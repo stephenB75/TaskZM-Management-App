@@ -1002,6 +1002,91 @@ export async function updateTeamMemberRole(workspaceId: string, memberId: string
   return response.json();
 }
 
+// Team Management API Functions
+export async function createTeam(workspaceId: string, name: string, description?: string) {
+  const response = await fetch(`${API_BASE}/teams/${workspaceId}`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ name, description }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create team');
+  }
+
+  return response.json();
+}
+
+export async function getTeams(workspaceId: string) {
+  try {
+    const response = await fetch(`${API_BASE}/teams/${workspaceId}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch teams');
+    }
+
+    const data = await response.json();
+    return data.teams || [];
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('404') || errorMessage.includes('Not found')) {
+      return [];
+    }
+    logger.warn('Error fetching teams, using empty list:', errorMessage);
+    return [];
+  }
+}
+
+export async function getTeamMembersByTeam(teamId: string) {
+  try {
+    const response = await fetch(`${API_BASE}/teams/${teamId}/members`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch team members');
+    }
+
+    const data = await response.json();
+    return data.members || [];
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('404') || errorMessage.includes('Not found')) {
+      return [];
+    }
+    logger.warn('Error fetching team members, using empty list:', errorMessage);
+    return [];
+  }
+}
+
+export async function inviteTeamMemberToTeam(teamId: string, email: string, name: string, role: 'admin' | 'member' | 'viewer' = 'member', avatar?: string) {
+  const response = await fetch(`${API_BASE}/teams/${teamId}/invite`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ email, name, role, avatar }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to invite team member');
+  }
+
+  return response.json();
+}
+
 // Admin API functions
 export async function getAdminUserInfo(email: string) {
   const response = await fetch(`${API_BASE}/admin/get-user/${encodeURIComponent(email)}`, {

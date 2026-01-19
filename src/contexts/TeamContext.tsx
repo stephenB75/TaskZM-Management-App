@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import type { User } from '../types';
+import type { User, Team } from '../types';
 import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
 import * as api from '../lib/api';
 import { toast } from 'sonner';
 import { DAYS_IN_WEEK } from '../lib/business-constants';
 import { createDefaultTeamContext } from '../lib/context-defaults';
+import { TEAM_MAX_MEMBERS } from '../lib/layout-constants';
 
 interface TeamContextType {
+  // Legacy workspace-based team (for backward compatibility)
   teamMembers: User[];
   isLoading: boolean;
   addTeamMember: (member: Omit<User, 'id'>, workspaceId: string) => Promise<void>;
@@ -19,6 +21,17 @@ interface TeamContextType {
   resendInvitation: (memberId: string, workspaceId: string) => Promise<void>;
   declineInvitation: (memberId: string, workspaceId: string) => Promise<void>;
   syncTeamMembers: (workspaceId: string) => Promise<void>;
+  // New multi-team support
+  teams: Team[];
+  currentTeamId: string | null;
+  currentTeamMembers: User[];
+  isLoadingTeams: boolean;
+  createTeam: (name: string, description?: string) => Promise<void>;
+  selectTeam: (teamId: string | null) => void;
+  syncTeams: (workspaceId: string) => Promise<void>;
+  addTeamMemberToTeam: (teamId: string, member: Omit<User, 'id'>, avatar?: string) => Promise<void>;
+  removeTeamMemberFromTeam: (teamId: string, memberId: string) => Promise<void>;
+  updateTeamMemberInTeam: (teamId: string, memberId: string, updates: Partial<User>) => Promise<void>;
 }
 
 export const TeamContext = createContext<TeamContextType | undefined>(undefined);
@@ -30,6 +43,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const { workspaceId } = useTasks();
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // New multi-team state
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
+  const [currentTeamMembers, setCurrentTeamMembers] = useState<User[]>([]);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
 
   const syncTeamMembers = useCallback(async (wsId: string) => {
     if (!accessToken) return;
@@ -303,9 +321,150 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   }, [accessToken, teamMembers, syncTeamMembers]);
 
+  // New multi-team functions
+  const syncTeams = useCallback(async (wsId: string) => {
+    if (!accessToken || !wsId) return;
+    
+    setIsLoadingTeams(true);
+    try {
+      const fetchedTeams = await api.getTeams(wsId);
+      setTeams(fetchedTeams);
+      
+      // If no team is selected and teams exist, select the first one
+      if (!currentTeamId && fetchedTeams.length > 0) {
+        setCurrentTeamId(fetchedTeams[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to sync teams:', error);
+      setTeams([]);
+    } finally {
+      setIsLoadingTeams(false);
+    }
+  }, [accessToken, currentTeamId]);
+
+  const createTeam = useCallback(async (name: string, description?: string) => {
+    if (!accessToken || !workspaceId || !user) {
+      toast.error('Cannot create team: No workspace access');
+      return;
+    }
+
+    // Check if user is admin (can create teams)
+    const userMember = teamMembers.find(m => m.id === user.id);
+    if (userMember?.role !== 'admin') {
+      toast.error('Only admins can create teams');
+      return;
+    }
+
+    try {
+      const newTeam = await api.createTeam(workspaceId, name, description);
+      setTeams(prev => [...prev, newTeam]);
+      setCurrentTeamId(newTeam.id);
+      toast.success(`Team "${name}" created successfully`);
+      await syncTeams(workspaceId);
+    } catch (error) {
+      console.error('Failed to create team:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create team');
+    }
+  }, [accessToken, workspaceId, user, teamMembers, syncTeams]);
+
+  const selectTeam = useCallback((teamId: string | null) => {
+    setCurrentTeamId(teamId);
+    if (teamId) {
+      // Load members for selected team
+      api.getTeamMembers(teamId).then(members => {
+        setCurrentTeamMembers(members);
+      }).catch(error => {
+        console.error('Failed to load team members:', error);
+        setCurrentTeamMembers([]);
+      });
+    } else {
+      setCurrentTeamMembers([]);
+    }
+  }, []);
+
+  const addTeamMemberToTeam = useCallback(async (teamId: string, member: Omit<User, 'id'>, avatar?: string) => {
+    if (!accessToken || !teamId) {
+      toast.error('Cannot invite: No team access');
+      return;
+    }
+
+    // Check team member limit
+    const team = teams.find(t => t.id === teamId);
+    if (team && team.memberCount >= TEAM_MAX_MEMBERS) {
+      toast.error(`Maximum of ${TEAM_MAX_MEMBERS} members per team`);
+      return;
+    }
+
+    try {
+      await api.inviteTeamMemberToTeam(teamId, member.email, member.name, member.role || 'member', avatar);
+      toast.success(`Invitation sent to ${member.email}`);
+      await selectTeam(teamId); // Refresh team members
+      await syncTeams(workspaceId || '');
+    } catch (error) {
+      console.error('Failed to invite team member:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to invite team member');
+    }
+  }, [accessToken, teams, workspaceId, selectTeam, syncTeams]);
+
+  const removeTeamMemberFromTeam = useCallback(async (teamId: string, memberId: string) => {
+    if (!accessToken || !teamId) {
+      toast.error('Cannot remove: No team access');
+      return;
+    }
+
+    try {
+      // TODO: Add API endpoint for removing team member from team
+      // await api.removeTeamMemberFromTeam(teamId, memberId);
+      setCurrentTeamMembers(prev => prev.filter(m => m.id !== memberId));
+      toast.success('Team member removed');
+      await syncTeams(workspaceId || '');
+    } catch (error) {
+      console.error('Failed to remove team member:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to remove team member');
+    }
+  }, [accessToken, workspaceId, syncTeams]);
+
+  const updateTeamMemberInTeam = useCallback(async (teamId: string, memberId: string, updates: Partial<User>) => {
+    if (!accessToken || !teamId) {
+      toast.error('Cannot update: No team access');
+      return;
+    }
+
+    try {
+      // TODO: Add API endpoint for updating team member in team
+      setCurrentTeamMembers(prev =>
+        prev.map(m => (m.id === memberId ? { ...m, ...updates } : m))
+      );
+      toast.success('Team member updated');
+    } catch (error) {
+      console.error('Failed to update team member:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update team member');
+    }
+  }, [accessToken]);
+
+  // Sync teams when workspace changes
+  useEffect(() => {
+    if (user && accessToken && workspaceId) {
+      syncTeams(workspaceId);
+    }
+  }, [user, accessToken, workspaceId, syncTeams]);
+
+  // Load members when team is selected
+  useEffect(() => {
+    if (currentTeamId && accessToken) {
+      api.getTeamMembersByTeam(currentTeamId).then(members => {
+        setCurrentTeamMembers(members);
+      }).catch(error => {
+        console.error('Failed to load team members:', error);
+        setCurrentTeamMembers([]);
+      });
+    }
+  }, [currentTeamId, accessToken]);
+
   return (
     <TeamContext.Provider
       value={{
+        // Legacy workspace-based team
         teamMembers,
         isLoading,
         addTeamMember,
@@ -317,6 +476,17 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         resendInvitation,
         declineInvitation,
         syncTeamMembers,
+        // New multi-team support
+        teams,
+        currentTeamId,
+        currentTeamMembers,
+        isLoadingTeams,
+        createTeam,
+        selectTeam,
+        syncTeams,
+        addTeamMemberToTeam,
+        removeTeamMemberFromTeam,
+        updateTeamMemberInTeam,
       }}
     >
       {children}

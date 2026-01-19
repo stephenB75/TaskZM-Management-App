@@ -30,6 +30,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { AvatarSelection, type AvatarGender } from "./AvatarSelection";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { AVATAR_UI_TEXT } from "../lib/avatar-constants";
@@ -123,6 +124,9 @@ import {
   TEAM_PANEL_VERTICAL_PADDING,
   TEAM_PANEL_GRID_COLUMNS,
   TEAM_PANEL_GRID_GAP,
+  TEAM_MAX_MEMBERS,
+  TEAM_PANEL_TAB_HEIGHT,
+  TEAM_PANEL_TAB_PADDING,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
   PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR,
   PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT,
@@ -160,6 +164,7 @@ import {
 
 export function TeamPanel() {
   const {
+    // Legacy workspace-based team
     teamMembers,
     addTeamMember,
     removeTeamMember,
@@ -169,11 +174,23 @@ export function TeamPanel() {
     resendInvitation,
     declineInvitation,
     isLoading,
+    // New multi-team support
+    teams,
+    currentTeamId,
+    currentTeamMembers,
+    isLoadingTeams,
+    createTeam,
+    selectTeam,
+    syncTeams,
+    addTeamMemberToTeam,
+    removeTeamMemberFromTeam,
+    updateTeamMemberInTeam,
   } = useTeam();
   const { tasks, workspaceId, ensureWorkspace, isSyncing } = useTasks();
   const { user: currentUser } = useAuth();
   const [showAddMember, setShowAddMember] = useState(false);
   const [showBulkInvite, setShowBulkInvite] = useState(false);
+  const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [editingMember, setEditingMember] =
     useState<User | null>(null);
   const [newMemberName, setNewMemberName] = useState("");
@@ -186,6 +203,10 @@ export function TeamPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [bulkInvites, setBulkInvites] = useState<string>("");
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+  // Team creation state
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamDescription, setNewTeamDescription] = useState("");
+  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
 
   const handleAddMember = async () => {
     if (!newMemberName.trim() || !newMemberEmail.trim()) {
@@ -200,9 +221,19 @@ export function TeamPanel() {
       return;
     }
 
-    // Check if email already exists
+    // Check team member limit (8 max) if adding to a team
+    if (currentTeamId) {
+      const team = teams.find(t => t.id === currentTeamId);
+      if (team && team.memberCount >= TEAM_MAX_MEMBERS) {
+        toast.error(TEAM_PANEL_UI_TEXT.maxMembersReached);
+        return;
+      }
+    }
+
+    // Check if email already exists in current team/workspace
+    const membersToCheck = currentTeamId ? currentTeamMembers : teamMembers;
     if (
-      teamMembers.some(
+      membersToCheck.some(
         (m) =>
           m.email.toLowerCase() ===
           newMemberEmail.toLowerCase(),
@@ -238,12 +269,26 @@ export function TeamPanel() {
     }
 
     try {
-      await addTeamMember({
-        name: newMemberName.trim(),
-        email: newMemberEmail.trim(),
-        role: newMemberRole,
-        avatar: newMemberAvatar || `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=${newMemberGender === 'male' ? '50' : '0'}`,
-      }, currentWorkspaceId);
+      if (currentTeamId) {
+        // Add to specific team
+        await addTeamMemberToTeam(
+          currentTeamId,
+          {
+            name: newMemberName.trim(),
+            email: newMemberEmail.trim(),
+            role: newMemberRole,
+          },
+          newMemberAvatar || `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=${newMemberGender === 'male' ? '50' : '0'}`,
+        );
+      } else {
+        // Legacy workspace-based team
+        await addTeamMember({
+          name: newMemberName.trim(),
+          email: newMemberEmail.trim(),
+          role: newMemberRole,
+          avatar: newMemberAvatar || `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=${newMemberGender === 'male' ? '50' : '0'}`,
+        }, currentWorkspaceId);
+      }
 
       // Reset form only on success
       setNewMemberName("");
@@ -380,6 +425,43 @@ export function TeamPanel() {
     }
   };
 
+  // Check if current user is admin
+  const isCurrentUserAdmin = useMemo(() => {
+    if (!currentUser) return false;
+    if (currentTeamId) {
+      // Check if user is admin in current team
+      const member = currentTeamMembers.find(m => m.id === currentUser.id);
+      return member?.role === 'admin';
+    }
+    // Check legacy workspace team
+    const member = teamMembers.find(m => m.id === currentUser.id);
+    return member?.role === 'admin';
+  }, [currentUser, currentTeamId, currentTeamMembers, teamMembers]);
+
+  const handleCreateTeam = async () => {
+    if (!newTeamName.trim()) {
+      toast.error("Please enter a team name");
+      return;
+    }
+
+    if (!workspaceId) {
+      toast.error("No workspace available");
+      return;
+    }
+
+    setIsCreatingTeam(true);
+    try {
+      await createTeam(newTeamName.trim(), newTeamDescription.trim() || undefined);
+      setNewTeamName("");
+      setNewTeamDescription("");
+      setShowCreateTeam(false);
+    } catch (error) {
+      console.error("Failed to create team:", error);
+    } finally {
+      setIsCreatingTeam(false);
+    }
+  };
+
   const getTaskStats = (memberId: string) => {
     const assignedTasks = tasks.filter((t) =>
       t.assignedTo.includes(memberId),
@@ -412,17 +494,20 @@ export function TeamPanel() {
     }
   };
 
+  // Use current team members if a team is selected, otherwise use legacy workspace team
+  const activeMembers = currentTeamId ? currentTeamMembers : teamMembers;
+
   // Filter members based on search query
   const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return teamMembers;
+    if (!searchQuery.trim()) return activeMembers;
     
     const query = searchQuery.toLowerCase();
-    return teamMembers.filter(member =>
+    return activeMembers.filter(member =>
       member.name.toLowerCase().includes(query) ||
       member.email.toLowerCase().includes(query) ||
       member.role.toLowerCase().includes(query)
     );
-  }, [teamMembers, searchQuery]);
+  }, [activeMembers, searchQuery]);
 
   // Format expiration date
   const formatExpirationDate = (expiresAt?: string) => {
@@ -1074,7 +1159,7 @@ export function TeamPanel() {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Bulk Invite</p>
+                    <p>{TEAM_PANEL_UI_TEXT.bulkInvite}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -1102,7 +1187,7 @@ export function TeamPanel() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Add Member</p>
+                  <p>{TEAM_PANEL_UI_TEXT.addMember}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1110,6 +1195,40 @@ export function TeamPanel() {
         }
         hideDesktopLogo
       />
+
+      {/* Teams Tabs - Show if teams exist or user is admin */}
+      {(teams.length > 0 || isCurrentUserAdmin) && (
+        <div 
+          className="border-b border-primary/10"
+          style={{ 
+            paddingLeft: PANEL_PADDING,
+            paddingRight: PANEL_PADDING,
+            paddingTop: TEAM_PANEL_TAB_PADDING,
+            paddingBottom: TEAM_PANEL_TAB_PADDING
+          }}
+        >
+          <Tabs 
+            value={currentTeamId || "workspace"} 
+            onValueChange={(value) => selectTeam(value === "workspace" ? null : value)}
+          >
+            <TabsList className="w-full justify-start overflow-x-auto" style={{ height: TEAM_PANEL_TAB_HEIGHT }}>
+              <TabsTrigger value="workspace">
+                {TEAM_PANEL_UI_TEXT.workspaceTeam}
+              </TabsTrigger>
+              {teams.map((team) => (
+                <TabsTrigger key={team.id} value={team.id}>
+                  {team.name}
+                  {team.memberCount > 0 && (
+                    <Badge variant="secondary" className="ml-1" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
+                      {team.memberCount}/{TEAM_MAX_MEMBERS}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div 
@@ -1131,7 +1250,7 @@ export function TeamPanel() {
             }} 
           />
           <Input
-            placeholder="Search members by name, email, or role..."
+            placeholder={TEAM_PANEL_UI_TEXT.searchMembersPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ paddingLeft: PANEL_SEARCH_INPUT_PADDING_LEFT }}
@@ -1234,12 +1353,24 @@ export function TeamPanel() {
                     member={member}
                     stats={stats}
                     isCurrentUser={isCurrentUser}
-                    allTeamMembers={teamMembers}
+                    allTeamMembers={activeMembers}
                     onCardClick={handleCardClick}
                     onResendInvitation={handleResendInvitation}
                     onDeclineInvitation={handleDeclineInvitation}
-                    onUpdateRole={handleUpdateRole}
-                    onRemoveMember={handleRemoveMember}
+                    onUpdateRole={async (member, role) => {
+                      if (currentTeamId) {
+                        await updateTeamMemberInTeam(currentTeamId, member.id, { role });
+                      } else {
+                        await handleUpdateRole(member, role);
+                      }
+                    }}
+                    onRemoveMember={async (member) => {
+                      if (currentTeamId) {
+                        await removeTeamMemberFromTeam(currentTeamId, member.id);
+                      } else {
+                        await handleRemoveMember(member);
+                      }
+                    }}
                     getRoleIcon={getRoleIcon}
                     getRoleBadgeVariant={getRoleBadgeVariant}
                     getInviteStatusBadge={getInviteStatusBadge}
@@ -1329,11 +1460,24 @@ export function TeamPanel() {
                         member={member}
                         stats={stats}
                         isCurrentUser={isCurrentUser}
+                        allTeamMembers={activeMembers}
                         onCardClick={handleCardClick}
                         onResendInvitation={handleResendInvitation}
                         onDeclineInvitation={handleDeclineInvitation}
-                        onUpdateRole={handleUpdateRole}
-                        onRemoveMember={handleRemoveMember}
+                    onUpdateRole={async (member, role) => {
+                      if (currentTeamId) {
+                        await updateTeamMemberInTeam(currentTeamId, member.id, { role });
+                      } else {
+                        await handleUpdateRole(member, role);
+                      }
+                    }}
+                    onRemoveMember={async (member) => {
+                      if (currentTeamId) {
+                        await removeTeamMemberFromTeam(currentTeamId, member.id);
+                      } else {
+                        await handleRemoveMember(member);
+                      }
+                    }}
                         getRoleIcon={getRoleIcon}
                         getRoleBadgeVariant={getRoleBadgeVariant}
                         getInviteStatusBadge={getInviteStatusBadge}
@@ -1348,6 +1492,62 @@ export function TeamPanel() {
           </div>
         )}
 
+      {/* Create Team Dialog */}
+      <Dialog
+        open={showCreateTeam}
+        onOpenChange={setShowCreateTeam}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{TEAM_PANEL_UI_TEXT.createTeam}</DialogTitle>
+            <DialogDescription>
+              Create a new team to organize your team members (max {TEAM_MAX_MEMBERS} members per team)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingTop: PANEL_PADDING, paddingBottom: PANEL_PADDING }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label htmlFor="team-name">{TEAM_PANEL_UI_TEXT.teamName} *</Label>
+              <Input
+                id="team-name"
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                placeholder="Enter team name"
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label htmlFor="team-description">{TEAM_PANEL_UI_TEXT.teamDescription}</Label>
+              <Input
+                id="team-description"
+                value={newTeamDescription}
+                onChange={(e) => setNewTeamDescription(e.target.value)}
+                placeholder={TEAM_PANEL_UI_TEXT.optionalDescription}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end" style={{ gap: PANEL_GAP_MEDIUM }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateTeam(false);
+                setNewTeamName("");
+                setNewTeamDescription("");
+              }}
+            >
+              {AVATAR_UI_TEXT.cancel}
+            </Button>
+            <Button
+              onClick={handleCreateTeam}
+              disabled={!newTeamName.trim() || isCreatingTeam}
+            >
+              {isCreatingTeam ? AVATAR_UI_TEXT.saving : TEAM_PANEL_UI_TEXT.createTeam}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Member Dialog */}
       <Dialog
         open={showAddMember}
@@ -1355,15 +1555,15 @@ export function TeamPanel() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Team Member</DialogTitle>
+            <DialogTitle>{TEAM_PANEL_UI_TEXT.addTeamMember}</DialogTitle>
             <DialogDescription>
-              Invite a new member to collaborate on tasks
+              {TEAM_PANEL_UI_TEXT.addMemberDescription}
             </DialogDescription>
           </DialogHeader>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingTop: PANEL_PADDING, paddingBottom: PANEL_PADDING }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{TEAM_PANEL_UI_TEXT.nameLabel} *</Label>
               <Input
                 id="name"
                 value={newMemberName}
@@ -1376,7 +1576,7 @@ export function TeamPanel() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">{TEAM_PANEL_UI_TEXT.emailLabel} *</Label>
               <Input
                 id="email"
                 type="email"
@@ -1497,7 +1697,7 @@ export function TeamPanel() {
                 onClick={handleAddMember}
                 disabled={!newMemberName.trim() || !newMemberEmail.trim() || isLoading}
               >
-                {isLoading ? 'Adding...' : 'Add Member'}
+                {isLoading ? TEAM_PANEL_UI_TEXT.adding : TEAM_PANEL_UI_TEXT.addMember}
               </Button>
             </div>
           </div>
@@ -1511,7 +1711,7 @@ export function TeamPanel() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Bulk Invite Members</DialogTitle>
+            <DialogTitle>{TEAM_PANEL_UI_TEXT.bulkInviteMembers}</DialogTitle>
             <DialogDescription>
               Invite multiple members at once. Enter one email per line or comma-separated.
             </DialogDescription>
@@ -1537,7 +1737,7 @@ export function TeamPanel() {
                 rows={TEAM_PANEL_TEXTAREA_ROWS}
               />
               <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                One email per line or comma-separated. Names will be auto-generated from emails.
+                {TEAM_PANEL_UI_TEXT.bulkInviteInstructions}
               </p>
             </div>
 

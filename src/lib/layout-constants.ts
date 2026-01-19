@@ -393,6 +393,11 @@ export const TEAM_PANEL_VERTICAL_PADDING = '1.5rem'; // p-6 = 1.5rem (24px) card
 export const TEAM_PANEL_GRID_COLUMNS = 2; // Number of columns for team member cards
 export const TEAM_PANEL_GRID_GAP = '0.75rem'; // gap-3 = 0.75rem (12px) between grid items
 
+// Team Management Constants
+export const TEAM_MAX_MEMBERS = 8; // Maximum team members per team
+export const TEAM_PANEL_TAB_HEIGHT = '2.5rem'; // Height for team tabs
+export const TEAM_PANEL_TAB_PADDING = '0.75rem'; // Padding for team tabs
+
 // Folder Panel specific constants
 export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
 export const FOLDER_PANEL_SEARCH_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem

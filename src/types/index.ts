@@ -99,6 +99,19 @@ export interface User {
   acceptedAt?: string | null;
   expiresAt?: string; // Invitation expiration date
   invitationToken?: string; // Token for pending invitations
+  teamId?: string; // Team ID when user is part of a team
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
+  workspaceId: string; // Teams belong to a workspace
+  createdBy: string; // User ID of creator (must be admin)
+  createdAt: string;
+  updatedAt: string;
+  maxMembers: number; // Maximum team members (default: 8)
+  memberCount: number; // Current number of members
 }
 
 export interface Workspace {

@@ -227,6 +227,7 @@ export function createDefaultCalendarContext() {
  */
 export function createDefaultTeamContext() {
   return {
+    // Legacy workspace-based team
     teamMembers: [],
     isLoading: false,
     addTeamMember: async () => {},
@@ -238,6 +239,17 @@ export function createDefaultTeamContext() {
     resendInvitation: async () => {},
     declineInvitation: async () => {},
     syncTeamMembers: async () => {},
+    // New multi-team support
+    teams: [],
+    currentTeamId: null,
+    currentTeamMembers: [],
+    isLoadingTeams: false,
+    createTeam: async () => {},
+    selectTeam: () => {},
+    syncTeams: async () => {},
+    addTeamMemberToTeam: async () => {},
+    removeTeamMemberFromTeam: async () => {},
+    updateTeamMemberInTeam: async () => {},
   };
 }
 
