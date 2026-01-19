@@ -939,13 +939,19 @@ export function TeamPanel() {
             className="text-muted-foreground text-center mb-3"
             style={{ 
               fontSize: TEAM_PANEL_VERTICAL_ROLE_SIZE,
-              marginBottom: TEAM_PANEL_VERTICAL_SPACING
+              marginBottom: TEAM_PANEL_VERTICAL_SPACING,
+              paddingLeft: TEAM_PANEL_CARD_PADDING,
+              paddingRight: TEAM_PANEL_CARD_PADDING,
             }}
           >
             <a 
               href={`mailto:${member.email}`}
               className="hover:text-primary transition-colors flex items-center justify-center"
-              style={{ gap: PANEL_GAP_SMALL }}
+              style={{ 
+                gap: PANEL_GAP_SMALL,
+                maxWidth: '100%',
+                minWidth: 0,
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               <Icon 
@@ -953,7 +959,17 @@ export function TeamPanel() {
                 size={TEAM_PANEL_ICON_SIZE_SMALL} 
                 className="text-muted-foreground flex-shrink-0" 
               />
-              {member.email}
+              <span 
+                className="break-words"
+                style={{ 
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
+                  maxWidth: '100%',
+                  minWidth: 0,
+                }}
+              >
+                {member.email}
+              </span>
             </a>
           </div>
 
