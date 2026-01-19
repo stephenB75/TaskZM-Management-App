@@ -1138,8 +1138,15 @@ function AppContent() {
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                 className="h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
               >
-                {/* Panel Content */}
-                <div className="h-full w-full overflow-hidden">
+                {/* Panel Content - Allow vertical scroll in landscape mode on tablets */}
+                <div 
+                  className="h-full w-full overflow-y-auto overflow-x-hidden"
+                  style={{
+                    WebkitOverflowScrolling: 'touch',
+                    touchAction: 'pan-y', // Allow vertical panning (scrolling) on touch devices
+                    overscrollBehaviorY: 'contain',
+                  } as React.CSSProperties}
+                >
                   {currentView === 'notifications' && <NotificationsPanel />}
                   {currentView === 'today' && <TodayAgendaView />}
                   {currentView === 'inbox' && <InboxView />}
