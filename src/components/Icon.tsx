@@ -5,108 +5,7 @@
  */
 
 import React from 'react';
-import {
-  Sparkle,
-  Calendar,
-  CalendarBlank,
-  Clock,
-  Gear,
-  Check,
-  CheckCircle,
-  X,
-  XCircle,
-  Plus,
-  Minus,
-  Trash,
-  Pencil,
-  Folder,
-  FolderPlus,
-  ArchiveBox,
-  Archive,
-  MagnifyingGlass,
-  Funnel,
-  Tag,
-  Users,
-  User,
-  Bell,
-  WarningCircle,
-  Warning,
-  Info,
-  Target,
-  Timer,
-  Brain,
-  Lightning,
-  ArrowClockwise,
-  ArrowCounterClockwise,
-  Repeat,
-  Link,
-  ArrowSquareOut,
-  Copy,
-  Download,
-  Upload,
-  CaretLeft,
-  CaretRight,
-  CaretUp,
-  CaretDown,
-  ArrowLeft,
-  ArrowRight,
-  List,
-  DotsThreeVertical,
-  DotsThree,
-  SidebarSimple,
-  Circle,
-  Play,
-  Pause,
-  PlayCircle,
-  Square,
-  Spinner,
-  Envelope,
-  PaperPlaneTilt,
-  Lock,
-  Eye,
-  EyeSlash,
-  Shield,
-  ShieldCheck,
-  CreditCard,
-  Trophy,
-  Crown,
-  ChartBar,
-  ChartPie,
-  GridFour,
-  TrendUp,
-  Activity,
-  FileText,
-  Folders,
-  Note,
-  ListNumbers,
-  ListChecks,
-  Cloud,
-  CloudSlash,
-  TextBolder,
-  TextItalic,
-  TextUnderline,
-  TextStrikethrough,
-  TextAa,
-  Eraser,
-  Code,
-  TextAlignLeft,
-  TextAlignCenter,
-  TextAlignRight,
-  TextAlignJustify,
-  UserPlus,
-  MapPin,
-  MagnifyingGlassMinus,
-  Globe,
-  Coffee,
-  Keyboard,
-  SignOut,
-  Briefcase,
-  Compass,
-  BatteryCharging,
-  Moon,
-  Sun,
-  Monitor,
-} from 'phosphor-react';
+import * as PhosphorIcons from 'phosphor-react';
 import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY } from '../lib/color-theme';
 import { ICON_SIZE_XL } from '../lib/layout-constants';
 
@@ -125,120 +24,13 @@ export interface IconProps {
   useDuotone?: boolean; // Auto-enable duotone for certain icons
 }
 
-// Icon registry - maps icon names to actual Phosphor icon components
-// Using React.ComponentType<any> because Phosphor icons have varying prop types
-const ICON_REGISTRY: Record<string, React.ComponentType<any>> = {
-  // Common icons
-  'Sparkle': Sparkle,
-  'Calendar': Calendar,
-  'CalendarBlank': CalendarBlank,
-  'Clock': Clock,
-  'Gear': Gear,
-  'Check': Check,
-  'CheckCircle': CheckCircle,
-  'X': X,
-  'XCircle': XCircle,
-  'Plus': Plus,
-  'Minus': Minus,
-  'Trash': Trash,
-  'Pencil': Pencil,
-  'Folder': Folder,
-  'FolderPlus': FolderPlus,
-  'ArchiveBox': ArchiveBox,
-  'Archive': Archive,
-  'MagnifyingGlass': MagnifyingGlass,
-  'Funnel': Funnel,
-  'Tag': Tag,
-  'Users': Users,
-  'User': User,
-  'Bell': Bell,
-  'WarningCircle': WarningCircle,
-  'Warning': Warning,
-  'Info': Info,
-  'Target': Target,
-  'Timer': Timer,
-  'Brain': Brain,
-  'Lightning': Lightning,
-  'ArrowClockwise': ArrowClockwise,
-  'ArrowCounterClockwise': ArrowCounterClockwise,
-  'Repeat': Repeat,
-  'Link': Link,
-  'ArrowSquareOut': ArrowSquareOut,
-  'Copy': Copy,
-  'Download': Download,
-  'Upload': Upload,
-  'CaretLeft': CaretLeft,
-  'CaretRight': CaretRight,
-  'CaretUp': CaretUp,
-  'CaretDown': CaretDown,
-  'ArrowLeft': ArrowLeft,
-  'ArrowRight': ArrowRight,
-  'List': List,
-  'DotsThreeVertical': DotsThreeVertical,
-  'DotsThree': DotsThree,
-  'SidebarSimple': SidebarSimple,
-  'Circle': Circle,
-  'Play': Play,
-  'Pause': Pause,
-  'PlayCircle': PlayCircle,
-  'Square': Square,
-  'Spinner': Spinner,
-  'Envelope': Envelope,
-  'PaperPlaneTilt': PaperPlaneTilt,
-  'Lock': Lock,
-  'Eye': Eye,
-  'EyeSlash': EyeSlash,
-  'Shield': Shield,
-  'ShieldCheck': ShieldCheck,
-  'CreditCard': CreditCard,
-  'Trophy': Trophy,
-  'Crown': Crown,
-  'ChartBar': ChartBar,
-  'ChartPie': ChartPie,
-  'GridFour': GridFour,
-  'TrendUp': TrendUp,
-  'Activity': Activity,
-  'FileText': FileText,
-  'Folders': Folders,
-  'Note': Note,
-  'ListNumbers': ListNumbers,
-  'ListChecks': ListChecks,
-  'Cloud': Cloud,
-  'CloudSlash': CloudSlash,
-  'TextBolder': TextBolder,
-  'TextItalic': TextItalic,
-  'TextUnderline': TextUnderline,
-  'TextStrikethrough': TextStrikethrough,
-  'TextAa': TextAa,
-  'Eraser': Eraser,
-  'Code': Code,
-  'TextAlignLeft': TextAlignLeft,
-  'TextAlignCenter': TextAlignCenter,
-  'TextAlignRight': TextAlignRight,
-  'TextAlignJustify': TextAlignJustify,
-  'UserPlus': UserPlus,
-  'MapPin': MapPin,
-  'MagnifyingGlassMinus': MagnifyingGlassMinus,
-  'Globe': Globe,
-  'Coffee': Coffee,
-  'Keyboard': Keyboard,
-  'SignOut': SignOut,
-  'Briefcase': Briefcase,
-  'Compass': Compass,
-  'BatteryCharging': BatteryCharging,
-  'Moon': Moon,
-  'Sun': Sun,
-  'Monitor': Monitor,
-};
-
 // Map common icon names to Phosphor icon names
-const ICON_NAME_MAP: Record<string, string> = {
+const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   // Common icons
   'sparkles': 'Sparkle',
   'calendar': 'Calendar',
   'calendar-days': 'CalendarBlank',
   'calendar-blank': 'CalendarBlank',
-  'calendar-range': 'Calendar',
   'clock': 'Clock',
   'settings': 'Gear',
   'check': 'Check',
@@ -272,12 +64,9 @@ const ICON_NAME_MAP: Record<string, string> = {
   'refresh': 'ArrowClockwise',
   'refresh-cw': 'ArrowClockwise',
   'arrow-clockwise': 'ArrowClockwise',
-  'rotate-ccw': 'ArrowCounterClockwise',
   'repeat': 'Repeat',
-  'trash-2': 'Trash',
   'link': 'Link',
   'link-2': 'Link',
-  'external-link': 'ArrowSquareOut',
   'copy': 'Copy',
   'download': 'Download',
   'upload': 'Upload',
@@ -294,8 +83,6 @@ const ICON_NAME_MAP: Record<string, string> = {
   'menu': 'List',
   'more-vertical': 'DotsThreeVertical',
   'more-horizontal': 'DotsThree',
-  'grip-vertical': 'DotsThreeVertical', // GripVertical doesn't exist in phosphor-react, using DotsThreeVertical
-  'panel-left': 'SidebarSimple', // Using SidebarSimple which exists in phosphor-react
   'circle': 'Circle',
   'play': 'Play',
   'pause': 'Pause',
@@ -324,47 +111,40 @@ const ICON_NAME_MAP: Record<string, string> = {
   'file-text': 'FileText',
   'folder-tree': 'Folders',
   'forward': 'ArrowRight',
+  'calendar-range': 'CalendarBlank',
+  'calendar-as': 'Calendar',
   'sparkle': 'Sparkle',
   'sparkling': 'Sparkle',
   'sticky-note': 'Note',
   'list': 'List',
   'list-ordered': 'ListNumbers',
-  'list-checks': 'ListChecks',
-  'cloud': 'Cloud',
-  'cloud-off': 'CloudSlash',
-  'cloud-slash': 'CloudSlash',
   'bold': 'TextBolder',
   'italic': 'TextItalic',
   'underline': 'TextUnderline',
   'strikethrough': 'TextStrikethrough',
-  'highlighter': 'TextBolder', // Highlighter doesn't exist in phosphor-react, using TextBolder as alternative
   'type': 'TextAa',
   'eraser': 'Eraser',
-  'case-lower': 'TextAa',
-  'pilcrow': 'Code', // Paragraph doesn't exist in phosphor-react, using Code as alternative
   'code': 'Code',
-  'indent': 'Code', // TextIndent doesn't exist in phosphor-react, using Code as alternative
-  'outdent': 'Code', // TextOutdent doesn't exist in phosphor-react, using Code as alternative
   'align-left': 'TextAlignLeft',
   'align-center': 'TextAlignCenter',
   'align-right': 'TextAlignRight',
   'align-justify': 'TextAlignJustify',
+  'external-link': 'ArrowSquareOut',
   'check-circle-2': 'CheckCircle',
-  'user-plus': 'UserPlus',
-  'loader-2': 'Spinner',
+  'rotate-ccw': 'ArrowCounterClockwise',
   'map-pin': 'MapPin',
-  'zoom-out': 'MagnifyingGlassMinus',
   'globe': 'Globe',
   'coffee': 'Coffee',
   'keyboard': 'Keyboard',
-  'log-out': 'SignOut',
+  'sign-out': 'SignOut',
   'briefcase': 'Briefcase',
   'compass': 'Compass',
   'battery-charging': 'BatteryCharging',
-  'sunrise': 'Sun', // Sunrise doesn't exist in phosphor-react, using Sun as alternative
   'moon': 'Moon',
   'sun': 'Sun',
   'monitor': 'Monitor',
+  'sidebar-simple': 'SidebarSimple',
+  'panel-left': 'SidebarSimple',
 };
 
 // Icons that should use duotone by default for better visual appeal
@@ -385,11 +165,6 @@ const DUOTONE_ICONS = new Set([
   'calendar-blank',
   'check-circle',
   'checkmark-circle',
-  'grid',
-  'dashboard',
-  'inbox',
-  'archive',
-  'bar-chart',
 ]);
 
 export function Icon({
@@ -402,57 +177,22 @@ export function Icon({
   secondaryColor,
   useDuotone = false,
 }: IconProps) {
-  // Early return with fallback if name is invalid
-  // Always return a valid React element, never null or undefined
-  if (!name || typeof name !== 'string') {
-    const sizeNum = typeof size === 'string'
-      ? parseInt(size.replace(/[^0-9]/g, ''), 10) || DEFAULT_ICON_SIZE
-      : size;
-    // Return a fallback div
-    return (
-      <div
-        style={{ display: 'inline-block', width: sizeNum, height: sizeNum }}
-        aria-hidden="true"
-      />
-    );
-  }
-
   const sizeNum = typeof size === 'string'
     ? parseInt(size.replace(/[^0-9]/g, ''), 10) || DEFAULT_ICON_SIZE
     : size;
 
   // Get Phosphor icon name
-  // Handle edge cases: empty string, whitespace-only, or invalid characters
-  const normalizedName = name.trim().toLowerCase();
-  const phosphorIconName = normalizedName 
-    ? (ICON_NAME_MAP[normalizedName] || 
-       normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase()))
-    : 'Circle'; // Fallback to Circle for empty/invalid names
+  const phosphorIconName = ICON_NAME_MAP[name.toLowerCase()] || 
+    name.charAt(0).toUpperCase() + name.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 
-  // Get the icon component from registry
-  const IconComponent = ICON_REGISTRY[phosphorIconName];
+  // Get the icon component dynamically from phosphor-react
+  const IconComponent = (PhosphorIcons as any)[phosphorIconName] as React.ComponentType<any>;
 
-  // Validate component exists and is a valid React component
-  // Check for null, undefined, or non-function values
-  if (!IconComponent || typeof IconComponent !== 'function') {
+  if (!IconComponent) {
     if (import.meta.env.DEV) {
-      console.warn(`[Icon] Phosphor icon "${phosphorIconName}" not found for name "${name}". Available icons: ${Object.keys(ICON_REGISTRY).slice(0, 10).join(', ')}...`);
-      console.warn(`[Icon] Registry lookup: name="${name}", mapped to="${phosphorIconName}", found=${!!IconComponent}, type=${typeof IconComponent}`);
+      console.warn(`[Icon] Phosphor icon "${phosphorIconName}" not found for name "${name}"`);
     }
-    // Return a fallback div instead of null to prevent React error #130
-    // Make it slightly visible in dev mode for debugging
-    return (
-      <div
-        style={{ 
-          display: 'inline-block', 
-          width: sizeNum, 
-          height: sizeNum,
-          ...(import.meta.env.DEV ? { backgroundColor: 'rgba(255,0,0,0.1)', border: '1px dashed red' } : {})
-        }}
-        aria-hidden="true"
-        title={import.meta.env.DEV ? `Missing icon: ${name}` : undefined}
-      />
-    );
+    return null;
   }
 
   // Determine weight - prefer duotone for certain icons or if explicitly requested
@@ -460,19 +200,11 @@ export function Icon({
   const iconWeight: IconWeight = weight || (shouldUseDuotone ? 'duotone' : 'regular');
 
   // Set colors for duotone
-  // Only set color prop if explicitly provided, otherwise let CSS classes handle it
+  const primaryColor = color || COLOR_PRIMARY;
   const secondary = secondaryColor || (iconWeight === 'duotone' ? COLOR_PRIMARY_LIGHT : undefined);
 
-  // Build props for Phosphor icon component
-  // Using any type because Phosphor icons accept varying prop types
-  const iconProps: {
-    size: number;
-    weight: IconWeight;
-    className?: string;
-    style?: React.CSSProperties;
-    color?: string;
-    secondaryColor?: string;
-  } = {
+  // Build props
+  const iconProps: any = {
     size: sizeNum,
     weight: iconWeight,
     className,
@@ -480,61 +212,16 @@ export function Icon({
   };
 
   // Add colors based on weight
-  // For duotone icons, we need both primary and secondary colors
-  // For regular icons, only set color if explicitly provided
-  if (iconWeight === 'duotone') {
-    // Duotone requires both colors - use provided or theme defaults
-    // If no color provided, use currentColor to inherit from CSS classes
-    iconProps.color = color || 'currentColor';
-    if (secondary) {
-      iconProps.secondaryColor = secondaryColor || secondary;
-    }
+  if (iconWeight === 'duotone' && secondary) {
+    iconProps.color = primaryColor;
+    iconProps.secondaryColor = secondary;
   } else {
-    // Regular icons - ensure they always have a visible color
-    // Use explicit color if provided, otherwise use currentColor to inherit from CSS classes
-    // This ensures icons are always visible even if parent doesn't have explicit color
-    iconProps.color = color || 'currentColor';
+    iconProps.color = primaryColor;
   }
 
-  // Render the icon component - we've already validated it exists
-  // Use JSX for proper rendering with Phosphor icons (React.createElement can cause issues)
-  try {
-    // Double-check that IconComponent is still valid (defensive programming)
-    if (!IconComponent || typeof IconComponent !== 'function') {
-      throw new Error(`Icon component "${phosphorIconName}" is not a valid function`);
-    }
-    
-    // Use JSX for proper rendering - Phosphor icons work better with JSX
-    // Create the element directly using JSX syntax
-    const IconElement = IconComponent;
-    return <IconElement {...iconProps} />;
-  } catch (error) {
-    // Fallback if rendering fails - always return a valid React element
-    if (import.meta.env.DEV) {
-      console.error('[Icon] Error rendering icon component:', error, { 
-        name, 
-        phosphorIconName, 
-        IconComponent,
-        iconProps,
-        errorMessage: error instanceof Error ? error.message : String(error)
-      });
-    }
-    // Always return a valid React element to prevent React error #130
-    return (
-      <div
-        style={{ 
-          display: 'inline-block', 
-          width: sizeNum, 
-          height: sizeNum,
-          backgroundColor: 'rgba(255,0,0,0.1)',
-          border: '1px dashed red'
-        }}
-        aria-hidden="true"
-        title={`Icon render error: ${name}`}
-      />
-    );
-  }
+  return <IconComponent {...iconProps} />;
 }
 
 // Default export for compatibility
 export default Icon;
+export { Icon };
