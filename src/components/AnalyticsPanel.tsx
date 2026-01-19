@@ -140,14 +140,14 @@ function MetricCard({
   title,
   value,
   subtitle,
-  icon: IconComponent,
+  iconName,
   color,
   trend,
 }: {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon: React.ElementType;
+  iconName: string;
   color: string;
   trend?: { value: number; label: string };
 }) {
@@ -157,7 +157,7 @@ function MetricCard({
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="p-2 rounded-lg" style={{ backgroundColor: getColorWithOpacity(color, 0.1) }}>
-            <IconComponent className="w-4 h-4" style={{ color }} />
+            <Icon name={iconName} size={16} style={{ color }} />
           </div>
           {trend && (
             <div className="text-xs font-medium" style={{ color: trend.value >= 0 ? COLOR_SUCCESS : COLOR_ERROR }}>
