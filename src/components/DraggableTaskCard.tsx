@@ -1249,10 +1249,10 @@ export const DraggableTaskCard = React.forwardRef<
                           '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
                         } as React.CSSProperties}
                       >
-                        <ListChecks 
+                        <Icon 
+                          name="list-checks"
+                          size={TASK_CARD_DROPDOWN.dimensions.icon.small}
                           style={{ 
-                            width: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`, 
-                            height: `${TASK_CARD_DROPDOWN.dimensions.icon.small}px`,
                             marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
                           }} 
                         />
