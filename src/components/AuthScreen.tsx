@@ -46,7 +46,7 @@ import {
   AUTH_COLORS
 } from '../lib/auth-constants';
 import { getUserFriendlyErrorMessage } from '../lib/error-utils';
-import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
+import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS, PANEL_GAP_MEDIUM, PANEL_GAP_SMALL, PANEL_FIELD_SPACING } from '../lib/layout-constants';
 import { useIsMobile } from './ui/use-mobile';
 import { AvatarSelection, type AvatarGender } from './AvatarSelection';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
@@ -134,7 +134,7 @@ export function AuthScreen() {
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [signUpGender, setSignUpGender] = useState<"male" | "female">("male");
+  const [signUpGender, setSignUpGender] = useState<"male" | "female">(AVATAR_UI_TEXT.defaultGender);
   const [signUpAvatar, setSignUpAvatar] = useState<string | undefined>(undefined);
 
 
@@ -965,7 +965,7 @@ export function AuthScreen() {
                       </div>
 
                       {/* Gender Selection */}
-                      <div className="space-y-2">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
                         <Label className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300">{AVATAR_UI_TEXT.selectGender}</Label>
                         <RadioGroup
                           value={signUpGender}
@@ -973,15 +973,15 @@ export function AuthScreen() {
                             setSignUpGender(value as "male" | "female");
                             setSignUpAvatar(undefined); // Reset avatar when gender changes
                           }}
-                          className="flex gap-4"
+                          style={{ display: 'flex', gap: PANEL_GAP_MEDIUM }}
                         >
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
                             <RadioGroupItem value="male" id="gender-male" />
                             <Label htmlFor="gender-male" className="text-[11px] sm:text-xs cursor-pointer">
                               {AVATAR_UI_TEXT.male}
                             </Label>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
                             <RadioGroupItem value="female" id="gender-female" />
                             <Label htmlFor="gender-female" className="text-[11px] sm:text-xs cursor-pointer">
                               {AVATAR_UI_TEXT.female}
@@ -991,7 +991,7 @@ export function AuthScreen() {
                       </div>
 
                       {/* Avatar Selection */}
-                      <div className="space-y-2">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
                         <Label className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300">{AVATAR_UI_TEXT.chooseYourAvatar}</Label>
                         <AvatarSelection
                           selectedAvatar={signUpAvatar}

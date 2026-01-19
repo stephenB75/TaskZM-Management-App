@@ -11,7 +11,7 @@ interface AuthContextType {
   accessToken: string | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, name: string, isDemo?: boolean) => Promise<void>;
+  signUp: (email: string, password: string, name: string, isDemo?: boolean, avatar?: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: { name?: string; avatar?: string }) => Promise<void>;
 }

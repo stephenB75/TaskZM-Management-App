@@ -178,7 +178,7 @@ export function TeamPanel() {
   const [newMemberRole, setNewMemberRole] = useState<
     "admin" | "member" | "viewer"
   >("member");
-  const [newMemberGender, setNewMemberGender] = useState<"male" | "female">("male");
+  const [newMemberGender, setNewMemberGender] = useState<"male" | "female">(AVATAR_UI_TEXT.defaultGender);
   const [newMemberAvatar, setNewMemberAvatar] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [bulkInvites, setBulkInvites] = useState<string>("");
@@ -246,7 +246,7 @@ export function TeamPanel() {
       setNewMemberName("");
       setNewMemberEmail("");
       setNewMemberRole("member");
-      setNewMemberGender("male");
+      setNewMemberGender(AVATAR_UI_TEXT.defaultGender);
       setNewMemberAvatar(undefined);
       setShowAddMember(false);
     } catch (error) {
@@ -1435,15 +1435,15 @@ export function TeamPanel() {
                   setNewMemberGender(value as "male" | "female");
                   setNewMemberAvatar(undefined); // Reset avatar when gender changes
                 }}
-                className="flex gap-4"
+                style={{ display: 'flex', gap: PANEL_GAP_MEDIUM }}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
                   <RadioGroupItem value="male" id="new-member-gender-male" />
                   <Label htmlFor="new-member-gender-male" className="cursor-pointer">
                     {AVATAR_UI_TEXT.male}
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
                   <RadioGroupItem value="female" id="new-member-gender-female" />
                   <Label htmlFor="new-member-gender-female" className="cursor-pointer">
                     {AVATAR_UI_TEXT.female}

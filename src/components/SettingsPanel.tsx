@@ -204,7 +204,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
-  const [profileGender, setProfileGender] = useState<"male" | "female">("male");
+  const [profileGender, setProfileGender] = useState<"male" | "female">(AVATAR_UI_TEXT.defaultGender);
   const [profileAvatar, setProfileAvatar] = useState<string | undefined>(user?.avatar);
   const [showAvatarSelection, setShowAvatarSelection] = useState(false);
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape

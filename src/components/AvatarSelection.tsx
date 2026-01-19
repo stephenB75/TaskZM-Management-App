@@ -36,7 +36,7 @@ export function AvatarSelection({
   return (
     <div className={cn("w-full", className)}>
       <div
-        className="grid gap-3"
+        className="grid"
         style={{
           gridTemplateColumns: `repeat(${AVATAR_SELECTION_GRID_COLS}, 1fr)`,
           gap: AVATAR_SELECTION_GAP,
