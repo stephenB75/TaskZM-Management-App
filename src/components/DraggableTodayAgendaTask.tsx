@@ -21,7 +21,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { PomodoroTimer } from "./PomodoroTimer";
-import { useIsMobile } from "./ui/use-mobile";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import type { Task } from "../types";
 import {
@@ -88,7 +88,8 @@ export function DraggableTodayAgendaTask({
   };
   const { getTimerState, timers: pomodoroTimers } = usePomodoro();
   const { actualTheme } = useTheme();
-  const isMobile = useIsMobile();
+  const shouldUseMobileLayout = useMobileLayout(); // Covers mobile, iPad, tablet, and landscape on smaller screens
+  const isMobile = shouldUseMobileLayout; // Keep isMobile for backward compatibility with existing code
   // For recurring tasks, use occurrence-specific ID for pomodoro timer to ensure each occurrence has its own timer state
   // This prevents the timer from being shared across all occurrences in the series
   const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
@@ -303,7 +304,7 @@ export function DraggableTodayAgendaTask({
     isDragging,
   } = useDraggable({
     id: task.id,
-    disabled: isMobile, // Disable drag on mobile
+    disabled: shouldUseMobileLayout, // Disable drag on mobile, iPad, tablet, and landscape on smaller screens
   });
 
   const style = {
