@@ -621,126 +621,135 @@ export function InboxView() {
                   }
                 </p>
                 <div className="flex items-center flex-wrap flex-shrink-0" style={{ gap: HEADER_GAP_SMALL }}>
-                <Button
-                  onClick={handleSelectAll}
-                  variant="outline"
-                  className="whitespace-nowrap"
-                  style={{
-                    borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
-                    whiteSpace: 'nowrap',
-                  }}
-                  size="sm"
-                >
-                  <span className="hidden md:inline">
-                    {selectedTaskIds.size === sortedTasks.length ? "Deselect All" : "Select All"}
-                  </span>
-                  <span className="md:hidden">
-                    {selectedTaskIds.size === sortedTasks.length ? "Deselect" : "All"}
-                  </span>
-                </Button>
-                <Button
-                  onClick={handleScheduleSelected}
-                  className={`whitespace-nowrap ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
-                  style={{
-                    borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
-                    whiteSpace: 'nowrap',
-                  }}
-                  size="sm"
-                  disabled={isScheduling}
-                >
-                  <Icon 
-                    name="sparkles" 
-                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
-                    weight="duotone"
-                    style={{
-                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
-                    }}
-                  />
-                  <span className="hidden md:inline">
-                    Schedule ({selectedTaskIds.size})
-                  </span>
-                  <span className="md:hidden">
-                    {selectedTaskIds.size}
-                  </span>
-                </Button>
-                <Button
-                  onClick={handleUnscheduleSelected}
-                  variant="outline"
-                  className="whitespace-nowrap"
-                  style={{
-                    borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
-                    whiteSpace: 'nowrap',
-                  }}
-                  size="sm"
-                >
-                  <Icon 
-                    name="calendar"
-                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
-                    weight="duotone"
-                    style={{
-                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
-                    }}
-                  />
-                  <span className="hidden md:inline">
-                    Unschedule ({selectedTaskIds.size})
-                  </span>
-                  <span className="md:hidden">
-                    {selectedTaskIds.size}
-                  </span>
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (!permissions.canDeleteTask) {
-                      toast.error('Permission Denied', {
-                        description: 'Viewer role does not have permission to delete tasks. Please contact an admin.',
-                      });
-                      return;
-                    }
-                    setShowBulkDeleteConfirm(true);
-                  }}
-                  disabled={!permissions.canDeleteTask}
-                  variant="destructive"
-                  className="whitespace-nowrap"
-                  style={{
-                    borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
-                    whiteSpace: 'nowrap',
-                  }}
-                  size="sm"
-                >
-                  <Icon 
-                    name="trash-2"
-                    size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
-                    style={{
-                      marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
-                    }}
-                  />
-                  <span className="hidden md:inline">
-                    Delete ({selectedTaskIds.size})
-                  </span>
-                  <span className="md:hidden">
-                    {selectedTaskIds.size}
-                  </span>
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        onClick={handleSelectAll}
+                        className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelectAll();
+                          }
+                        }}
+                      >
+                        <Icon 
+                          name="check-square"
+                          size={ICON_SIZE_XL}
+                          className="text-primary dark:text-primary-foreground flex-shrink-0"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{selectedTaskIds.size === sortedTasks.length ? "Deselect All" : "Select All"}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        onClick={isScheduling ? undefined : handleScheduleSelected}
+                        className={cn(
+                          "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
+                          isScheduling && "opacity-50 cursor-not-allowed"
+                        )}
+                        role="button"
+                        tabIndex={isScheduling ? -1 : 0}
+                        onKeyDown={(e) => {
+                          if (isScheduling) return;
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleScheduleSelected();
+                          }
+                        }}
+                      >
+                        <Icon 
+                          name="head-circuit"
+                          size={ICON_SIZE_XL}
+                          weight="duotone"
+                          className={cn(
+                            "text-primary dark:text-primary-foreground flex-shrink-0",
+                            isScheduling && "animate-spin"
+                          )}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Schedule ({selectedTaskIds.size})</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        onClick={handleUnscheduleSelected}
+                        className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleUnscheduleSelected();
+                          }
+                        }}
+                      >
+                        <Icon 
+                          name="calendar"
+                          size={ICON_SIZE_XL}
+                          weight="duotone"
+                          className="text-primary dark:text-primary-foreground flex-shrink-0"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Unschedule ({selectedTaskIds.size})</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        onClick={() => {
+                          if (!permissions.canDeleteTask) {
+                            toast.error('Permission Denied', {
+                              description: 'Viewer role does not have permission to delete tasks. Please contact an admin.',
+                            });
+                            return;
+                          }
+                          setShowBulkDeleteConfirm(true);
+                        }}
+                        className={cn(
+                          "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
+                          !permissions.canDeleteTask && "opacity-50 cursor-not-allowed"
+                        )}
+                        role="button"
+                        tabIndex={!permissions.canDeleteTask ? -1 : 0}
+                        onKeyDown={(e) => {
+                          if (!permissions.canDeleteTask) return;
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setShowBulkDeleteConfirm(true);
+                          }
+                        }}
+                      >
+                        <Icon 
+                          name="trash-2"
+                          size={ICON_SIZE_XL}
+                          className="text-destructive flex-shrink-0"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete ({selectedTaskIds.size})</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 </div>
               </>
             ) : (
