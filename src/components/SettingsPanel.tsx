@@ -763,7 +763,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   onClick={handleSignOut} 
                   className="w-full"
                 >
-                  <Icon name="log-out" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                  <Icon name="log-out" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL, color: COLOR_TEXT_WHITE }} />
                   Sign Out
                 </Button>
                 <Button 
@@ -772,7 +772,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   onClick={() => setShowDeleteAccountDialog(true)} 
                   className="w-full border-destructive/50"
                 >
-                  <Icon name="trash-2" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                  <Icon name="trash-2" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL, color: COLOR_TEXT_WHITE }} />
                   Delete Account
                 </Button>
               </div>
