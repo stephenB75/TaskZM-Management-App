@@ -42,6 +42,7 @@ import {
   NAV_BAR_SHADOW_OFFSET_Y_LARGE,
   NAV_BAR_SHADOW_OFFSET_Y_SMALL,
 } from "../lib/layout-constants";
+import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import {
   COLOR_PRIMARY,
   COLOR_PASTEL_MINT,
@@ -83,7 +84,7 @@ export function BottomNav({
   const navItems = [
     {
       id: "today",
-      label: "Today",
+      label: NAVIGATION_UI_TEXT.today,
       iconName: "calendar",
       onClick: () => {
         triggerHaptic();
@@ -94,7 +95,7 @@ export function BottomNav({
     },
     {
       id: "week",
-      label: "Week",
+      label: NAVIGATION_UI_TEXT.week,
       iconName: "calendar-days",
       onClick: () => {
         triggerHaptic();
@@ -107,7 +108,7 @@ export function BottomNav({
     },
     {
       id: "inbox",
-      label: "Inbox",
+      label: NAVIGATION_UI_TEXT.inbox,
       iconName: "inbox",
       onClick: () => {
         triggerHaptic();
@@ -118,7 +119,7 @@ export function BottomNav({
     },
     {
       id: "settings",
-      label: "Settings",
+      label: NAVIGATION_UI_TEXT.settings,
       iconName: "settings",
       onClick: () => {
         triggerHaptic();

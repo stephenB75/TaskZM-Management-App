@@ -25,6 +25,7 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useMobileLayout } from "../hooks/useMobileLayout";
+import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black logo for light mode
 import taskzmLogoGray from "../assets/taskzm-logo-gray.png";  // Gray logo for dark mode
 
@@ -65,47 +66,47 @@ export function AppSidebar({
   const menuItems = [
     {
       id: "dashboard",
-      label: "Dashboard",
+      label: NAVIGATION_UI_TEXT.dashboard,
       iconName: "kanban",
     },
     {
       id: "notifications",
-      label: "Notifications",
+      label: NAVIGATION_UI_TEXT.notifications,
       iconName: "bell",
       badge: badgeCount,
     },
     { 
       id: "today", 
-      label: "Today Agenda", 
+      label: NAVIGATION_UI_TEXT.todayAgenda, 
       iconName: "calendar",
       badge: upcomingAndDueNowCount > 0 ? upcomingAndDueNowCount : undefined,
     },
     {
       id: "inbox",
-      label: "Inbox",
+      label: NAVIGATION_UI_TEXT.inbox,
       iconName: "inbox",
       badge: unscheduledCount,
     },
     {
       id: "folders",
-      label: "Folders",
+      label: NAVIGATION_UI_TEXT.folders,
       iconName: "folder",
     },
     {
       id: "team",
-      label: "Team",
+      label: NAVIGATION_UI_TEXT.team,
       iconName: "users",
       badge: teamNotificationCount,
       pro: !hasFeature("teamFeatures"),
     },
     {
       id: "analytics",
-      label: "Analytics",
+      label: NAVIGATION_UI_TEXT.analytics,
       iconName: "bar-chart",
       pro: !hasFeature("analytics"),
     },
-    { id: "archive", label: "Archive", iconName: "archive" },
-    { id: "settings", label: "Settings", iconName: "settings" },
+    { id: "archive", label: NAVIGATION_UI_TEXT.archive, iconName: "archive" },
+    { id: "settings", label: NAVIGATION_UI_TEXT.settings, iconName: "settings" },
   ];
 
   const iconNavContent = (
