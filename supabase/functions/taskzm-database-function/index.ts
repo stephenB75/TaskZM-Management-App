@@ -377,7 +377,7 @@ app.get("/taskzm-database-function/health", (c) => {
 app.post("/taskzm-database-function/signup", async (c) => {
   try {
     const body = await c.req.json();
-    const { email, password, name, isDemo } = body;
+    const { email, password, name, isDemo, avatar } = body;
 
     if (!email || !password || !name) {
       return c.json({ error: 'Email, password, and name are required' }, 400);
@@ -409,6 +409,7 @@ app.post("/taskzm-database-function/signup", async (c) => {
       user_metadata: { 
         name,
         isDemo: isDemo || false, // Mark demo users
+        avatar: avatar || undefined, // Store selected avatar
       },
       // Automatically confirm the user's email since an email server hasn't been configured.
       email_confirm: true

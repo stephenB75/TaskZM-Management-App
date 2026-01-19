@@ -66,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               name: session.user.user_metadata?.name || 'User',
               role: 'admin',
               isDemo: session.user.user_metadata?.isDemo || false,
+              avatar: session.user.user_metadata?.avatar || undefined,
             };
             setUser(userData);
             setToken(session.access_token);
@@ -111,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: session.user.user_metadata.name || 'User',
           role: 'admin',
           isDemo: session.user.user_metadata.isDemo || false,
+          avatar: session.user.user_metadata.avatar || undefined,
         };
         setUser(userData);
         setToken(session.access_token);
@@ -148,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: data.session.user.user_metadata.name || 'User',
           role: 'admin',
           isDemo: data.session.user.user_metadata.isDemo || false,
+          avatar: data.session.user.user_metadata.avatar || undefined,
         };
         
         // Check if this is a different user - clear localStorage if so
@@ -181,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function signUp(email: string, password: string, name: string, isDemo: boolean = false) {
+  async function signUp(email: string, password: string, name: string, isDemo: boolean = false, avatar?: string) {
     try {
       // Call our backend signup endpoint which handles user creation
       const response = await fetch(`https://${projectId}.supabase.co/functions/v1/taskzm-database-function/signup`, {
@@ -190,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${publicAnonKey}`,
         },
-        body: JSON.stringify({ email, password, name, isDemo }),
+        body: JSON.stringify({ email, password, name, isDemo, avatar }),
       });
 
       // Parse response body first to get error details

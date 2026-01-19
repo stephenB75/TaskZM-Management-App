@@ -24,6 +24,9 @@ import { PrivacyPolicyDialog } from './PrivacyPolicyDialog';
 import { TermsOfServiceDialog } from './TermsOfServiceDialog';
 import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
+import { AvatarSelection, type AvatarGender } from './AvatarSelection';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -186,7 +189,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
+  const [profileGender, setProfileGender] = useState<"male" | "female">("male");
+  const [profileAvatar, setProfileAvatar] = useState<string | undefined>(user?.avatar);
+  const [showAvatarSelection, setShowAvatarSelection] = useState(false);
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
+
+  // Update profile avatar state when user changes
+  React.useEffect(() => {
+    setProfileAvatar(user?.avatar);
+  }, [user?.avatar]);
+
+  // Update profile avatar state when user changes
+  React.useEffect(() => {
+    setProfileAvatar(user?.avatar);
+  }, [user?.avatar]);
   
   // Date, Time & Theme settings state
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(() => {
@@ -373,18 +389,25 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         return;
       }
 
-      if (trimmedName === user?.name) {
+      const hasNameChange = trimmedName !== user?.name;
+      const hasAvatarChange = profileAvatar !== undefined && profileAvatar !== user?.avatar;
+      
+      if (!hasNameChange && !hasAvatarChange) {
         toast.info('No changes to save');
         return;
       }
 
-      await updateProfile({ name: trimmedName });
+      await updateProfile({ 
+        name: hasNameChange ? trimmedName : undefined,
+        avatar: hasAvatarChange ? profileAvatar : undefined,
+      });
       toast.success('Profile updated successfully');
     } catch (error) {
       // Error handled by toast notification
       toast.error('Failed to update profile');
       // Reset to original value on error
       setProfileName(user?.name || '');
+      setProfileAvatar(user?.avatar);
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -555,16 +578,61 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 {/* Profile Picture - Overlapping Banner */}
                 <div className="relative px-4" style={{ marginTop: SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET }}>
                   <div className="relative flex-shrink-0 inline-block">
-                    <div 
-                      className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg"
-                      style={{ 
-                        width: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
-                        height: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
-                        fontSize: SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE
+                    {user?.avatar ? (
+                      <div 
+                        className="rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-4 border-white dark:border-card shadow-lg"
+                        style={{ 
+                          width: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
+                          height: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
+                        }}
+                      >
+                        <img
+                          src={user.avatar}
+                          alt={user?.name || 'Profile'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to initials if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const fallback = document.createElement('div');
+                              fallback.className = 'rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg';
+                              fallback.style.width = SETTINGS_PANEL_PROFILE_AVATAR_SIZE;
+                              fallback.style.height = SETTINGS_PANEL_PROFILE_AVATAR_SIZE;
+                              fallback.style.fontSize = SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE;
+                              fallback.textContent = getInitials(user?.name || '');
+                              parent.appendChild(fallback);
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div 
+                        className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg"
+                        style={{ 
+                          width: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
+                          height: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
+                          fontSize: SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE
+                        }}
+                      >
+                        {getInitials(user?.name)}
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="absolute bottom-0 right-0 rounded-full border-2 border-white dark:border-card bg-background hover:bg-muted"
+                      style={{
+                        width: '2rem',
+                        height: '2rem',
                       }}
+                      onClick={() => setShowAvatarSelection(true)}
+                      title={AVATAR_UI_TEXT.changeAvatar}
                     >
-                      {getInitials(user?.name)}
-                    </div>
+                      <Icon name="edit" size={SETTINGS_PANEL_ICON_SIZE_SMALL} />
+                    </Button>
                   </div>
                 </div>
 
@@ -626,6 +694,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               {/* Action Buttons */}
               <div className="flex flex-col w-full items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setShowAvatarSelection(true)}
+                  className="w-full"
+                >
+                  <Icon name="user" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                  {AVATAR_UI_TEXT.changeAvatar}
+                </Button>
                 <Button 
                   size="sm" 
                   variant="outline"
@@ -3125,6 +3202,82 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         open={showTermsDialog}
         onOpenChange={setShowTermsDialog}
       />
+
+      {/* Avatar Selection Dialog */}
+      <Dialog open={showAvatarSelection} onOpenChange={setShowAvatarSelection}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{AVATAR_UI_TEXT.selectYourAvatar}</DialogTitle>
+            <DialogDescription>
+              {AVATAR_UI_TEXT.selectAvatarDescription}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING, paddingBottom: SETTINGS_PANEL_PADDING }}>
+            {/* Gender Selection */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label>{AVATAR_UI_TEXT.gender}</Label>
+              <RadioGroup
+                value={profileGender}
+                onValueChange={(value) => {
+                  setProfileGender(value as "male" | "female");
+                  setProfileAvatar(undefined); // Reset avatar when gender changes
+                }}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="male" id="profile-gender-male" />
+                  <Label htmlFor="profile-gender-male" className="cursor-pointer">
+                    {AVATAR_UI_TEXT.male}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="female" id="profile-gender-female" />
+                  <Label htmlFor="profile-gender-female" className="cursor-pointer">
+                    {AVATAR_UI_TEXT.female}
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Avatar Selection */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label>{AVATAR_UI_TEXT.chooseAvatar}</Label>
+              <AvatarSelection
+                selectedAvatar={profileAvatar}
+                gender={profileGender}
+                onAvatarSelect={setProfileAvatar}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end" style={{ gap: PANEL_GAP_MEDIUM }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAvatarSelection(false);
+                setProfileAvatar(user?.avatar);
+                setProfileGender("male");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (profileAvatar) {
+                  handleUpdateProfile();
+                  setShowAvatarSelection(false);
+                } else {
+                  toast.error("Please select an avatar");
+                }
+              }}
+              disabled={!profileAvatar || isUpdatingProfile}
+            >
+              {isUpdatingProfile ? AVATAR_UI_TEXT.saving : AVATAR_UI_TEXT.saveAvatar}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Account Confirmation Dialog */}
       <AlertDialog open={showDeleteAccountDialog} onOpenChange={setShowDeleteAccountDialog}>

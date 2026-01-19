@@ -30,6 +30,9 @@ import {
 } from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
+import { AvatarSelection, type AvatarGender } from "./AvatarSelection";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { AVATAR_UI_TEXT } from "../lib/avatar-constants";
 import {
   Tooltip,
   TooltipContent,
@@ -172,6 +175,7 @@ export function TeamPanel() {
     "admin" | "member" | "viewer"
   >("member");
   const [newMemberGender, setNewMemberGender] = useState<"male" | "female">("male");
+  const [newMemberAvatar, setNewMemberAvatar] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [bulkInvites, setBulkInvites] = useState<string>("");
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
@@ -231,7 +235,7 @@ export function TeamPanel() {
         name: newMemberName.trim(),
         email: newMemberEmail.trim(),
         role: newMemberRole,
-        avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=${newMemberGender === 'male' ? '50' : '0'}`,
+        avatar: newMemberAvatar || `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=${newMemberGender === 'male' ? '50' : '0'}`,
       }, currentWorkspaceId);
 
       // Reset form only on success
@@ -239,6 +243,7 @@ export function TeamPanel() {
       setNewMemberEmail("");
       setNewMemberRole("member");
       setNewMemberGender("male");
+      setNewMemberAvatar(undefined);
       setShowAddMember(false);
     } catch (error) {
       // Error already handled in addTeamMember, but keep dialog open on error
@@ -1404,41 +1409,37 @@ export function TeamPanel() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
-              <Label htmlFor="gender">Avatar</Label>
-              <Select
+              <Label>{AVATAR_UI_TEXT.gender}</Label>
+              <RadioGroup
                 value={newMemberGender}
-                onValueChange={(value: "male" | "female") =>
-                  setNewMemberGender(value)
-                }
+                onValueChange={(value) => {
+                  setNewMemberGender(value as "male" | "female");
+                  setNewMemberAvatar(undefined); // Reset avatar when gender changes
+                }}
+                className="flex gap-4"
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">
-                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="user" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
-                      <div>
-                        <div>Male</div>
-                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                          Male avatar illustration
-                        </div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="female">
-                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="user" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
-                      <div>
-                        <div>Female</div>
-                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                          Female avatar illustration
-                        </div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="male" id="new-member-gender-male" />
+                  <Label htmlFor="new-member-gender-male" className="cursor-pointer">
+                    {AVATAR_UI_TEXT.male}
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="female" id="new-member-gender-female" />
+                  <Label htmlFor="new-member-gender-female" className="cursor-pointer">
+                    {AVATAR_UI_TEXT.female}
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label>{AVATAR_UI_TEXT.chooseAvatar}</Label>
+              <AvatarSelection
+                selectedAvatar={newMemberAvatar}
+                gender={newMemberGender}
+                onAvatarSelect={setNewMemberAvatar}
+              />
             </div>
           </div>
 
