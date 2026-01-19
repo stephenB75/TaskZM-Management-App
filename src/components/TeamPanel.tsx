@@ -171,6 +171,7 @@ export function TeamPanel() {
   const [newMemberRole, setNewMemberRole] = useState<
     "admin" | "member" | "viewer"
   >("member");
+  const [newMemberGender, setNewMemberGender] = useState<"male" | "female">("male");
   const [searchQuery, setSearchQuery] = useState("");
   const [bulkInvites, setBulkInvites] = useState<string>("");
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
@@ -230,13 +231,14 @@ export function TeamPanel() {
         name: newMemberName.trim(),
         email: newMemberEmail.trim(),
         role: newMemberRole,
-          avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=ffffff`,
+        avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=${newMemberGender === 'male' ? '50' : '0'}`,
       }, currentWorkspaceId);
 
       // Reset form only on success
       setNewMemberName("");
       setNewMemberEmail("");
       setNewMemberRole("member");
+      setNewMemberGender("male");
       setShowAddMember(false);
     } catch (error) {
       // Error already handled in addTeamMember, but keep dialog open on error
@@ -740,33 +742,37 @@ export function TeamPanel() {
           {/* Circular Profile Illustration */}
           <div className="relative flex-shrink-0 mb-3" style={{ marginBottom: TEAM_PANEL_VERTICAL_SPACING }}>
             {member.avatar ? (
-              <img
-                src={member.avatar}
-                alt={member.name}
-                className="rounded-full object-cover border-2 border-border/40"
+              <div 
+                className="rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-border/40"
                 style={{
                   width: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
                   height: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
                 }}
-                onError={(e) => {
-                  // Fallback to initials if image fails to load
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent) {
-                    const fallback = document.createElement('div');
-                    fallback.className = 'rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-2 border-border/40';
-                    fallback.style.width = TEAM_PANEL_VERTICAL_AVATAR_SIZE;
-                    fallback.style.height = TEAM_PANEL_VERTICAL_AVATAR_SIZE;
-                    fallback.style.fontSize = TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE;
-                    fallback.textContent = getInitials(member.name);
-                    parent.appendChild(fallback);
-                  }
-                }}
-              />
+              >
+                <img
+                  src={member.avatar}
+                  alt={member.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to initials if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 font-semibold border-2 border-border/40';
+                      fallback.style.width = '100%';
+                      fallback.style.height = '100%';
+                      fallback.style.fontSize = TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE;
+                      fallback.textContent = getInitials(member.name);
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
+              </div>
             ) : (
               <div 
-                className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-2 border-border/40"
+                className="rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 font-semibold border-2 border-border/40"
                 style={{ 
                   width: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
                   height: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
@@ -816,10 +822,10 @@ export function TeamPanel() {
 
           {/* Role/Job Title */}
           <p 
-            className="text-muted-foreground text-center mb-3 capitalize"
+            className="text-muted-foreground text-center mb-2 capitalize"
             style={{ 
               fontSize: TEAM_PANEL_VERTICAL_ROLE_SIZE,
-              marginBottom: TEAM_PANEL_VERTICAL_SPACING
+              marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
             }}
           >
             {roleDisplayText}
@@ -830,48 +836,62 @@ export function TeamPanel() {
             )}
           </p>
 
-          {/* Social Media Icons (without background badges) */}
+          {/* Email */}
           <div 
-            className="flex items-center justify-center"
-            style={{ gap: TEAM_PANEL_VERTICAL_SPACING }}
-            onClick={(e) => e.stopPropagation()}
+            className="text-muted-foreground text-center mb-3"
+            style={{ 
+              fontSize: TEAM_PANEL_VERTICAL_ROLE_SIZE,
+              marginBottom: TEAM_PANEL_VERTICAL_SPACING
+            }}
           >
-            <a
-              href={`https://twitter.com/${member.email.split('@')[0]}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground hover:text-primary transition-colors"
-              aria-label="Twitter"
+            <a 
+              href={`mailto:${member.email}`}
+              className="hover:text-primary transition-colors"
+              onClick={(e) => e.stopPropagation()}
             >
-              <Icon name="twitter" size={TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE} />
+              {member.email}
             </a>
-            <a
-              href={`https://facebook.com/${member.email.split('@')[0]}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground hover:text-primary transition-colors"
-              aria-label="Facebook"
-            >
-              <Icon name="facebook" size={TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE} />
-            </a>
-            <a
-              href={`https://instagram.com/${member.email.split('@')[0]}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground hover:text-primary transition-colors"
-              aria-label="Instagram"
-            >
-              <Icon name="instagram" size={TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE} />
-            </a>
-            <a
-              href={`https://linkedin.com/in/${member.email.split('@')[0]}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground hover:text-primary transition-colors"
-              aria-label="LinkedIn"
-            >
-              <Icon name="linkedin" size={TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE} />
-            </a>
+          </div>
+
+          {/* Task Stats and Team Info */}
+          <div 
+            className="w-full text-center"
+            style={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              gap: TEAM_PANEL_MARGIN_BOTTOM_SMALL,
+              paddingTop: TEAM_PANEL_VERTICAL_SPACING,
+              borderTop: '1px solid',
+              borderColor: 'var(--border)'
+            }}
+          >
+            {/* Task Count */}
+            <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
+              <Icon name="list-checks" size={TEAM_PANEL_ICON_SIZE_SMALL} className="text-muted-foreground" />
+              <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                <span className="font-semibold">{stats.total}</span> task{stats.total !== 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {/* Tasks Completed */}
+            {stats.completed > 0 && (
+              <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
+                <Icon name="check-circle" size={TEAM_PANEL_ICON_SIZE_SMALL} className="text-green-600 dark:text-green-400" />
+                <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                  <span className="font-semibold">{stats.completed}</span> completed
+                </span>
+              </div>
+            )}
+
+            {/* Team Info */}
+            {otherMembers.length > 0 && (
+              <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
+                <Icon name="users" size={TEAM_PANEL_ICON_SIZE_SMALL} className="text-muted-foreground" />
+                <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                  <span className="font-semibold">{otherMembers.length}</span> team member{otherMembers.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -958,7 +978,7 @@ export function TeamPanel() {
           name: capitalizedName,
           email,
           role: newMemberRole,
-          avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${capitalizedName}&backgroundColor=ffffff`,
+          avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${capitalizedName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=25`,
         }, currentWorkspaceId);
         successCount++;
       } catch (error) {
@@ -1375,6 +1395,44 @@ export function TeamPanel() {
                         <div>Viewer</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
                           Read-only access
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label htmlFor="gender">Avatar</Label>
+              <Select
+                value={newMemberGender}
+                onValueChange={(value: "male" | "female") =>
+                  setNewMemberGender(value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+                      <Icon name="user" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <div>
+                        <div>Male</div>
+                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                          Male avatar illustration
+                        </div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="female">
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+                      <Icon name="user" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <div>
+                        <div>Female</div>
+                        <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                          Female avatar illustration
                         </div>
                       </div>
                     </div>
