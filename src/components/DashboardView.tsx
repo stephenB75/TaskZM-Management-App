@@ -1327,28 +1327,22 @@ export function DashboardView({
               )}
               style={{ gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM }}
             >
-              <Button
-                variant="outline"
-                size="sm"
+              <div
                 onClick={handleScheduleUnscheduledTasks}
                 className={cn(
-                  cn(UI_INBOX_GRADIENTS.button.className, "dark:from-[#6A5A8A] dark:to-[#5A7A9A] border-primary/20 dark:border-primary/40", UI_INBOX_GRADIENTS.button.hover.className, "dark:hover:from-[#5A7A9A] dark:hover:to-[#6A5A8A] transition-all"),
+                  "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80",
                   !isSmallScreen && "whitespace-nowrap"
                 )}
-                style={{
-                  fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
-                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-                  paddingRight: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-                  paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
-                  paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
-                  height: 'auto',
-                  minHeight: 'auto',
-                  lineHeight: HEADER_BUTTON_LINE_HEIGHT,
-                  borderRadius: HEADER_BUTTON_BORDER_RADIUS, // Pill shape
-                  transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
-                }}
                 data-tour="ai-scheduler"
                 title={isSmallScreen ? "AI Suggestions" : "AI Scheduler Suggestions"}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleScheduleUnscheduledTasks();
+                  }
+                }}
               >
                 <Icon 
                   name="head-circuit"
@@ -1364,11 +1358,10 @@ export function DashboardView({
                     AI Scheduler Suggestions
                   </span>
                 )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </div>
+              <div
                 onClick={() => {
+                  if (isRescheduling) return;
                   // Check if user has access to AI Scheduler feature
                   if (!safeHasFeature('aiScheduler')) {
                     toast.error('Re-schedule is a Pro feature', {
@@ -1387,24 +1380,35 @@ export function DashboardView({
                   }
                 }}
                 className={cn(
-                  "bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/20 dark:border-primary/40 hover:from-primary/20 hover:to-primary/10 dark:hover:from-primary/30 dark:hover:to-primary/20 transition-all",
-                  !isSmallScreen && "whitespace-nowrap"
+                  "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80",
+                  !isSmallScreen && "whitespace-nowrap",
+                  isRescheduling && "opacity-50 cursor-not-allowed"
                 )}
-                style={{
-                  fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
-                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-                  paddingRight: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-                  paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
-                  paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
-                  height: 'auto',
-                  minHeight: 'auto',
-                  lineHeight: HEADER_BUTTON_LINE_HEIGHT,
-                  borderRadius: HEADER_BUTTON_BORDER_RADIUS, // Pill shape
-                  transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
-                }}
-                disabled={isRescheduling}
                 data-tour="re-schedule"
                 title="Re-schedule"
+                role="button"
+                tabIndex={isRescheduling ? -1 : 0}
+                onKeyDown={(e) => {
+                  if (isRescheduling) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (!safeHasFeature('aiScheduler')) {
+                      toast.error('Re-schedule is a Pro feature', {
+                        description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
+                      });
+                      return;
+                    }
+                    try {
+                      setShowRescheduleDialog(true);
+                    } catch (error) {
+                      console.error('Error opening reschedule dialog:', error);
+                      toast.error('Failed to open reschedule dialog', {
+                        description: 'Please try again',
+                        duration: TOAST_DURATION_SHORT_MS,
+                      });
+                    }
+                  }
+                }}
               >
                 <Icon 
                   name="calendar-dots"
@@ -1421,7 +1425,7 @@ export function DashboardView({
                 {!isSmallScreen && (
                   <span className="text-foreground dark:text-gray-100">Re-schedule</span>
                 )}
-              </Button>
+              </div>
             </div>
           </div>
         }
