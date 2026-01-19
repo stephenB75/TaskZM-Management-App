@@ -1455,9 +1455,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     // Use requestIdleCallback when available to run syncs when browser is idle
     // Falls back to setTimeout if requestIdleCallback is not available
+    // CRITICAL: Use syncIntervalRef.current instead of syncInterval to prevent effect re-runs
+    // This prevents the interval from being recreated every time syncInterval state changes
     const scheduleSync = () => {
+      const currentInterval = syncIntervalRef.current;
       if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(runBackgroundSync, { timeout: syncInterval });
+        (window as any).requestIdleCallback(runBackgroundSync, { timeout: currentInterval });
       } else {
         // Fallback for browsers without requestIdleCallback
         setTimeout(runBackgroundSync, 0);
@@ -1465,10 +1468,44 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     };
 
     // Set up interval to schedule syncs (non-blocking)
-    const syncTimer = setInterval(scheduleSync, syncInterval);
+    // Use syncIntervalRef.current to get the latest interval value without causing re-renders
+    // Store timer in a ref so we can update it when interval changes
+    const syncTimerRef = { current: null as NodeJS.Timeout | null };
+    
+    const startSyncTimer = () => {
+      // Clear existing timer if any
+      if (syncTimerRef.current) {
+        clearInterval(syncTimerRef.current);
+      }
+      // Start new timer with current interval
+      const currentInterval = syncIntervalRef.current;
+      syncTimerRef.current = setInterval(scheduleSync, currentInterval);
+      // Store interval for comparison
+      if (syncTimerRef.current) {
+        (syncTimerRef.current as any).__interval = currentInterval;
+      }
+    };
+    
+    // Start initial timer
+    startSyncTimer();
+    
+    // Update timer when interval changes (without recreating the entire effect)
+    // Check every second if interval has changed
+    const intervalUpdateTimer = setInterval(() => {
+      const latestInterval = syncIntervalRef.current;
+      // Restart timer if interval changed
+      if (syncTimerRef.current && latestInterval !== syncIntervalRef.current) {
+        startSyncTimer();
+      }
+    }, 1000);
 
-    return () => clearInterval(syncTimer);
-  }, [autoSyncEnabled, workspaceId, accessToken, syncInterval, syncWithServer]);
+    return () => {
+      if (syncTimerRef.current) {
+        clearInterval(syncTimerRef.current);
+      }
+      clearInterval(intervalUpdateTimer);
+    };
+  }, [autoSyncEnabled, workspaceId, accessToken, syncWithServer]); // Removed syncInterval from dependencies to prevent refresh loops
 
   // Debounce helper to prevent multiple rapid syncs
   const lastEventSyncRef = useRef<number>(0);
