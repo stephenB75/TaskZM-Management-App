@@ -14,6 +14,7 @@ export const COLOR_PRIMARY_SECONDARY = '#9D87C3'; // Secondary purple for manife
 export const COLOR_PASTEL_MINT = '#B8E6D5'; // Mint green
 export const COLOR_PASTEL_MINT_DARK = '#5A8A7A'; // Dark mint for dark mode
 export const COLOR_PASTEL_LAVENDER = '#E6D5F0'; // Lavender
+export const COLOR_PASTEL_LAVENDER_DARK = '#8A7A9A'; // Dark lavender for dark mode
 export const COLOR_PASTEL_SKY = '#C9E4F7'; // Sky blue
 export const COLOR_PASTEL_SKY_DARK = '#6A8AAA'; // Dark sky for dark mode
 export const COLOR_PASTEL_PEACH = '#FFD6BA'; // Peach

@@ -363,6 +363,10 @@ export const TEAM_PANEL_NOTIFICATION_BADGE_TOP = '0.5rem'; // top-2 = 0.5rem (8p
 export const TEAM_PANEL_NOTIFICATION_BADGE_RIGHT = '0.5rem'; // right-2 = 0.5rem (8px)
 export const TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET = '-0.125rem'; // Negative offset for notification dot positioning
 export const TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET = '-0.125rem'; // Negative offset for notification dot positioning
+export const TEAM_PANEL_PROFILE_BANNER_HEIGHT = '80px'; // Height of profile card banner
+export const TEAM_PANEL_PROFILE_AVATAR_SIZE = '80px'; // Size of profile avatar (overlapping banner)
+export const TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE = '24px'; // Font size for profile avatar initials
+export const TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET = '-2.5rem'; // Negative margin to overlap avatar with banner (-mt-10)
 
 // Folder Panel specific constants
 export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
@@ -541,6 +545,10 @@ export const SETTINGS_PANEL_START_TOUR_BUTTON_GAP = '0.4rem'; // 20% smaller tha
 export const SETTINGS_PANEL_START_TOUR_FONT_SIZE = '0.7rem'; // Slightly smaller text for compact button
 export const SETTINGS_PANEL_TOAST_DURATION_MS = 5000; // Toast duration in milliseconds (5 seconds)
 export const SETTINGS_PANEL_TIMEOUT_DELAY_MS = 100; // Timeout delay in milliseconds (100ms)
+export const SETTINGS_PANEL_PROFILE_BANNER_HEIGHT = '100px'; // Height of profile card banner
+export const SETTINGS_PANEL_PROFILE_AVATAR_SIZE = '96px'; // Size of profile avatar (overlapping banner)
+export const SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE = '32px'; // Font size for profile avatar initials
+export const SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET = '-3.5rem'; // Negative margin to overlap avatar with banner (-mt-14)
 
 // App Icon and Theme Colors
 export const APP_THEME_COLOR_PRIMARY = '#9B87E8'; // TaskZM purple/lavender (primary theme color)

@@ -147,6 +147,10 @@ import {
   SETTINGS_PANEL_START_TOUR_ICON_SIZE,
   SETTINGS_PANEL_TOAST_DURATION_MS,
   SETTINGS_PANEL_TIMEOUT_DELAY_MS,
+  SETTINGS_PANEL_PROFILE_BANNER_HEIGHT,
+  SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
+  SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE,
+  SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
   COMPONENT_DIMENSIONS,
   ICON_SIZE_XS,
   ICON_SIZE_LG,
@@ -155,7 +159,7 @@ import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/not
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
-import { COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY, COLOR_PASTEL_MINT, getColorWithOpacity } from '../lib/color-theme';
+import { COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, getColorWithOpacity } from '../lib/color-theme';
 import { projectId } from '../utils/supabase/info';
 
 interface SettingsPanelProps {
@@ -545,18 +549,18 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 className="relative w-full bg-white dark:bg-card rounded-xl shadow-sm border border-border/40 overflow-hidden"
               >
                 {/* Blue Header Banner */}
-                <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: '100px' }}>
+                <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: SETTINGS_PANEL_PROFILE_BANNER_HEIGHT }}>
                 </div>
 
                 {/* Profile Picture - Overlapping Banner */}
-                <div className="relative px-4 -mt-14">
+                <div className="relative px-4" style={{ marginTop: SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET }}>
                   <div className="relative flex-shrink-0 inline-block">
                     <div 
                       className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg"
                       style={{ 
-                        width: '96px',
-                        height: '96px',
-                        fontSize: '32px'
+                        width: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
+                        height: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
+                        fontSize: SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE
                       }}
                     >
                       {getInitials(user?.name)}
@@ -2879,7 +2883,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 my-2 sm:my-1.5 md:my-4"
           style={{
             background: isDark 
-              ? `linear-gradient(to bottom right, ${getColorWithOpacity('#8A7A9A', 0.25)}, ${getColorWithOpacity('#6A8AAA', 0.25)})`
+              ? `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER_DARK, 0.25)}, ${getColorWithOpacity(COLOR_PASTEL_SKY_DARK, 0.25)})`
               : `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.4)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.4)})`,
           }}
         >
@@ -2965,7 +2969,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 my-2 sm:my-1.5 md:my-4"
           style={{
             background: isDark 
-              ? `linear-gradient(to bottom right, ${getColorWithOpacity('#6A8AAA', 0.25)}, ${getColorWithOpacity('#5A8A7A', 0.25)})`
+              ? `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_SKY_DARK, 0.25)}, ${getColorWithOpacity(COLOR_PASTEL_MINT_DARK, 0.25)})`
               : `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.4)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.4)})`,
           }}
         >

@@ -99,6 +99,10 @@ import {
   TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
   TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET,
   TEAM_PANEL_CARD_BACKGROUND_HEIGHT,
+  TEAM_PANEL_PROFILE_BANNER_HEIGHT,
+  TEAM_PANEL_PROFILE_AVATAR_SIZE,
+  TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE,
+  TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
   PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR,
   PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT,
@@ -111,6 +115,7 @@ import {
 } from "../lib/layout-constants";
 import {
   COLOR_PASTEL_LAVENDER,
+  COLOR_PASTEL_LAVENDER_DARK,
   COLOR_PASTEL_SKY,
   COLOR_PASTEL_SKY_DARK,
   COLOR_PASTEL_MINT,
@@ -561,7 +566,7 @@ export function TeamPanel() {
           )}
         
         {/* Blue Header Banner */}
-        <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: '80px' }}>
+        <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: TEAM_PANEL_PROFILE_BANNER_HEIGHT }}>
           {/* Action Button in Header (top right) */}
           <div 
             className="absolute top-3 right-3"
@@ -704,14 +709,14 @@ export function TeamPanel() {
         </div>
 
         {/* Profile Picture - Overlapping Banner */}
-        <div className="relative px-4 -mt-10">
+        <div className="relative px-4" style={{ marginTop: TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET }}>
           <div className="relative flex-shrink-0 inline-block">
             <div 
               className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg"
               style={{ 
-                width: '80px',
-                height: '80px',
-                fontSize: '24px'
+                width: TEAM_PANEL_PROFILE_AVATAR_SIZE,
+                height: TEAM_PANEL_PROFILE_AVATAR_SIZE,
+                fontSize: TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE
               }}
             >
               {getInitials(member.name)}
@@ -837,143 +842,6 @@ export function TeamPanel() {
         </div>
       </div>
     );
-                <DropdownMenu
-                  open={dropdownOpen}
-                  onOpenChange={setDropdownOpen}
-                  modal={false}
-                >
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="flex-shrink-0 hover:bg-transparent hover:text-current"
-                      style={{ 
-                        height: TEAM_PANEL_BUTTON_SIZE, 
-                        width: TEAM_PANEL_BUTTON_SIZE 
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      data-slot={PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT}
-                    >
-                      <Icon name="more-vertical" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent 
-                    align="end"
-                    style={{ 
-                      zIndex: TEAM_PANEL_DROPDOWN_Z_INDEX,
-                      width: TEAM_PANEL_DROPDOWN_WIDTH
-                    }}
-                    onCloseAutoFocus={(e) => {
-                      e.preventDefault();
-                    }}
-                  >
-                    {member.inviteStatus === "pending" && (
-                      <>
-                        <DropdownMenuItem
-                          onSelect={() => {
-                            setDropdownOpen(false);
-                            setTimeout(() => {
-                              onResendInvitation(member);
-                            }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Icon name="paper-plane-tilt" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                          Resend Invitation
-                        </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          acceptInvitation(member.id);
-                          toast.success(
-                            `${member.name} accepted the invitation!`,
-                          );
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <Icon name="bell" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Accept Invite (Demo)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          onDeclineInvitation(member);
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                    >
-                      <Icon name="x-circle" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Decline Invitation
-                    </DropdownMenuItem>
-                    <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
-                      </>
-                    )}
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          onUpdateRole(member, "admin");
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      disabled={member.role === "admin"}
-                      className="cursor-pointer"
-                    >
-                      <Icon name="shield-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Make Admin
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          onUpdateRole(member, "member");
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      disabled={member.role === "member"}
-                      className="cursor-pointer"
-                    >
-                      <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Make Member
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          onUpdateRole(member, "viewer");
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      disabled={member.role === "viewer"}
-                      className="cursor-pointer"
-                    >
-                      <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Make Viewer
-                    </DropdownMenuItem>
-                    <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          onRemoveMember(member);
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                      disabled={isCurrentUser}
-                    >
-                      <Icon name="trash-2" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Remove
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   });
 
   TeamMemberCard.displayName = 'TeamMemberCard';
@@ -1082,7 +950,7 @@ export function TeamPanel() {
   const isDark = actualTheme === 'dark';
   
   // Get appropriate colors based on theme
-  const gradientColor1 = isDark ? '#8A7A9A' : COLOR_PASTEL_LAVENDER;
+  const gradientColor1 = isDark ? COLOR_PASTEL_LAVENDER_DARK : COLOR_PASTEL_LAVENDER;
   const gradientColor2 = isDark ? COLOR_PASTEL_SKY_DARK : COLOR_PASTEL_SKY;
   const gradientColor3 = isDark ? COLOR_PASTEL_MINT_DARK : COLOR_PASTEL_MINT;
 
