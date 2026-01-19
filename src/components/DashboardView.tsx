@@ -1351,7 +1351,7 @@ export function DashboardView({
                 title={isSmallScreen ? "AI Suggestions" : "AI Scheduler Suggestions"}
               >
                 <Icon 
-                  name="sparkles"
+                  name="head-circuit"
                   size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
                   weight={viewMode === "week" ? "duotone" : "regular"}
                   className="text-primary dark:text-primary-foreground flex-shrink-0"
@@ -1407,7 +1407,7 @@ export function DashboardView({
                 title="Re-schedule"
               >
                 <Icon 
-                  name="refresh-cw"
+                  name="calendar-dots"
                   size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
                   weight={viewMode === "week" ? "duotone" : "regular"}
                   className={cn(
