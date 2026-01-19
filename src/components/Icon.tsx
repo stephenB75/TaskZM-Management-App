@@ -119,6 +119,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'sticky-note': 'Note',
   'list': 'List',
   'list-ordered': 'ListNumbers',
+  'list-checks': 'ListChecks',
   'bold': 'TextBolder',
   'italic': 'TextItalic',
   'underline': 'TextUnderline',
