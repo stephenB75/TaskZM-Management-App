@@ -1474,7 +1474,7 @@ export function TeamPanel() {
               style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}
             >
               <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_SMALL} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
-              Bulk Invite
+              {TEAM_PANEL_UI_TEXT.bulkInvite}
             </Button>
             <div className="flex" style={{ gap: PANEL_GAP_MEDIUM }}>
               <Button

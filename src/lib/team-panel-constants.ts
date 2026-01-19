@@ -10,6 +10,7 @@ export const TEAM_PANEL_UI_TEXT = {
     viewer: 'Viewer',
   },
   currentUser: '(You)',
+  bulkInvite: 'Bulk Invite',
   stats: {
     task: 'task',
     tasks: 'tasks',

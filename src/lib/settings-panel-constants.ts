@@ -8,6 +8,7 @@ export const SETTINGS_PANEL_UI_TEXT = {
     saveProfile: 'Save Profile',
     saving: 'Saving…',
     profile: 'Profile',
+    userProfile: 'User Profile',
     user: 'user',
     fallbackName: '—',
     fallbackEmail: '—',

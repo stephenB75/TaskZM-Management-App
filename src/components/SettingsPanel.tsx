@@ -575,7 +575,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               >
                 {getInitials(user?.name)}
               </div>
-              <span>User Profile</span>
+              <span>{SETTINGS_PANEL_UI_TEXT.profile.userProfile}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent 
