@@ -47,6 +47,9 @@ export const AVATAR_UI_TEXT = {
   saveAvatar: 'Save Avatar',
   saving: 'Saving…',
   gender: 'Gender',
+  cancel: 'Cancel',
+  pleaseSelectAvatar: 'Please select an avatar',
+  defaultGender: 'male' as const,
 } as const;
 
 // Avatar selection icon sizes

@@ -26,6 +26,7 @@ import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
 import { AvatarSelection, type AvatarGender } from './AvatarSelection';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
+import { SETTINGS_PANEL_UI_TEXT } from '../lib/settings-panel-constants';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -138,6 +139,7 @@ import {
   SETTINGS_PANEL_MARGIN_LEFT_XSMALL,
   SETTINGS_PANEL_MARGIN_LEFT_SMALL,
   SETTINGS_PANEL_MARGIN_LEFT_MEDIUM,
+  SETTINGS_PANEL_PADDING,
   SETTINGS_PANEL_PADDING_SMALL,
   SETTINGS_PANEL_PADDING_MEDIUM,
   SETTINGS_PANEL_PADDING_LARGE,
@@ -160,6 +162,13 @@ import {
   SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
   SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE,
   SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
+  SETTINGS_PANEL_EDIT_BUTTON_SIZE,
+  SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
+  SETTINGS_PANEL_PROFILE_CONTENT_PADDING_BOTTOM,
+  SETTINGS_PANEL_PROFILE_CONTENT_PADDING_TOP,
+  SETTINGS_PANEL_PROFILE_NAME_SIZE,
+  SETTINGS_PANEL_PROFILE_ICON_SIZE,
+  SETTINGS_PANEL_PROFILE_EMAIL_ICON_SIZE,
   COMPONENT_DIMENSIONS,
   ICON_SIZE_XS,
   ICON_SIZE_LG,
@@ -582,11 +591,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
 
                 {/* Profile Picture - Overlapping Banner */}
-                <div className="relative px-4" style={{ marginTop: SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET }}>
+                <div className="relative" style={{ 
+                  marginTop: SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
+                  paddingLeft: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
+                  paddingRight: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
+                }}>
                   <div className="relative flex-shrink-0 inline-block">
                     {user?.avatar ? (
                       <div 
-                        className="rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-4 border-white dark:border-card shadow-lg"
+                        className="rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 border-white dark:border-card shadow-lg"
                         style={{ 
                           width: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
                           height: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
@@ -594,7 +607,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       >
                         <img
                           src={user.avatar}
-                          alt={user?.name || 'Profile'}
+                          alt={user?.name || SETTINGS_PANEL_UI_TEXT.profile.profile}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             // Fallback to initials if image fails to load
@@ -604,6 +617,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             if (parent) {
                               const fallback = document.createElement('div');
                               fallback.className = 'rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg';
+                              // Note: Gradient classes are theme-based and don't need constants
                               fallback.style.width = SETTINGS_PANEL_PROFILE_AVATAR_SIZE;
                               fallback.style.height = SETTINGS_PANEL_PROFILE_AVATAR_SIZE;
                               fallback.style.fontSize = SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE;
@@ -631,8 +645,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       size="icon"
                       className="absolute bottom-0 right-0 rounded-full border-2 border-white dark:border-card bg-background hover:bg-muted"
                       style={{
-                        width: '2rem',
-                        height: '2rem',
+                        width: SETTINGS_PANEL_EDIT_BUTTON_SIZE,
+                        height: SETTINGS_PANEL_EDIT_BUTTON_SIZE,
                       }}
                       onClick={() => setShowAvatarSelection(true)}
                       title={AVATAR_UI_TEXT.changeAvatar}
@@ -643,16 +657,24 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
 
                 {/* Content Section */}
-                <div className="px-4 pb-4 pt-2">
+                <div style={{ 
+                  paddingLeft: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
+                  paddingRight: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
+                  paddingBottom: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_BOTTOM,
+                  paddingTop: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_TOP,
+                }}>
                   {/* Name with Verification Badge */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-xl text-foreground">
-                      {user?.name || '—'}
+                  <div className="flex items-center" style={{ 
+                    gap: PANEL_GAP_SMALL,
+                    marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
+                  }}>
+                    <h3 className="font-bold text-foreground" style={{ fontSize: SETTINGS_PANEL_PROFILE_NAME_SIZE }}>
+                      {user?.name || SETTINGS_PANEL_UI_TEXT.profile.fallbackName}
                     </h3>
                     {subscription.tier === 'pro' && (
                       <Icon 
                         name="sparkles" 
-                        size={20} 
+                        size={SETTINGS_PANEL_PROFILE_ICON_SIZE} 
                         className="text-primary flex-shrink-0" 
                         weight="duotone"
                       />
@@ -660,14 +682,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
                   
                   {/* Username/Email */}
-                  <div className="flex items-center text-muted-foreground text-sm mb-3">
-                    <span className="truncate">@{user?.email?.split('@')[0] || 'user'}</span>
+                  <div className="flex items-center text-muted-foreground" style={{ 
+                    fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+                    marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM,
+                  }}>
+                    <span className="truncate">@{user?.email?.split('@')[0] || SETTINGS_PANEL_UI_TEXT.profile.user}</span>
                   </div>
 
                   {/* Subscription Badge */}
-                  <div className="flex items-center flex-wrap gap-2 mb-3">
+                  <div className="flex items-center flex-wrap" style={{ 
+                    gap: PANEL_GAP_SMALL,
+                    marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM,
+                  }}>
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap">
-                      {subscription.tier === 'pro' ? 'Pro Member' : 'Free Member'}
+                      {subscription.tier === 'pro' ? SETTINGS_PANEL_UI_TEXT.profile.proMember : SETTINGS_PANEL_UI_TEXT.profile.freeMember}
                     </Badge>
                     {subscription.status && (
                       <Badge variant="outline" className="text-muted-foreground border-muted whitespace-nowrap">
@@ -677,23 +705,32 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   </div>
 
                   {/* Stats Section - Following/Followers Style */}
-                  <div className="flex items-center gap-4 text-sm text-foreground border-t pt-3 mt-3">
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold">{subscription.tier === 'pro' ? 'Pro' : 'Free'}</span>
-                      <span className="text-muted-foreground">Plan</span>
+                  <div className="flex items-center text-foreground border-t" style={{ 
+                    gap: SETTINGS_PANEL_GAP_LARGE,
+                    fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+                    paddingTop: SETTINGS_PANEL_PADDING_MEDIUM,
+                    marginTop: SETTINGS_PANEL_MARGIN_TOP_MEDIUM,
+                  }}>
+                    <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
+                      <span className="font-bold">{subscription.tier === 'pro' ? SETTINGS_PANEL_UI_TEXT.profile.pro : SETTINGS_PANEL_UI_TEXT.profile.free}</span>
+                      <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.profile.plan}</span>
                     </div>
                     {subscription.tier === 'pro' && subscription.billingPeriod && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
                         <span className="font-bold capitalize">{subscription.billingPeriod}</span>
-                        <span className="text-muted-foreground">Billing</span>
+                        <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.profile.billing}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Email Link */}
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
-                    <Icon name="mail" size={14} className="flex-shrink-0" />
-                    <span className="truncate">{user?.email || '—'}</span>
+                  <div className="flex items-center text-muted-foreground" style={{ 
+                    gap: PANEL_GAP_SMALL,
+                    fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+                    marginTop: SETTINGS_PANEL_MARGIN_TOP_MEDIUM,
+                  }}>
+                    <Icon name="mail" size={SETTINGS_PANEL_PROFILE_EMAIL_ICON_SIZE} className="flex-shrink-0" />
+                    <span className="truncate">{user?.email || SETTINGS_PANEL_UI_TEXT.profile.fallbackEmail}</span>
                   </div>
                 </div>
               </div>
@@ -716,7 +753,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   disabled={isUpdatingProfile || profileName.trim() === user?.name}
                   className="w-full"
                 >
-                  {isUpdatingProfile ? 'Saving…' : 'Save Profile'}
+                  {isUpdatingProfile ? SETTINGS_PANEL_UI_TEXT.profile.saving : SETTINGS_PANEL_UI_TEXT.profile.saveProfile}
                 </Button>
                 <Button 
                   variant="destructive" 
@@ -3229,15 +3266,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   setProfileGender(value as "male" | "female");
                   setProfileAvatar(undefined); // Reset avatar when gender changes
                 }}
-                className="flex gap-4"
+                style={{ display: 'flex', gap: PANEL_GAP_MEDIUM }}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
                   <RadioGroupItem value="male" id="profile-gender-male" />
                   <Label htmlFor="profile-gender-male" className="cursor-pointer">
                     {AVATAR_UI_TEXT.male}
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
                   <RadioGroupItem value="female" id="profile-gender-female" />
                   <Label htmlFor="profile-gender-female" className="cursor-pointer">
                     {AVATAR_UI_TEXT.female}
@@ -3263,10 +3300,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               onClick={() => {
                 setShowAvatarSelection(false);
                 setProfileAvatar(user?.avatar);
-                setProfileGender("male");
+                setProfileGender(AVATAR_UI_TEXT.defaultGender);
               }}
             >
-              Cancel
+              {AVATAR_UI_TEXT.cancel}
             </Button>
             <Button
               onClick={() => {
@@ -3274,7 +3311,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   handleUpdateProfile();
                   setShowAvatarSelection(false);
                 } else {
-                  toast.error("Please select an avatar");
+                  toast.error(AVATAR_UI_TEXT.pleaseSelectAvatar);
                 }
               }}
               disabled={!profileAvatar || isUpdatingProfile}

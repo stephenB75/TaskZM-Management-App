@@ -502,6 +502,7 @@ export const SETTINGS_PANEL_ICON_SIZE_MEDIUM = '1rem'; // w-4 h-4 = 1rem
 export const SETTINGS_PANEL_ICON_SIZE_LARGE = '1.25rem'; // w-5 h-5 = 1.25rem
 export const SETTINGS_PANEL_ICON_SIZE_XLARGE = '2rem'; // w-8 h-8 = 2rem
 export const SETTINGS_PANEL_ICON_SIZE_EXTRA_SMALL = '0.875rem'; // w-3.5 h-3.5 = 0.875rem
+export const SETTINGS_PANEL_EDIT_BUTTON_SIZE = '2rem'; // w-8 h-8 = 2rem (32px) - size for edit avatar button
 export const SETTINGS_PANEL_START_TOUR_ICON_SIZE = '0.8rem'; // 20% smaller than standard medium icon
 export const SETTINGS_PANEL_AVATAR_SIZE = '4rem'; // w-16 h-16 = 4rem
 export const SETTINGS_PANEL_INPUT_HEIGHT = '2.25rem'; // h-9 = 2.25rem
@@ -540,6 +541,7 @@ export const SETTINGS_PANEL_MARGIN_LEFT_SMALL = '0.5rem'; // ml-2 = 0.5rem
 export const SETTINGS_PANEL_MARGIN_LEFT_MEDIUM = '1rem'; // ml-4 = 1rem
 export const SETTINGS_PANEL_MARGIN_LEFT_NONE = '0'; // margin-left: 0px
 export const SETTINGS_PANEL_MARGIN_RIGHT_NONE = '0'; // margin-right: 0px
+export const SETTINGS_PANEL_PADDING = '1rem'; // Base padding = 1rem (16px) - default padding for dialogs and sections
 export const SETTINGS_PANEL_PADDING_SMALL = '0.625rem'; // p-2.5 = 0.625rem
 export const SETTINGS_PANEL_PADDING_MEDIUM = '0.75rem'; // p-3 = 0.75rem
 export const SETTINGS_PANEL_PADDING_LARGE = '1rem'; // p-4 = 1rem
@@ -569,6 +571,12 @@ export const SETTINGS_PANEL_TIMEOUT_DELAY_MS = 100; // Timeout delay in millisec
 export const SETTINGS_PANEL_PROFILE_BANNER_HEIGHT = '100px'; // Height of profile card banner
 export const SETTINGS_PANEL_PROFILE_AVATAR_SIZE = '96px'; // Size of profile avatar (overlapping banner)
 export const SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE = '32px'; // Font size for profile avatar initials
+export const SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X = '1rem'; // px-4 = 1rem (16px)
+export const SETTINGS_PANEL_PROFILE_CONTENT_PADDING_BOTTOM = '1rem'; // pb-4 = 1rem (16px)
+export const SETTINGS_PANEL_PROFILE_CONTENT_PADDING_TOP = '0.5rem'; // pt-2 = 0.5rem (8px)
+export const SETTINGS_PANEL_PROFILE_NAME_SIZE = '1.25rem'; // text-xl = 1.25rem (20px)
+export const SETTINGS_PANEL_PROFILE_ICON_SIZE = 20; // Icon size for sparkles badge (20px)
+export const SETTINGS_PANEL_PROFILE_EMAIL_ICON_SIZE = 14; // Icon size for email icon (14px)
 export const SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET = '-3.5rem'; // Negative margin to overlap avatar with banner (-mt-14)
 
 // App Icon and Theme Colors
