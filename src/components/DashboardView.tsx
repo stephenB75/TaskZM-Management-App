@@ -1328,7 +1328,7 @@ export function DashboardView({
               className={cn(
                 !shouldUseMobileLayout ? "flex items-center flex-shrink-0" : "hidden"
               )}
-              style={{ gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM }}
+              style={{ gap: isSmallScreen ? HEADER_GAP_MEDIUM : HEADER_GAP_LARGE }}
             >
               <div
                 onClick={handleScheduleUnscheduledTasks}

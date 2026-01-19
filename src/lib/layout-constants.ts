@@ -26,7 +26,7 @@ export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGH
 // Header-specific constants
 export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px)
 export const HEADER_PADDING_Y_MOBILE = '1rem'; // py-4 = 1rem (16px)
-export const HEADER_PADDING_X_DESKTOP = '1rem'; // px-4 = 1rem (16px) - reduced from 1.5rem to minimize gap from screen border
+export const HEADER_PADDING_X_DESKTOP = '0.5rem'; // px-2 = 0.5rem (8px) - minimal padding to eliminate gap from screen border
 export const HEADER_PADDING_Y_DESKTOP = '0.5rem'; // py-2 = 0.5rem (8px)
 export const HEADER_ICON_SIZE_SMALL = '1rem'; // w-4 h-4 = 1rem (16px)
 export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
