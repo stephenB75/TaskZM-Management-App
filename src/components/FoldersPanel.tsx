@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL } from "../lib/layout-constants";
 import { useDroppable } from "@dnd-kit/core";
 import { AppHeader } from "./AppHeader";
 import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
@@ -42,6 +42,12 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { ScrollArea } from "./ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { toast } from "sonner";
@@ -560,41 +566,43 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
         isSidePanelHeader={true}
         description={`${filteredFolders.length} of ${folders?.length || 0} folder${(folders?.length || 0) === 1 ? "" : "s"}`}
         actions={
-          <div
-            onClick={() => {
-              setEditingFolder(null);
-              setNewFolderName("");
-              setNewFolderDescription("");
-              setNewFolderColor(COLOR_FOLDER_DEFAULT);
-              setShowAddFolder(true);
-            }}
-            className="cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80 whitespace-nowrap"
-            title="Add Folder"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setEditingFolder(null);
-                setNewFolderName("");
-                setNewFolderDescription("");
-                setNewFolderColor(COLOR_FOLDER_DEFAULT);
-                setShowAddFolder(true);
-              }
-            }}
-          >
-            <Icon 
-              name="folder-simple-plus"
-              size={ICON_SIZE_MD}
-              className="text-primary dark:text-primary-foreground flex-shrink-0"
-              style={{
-                marginRight: '0.25rem',
-              }}
-            />
-            <span className="text-foreground dark:text-gray-100">
-              Add Folder
-            </span>
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  onClick={() => {
+                    setEditingFolder(null);
+                    setNewFolderName("");
+                    setNewFolderDescription("");
+                    setNewFolderColor(COLOR_FOLDER_DEFAULT);
+                    setShowAddFolder(true);
+                  }}
+                  className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setEditingFolder(null);
+                      setNewFolderName("");
+                      setNewFolderDescription("");
+                      setNewFolderColor(COLOR_FOLDER_DEFAULT);
+                      setShowAddFolder(true);
+                    }
+                  }}
+                >
+                  <Icon 
+                    name="folder-simple-plus"
+                    size={ICON_SIZE_XL}
+                    className="text-primary dark:text-primary-foreground flex-shrink-0"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Add Folder</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         }
         hideDesktopLogo
       />
