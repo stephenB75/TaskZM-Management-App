@@ -332,6 +332,15 @@ export function NotificationsPanel() {
     return notif.type === filterType;
   });
 
+  // Clear selection when notifications change (e.g., after deletion or filter change)
+  useEffect(() => {
+    setSelectedNotificationIds(prev => {
+      const currentNotificationIds = new Set(filteredNotifications.map(n => n.id));
+      const filtered = new Set([...prev].filter(id => currentNotificationIds.has(id)));
+      return filtered.size !== prev.size ? filtered : prev;
+    });
+  }, [filteredNotifications]);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = (id: string) => {
