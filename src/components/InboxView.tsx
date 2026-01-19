@@ -850,34 +850,49 @@ export function InboxView() {
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <Card className={`p-4 ${UI_INBOX_GRADIENTS.card.className} border-primary/20`}>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Quick add task..."
-                        value={quickAddTitle}
-                        onChange={(e) =>
-                          setQuickAddTitle(e.target.value)
+                  <div className="relative flex items-center gap-2 p-2 bg-white/50 dark:bg-card/50 rounded-lg border border-primary/20">
+                    <Input
+                      placeholder="Quick add task..."
+                      value={quickAddTitle}
+                      onChange={(e) =>
+                        setQuickAddTitle(e.target.value)
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter")
+                          handleQuickAdd();
+                        if (e.key === "Escape") {
+                          setIsQuickAddOpen(false);
+                          setQuickAddTitle("");
                         }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter")
-                            handleQuickAdd();
-                          if (e.key === "Escape") {
-                            setIsQuickAddOpen(false);
-                            setQuickAddTitle("");
-                          }
-                        }}
-                        autoFocus
-                        className="flex-1"
+                      }}
+                      autoFocus
+                      className="flex-1 bg-white dark:bg-card border-primary/20 focus:border-primary"
+                    />
+                    <div
+                      onClick={quickAddTitle.trim() ? handleQuickAdd : undefined}
+                      className={cn(
+                        "flex items-center justify-center w-10 h-10 rounded-full transition-opacity hover:opacity-80 flex-shrink-0",
+                        quickAddTitle.trim() 
+                          ? "bg-primary text-primary-foreground cursor-pointer" 
+                          : "bg-primary/20 text-primary/50 cursor-not-allowed"
+                      )}
+                      role="button"
+                      tabIndex={quickAddTitle.trim() ? 0 : -1}
+                      onKeyDown={(e) => {
+                        if (!quickAddTitle.trim()) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleQuickAdd();
+                        }
+                      }}
+                    >
+                      <Icon 
+                        name="plus" 
+                        size={ICON_SIZE_MD} 
+                        className="text-current"
                       />
-                      <Button
-                        onClick={handleQuickAdd}
-                        size="sm"
-                        disabled={!quickAddTitle.trim()}
-                      >
-                        <Icon name="plus" size={ICON_SIZE_MD} />
-                      </Button>
                     </div>
-                  </Card>
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
