@@ -1471,6 +1471,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Use syncIntervalRef.current to get the latest interval value without causing re-renders
     // Store timer in a ref so we can update it when interval changes
     const syncTimerRef = { current: null as NodeJS.Timeout | null };
+    const syncTimerIntervalRef = { current: 0 }; // Store the interval value separately
     
     const startSyncTimer = () => {
       // Clear existing timer if any
@@ -1480,10 +1481,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       // Start new timer with current interval
       const currentInterval = syncIntervalRef.current;
       syncTimerRef.current = setInterval(scheduleSync, currentInterval);
-      // Store interval for comparison
-      if (syncTimerRef.current) {
-        (syncTimerRef.current as any).__interval = currentInterval;
-      }
+      // Store interval value separately (can't attach to timer ID since it's a number)
+      syncTimerIntervalRef.current = currentInterval;
     };
     
     // Start initial timer
@@ -1494,7 +1493,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const intervalUpdateTimer = setInterval(() => {
       const latestInterval = syncIntervalRef.current;
       // Restart timer if interval changed
-      if (syncTimerRef.current && latestInterval !== syncIntervalRef.current) {
+      if (syncTimerRef.current && latestInterval !== syncTimerIntervalRef.current) {
         startSyncTimer();
       }
     }, 1000);
