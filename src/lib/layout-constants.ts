@@ -389,6 +389,10 @@ export const TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE = '1.25rem'; // Size of social
 export const TEAM_PANEL_VERTICAL_SPACING = '0.75rem'; // gap-3 = 0.75rem (12px) between elements
 export const TEAM_PANEL_VERTICAL_PADDING = '1.5rem'; // p-6 = 1.5rem (24px) card padding
 
+// Team Panel Grid Layout Constants
+export const TEAM_PANEL_GRID_COLUMNS = 2; // Number of columns for team member cards
+export const TEAM_PANEL_GRID_GAP = '0.75rem'; // gap-3 = 0.75rem (12px) between grid items
+
 // Folder Panel specific constants
 export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
 export const FOLDER_PANEL_SEARCH_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem

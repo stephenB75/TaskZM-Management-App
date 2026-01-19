@@ -121,6 +121,8 @@ import {
   TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE,
   TEAM_PANEL_VERTICAL_SPACING,
   TEAM_PANEL_VERTICAL_PADDING,
+  TEAM_PANEL_GRID_COLUMNS,
+  TEAM_PANEL_GRID_GAP,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
   PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR,
   PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT,
@@ -1219,7 +1221,13 @@ export function TeamPanel() {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_CONTENT_SPACING }}>
+            <div 
+              style={{ 
+                display: 'grid',
+                gridTemplateColumns: `repeat(${TEAM_PANEL_GRID_COLUMNS}, 1fr)`,
+                gap: TEAM_PANEL_GRID_GAP
+              }}
+            >
               {filteredMembers.map((member) => {
                 const stats = getTaskStats(member.id);
                 const isCurrentUser = member.id === currentUser?.id;
@@ -1308,7 +1316,13 @@ export function TeamPanel() {
                   )}
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_CONTENT_SPACING }}>
+                <div 
+                  style={{ 
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${TEAM_PANEL_GRID_COLUMNS}, 1fr)`,
+                    gap: TEAM_PANEL_GRID_GAP
+                  }}
+                >
                   {filteredMembers.map((member) => {
                     const stats = getTaskStats(member.id);
                     const isCurrentUser = member.id === currentUser?.id;
