@@ -195,6 +195,7 @@ const DUOTONE_ICONS = new Set([
   'calendar-dots', // Added for Re-Scheduler icon
   'check-circle',
   'checkmark-circle',
+  'user-circle-check', // Added for User Profile icon
 ]);
 
 function Icon({

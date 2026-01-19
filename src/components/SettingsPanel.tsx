@@ -182,7 +182,7 @@ import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/not
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
-import { COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
+import { COLOR_PRIMARY, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
 import { projectId } from '../utils/supabase/info';
 
 interface SettingsPanelProps {
@@ -570,7 +570,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 name="user-circle-check" 
                 size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} 
                 weight="duotone"
-                className="text-primary flex-shrink-0" 
+                color={COLOR_PRIMARY}
+                className="flex-shrink-0" 
               />
               <span className="font-semibold">{SETTINGS_PANEL_UI_TEXT.profile.userProfile}</span>
             </div>
