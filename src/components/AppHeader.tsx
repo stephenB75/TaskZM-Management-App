@@ -302,7 +302,13 @@ export function AppHeader({
             {/* Left side: Back Button (if onBack provided) + Logo + Title/Description */}
             <motion.div
               className="flex items-center min-w-0 flex-1"
-              style={{ gap: HEADER_SIDE_PANEL_GAP_LEFT }}
+              style={{ 
+                gap: isSmallMonitor && isLandscape 
+                  ? HEADER_GAP_SMALL 
+                  : HEADER_SIDE_PANEL_GAP_LEFT,
+                flexShrink: 1, // Allow container to shrink
+                minWidth: 0, // Allow flex items to shrink below content size
+              }}
               initial={{ opacity: 0, x: HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_LEFT }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_LEFT }}
@@ -330,17 +336,23 @@ export function AppHeader({
                 <motion.img
                   src={isDark ? logoImageGray : logoImageBlack}
                   alt="TaskZM Logo"
-                  className={cn(
-                    "w-auto flex-shrink-0",
-                  )}
+                  className="object-contain"
                   style={{ 
-                    // Responsive logo height: smaller for small monitors and landscape
+                    // Responsive logo height: smaller for small monitors and landscape, with more aggressive scaling
                     height: isSmallMonitor && isLandscape 
-                      ? `calc(${HEADER_LOGO_HEIGHT} * 0.85)`
+                      ? `calc(${HEADER_LOGO_HEIGHT} * 0.75)`
                       : (isSmallMonitor 
-                        ? `calc(${HEADER_LOGO_HEIGHT} * 0.9)`
+                        ? `calc(${HEADER_LOGO_HEIGHT} * 0.85)`
                         : HEADER_LOGO_HEIGHT),
+                    maxWidth: isSmallMonitor && isLandscape 
+                      ? '100px' 
+                      : (isSmallMonitor 
+                        ? '120px' 
+                        : '150px'), // Constrain width to prevent overlap
+                    width: 'auto', // Maintain aspect ratio
                     backgroundColor: 'transparent',
+                    flexShrink: 1, // Allow logo to shrink when space is constrained
+                    minWidth: 0, // Allow logo to shrink below content size
                   }}
                   initial={{ opacity: 0, scale: HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -436,7 +448,7 @@ export function AppHeader({
           >
             {/* Left side: Back Button (if onBack provided) + Logo only - No animations */}
             <div
-              className="flex items-center min-w-0 flex-shrink-0"
+              className="flex items-center min-w-0"
               style={{ 
                 // Responsive gap: smaller for small monitors and landscape
                 gap: hideDesktopLogo 
@@ -450,6 +462,8 @@ export function AppHeader({
                       : (isSmallMonitor 
                         ? HEADER_GAP_MEDIUM 
                         : HEADER_GAP_XLARGE)),
+                flexShrink: 1, // Allow container to shrink
+                minWidth: 0, // Allow flex items to shrink below content size
               }}
             >
               {onBack && (
@@ -476,21 +490,28 @@ export function AppHeader({
                   key={`header-logo-${isDark ? 'dark' : 'light'}`}
                   src={isDark ? logoImageGray : logoImageBlack}
                   alt="TaskZM Logo"
-                  className="w-auto flex-shrink-0 object-contain self-center"
+                  className="object-contain self-center"
                   style={{ 
-                    // Responsive logo height: smaller for small monitors and landscape
+                    // Responsive logo height: smaller for small monitors and landscape, with more aggressive scaling
                     height: isSmallMonitor && isLandscape 
-                      ? `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * 0.85)`
+                      ? `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * 0.75)`
                       : (isSmallMonitor 
-                        ? `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * 0.9)`
+                        ? `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * 0.85)`
                         : HEADER_LOGO_HEIGHT_DESKTOP),
                     maxHeight: isSmallMonitor && isLandscape
                       ? `calc(${HEADER_HEIGHT}px - 0.75rem - 0.75rem - ${HEADER_BORDER_BOTTOM}px)`
                       : `calc(${HEADER_HEIGHT}px - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_BORDER_BOTTOM}px)`,
+                    maxWidth: isSmallMonitor && isLandscape 
+                      ? '120px' 
+                      : (isSmallMonitor 
+                        ? '140px' 
+                        : '180px'), // Constrain width to prevent overlap
                     width: 'auto', // Maintain aspect ratio
                     backgroundColor: 'transparent',
                     display: 'block',
                     objectFit: 'contain', // Ensure logo fits within bounds
+                    flexShrink: 1, // Allow logo to shrink when space is constrained
+                    minWidth: 0, // Allow logo to shrink below content size
                     // No transition on logo itself - it moves smoothly with the header container
                     transition: 'none',
                   }}
