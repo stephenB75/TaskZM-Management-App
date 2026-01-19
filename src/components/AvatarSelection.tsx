@@ -34,7 +34,7 @@ export function AvatarSelection({
   const avatars = AVATAR_PATHS[gender];
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full", className)} key={`avatar-selection-${gender}`}>
       <div
         className="grid"
         style={{
@@ -46,7 +46,7 @@ export function AvatarSelection({
           const isSelected = selectedAvatar === avatarPath;
           return (
             <button
-              key={avatarPath}
+              key={`${gender}-${avatarPath}`}
               type="button"
               onClick={() => onAvatarSelect(avatarPath)}
               className={cn(
@@ -62,7 +62,7 @@ export function AvatarSelection({
             >
               <div className="w-full h-full bg-muted flex items-center justify-center">
                 <img
-                  key={avatarPath}
+                  key={`${gender}-${avatarPath}-${index}`}
                   src={avatarPath}
                   alt={`${gender} Avatar ${index + 1}`}
                   className="w-full h-full object-cover"
