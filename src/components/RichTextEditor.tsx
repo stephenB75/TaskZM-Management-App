@@ -581,7 +581,7 @@ export function RichTextEditor({
           onClick={() => formatText('lowercase')}
           title="Lowercase"
         >
-          <CaseLower className="w-4 h-4" />
+          <Icon name="type" size={16} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
