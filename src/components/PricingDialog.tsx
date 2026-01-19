@@ -785,7 +785,7 @@ export function PricingDialog({
                   </Badge>
                 )}
                 <Badge className={`${UI_PRICING_DIALOG_COLORS.buttonGradient.className} text-white border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`}>
-                  <Crown className="w-1.5 h-1.5 md:w-2 md:h-2 mr-0.5" />
+                  <Icon name="crown" size={ICON_SIZE_XS} className="mr-0.5" />
                   {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
                 </Badge>
               </div>
