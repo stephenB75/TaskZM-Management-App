@@ -821,26 +821,6 @@ export function TeamPanel() {
             }}
           >
             {member.name}
-            {isCurrentUser && (
-              <span 
-                className="font-normal text-muted-foreground"
-                style={{
-                  fontSize: TEAM_PANEL_TEXT_SIZE_XS,
-                  marginLeft: TEAM_PANEL_MARGIN_LEFT_SMALL,
-                }}
-              >
-                {TEAM_PANEL_UI_TEXT.currentUser}
-              </span>
-            )}
-            {member.role === 'admin' && (
-              <Icon 
-                name="shield-check" 
-                size={TEAM_PANEL_ICON_SIZE_SMALL} 
-                className="text-primary flex-shrink-0 inline" 
-                style={{ marginLeft: TEAM_PANEL_MARGIN_LEFT_SMALL }}
-                weight="duotone"
-              />
-            )}
           </h3>
 
           {/* Role/Job Title */}
@@ -851,7 +831,17 @@ export function TeamPanel() {
               marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
             }}
           >
-            {roleDisplayText}
+            <span className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
+              {member.role === 'admin' && (
+                <Icon 
+                  name="shield-check" 
+                  size={TEAM_PANEL_ICON_SIZE_SMALL} 
+                  className="text-primary flex-shrink-0" 
+                  weight="duotone"
+                />
+              )}
+              {roleDisplayText}
+            </span>
             {getInviteStatusBadge(member) && (
               <span style={{ marginLeft: TEAM_PANEL_MARGIN_LEFT_MEDIUM }}>
                 {getInviteStatusBadge(member)}
@@ -869,9 +859,15 @@ export function TeamPanel() {
           >
             <a 
               href={`mailto:${member.email}`}
-              className="hover:text-primary transition-colors"
+              className="hover:text-primary transition-colors flex items-center justify-center"
+              style={{ gap: PANEL_GAP_SMALL }}
               onClick={(e) => e.stopPropagation()}
             >
+              <Icon 
+                name="envelope-simple" 
+                size={TEAM_PANEL_ICON_SIZE_SMALL} 
+                className="text-muted-foreground flex-shrink-0" 
+              />
               {member.email}
             </a>
           </div>

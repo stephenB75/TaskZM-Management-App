@@ -101,6 +101,8 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'loader2': 'Spinner',
   'loader-2': 'Spinner',
   'mail': 'Envelope',
+  'envelope': 'Envelope',
+  'envelope-simple': 'EnvelopeSimple',
   'send': 'PaperPlaneTilt',
   'paper-plane-tilt': 'PaperPlaneTilt',
   'lock': 'Lock',
