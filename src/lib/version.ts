@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.14';
-export const VERSION_NAME = 'Terminology Expansion & AI Scheduler Conflict Fix';
-export const VERSION_DATE = 'January 12, 2026';
-export const BUILD_NUMBER = '20260112-1';
+export const APP_VERSION = '1.0.15';
+export const VERSION_NAME = 'UI Visibility & Icon Fixes';
+export const VERSION_DATE = 'January 26, 2026';
+export const BUILD_NUMBER = '20260126-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,28 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.15',
+    date: 'January 26, 2026',
+    name: 'UI Visibility & Icon Fixes',
+    changes: [
+      'Fixed user profile icon visibility in Settings Panel - replaced non-existent UserCircleCheck with UserCircle icon',
+      'Fixed dark button icon visibility across the app - all buttons with dark backgrounds now use COLOR_TEXT_WHITE constant',
+      'Fixed Sign Out button icon visibility - log-out icon now uses white color on red destructive background',
+      'Fixed Delete Account button icon visibility - trash-2 icon now uses white color on red destructive background',
+      'Fixed NotificationsPanel trash icon visibility - icon now uses COLOR_TEXT_WHITE on dark background',
+      'Fixed SettingsPanel award icons visibility - all earned award icons now use COLOR_TEXT_WHITE on gradient backgrounds',
+      'Fixed TaskDialog delete button icon visibility - trash icon now uses COLOR_TEXT_WHITE on destructive background',
+      'Fixed TaskDialog submit button text visibility - button text now explicitly uses COLOR_TEXT_WHITE on primary background',
+      'Replaced all hardcoded text-white classes and color: white values with COLOR_TEXT_WHITE constant for consistency',
+      'Added COLOR_TEXT_WHITE constant usage in AuthScreen button text for gradient backgrounds',
+      'Fixed dark mode gradient classes in SettingsPanel - moved hardcoded values to UI_SETTINGS_BADGE_COLORS constant',
+      'Verified AI description generation flow - confirmed Local Terminology and Browser AI work together correctly',
+      'Created comprehensive review documentation for AI description generation system',
+      'Fixed shared_terminology table database error - created migration and improved error handling',
+      'All UI visibility issues resolved - buttons, icons, and text are now properly visible on dark backgrounds',
+    ],
+  },
   {
     version: '1.0.14',
     date: 'January 12, 2026',
