@@ -552,7 +552,7 @@ export const TASK_CARD_ASSIGNED_USER_COLORS = {
 
 // Text Colors - Light colors for dark backgrounds in dark mode
 // AI Action Plan text size
-export const TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE = '12px'; // All text in AI Action Plan uses 12px
+export const TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE = '16px'; // All text in AI Action Plan uses 16px (increased from 12px for better readability when zoomed out)
 
 export const TASK_CARD_TEXT_COLORS = {
   description: 'text-gray-500 dark:text-gray-300',
