@@ -46,7 +46,7 @@ export function AvatarSelection({
           const isSelected = selectedAvatar === avatarPath;
           return (
             <button
-              key={index}
+              key={avatarPath}
               type="button"
               onClick={() => onAvatarSelect(avatarPath)}
               className={cn(
@@ -62,13 +62,15 @@ export function AvatarSelection({
             >
               <div className="w-full h-full bg-muted flex items-center justify-center">
                 <img
+                  key={avatarPath}
                   src={avatarPath}
-                  alt={`Avatar ${index + 1}`}
+                  alt={`${gender} Avatar ${index + 1}`}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                   onError={(e) => {
                     // Fallback to default avatar if image fails to load
                     const target = e.target as HTMLImageElement;
-                    if (target.src !== DEFAULT_AVATAR) {
+                    if (target.src !== DEFAULT_AVATAR && !target.src.includes(DEFAULT_AVATAR)) {
                       target.src = DEFAULT_AVATAR;
                     }
                   }}
