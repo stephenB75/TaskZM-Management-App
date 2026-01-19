@@ -210,7 +210,15 @@ function Icon({
     name.charAt(0).toUpperCase() + name.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 
   // Get the icon component dynamically from phosphor-react
-  const IconComponent = (PhosphorIcons as any)[phosphorIconName] as React.ComponentType<any>;
+  let IconComponent: React.ComponentType<any> | undefined;
+  try {
+    IconComponent = (PhosphorIcons as any)[phosphorIconName] as React.ComponentType<any>;
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error(`[Icon] Error accessing Phosphor icon "${phosphorIconName}" for name "${name}":`, error);
+    }
+    return null;
+  }
 
   if (!IconComponent) {
     if (import.meta.env.DEV) {
@@ -231,9 +239,17 @@ function Icon({
   const iconProps: any = {
     size: sizeNum,
     weight: iconWeight,
-    className,
-    style: { ...style },
   };
+  
+  // Add className if provided and not empty (avoid passing empty strings)
+  if (className && typeof className === 'string' && className.trim().length > 0) {
+    iconProps.className = className;
+  }
+  
+  // Add style if provided (React handles undefined/null style gracefully)
+  if (style != null && typeof style === 'object') {
+    iconProps.style = style;
+  }
 
   // Add colors based on weight
   if (iconWeight === 'duotone' && secondary) {
