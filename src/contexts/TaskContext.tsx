@@ -1332,7 +1332,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         syncLockRef.current = false;
       }
     },
-    [workspaceId, accessToken, user?.id, tasks] // Add tasks to dependencies for areTasksEqual comparison
+    [workspaceId, accessToken, user?.id] // Removed tasks from dependencies - using tasksRef.current instead to prevent infinite loops
   );
 
   // Activity tracking for adaptive polling
@@ -1353,9 +1353,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         activityThrottleTimeout = null;
         if (!isActiveRef.current) {
           isActiveRef.current = true;
-          // Switch to active interval (30 seconds)
-          setSyncInterval(WORKSPACE_SYNC_INTERVAL_ACTIVE_MS);
-          logger.debug('User activity detected, switching to active sync interval (30 sec)');
+          // Only update state if interval actually needs to change (prevents unnecessary re-renders)
+          if (syncIntervalRef.current !== WORKSPACE_SYNC_INTERVAL_ACTIVE_MS) {
+            setSyncInterval(WORKSPACE_SYNC_INTERVAL_ACTIVE_MS);
+            logger.debug('User activity detected, switching to active sync interval (30 sec)');
+          }
         }
       }, THROTTLE_MS);
     };
@@ -1376,9 +1378,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const timeSinceActivity = Date.now() - lastActivityRef.current;
       if (timeSinceActivity > WORKSPACE_ACTIVITY_TIMEOUT_MS && isActiveRef.current) {
         isActiveRef.current = false;
-        // Switch to idle interval (2 minutes)
-        setSyncInterval(WORKSPACE_SYNC_INTERVAL_IDLE_MS);
-        logger.debug('User inactive, switching to idle sync interval (2 min)');
+        // Only update state if interval actually needs to change (prevents unnecessary re-renders)
+        if (syncIntervalRef.current !== WORKSPACE_SYNC_INTERVAL_IDLE_MS) {
+          setSyncInterval(WORKSPACE_SYNC_INTERVAL_IDLE_MS);
+          logger.debug('User inactive, switching to idle sync interval (2 min)');
+        }
       }
     }, TIMING_CONSTANTS.intervals.activityCheck); // Check every minute
 
