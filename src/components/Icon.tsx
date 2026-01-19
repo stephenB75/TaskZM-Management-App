@@ -68,7 +68,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'repeat': 'Repeat',
   'link': 'Link',
   'link-2': 'Link',
-  'copy': 'Copy',
+  'copy': 'CopySimple',
   'download': 'Download',
   'upload': 'Upload',
   'chevron-left': 'CaretLeft',
