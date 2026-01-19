@@ -739,37 +739,37 @@ export function InboxView() {
               </>
             ) : (
               <>
-                <Button
-                  onClick={handleScheduleAll}
-                  className={`whitespace-nowrap ${UI_INBOX_GRADIENTS.button.className} ${UI_INBOX_GRADIENTS.button.hover.className}`}
-                  style={{
-                    borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
-                    whiteSpace: 'nowrap',
+                <div
+                  onClick={unscheduledTasks.length === 0 ? undefined : handleScheduleAll}
+                  className={cn(
+                    "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80 whitespace-nowrap",
+                    unscheduledTasks.length === 0 && "opacity-50 cursor-not-allowed"
+                  )}
+                  title="Schedule All"
+                  role="button"
+                  tabIndex={unscheduledTasks.length === 0 ? -1 : 0}
+                  onKeyDown={(e) => {
+                    if (unscheduledTasks.length === 0) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleScheduleAll();
+                    }
                   }}
-                  size="sm"
-                  disabled={unscheduledTasks.length === 0}
                 >
                   <Icon 
-                    name="sparkles" 
+                    name="head-circuit"
                     size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
                     weight="duotone"
+                    className="text-primary dark:text-primary-foreground flex-shrink-0"
                     style={{
                       marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
-                  <span className="hidden md:inline">
+                  <span className="text-foreground dark:text-gray-100">
                     Schedule All
                   </span>
-                  <span className="md:hidden">
-                    All
-                  </span>
-                </Button>
-                <Button
+                </div>
+                <div
                   onClick={() => {
                     if (!permissions.canCreateTask) {
                       toast.error('Permission Denied', {
@@ -780,30 +780,34 @@ export function InboxView() {
                     setSelectedTask(undefined);
                     setIsTaskDialogOpen(true);
                   }}
-                  disabled={!permissions.canCreateTask}
-                  className="hidden sm:flex whitespace-nowrap"
-                  style={{
-                    borderRadius: COMPONENT_DIMENSIONS.inboxHeader.button.borderRadius,
-                    paddingLeft: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingX.desktop,
-                    paddingTop: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    paddingBottom: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.paddingY.desktop,
-                    fontSize: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.textSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.textSize.desktop,
-                    whiteSpace: 'nowrap',
+                  className={cn(
+                    "hidden sm:flex cursor-pointer items-center flex-shrink-0 transition-opacity hover:opacity-80 whitespace-nowrap",
+                    !permissions.canCreateTask && "opacity-50 cursor-not-allowed"
+                  )}
+                  title="New Task"
+                  role="button"
+                  tabIndex={!permissions.canCreateTask ? -1 : 0}
+                  onKeyDown={(e) => {
+                    if (!permissions.canCreateTask) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedTask(undefined);
+                      setIsTaskDialogOpen(true);
+                    }
                   }}
-                  size="sm"
                 >
                   <Icon 
-                    name="plus"
+                    name="check-square"
                     size={shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconSize.desktop}
+                    className="text-primary dark:text-primary-foreground flex-shrink-0"
                     style={{
                       marginRight: shouldUseMobileLayout ? COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.mobile : COMPONENT_DIMENSIONS.inboxHeader.button.iconMargin.desktop,
                     }}
                   />
-                  <span className="hidden md:inline">
+                  <span className="text-foreground dark:text-gray-100">
                     New Task
                   </span>
-                </Button>
+                </div>
               </>
             )}
           </div>

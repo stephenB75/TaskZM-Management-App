@@ -38,6 +38,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'checkmark': 'CheckCircle',
   'check-circle': 'CheckCircle',
   'checkmark-circle': 'CheckCircle',
+  'check-square': 'CheckSquare',
   'x': 'X',
   'x-circle': 'XCircle',
   'plus': 'Plus',
