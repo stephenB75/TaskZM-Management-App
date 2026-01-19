@@ -1,12 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { COMPONENT_DIMENSIONS } from '../lib/layout-constants';
+import { COMPONENT_DIMENSIONS, ICON_SIZE_MD } from '../lib/layout-constants';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { UI_RICH_TEXT_COLORS } from '../lib/ui-colors';
-import { COMPONENT_DIMENSIONS } from '../lib/layout-constants';
 
 interface RichTextEditorProps {
   value: string;
@@ -376,7 +375,7 @@ export function RichTextEditor({
           onClick={() => formatText('bold')}
           title="Bold (Ctrl+B)"
         >
-          <Icon name="bold" size={16} />
+          <Icon name="bold" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -389,7 +388,7 @@ export function RichTextEditor({
           onClick={() => formatText('italic')}
           title="Italic (Ctrl+I)"
         >
-          <Icon name="italic" size={16} />
+          <Icon name="italic" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -402,7 +401,7 @@ export function RichTextEditor({
           onClick={() => formatText('underline')}
           title="Underline (Ctrl+U)"
         >
-          <Icon name="underline" size={16} />
+          <Icon name="underline" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -415,7 +414,7 @@ export function RichTextEditor({
           onClick={() => formatText('strikethrough')}
           title="Strikethrough"
         >
-          <Icon name="strikethrough" size={16} />
+          <Icon name="strikethrough" size={ICON_SIZE_MD} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -428,7 +427,7 @@ export function RichTextEditor({
           onClick={() => formatText('highlight')}
           title="Highlight"
         >
-          <Icon name="highlighter" size={16} />
+          <Icon name="highlighter" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -438,7 +437,7 @@ export function RichTextEditor({
           onClick={() => formatText('code')}
           title="Code"
         >
-          <Icon name="code" size={16} />
+          <Icon name="code" size={ICON_SIZE_MD} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -454,7 +453,7 @@ export function RichTextEditor({
           onClick={() => formatText('bullet')}
           title="Bullet List"
         >
-          <Icon name="list" size={16} />
+          <Icon name="list" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -467,7 +466,7 @@ export function RichTextEditor({
           onClick={() => formatText('numbered')}
           title="Numbered List"
         >
-          <Icon name="list-ordered" size={16} />
+          <Icon name="list-ordered" size={ICON_SIZE_MD} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -483,7 +482,7 @@ export function RichTextEditor({
           onClick={() => formatText('alignLeft')}
           title="Align Left"
         >
-          <Icon name="align-left" size={16} />
+          <Icon name="align-left" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -496,7 +495,7 @@ export function RichTextEditor({
           onClick={() => formatText('alignCenter')}
           title="Align Center"
         >
-          <Icon name="align-center" size={16} />
+          <Icon name="align-center" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -509,7 +508,7 @@ export function RichTextEditor({
           onClick={() => formatText('alignRight')}
           title="Align Right"
         >
-          <Icon name="align-right" size={16} />
+          <Icon name="align-right" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -522,7 +521,7 @@ export function RichTextEditor({
           onClick={() => formatText('alignJustify')}
           title="Justify"
         >
-          <Icon name="align-justify" size={16} />
+          <Icon name="align-justify" size={ICON_SIZE_MD} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -535,7 +534,7 @@ export function RichTextEditor({
           onClick={() => formatText('paragraph')}
           title="Paragraph (Press Enter for new paragraph)"
         >
-          <Icon name="pilcrow" size={16} />
+          <Icon name="pilcrow" size={ICON_SIZE_MD} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -548,7 +547,7 @@ export function RichTextEditor({
           onClick={() => formatText('outdent')}
           title="Decrease Indent"
         >
-          <Icon name="outdent" size={16} />
+          <Icon name="outdent" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -558,7 +557,7 @@ export function RichTextEditor({
           onClick={() => formatText('indent')}
           title="Increase Indent"
         >
-          <Icon name="indent" size={16} />
+          <Icon name="indent" size={ICON_SIZE_MD} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -571,7 +570,7 @@ export function RichTextEditor({
           onClick={() => formatText('uppercase')}
           title="Uppercase"
         >
-          <Icon name="type" size={16} />
+          <Icon name="type" size={ICON_SIZE_MD} />
         </Button>
         <Button
           type="button"
@@ -581,7 +580,7 @@ export function RichTextEditor({
           onClick={() => formatText('lowercase')}
           title="Lowercase"
         >
-          <Icon name="type" size={16} />
+          <Icon name="type" size={ICON_SIZE_MD} />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
         
@@ -594,7 +593,7 @@ export function RichTextEditor({
           onClick={() => formatText('clear')}
           title="Clear Formatting"
         >
-          <Icon name="eraser" size={16} />
+          <Icon name="eraser" size={ICON_SIZE_MD} />
         </Button>
       </div>
 
