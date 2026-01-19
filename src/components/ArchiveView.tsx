@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 // Icons migrated to Icon component - imports removed
 import { useTasks } from "../contexts/TaskContext";
-import { useTeam } from "../contexts/TeamContext";
 import { AppHeader } from "./AppHeader";
 import { 
   HEADER_MOBILE_SAFE_AREA_SPACER, 
@@ -43,7 +42,6 @@ import type { Task } from "../types";
 
 export function ArchiveView() {
   const { tasks, updateTask, deleteTask, bulkDeleteTasks } = useTasks();
-  const { getTeamMember } = useTeam();
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] =
