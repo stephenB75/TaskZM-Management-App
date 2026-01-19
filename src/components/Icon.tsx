@@ -222,6 +222,5 @@ function Icon({
   return <IconComponent {...iconProps} />;
 }
 
-// Export as both named and default for compatibility
+// Export as named export (components import as: import { Icon } from './Icon')
 export { Icon };
-export default Icon;
