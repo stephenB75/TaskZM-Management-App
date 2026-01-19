@@ -1331,10 +1331,10 @@ export function DashboardView({
                 onClick={handleScheduleUnscheduledTasks}
                 className={cn(
                   "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80",
-                  !isSmallScreen && "whitespace-nowrap"
+                  !shouldUseMobileLayout && "whitespace-nowrap"
                 )}
                 data-tour="ai-scheduler"
-                title={isSmallScreen ? "AI Suggestions" : "AI Scheduler Suggestions"}
+                title={shouldUseMobileLayout ? "AI Suggestions" : "AI Scheduler Suggestions"}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -1350,10 +1350,10 @@ export function DashboardView({
                   weight={viewMode === "week" ? "duotone" : "regular"}
                   className="text-primary dark:text-primary-foreground flex-shrink-0"
                   style={{
-                    marginRight: isSmallScreen ? 0 : (HEADER_ICON_MARGIN_SMALL),
+                    marginRight: shouldUseMobileLayout ? 0 : HEADER_ICON_MARGIN_SMALL,
                   }}
                 />
-                {!isSmallScreen && (
+                {!shouldUseMobileLayout && (
                   <span className="text-foreground dark:text-gray-100">
                     AI Scheduler Suggestions
                   </span>
@@ -1381,7 +1381,7 @@ export function DashboardView({
                 }}
                 className={cn(
                   "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80",
-                  !isSmallScreen && "whitespace-nowrap",
+                  !shouldUseMobileLayout && "whitespace-nowrap",
                   isRescheduling && "opacity-50 cursor-not-allowed"
                 )}
                 data-tour="re-schedule"
@@ -1419,10 +1419,10 @@ export function DashboardView({
                     isRescheduling && "animate-spin"
                   )}
                   style={{
-                    marginRight: isSmallScreen ? 0 : HEADER_ICON_MARGIN_DESKTOP,
+                    marginRight: shouldUseMobileLayout ? 0 : HEADER_ICON_MARGIN_DESKTOP,
                   }}
                 />
-                {!isSmallScreen && (
+                {!shouldUseMobileLayout && (
                   <span className="text-foreground dark:text-gray-100">Re-schedule</span>
                 )}
               </div>
