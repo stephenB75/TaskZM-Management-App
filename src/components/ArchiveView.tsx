@@ -467,12 +467,11 @@ export function ArchiveView() {
                                   height: ARCHIVE_CHECKMARK_CONTAINER_SIZE 
                                 }}
                               >
-                                <Check 
+                                <Icon 
+                                  name="check-circle"
+                                  size={ARCHIVE_CHECKMARK_ICON_SIZE}
+                                  weight="fill"
                                   className="text-green-600 dark:text-green-400" 
-                                  style={{ 
-                                    width: ARCHIVE_CHECKMARK_ICON_SIZE, 
-                                    height: ARCHIVE_CHECKMARK_ICON_SIZE 
-                                  }}
                                 />
                               </div>
 
@@ -656,12 +655,11 @@ export function ArchiveView() {
                                 height: ARCHIVE_CHECKMARK_CONTAINER_SIZE 
                               }}
                             >
-                              <Check 
+                              <Icon 
+                                name="check-circle"
+                                size={ARCHIVE_CHECKMARK_ICON_SIZE}
+                                weight="fill"
                                 className="text-green-600 dark:text-green-400" 
-                                style={{ 
-                                  width: ARCHIVE_CHECKMARK_ICON_SIZE, 
-                                  height: ARCHIVE_CHECKMARK_ICON_SIZE 
-                                }}
                               />
                             </div>
 
