@@ -25,7 +25,6 @@ import { TermsOfServiceDialog } from './TermsOfServiceDialog';
 import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
 import { AvatarSelection, type AvatarGender } from './AvatarSelection';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import {
   AlertDialog,
@@ -37,6 +36,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 import { useMobileLayout } from '../hooks/useMobileLayout';
 import { toast } from 'sonner';
 import { Icon } from './Icon';
