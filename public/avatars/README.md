@@ -2,33 +2,34 @@
 
 This directory should contain the cropped avatar illustrations.
 
-## Required Files
+## Avatar Files
 
-Place the following SVG files in this directory:
+The following PNG avatar files are available in this directory (processed from user profile images):
 
-### Male Avatars (6 files):
-- `male-1.svg`
-- `male-2.svg`
-- `male-3.svg`
-- `male-4.svg`
-- `male-5.svg`
-- `male-6.svg`
+### Male Avatars (10 files):
+- `male-1.png` through `male-10.png`
+- App uses: `male-1.png` through `male-6.png`
 
-### Female Avatars (6 files):
-- `female-1.svg`
-- `female-2.svg`
-- `female-3.svg`
-- `female-4.svg`
-- `female-5.svg`
-- `female-6.svg`
+### Female Avatars (14 files):
+- `female-1.png` through `female-14.png`
+- App uses: `female-1.png` through `female-6.png`
 
-## Image Requirements
+## Processing
 
-- Format: SVG (preferred) or PNG
-- Size: Square format recommended (e.g., 200x200px or 300x300px)
-- Style: Black and white illustrations matching the reference images
-- Background: Transparent or light gray (#e5e7eb)
-- Content: Head and shoulders view, circular crop ready
+All avatars were processed from source images in `src/assets/user_profiles/` using `scripts/process-user-profiles.py`:
+- ✅ White background removed (transparent)
+- ✅ Converted to black & white
+- ✅ Enhanced and cleaned
+- ✅ Cropped to square (300x300px)
+- ✅ Saved as PNG format with RGBA transparency
+
+## Image Specifications
+
+- Format: PNG with RGBA transparency
+- Size: 300x300px (square)
+- Style: Black and white illustrations
+- Background: Transparent
+- Content: Head and shoulders view, centered
 
 ## Instructions
 

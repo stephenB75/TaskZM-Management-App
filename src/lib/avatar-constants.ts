@@ -6,23 +6,24 @@
 
 // Avatar paths - organized by gender
 // Note: These paths assume avatars are in public/avatars/ directory
-// When you add the cropped images, name them: male-1.svg through male-6.svg and female-1.svg through female-6.svg
+// Avatar files are PNG format, processed from user profile images
+// All avatars have white background removed, converted to black & white, and cleaned
 export const AVATAR_PATHS = {
   male: [
-    '/avatars/male-1.svg',
-    '/avatars/male-2.svg',
-    '/avatars/male-3.svg',
-    '/avatars/male-4.svg',
-    '/avatars/male-5.svg',
-    '/avatars/male-6.svg',
+    '/avatars/male-1.png',
+    '/avatars/male-2.png',
+    '/avatars/male-3.png',
+    '/avatars/male-4.png',
+    '/avatars/male-5.png',
+    '/avatars/male-6.png',
   ],
   female: [
-    '/avatars/female-1.svg',
-    '/avatars/female-2.svg',
-    '/avatars/female-3.svg',
-    '/avatars/female-4.svg',
-    '/avatars/female-5.svg',
-    '/avatars/female-6.svg',
+    '/avatars/female-1.png',
+    '/avatars/female-2.png',
+    '/avatars/female-3.png',
+    '/avatars/female-4.png',
+    '/avatars/female-5.png',
+    '/avatars/female-6.png',
   ],
 } as const;
 
