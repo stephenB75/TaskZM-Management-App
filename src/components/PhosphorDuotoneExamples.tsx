@@ -17,6 +17,8 @@ import {
   COLOR_GRADIENT_MID,
   COLOR_GRADIENT_END,
 } from '../lib/color-theme';
+import { ICON_SIZE_MD, ICON_SIZE_XL, ICON_SIZE_2XL, ICON_SIZE_3XL, ICON_SIZE_4XL } from '../lib/layout-constants';
+import { UI_GRADIENT_COLORS } from '../lib/ui-colors';
 
 export function PhosphorDuotoneExamples() {
   return (
