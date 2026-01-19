@@ -103,6 +103,14 @@ import {
   TEAM_PANEL_PROFILE_AVATAR_SIZE,
   TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE,
   TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
+  TEAM_PANEL_COMPACT_BANNER_HEIGHT,
+  TEAM_PANEL_COMPACT_AVATAR_SIZE,
+  TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE,
+  TEAM_PANEL_COMPACT_AVATAR_OVERLAP_OFFSET,
+  TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
+  TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE,
+  TEAM_PANEL_OTHER_MEMBERS_GAP,
+  TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
   PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR,
   PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT,
@@ -506,6 +514,7 @@ export function TeamPanel() {
     member, 
     stats, 
     isCurrentUser,
+    allTeamMembers,
     onCardClick,
     onResendInvitation,
     onDeclineInvitation,
@@ -520,6 +529,7 @@ export function TeamPanel() {
     member: User;
     stats: ReturnType<typeof getTaskStats>;
     isCurrentUser: boolean;
+    allTeamMembers: User[];
     onCardClick: (member: User) => void;
     onResendInvitation: (member: User) => void;
     onDeclineInvitation: (member: User) => void;
@@ -532,10 +542,15 @@ export function TeamPanel() {
     acceptInvitation: (id: string) => void;
   }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    
+    // Get other team members (excluding current member)
+    const otherMembers = allTeamMembers.filter(m => m.id !== member.id);
+    const visibleOtherMembers = otherMembers.slice(0, TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE);
+    const remainingCount = Math.max(0, otherMembers.length - TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE);
 
     return (
       <div 
-        className="relative w-full bg-white dark:bg-card rounded-xl shadow-sm border border-border/40 overflow-hidden"
+        className="relative w-full bg-white dark:bg-card rounded-lg shadow-sm border border-border/40 overflow-hidden"
         onClick={(e) => {
           // Don't trigger card click if clicking on dropdown area or if dropdown is open
           const target = e.target as HTMLElement;
@@ -565,11 +580,11 @@ export function TeamPanel() {
             </div>
           )}
         
-        {/* Blue Header Banner */}
-        <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: TEAM_PANEL_PROFILE_BANNER_HEIGHT }}>
+        {/* Compact Blue Header Banner */}
+        <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: TEAM_PANEL_COMPACT_BANNER_HEIGHT }}>
           {/* Action Button in Header (top right) */}
           <div 
-            className="absolute top-3 right-3"
+            className="absolute top-2 right-2"
             style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -585,15 +600,15 @@ export function TeamPanel() {
                   size="icon"
                   className="flex-shrink-0 hover:bg-white/20 text-white"
                   style={{ 
-                    height: TEAM_PANEL_BUTTON_SIZE, 
-                    width: TEAM_PANEL_BUTTON_SIZE 
+                    height: TEAM_PANEL_BUTTON_SIZE_SMALL, 
+                    width: TEAM_PANEL_BUTTON_SIZE_SMALL 
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
                   data-slot={PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT}
                 >
-                  <Icon name="more-vertical" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                  <Icon name="more-vertical" size={TEAM_PANEL_ICON_SIZE_SMALL} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
@@ -708,136 +723,176 @@ export function TeamPanel() {
           </div>
         </div>
 
-        {/* Profile Picture - Overlapping Banner */}
-        <div className="relative px-4" style={{ marginTop: TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET }}>
-          <div className="relative flex-shrink-0 inline-block">
-            <div 
-              className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg"
-              style={{ 
-                width: TEAM_PANEL_PROFILE_AVATAR_SIZE,
-                height: TEAM_PANEL_PROFILE_AVATAR_SIZE,
-                fontSize: TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE
-              }}
-            >
-              {getInitials(member.name)}
-            </div>
-            {member.hasUnreadNotification &&
-              member.inviteStatus === "accepted" && (
-                <div 
-                  className="absolute bg-primary rounded-full border-2 border-white dark:border-card" 
-                  style={{ 
-                    width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                    height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                    bottom: '2px',
-                    right: '2px'
-                  }} 
-                />
-              )}
-          </div>
-        </div>
-
-        {/* Content Section */}
-        <div className="px-4 pb-4 pt-2">
-          {/* Name with Verification Badge */}
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-bold text-lg text-foreground">
-              {member.name}
-              {isCurrentUser && (
-                <span className="font-normal text-muted-foreground text-sm ml-1">
-                  (You)
-                </span>
-              )}
-            </h3>
-            {member.role === 'admin' && (
-              <Icon 
-                name="shield-check" 
-                size={18} 
-                className="text-primary flex-shrink-0" 
-                weight="duotone"
-              />
-            )}
-          </div>
-          
-          {/* Username/Email */}
-          <div className="flex items-center text-muted-foreground text-sm mb-3">
-            <span className="truncate">@{member.email.split('@')[0]}</span>
-          </div>
-
-          {/* Role Badge and Invite Status */}
-          <div className="flex items-center flex-wrap gap-2 mb-3">
-            <Badge
-              variant={getRoleBadgeVariant(member.role)}
-              style={{ 
-                fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
-              }}
-            >
-              {getRoleIcon(member.role)}
-              <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
-                {member.role}
-              </span>
-            </Badge>
-            {getInviteStatusBadge(member)}
-          </div>
-
-          {/* Expiration Date */}
-          {member.inviteStatus === "pending" && member.expiresAt && (
-            <div className="flex items-center gap-2 text-sm mb-3">
-              <Icon 
-                name="calendar" 
-                size={TEAM_PANEL_ICON_SIZE_SMALL}
-                weight="duotone"
-                className="flex-shrink-0"
+        {/* Compact Content Section - Horizontal Layout */}
+        <div className="px-3 pb-3 pt-2" style={{ marginTop: TEAM_PANEL_COMPACT_AVATAR_OVERLAP_OFFSET }}>
+          <div className="flex items-start gap-3">
+            {/* Compact Avatar */}
+            <div className="relative flex-shrink-0">
+              <div 
+                className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-2 border-white dark:border-card shadow-md"
                 style={{ 
-                  color: formatExpirationDate(member.expiresAt)?.isExpired 
-                    ? COLOR_STATUS_EXPIRED_RED 
-                    : COLOR_STATUS_PENDING_AMBER
-                }} 
-              />
-              <span 
-                className="font-medium"
-                style={{
-                  color: formatExpirationDate(member.expiresAt)?.isExpired 
-                    ? COLOR_STATUS_EXPIRED_RED 
-                    : COLOR_STATUS_PENDING_AMBER
+                  width: TEAM_PANEL_COMPACT_AVATAR_SIZE,
+                  height: TEAM_PANEL_COMPACT_AVATAR_SIZE,
+                  fontSize: TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE
                 }}
               >
-                {formatExpirationDate(member.expiresAt)?.text}
-              </span>
+                {getInitials(member.name)}
+              </div>
+              {member.hasUnreadNotification &&
+                member.inviteStatus === "accepted" && (
+                  <div 
+                    className="absolute bg-primary rounded-full border-2 border-white dark:border-card" 
+                    style={{ 
+                      width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                      height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                      bottom: TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
+                      right: TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET
+                    }} 
+                  />
+                )}
             </div>
-          )}
 
-          {/* Task Stats - Following/Followers Style */}
-          {stats.total > 0 && (
-            <div className="flex items-center gap-4 text-sm text-foreground border-t pt-3 mt-3">
-              <div className="flex items-center gap-1">
-                <span className="font-bold">{stats.todo}</span>
-                <span className="text-muted-foreground">Todo</span>
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
+              {/* Name, Role, and Other Members */}
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <h3 className="font-semibold text-base text-foreground truncate">
+                    {member.name}
+                    {isCurrentUser && (
+                      <span className="font-normal text-muted-foreground text-xs ml-1">
+                        (You)
+                      </span>
+                    )}
+                  </h3>
+                  {member.role === 'admin' && (
+                    <Icon 
+                      name="shield-check" 
+                      size={TEAM_PANEL_ICON_SIZE_SMALL} 
+                      className="text-primary flex-shrink-0" 
+                      weight="duotone"
+                    />
+                  )}
+                </div>
+                
+                {/* Other Team Members Visual Element */}
+                {otherMembers.length > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center flex-shrink-0" style={{ marginLeft: PANEL_GAP_SMALL }}>
+                          <div className="flex items-center" style={{ marginRight: TEAM_PANEL_OTHER_MEMBERS_GAP }}>
+                            {visibleOtherMembers.map((otherMember, index) => (
+                              <div
+                                key={otherMember.id}
+                                className="rounded-full bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary/30 dark:to-primary/15 flex items-center justify-center text-primary font-semibold border-2 border-white dark:border-card shadow-sm"
+                                style={{
+                                  width: TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
+                                  height: TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
+                                  fontSize: TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE,
+                                  marginLeft: index > 0 ? TEAM_PANEL_OTHER_MEMBERS_GAP : '0',
+                                  zIndex: visibleOtherMembers.length - index
+                                }}
+                              >
+                                {getInitials(otherMember.name)}
+                              </div>
+                            ))}
+                            {remainingCount > 0 && (
+                              <div
+                                className="rounded-full bg-muted flex items-center justify-center text-muted-foreground font-semibold border-2 border-white dark:border-card shadow-sm"
+                                style={{
+                                  width: TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
+                                  height: TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
+                                  fontSize: TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE,
+                                  marginLeft: TEAM_PANEL_OTHER_MEMBERS_GAP,
+                                  zIndex: 0
+                                }}
+                              >
+                                +{remainingCount}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="flex flex-col gap-1">
+                          <p className="font-semibold">Team Members</p>
+                          {otherMembers.map(m => (
+                            <p key={m.id} className="text-xs">{m.name}</p>
+                          ))}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
-              <div className="flex items-center gap-1">
-                <span className="font-bold">{stats.inProgress}</span>
-                <span className="text-muted-foreground">Active</span>
+
+              {/* Username and Role Badge */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-muted-foreground text-xs truncate">@{member.email.split('@')[0]}</span>
+                <Badge
+                  variant={getRoleBadgeVariant(member.role)}
+                  style={{ 
+                    fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
+                    paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
+                    paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
+                    paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
+                    paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
+                  }}
+                >
+                  {getRoleIcon(member.role)}
+                  <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
+                    {member.role}
+                  </span>
+                </Badge>
+                {getInviteStatusBadge(member)}
               </div>
-              <div className="flex items-center gap-1">
-                <span className="font-bold">{stats.completed}</span>
-                <span className="text-muted-foreground">Done</span>
-              </div>
+
+              {/* Expiration Date */}
+              {member.inviteStatus === "pending" && member.expiresAt && (
+                <div className="flex items-center gap-1.5 text-xs mb-2">
+                  <Icon 
+                    name="calendar" 
+                    size={TEAM_PANEL_ICON_SIZE_SMALL}
+                    weight="duotone"
+                    className="flex-shrink-0"
+                    style={{ 
+                      color: formatExpirationDate(member.expiresAt)?.isExpired 
+                        ? COLOR_STATUS_EXPIRED_RED 
+                        : COLOR_STATUS_PENDING_AMBER
+                    }} 
+                  />
+                  <span 
+                    className="font-medium"
+                    style={{
+                      color: formatExpirationDate(member.expiresAt)?.isExpired 
+                        ? COLOR_STATUS_EXPIRED_RED 
+                        : COLOR_STATUS_PENDING_AMBER
+                    }}
+                  >
+                    {formatExpirationDate(member.expiresAt)?.text}
+                  </span>
+                </div>
+              )}
+
+              {/* Task Stats - Compact Horizontal */}
+              {stats.total > 0 && (
+                <div className="flex items-center gap-3 text-xs text-foreground pt-2 border-t">
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold">{stats.todo}</span>
+                    <span className="text-muted-foreground">Todo</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold">{stats.inProgress}</span>
+                    <span className="text-muted-foreground">Active</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold">{stats.completed}</span>
+                    <span className="text-muted-foreground">Done</span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-
-          {/* Email Link */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
-            <Icon name="mail" size={14} className="flex-shrink-0" />
-            <a 
-              href={`mailto:${member.email}`}
-              className="truncate hover:text-primary transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {member.email}
-            </a>
           </div>
         </div>
       </div>
@@ -1151,6 +1206,7 @@ export function TeamPanel() {
                     member={member}
                     stats={stats}
                     isCurrentUser={isCurrentUser}
+                    allTeamMembers={teamMembers}
                     onCardClick={handleCardClick}
                     onResendInvitation={handleResendInvitation}
                     onDeclineInvitation={handleDeclineInvitation}

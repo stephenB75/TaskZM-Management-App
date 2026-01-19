@@ -368,6 +368,16 @@ export const TEAM_PANEL_PROFILE_AVATAR_SIZE = '80px'; // Size of profile avatar 
 export const TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE = '24px'; // Font size for profile avatar initials
 export const TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET = '-2.5rem'; // Negative margin to overlap avatar with banner (-mt-10)
 
+// Compact Team Card Constants (for showing multiple team members)
+export const TEAM_PANEL_COMPACT_BANNER_HEIGHT = '48px'; // Height of compact card banner
+export const TEAM_PANEL_COMPACT_AVATAR_SIZE = '48px'; // Size of compact card avatar
+export const TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE = '16px'; // Font size for compact avatar initials
+export const TEAM_PANEL_COMPACT_AVATAR_OVERLAP_OFFSET = '-1.5rem'; // Negative margin to overlap avatar with banner
+export const TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE = '24px'; // Size of other team members' avatars
+export const TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE = '10px'; // Font size for other members' avatar initials
+export const TEAM_PANEL_OTHER_MEMBERS_GAP = '-0.5rem'; // Negative gap for overlapping avatars
+export const TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE = 3; // Maximum number of other members to show as avatars
+
 // Folder Panel specific constants
 export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
 export const FOLDER_PANEL_SEARCH_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem
