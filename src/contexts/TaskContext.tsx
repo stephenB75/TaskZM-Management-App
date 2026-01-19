@@ -1902,13 +1902,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     
     // Preserve recurrence property when updating task - don't let updates overwrite it unless explicitly changed
     // This ensures recurring tasks maintain their recurrence pattern when marked complete
-    const updatedTask = { 
-      ...currentTask, 
-      ...updates, 
-      updatedAt: new Date().toISOString(),
-      // Explicitly preserve recurrence if it's not being changed
-      recurrence: updates.recurrence !== undefined ? updates.recurrence : currentTask.recurrence
-    };
     
     // Check if task is being marked as complete (status changing to 'done')
     const isBeingMarkedComplete = (updates.status === 'done' && currentTask.status !== 'done') ||
@@ -1916,23 +1909,36 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const isBeingUnmarkedComplete = (updates.status !== 'done' && currentTask.status === 'done') ||
                                     (updates.status === undefined && updates.completedAt === null && currentTask.status === 'done');
     
+    // Build the updated task object immutably - avoid direct mutations to prevent readonly property errors
+    const baseUpdates: Partial<Task> = {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+      // Explicitly preserve recurrence if it's not being changed
+      recurrence: updates.recurrence !== undefined ? updates.recurrence : currentTask.recurrence,
+    };
+    
     // Automatically handle completedAt when status changes (unless explicitly provided)
-    if (updates.status !== undefined && updates.completedAt === undefined) {
-      if (isBeingMarkedComplete) {
-        // Task is being marked as complete - set completedAt if not already provided
-        updatedTask.completedAt = new Date().toISOString();
-      } else if (isBeingUnmarkedComplete) {
-        // Task is being unmarked from complete
-        updatedTask.completedAt = null;
-      }
-    } else if (updates.completedAt !== undefined && updates.status === undefined) {
-      // completedAt was explicitly set, update status accordingly
-      if (updates.completedAt !== null && currentTask.status !== 'done') {
-        updatedTask.status = 'done';
-      } else if (updates.completedAt === null && currentTask.status === 'done') {
-        updatedTask.status = 'todo';
-      }
-    }
+    const statusUpdates: Partial<Task> = 
+      updates.status !== undefined && updates.completedAt === undefined
+        ? isBeingMarkedComplete
+          ? { completedAt: new Date().toISOString() }
+          : isBeingUnmarkedComplete
+          ? { completedAt: null }
+          : {}
+        : updates.completedAt !== undefined && updates.status === undefined
+        ? updates.completedAt !== null && currentTask.status !== 'done'
+          ? { status: 'done' as const }
+          : updates.completedAt === null && currentTask.status === 'done'
+          ? { status: 'todo' as const }
+          : {}
+        : {};
+    
+    // Create the final updated task object immutably
+    const updatedTask: Task = { 
+      ...currentTask, 
+      ...baseUpdates,
+      ...statusUpdates
+    };
     
     // Handle recurring task completion: create completed occurrence and advance to next occurrence
     const isRecurringTask = currentTask.recurrence && currentTask.recurrence.type !== 'none';
