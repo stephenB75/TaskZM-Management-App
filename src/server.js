@@ -81,6 +81,9 @@ function serveStaticFile(path, res) {
     // Cache headers for static assets
     if (path.startsWith('/assets/') || STATIC_PATHS.includes(path)) {
       headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+    } else if (path.startsWith('/avatars/')) {
+      // Avatar files: cache for 1 week, but allow revalidation
+      headers['Cache-Control'] = 'public, max-age=604800, must-revalidate';
     } else {
       headers['Cache-Control'] = 'public, max-age=0, must-revalidate';
     }
@@ -141,6 +144,17 @@ const server = createServer((req, res) => {
     // If asset file not found, return 404
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('404 - Asset Not Found');
+    return;
+  }
+
+  // Serve avatar files from /avatars directory
+  if (pathname.startsWith('/avatars/')) {
+    if (serveStaticFile(pathname, res)) {
+      return;
+    }
+    // If avatar file not found, return 404
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('404 - Avatar Not Found');
     return;
   }
 

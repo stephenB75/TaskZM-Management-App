@@ -1,7 +1,7 @@
 // TaskZM Service Worker - Offline Support & Caching
 // IMPORTANT: This service worker is configured to NOT cause automatic page refreshes
 // Updates will only apply on manual page refresh or navigation
-const CACHE_NAME = 'taskzm-v2.7.4'; // Increment version to force update on next deploy
+const CACHE_NAME = 'taskzm-v1.0.14'; // Increment version to force update on next deploy
 const RUNTIME_CACHE = 'taskzm-runtime';
 
 // Core files to cache immediately
