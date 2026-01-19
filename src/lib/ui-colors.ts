@@ -307,6 +307,7 @@ export const UI_SETTINGS_BADGE_COLORS = {
       from: '#D4C5F9',
       to: '#C9E4F7',
       className: 'bg-gradient-to-br from-[#D4C5F9]/10 to-[#C9E4F7]/10',
+      darkClassName: 'dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5',
     },
     border: {
       className: 'border-[#D4C5F9]/20',

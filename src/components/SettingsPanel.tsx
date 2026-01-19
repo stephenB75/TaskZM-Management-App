@@ -1285,7 +1285,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <p className="text-sm text-muted-foreground">
                   Sync your tasks with Google, Outlook, and Apple Calendar with TaskZM Pro
                 </p>
-                <div className={`border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5`} style={{ padding: SETTINGS_PANEL_PADDING_LARGE }}>
+                <div className={`border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.background.darkClassName}`} style={{ padding: SETTINGS_PANEL_PADDING_LARGE }}>
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
                     <Icon name="lock" size={ICON_SIZE_MD} className={`${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass}`} />
                     <span className="text-sm">Pro Feature</span>
