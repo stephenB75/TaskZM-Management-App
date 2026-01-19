@@ -13,6 +13,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
+import { Checkbox } from "./ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -59,6 +60,7 @@ export function NotificationsPanel() {
   const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(
     () => new Set(JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.dismissedNotifications) || '[]'))
   );
+  const [selectedNotificationIds, setSelectedNotificationIds] = useState<Set<string>>(new Set());
 
   // Save read notifications to localStorage
   useEffect(() => {
@@ -362,11 +364,44 @@ export function NotificationsPanel() {
     }
     // Remove from list immediately
     setNotifications(prev => prev.filter(n => n.id !== id));
+    // Remove from selection if it was selected
+    setSelectedNotificationIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
     // Trigger badge update after notification is cleared
     // Use setTimeout to ensure state updates are complete
     setTimeout(() => {
       updateBadge();
     }, 100);
+  };
+
+  const clearSelectedNotifications = () => {
+    selectedNotificationIds.forEach(id => {
+      clearNotification(id);
+    });
+    setSelectedNotificationIds(new Set());
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedNotificationIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedNotificationIds.size === filteredNotifications.length) {
+      setSelectedNotificationIds(new Set());
+    } else {
+      setSelectedNotificationIds(new Set(filteredNotifications.map(n => n.id)));
+    }
   };
 
   const getNotificationIcon = (type: NotificationItem['type']) => {
@@ -419,17 +454,49 @@ export function NotificationsPanel() {
         description={NOTIFICATION_MESSAGES.unreadCount(unreadCount)}
         hideDesktopLogo
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={markAllAsRead}
-            className="flex"
-            disabled={unreadCount === 0}
-          >
-            <Icon name="check-circle" size={ICON_SIZE_XS} className="mr-2" />
-            <span className="hidden sm:inline">{NOTIFICATION_PANEL_TEXT.markAllRead}</span>
-            <span className="sm:hidden">{NOTIFICATION_PANEL_TEXT.markRead}</span>
-          </Button>
+          selectedNotificationIds.size > 0 ? (
+            <div className="flex items-center gap-1.5">
+              <Button
+                onClick={handleSelectAll}
+                variant="outline"
+                className="rounded-full px-2.5 sm:px-3"
+                size="sm"
+              >
+                <span className="hidden sm:inline">
+                  {selectedNotificationIds.size === filteredNotifications.length ? "Deselect All" : "Select All"}
+                </span>
+                <span className="sm:hidden">
+                  {selectedNotificationIds.size === filteredNotifications.length ? "Deselect" : "Select All"}
+                </span>
+              </Button>
+              <Button
+                onClick={clearSelectedNotifications}
+                variant="destructive"
+                className="rounded-full px-2.5 sm:px-3"
+                size="sm"
+              >
+                <Icon name="trash-2" size={ICON_SIZE_MD} className="sm:mr-2" />
+                <span className="hidden sm:inline">
+                  Clear ({selectedNotificationIds.size})
+                </span>
+                <span className="sm:hidden">
+                  {selectedNotificationIds.size}
+                </span>
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markAllAsRead}
+              className="flex"
+              disabled={unreadCount === 0}
+            >
+              <Icon name="check-circle" size={ICON_SIZE_XS} className="mr-2" />
+              <span className="hidden sm:inline">{NOTIFICATION_PANEL_TEXT.markAllRead}</span>
+              <span className="sm:hidden">{NOTIFICATION_PANEL_TEXT.markRead}</span>
+            </Button>
+          )
         }
       />
       {/* Spacer for fixed header on mobile */}
@@ -487,18 +554,29 @@ export function NotificationsPanel() {
                   >
                     <Card
                       className={cn(
-                        "p-4 border-l-4 transition-all cursor-pointer hover:shadow-md",
+                        "p-4 border-l-4 transition-all hover:shadow-md",
                         !notification.read && "bg-primary/5 border-l-4",
                         notification.read && "opacity-60",
                         getPriorityColor(notification.priority)
                       )}
-                      onClick={() => markAsRead(notification.id)}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
+                        <Checkbox
+                          checked={selectedNotificationIds.has(notification.id)}
+                          onCheckedChange={() => handleToggleSelect(notification.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-0.5"
+                        />
+                        <div 
+                          className="mt-0.5 flex-shrink-0 cursor-pointer"
+                          onClick={() => markAsRead(notification.id)}
+                        >
                           {getNotificationIcon(notification.type)}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => markAsRead(notification.id)}
+                        >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <h3 className="text-sm font-semibold mb-1">
@@ -568,18 +646,29 @@ export function NotificationsPanel() {
                     >
                       <Card
                         className={cn(
-                          "p-4 border-l-4 transition-all cursor-pointer hover:shadow-md",
+                          "p-4 border-l-4 transition-all hover:shadow-md",
                           !notification.read && "bg-primary/5 border-l-4",
                           notification.read && "opacity-60",
                           getPriorityColor(notification.priority)
                         )}
-                        onClick={() => markAsRead(notification.id)}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="mt-0.5 flex-shrink-0">
+                          <Checkbox
+                            checked={selectedNotificationIds.has(notification.id)}
+                            onCheckedChange={() => handleToggleSelect(notification.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-0.5"
+                          />
+                          <div 
+                            className="mt-0.5 flex-shrink-0 cursor-pointer"
+                            onClick={() => markAsRead(notification.id)}
+                          >
                             {getNotificationIcon(notification.type)}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div 
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => markAsRead(notification.id)}
+                          >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-sm font-semibold mb-1">
