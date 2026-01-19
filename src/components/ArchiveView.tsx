@@ -10,17 +10,10 @@ import {
   NAV_BAR_BOTTOM_PADDING_MOBILE, 
   MOBILE_PADDING_BOTTOM,
   ARCHIVE_CHECKBOX_SIZE,
-  ARCHIVE_CHECKMARK_CONTAINER_SIZE,
-  ARCHIVE_CHECKMARK_ICON_SIZE,
   ARCHIVE_TITLE_TEXT_SIZE,
-  ARCHIVE_ASSIGNEE_TEXT_SIZE,
-  ARCHIVE_ASSIGNEE_AVATAR_SIZE,
-  ARCHIVE_ASSIGNEE_INITIALS_SIZE,
 } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
 import {
   Select,
   SelectContent,
@@ -29,7 +22,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
-import { cn, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getInitials } from "../lib/utils";
+import { cn, prepareTaskForDialog } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
 import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
@@ -237,20 +230,6 @@ export function ArchiveView() {
     });
   }, [sortedTasks]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return "border-red-400"; // Red
-      case "high":
-        return "border-orange-400"; // Orange
-      case "medium":
-        return "border-blue-400"; // Blue
-      case "low":
-        return "border-gray-400"; // Grey
-      default:
-        return "border-gray-300";
-    }
-  };
 
   const formatCompletedDate = (dateString: string | null) => {
     if (!dateString) return "Completed";
