@@ -163,6 +163,11 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'monitor': 'Monitor',
   'sidebar-simple': 'SidebarSimple',
   'panel-left': 'SidebarSimple',
+  // Social media icons
+  'twitter': 'TwitterLogo',
+  'facebook': 'FacebookLogo',
+  'instagram': 'InstagramLogo',
+  'linkedin': 'LinkedinLogo',
 };
 
 // Icons that should use duotone by default for better visual appeal

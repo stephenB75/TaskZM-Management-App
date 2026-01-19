@@ -378,6 +378,14 @@ export const TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE = '10px'; // Font size fo
 export const TEAM_PANEL_OTHER_MEMBERS_GAP = '-0.5rem'; // Negative gap for overlapping avatars
 export const TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE = 3; // Maximum number of other members to show as avatars
 
+// Vertical Profile Layout Constants
+export const TEAM_PANEL_VERTICAL_AVATAR_SIZE = '120px'; // Size of vertical profile avatar
+export const TEAM_PANEL_VERTICAL_NAME_SIZE = '1.125rem'; // text-lg = 1.125rem (18px)
+export const TEAM_PANEL_VERTICAL_ROLE_SIZE = '0.875rem'; // text-sm = 0.875rem (14px)
+export const TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE = '1.25rem'; // Size of social media icons
+export const TEAM_PANEL_VERTICAL_SPACING = '0.75rem'; // gap-3 = 0.75rem (12px) between elements
+export const TEAM_PANEL_VERTICAL_PADDING = '1.5rem'; // p-6 = 1.5rem (24px) card padding
+
 // Folder Panel specific constants
 export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
 export const FOLDER_PANEL_SEARCH_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem

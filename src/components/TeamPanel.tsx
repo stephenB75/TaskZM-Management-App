@@ -111,6 +111,12 @@ import {
   TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE,
   TEAM_PANEL_OTHER_MEMBERS_GAP,
   TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE,
+  TEAM_PANEL_VERTICAL_AVATAR_SIZE,
+  TEAM_PANEL_VERTICAL_NAME_SIZE,
+  TEAM_PANEL_VERTICAL_ROLE_SIZE,
+  TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE,
+  TEAM_PANEL_VERTICAL_SPACING,
+  TEAM_PANEL_VERTICAL_PADDING,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
   PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR,
   PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT,
@@ -224,7 +230,7 @@ export function TeamPanel() {
         name: newMemberName.trim(),
         email: newMemberEmail.trim(),
         role: newMemberRole,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${newMemberName}`,
+          avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=ffffff`,
       }, currentWorkspaceId);
 
       // Reset form only on success
@@ -548,13 +554,16 @@ export function TeamPanel() {
     const visibleOtherMembers = otherMembers.slice(0, TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE);
     const remainingCount = Math.max(0, otherMembers.length - TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE);
 
+    // Get role display text
+    const roleDisplayText = member.role === 'admin' ? 'Admin' : member.role === 'member' ? 'Member' : 'Viewer';
+    
     return (
       <div 
         className="relative w-full bg-white dark:bg-card rounded-lg shadow-sm border border-border/40 overflow-hidden"
         onClick={(e) => {
           // Don't trigger card click if clicking on dropdown area or if dropdown is open
           const target = e.target as HTMLElement;
-          if (!dropdownOpen && !target.closest(PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR)) {
+          if (!dropdownOpen && !target.closest(PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR) && !target.closest('a')) {
             onCardClick(member);
           }
         }}
@@ -580,14 +589,12 @@ export function TeamPanel() {
             </div>
           )}
         
-        {/* Compact Blue Header Banner */}
-        <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: TEAM_PANEL_COMPACT_BANNER_HEIGHT }}>
-          {/* Action Button in Header (top right) */}
-          <div 
-            className="absolute top-2 right-2"
-            style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        {/* Action Button (top right) */}
+        <div 
+          className="absolute top-2 right-2"
+          style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
+          onClick={(e) => e.stopPropagation()}
+        >
             <DropdownMenu
               open={dropdownOpen}
               onOpenChange={setDropdownOpen}
@@ -598,7 +605,7 @@ export function TeamPanel() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="flex-shrink-0 hover:bg-white/20 text-white"
+                  className="flex-shrink-0 hover:bg-muted"
                   style={{ 
                     height: TEAM_PANEL_BUTTON_SIZE_SMALL, 
                     width: TEAM_PANEL_BUTTON_SIZE_SMALL 
@@ -721,178 +728,150 @@ export function TeamPanel() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
 
-        {/* Compact Content Section - Horizontal Layout */}
-        <div className="px-3 pb-3 pt-2" style={{ marginTop: TEAM_PANEL_COMPACT_AVATAR_OVERLAP_OFFSET }}>
-          <div className="flex items-start gap-3">
-            {/* Compact Avatar */}
-            <div className="relative flex-shrink-0">
+        {/* Vertical Profile Layout */}
+        <div 
+          className="flex flex-col items-center"
+          style={{ 
+            padding: TEAM_PANEL_VERTICAL_PADDING,
+            paddingTop: `calc(${TEAM_PANEL_VERTICAL_PADDING} + ${TEAM_PANEL_VERTICAL_SPACING})`
+          }}
+        >
+          {/* Circular Profile Illustration */}
+          <div className="relative flex-shrink-0 mb-3" style={{ marginBottom: TEAM_PANEL_VERTICAL_SPACING }}>
+            {member.avatar ? (
+              <img
+                src={member.avatar}
+                alt={member.name}
+                className="rounded-full object-cover border-2 border-border/40"
+                style={{
+                  width: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
+                  height: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
+                }}
+                onError={(e) => {
+                  // Fallback to initials if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-2 border-border/40';
+                    fallback.style.width = TEAM_PANEL_VERTICAL_AVATAR_SIZE;
+                    fallback.style.height = TEAM_PANEL_VERTICAL_AVATAR_SIZE;
+                    fallback.style.fontSize = TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE;
+                    fallback.textContent = getInitials(member.name);
+                    parent.appendChild(fallback);
+                  }
+                }}
+              />
+            ) : (
               <div 
-                className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-2 border-white dark:border-card shadow-md"
+                className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-2 border-border/40"
                 style={{ 
-                  width: TEAM_PANEL_COMPACT_AVATAR_SIZE,
-                  height: TEAM_PANEL_COMPACT_AVATAR_SIZE,
+                  width: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
+                  height: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
                   fontSize: TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE
                 }}
               >
                 {getInitials(member.name)}
               </div>
-              {member.hasUnreadNotification &&
-                member.inviteStatus === "accepted" && (
-                  <div 
-                    className="absolute bg-primary rounded-full border-2 border-white dark:border-card" 
-                    style={{ 
-                      width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                      height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                      bottom: TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
-                      right: TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET
-                    }} 
-                  />
-                )}
-            </div>
-
-            {/* Main Content */}
-            <div className="flex-1 min-w-0">
-              {/* Name, Role, and Other Members */}
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  <h3 className="font-semibold text-base text-foreground truncate">
-                    {member.name}
-                    {isCurrentUser && (
-                      <span className="font-normal text-muted-foreground text-xs ml-1">
-                        (You)
-                      </span>
-                    )}
-                  </h3>
-                  {member.role === 'admin' && (
-                    <Icon 
-                      name="shield-check" 
-                      size={TEAM_PANEL_ICON_SIZE_SMALL} 
-                      className="text-primary flex-shrink-0" 
-                      weight="duotone"
-                    />
-                  )}
-                </div>
-                
-                {/* Other Team Members Visual Element */}
-                {otherMembers.length > 0 && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center flex-shrink-0" style={{ marginLeft: PANEL_GAP_SMALL }}>
-                          <div className="flex items-center" style={{ marginRight: TEAM_PANEL_OTHER_MEMBERS_GAP }}>
-                            {visibleOtherMembers.map((otherMember, index) => (
-                              <div
-                                key={otherMember.id}
-                                className="rounded-full bg-gradient-to-br from-primary/20 to-primary/10 dark:from-primary/30 dark:to-primary/15 flex items-center justify-center text-primary font-semibold border-2 border-white dark:border-card shadow-sm"
-                                style={{
-                                  width: TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
-                                  height: TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
-                                  fontSize: TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE,
-                                  marginLeft: index > 0 ? TEAM_PANEL_OTHER_MEMBERS_GAP : '0',
-                                  zIndex: visibleOtherMembers.length - index
-                                }}
-                              >
-                                {getInitials(otherMember.name)}
-                              </div>
-                            ))}
-                            {remainingCount > 0 && (
-                              <div
-                                className="rounded-full bg-muted flex items-center justify-center text-muted-foreground font-semibold border-2 border-white dark:border-card shadow-sm"
-                                style={{
-                                  width: TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
-                                  height: TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
-                                  fontSize: TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE,
-                                  marginLeft: TEAM_PANEL_OTHER_MEMBERS_GAP,
-                                  zIndex: 0
-                                }}
-                              >
-                                +{remainingCount}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="flex flex-col gap-1">
-                          <p className="font-semibold">Team Members</p>
-                          {otherMembers.map(m => (
-                            <p key={m.id} className="text-xs">{m.name}</p>
-                          ))}
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-
-              {/* Username and Role Badge */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-muted-foreground text-xs truncate">@{member.email.split('@')[0]}</span>
-                <Badge
-                  variant={getRoleBadgeVariant(member.role)}
+            )}
+            {member.hasUnreadNotification &&
+              member.inviteStatus === "accepted" && (
+                <div 
+                  className="absolute bg-primary rounded-full border-2 border-white dark:border-card" 
                   style={{ 
-                    fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                    paddingLeft: TEAM_PANEL_BADGE_PADDING_X, 
-                    paddingRight: TEAM_PANEL_BADGE_PADDING_X, 
-                    paddingTop: TEAM_PANEL_BADGE_PADDING_Y, 
-                    paddingBottom: TEAM_PANEL_BADGE_PADDING_Y
-                  }}
-                >
-                  {getRoleIcon(member.role)}
-                  <span className="capitalize" style={{ marginLeft: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
-                    {member.role}
-                  </span>
-                </Badge>
+                    width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                    height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                    bottom: TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
+                    right: TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET
+                  }} 
+                />
+              )}
+          </div>
+
+          {/* Name */}
+          <h3 
+            className="font-semibold text-foreground text-center mb-1"
+            style={{ 
+              fontSize: TEAM_PANEL_VERTICAL_NAME_SIZE,
+              marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
+            }}
+          >
+            {member.name}
+            {isCurrentUser && (
+              <span className="font-normal text-muted-foreground text-xs ml-1">
+                (You)
+              </span>
+            )}
+            {member.role === 'admin' && (
+              <Icon 
+                name="shield-check" 
+                size={TEAM_PANEL_ICON_SIZE_SMALL} 
+                className="text-primary flex-shrink-0 ml-1 inline" 
+                weight="duotone"
+              />
+            )}
+          </h3>
+
+          {/* Role/Job Title */}
+          <p 
+            className="text-muted-foreground text-center mb-3 capitalize"
+            style={{ 
+              fontSize: TEAM_PANEL_VERTICAL_ROLE_SIZE,
+              marginBottom: TEAM_PANEL_VERTICAL_SPACING
+            }}
+          >
+            {roleDisplayText}
+            {getInviteStatusBadge(member) && (
+              <span className="ml-2">
                 {getInviteStatusBadge(member)}
-              </div>
+              </span>
+            )}
+          </p>
 
-              {/* Expiration Date */}
-              {member.inviteStatus === "pending" && member.expiresAt && (
-                <div className="flex items-center gap-1.5 text-xs mb-2">
-                  <Icon 
-                    name="calendar" 
-                    size={TEAM_PANEL_ICON_SIZE_SMALL}
-                    weight="duotone"
-                    className="flex-shrink-0"
-                    style={{ 
-                      color: formatExpirationDate(member.expiresAt)?.isExpired 
-                        ? COLOR_STATUS_EXPIRED_RED 
-                        : COLOR_STATUS_PENDING_AMBER
-                    }} 
-                  />
-                  <span 
-                    className="font-medium"
-                    style={{
-                      color: formatExpirationDate(member.expiresAt)?.isExpired 
-                        ? COLOR_STATUS_EXPIRED_RED 
-                        : COLOR_STATUS_PENDING_AMBER
-                    }}
-                  >
-                    {formatExpirationDate(member.expiresAt)?.text}
-                  </span>
-                </div>
-              )}
-
-              {/* Task Stats - Compact Horizontal */}
-              {stats.total > 0 && (
-                <div className="flex items-center gap-3 text-xs text-foreground pt-2 border-t">
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold">{stats.todo}</span>
-                    <span className="text-muted-foreground">Todo</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold">{stats.inProgress}</span>
-                    <span className="text-muted-foreground">Active</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold">{stats.completed}</span>
-                    <span className="text-muted-foreground">Done</span>
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Social Media Icons (without background badges) */}
+          <div 
+            className="flex items-center justify-center"
+            style={{ gap: TEAM_PANEL_VERTICAL_SPACING }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <a
+              href={`https://twitter.com/${member.email.split('@')[0]}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors"
+              aria-label="Twitter"
+            >
+              <Icon name="twitter" size={TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE} />
+            </a>
+            <a
+              href={`https://facebook.com/${member.email.split('@')[0]}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors"
+              aria-label="Facebook"
+            >
+              <Icon name="facebook" size={TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE} />
+            </a>
+            <a
+              href={`https://instagram.com/${member.email.split('@')[0]}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors"
+              aria-label="Instagram"
+            >
+              <Icon name="instagram" size={TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE} />
+            </a>
+            <a
+              href={`https://linkedin.com/in/${member.email.split('@')[0]}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors"
+              aria-label="LinkedIn"
+            >
+              <Icon name="linkedin" size={TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE} />
+            </a>
           </div>
         </div>
       </div>
@@ -979,7 +958,7 @@ export function TeamPanel() {
           name: capitalizedName,
           email,
           role: newMemberRole,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${capitalizedName}`,
+          avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${capitalizedName}&backgroundColor=ffffff`,
         }, currentWorkspaceId);
         successCount++;
       } catch (error) {
