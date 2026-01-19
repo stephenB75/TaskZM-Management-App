@@ -27,6 +27,7 @@ import { AppHeader } from './AppHeader';
 import { AvatarSelection, type AvatarGender } from './AvatarSelection';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import { SETTINGS_PANEL_UI_TEXT } from '../lib/settings-panel-constants';
+import { NAVIGATION_UI_TEXT } from '../lib/navigation-constants';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -172,6 +173,9 @@ import {
   COMPONENT_DIMENSIONS,
   ICON_SIZE_XS,
   ICON_SIZE_LG,
+  PANEL_GAP_SMALL,
+  PANEL_GAP_MEDIUM,
+  PANEL_FIELD_SPACING,
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
@@ -486,7 +490,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   return (
     <div className={`h-full flex flex-col ${UI_SETTINGS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}>
       <AppHeader
-        title="Settings"
+        title={NAVIGATION_UI_TEXT.settings}
         panelOpen={true}
         isSidePanelHeader={true}
         description="Customize your task manager"

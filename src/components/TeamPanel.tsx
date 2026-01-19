@@ -33,6 +33,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { AvatarSelection, type AvatarGender } from "./AvatarSelection";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { AVATAR_UI_TEXT } from "../lib/avatar-constants";
+import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import {
   Tooltip,
   TooltipContent,
@@ -1041,7 +1042,7 @@ export function TeamPanel() {
     >
       {/* Header */}
       <AppHeader
-        title="Team"
+        title={NAVIGATION_UI_TEXT.team}
         panelOpen={true}
         isSidePanelHeader={true}
         description={
