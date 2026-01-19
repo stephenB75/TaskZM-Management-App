@@ -1086,7 +1086,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         }}
                         disabled={isSubscriptionLoading}
                       >
-                        <Icon name="refresh-cw" size={parseInt(SETTINGS_PANEL_ICON_SIZE_SMALL.replace(/[^0-9]/g, ''), 10) || ICON_SIZE_XS} className={isSubscriptionLoading ? 'animate-spin' : ''} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                        <Icon name="refresh-cw" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className={isSubscriptionLoading ? 'animate-spin' : ''} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                         {SUBSCRIPTION_UI_TEXT.settings.refresh}
                       </Button>
 
@@ -1114,6 +1114,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             }
                           }}
                         >
+                          <Icon name="x-circle" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                           {SUBSCRIPTION_UI_TEXT.settings.cancel}
                         </Button>
                       )}
