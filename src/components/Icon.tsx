@@ -31,7 +31,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'calendar': 'Calendar',
   'calendar-days': 'CalendarBlank',
   'calendar-blank': 'CalendarBlank',
-  'calendar-dots': 'CalendarDots',
+  'calendar-dots': 'Calendar',
   'clock': 'Clock',
   'settings': 'Gear',
   'check': 'CheckCircle',
@@ -65,8 +65,8 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'target': 'Target',
   'timer': 'Timer',
   'brain': 'Brain',
-  'head-circuit': 'BrainCircuit',
-  'circuit': 'BrainCircuit',
+  'head-circuit': 'Brain',
+  'circuit': 'Brain',
   'zap': 'Lightning',
   'refresh': 'ArrowClockwise',
   'refresh-cw': 'ArrowClockwise',
@@ -168,6 +168,8 @@ const DUOTONE_ICONS = new Set([
   'sparkle',
   'sparkling',
   'brain',
+  'head-circuit', // Added for AI Suggestions icon
+  'circuit', // Added for circuit alias
   'target',
   'trophy',
   'award',
@@ -178,6 +180,7 @@ const DUOTONE_ICONS = new Set([
   'calendar',
   'calendar-days',
   'calendar-blank',
+  'calendar-dots', // Added for Re-Scheduler icon
   'check-circle',
   'checkmark-circle',
 ]);
