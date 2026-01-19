@@ -1425,9 +1425,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await syncWithServer(workspaceId, true); // Silent sync
         
         // Sync folders more frequently (every interval) for better cross-device sync
-        // Projects and settings change less frequently, so sync them every 2-3 intervals
+        // Projects and settings change less frequently, so sync them every N intervals based on activity
         const syncCount = Math.floor(Date.now() / syncInterval);
-        const shouldSyncOtherResources = syncCount % (isActiveRef.current ? 2 : 3) === 0;
+        const syncMultiplier = isActiveRef.current 
+          ? WORKSPACE_SYNC_ACTIVE_MULTIPLIER 
+          : WORKSPACE_SYNC_IDLE_MULTIPLIER;
+        const shouldSyncOtherResources = syncCount % syncMultiplier === 0;
         
         // Always sync folders (they change more frequently than projects/settings)
         await syncFoldersFromServer(workspaceId, true);

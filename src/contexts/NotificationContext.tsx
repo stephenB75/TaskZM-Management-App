@@ -533,10 +533,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (!document.hidden) {
         // App became visible, update badge in background (non-blocking)
         if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(() => updateBadge(), { timeout: 1000 });
+          (window as any).requestIdleCallback(() => updateBadge(), { timeout: TIMING_CONSTANTS.timeouts.idleCallback });
         } else {
           // Fallback: use setTimeout with small delay to avoid blocking
-          setTimeout(() => updateBadge(), 100);
+          setTimeout(() => updateBadge(), TIMING_CONSTANTS.delays.badgeUpdateFallback);
         }
       }
     };
@@ -544,10 +544,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const handleFocus = () => {
       // App gained focus, update badge in background (non-blocking)
       if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(() => updateBadge(), { timeout: 1000 });
+        (window as any).requestIdleCallback(() => updateBadge(), { timeout: TIMING_CONSTANTS.timeouts.idleCallback });
       } else {
         // Fallback: use setTimeout with small delay to avoid blocking
-        setTimeout(() => updateBadge(), 100);
+        setTimeout(() => updateBadge(), TIMING_CONSTANTS.delays.badgeUpdateFallback);
       }
     };
 

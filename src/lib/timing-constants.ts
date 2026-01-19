@@ -18,6 +18,7 @@ export const TIMING_CONSTANTS = {
     scroll: 100, // Scroll to current time delay
     aiScheduler: 100, // AI scheduler processing delay
     taskContext: 1000, // Task context update delay
+    badgeUpdateFallback: 100, // Fallback delay for badge updates when requestIdleCallback is not available
     splashScreen: [100, 200, 800], // Splash screen animation delays (optimized for faster loading)
     splashScreenFallback: 2000, // Fallback delay to hide splash screen (increased to ensure app loads)
     splashScreenFinal: 4000, // Final fallback delay to hide splash screen (increased to ensure full render)
@@ -54,6 +55,7 @@ export const TIMING_CONSTANTS = {
     revenueCat: 45000, // 45 seconds - RevenueCat purchase timeout
     notification: 5000, // 5 seconds - Notification timeout (for closing)
     notificationDueNow: 15000, // 15 seconds - Due now notification timeout
+    idleCallback: 1000, // 1 second - requestIdleCallback timeout for background operations
   },
   
   // Animation durations (in milliseconds)
