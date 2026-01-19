@@ -371,7 +371,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     setCurrentTeamId(teamId);
     if (teamId) {
       // Load members for selected team
-      api.getTeamMembers(teamId).then(members => {
+      api.getTeamMembersByTeam(teamId).then(members => {
         setCurrentTeamMembers(members);
       }).catch(error => {
         console.error('Failed to load team members:', error);

@@ -1162,9 +1162,15 @@ export function TeamPanel() {
         panelOpen={true}
         isSidePanelHeader={true}
         description={
-          teamMembers.length === 0
-            ? "Invite your first team member"
-            : `${filteredMembers.length} of ${teamMembers.length} member${teamMembers.length === 1 ? "" : "s"}`
+          currentTeamId
+            ? teams.find(t => t.id === currentTeamId)
+              ? `${filteredMembers.length} of ${activeMembers.length} member${activeMembers.length === 1 ? "" : "s"} in ${teams.find(t => t.id === currentTeamId)?.name || "team"}`
+              : `${filteredMembers.length} of ${activeMembers.length} member${activeMembers.length === 1 ? "" : "s"}`
+            : teams.length > 0
+            ? TEAM_PANEL_UI_TEXT.teamsAvailable(teams.length)
+            : activeMembers.length === 0
+            ? TEAM_PANEL_UI_TEXT.inviteFirstMember
+            : `${filteredMembers.length} of ${activeMembers.length} member${activeMembers.length === 1 ? "" : "s"}`
         }
         actions={
           <div className="flex items-center" style={{ gap: TEAM_PANEL_HEADER_ICON_GAP }}>
@@ -1197,35 +1203,6 @@ export function TeamPanel() {
                 </Tooltip>
               </TooltipProvider>
             )}
-            {teamMembers.length > 0 && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      onClick={() => setShowBulkInvite(true)}
-                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setShowBulkInvite(true);
-                        }
-                      }}
-                    >
-                      <Icon 
-                        name="users"
-                        size={ICON_SIZE_XL}
-                        className="text-primary dark:text-primary-foreground flex-shrink-0"
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{TEAM_PANEL_UI_TEXT.bulkInvite}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1253,44 +1230,82 @@ export function TeamPanel() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            {teamMembers.length > 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      onClick={() => setShowBulkInvite(true)}
+                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setShowBulkInvite(true);
+                        }
+                      }}
+                    >
+                      <Icon 
+                        name="paper-plane-tilt"
+                        size={ICON_SIZE_XL}
+                        className="text-primary dark:text-primary-foreground flex-shrink-0"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{TEAM_PANEL_UI_TEXT.bulkInvite}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         }
         hideDesktopLogo
       />
 
-      {/* Teams Tabs - Show if teams exist or user is admin */}
-      {(teams.length > 0 || isCurrentUserAdmin) && (
-        <div 
-          className="border-b border-primary/10"
-          style={{ 
-            paddingLeft: PANEL_PADDING,
-            paddingRight: PANEL_PADDING,
-            paddingTop: TEAM_PANEL_TAB_PADDING,
-            paddingBottom: TEAM_PANEL_TAB_PADDING
-          }}
+      {/* Teams Tabs - Always show if teams exist, or show workspace team if no teams */}
+      <div 
+        className="border-b border-primary/10"
+        style={{ 
+          paddingLeft: PANEL_PADDING,
+          paddingRight: PANEL_PADDING,
+          paddingTop: TEAM_PANEL_TAB_PADDING,
+          paddingBottom: TEAM_PANEL_TAB_PADDING
+        }}
+      >
+        <Tabs 
+          value={currentTeamId || "workspace"} 
+          onValueChange={(value) => selectTeam(value === "workspace" ? null : value)}
         >
-          <Tabs 
-            value={currentTeamId || "workspace"} 
-            onValueChange={(value) => selectTeam(value === "workspace" ? null : value)}
-          >
-            <TabsList className="w-full justify-start overflow-x-auto" style={{ height: TEAM_PANEL_TAB_HEIGHT }}>
-              <TabsTrigger value="workspace">
-                {TEAM_PANEL_UI_TEXT.workspaceTeam}
+          <TabsList className="w-full justify-start overflow-x-auto" style={{ height: TEAM_PANEL_TAB_HEIGHT }}>
+            <TabsTrigger value="workspace">
+              {TEAM_PANEL_UI_TEXT.workspaceTeam}
+            </TabsTrigger>
+              {isLoadingTeams ? (
+              <TabsTrigger value="loading" disabled>
+                {TEAM_PANEL_UI_TEXT.loadingTeams}
               </TabsTrigger>
-              {teams.map((team) => (
-                <TabsTrigger key={team.id} value={team.id}>
-                  {team.name}
-                  {team.memberCount > 0 && (
-                    <Badge variant="secondary" className="ml-1" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
-                      {team.memberCount}/{TEAM_MAX_MEMBERS}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
+            ) : (
+              teams.length > 0 ? (
+                teams.map((team) => {
+                  const memberCount = team.memberCount ?? (team.id === currentTeamId ? currentTeamMembers.length : 0);
+                  return (
+                    <TabsTrigger key={team.id} value={team.id}>
+                      {team.name}
+                      {memberCount > 0 && (
+                        <Badge variant="secondary" className="ml-1" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
+                          {memberCount}/{TEAM_MAX_MEMBERS}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  );
+                })
+              ) : null
+            )}
+          </TabsList>
+        </Tabs>
+      </div>
 
       {/* Search Bar */}
       <div 
@@ -1383,7 +1398,9 @@ export function TeamPanel() {
                       marginBottom: TEAM_PANEL_MARGIN_BOTTOM_XLARGE
                     }}
                   >
-                    Invite family members or teammates to collaborate
+                    {currentTeamId 
+                      ? TEAM_PANEL_UI_TEXT.inviteToTeam
+                      : TEAM_PANEL_UI_TEXT.inviteFamilyMembers}
                   </p>
                   <Button
                     onClick={() => setShowAddMember(true)}
@@ -1392,7 +1409,7 @@ export function TeamPanel() {
                     style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
                   >
                     <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                    Add your first member
+                    {currentTeamId ? TEAM_PANEL_UI_TEXT.addMemberToTeam : TEAM_PANEL_UI_TEXT.addFirstMember}
                   </Button>
                 </>
               )}
@@ -1490,7 +1507,9 @@ export function TeamPanel() {
                           marginBottom: TEAM_PANEL_MARGIN_BOTTOM_XLARGE
                         }}
                       >
-                        Invite family members or teammates to collaborate
+                        {currentTeamId 
+                          ? TEAM_PANEL_UI_TEXT.inviteToTeam
+                          : TEAM_PANEL_UI_TEXT.inviteFamilyMembers}
                       </p>
                       <Button
                         onClick={() => setShowAddMember(true)}
@@ -1499,7 +1518,7 @@ export function TeamPanel() {
                         style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
                       >
                         <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                        Add your first member
+                        {currentTeamId ? TEAM_PANEL_UI_TEXT.addMemberToTeam : TEAM_PANEL_UI_TEXT.addFirstMember}
                       </Button>
                     </>
                   )}
