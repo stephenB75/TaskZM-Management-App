@@ -527,17 +527,28 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [tasks, settings, updateBadge]);
 
   // Update badge when app becomes visible (handles tab switching, app focus)
+  // Use requestIdleCallback to run badge updates in background without blocking UI
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // App became visible, update badge
-        updateBadge();
+        // App became visible, update badge in background (non-blocking)
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(() => updateBadge(), { timeout: 1000 });
+        } else {
+          // Fallback: use setTimeout with small delay to avoid blocking
+          setTimeout(() => updateBadge(), 100);
+        }
       }
     };
 
     const handleFocus = () => {
-      // App gained focus, update badge
-      updateBadge();
+      // App gained focus, update badge in background (non-blocking)
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => updateBadge(), { timeout: 1000 });
+      } else {
+        // Fallback: use setTimeout with small delay to avoid blocking
+        setTimeout(() => updateBadge(), 100);
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, startTransition } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
@@ -452,6 +452,25 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   // Recurring tasks work by having ONE task that appears on multiple dates via isDateInRecurrence()
   // Removes duplicate tasks that have the same title, recurrence pattern, and scheduled date
   // Also handles pre-created occurrences (recurrence.type = 'none') by matching title and scheduledDate
+  // Helper function to check if two task arrays are equal (by ID and updatedAt)
+  // This prevents unnecessary re-renders when sync data hasn't actually changed
+  function areTasksEqual(tasks1: Task[], tasks2: Task[]): boolean {
+    if (tasks1.length !== tasks2.length) return false;
+    
+    // Create maps for quick lookup
+    const map1 = new Map(tasks1.map(t => [t.id, t.updatedAt]));
+    const map2 = new Map(tasks2.map(t => [t.id, t.updatedAt]));
+    
+    // Check if all IDs match and updatedAt timestamps match
+    for (const [id, updatedAt] of map1) {
+      if (!map2.has(id) || map2.get(id) !== updatedAt) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
   function deduplicateRecurringTasks(tasks: Task[]): Task[] {
     // First, deduplicate by task ID (most important - same ID should only appear once)
     const tasksById = new Map<string, Task>();
@@ -1254,10 +1273,23 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           setSyncInterval(desiredInterval);
         }
 
-        // Server is source of truth - always use server data, overwrite localStorage
-        logger.info(`Synced ${serverTasks.length} tasks from server`);
-        setTasks(serverTasks);
-        saveToLocalStorage('tasks', serverTasks, user?.id);
+        // Server is source of truth - only update state if data actually changed
+        // This prevents unnecessary re-renders that feel like refreshes
+        const currentTasks = tasks; // Get current tasks from closure
+        const tasksChanged = !areTasksEqual(currentTasks, serverTasks);
+        
+        if (tasksChanged) {
+          logger.info(`Synced ${serverTasks.length} tasks from server (data changed)`);
+          // Use startTransition to make state update non-blocking (runs in background)
+          startTransition(() => {
+            setTasks(serverTasks);
+            saveToLocalStorage('tasks', serverTasks, user?.id);
+          });
+        } else {
+          logger.debug(`Sync completed but no task changes detected (skipping state update)`);
+          // Still update localStorage and sync timestamp even if state doesn't change
+          saveToLocalStorage('tasks', serverTasks, user?.id);
+        }
 
         // Clear sync flags to ensure fresh sync
         const syncKey = `synced_local_data_${targetWorkspaceId}`;
@@ -1292,7 +1324,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         syncLockRef.current = false;
       }
     },
-    [workspaceId, accessToken, user?.id]
+    [workspaceId, accessToken, user?.id, tasks] // Add tasks to dependencies for areTasksEqual comparison
   );
 
   // Activity tracking for adaptive polling
@@ -1376,12 +1408,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }, [autoSyncEnabled, workspaceId, accessToken]);
 
   // Auto-sync: Poll server for changes at adaptive intervals
+  // Uses requestIdleCallback when available to run syncs in background without blocking UI
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 
-    // Only sync tasks on auto-sync (most frequently changing data)
-    // Projects, folders, and settings change less frequently
-    const syncTimer = setInterval(async () => {
+    // Helper to run sync in background (non-blocking)
+    const runBackgroundSync = async () => {
       try {
         // Only sync tasks on regular interval (most frequently changing)
         await syncWithServer(workspaceId, true); // Silent sync
@@ -1404,7 +1436,21 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         logger.error('Auto-sync error:', error);
       }
-    }, syncInterval);
+    };
+
+    // Use requestIdleCallback when available to run syncs when browser is idle
+    // Falls back to setTimeout if requestIdleCallback is not available
+    const scheduleSync = () => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(runBackgroundSync, { timeout: syncInterval });
+      } else {
+        // Fallback for browsers without requestIdleCallback
+        setTimeout(runBackgroundSync, 0);
+      }
+    };
+
+    // Set up interval to schedule syncs (non-blocking)
+    const syncTimer = setInterval(scheduleSync, syncInterval);
 
     return () => clearInterval(syncTimer);
   }, [autoSyncEnabled, workspaceId, accessToken, syncInterval, syncWithServer]);
