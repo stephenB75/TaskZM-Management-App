@@ -571,7 +571,7 @@ export function RichTextEditor({
           onClick={() => formatText('uppercase')}
           title="Uppercase"
         >
-          <Type className="w-4 h-4" />
+          <Icon name="type" size={16} />
         </Button>
         <Button
           type="button"
