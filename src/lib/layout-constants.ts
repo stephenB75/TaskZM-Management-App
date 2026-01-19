@@ -341,6 +341,7 @@ export const TEAM_PANEL_NOTIFICATION_Z_INDEX = 20; // z-20
 export const TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX = 50; // z-50
 export const TEAM_PANEL_TEXT_SIZE_SMALL = '0.75rem'; // text-xs = 0.75rem
 export const TEAM_PANEL_TEXT_SIZE_MEDIUM = '0.875rem'; // text-sm = 0.875rem
+export const TEAM_PANEL_TEXT_SIZE_XS = '0.75rem'; // text-xs = 0.75rem (12px) - for small inline text
 export const TEAM_PANEL_MARGIN_BOTTOM_SMALL = '0.25rem'; // mb-1 = 0.25rem
 export const TEAM_PANEL_MARGIN_BOTTOM_MEDIUM = '0.5rem'; // mb-2 = 0.5rem
 export const TEAM_PANEL_MARGIN_BOTTOM_LARGE = '0.75rem'; // mb-3 = 0.75rem
@@ -348,6 +349,8 @@ export const TEAM_PANEL_MARGIN_BOTTOM_XLARGE = '1rem'; // mb-4 = 1rem
 export const TEAM_PANEL_MARGIN_TOP_SMALL = '0.5rem'; // mt-2 = 0.5rem
 export const TEAM_PANEL_MARGIN_RIGHT_SMALL = '0.25rem'; // mr-1 = 0.25rem
 export const TEAM_PANEL_MARGIN_RIGHT_MEDIUM = '0.5rem'; // mr-2 = 0.5rem
+export const TEAM_PANEL_MARGIN_LEFT_SMALL = '0.25rem'; // ml-1 = 0.25rem
+export const TEAM_PANEL_MARGIN_LEFT_MEDIUM = '0.5rem'; // ml-2 = 0.5rem
 export const TEAM_PANEL_TEXTAREA_MIN_HEIGHT = '120px'; // min-h-[120px] = 120px
 export const TEAM_PANEL_TEXTAREA_ROWS = 6;
 export const TEAM_PANEL_BADGE_PADDING_X = '0.5rem'; // px-2 = 0.5rem

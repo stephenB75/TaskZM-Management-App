@@ -129,7 +129,11 @@ import {
   PANEL_SEARCH_INPUT_PADDING_LEFT,
   PANEL_EMPTY_STATE_PADDING_Y,
   PANEL_EMPTY_STATE_TEXT_SIZE,
+  TEAM_PANEL_MARGIN_LEFT_SMALL,
+  TEAM_PANEL_MARGIN_LEFT_MEDIUM,
+  TEAM_PANEL_TEXT_SIZE_XS,
 } from "../lib/layout-constants";
+import { TEAM_PANEL_UI_TEXT } from "../lib/team-panel-constants";
 import {
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_LAVENDER_DARK,
@@ -562,7 +566,11 @@ export function TeamPanel() {
     const remainingCount = Math.max(0, otherMembers.length - TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE);
 
     // Get role display text
-    const roleDisplayText = member.role === 'admin' ? 'Admin' : member.role === 'member' ? 'Member' : 'Viewer';
+    const roleDisplayText = member.role === 'admin' 
+      ? TEAM_PANEL_UI_TEXT.roles.admin 
+      : member.role === 'member' 
+      ? TEAM_PANEL_UI_TEXT.roles.member 
+      : TEAM_PANEL_UI_TEXT.roles.viewer;
     
     return (
       <div 
@@ -748,7 +756,7 @@ export function TeamPanel() {
           <div className="relative flex-shrink-0 mb-3" style={{ marginBottom: TEAM_PANEL_VERTICAL_SPACING }}>
             {member.avatar ? (
               <div 
-                className="rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-border/40"
+                className="rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-border/40"
                 style={{
                   width: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
                   height: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
@@ -765,7 +773,7 @@ export function TeamPanel() {
                     const parent = target.parentElement;
                     if (parent) {
                       const fallback = document.createElement('div');
-                      fallback.className = 'rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 font-semibold border-2 border-border/40';
+                      fallback.className = 'rounded-full bg-muted flex items-center justify-center text-muted-foreground font-semibold border-2 border-border/40';
                       fallback.style.width = '100%';
                       fallback.style.height = '100%';
                       fallback.style.fontSize = TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE;
@@ -777,7 +785,7 @@ export function TeamPanel() {
               </div>
             ) : (
               <div 
-                className="rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 font-semibold border-2 border-border/40"
+                className="rounded-full bg-muted flex items-center justify-center text-muted-foreground font-semibold border-2 border-border/40"
                 style={{ 
                   width: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
                   height: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
@@ -811,15 +819,22 @@ export function TeamPanel() {
           >
             {member.name}
             {isCurrentUser && (
-              <span className="font-normal text-muted-foreground text-xs ml-1">
-                (You)
+              <span 
+                className="font-normal text-muted-foreground"
+                style={{
+                  fontSize: TEAM_PANEL_TEXT_SIZE_XS,
+                  marginLeft: TEAM_PANEL_MARGIN_LEFT_SMALL,
+                }}
+              >
+                {TEAM_PANEL_UI_TEXT.currentUser}
               </span>
             )}
             {member.role === 'admin' && (
               <Icon 
                 name="shield-check" 
                 size={TEAM_PANEL_ICON_SIZE_SMALL} 
-                className="text-primary flex-shrink-0 ml-1 inline" 
+                className="text-primary flex-shrink-0 inline" 
+                style={{ marginLeft: TEAM_PANEL_MARGIN_LEFT_SMALL }}
                 weight="duotone"
               />
             )}
@@ -835,7 +850,7 @@ export function TeamPanel() {
           >
             {roleDisplayText}
             {getInviteStatusBadge(member) && (
-              <span className="ml-2">
+              <span style={{ marginLeft: TEAM_PANEL_MARGIN_LEFT_MEDIUM }}>
                 {getInviteStatusBadge(member)}
               </span>
             )}
@@ -874,16 +889,20 @@ export function TeamPanel() {
             <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
               <Icon name="list-checks" size={TEAM_PANEL_ICON_SIZE_SMALL} className="text-muted-foreground" />
               <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                <span className="font-semibold">{stats.total}</span> task{stats.total !== 1 ? 's' : ''}
+                <span className="font-semibold">{stats.total}</span> {stats.total !== 1 ? TEAM_PANEL_UI_TEXT.stats.tasks : TEAM_PANEL_UI_TEXT.stats.task}
               </span>
             </div>
 
             {/* Tasks Completed */}
             {stats.completed > 0 && (
               <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
-                <Icon name="check-circle" size={TEAM_PANEL_ICON_SIZE_SMALL} className="text-green-600 dark:text-green-400" />
+                <Icon 
+                  name="check-circle" 
+                  size={TEAM_PANEL_ICON_SIZE_SMALL} 
+                  style={{ color: COLOR_TASK_COMPLETED_GREEN }}
+                />
                 <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                  <span className="font-semibold">{stats.completed}</span> completed
+                  <span className="font-semibold">{stats.completed}</span> {TEAM_PANEL_UI_TEXT.stats.completed}
                 </span>
               </div>
             )}
@@ -893,7 +912,7 @@ export function TeamPanel() {
               <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
                 <Icon name="users" size={TEAM_PANEL_ICON_SIZE_SMALL} className="text-muted-foreground" />
                 <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                  <span className="font-semibold">{otherMembers.length}</span> team member{otherMembers.length !== 1 ? 's' : ''}
+                  <span className="font-semibold">{otherMembers.length}</span> {otherMembers.length !== 1 ? TEAM_PANEL_UI_TEXT.stats.teamMembers : TEAM_PANEL_UI_TEXT.stats.teamMember}
                 </span>
               </div>
             )}
