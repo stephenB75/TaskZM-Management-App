@@ -177,9 +177,12 @@ function Icon({
   secondaryColor,
   useDuotone = false,
 }: IconProps) {
+  // Convert size to number - handle rem strings (e.g., "0.75rem" = 12px) and numeric strings
   const sizeNum = typeof size === 'string'
-    ? parseInt(size.replace(/[^0-9]/g, ''), 10) || DEFAULT_ICON_SIZE
-    : size;
+    ? size.includes('rem')
+      ? parseFloat(size.replace('rem', '')) * 16 // Convert rem to pixels (1rem = 16px)
+      : parseInt(size.replace(/[^0-9]/g, ''), 10) || DEFAULT_ICON_SIZE
+    : size || DEFAULT_ICON_SIZE;
 
   // Get Phosphor icon name
   const phosphorIconName = ICON_NAME_MAP[name.toLowerCase()] || 
