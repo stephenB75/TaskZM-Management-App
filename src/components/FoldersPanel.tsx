@@ -560,7 +560,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
         isSidePanelHeader={true}
         description={`${filteredFolders.length} of ${folders?.length || 0} folder${(folders?.length || 0) === 1 ? "" : "s"}`}
         actions={
-          <Button
+          <div
             onClick={() => {
               setEditingFolder(null);
               setNewFolderName("");
@@ -568,13 +568,33 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
               setNewFolderColor(COLOR_FOLDER_DEFAULT);
               setShowAddFolder(true);
             }}
-            className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-            size="sm"
+            className="cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80 whitespace-nowrap"
+            title="Add Folder"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setEditingFolder(null);
+                setNewFolderName("");
+                setNewFolderDescription("");
+                setNewFolderColor(COLOR_FOLDER_DEFAULT);
+                setShowAddFolder(true);
+              }
+            }}
           >
-            <Icon name="folder-plus" size={ICON_SIZE_MD} className="mr-2" />
-            <span className="hidden sm:inline">Add Folder</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
+            <Icon 
+              name="folder-simple-plus"
+              size={ICON_SIZE_MD}
+              className="text-primary dark:text-primary-foreground flex-shrink-0"
+              style={{
+                marginRight: '0.25rem',
+              }}
+            />
+            <span className="text-foreground dark:text-gray-100">
+              Add Folder
+            </span>
+          </div>
         }
         hideDesktopLogo
       />
@@ -660,16 +680,6 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                   ? "No folders match your search"
                   : "No folders yet"}
               </p>
-              {!searchQuery && (
-                <Button
-                  onClick={() => setShowAddFolder(true)}
-                  size="sm"
-                  style={{ marginTop: PANEL_PADDING }}
-                >
-                  <Icon name="folder-plus" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
-                  Create Your First Folder
-                </Button>
-              )}
             </div>
           ) : (
             filteredFolders.map((folder) => {
@@ -726,16 +736,6 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                       ? "No folders match your search"
                       : "No folders yet"}
                   </p>
-                  {!searchQuery && (
-                    <Button
-                      onClick={() => setShowAddFolder(true)}
-                      size="sm"
-                      style={{ marginTop: PANEL_PADDING }}
-                    >
-                      <Icon name="folder-plus" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
-                      Create Your First Folder
-                    </Button>
-                  )}
                 </div>
               ) : (
                 filteredFolders.map((folder) => {

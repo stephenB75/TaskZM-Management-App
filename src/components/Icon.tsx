@@ -49,6 +49,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'edit-2': 'Pencil',
   'folder': 'Folder',
   'folder-plus': 'FolderPlus',
+  'folder-simple-plus': 'FolderSimplePlus',
   'inbox': 'ArchiveBox',
   'archive': 'Archive',
   'search': 'MagnifyingGlass',
