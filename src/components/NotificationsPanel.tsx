@@ -72,14 +72,8 @@ export function NotificationsPanel() {
     localStorage.setItem(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, JSON.stringify(Array.from(dismissedNotifications)));
   }, [dismissedNotifications]);
 
-  // Clear selection when notifications change (e.g., after deletion or filter change)
+  // Generate notifications from tasks
   useEffect(() => {
-    setSelectedNotificationIds(prev => {
-      const currentNotificationIds = new Set(filteredNotifications.map(n => n.id));
-      const filtered = new Set([...prev].filter(id => currentNotificationIds.has(id)));
-      return filtered.size !== prev.size ? filtered : prev;
-    });
-  }, [filteredNotifications]);
 
   // Track last seen Pomodoro session counts to detect new completions
   const [lastSeenSessions, setLastSeenSessions] = useState<Record<string, number>>(
