@@ -532,6 +532,7 @@ export function DashboardView({
   
   // Track screen size for responsive button sizing
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [showActionText, setShowActionText] = useState(false); // Show text labels for AI Suggestions and Re-Scheduler
   const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop);
   useEffect(() => {
     let resizeTimeoutId: NodeJS.Timeout;
@@ -542,6 +543,8 @@ export function DashboardView({
       requestAnimationFrame(() => {
         const width = window.innerWidth;
         setIsSmallScreen(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
+        // Show text labels only on screens >= 1400px to prevent overlap
+        setShowActionText(width >= 1400);
         setScreenWidth(width);
       });
     };
@@ -1331,10 +1334,10 @@ export function DashboardView({
                 onClick={handleScheduleUnscheduledTasks}
                 className={cn(
                   "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80",
-                  !shouldUseMobileLayout && "whitespace-nowrap"
+                  showActionText && "whitespace-nowrap"
                 )}
                 data-tour="ai-scheduler"
-                title={shouldUseMobileLayout ? "AI Suggestions" : "AI Scheduler Suggestions"}
+                title={showActionText ? "AI Scheduler Suggestions" : "AI Suggestions"}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -1350,10 +1353,10 @@ export function DashboardView({
                   weight={viewMode === "week" ? "duotone" : "regular"}
                   className="text-primary dark:text-primary-foreground flex-shrink-0"
                   style={{
-                    marginRight: shouldUseMobileLayout ? 0 : HEADER_ICON_MARGIN_SMALL,
+                    marginRight: showActionText ? HEADER_ICON_MARGIN_SMALL : 0,
                   }}
                 />
-                {!shouldUseMobileLayout && (
+                {showActionText && (
                   <span className="text-foreground dark:text-gray-100">
                     AI Scheduler Suggestions
                   </span>
@@ -1381,7 +1384,7 @@ export function DashboardView({
                 }}
                 className={cn(
                   "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80",
-                  !shouldUseMobileLayout && "whitespace-nowrap",
+                  showActionText && "whitespace-nowrap",
                   isRescheduling && "opacity-50 cursor-not-allowed"
                 )}
                 data-tour="re-schedule"
@@ -1419,10 +1422,10 @@ export function DashboardView({
                     isRescheduling && "animate-spin"
                   )}
                   style={{
-                    marginRight: shouldUseMobileLayout ? 0 : HEADER_ICON_MARGIN_DESKTOP,
+                    marginRight: showActionText ? HEADER_ICON_MARGIN_DESKTOP : 0,
                   }}
                 />
-                {!shouldUseMobileLayout && (
+                {showActionText && (
                   <span className="text-foreground dark:text-gray-100">Re-schedule</span>
                 )}
               </div>
