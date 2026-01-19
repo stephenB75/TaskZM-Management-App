@@ -167,7 +167,7 @@ const DUOTONE_ICONS = new Set([
   'checkmark-circle',
 ]);
 
-export function Icon({
+function Icon({
   name,
   size = DEFAULT_ICON_SIZE,
   className = '',
@@ -222,6 +222,6 @@ export function Icon({
   return <IconComponent {...iconProps} />;
 }
 
-// Default export for compatibility
-export default Icon;
+// Export as both named and default for compatibility
 export { Icon };
+export default Icon;
