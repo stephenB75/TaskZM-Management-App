@@ -426,7 +426,11 @@ export function AppHeader({
             className="flex h-full items-center"
             style={{ 
               // Responsive gap: smaller for small monitors and landscape
-              gap: isSmallMonitor && isLandscape ? HEADER_GAP_SMALL : (isSmallMonitor ? HEADER_GAP_MEDIUM : HEADER_GAP_XLARGE),
+              gap: isSmallMonitor && isLandscape 
+                ? HEADER_GAP_XSMALL 
+                : (isSmallMonitor 
+                  ? HEADER_GAP_SMALL 
+                  : HEADER_GAP_XLARGE),
               justifyContent: 'space-between',
             }}
           >
@@ -434,10 +438,18 @@ export function AppHeader({
             <div
               className="flex items-center min-w-0 flex-shrink-0"
               style={{ 
-                // Responsive gap: smaller for small monitors
+                // Responsive gap: smaller for small monitors and landscape
                 gap: hideDesktopLogo 
-                  ? (isSmallMonitor ? HEADER_GAP_MEDIUM : HEADER_GAP_LARGE)
-                  : (isSmallMonitor && isLandscape ? HEADER_GAP_MEDIUM : (isSmallMonitor ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE)),
+                  ? (isSmallMonitor && isLandscape 
+                      ? HEADER_GAP_SMALL 
+                      : (isSmallMonitor 
+                        ? HEADER_GAP_MEDIUM 
+                        : HEADER_GAP_LARGE))
+                  : (isSmallMonitor && isLandscape 
+                      ? HEADER_GAP_SMALL 
+                      : (isSmallMonitor 
+                        ? HEADER_GAP_MEDIUM 
+                        : HEADER_GAP_XLARGE)),
               }}
             >
               {onBack && (
@@ -488,17 +500,18 @@ export function AppHeader({
             {/* Right side: Actions (text is now inside actions component) */}
             {actions && (
               <div 
-                className="flex items-center"
+                className="flex items-center min-w-0"
                 style={{ 
                   // Responsive gap: smaller for small monitors and landscape
                   gap: isSmallMonitor && isLandscape 
                     ? HEADER_GAP_XSMALL 
                     : (isSmallMonitor 
-                      ? HEADER_GAP_SMALL 
+                      ? HEADER_GAP_XSMALL 
                       : HEADER_GAP_MEDIUM),
                   justifyContent: 'flex-end',
-                  flexShrink: 0, // Prevent actions from shrinking
+                  flexShrink: 1, // Allow slight shrinking on very small screens
                   flexBasis: 'auto', // Use natural width
+                  minWidth: 0, // Allow flex items to shrink below content size
                 }}
               >
                 {actions}

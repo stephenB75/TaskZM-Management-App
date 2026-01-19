@@ -31,10 +31,11 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_ICON_SIZE_LARGE, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CARD_SHADOW_MOBILE, ICON_SIZE_XS, ICON_SIZE_MD } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_ICON_SIZE_LARGE, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CHECKBOX_SIZE_SMALL_MONITOR, INBOX_CHECKBOX_SIZE_LANDSCAPE, INBOX_CHECKBOX_SIZE_DESKTOP, INBOX_CARD_SHADOW_MOBILE, ICON_SIZE_XS, ICON_SIZE_MD } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
+import { useOrientation } from "../hooks/useOrientation";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
@@ -78,6 +79,37 @@ export function InboxView() {
   };
   const { scheduleAllTasks, generateSchedulePlan, applySchedulePlan, isScheduling } = useAIScheduler();
   const shouldUseMobileLayout = useMobileLayout();
+  const orientation = useOrientation();
+  const isLandscape = orientation === 'landscape';
+  
+  // Detect small monitor (1024px - 1279px) for responsive checkbox sizing
+  const [isSmallMonitor, setIsSmallMonitor] = useState(false);
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsSmallMonitor(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+  
+  // Calculate responsive checkbox size
+  const getCheckboxSize = () => {
+    if (shouldUseMobileLayout) {
+      return INBOX_CHECKBOX_SIZE_MOBILE;
+    }
+    if (isSmallMonitor && isLandscape) {
+      return INBOX_CHECKBOX_SIZE_LANDSCAPE;
+    }
+    if (isSmallMonitor) {
+      return INBOX_CHECKBOX_SIZE_SMALL_MONITOR;
+    }
+    return INBOX_CHECKBOX_SIZE_DESKTOP;
+  };
+  
+  const checkboxSize = getCheckboxSize();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] =
     useState<string>("all");
@@ -1051,16 +1083,13 @@ export function InboxView() {
                                   });
                                 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className={cn(
-                                  "mt-0.5",
-                                  shouldUseMobileLayout 
-                                    ? "!w-1 !h-1 !min-w-1 !min-h-1 [&_[data-slot='checkbox-indicator']_svg]:!w-0.5 [&_[data-slot='checkbox-indicator']_svg]:!h-0.5"
-                                    : ""
-                                )}
-                                style={shouldUseMobileLayout 
-                                  ? { width: INBOX_CHECKBOX_SIZE_MOBILE, height: INBOX_CHECKBOX_SIZE_MOBILE, minWidth: INBOX_CHECKBOX_SIZE_MOBILE, minHeight: INBOX_CHECKBOX_SIZE_MOBILE }
-                                  : undefined
-                                }
+                                className="mt-0.5 flex-shrink-0"
+                                style={{ 
+                                  width: checkboxSize, 
+                                  height: checkboxSize, 
+                                  minWidth: checkboxSize, 
+                                  minHeight: checkboxSize 
+                                }}
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -1338,16 +1367,13 @@ export function InboxView() {
                                 });
                               }}
                               onClick={(e) => e.stopPropagation()}
-                              className={cn(
-                                "mt-0.5",
-                                shouldUseMobileLayout 
-                                  ? "!w-1 !h-1 !min-w-1 !min-h-1 [&_[data-slot='checkbox-indicator']_svg]:!w-0.5 [&_[data-slot='checkbox-indicator']_svg]:!h-0.5"
-                                  : ""
-                              )}
-                              style={shouldUseMobileLayout 
-                                ? { width: INBOX_CHECKBOX_SIZE_MOBILE, height: INBOX_CHECKBOX_SIZE_MOBILE, minWidth: INBOX_CHECKBOX_SIZE_MOBILE, minHeight: INBOX_CHECKBOX_SIZE_MOBILE }
-                                : undefined
-                              }
+                              className="mt-0.5 flex-shrink-0"
+                              style={{ 
+                                width: checkboxSize, 
+                                height: checkboxSize, 
+                                minWidth: checkboxSize, 
+                                minHeight: checkboxSize 
+                              }}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
