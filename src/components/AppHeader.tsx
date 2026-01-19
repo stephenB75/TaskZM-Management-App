@@ -81,6 +81,7 @@ import {
   getHeaderGradient,
 } from "../lib/layout-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
+import { useOrientation } from "../hooks/useOrientation";
 import {
   COLOR_GRADIENT_START,
   COLOR_GRADIENT_MID,
@@ -118,13 +119,18 @@ export function AppHeader({
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const shouldUseMobileLayout = useMobileLayout(); // Determine if device should use mobile layout (includes tablets)
+  const orientation = useOrientation(); // Detect landscape/portrait orientation
+  const isLandscape = orientation === 'landscape';
   
   // Detect laptop/small screen (1024px - 1279px) for responsive adjustments
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [isSmallMonitor, setIsSmallMonitor] = useState(false);
   useEffect(() => {
     const checkScreenSize = () => {
       const width = window.innerWidth;
       setIsSmallScreen(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
+      // Small monitor: 1024px - 1279px (includes landscape tablets and small desktop monitors)
+      setIsSmallMonitor(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
@@ -275,10 +281,11 @@ export function AppHeader({
               ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
               : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
             borderColor: HEADER_BORDER_COLOR,
-            paddingLeft: HEADER_SIDE_PANEL_PADDING_X,
-            paddingRight: HEADER_SIDE_PANEL_PADDING_X,
-            paddingTop: HEADER_PADDING_Y_DESKTOP,
-            paddingBottom: HEADER_PADDING_Y_DESKTOP,
+            // Responsive padding: reduce for small monitors and landscape
+            paddingLeft: isSmallMonitor && isLandscape ? '0.75rem' : HEADER_SIDE_PANEL_PADDING_X,
+            paddingRight: isSmallMonitor && isLandscape ? '0.75rem' : HEADER_SIDE_PANEL_PADDING_X,
+            paddingTop: isSmallMonitor && isLandscape ? '0.375rem' : HEADER_PADDING_Y_DESKTOP,
+            paddingBottom: isSmallMonitor && isLandscape ? '0.375rem' : HEADER_PADDING_Y_DESKTOP,
             minHeight: `${HEADER_HEIGHT}px`, 
             height: `${HEADER_HEIGHT}px`,
             boxSizing: 'border-box',
@@ -307,12 +314,16 @@ export function AppHeader({
                   onClick={onBack}
                   className="flex-shrink-0"
                   style={{ 
-                    height: HEADER_BUTTON_SIZE, 
-                    width: HEADER_BUTTON_SIZE,
+                    // Responsive button size: smaller for small monitors
+                    height: isSmallMonitor ? HEADER_BUTTON_SIZE_SMALL_SCREEN : HEADER_BUTTON_SIZE, 
+                    width: isSmallMonitor ? HEADER_BUTTON_SIZE_SMALL_SCREEN : HEADER_BUTTON_SIZE,
                     marginLeft: HEADER_BUTTON_NEGATIVE_MARGIN_LEFT
                   }}
                 >
-                  <Icon name="arrow-left" size={HEADER_ICON_SIZE_SMALL} />
+                  <Icon 
+                    name="arrow-left" 
+                    size={isSmallMonitor ? HEADER_ICON_SIZE_SMALL_SCREEN : HEADER_ICON_SIZE_SMALL} 
+                  />
                 </Button>
               )}
               {!hideDesktopLogo && (
@@ -323,7 +334,12 @@ export function AppHeader({
                     "w-auto flex-shrink-0",
                   )}
                   style={{ 
-                    height: HEADER_LOGO_HEIGHT,
+                    // Responsive logo height: smaller for small monitors and landscape
+                    height: isSmallMonitor && isLandscape 
+                      ? `calc(${HEADER_LOGO_HEIGHT} * 0.85)`
+                      : (isSmallMonitor 
+                        ? `calc(${HEADER_LOGO_HEIGHT} * 0.9)`
+                        : HEADER_LOGO_HEIGHT),
                     backgroundColor: 'transparent',
                   }}
                   initial={{ opacity: 0, scale: HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL }}
@@ -339,7 +355,10 @@ export function AppHeader({
               >
                 <h2 
                   className="font-semibold text-foreground uppercase tracking-wide"
-                  style={{ fontSize: HEADER_TITLE_SIZE_DESKTOP }}
+                  style={{ 
+                    // Responsive title size: smaller for small monitors
+                    fontSize: isSmallMonitor ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP 
+                  }}
                 >
                   {typeof title === 'string' ? title : title}
                 </h2>
@@ -347,7 +366,8 @@ export function AppHeader({
                   <p 
                     className="text-muted-foreground"
                     style={{ 
-                      fontSize: HEADER_DESCRIPTION_SIZE,
+                      // Responsive description size: smaller for small monitors
+                      fontSize: isSmallMonitor ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
                       marginTop: HEADER_DESCRIPTION_MARGIN_TOP,
                     }}
                   >
@@ -385,10 +405,11 @@ export function AppHeader({
               : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
             backgroundImage: getHeaderGradient(isDark),
             borderColor: HEADER_BORDER_COLOR,
-            paddingLeft: HEADER_PADDING_X_DESKTOP,
-            paddingRight: HEADER_PADDING_X_DESKTOP,
-            paddingTop: HEADER_PADDING_Y_DESKTOP,
-            paddingBottom: HEADER_PADDING_Y_DESKTOP,
+            // Responsive padding: reduce for small monitors and landscape views
+            paddingLeft: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_PADDING_X_DESKTOP),
+            paddingRight: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_PADDING_X_DESKTOP),
+            paddingTop: isSmallMonitor && isLandscape ? '0.375rem' : (isSmallMonitor ? HEADER_PADDING_Y_DESKTOP : HEADER_PADDING_Y_DESKTOP),
+            paddingBottom: isSmallMonitor && isLandscape ? '0.375rem' : (isSmallMonitor ? HEADER_PADDING_Y_DESKTOP : HEADER_PADDING_Y_DESKTOP),
             minHeight: `${HEADER_HEIGHT}px`, 
             height: `${HEADER_HEIGHT}px`,
             left: `${headerLeft}px`,
@@ -404,7 +425,8 @@ export function AppHeader({
           <div 
             className="flex h-full items-center"
             style={{ 
-              gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_XLARGE,
+              // Responsive gap: smaller for small monitors and landscape
+              gap: isSmallMonitor && isLandscape ? HEADER_GAP_SMALL : (isSmallMonitor ? HEADER_GAP_MEDIUM : HEADER_GAP_XLARGE),
               justifyContent: 'space-between',
             }}
           >
@@ -412,7 +434,10 @@ export function AppHeader({
             <div
               className="flex items-center min-w-0 flex-shrink-0"
               style={{ 
-                gap: hideDesktopLogo ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE,
+                // Responsive gap: smaller for small monitors
+                gap: hideDesktopLogo 
+                  ? (isSmallMonitor ? HEADER_GAP_MEDIUM : HEADER_GAP_LARGE)
+                  : (isSmallMonitor && isLandscape ? HEADER_GAP_MEDIUM : (isSmallMonitor ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE)),
               }}
             >
               {onBack && (
@@ -422,12 +447,16 @@ export function AppHeader({
                   onClick={onBack}
                   className="flex-shrink-0"
                   style={{ 
-                    height: HEADER_BUTTON_SIZE, 
-                    width: HEADER_BUTTON_SIZE,
+                    // Responsive button size: smaller for small monitors
+                    height: isSmallMonitor ? HEADER_BUTTON_SIZE_SMALL_SCREEN : HEADER_BUTTON_SIZE, 
+                    width: isSmallMonitor ? HEADER_BUTTON_SIZE_SMALL_SCREEN : HEADER_BUTTON_SIZE,
                     marginLeft: HEADER_BUTTON_NEGATIVE_MARGIN_LEFT
                   }}
                 >
-                  <Icon name="arrow-left" size={HEADER_ICON_SIZE_SMALL} />
+                  <Icon 
+                    name="arrow-left" 
+                    size={isSmallMonitor ? HEADER_ICON_SIZE_SMALL_SCREEN : HEADER_ICON_SIZE_SMALL} 
+                  />
                 </Button>
               )}
               {!hideDesktopLogo && (
@@ -437,8 +466,15 @@ export function AppHeader({
                   alt="TaskZM Logo"
                   className="w-auto flex-shrink-0 object-contain self-center"
                   style={{ 
-                    height: HEADER_LOGO_HEIGHT_DESKTOP,
-                    maxHeight: `calc(${HEADER_HEIGHT}px - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_BORDER_BOTTOM}px)`, // Fit within header minus padding and border
+                    // Responsive logo height: smaller for small monitors and landscape
+                    height: isSmallMonitor && isLandscape 
+                      ? `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * 0.85)`
+                      : (isSmallMonitor 
+                        ? `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * 0.9)`
+                        : HEADER_LOGO_HEIGHT_DESKTOP),
+                    maxHeight: isSmallMonitor && isLandscape
+                      ? `calc(${HEADER_HEIGHT}px - 0.75rem - 0.75rem - ${HEADER_BORDER_BOTTOM}px)`
+                      : `calc(${HEADER_HEIGHT}px - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_BORDER_BOTTOM}px)`,
                     width: 'auto', // Maintain aspect ratio
                     backgroundColor: 'transparent',
                     display: 'block',
@@ -454,7 +490,12 @@ export function AppHeader({
               <div 
                 className="flex items-center"
                 style={{ 
-                  gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
+                  // Responsive gap: smaller for small monitors and landscape
+                  gap: isSmallMonitor && isLandscape 
+                    ? HEADER_GAP_XSMALL 
+                    : (isSmallMonitor 
+                      ? HEADER_GAP_SMALL 
+                      : HEADER_GAP_MEDIUM),
                   justifyContent: 'flex-end',
                   flexShrink: 0, // Prevent actions from shrinking
                   flexBasis: 'auto', // Use natural width
