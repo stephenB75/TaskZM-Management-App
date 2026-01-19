@@ -1348,18 +1348,22 @@ export function DashboardView({
                   transform: `scale(${buttonScale})`, // Progressive scaling based on screen width
                 }}
                 data-tour="ai-scheduler"
+                title={isSmallScreen ? "AI Suggestions" : "AI Scheduler Suggestions"}
               >
                 <Icon 
                   name="sparkles"
                   size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
+                  weight={viewMode === "week" ? "duotone" : "regular"}
                   className="text-primary dark:text-primary-foreground flex-shrink-0"
                   style={{
-                    marginRight: isSmallScreen ? HEADER_ICON_MARGIN_SMALL : HEADER_ICON_MARGIN_DESKTOP,
+                    marginRight: isSmallScreen ? 0 : (HEADER_ICON_MARGIN_SMALL),
                   }}
                 />
-                <span className="text-foreground dark:text-gray-100">
-                  {isSmallScreen ? "AI Suggestions" : "AI Scheduler Suggestions"}
-                </span>
+                {!isSmallScreen && (
+                  <span className="text-foreground dark:text-gray-100">
+                    AI Scheduler Suggestions
+                  </span>
+                )}
               </Button>
               <Button
                 variant="outline"
@@ -1400,19 +1404,23 @@ export function DashboardView({
                 }}
                 disabled={isRescheduling}
                 data-tour="re-schedule"
+                title="Re-schedule"
               >
                 <Icon 
                   name="refresh-cw"
                   size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
+                  weight={viewMode === "week" ? "duotone" : "regular"}
                   className={cn(
                     "text-primary dark:text-primary-foreground",
                     isRescheduling && "animate-spin"
                   )}
                   style={{
-                    marginRight: isSmallScreen ? HEADER_ICON_MARGIN_SMALL : HEADER_ICON_MARGIN_DESKTOP,
+                    marginRight: isSmallScreen ? 0 : HEADER_ICON_MARGIN_DESKTOP,
                   }}
                 />
-                <span className="text-foreground dark:text-gray-100">Re-schedule</span>
+                {!isSmallScreen && (
+                  <span className="text-foreground dark:text-gray-100">Re-schedule</span>
+                )}
               </Button>
             </div>
           </div>
