@@ -569,6 +569,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <Icon 
                 name="user-circle-check" 
                 size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} 
+                weight="duotone"
                 className="text-primary flex-shrink-0" 
               />
               <span className="font-semibold">{SETTINGS_PANEL_UI_TEXT.profile.userProfile}</span>
