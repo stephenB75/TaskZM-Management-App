@@ -122,6 +122,7 @@ export const AUTH_COLORS = {
   },
   secondary: '#DDA0DD',
   secondaryHover: '#DA70D6',
+  buttonText: '#FFFFFF', // White text for dark button backgrounds
   background: {
     gradient: {
       from: '#B4E4FF',

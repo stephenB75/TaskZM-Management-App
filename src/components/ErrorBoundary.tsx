@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 
 interface Props {
   children: ReactNode;
@@ -102,7 +103,8 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
             <button
               onClick={this.handleReset}
-              className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              className="w-full px-4 py-2 bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+              style={{ color: COLOR_TEXT_WHITE }}
             >
               Try Again
             </button>

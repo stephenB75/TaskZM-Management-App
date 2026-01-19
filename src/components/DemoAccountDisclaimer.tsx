@@ -12,6 +12,7 @@ import { Button } from './ui/button';
 import { Icon } from './Icon';
 import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG } from '../lib/layout-constants';
 import { DEMO_ACCOUNT_CONFIG } from '../lib/auth-constants';
+import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 
 interface DemoAccountDisclaimerProps {
   open: boolean;
@@ -125,7 +126,8 @@ export function DemoAccountDisclaimer({
         <DialogFooter>
           <Button
             onClick={handleContinue}
-            className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white"
+            className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+            style={{ color: COLOR_TEXT_WHITE }}
           >
             I Understand, Continue
           </Button>

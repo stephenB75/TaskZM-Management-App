@@ -68,6 +68,7 @@ import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
+import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import type {
   Task,
   TaskPriority,
@@ -3428,9 +3429,10 @@ export function TaskDialog({
                 type="submit"
                 disabled={task ? !permissions.canEditTask : !permissions.canCreateTask} 
                 className={cn(
-                  "bg-primary hover:bg-primary/90 text-white h-10 px-5 text-sm font-medium flex-1 sm:flex-initial shadow-md",
+                  "bg-primary hover:bg-primary/90 h-10 px-5 text-sm font-medium flex-1 sm:flex-initial shadow-md",
                   COMPONENT_DIMENSIONS.taskDialog.buttonMinWidth
                 )}
+                style={{ color: COLOR_TEXT_WHITE }}
               >
                 {task ? "Update Task" : "Create Task"}
               </Button>

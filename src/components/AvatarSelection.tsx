@@ -15,6 +15,7 @@ import {
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
 } from '../lib/avatar-constants';
+import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 
 export type AvatarGender = 'male' | 'female';
 
@@ -86,8 +87,8 @@ export function AvatarSelection({
                     }}
                   >
                     <svg
-                      className="text-white"
                       style={{
+                        color: COLOR_TEXT_WHITE,
                         width: AVATAR_CHECKMARK_ICON_SIZE,
                         height: AVATAR_CHECKMARK_ICON_SIZE,
                       }}

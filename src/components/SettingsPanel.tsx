@@ -182,7 +182,7 @@ import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/not
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
-import { COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, getColorWithOpacity } from '../lib/color-theme';
+import { COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
 import { projectId } from '../utils/supabase/info';
 
 interface SettingsPanelProps {
@@ -2675,7 +2675,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
-                        <Icon name="target" size={ICON_SIZE_MD} weight="duotone" className="text-white" />
+                        <Icon name="target" size={ICON_SIZE_MD} weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                       </div>
                       <div className="flex-1 text-left">
                         <h4 className="text-sm font-semibold">Completion Milestones</h4>
@@ -2759,7 +2759,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                        <Icon name="trending-up" size={ICON_SIZE_MD} weight="duotone" className="text-white" />
+                        <Icon name="trending-up" size={ICON_SIZE_MD} weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                       </div>
                       <div className="flex-1 text-left">
                         <h4 className="text-sm font-semibold">Streak Champions</h4>
@@ -2843,7 +2843,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
-                        <Icon name="timer" size={ICON_SIZE_MD} weight="duotone" className="text-white" />
+                        <Icon name="timer" size={ICON_SIZE_MD} weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                       </div>
                       <div className="flex-1 text-left">
                         <h4 className="text-sm font-semibold">Focus Masters</h4>
@@ -2927,7 +2927,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                        <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" className="text-white" />
+                        <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                       </div>
                       <div className="flex-1 text-left">
                         <h4 className="text-sm font-semibold">Special Achievements</h4>
@@ -3053,7 +3053,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 className="w-full bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 text-primary-foreground border border-primary/20 shadow-sm"
                 onClick={handleStartTour}
               >
-                <Icon name="compass" size={ICON_SIZE_XS} weight="duotone" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                <Icon name="compass" size={ICON_SIZE_XS} weight="duotone" className="text-primary-foreground" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                 {hasSeenTour ? 'Restart Tour' : 'Start Tour'}
               </Button>
             </div>

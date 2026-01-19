@@ -43,6 +43,7 @@ import {
   NAV_BAR_SHADOW_OFFSET_Y_SMALL,
 } from "../lib/layout-constants";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
+import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import {
   COLOR_PRIMARY,
   COLOR_PASTEL_MINT,
@@ -227,8 +228,9 @@ export function BottomNav({
                 />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span 
-                    className="absolute text-white font-bold rounded-full flex items-center justify-center border-white z-30 shadow-lg" 
+                    className="absolute font-bold rounded-full flex items-center justify-center border-white z-30 shadow-lg"
                     style={{ 
+                      color: COLOR_TEXT_WHITE,
                       backgroundColor: COLOR_BADGE_RED,
                       fontSize: NAV_BAR_BADGE_TEXT_SIZE,
                       width: NAV_BAR_BADGE_SIZE,

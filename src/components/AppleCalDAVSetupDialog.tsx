@@ -457,8 +457,8 @@ export function AppleCalDAVSetupDialog({
           )}
 
           {step === 3 && (
-            <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700">
-              <Icon name="check" size={ICON_SIZE_MD} className="mr-2" />
+            <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700" style={{ color: COLOR_TEXT_WHITE }}>
+              <Icon name="check" size={ICON_SIZE_MD} className="mr-2" style={{ color: COLOR_TEXT_WHITE }} />
               Done
             </Button>
           )}

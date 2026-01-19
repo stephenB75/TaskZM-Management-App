@@ -41,7 +41,6 @@ export const TEAM_PANEL_UI_TEXT = {
   inviteToTeam: 'Invite members to this team',
   teamsAvailable: (count: number) => `${count} team${count === 1 ? "" : "s"} available`,
   membersInTeam: (count: number, teamName: string) => `${count} of ${count} member${count === 1 ? "" : "s"} in ${teamName}`,
-  createNewTeam: 'Create New Team',
   inviteFamilyMembers: 'Invite family members or teammates to collaborate',
   addFirstMember: 'Add your first member',
   stats: {

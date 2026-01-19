@@ -13,7 +13,7 @@ import { Icon } from "./Icon";
 import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAuth } from "../contexts/AuthContext";
-import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY, COLOR_PASTEL_MINT } from "../lib/color-theme";
+import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY, COLOR_PASTEL_MINT, COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import { getPlatform } from "../lib/platform";
@@ -665,7 +665,7 @@ export function PricingDialog({
                 
                 {subscription.tier === "pro" && subscription.billingPeriod === "monthly" && (
                   <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
-                    <Badge className={`${UI_PRICING_DIALOG_COLORS.primaryClass} text-white border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`}>
+                    <Badge className={`${UI_PRICING_DIALOG_COLORS.primaryClass} border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`} style={{ color: COLOR_TEXT_WHITE }}>
                       {SUBSCRIPTION_UI_TEXT.pro.button.current}
                     </Badge>
                   </div>
@@ -709,7 +709,7 @@ export function PricingDialog({
                           size={6} 
                           className={cn(
                             "w-1.5 h-1.5",
-                            feature.highlight ? "text-white" : "text-gray-800 dark:text-foreground"
+                            feature.highlight ? "" : "text-gray-800 dark:text-foreground"
                           )} 
                         />
                       </div>
@@ -724,15 +724,16 @@ export function PricingDialog({
                   className={cn(
                     `w-full shadow-md hover:shadow-lg transition-all duration-300 ${PRICING_DIALOG_TEXT_SIZES.description} font-medium py-1.5 relative z-20`,
                     subscription.tier === "pro" && subscription.billingPeriod === "monthly"
-                      ? `${UI_PRICING_DIALOG_COLORS.primaryClass} text-white ${UI_PRICING_DIALOG_COLORS.primaryHoverClass} cursor-default`
-                      : `${UI_PRICING_DIALOG_COLORS.buttonGradient.className} ${UI_PRICING_DIALOG_COLORS.buttonGradient.hover.className} text-white`
+                      ? `${UI_PRICING_DIALOG_COLORS.primaryClass} ${UI_PRICING_DIALOG_COLORS.primaryHoverClass} cursor-default`
+                      : `${UI_PRICING_DIALOG_COLORS.buttonGradient.className} ${UI_PRICING_DIALOG_COLORS.buttonGradient.hover.className}`
                   )}
+                  style={{ color: COLOR_TEXT_WHITE }}
                   disabled={(subscription.tier === "pro" && subscription.billingPeriod === "monthly") || isUpgrading}
                   onClick={handleUpgradeMonthly}
                 >
                   {isUpgrading ? (
                     <span className="flex items-center justify-center gap-1.5">
-                      <div className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-2.5 h-2.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: COLOR_TEXT_WHITE }} />
                       <span className={PRICING_DIALOG_TEXT_SIZES.small}>{SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}</span>
                     </span>
                   ) : subscription.tier === "pro" && subscription.billingPeriod === "monthly" ? (
@@ -780,12 +781,12 @@ export function PricingDialog({
               
               <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5 pointer-events-none">
                 {subscription.tier === "pro" && subscription.billingPeriod === "yearly" && (
-                  <Badge className={`${UI_PRICING_DIALOG_COLORS.primaryClass} text-white border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium mb-0.5`}>
+                  <Badge className={`${UI_PRICING_DIALOG_COLORS.primaryClass} border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium mb-0.5`} style={{ color: COLOR_TEXT_WHITE }}>
                     {SUBSCRIPTION_UI_TEXT.pro.button.current}
                   </Badge>
                 )}
-                <Badge className={`${UI_PRICING_DIALOG_COLORS.buttonGradient.className} text-white border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`}>
-                  <Icon name="crown" size={ICON_SIZE_XS} className="mr-0.5" />
+                <Badge className={`${UI_PRICING_DIALOG_COLORS.buttonGradient.className} border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`} style={{ color: COLOR_TEXT_WHITE }}>
+                  <Icon name="crown" size={ICON_SIZE_XS} className="mr-0.5" style={{ color: COLOR_TEXT_WHITE }} />
                   {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
                 </Badge>
               </div>
@@ -839,7 +840,7 @@ export function PricingDialog({
                       <div className={cn(
                         "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5"
                       )} style={{ backgroundImage: `linear-gradient(to bottom right, ${COLOR_PRIMARY}, ${COLOR_PRIMARY_LIGHT})` }}>
-                        <Icon name={feature.icon} size={6} className="w-1.5 h-1.5 text-white" />
+                        <Icon name={feature.icon} size={6} className="w-1.5 h-1.5" style={{ color: COLOR_TEXT_WHITE }} />
                       </div>
                       <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground font-medium leading-snug`}>
                         {feature.text}
@@ -852,15 +853,16 @@ export function PricingDialog({
                   className={cn(
                     `w-full shadow-md hover:shadow-lg transition-all duration-300 ${PRICING_DIALOG_TEXT_SIZES.description} font-medium py-1.5 relative z-20`,
                     subscription.tier === "pro" && subscription.billingPeriod === "yearly"
-                      ? `${UI_PRICING_DIALOG_COLORS.primaryClass} text-white ${UI_PRICING_DIALOG_COLORS.primaryHoverClass} cursor-default`
-                      : `${UI_PRICING_DIALOG_COLORS.buttonGradient.className} ${UI_PRICING_DIALOG_COLORS.buttonGradient.hover.className} text-white`
+                      ? `${UI_PRICING_DIALOG_COLORS.primaryClass} ${UI_PRICING_DIALOG_COLORS.primaryHoverClass} cursor-default`
+                      : `${UI_PRICING_DIALOG_COLORS.buttonGradient.className} ${UI_PRICING_DIALOG_COLORS.buttonGradient.hover.className}`
                   )}
+                  style={{ color: COLOR_TEXT_WHITE }}
                   disabled={(subscription.tier === "pro" && subscription.billingPeriod === "yearly") || isUpgrading}
                   onClick={handleUpgradeYearly}
                 >
                   {isUpgrading ? (
                     <span className="flex items-center justify-center gap-1.5">
-                      <div className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-2.5 h-2.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: COLOR_TEXT_WHITE }} />
                       <span className={PRICING_DIALOG_TEXT_SIZES.small}>{SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}</span>
                     </span>
                   ) : subscription.tier === "pro" && subscription.billingPeriod === "yearly" ? (
