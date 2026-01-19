@@ -32,8 +32,8 @@ export const HEADER_ICON_SIZE_SMALL = '1rem'; // w-4 h-4 = 1rem (16px)
 export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
 export const HEADER_BUTTON_SIZE_SMALL_SCREEN = '1.75rem'; // h-7 w-7 = 1.75rem (28px) - for laptops and small screens
 export const HEADER_ICON_SIZE_SMALL_SCREEN = '0.875rem'; // w-3.5 h-3.5 = 0.875rem (14px) - for laptops and small screens
-export const HEADER_ICON_SIZE_BUTTON_SMALL = '0.625rem'; // w-2.5 h-2.5 = 0.625rem (10px) - for button icons on small screens (reduced from 0.75rem)
-export const HEADER_ICON_SIZE_BUTTON_DESKTOP = '0.75rem'; // w-3 h-3 = 0.75rem (12px) - for button icons on desktop (reduced from 0.875rem)
+export const HEADER_ICON_SIZE_BUTTON_SMALL = '0.8125rem'; // 0.625rem * 1.3 = 0.8125rem (13px) - for button icons on small screens (increased by 30%)
+export const HEADER_ICON_SIZE_BUTTON_DESKTOP = '0.975rem'; // 0.75rem * 1.3 = 0.975rem (15.6px) - for button icons on desktop (increased by 30%)
 // Common icon sizes (numeric values for Phosphor Icons)
 export const ICON_SIZE_XS = 12; // Extra small icons
 export const ICON_SIZE_SM = 14; // Small icons
