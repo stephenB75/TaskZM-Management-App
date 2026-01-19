@@ -30,6 +30,12 @@ import {
 } from "./ui/dropdown-menu";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 import { useTeam } from "../contexts/TeamContext";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -998,25 +1004,61 @@ export function TeamPanel() {
         actions={
           <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
             {teamMembers.length > 0 && (
-              <Button
-                onClick={() => setShowBulkInvite(true)}
-                variant="outline"
-                size="sm"
-                className="hidden sm:flex"
-              >
-                <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                Bulk Invite
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      onClick={() => setShowBulkInvite(true)}
+                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setShowBulkInvite(true);
+                        }
+                      }}
+                    >
+                      <Icon 
+                        name="users"
+                        size={ICON_SIZE_XL}
+                        className="text-primary dark:text-primary-foreground flex-shrink-0"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Bulk Invite</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
-            <Button
-              onClick={() => setShowAddMember(true)}
-              className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-              size="sm"
-            >
-              <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-              <span className="hidden sm:inline">Add Member</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    onClick={() => setShowAddMember(true)}
+                    className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setShowAddMember(true);
+                      }
+                    }}
+                  >
+                    <Icon 
+                      name="user-plus"
+                      size={ICON_SIZE_XL}
+                      className="text-primary dark:text-primary-foreground flex-shrink-0"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add Member</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         }
         hideDesktopLogo
