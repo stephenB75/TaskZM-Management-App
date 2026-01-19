@@ -36,6 +36,7 @@ export const TEAM_PANEL_UI_TEXT = {
   addMemberDescription: 'Invite a new member to collaborate on tasks',
   emailLabel: 'Email',
   nameLabel: 'Name',
+  createNewTeam: 'Create New Team',
   stats: {
     task: 'task',
     tasks: 'tasks',

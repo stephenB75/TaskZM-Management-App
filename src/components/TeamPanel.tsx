@@ -119,7 +119,9 @@ import {
   TEAM_PANEL_VERTICAL_AVATAR_SIZE,
   TEAM_PANEL_VERTICAL_NAME_SIZE,
   TEAM_PANEL_VERTICAL_ROLE_SIZE,
+  TEAM_PANEL_VERTICAL_EMAIL_SIZE,
   TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE,
+  TEAM_PANEL_HEADER_ICON_GAP,
   TEAM_PANEL_VERTICAL_SPACING,
   TEAM_PANEL_VERTICAL_PADDING,
   TEAM_PANEL_GRID_COLUMNS,
@@ -899,10 +901,16 @@ export function TeamPanel() {
 
           {/* Name */}
           <h3 
-            className="font-semibold text-foreground text-center mb-1"
+            className="font-semibold text-foreground text-center mb-1 truncate"
             style={{ 
               fontSize: TEAM_PANEL_VERTICAL_NAME_SIZE,
-              marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
+              marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%',
+              paddingLeft: TEAM_PANEL_CARD_PADDING,
+              paddingRight: TEAM_PANEL_CARD_PADDING,
             }}
           >
             {member.name}
@@ -917,12 +925,18 @@ export function TeamPanel() {
             }}
           >
             <span className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
-              {member.role === 'admin' && (
+              {member.role === 'admin' ? (
                 <Icon 
                   name="shield-check" 
                   size={TEAM_PANEL_ICON_SIZE_SMALL} 
                   className="text-primary flex-shrink-0" 
                   weight="duotone"
+                />
+              ) : (
+                <Icon 
+                  name="user-circle-check" 
+                  size={TEAM_PANEL_ICON_SIZE_SMALL} 
+                  className="text-muted-foreground flex-shrink-0" 
                 />
               )}
               {roleDisplayText}
@@ -938,7 +952,7 @@ export function TeamPanel() {
           <div 
             className="text-muted-foreground text-center mb-3"
             style={{ 
-              fontSize: TEAM_PANEL_VERTICAL_ROLE_SIZE,
+              fontSize: TEAM_PANEL_VERTICAL_EMAIL_SIZE,
               marginBottom: TEAM_PANEL_VERTICAL_SPACING,
               paddingLeft: TEAM_PANEL_CARD_PADDING,
               paddingRight: TEAM_PANEL_CARD_PADDING,
@@ -946,11 +960,14 @@ export function TeamPanel() {
           >
             <a 
               href={`mailto:${member.email}`}
-              className="hover:text-primary transition-colors flex items-center justify-center"
+              className="hover:text-primary transition-colors flex items-center justify-center truncate"
               style={{ 
                 gap: PANEL_GAP_SMALL,
                 maxWidth: '100%',
                 minWidth: 0,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -960,10 +977,10 @@ export function TeamPanel() {
                 className="text-muted-foreground flex-shrink-0" 
               />
               <span 
-                className="break-words"
                 style={{ 
-                  wordBreak: 'break-word',
-                  overflowWrap: 'break-word',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                   maxWidth: '100%',
                   minWidth: 0,
                 }}
@@ -1150,7 +1167,36 @@ export function TeamPanel() {
             : `${filteredMembers.length} of ${teamMembers.length} member${teamMembers.length === 1 ? "" : "s"}`
         }
         actions={
-          <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
+          <div className="flex items-center" style={{ gap: TEAM_PANEL_HEADER_ICON_GAP }}>
+            {isCurrentUserAdmin && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      onClick={() => setShowCreateTeam(true)}
+                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setShowCreateTeam(true);
+                        }
+                      }}
+                    >
+                      <Icon 
+                        name="user-three"
+                        size={ICON_SIZE_XL}
+                        className="text-primary dark:text-primary-foreground flex-shrink-0"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{TEAM_PANEL_UI_TEXT.createNewTeam}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {teamMembers.length > 0 && (
               <TooltipProvider>
                 <Tooltip>
@@ -1630,7 +1676,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="member">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <Icon name="user-circle-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Member</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1641,7 +1687,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="viewer">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <Icon name="user-circle-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Viewer</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1782,7 +1828,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="member">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <Icon name="user-circle-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Member</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1793,7 +1839,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="viewer">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <Icon name="user-circle-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Viewer</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>

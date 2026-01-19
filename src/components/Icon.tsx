@@ -59,6 +59,8 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'users': 'Users',
   'user': 'User',
   'user-plus': 'UserPlus',
+  'user-circle-check': 'UserCircleCheck',
+  'user-three': 'UsersThree',
   'bell': 'Bell',
   'alert-circle': 'WarningCircle',
   'alert-triangle': 'Warning',

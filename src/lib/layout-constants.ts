@@ -357,6 +357,7 @@ export const TEAM_PANEL_BADGE_PADDING_X = '0.5rem'; // px-2 = 0.5rem
 export const TEAM_PANEL_BADGE_PADDING_Y = '0.125rem'; // py-0.5 = 0.125rem
 export const TEAM_PANEL_TEXTAREA_PADDING_X = '0.75rem'; // px-3 = 0.75rem
 export const TEAM_PANEL_TEXTAREA_PADDING_Y = '0.5rem'; // py-2 = 0.5rem
+export const TEAM_PANEL_SELECT_ITEM_PADDING_Y = '0.625rem'; // py-2.5 = 0.625rem (10px) - increased padding for better touch targets
 export const TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT = '0.25rem'; // right-1 = 0.25rem
 export const TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET = '0.5rem'; // Additional padding top offset
 export const TEAM_PANEL_CARD_BORDER_RADIUS_BOTTOM = '0.5rem'; // Border radius for bottom corners (rounded-lg equivalent)
@@ -385,6 +386,7 @@ export const TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE = 3; // Maximum number of othe
 export const TEAM_PANEL_VERTICAL_AVATAR_SIZE = '120px'; // Size of vertical profile avatar
 export const TEAM_PANEL_VERTICAL_NAME_SIZE = '1.125rem'; // text-lg = 1.125rem (18px)
 export const TEAM_PANEL_VERTICAL_ROLE_SIZE = '0.875rem'; // text-sm = 0.875rem (14px)
+export const TEAM_PANEL_VERTICAL_EMAIL_SIZE = '0.75rem'; // text-xs = 0.75rem (12px) - smaller for email to fit on one line
 export const TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE = '1.25rem'; // Size of social media icons
 export const TEAM_PANEL_VERTICAL_SPACING = '0.75rem'; // gap-3 = 0.75rem (12px) between elements
 export const TEAM_PANEL_VERTICAL_PADDING = '1.5rem'; // p-6 = 1.5rem (24px) card padding
@@ -397,6 +399,7 @@ export const TEAM_PANEL_GRID_GAP = '0.75rem'; // gap-3 = 0.75rem (12px) between 
 export const TEAM_MAX_MEMBERS = 8; // Maximum team members per team
 export const TEAM_PANEL_TAB_HEIGHT = '2.5rem'; // Height for team tabs
 export const TEAM_PANEL_TAB_PADDING = '0.75rem'; // Padding for team tabs
+export const TEAM_PANEL_HEADER_ICON_GAP = '1rem'; // gap-4 = 1rem (16px) - increased spacing between header icons for better mobile touch targets
 
 // Folder Panel specific constants
 export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
