@@ -751,7 +751,7 @@ export function InboxView() {
                       <div
                         onClick={unscheduledTasks.length === 0 ? undefined : handleScheduleAll}
                         className={cn(
-                          "cursor-pointer flex flex-col items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
+                          "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
                           unscheduledTasks.length === 0 && "opacity-50 cursor-not-allowed"
                         )}
                         role="button"
@@ -766,13 +766,10 @@ export function InboxView() {
                       >
                         <Icon 
                           name="head-circuit"
-                          size={ICON_SIZE_LG}
+                          size={ICON_SIZE_XL}
                           weight="duotone"
                           className="text-primary dark:text-primary-foreground flex-shrink-0"
                         />
-                        <span className="text-[10px] text-foreground dark:text-gray-100 mt-0.5">
-                          Schedule All
-                        </span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -795,7 +792,7 @@ export function InboxView() {
                           setIsTaskDialogOpen(true);
                         }}
                         className={cn(
-                          "hidden sm:flex cursor-pointer flex-col items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
+                          "hidden sm:flex cursor-pointer items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
                           !permissions.canCreateTask && "opacity-50 cursor-not-allowed"
                         )}
                         role="button"
@@ -811,12 +808,9 @@ export function InboxView() {
                       >
                         <Icon 
                           name="check-square"
-                          size={ICON_SIZE_LG}
+                          size={ICON_SIZE_XL}
                           className="text-primary dark:text-primary-foreground flex-shrink-0"
                         />
-                        <span className="text-[10px] text-foreground dark:text-gray-100 mt-0.5">
-                          New Task
-                        </span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
