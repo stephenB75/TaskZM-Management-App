@@ -850,7 +850,7 @@ export function InboxView() {
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="relative flex items-center gap-2 p-2 bg-white/50 dark:bg-card/50 rounded-lg border border-primary/20">
+                  <div className="relative flex items-center gap-2">
                     <Input
                       placeholder="Quick add task..."
                       value={quickAddTitle}
