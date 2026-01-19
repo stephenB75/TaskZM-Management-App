@@ -417,155 +417,64 @@ export function ArchiveView() {
                           exit={{ opacity: 0, scale: 0.95 }}
                           transition={{ delay: index * 0.03 }}
                         >
-                          <Card
-                            className={cn(
-                              // Responsive padding: smaller on mobile, comfortable on desktop
-                              "px-2.5 py-2 md:px-3 md:py-3 cursor-pointer transition-all",
-                              // Responsive borders: thinner on mobile, standard on desktop
-                              "border-l-2 md:border-l-4 border-gray-300/80 md:border-gray-300/90",
-                              // Better shadow blending on mobile
-                              "shadow-lg hover:shadow-xl",
-                              "sm:shadow-lg sm:hover:shadow-xl",
-                              getPriorityColor(task.priority),
-                            )}
-                            style={{
-                              // Custom shadow for better mobile blending
-                              boxShadow: isMobile 
-                                ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
-                                : undefined
-                            }}
+                          <div
+                            className="flex items-center gap-2 md:gap-3 py-2 px-1 cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => handleTaskClick(task)}
                           >
-                            <div className="flex items-start gap-2 md:gap-2.5">
-                              <Checkbox
-                                checked={selectedTaskIds.has(task.id)}
-                                onCheckedChange={() => {
-                                  setSelectedTaskIds(prev => {
-                                    const newSet = new Set(prev);
-                                    if (newSet.has(task.id)) {
-                                      newSet.delete(task.id);
-                                    } else {
-                                      newSet.add(task.id);
-                                    }
-                                    return newSet;
-                                  });
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="mt-0.5"
-                                style={{ 
-                                  width: ARCHIVE_CHECKBOX_SIZE, 
-                                  height: ARCHIVE_CHECKBOX_SIZE,
-                                  minWidth: ARCHIVE_CHECKBOX_SIZE,
-                                  minHeight: ARCHIVE_CHECKBOX_SIZE,
-                                }}
-                              />
-                              {/* Checkmark Icon */}
-                              <div 
-                                className="rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0"
-                                style={{ 
-                                  width: ARCHIVE_CHECKMARK_CONTAINER_SIZE, 
-                                  height: ARCHIVE_CHECKMARK_CONTAINER_SIZE 
-                                }}
+                            <Checkbox
+                              checked={selectedTaskIds.has(task.id)}
+                              onCheckedChange={() => {
+                                setSelectedTaskIds(prev => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(task.id)) {
+                                    newSet.delete(task.id);
+                                  } else {
+                                    newSet.add(task.id);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ 
+                                width: ARCHIVE_CHECKBOX_SIZE, 
+                                height: ARCHIVE_CHECKBOX_SIZE,
+                                minWidth: ARCHIVE_CHECKBOX_SIZE,
+                                minHeight: ARCHIVE_CHECKBOX_SIZE,
+                              }}
+                            />
+                            {/* Task Title - Just the headline */}
+                            <h3 
+                              className="flex-1 line-through opacity-70 line-clamp-2 font-semibold"
+                              style={{ fontSize: ARCHIVE_TITLE_TEXT_SIZE }}
+                            >
+                              {task.title}
+                            </h3>
+                            {/* Action Buttons */}
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={(e) =>
+                                  handleRestore(task, e)
+                                }
+                                title="Restore task"
                               >
-                                <Icon 
-                                  name="check-circle"
-                                  size={ARCHIVE_CHECKMARK_ICON_SIZE}
-                                  weight="fill"
-                                  className="text-green-600 dark:text-green-400" 
-                                />
-                              </div>
-
-                              {/* Task Content */}
-                              <div className="flex-1 min-w-0">
-                                <h3 
-                                  className="line-through opacity-70 mb-0.5 line-clamp-2"
-                                  style={{ fontSize: ARCHIVE_TITLE_TEXT_SIZE }}
-                                >
-                                  {task.title}
-                                </h3>
-
-                                {/* Description removed - only showing headline in archive view */}
-
-                                {/* Assignee Display */}
-                                {task.assignedTo &&
-                                  task.assignedTo.length > 0 && (
-                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                      {task.assignedTo
-                                        .slice(0, 3)
-                                        .map((userId) => {
-                                          const member =
-                                            getTeamMember(userId);
-                                          if (!member)
-                                            return null;
-
-                                          const initials = getInitials(member.name);
-
-                                          return (
-                                            <div
-                                              key={userId}
-                                              className="flex items-center gap-1"
-                                            >
-                                              <div 
-                                              className="rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60 flex items-center justify-center font-semibold"
-                                              style={{ 
-                                                width: ARCHIVE_ASSIGNEE_AVATAR_SIZE, 
-                                                height: ARCHIVE_ASSIGNEE_AVATAR_SIZE,
-                                                fontSize: ARCHIVE_ASSIGNEE_INITIALS_SIZE,
-                                              }}
-                                            >
-                                                {initials}
-                                              </div>
-                                              <span 
-                                                className="text-gray-600 opacity-60 font-semibold"
-                                                style={{ fontSize: ARCHIVE_ASSIGNEE_TEXT_SIZE }}
-                                              >
-                                                {member.name}
-                                              </span>
-                                            </div>
-                                          );
-                                        })}
-                                      {task.assignedTo.length >
-                                        3 && (
-                                        <span 
-                                          className="text-gray-500 opacity-60"
-                                          style={{ fontSize: ARCHIVE_ASSIGNEE_TEXT_SIZE }}
-                                        >
-                                          +
-                                          {task.assignedTo
-                                            .length - 3}
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-                              </div>
-
-                              {/* Action Buttons */}
-                              <div className="flex gap-1 flex-shrink-0">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                  onClick={(e) =>
-                                    handleRestore(task, e)
-                                  }
-                                  title="Restore task"
-                                >
-                                  <Icon name="rotate-ccw" size={ICON_SIZE_MD} />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                  onClick={(e) =>
-                                    handleDelete(task, e)
-                                  }
-                                  title="Delete permanently"
-                                >
-                                  <Icon name="trash-2" size={ICON_SIZE_MD} />
-                                </Button>
-                              </div>
+                                <Icon name="rotate-ccw" size={ICON_SIZE_MD} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                onClick={(e) =>
+                                  handleDelete(task, e)
+                                }
+                                title="Delete permanently"
+                              >
+                                <Icon name="trash-2" size={ICON_SIZE_MD} />
+                              </Button>
                             </div>
-                          </Card>
+                          </div>
                         </motion.div>
                       ))
                     )}
@@ -605,155 +514,64 @@ export function ArchiveView() {
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ delay: index * 0.03 }}
                       >
-                        <Card
-                          className={cn(
-                            // Responsive padding: smaller on mobile, comfortable on desktop
-                            "px-2.5 py-2 md:px-3 md:py-3 cursor-pointer transition-all",
-                            // Responsive borders: thinner on mobile, standard on desktop
-                            "border-l-2 md:border-l-4 border-gray-300/80 md:border-gray-300/90",
-                            // Better shadow blending on mobile
-                            "shadow-lg hover:shadow-xl",
-                            "sm:shadow-lg sm:hover:shadow-xl",
-                            getPriorityColor(task.priority),
-                          )}
-                          style={{
-                            // Custom shadow for better mobile blending
-                            boxShadow: isMobile 
-                              ? '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)'
-                              : undefined
-                          }}
+                        <div
+                          className="flex items-center gap-2 md:gap-3 py-2 px-1 cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={() => handleTaskClick(task)}
                         >
-                          <div className="flex items-start gap-2 md:gap-2.5">
-                            <Checkbox
-                              checked={selectedTaskIds.has(task.id)}
-                              onCheckedChange={() => {
-                                setSelectedTaskIds(prev => {
-                                  const newSet = new Set(prev);
-                                  if (newSet.has(task.id)) {
-                                    newSet.delete(task.id);
-                                  } else {
-                                    newSet.add(task.id);
-                                  }
-                                  return newSet;
-                                });
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="mt-0.5"
-                              style={{ 
-                                width: ARCHIVE_CHECKBOX_SIZE, 
-                                height: ARCHIVE_CHECKBOX_SIZE,
-                                minWidth: ARCHIVE_CHECKBOX_SIZE,
-                                minHeight: ARCHIVE_CHECKBOX_SIZE,
-                              }}
-                            />
-                            {/* Checkmark Icon */}
-                            <div 
-                              className="rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0"
-                              style={{ 
-                                width: ARCHIVE_CHECKMARK_CONTAINER_SIZE, 
-                                height: ARCHIVE_CHECKMARK_CONTAINER_SIZE 
-                              }}
+                          <Checkbox
+                            checked={selectedTaskIds.has(task.id)}
+                            onCheckedChange={() => {
+                              setSelectedTaskIds(prev => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(task.id)) {
+                                  newSet.delete(task.id);
+                                } else {
+                                  newSet.add(task.id);
+                                }
+                                return newSet;
+                              });
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ 
+                              width: ARCHIVE_CHECKBOX_SIZE, 
+                              height: ARCHIVE_CHECKBOX_SIZE,
+                              minWidth: ARCHIVE_CHECKBOX_SIZE,
+                              minHeight: ARCHIVE_CHECKBOX_SIZE,
+                            }}
+                          />
+                          {/* Task Title - Just the headline */}
+                          <h3 
+                            className="flex-1 line-through opacity-70 line-clamp-2 font-semibold"
+                            style={{ fontSize: ARCHIVE_TITLE_TEXT_SIZE }}
+                          >
+                            {task.title}
+                          </h3>
+                          {/* Action Buttons */}
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={(e) =>
+                                handleRestore(task, e)
+                              }
+                              title="Restore task"
                             >
-                              <Icon 
-                                name="check-circle"
-                                size={ARCHIVE_CHECKMARK_ICON_SIZE}
-                                weight="fill"
-                                className="text-green-600 dark:text-green-400" 
-                              />
-                            </div>
-
-                            {/* Task Content */}
-                            <div className="flex-1 min-w-0">
-                              <h3 
-                                className="line-through opacity-70 mb-0.5 line-clamp-2"
-                                style={{ fontSize: ARCHIVE_TITLE_TEXT_SIZE }}
-                              >
-                                {task.title}
-                              </h3>
-
-                              {/* Description removed - only showing headline in archive view */}
-
-                              {/* Assignee Display */}
-                              {task.assignedTo &&
-                                task.assignedTo.length > 0 && (
-                                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                    {task.assignedTo
-                                      .slice(0, 3)
-                                      .map((userId) => {
-                                        const member =
-                                          getTeamMember(userId);
-                                        if (!member)
-                                          return null;
-
-                                        const initials = getInitials(member.name);
-
-                                        return (
-                                          <div
-                                            key={userId}
-                                            className="flex items-center gap-1"
-                                          >
-                                            <div 
-                                              className="rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 opacity-60 flex items-center justify-center font-semibold"
-                                              style={{ 
-                                                width: ARCHIVE_ASSIGNEE_AVATAR_SIZE, 
-                                                height: ARCHIVE_ASSIGNEE_AVATAR_SIZE,
-                                                fontSize: ARCHIVE_ASSIGNEE_INITIALS_SIZE,
-                                              }}
-                                            >
-                                                {initials}
-                                              </div>
-                                              <span 
-                                                className="text-gray-600 opacity-60 font-semibold"
-                                                style={{ fontSize: ARCHIVE_ASSIGNEE_TEXT_SIZE }}
-                                              >
-                                                {member.name}
-                                              </span>
-                                          </div>
-                                        );
-                                      })}
-                                    {task.assignedTo.length >
-                                      3 && (
-                                      <span 
-                                        className="text-gray-500 opacity-60"
-                                        style={{ fontSize: ARCHIVE_ASSIGNEE_TEXT_SIZE }}
-                                      >
-                                        +
-                                        {task.assignedTo
-                                          .length - 3}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-1 flex-shrink-0">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                onClick={(e) =>
-                                  handleRestore(task, e)
-                                }
-                                title="Restore task"
-                              >
-                                <Icon name="rotate-ccw" size={ICON_SIZE_MD} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                onClick={(e) =>
-                                  handleDelete(task, e)
-                                }
-                                title="Delete permanently"
-                              >
-                                <Icon name="trash-2" size={ICON_SIZE_MD} />
-                              </Button>
-                            </div>
+                              <Icon name="rotate-ccw" size={ICON_SIZE_MD} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={(e) =>
+                                handleDelete(task, e)
+                              }
+                              title="Delete permanently"
+                            >
+                              <Icon name="trash-2" size={ICON_SIZE_MD} />
+                            </Button>
                           </div>
-                        </Card>
+                        </div>
                       </motion.div>
                     ))
                   )}
