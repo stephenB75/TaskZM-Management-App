@@ -66,7 +66,7 @@ export function AppSidebar({
     {
       id: "dashboard",
       label: "Dashboard",
-      iconName: "grid",
+      iconName: "kanban",
     },
     {
       id: "notifications",

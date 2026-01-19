@@ -114,7 +114,8 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'bar-chart-3': 'ChartBar',
   'pie-chart': 'ChartPie',
   'grid': 'GridFour',
-  'dashboard': 'GridFour',
+  'dashboard': 'Kanban', // Changed from GridFour to Kanban
+  'kanban': 'Kanban',
   'trending-up': 'TrendUp',
   'activity': 'Activity',
   'file-text': 'FileText',
