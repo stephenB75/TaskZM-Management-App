@@ -75,6 +75,7 @@ import {
   SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
   SETTINGS_PANEL_ICON_SIZE_SMALL,
   SETTINGS_PANEL_ICON_SIZE_MEDIUM,
+  SETTINGS_PANEL_ACCORDION_ICON_SIZE,
   ICON_SIZE_SM,
   ICON_SIZE_MD,
   SETTINGS_PANEL_GAP_SMALL,
@@ -553,7 +554,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* User Profile */}
         <AccordionItem 
           value="user-profile" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.profile.className} dark:from-gray-800/30 dark:to-gray-700/30 md:my-4`}
+          className="md:my-4"
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -565,17 +566,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <div 
-                className="rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold"
-                style={{ 
-                  width: SETTINGS_PANEL_AVATAR_SIZE_VALUE, 
-                  height: SETTINGS_PANEL_AVATAR_SIZE_VALUE,
-                  fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL
-                }}
-              >
-                {getInitials(user?.name)}
-              </div>
-              <span>{SETTINGS_PANEL_UI_TEXT.profile.userProfile}</span>
+              <Icon 
+                name="user-circle-check" 
+                size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} 
+                className="text-primary flex-shrink-0" 
+              />
+              <span className="font-semibold">{SETTINGS_PANEL_UI_TEXT.profile.userProfile}</span>
             </div>
           </AccordionTrigger>
           <AccordionContent 
@@ -810,7 +806,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Subscription */}
         <AccordionItem 
           value="subscription" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.subscription.className} dark:from-gray-800/50 dark:to-gray-700/50 md:my-4`}
+          className="md:my-4"
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -1253,7 +1249,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Calendar Integration */}
         <AccordionItem 
           value="calendar" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.calendar.className} dark:from-blue-900/25 dark:to-purple-900/25`} 
+          className="" 
           data-tour="calendar-integration"
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -1410,7 +1406,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Notifications */}
         <AccordionItem 
           value="notifications" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.notifications.className} dark:from-orange-900/20 dark:to-green-900/20`}
+          className=""
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -1422,8 +1418,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center min-w-0 flex-1" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
-              <Icon name="bell" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-primary flex-shrink-0" />
-              <span className="text-sm md:text-base truncate">Notifications</span>
+              <Icon name="bell" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} className="text-primary flex-shrink-0" />
+              <span className="text-sm md:text-base truncate font-semibold">Notifications</span>
               {badgeCount > 0 && (
                 <Badge variant="destructive" className="ml-auto flex-shrink-0 text-xs">
                   {badgeCount}
@@ -1702,7 +1698,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Tags Management */}
         <AccordionItem 
           value="tags" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.tags.className} dark:from-purple-800/25 dark:to-indigo-800/25`}
+          className=""
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -1714,8 +1710,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="tag" size={ICON_SIZE_LG} className="text-primary" />
-              <span>Tags Management</span>
+              <Icon name="tag" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} className="text-primary" />
+              <span className="font-semibold">Tags Management</span>
             </div>
           </AccordionTrigger>
           <AccordionContent 
@@ -1803,7 +1799,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* AI Settings */}
         <AccordionItem 
           value="ai-settings" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.aiSettings.className} dark:from-cyan-900/25 dark:to-blue-900/25`}
+          className=""
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -1815,8 +1811,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" className="text-primary" />
-              <span>AI Scheduling</span>
+              <Icon name="sparkles" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} weight="duotone" className="text-primary" />
+              <span className="font-semibold">AI Scheduling</span>
               {!features.aiScheduler && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
                   PRO
@@ -2031,7 +2027,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Date, Time & Theme */}
         <AccordionItem 
           value="datetime" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.datetime.className} dark:from-violet-900/25 dark:to-orange-900/25`}
+          className=""
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -2043,8 +2039,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="clock" size={ICON_SIZE_LG} className="text-primary" />
-              <span>Date, Time & Theme</span>
+              <Icon name="clock" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} className="text-primary" />
+              <span className="font-semibold">Date, Time & Theme</span>
             </div>
           </AccordionTrigger>
           <AccordionContent 
@@ -2166,7 +2162,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Task Rollover */}
         <AccordionItem 
           value="rollover" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.rollover.className} dark:from-green-900/25 dark:to-teal-900/25`}
+          className=""
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -2178,8 +2174,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="rotate-ccw" size={ICON_SIZE_LG} className="text-primary" />
-              <span>Task Rollover</span>
+              <Icon name="rotate-ccw" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} className="text-primary" />
+              <span className="font-semibold">Task Rollover</span>
               {!features.taskRollover && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
                   PRO
@@ -2262,7 +2258,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Task Category Hours */}
         <AccordionItem 
           value="hours" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.hours.className} dark:from-amber-900/25 dark:to-pink-900/25`}
+          className=""
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -2274,8 +2270,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="briefcase" size={ICON_SIZE_LG} className="text-primary" />
-              <span>Task Category Hours</span>
+              <Icon name="briefcase" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} className="text-primary" />
+              <span className="font-semibold">Task Category Hours</span>
               {!features.taskHours && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
                   PRO
@@ -2622,7 +2618,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Awards & Achievements */}
         <AccordionItem 
           value="awards" 
-          className={`border rounded-lg ${UI_SETTINGS_PANEL_GRADIENTS.awards.className} dark:from-purple-900/30 dark:to-yellow-900/30`}
+          className=""
           data-tour="awards-section"
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -2635,8 +2631,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="trophy" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
-              <span>Awards & Achievements</span>
+              <Icon name="trophy" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} weight="duotone" className="text-primary" />
+              <span className="font-semibold">Awards & Achievements</span>
               <Badge variant="secondary" className="ml-auto bg-muted text-muted-foreground text-xs">
                 {earnedAwards.length}/{awards.length}
               </Badge>
@@ -2675,7 +2671,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               {/* Award Categories as Nested Accordion */}
               <Accordion type="multiple" className="space-y-3">
                 {/* Completion Awards */}
-                <AccordionItem value="completion" className="border rounded-lg px-3 bg-gradient-to-br from-blue-50/50 to-cyan-50/50 dark:from-blue-950/20 dark:to-cyan-950/20">
+                <AccordionItem value="completion" className="px-3">
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
@@ -2759,7 +2755,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </AccordionItem>
 
                 {/* Streak Awards */}
-                <AccordionItem value="streak" className="border rounded-lg px-3 bg-gradient-to-br from-orange-50/50 to-red-50/50 dark:from-orange-950/20 dark:to-red-950/20">
+                <AccordionItem value="streak" className="px-3">
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0">
@@ -2843,7 +2839,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </AccordionItem>
 
                 {/* Focus Awards */}
-                <AccordionItem value="focus" className="border rounded-lg px-3 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20">
+                <AccordionItem value="focus" className="px-3">
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
@@ -2927,7 +2923,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </AccordionItem>
 
                 {/* Special Awards */}
-                <AccordionItem value="special" className="border rounded-lg px-3 bg-gradient-to-br from-pink-50/50 to-purple-50/50 dark:from-pink-950/20 dark:to-purple-950/20">
+                <AccordionItem value="special" className="px-3">
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 w-full">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0">
