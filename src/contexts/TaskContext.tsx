@@ -57,6 +57,8 @@ import {
   MINUTES_PER_HOUR,
   MILLISECONDS_PER_MINUTE,
   HOURS_PER_DAY,
+  WORKSPACE_SYNC_ACTIVE_MULTIPLIER,
+  WORKSPACE_SYNC_IDLE_MULTIPLIER,
 } from '../lib/business-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
