@@ -1811,7 +1811,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="sparkles" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} weight="duotone" className="text-primary" />
+              <Icon name="head-circuit" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} weight="duotone" className="text-primary flex-shrink-0" />
               <span className="font-semibold">AI Scheduling</span>
               {!features.aiScheduler && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
@@ -3001,17 +3001,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* App Tour */}
         <AccordionItem 
           value="app-tour" 
-          className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 my-2 sm:my-1.5 md:my-4"
+          className=""
           style={{
-            background: isDark 
-              ? `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER_DARK, 0.25)}, ${getColorWithOpacity(COLOR_PASTEL_SKY_DARK, 0.25)})`
-              : `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, 0.4)}, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.4)})`,
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
           }}
         >
-          <AccordionTrigger className="hover:no-underline py-4">
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="compass" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" className="text-primary" />
-              <span>App Tour</span>
+              <Icon name="compass" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} weight="duotone" className="text-primary flex-shrink-0" />
+              <span className="font-semibold">App Tour</span>
               {!hasSeenTour && (
                 <Badge className="bg-accent/50 text-foreground border-accent/50 ml-2">
                   New
@@ -3087,17 +3090,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* About */}
         <AccordionItem 
           value="about" 
-          className="border rounded-lg px-4 py-2 sm:py-0 md:py-0 my-2 sm:my-1.5 md:my-4"
+          className=""
           style={{
-            background: isDark 
-              ? `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_SKY_DARK, 0.25)}, ${getColorWithOpacity(COLOR_PASTEL_MINT_DARK, 0.25)})`
-              : `linear-gradient(to bottom right, ${getColorWithOpacity(COLOR_PASTEL_SKY, 0.4)}, ${getColorWithOpacity(COLOR_PASTEL_MINT, 0.4)})`,
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
           }}
         >
-          <AccordionTrigger className="hover:no-underline py-4">
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-              <Icon name="info" size={ICON_SIZE_LG} className="text-primary" />
-              <span>About</span>
+              <Icon name="info" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} className="text-primary flex-shrink-0" />
+              <span className="font-semibold">About</span>
             </div>
           </AccordionTrigger>
           <AccordionContent 
