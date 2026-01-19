@@ -138,6 +138,16 @@ app.get("/taskzm-database-function/shared-terminology/:domain", async (c) => {
       .limit(TERMINOLOGY_CONFIG.maxTermsPerDomain);
     
     if (error) {
+      // If table doesn't exist, return empty results instead of error
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        console.warn('shared_terminology table does not exist, returning empty results');
+        return c.json({
+          keywords: [],
+          phrases: [],
+          verbs: [],
+          nouns: [],
+        });
+      }
       console.error('Error fetching shared terminology:', error);
       return c.json({ error: getErrorMessage(error) }, 500);
     }
@@ -210,7 +220,12 @@ app.post("/taskzm-database-function/shared-terminology", async (c) => {
         });
         
         if (upsertError) {
-          console.warn(`Failed to save keyword "${keyword}":`, upsertError);
+          // If table doesn't exist, skip silently (table will be created by migration)
+          if (upsertError.code === '42P01' || upsertError.message?.includes('does not exist')) {
+            console.warn(`shared_terminology table does not exist, skipping keyword "${keyword}"`);
+          } else {
+            console.warn(`Failed to save keyword "${keyword}":`, upsertError);
+          }
           skippedCount++;
         } else {
           savedCount++;
@@ -237,7 +252,12 @@ app.post("/taskzm-database-function/shared-terminology", async (c) => {
         });
         
         if (upsertError) {
-          console.warn(`Failed to save phrase "${phrase}":`, upsertError);
+          // If table doesn't exist, skip silently (table will be created by migration)
+          if (upsertError.code === '42P01' || upsertError.message?.includes('does not exist')) {
+            console.warn(`shared_terminology table does not exist, skipping phrase "${phrase}"`);
+          } else {
+            console.warn(`Failed to save phrase "${phrase}":`, upsertError);
+          }
           skippedCount++;
         } else {
           savedCount++;
@@ -264,7 +284,12 @@ app.post("/taskzm-database-function/shared-terminology", async (c) => {
         });
         
         if (upsertError) {
-          console.warn(`Failed to save verb "${verb}":`, upsertError);
+          // If table doesn't exist, skip silently (table will be created by migration)
+          if (upsertError.code === '42P01' || upsertError.message?.includes('does not exist')) {
+            console.warn(`shared_terminology table does not exist, skipping verb "${verb}"`);
+          } else {
+            console.warn(`Failed to save verb "${verb}":`, upsertError);
+          }
           skippedCount++;
         } else {
           savedCount++;
@@ -291,7 +316,12 @@ app.post("/taskzm-database-function/shared-terminology", async (c) => {
         });
         
         if (upsertError) {
-          console.warn(`Failed to save noun "${noun}":`, upsertError);
+          // If table doesn't exist, skip silently (table will be created by migration)
+          if (upsertError.code === '42P01' || upsertError.message?.includes('does not exist')) {
+            console.warn(`shared_terminology table does not exist, skipping noun "${noun}"`);
+          } else {
+            console.warn(`Failed to save noun "${noun}":`, upsertError);
+          }
           skippedCount++;
         } else {
           savedCount++;
