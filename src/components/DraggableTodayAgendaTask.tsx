@@ -309,7 +309,8 @@ export function DraggableTodayAgendaTask({
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    touchAction: (isMobile ? "auto" : "none") as const, // Allow normal touch on mobile
+    // Allow normal touch scrolling on mobile/tablet, prevent on desktop for drag
+    touchAction: (shouldUseMobileLayout ? "auto" : "none") as const,
   };
 
   const getPriorityLineColor = (priority: Task["priority"]) => {
@@ -418,10 +419,10 @@ export function DraggableTodayAgendaTask({
         ref={setNodeRef}
         style={{
           ...style,
-          ...(!isMobile && isDragging ? { opacity: TASK_CARD_OPACITY.dragging / 100 } : {})
+          ...(!shouldUseMobileLayout && isDragging ? { opacity: TASK_CARD_OPACITY.dragging / 100 } : {})
         }}
         {...attributes}
-        {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
+        {...(shouldUseMobileLayout ? {} : listeners)} // Only apply drag listeners on desktop (not mobile/tablet)
         initial={{ opacity: 0, x: -20 }}
         animate={{ 
           opacity: isDragging ? 0.7 : (task.status === "done" ? 0.6 : 1), 
@@ -429,10 +430,10 @@ export function DraggableTodayAgendaTask({
         }}
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.2, delay: index * 0.05 }}
-        className={cn(
+          className={cn(
           "flex gap-3 group w-full min-w-0 relative transition-all duration-200",
-          !isMobile && isDragging ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.dragging}` : "",
-          !isMobile && !isDragging ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hover}` : "",
+          !shouldUseMobileLayout && isDragging ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.dragging}` : "",
+          !shouldUseMobileLayout && !isDragging ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hover}` : "",
         )}
         data-task-id={task.id}
       >
