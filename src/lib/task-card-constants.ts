@@ -120,35 +120,36 @@ export const TASK_CARD_FONT_SIZES = {
   },
 } as const;
 
-// Icon Sizes
+// Icon Sizes (numeric pixel values for Icon component)
+// Tailwind: w-2 = 0.5rem = 8px, w-2.5 = 0.625rem = 10px, w-3 = 0.75rem = 12px, w-3.5 = 0.875rem = 14px, w-4 = 1rem = 16px
 export const TASK_CARD_ICON_SIZES = {
   clock: {
-    mobile: 'w-2.5 h-2.5',
-    desktop: 'w-3 h-3',
+    mobile: 10, // w-2.5 = 10px
+    desktop: 12, // w-3 = 12px
   },
   repeat: {
-    mobile: 'w-3 h-3',
-    desktop: 'w-3.5 h-3.5',
+    mobile: 12, // w-3 = 12px
+    desktop: 14, // w-3.5 = 14px
   },
   timer: {
-    mobile: 'w-2 h-2',
-    desktop: 'w-2.5 h-2.5',
+    mobile: 8, // w-2 = 8px
+    desktop: 10, // w-2.5 = 10px
   },
   timerLarge: {
-    mobile: 'w-2.5 h-2.5',
-    desktop: 'w-3 h-3',
+    mobile: 10, // w-2.5 = 10px
+    desktop: 12, // w-3 = 12px
   },
   checkbox: {
-    mobile: 'w-3.5 h-3.5',
-    desktop: 'w-4 h-4',
+    mobile: 14, // w-3.5 = 14px
+    desktop: 16, // w-4 = 16px
   },
   subtask: {
-    mobile: 'w-2 h-2',
-    desktop: 'w-2.5 h-2.5',
+    mobile: 8, // w-2 = 8px
+    desktop: 10, // w-2.5 = 10px
   },
   assignedUser: {
-    mobile: 'w-3 h-3',
-    desktop: 'w-4 h-4',
+    mobile: 12, // w-3 = 12px
+    desktop: 16, // w-4 = 16px
   },
 } as const;
 

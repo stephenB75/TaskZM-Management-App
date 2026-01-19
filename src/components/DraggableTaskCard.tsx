@@ -710,12 +710,13 @@ export const DraggableTaskCard = React.forwardRef<
             <button
               onClick={handleToggleComplete}
               onPointerDown={(e) => e.stopPropagation()}
-              className={cn("flex-shrink-0 hover:opacity-80 transition-opacity", isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop)}
+              className="flex-shrink-0 hover:opacity-80 transition-opacity"
             >
-              <Icon name="circle"
+              <Icon 
+                name="circle"
                 size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
                 className={cn(
-                  "transition-colors",
+                  "transition-colors flex-shrink-0",
                   task.status === "done"
                     ? "text-primary fill-primary"
                     : "text-gray-300 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300",
@@ -976,7 +977,7 @@ export const DraggableTaskCard = React.forwardRef<
                           background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
                         }}
                       >
-                        <Icon name="timer" className={cn("animate-spin flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop)} />
+                        <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin flex-shrink-0" />
                         <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
                       </div>
                     </div>
@@ -985,8 +986,10 @@ export const DraggableTaskCard = React.forwardRef<
                   {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top) */}
                   {task.estimatedTime && task.estimatedTime >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && task.actualTime && task.actualTime > 0 && !pomodoroIsRunning && (
                     <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
-                      <Icon name="timer" 
-                        className={cn("flex-shrink-0", isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop)} 
+                      <Icon 
+                        name="timer" 
+                        size={isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop}
+                        className="flex-shrink-0" 
                         style={{ color: TASK_CARD_THEME_COLORS.primary }}
                       />
                       <span 
