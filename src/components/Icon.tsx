@@ -59,7 +59,8 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'users': 'Users',
   'user': 'User',
   'user-plus': 'UserPlus',
-  'user-circle-check': 'UserCircleCheck',
+  'user-circle': 'UserCircle',
+  'user-circle-check': 'UserCircle', // UserCircleCheck doesn't exist in phosphor-react v1.4.1, using UserCircle as fallback
   'user-three': 'UsersThree',
   'bell': 'Bell',
   'alert-circle': 'WarningCircle',
