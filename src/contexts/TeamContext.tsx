@@ -357,10 +357,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
     try {
       const newTeam = await api.createTeam(workspaceId, name, description);
-      setTeams(prev => [...prev, newTeam]);
+      // Sync teams from server to get the complete list with all metadata
+      await syncTeams(workspaceId);
+      // Select the newly created team after sync
       setCurrentTeamId(newTeam.id);
       toast.success(`Team "${name}" created successfully`);
-      await syncTeams(workspaceId);
     } catch (error) {
       console.error('Failed to create team:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create team');
