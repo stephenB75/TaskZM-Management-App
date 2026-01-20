@@ -3396,7 +3396,7 @@ export function TaskDialog({
                   onClick={handleDuplicate}
                   className="gap-1.5 sm:gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground h-10 px-4 text-sm font-medium"
                 >
-                  <Copy className="w-4 h-4" />
+                  <Icon name="copy" size={ICON_SIZE_MD} />
                   <span className="hidden sm:inline">Duplicate</span>
                   <span className="sm:hidden">Dup</span>
                 </Button>
