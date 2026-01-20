@@ -69,6 +69,7 @@ import { generateDescription } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
+import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS } from "../lib/task-dialog-constants";
 import type {
   Task,
   TaskPriority,
@@ -192,14 +193,18 @@ function FixedMiniCalendar({
           size="sm"
           onClick={() => onFieldChange("scheduled")}
           className={cn(
-            "flex-1 text-xs h-8",
+            "flex-1",
+            style: {
+              fontSize: TASK_DIALOG_FONT_SIZES.xs,
+              height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
+            },
             activeField === "scheduled"
               ? "bg-primary text-primary-foreground"
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           )}
         >
           <Icon name="calendar" size={14} className="mr-1.5" weight="duotone" />
-          Scheduled Date
+          {TASK_DIALOG_UI_TEXT.scheduledDate}
         </Button>
         <Button
           type="button"
@@ -207,14 +212,18 @@ function FixedMiniCalendar({
           size="sm"
           onClick={() => onFieldChange("due")}
           className={cn(
-            "flex-1 text-xs h-8",
+            "flex-1",
+            style: {
+              fontSize: TASK_DIALOG_FONT_SIZES.xs,
+              height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
+            },
             activeField === "due"
               ? "bg-primary text-primary-foreground"
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           )}
         >
           <Icon name="alert-circle" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="mr-1.5" />
-          Due Date
+          {TASK_DIALOG_UI_TEXT.dueDate}
         </Button>
       </div>
 
@@ -236,7 +245,11 @@ function FixedMiniCalendar({
             variant="ghost"
             size="sm"
             onClick={goToToday}
-            className="h-6 px-2 text-xs text-primary hover:bg-primary/10"
+            className="px-2 text-primary hover:bg-primary/10"
+            style={{ 
+              height: TASK_DIALOG_DIMENSIONS.calendarButton.height,
+              fontSize: TASK_DIALOG_FONT_SIZES.xs,
+            }}
           >
             Today
           </Button>
@@ -280,7 +293,7 @@ function FixedMiniCalendar({
               type="button"
               onClick={() => onDateSelect(date, activeField)}
               className={cn(
-                "h-8 w-full rounded-md text-xs font-medium transition-all hover:scale-105 flex items-center justify-center",
+                "w-full rounded-md font-medium transition-all hover:scale-105 flex items-center justify-center",
                 isSelectedScheduled && activeField === "scheduled"
                   ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
                   : isSelectedDue && activeField === "due"
@@ -295,6 +308,10 @@ function FixedMiniCalendar({
                   ? "text-foreground hover:bg-primary/10"
                   : "text-muted-foreground/50 hover:bg-muted/50"
               )}
+              style={{ 
+                height: TASK_DIALOG_DIMENSIONS.dateButton.height,
+                fontSize: TASK_DIALOG_FONT_SIZES.xs,
+              }}
             >
               {day}
             </button>
@@ -325,7 +342,7 @@ function FixedMiniCalendar({
             }}
             className="h-6 px-2 text-xs"
           >
-            Clear
+            {TASK_DIALOG_UI_TEXT.clear}
           </Button>
         </div>
       )}
@@ -438,7 +455,11 @@ function SingleDateMiniCalendar({
             variant="ghost"
             size="sm"
             onClick={goToToday}
-            className="h-6 px-2 text-xs text-primary hover:bg-primary/10"
+            className="px-2 text-primary hover:bg-primary/10"
+            style={{ 
+              height: TASK_DIALOG_DIMENSIONS.calendarButton.height,
+              fontSize: TASK_DIALOG_FONT_SIZES.xs,
+            }}
           >
             Today
           </Button>
@@ -480,8 +501,12 @@ function SingleDateMiniCalendar({
               key={`${dateStr}-${index}`}
               type="button"
               onClick={() => onDateSelect(date)}
-              className={cn(
-                "h-8 w-full rounded-md text-xs font-medium transition-all hover:scale-105 flex items-center justify-center",
+                className={cn(
+                "w-full rounded-md font-medium transition-all hover:scale-105 flex items-center justify-center",
+                style={{ 
+                  height: TASK_DIALOG_DIMENSIONS.dateButton.height,
+                  fontSize: TASK_DIALOG_FONT_SIZES.xs,
+                }}
                 isSelectedDate
                   ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
                   : isTodayDate
@@ -490,6 +515,10 @@ function SingleDateMiniCalendar({
                   ? "text-foreground hover:bg-primary/10"
                   : "text-muted-foreground/50 hover:bg-muted/50"
               )}
+              style={{ 
+                height: TASK_DIALOG_DIMENSIONS.dateButton.height,
+                fontSize: TASK_DIALOG_FONT_SIZES.xs,
+              }}
             >
               {day}
             </button>
@@ -520,7 +549,7 @@ function SingleDateMiniCalendar({
             }}
             className="h-6 px-2 text-xs"
           >
-            Clear
+            {TASK_DIALOG_UI_TEXT.clear}
           </Button>
         </div>
       )}
@@ -1837,12 +1866,12 @@ export function TaskDialog({
       <DialogContent className={`max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full ${UI_GRADIENT_COLORS.dialog.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
         <DialogHeader className="flex-shrink-0 pb-4 sm:pb-5 md:pb-6 border-b border-primary/25 dark:border-primary/30">
           <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground dark:text-foreground">
-            {task ? "Edit Task" : "Create New Task"}
+            {task ? TASK_DIALOG_UI_TEXT.editTask : TASK_DIALOG_UI_TEXT.createNewTask}
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm text-muted-foreground dark:text-muted-foreground">
             {task
-              ? "Update the task details below."
-              : "Fill in the details to create a new task."}
+              ? TASK_DIALOG_UI_TEXT.editTaskDescription
+              : TASK_DIALOG_UI_TEXT.createTaskDescription}
           </DialogDescription>
         </DialogHeader>
 
@@ -1857,18 +1886,18 @@ export function TaskDialog({
           <Tabs defaultValue="basic" className="flex-1 flex flex-col overflow-hidden">
             <TabsList className="w-full justify-start px-4 sm:px-6 mb-4 bg-transparent border-b border-primary/10 rounded-none h-auto py-2 sm:py-3">
               <TabsTrigger value="basic" className="text-xs sm:text-sm">
-                <span className="hidden sm:inline">Basic Info</span>
-                <span className="sm:hidden">Basic</span>
+                <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.basicInfo.desktop}</span>
+                <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.basicInfo.mobile}</span>
               </TabsTrigger>
               <TabsTrigger value="scheduling" className="text-xs sm:text-sm">
                 <Icon name="calendar" size={16} className="mr-1" weight="duotone" />
-                <span className="hidden sm:inline">Schedule</span>
-                <span className="sm:hidden">Time</span>
+                <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.schedule.desktop}</span>
+                <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.schedule.mobile}</span>
               </TabsTrigger>
               <TabsTrigger value="organization" className="text-xs sm:text-sm">
                 <Icon name="settings" size={ICON_SIZE_SM} className="mr-1" />
-                <span className="hidden sm:inline">Organize & Advanced</span>
-                <span className="sm:hidden">More</span>
+                <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.organize.desktop}</span>
+                <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.organize.mobile}</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1878,16 +1907,22 @@ export function TaskDialog({
                 {/* Step 1: Name the Task */}
                 <div className="space-y-3 sm:space-y-4 bg-white dark:bg-card rounded-lg p-4 sm:p-5 border-2 border-primary/30 shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">1</span>
+                    <div 
+                      className="rounded-full bg-primary/20 flex items-center justify-center"
+                      style={{
+                        width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.medium.width,
+                        height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.medium.height,
+                      }}
+                    >
+                      <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>1</span>
                     </div>
-                    <Label htmlFor="title" className="text-base font-semibold text-foreground">Task Name *</Label>
+                    <Label htmlFor="title" className="text-base font-semibold text-foreground">{TASK_DIALOG_UI_TEXT.taskName}</Label>
                   </div>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter task name..."
+                    placeholder={TASK_DIALOG_UI_TEXT.taskNamePlaceholder}
                     autoFocus
                     disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                     className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-11 text-base"
@@ -1898,10 +1933,16 @@ export function TaskDialog({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                     <Label htmlFor="status" className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-primary">2</span>
+                      <div 
+                        className="rounded-full bg-primary/20 flex items-center justify-center"
+                        style={{
+                          width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.width,
+                          height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.height,
+                        }}
+                      >
+                        <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>2</span>
                       </div>
-                      Status
+                      {TASK_DIALOG_UI_TEXT.status}
                     </Label>
                     <Select
                       value={status}
@@ -1914,20 +1955,26 @@ export function TaskDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                        <SelectItem value="todo">To Do</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="done">Done</SelectItem>
-                        <SelectItem value="on-hold">On Hold</SelectItem>
+                        <SelectItem value="todo">{TASK_DIALOG_UI_TEXT.statusOptions.todo}</SelectItem>
+                        <SelectItem value="in-progress">{TASK_DIALOG_UI_TEXT.statusOptions.inProgress}</SelectItem>
+                        <SelectItem value="done">{TASK_DIALOG_UI_TEXT.statusOptions.done}</SelectItem>
+                        <SelectItem value="on-hold">{TASK_DIALOG_UI_TEXT.statusOptions.onHold}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                     <Label htmlFor="priority" className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-primary">3</span>
+                      <div 
+                        className="rounded-full bg-primary/20 flex items-center justify-center"
+                        style={{
+                          width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.width,
+                          height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.height,
+                        }}
+                      >
+                        <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>3</span>
                       </div>
-                      Priority
+                      {TASK_DIALOG_UI_TEXT.priority}
                     </Label>
                     <Select
                       value={priority}
@@ -1940,10 +1987,10 @@ export function TaskDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="low">{TASK_DIALOG_UI_TEXT.priorityOptions.low}</SelectItem>
+                        <SelectItem value="medium">{TASK_DIALOG_UI_TEXT.priorityOptions.medium}</SelectItem>
+                        <SelectItem value="high">{TASK_DIALOG_UI_TEXT.priorityOptions.high}</SelectItem>
+                        <SelectItem value="urgent">{TASK_DIALOG_UI_TEXT.priorityOptions.urgent}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1952,7 +1999,7 @@ export function TaskDialog({
                 {/* Description - Optional */}
                 <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="description" className="text-sm font-semibold text-foreground">Description (Optional)</Label>
+                    <Label htmlFor="description" className="text-sm font-semibold text-foreground">{TASK_DIALOG_UI_TEXT.description}</Label>
                     {title.trim() && (
                       <div className="flex items-center gap-1">
                         {/* Refresh/Regenerate Description Button - Only show if description exists */}
@@ -2354,7 +2401,7 @@ export function TaskDialog({
                                 }}
                                 className="h-5 text-xs text-muted-foreground hover:text-foreground"
                               >
-                                Clear
+                                {TASK_DIALOG_UI_TEXT.clear}
                               </Button>
                             )}
                           </div>
@@ -2569,7 +2616,7 @@ export function TaskDialog({
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-semibold flex items-center gap-2">
                           <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-primary" />
-                          Due Date
+                          {TASK_DIALOG_UI_TEXT.dueDate}
                         </Label>
                         {dueDate && (
                           <Button
@@ -2584,7 +2631,7 @@ export function TaskDialog({
                             }}
                             className="h-6 text-xs text-muted-foreground hover:text-foreground"
                           >
-                            Clear
+                            {TASK_DIALOG_UI_TEXT.clear}
                           </Button>
                         )}
                       </div>
@@ -3350,7 +3397,8 @@ export function TaskDialog({
                                         const parent = target.parentElement;
                                         if (parent) {
                                           const fallback = document.createElement('div');
-                                          fallback.className = 'rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium w-full h-full';
+                                          fallback.className = `${TASK_DIALOG_COLORS.assigneeFallbackGradient} flex items-center justify-center font-medium w-full h-full`;
+                                          fallback.style.fontSize = TASK_DIALOG_FONT_SIZES.assigneeFallback;
                                           fallback.textContent = getInitials(member.name);
                                           parent.appendChild(fallback);
                                         }
@@ -3359,10 +3407,11 @@ export function TaskDialog({
                                   </div>
                                 ) : (
                                   <div 
-                                    className="rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium flex-shrink-0"
+                                    className={`rounded-full ${TASK_DIALOG_COLORS.assigneeFallbackGradient} flex items-center justify-center font-medium flex-shrink-0`}
                                     style={{
                                       width: COMPONENT_DIMENSIONS.taskDialog.assignee.avatarSize,
                                       height: COMPONENT_DIMENSIONS.taskDialog.assignee.avatarSize,
+                                      fontSize: TASK_DIALOG_FONT_SIZES.assigneeFallback,
                                     }}
                                   >
                                     {getInitials(member.name)}
@@ -3442,8 +3491,8 @@ export function TaskDialog({
                     className="gap-1.5 sm:gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 text-sm font-medium"
                   >
                     <Icon name="trash-2" size={ICON_SIZE_MD} style={{ color: COLOR_TEXT_WHITE }} />
-                    <span className="hidden sm:inline">Delete</span>
-                    <span className="sm:hidden">Del</span>
+                  <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.delete.desktop}</span>
+                  <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.delete.mobile}</span>
                   </Button>
                 )}
               </div>
@@ -3457,7 +3506,7 @@ export function TaskDialog({
                 onClick={onClose}
                 className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground h-10 px-5 text-sm font-medium flex-1 sm:flex-initial"
               >
-                Cancel
+                {TASK_DIALOG_UI_TEXT.cancel}
               </Button>
               <Button 
                 type="submit"
@@ -3468,7 +3517,7 @@ export function TaskDialog({
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
               >
-                {task ? "Update Task" : "Create Task"}
+                {task ? TASK_DIALOG_UI_TEXT.updateTask : TASK_DIALOG_UI_TEXT.createTask}
               </Button>
             </div>
           </div>
@@ -3482,24 +3531,24 @@ export function TaskDialog({
       >
         <AlertDialogContent className="bg-white dark:bg-popover border-primary/20">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Task?</AlertDialogTitle>
+            <AlertDialogTitle>{TASK_DIALOG_UI_TEXT.deleteConfirmation.title}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{task?.title}"?
-              This action cannot be undone.
+              {task?.title && TASK_DIALOG_UI_TEXT.deleteConfirmation.description(task.title)}
+              {TASK_DIALOG_UI_TEXT.deleteConfirmation.cannotUndo}
               {task?.subtasks && task.subtasks.length > 0 && (
                 <span className="block mt-2 text-amber-600">
-                  This task has {task.subtasks.length} subtask{task.subtasks.length !== 1 ? "s" : ""} that will also be deleted.
+                  {TASK_DIALOG_UI_TEXT.deleteConfirmation.hasSubtasks(task.subtasks.length)}
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{TASK_DIALOG_UI_TEXT.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete Task
+              {TASK_DIALOG_UI_TEXT.deleteTask}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -3509,18 +3558,20 @@ export function TaskDialog({
       <AlertDialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Time Slot Already Taken</AlertDialogTitle>
+            <AlertDialogTitle>{TASK_DIALOG_UI_TEXT.conflictResolution.title}</AlertDialogTitle>
             <AlertDialogDescription>
-              The time slot {pendingTaskData && formatTime(pendingTaskData.requestedTime)} is already occupied by another task.
-              Would you like to schedule this task at {pendingTaskData && formatTime(pendingTaskData.alternativeTime)} instead?
+              {pendingTaskData && TASK_DIALOG_UI_TEXT.conflictResolution.description(
+                formatTime(pendingTaskData.requestedTime),
+                formatTime(pendingTaskData.alternativeTime)
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleConflictCancel}>
-              Cancel
+              {TASK_DIALOG_UI_TEXT.cancel}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleConflictConfirm}>
-              Use {pendingTaskData && formatTime(pendingTaskData.alternativeTime)}
+              {pendingTaskData && TASK_DIALOG_UI_TEXT.conflictResolution.useAlternative(formatTime(pendingTaskData.alternativeTime))}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
