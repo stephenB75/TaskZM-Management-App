@@ -1093,13 +1093,23 @@ export function TeamPanel() {
       return;
     }
 
-    // Check if any emails already exist
+    // Check if any emails already exist in current team/workspace
+    const membersToCheck = currentTeamId ? currentTeamMembers : teamMembers;
     const existingEmails = emails.filter(email =>
-      teamMembers.some(m => m.email.toLowerCase() === email.toLowerCase())
+      membersToCheck.some(m => m.email.toLowerCase() === email.toLowerCase())
     );
     if (existingEmails.length > 0) {
       toast.error(`These emails are already team members: ${existingEmails.join(", ")}`);
       return;
+    }
+
+    // Check team member limit if adding to a team
+    if (currentTeamId) {
+      const team = teams.find(t => t.id === currentTeamId);
+      if (team && team.memberCount + emails.length > TEAM_MAX_MEMBERS) {
+        toast.error(`Cannot add ${emails.length} members. Team would exceed maximum of ${TEAM_MAX_MEMBERS} members.`);
+        return;
+      }
     }
 
     // Send invitations
@@ -1115,12 +1125,28 @@ export function TeamPanel() {
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" ");
 
-        await addTeamMember({
-          name: capitalizedName,
-          email,
-          role: newMemberRole,
-          avatar: `https://api.dicebear.com/7.x/lorelei/svg?seed=${capitalizedName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=25`,
-        }, currentWorkspaceId);
+        const avatar = `https://api.dicebear.com/7.x/lorelei/svg?seed=${capitalizedName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=25`;
+
+        if (currentTeamId) {
+          // Add to specific team
+          await addTeamMemberToTeam(
+            currentTeamId,
+            {
+              name: capitalizedName,
+              email,
+              role: newMemberRole,
+            },
+            avatar
+          );
+        } else {
+          // Legacy workspace-based team
+          await addTeamMember({
+            name: capitalizedName,
+            email,
+            role: newMemberRole,
+            avatar,
+          }, currentWorkspaceId);
+        }
         successCount++;
       } catch (error) {
         errorCount++;
@@ -1203,34 +1229,36 @@ export function TeamPanel() {
                 </Tooltip>
               </TooltipProvider>
             )}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    onClick={() => setShowAddMember(true)}
-                    className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setShowAddMember(true);
-                      }
-                    }}
-                  >
-                    <Icon 
-                      name="user-plus"
-                      size={ICON_SIZE_XL}
-                      className="text-primary dark:text-primary-foreground flex-shrink-0"
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{TEAM_PANEL_UI_TEXT.addMember}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {teamMembers.length > 0 && (
+            {isCurrentUserAdmin && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      onClick={() => setShowAddMember(true)}
+                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setShowAddMember(true);
+                        }
+                      }}
+                    >
+                      <Icon 
+                        name="user-plus"
+                        size={ICON_SIZE_XL}
+                        className="text-primary dark:text-primary-foreground flex-shrink-0"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{currentTeamId ? TEAM_PANEL_UI_TEXT.addMemberToTeam : TEAM_PANEL_UI_TEXT.addMember}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {isCurrentUserAdmin && (teamMembers.length > 0 || (currentTeamId && currentTeamMembers.length > 0)) && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
