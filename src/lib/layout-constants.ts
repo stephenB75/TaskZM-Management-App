@@ -879,6 +879,11 @@ export const COMPONENT_DIMENSIONS = {
       combined: 'min-w-[70px] sm:min-w-[90px]',
     },
     buttonMinWidth: 'min-w-[140px]',
+    assignee: {
+      avatarSize: '1.5rem', // w-6 h-6 = 1.5rem (24px) - assignee avatar size
+      textSize: '0.875rem', // text-sm = 0.875rem (14px) - assignee name text size
+      gap: '0.5rem', // gap-2 = 0.5rem (8px) - gap between avatar and name
+    },
     footer: {
       padding: {
         horizontal: '1.75rem', // px-7 = 1.75rem (28px) - increased from 1.5rem (24px)

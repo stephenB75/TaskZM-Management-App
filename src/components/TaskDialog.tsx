@@ -3330,12 +3330,46 @@ export function TaskDialog({
                                 setAssignedTo(assignedTo.filter((id) => id !== memberId))
                               }
                             >
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium">
-                                  {getInitials(member.name)}
-                                </div>
-                                <span>{member.name}</span>
-                                <Icon name="x" size={ICON_SIZE_XS} className="ml-1" />
+                              <div className="flex items-center" style={{ gap: COMPONENT_DIMENSIONS.taskDialog.assignee.gap }}>
+                                {member.avatar ? (
+                                  <div 
+                                    className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
+                                    style={{ 
+                                      width: COMPONENT_DIMENSIONS.taskDialog.assignee.avatarSize,
+                                      height: COMPONENT_DIMENSIONS.taskDialog.assignee.avatarSize,
+                                    }}
+                                  >
+                                    <img
+                                      src={member.avatar}
+                                      alt={member.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        // Fallback to initials if image fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                          const fallback = document.createElement('div');
+                                          fallback.className = 'rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium w-full h-full';
+                                          fallback.textContent = getInitials(member.name);
+                                          parent.appendChild(fallback);
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div 
+                                    className="rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-medium flex-shrink-0"
+                                    style={{
+                                      width: COMPONENT_DIMENSIONS.taskDialog.assignee.avatarSize,
+                                      height: COMPONENT_DIMENSIONS.taskDialog.assignee.avatarSize,
+                                    }}
+                                  >
+                                    {getInitials(member.name)}
+                                  </div>
+                                )}
+                                <span className="font-medium" style={{ fontSize: COMPONENT_DIMENSIONS.taskDialog.assignee.textSize }}>{member.name}</span>
+                                <Icon name="x" size={ICON_SIZE_XS} className="ml-1 flex-shrink-0" />
                               </div>
                             </Badge>
                           );
