@@ -442,12 +442,12 @@ export function TeamPanel() {
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
-      toast.error("Please enter a team name");
+      toast.error(TEAM_PANEL_UI_TEXT.teamNameRequired);
       return;
     }
 
     if (!workspaceId) {
-      toast.error("No workspace available");
+      toast.error(TEAM_PANEL_UI_TEXT.noWorkspaceAvailable);
       return;
     }
 
@@ -1610,7 +1610,7 @@ export function TeamPanel() {
           <DialogHeader>
             <DialogTitle>{TEAM_PANEL_UI_TEXT.createTeam}</DialogTitle>
             <DialogDescription>
-              Create a new team to organize your team members (max {TEAM_MAX_MEMBERS} members per team)
+              {TEAM_PANEL_UI_TEXT.createTeamDescription(TEAM_MAX_MEMBERS)}
             </DialogDescription>
           </DialogHeader>
 
@@ -1621,7 +1621,7 @@ export function TeamPanel() {
                 id="team-name"
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
-                placeholder="Enter team name"
+                placeholder={TEAM_PANEL_UI_TEXT.enterTeamName}
               />
             </div>
 

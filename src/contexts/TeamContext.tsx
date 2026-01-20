@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { DAYS_IN_WEEK } from '../lib/business-constants';
 import { createDefaultTeamContext } from '../lib/context-defaults';
 import { TEAM_MAX_MEMBERS } from '../lib/layout-constants';
+import { TEAM_PANEL_UI_TEXT } from '../lib/team-panel-constants';
 
 interface TeamContextType {
   // Legacy workspace-based team (for backward compatibility)
@@ -344,14 +345,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const createTeam = useCallback(async (name: string, description?: string) => {
     if (!accessToken || !workspaceId || !user) {
-      toast.error('Cannot create team: No workspace access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotCreateTeamNoAccess);
       return;
     }
 
     // Check if user is admin (can create teams)
     const userMember = teamMembers.find(m => m.id === user.id);
     if (userMember?.role !== 'admin') {
-      toast.error('Only admins can create teams');
+      toast.error(TEAM_PANEL_UI_TEXT.onlyAdminsCanCreateTeams);
       return;
     }
 
@@ -361,10 +362,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       await syncTeams(workspaceId);
       // Select the newly created team after sync
       setCurrentTeamId(newTeam.id);
-      toast.success(`Team "${name}" created successfully`);
+      toast.success(TEAM_PANEL_UI_TEXT.teamCreatedSuccessfully(name));
     } catch (error) {
       console.error('Failed to create team:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create team');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToCreateTeam);
     }
   }, [accessToken, workspaceId, user, teamMembers, syncTeams]);
 
