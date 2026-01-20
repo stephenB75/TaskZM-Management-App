@@ -607,6 +607,9 @@ export const TASK_CARD_ADDITIONAL_FONT_SIZES = {
     mobile: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
     desktop: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
   },
+  assignedUserNameStandalone: {
+    fontSize: '0.75rem', // 12px - for standalone assignee name display (TaskCard, InboxView)
+  },
   assignedUserCount: {
     mobile: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
     desktop: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px

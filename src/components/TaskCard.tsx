@@ -257,7 +257,7 @@ export function TaskCard({
                           {initials}
                         </div>
                       )}
-                      <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: '0.75rem' }}>
+                      <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameStandalone.fontSize }}>
                         {member.name}
                       </span>
                     </div>

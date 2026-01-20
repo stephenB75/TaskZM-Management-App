@@ -1233,7 +1233,7 @@ export function InboxView() {
                                                 </div>
                                               ) : (
                                                 <div 
-                                                  className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`}
+                                                  className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`}
                                                   style={{
                                                     width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
                                                     height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
@@ -1242,7 +1242,7 @@ export function InboxView() {
                                                   {initials}
                                                 </div>
                                               )}
-                                              <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: '0.75rem' }}>
+                                              <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameStandalone.fontSize }}>
                                                 {member.name}
                                               </span>
                                             </div>
@@ -1536,7 +1536,7 @@ export function InboxView() {
                                               </div>
                                             ) : (
                                               <div 
-                                                className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`}
+                                                className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`}
                                                 style={{
                                                   width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
                                                   height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
@@ -1545,7 +1545,7 @@ export function InboxView() {
                                                 {initials}
                                               </div>
                                             )}
-                                            <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: '0.75rem' }}>
+                                            <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameStandalone.fontSize }}>
                                               {member.name}
                                             </span>
                                           </div>
