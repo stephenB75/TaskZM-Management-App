@@ -23,6 +23,7 @@ import { cn, getInitials, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "sonner";
 import type { Task, Folder as FolderType } from "../types";
 import { Z_INDEX } from "../lib/layout-constants";
+import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES } from "../lib/task-card-constants";
 
 interface FolderViewProps {
   folder: FolderType;
@@ -522,20 +523,58 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
 
                           {assignedMembers.length > 0 && (
                             <div className="flex items-center gap-1.5 mt-2">
-                              {assignedMembers.slice(0, 3).map((member) => (
-                                <Badge
-                                  key={member.id}
-                                  variant="secondary"
-                                  className="text-[10px] h-5 px-1.5"
-                                >
-                                  <div className="flex items-center gap-1">
-                                    <div className="w-3 h-3 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[8px] font-medium">
-                                      {getInitials(member.name)}
+                              {assignedMembers.slice(0, 3).map((member) => {
+                                const initials = getInitials(member.name);
+                                return (
+                                  <Badge
+                                    key={member.id}
+                                    variant="secondary"
+                                    className="text-[10px] h-5 px-1.5"
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      {member.avatar ? (
+                                        <div 
+                                          className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
+                                          style={{
+                                            width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.width}px`,
+                                            height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.height}px`,
+                                          }}
+                                        >
+                                          <img
+                                            src={member.avatar}
+                                            alt={member.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              const target = e.target as HTMLImageElement;
+                                              target.style.display = 'none';
+                                              const parent = target.parentElement;
+                                              if (parent) {
+                                                const fallback = document.createElement('div');
+                                                fallback.className = `rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-medium`;
+                                                fallback.style.width = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.width}px`;
+                                                fallback.style.height = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.height}px`;
+                                                fallback.textContent = initials;
+                                                parent.appendChild(fallback);
+                                              }
+                                            }}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div 
+                                          className={`rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-medium`}
+                                          style={{
+                                            width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.width}px`,
+                                            height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.height}px`,
+                                          }}
+                                        >
+                                          {initials}
+                                        </div>
+                                      )}
+                                      <span>{member.name}</span>
                                     </div>
-                                    <span>{member.name}</span>
-                                  </div>
-                                </Badge>
-                              ))}
+                                  </Badge>
+                                );
+                              })}
                               {assignedMembers.length > 3 && (
                                 <span className="text-xs text-muted-foreground">
                                   +{assignedMembers.length - 3}

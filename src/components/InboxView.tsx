@@ -32,6 +32,7 @@ import {
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CHECKBOX_SIZE_SMALL_MONITOR, INBOX_CHECKBOX_SIZE_LANDSCAPE, INBOX_CHECKBOX_SIZE_DESKTOP, INBOX_CARD_SHADOW_MOBILE, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL } from "../lib/layout-constants";
+import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES, TASK_CARD_TEXT_COLORS } from "../lib/task-card-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
@@ -1203,10 +1204,45 @@ export function InboxView() {
                                               key={userId}
                                               className="flex items-center gap-1.5"
                                             >
-                                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center text-[8px] font-semibold">
-                                                {initials}
-                                              </div>
-                                              <span className="text-xs text-gray-600 font-semibold">
+                                              {member.avatar ? (
+                                                <div 
+                                                  className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
+                                                  style={{
+                                                    width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
+                                                    height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
+                                                  }}
+                                                >
+                                                  <img
+                                                    src={member.avatar}
+                                                    alt={member.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                      const target = e.target as HTMLImageElement;
+                                                      target.style.display = 'none';
+                                                      const parent = target.parentElement;
+                                                      if (parent) {
+                                                        const fallback = document.createElement('div');
+                                                        fallback.className = `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`;
+                                                        fallback.style.width = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`;
+                                                        fallback.style.height = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`;
+                                                        fallback.textContent = initials;
+                                                        parent.appendChild(fallback);
+                                                      }
+                                                    }}
+                                                  />
+                                                </div>
+                                              ) : (
+                                                <div 
+                                                  className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`}
+                                                  style={{
+                                                    width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
+                                                    height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
+                                                  }}
+                                                >
+                                                  {initials}
+                                                </div>
+                                              )}
+                                              <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: '0.75rem' }}>
                                                 {member.name}
                                               </span>
                                             </div>
@@ -1471,10 +1507,45 @@ export function InboxView() {
                                             key={userId}
                                             className="flex items-center gap-1.5"
                                           >
-                                            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 text-purple-700 flex items-center justify-center text-[8px] font-semibold">
-                                              {initials}
-                                            </div>
-                                            <span className="text-xs text-gray-600 font-semibold">
+                                            {member.avatar ? (
+                                              <div 
+                                                className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
+                                                style={{
+                                                  width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
+                                                  height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
+                                                }}
+                                              >
+                                                <img
+                                                  src={member.avatar}
+                                                  alt={member.name}
+                                                  className="w-full h-full object-cover"
+                                                  onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.style.display = 'none';
+                                                    const parent = target.parentElement;
+                                                    if (parent) {
+                                                      const fallback = document.createElement('div');
+                                                      fallback.className = `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`;
+                                                      fallback.style.width = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`;
+                                                      fallback.style.height = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`;
+                                                      fallback.textContent = initials;
+                                                      parent.appendChild(fallback);
+                                                    }
+                                                  }}
+                                                />
+                                              </div>
+                                            ) : (
+                                              <div 
+                                                className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`}
+                                                style={{
+                                                  width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
+                                                  height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
+                                                }}
+                                              >
+                                                {initials}
+                                              </div>
+                                            )}
+                                            <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: '0.75rem' }}>
                                               {member.name}
                                             </span>
                                           </div>

@@ -536,7 +536,9 @@ export const TASK_CARD_RICH_TEXT_COLORS = {
 // Assigned User Avatar Colors
 export const TASK_CARD_ASSIGNED_USER_COLORS = {
   gradient: 'bg-gradient-to-br from-purple-100 to-pink-100',
+  gradientDark: 'dark:from-purple-900 dark:to-pink-900',
   text: 'text-purple-700',
+  textDark: 'dark:text-purple-300',
   // Avatar sizes
   avatar: {
     mobile: {
@@ -546,6 +548,10 @@ export const TASK_CARD_ASSIGNED_USER_COLORS = {
     desktop: {
       width: 16, // w-4 = 16px
       height: 16, // h-4 = 16px
+    },
+    large: {
+      width: 20, // w-5 = 20px (for TaskCard.tsx)
+      height: 20, // h-5 = 20px
     },
   },
 } as const;

@@ -19,6 +19,7 @@ import { useTasks } from '../contexts/TaskContext';
 import { useTeam } from '../contexts/TeamContext';
 import type { Task } from '../types';
 import { motion } from 'motion/react';
+import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES, TASK_CARD_TEXT_COLORS } from '../lib/task-card-constants';
 
 interface TaskCardProps {
   task: Task;
@@ -218,10 +219,45 @@ export function TaskCard({
                   
                   return (
                     <div key={userId} className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 flex items-center justify-center text-[10px] font-semibold text-purple-700 dark:text-purple-300">
-                        {initials}
-                      </div>
-                      <span className="text-xs text-gray-600 dark:text-muted-foreground font-semibold">
+                      {member.avatar ? (
+                        <div 
+                          className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
+                          style={{
+                            width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.large.width}px`,
+                            height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.large.height}px`,
+                          }}
+                        >
+                          <img
+                            src={member.avatar}
+                            alt={member.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                const fallback = document.createElement('div');
+                                fallback.className = `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop} font-semibold ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark}`;
+                                fallback.style.width = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.large.width}px`;
+                                fallback.style.height = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.large.height}px`;
+                                fallback.textContent = initials;
+                                parent.appendChild(fallback);
+                              }
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div 
+                          className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop} font-semibold ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark}`}
+                          style={{
+                            width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.large.width}px`,
+                            height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.large.height}px`,
+                          }}
+                        >
+                          {initials}
+                        </div>
+                      )}
+                      <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: '0.75rem' }}>
                         {member.name}
                       </span>
                     </div>

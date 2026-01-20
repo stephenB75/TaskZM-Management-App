@@ -737,20 +737,57 @@ export function DraggableTodayAgendaTask({
                       if (!member) return null;
 
                       const initials = getInitials(member.name);
+                      const avatarSize = isMobile ? TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile : TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop;
 
                       return (
                         <TooltipProvider key={userId}>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
-                                <div className={cn(
-                                  TASK_CARD_ASSIGNED_USER_COLORS.gradient,
-                                  TASK_CARD_ASSIGNED_USER_COLORS.text,
-                                  "rounded-full flex items-center justify-center font-semibold",
-                                  isMobile ? `w-3 h-3 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile}` : `w-4 h-4 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop}`,
-                                )}>
-                                  {initials}
-                                </div>
+                                {member.avatar ? (
+                                  <div 
+                                    className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
+                                    style={{
+                                      width: `${avatarSize.width}px`,
+                                      height: `${avatarSize.height}px`,
+                                    }}
+                                  >
+                                    <img
+                                      src={member.avatar}
+                                      alt={member.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                          const fallback = document.createElement('div');
+                                          fallback.className = cn(
+                                            `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center font-semibold`,
+                                            isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop
+                                          );
+                                          fallback.style.width = `${avatarSize.width}px`;
+                                          fallback.style.height = `${avatarSize.height}px`;
+                                          fallback.textContent = initials;
+                                          parent.appendChild(fallback);
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div 
+                                    className={cn(
+                                      `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center font-semibold`,
+                                      isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop
+                                    )}
+                                    style={{
+                                      width: `${avatarSize.width}px`,
+                                      height: `${avatarSize.height}px`,
+                                    }}
+                                  >
+                                    {initials}
+                                  </div>
+                                )}
                                 <span className={cn(
                                   "text-gray-600 dark:text-gray-200 font-semibold whitespace-nowrap flex-shrink-0",
                                   isMobile ? "text-[10px]" : "text-[11px]",

@@ -827,23 +827,56 @@ export const DraggableTaskCard = React.forwardRef<
                       const member = getTeamMember(userId);
                       if (!member) return null;
                       const initials = getInitials(member.name);
+                      const avatarSize = isMobile ? TASK_CARD_CALCULATIONS.assignedUser.avatarSize.mobile.width : TASK_CARD_CALCULATIONS.assignedUser.avatarSize.desktop.width;
                       return (
                         <TooltipProvider key={userId}>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
-                                <div 
-                                  className={cn(
-                                    `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center font-semibold`,
-                                    isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop
-                                  )}
-                                  style={{
-                                    width: `${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.avatarSize.mobile.width : TASK_CARD_CALCULATIONS.assignedUser.avatarSize.desktop.width}px`,
-                                    height: `${isMobile ? TASK_CARD_CALCULATIONS.assignedUser.avatarSize.mobile.height : TASK_CARD_CALCULATIONS.assignedUser.avatarSize.desktop.height}px`,
-                                  }}
-                                >
-                                  {initials}
-                                </div>
+                                {member.avatar ? (
+                                  <div 
+                                    className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
+                                    style={{
+                                      width: `${avatarSize}px`,
+                                      height: `${avatarSize}px`,
+                                    }}
+                                  >
+                                    <img
+                                      src={member.avatar}
+                                      alt={member.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                          const fallback = document.createElement('div');
+                                          fallback.className = cn(
+                                            `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center font-semibold`,
+                                            isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop
+                                          );
+                                          fallback.style.width = `${avatarSize}px`;
+                                          fallback.style.height = `${avatarSize}px`;
+                                          fallback.textContent = initials;
+                                          parent.appendChild(fallback);
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div 
+                                    className={cn(
+                                      `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center font-semibold`,
+                                      isMobile ? TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile : TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop
+                                    )}
+                                    style={{
+                                      width: `${avatarSize}px`,
+                                      height: `${avatarSize}px`,
+                                    }}
+                                  >
+                                    {initials}
+                                  </div>
+                                )}
                                 <span 
                                   className={cn(
                                     `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold whitespace-nowrap flex-shrink-0`,
