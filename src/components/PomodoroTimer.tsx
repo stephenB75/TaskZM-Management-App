@@ -173,27 +173,27 @@ export function PomodoroTimer({
                 size="icon"
                 variant="ghost"
                 className={cn(
-                  isMobile ? "h-2.5 w-2.5 bg-transparent hover:bg-transparent border-0" : "h-5 w-5"
+                  isMobile ? "h-4 w-4 bg-transparent hover:bg-transparent border-0" : "h-6 w-6"
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleTimer();
                 }}
               >
-                <Icon name="pause" size={isMobile ? 6 : 12} />
+                <Icon name="pause" size={isMobile ? 10 : 18} />
               </Button>
               <Button
                 size="icon"
                 variant="ghost"
                 className={cn(
-                  isMobile ? "h-2.5 w-2.5 bg-transparent hover:bg-transparent border-0" : "h-5 w-5"
+                  isMobile ? "h-4 w-4 bg-transparent hover:bg-transparent border-0" : "h-6 w-6"
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleStopTimer();
                 }}
               >
-                <Icon name="square" size={isMobile ? 6 : 12} />
+                <Icon name="square" size={isMobile ? 10 : 18} />
               </Button>
             </motion.div>
           ) : (
@@ -211,8 +211,8 @@ export function PomodoroTimer({
                   "rounded-full text-primary",
                   timerState.sessionsCompleted > 0 && "text-green-500 dark:text-green-400",
                   isMobile 
-                    ? "h-2.5 w-2.5 bg-transparent hover:bg-transparent border-0" 
-                    : "h-5 w-5 border-primary/30 dark:border-primary/40 hover:bg-primary/10 dark:hover:bg-primary/20",
+                    ? "h-4 w-4 bg-transparent hover:bg-transparent border-0" 
+                    : "h-6 w-6 border-primary/30 dark:border-primary/40 hover:bg-primary/10 dark:hover:bg-primary/20",
                   timerState.sessionsCompleted > 0 && !isMobile && "border-green-500/30 dark:border-green-400/40 hover:bg-green-500/10 dark:hover:bg-green-400/20",
                 )}
                 onClick={(e) => {
@@ -220,7 +220,7 @@ export function PomodoroTimer({
                   toggleTimer();
                 }}
               >
-                <Icon name="play" size={isMobile ? 6 : 12} />
+                <Icon name="play" size={isMobile ? 10 : 18} />
               </Button>
               {timerState.sessionsCompleted > 0 && (
                 <span className={cn(

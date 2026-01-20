@@ -90,8 +90,8 @@ export const TASK_CARD_FONT_SIZES = {
     desktop: 'text-[11px]', // 10px * 1.1 = 11px
   },
   duration: {
-    mobile: 'text-[11px]', // 10px * 1.1 = 11px
-    desktop: 'text-[12px]', // 11px * 1.1 = 12.1px ≈ 12px
+    mobile: 'text-[16px]', // Increased from 11px to 16px (45% larger)
+    desktop: 'text-[18px]', // Increased from 12px to 18px (50% larger)
   },
   title: {
     mobile: 'text-[15px]', // text-sm (14px) * 1.1 = 15.4px ≈ 15px
@@ -539,19 +539,19 @@ export const TASK_CARD_ASSIGNED_USER_COLORS = {
   gradientDark: 'dark:from-purple-900 dark:to-pink-900',
   text: 'text-purple-700',
   textDark: 'dark:text-purple-300',
-  // Avatar sizes
+  // Avatar sizes (increased for better visibility)
   avatar: {
     mobile: {
-      width: 12, // w-3 = 12px
-      height: 12, // h-3 = 12px
+      width: 18, // Increased from 12px to 18px (50% larger)
+      height: 18, // Increased from 12px to 18px (50% larger)
     },
     desktop: {
-      width: 16, // w-4 = 16px
-      height: 16, // h-4 = 16px
+      width: 24, // Increased from 16px to 24px (50% larger)
+      height: 24, // Increased from 16px to 24px (50% larger)
     },
     large: {
-      width: 20, // w-5 = 20px (for TaskCard.tsx)
-      height: 20, // h-5 = 20px
+      width: 30, // Increased from 20px to 30px (50% larger) (for TaskCard.tsx)
+      height: 30, // Increased from 20px to 30px (50% larger)
     },
   },
 } as const;
@@ -600,15 +600,15 @@ export const TASK_CARD_POSITIONING = {
 // Font Sizes (Additional - for assigned users and tooltips, increased by 10%)
 export const TASK_CARD_ADDITIONAL_FONT_SIZES = {
   assignedUserInitials: {
-    mobile: 'text-[8px]', // 7px * 1.1 = 7.7px ≈ 8px
-    desktop: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
+    mobile: 'text-[12px]', // Increased from 8px to 12px (50% larger) to match larger avatar
+    desktop: 'text-[14px]', // Increased from 9px to 14px (55% larger) to match larger avatar
   },
   assignedUserNameInline: {
     mobile: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px
     desktop: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
   },
   assignedUserNameStandalone: {
-    fontSize: '0.75rem', // 12px - for standalone assignee name display (TaskCard, InboxView)
+    fontSize: '1rem', // Increased from 0.75rem (12px) to 1rem (16px) - for standalone assignee name display (TaskCard, InboxView)
   },
   assignedUserCount: {
     mobile: 'text-[9px]', // 8px * 1.1 = 8.8px ≈ 9px

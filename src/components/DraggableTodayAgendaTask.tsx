@@ -841,7 +841,7 @@ export function DraggableTodayAgendaTask({
                   <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
                     <Icon 
                       name="timer"
-                      size={isMobile ? ICON_SIZE_XS : ICON_SIZE_SM}
+                      size={isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop}
                       className="flex-shrink-0"
                       style={{ color: TASK_CARD_THEME_COLORS.primary }}
                     />
