@@ -264,8 +264,8 @@ export function TaskCard({
                   );
                 })}
                 {task.assignedTo.length > 3 && (
-                  <span className="text-xs text-gray-500">
-                    +{task.assignedTo.length - 3} more
+                  <span className={`${TASK_CARD_TEXT_COLORS.assignedUserCount} text-xs`}>
+                    {TASK_CARD_TEXT.moreAssigned(task.assignedTo.length - 3)}
                   </span>
                 )}
               </div>

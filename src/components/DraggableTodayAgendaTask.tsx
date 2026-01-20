@@ -789,8 +789,8 @@ export function DraggableTodayAgendaTask({
                                   </div>
                                 )}
                                 <span className={cn(
-                                  "text-gray-600 dark:text-gray-200 font-semibold whitespace-nowrap flex-shrink-0",
-                                  isMobile ? "text-[10px]" : "text-[11px]",
+                                  `${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold whitespace-nowrap flex-shrink-0`,
+                                  isMobile ? TASK_CARD_FONT_SIZES.assignedUserName.mobile : TASK_CARD_FONT_SIZES.assignedUserName.desktop,
                                 )}>
                                   {member.name}
                                 </span>
@@ -798,7 +798,7 @@ export function DraggableTodayAgendaTask({
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>{member.name}</p>
-                              <p className="text-[13px] text-gray-400 dark:text-gray-300">
+                              <p className={`${TASK_CARD_TEXT_COLORS.tooltipEmail} ${TASK_CARD_FONT_SIZES.description}`}>
                                 {member.email}
                               </p>
                             </TooltipContent>

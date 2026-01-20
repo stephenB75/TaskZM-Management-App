@@ -1222,7 +1222,7 @@ export function InboxView() {
                                                       const parent = target.parentElement;
                                                       if (parent) {
                                                         const fallback = document.createElement('div');
-                                                        fallback.className = `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`;
+                                                        fallback.className = `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop} font-semibold`;
                                                         fallback.style.width = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`;
                                                         fallback.style.height = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`;
                                                         fallback.textContent = initials;
@@ -1250,10 +1250,8 @@ export function InboxView() {
                                         })}
                                       {task.assignedTo.length >
                                         3 && (
-                                        <span className="text-xs text-gray-500">
-                                          +
-                                          {task.assignedTo
-                                            .length - 3}
+                                        <span className={`${TASK_CARD_TEXT_COLORS.assignedUserCount} text-xs`}>
+                                          {TASK_CARD_TEXT.moreAssigned(task.assignedTo.length - 3)}
                                         </span>
                                       )}
                                     </div>

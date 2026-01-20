@@ -529,7 +529,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                                   <Badge
                                     key={member.id}
                                     variant="secondary"
-                                    className="text-[10px] h-5 px-1.5"
+                                    className={`h-5 px-1.5 ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile}`}
                                   >
                                     <div className="flex items-center gap-1">
                                       {member.avatar ? (
@@ -550,7 +550,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                                               const parent = target.parentElement;
                                               if (parent) {
                                                 const fallback = document.createElement('div');
-                                                fallback.className = `rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-medium`;
+                                                fallback.className = `rounded-full ${TASK_DIALOG_COLORS.assigneeFallbackGradient} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-medium`;
                                                 fallback.style.width = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.width}px`;
                                                 fallback.style.height = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.height}px`;
                                                 fallback.textContent = initials;
@@ -561,7 +561,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                                         </div>
                                       ) : (
                                         <div 
-                                          className={`rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-medium`}
+                                          className={`rounded-full ${TASK_DIALOG_COLORS.assigneeFallbackGradient} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-medium`}
                                           style={{
                                             width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.width}px`,
                                             height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.mobile.height}px`,

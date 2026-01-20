@@ -194,14 +194,14 @@ function FixedMiniCalendar({
           onClick={() => onFieldChange("scheduled")}
           className={cn(
             "flex-1",
-            style: {
-              fontSize: TASK_DIALOG_FONT_SIZES.xs,
-              height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
-            },
             activeField === "scheduled"
               ? "bg-primary text-primary-foreground"
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           )}
+          style={{
+            fontSize: TASK_DIALOG_FONT_SIZES.xs,
+            height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
+          }}
         >
           <Icon name="calendar" size={14} className="mr-1.5" weight="duotone" />
           {TASK_DIALOG_UI_TEXT.scheduledDate}
@@ -213,14 +213,14 @@ function FixedMiniCalendar({
           onClick={() => onFieldChange("due")}
           className={cn(
             "flex-1",
-            style: {
-              fontSize: TASK_DIALOG_FONT_SIZES.xs,
-              height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
-            },
             activeField === "due"
               ? "bg-primary text-primary-foreground"
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           )}
+          style={{
+            fontSize: TASK_DIALOG_FONT_SIZES.xs,
+            height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
+          }}
         >
           <Icon name="alert-circle" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="mr-1.5" />
           {TASK_DIALOG_UI_TEXT.dueDate}
