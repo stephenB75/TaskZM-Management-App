@@ -501,12 +501,8 @@ function SingleDateMiniCalendar({
               key={`${dateStr}-${index}`}
               type="button"
               onClick={() => onDateSelect(date)}
-                className={cn(
+              className={cn(
                 "w-full rounded-md font-medium transition-all hover:scale-105 flex items-center justify-center",
-                style={{ 
-                  height: TASK_DIALOG_DIMENSIONS.dateButton.height,
-                  fontSize: TASK_DIALOG_FONT_SIZES.xs,
-                }}
                 isSelectedDate
                   ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
                   : isTodayDate
