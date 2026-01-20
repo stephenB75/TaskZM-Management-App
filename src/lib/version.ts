@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.15';
-export const VERSION_NAME = 'UI Visibility & Icon Fixes';
-export const VERSION_DATE = 'January 26, 2026';
-export const BUILD_NUMBER = '20260126-1';
+export const APP_VERSION = '1.0.16';
+export const VERSION_NAME = 'Multi-Team Support & Task Card Enhancements';
+export const VERSION_DATE = 'January 27, 2026';
+export const BUILD_NUMBER = '20260127-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,34 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.16',
+    date: 'January 27, 2026',
+    name: 'Multi-Team Support & Task Card Enhancements',
+    changes: [
+      'Implemented multi-team support - users can now create multiple teams with maximum 8 members per team',
+      'Redesigned Team Panel with tabs to display multiple teams - Workspace Team tab always visible, additional teams shown as separate tabs',
+      'Added team creation functionality - admin users can create new teams with name and optional description',
+      'Enhanced team member management - admins can add members to specific teams or workspace team',
+      'Updated team member invitation - supports both workspace-based and team-specific invitations',
+      'Fixed team creation flow - teams now sync from server after creation to ensure complete metadata',
+      'Added admin-only restrictions - only admins can create teams and add members (both single and bulk invite)',
+      'Updated task card assignee display - all task cards now show member avatars instead of initials with proper fallback',
+      'Enhanced assignee display across all components - TaskCard, InboxView, FolderView, DraggableTaskCard, DraggableTodayAgendaTask all use avatars',
+      'Added avatar size constants - mobile (12px), desktop (16px), and large (20px) sizes for different card types',
+      'Improved dark mode support - all assignee fallback displays now include dark mode gradient and text color variants',
+      'Eliminated hardcoded values in task cards - replaced all hardcoded sizes, colors, and font sizes with constants',
+      'Added new constants for assignee display - TASK_CARD_ASSIGNED_USER_COLORS with gradientDark and textDark variants',
+      'Added assignedUserNameStandalone fontSize constant (0.75rem) for consistent name text sizing',
+      'Fixed team panel header icons - Add Member and Bulk Invite buttons now restricted to admins only',
+      'Updated team creation dialog - all user-facing strings now use TEAM_PANEL_UI_TEXT constants',
+      'Added team creation error message constants - cannotCreateTeamNoAccess, onlyAdminsCanCreateTeams, failedToCreateTeam',
+      'Enhanced team sync logic - teams sync from server after creation to ensure list is always up-to-date',
+      'Improved team selection - newly created teams are automatically selected after creation',
+      'Fixed team member count display - shows current/max members (e.g., "3/8") in team tabs',
+      'All hardcoded values eliminated - team creation, task cards, and assignee displays use centralized constants',
+    ],
+  },
   {
     version: '1.0.15',
     date: 'January 26, 2026',
