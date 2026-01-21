@@ -119,6 +119,21 @@ export const TASK_DIALOG_DIMENSIONS = {
   dateButton: {
     height: '2rem', // h-8 = 32px = 2rem
   },
+  // Footer button dimensions
+  footerButton: {
+    mobile: {
+      height: '2rem', // h-8 = 32px (reduced from h-10 = 40px for mobile)
+      paddingX: '0.75rem', // px-3 = 12px (reduced from px-4/px-5 for mobile)
+      fontSize: '0.75rem', // text-xs = 12px (reduced from text-sm = 14px for mobile)
+      iconSize: 14, // Reduced icon size for mobile
+    },
+    desktop: {
+      height: '2.5rem', // h-10 = 40px
+      paddingX: '1.25rem', // px-5 = 20px
+      fontSize: '0.875rem', // text-sm = 14px
+      iconSize: 16, // ICON_SIZE_MD
+    },
+  },
 } as const;
 
 // Color Classes (for intentional design differences)

@@ -3473,22 +3473,25 @@ export function TaskDialog({
                   type="button"
                   variant="outline"
                   onClick={handleDuplicate}
-                  className="gap-1.5 sm:gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground h-10 px-4 text-sm font-medium"
+                  className="gap-1.5 sm:gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground font-medium h-8 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
                 >
-                  <Icon name="copy" size={ICON_SIZE_MD} />
-                  <span className="hidden sm:inline">Duplicate</span>
-                  <span className="sm:hidden">Dup</span>
+                  <Icon name="copy" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} className="sm:hidden" />
+                  <Icon name="copy" size={TASK_DIALOG_DIMENSIONS.footerButton.desktop.iconSize} className="hidden sm:inline" />
+                  <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.duplicate.desktop}</span>
+                  <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.duplicate.mobile}</span>
                 </Button>
                 {task.status !== "done" && (
                   <Button
                     type="button"
                     variant="destructive"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="gap-1.5 sm:gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 text-sm font-medium"
+                    className="gap-1.5 sm:gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium h-8 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
+                    style={{ color: COLOR_TEXT_WHITE }}
                   >
-                    <Icon name="trash-2" size={ICON_SIZE_MD} style={{ color: COLOR_TEXT_WHITE }} />
-                  <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.delete.desktop}</span>
-                  <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.delete.mobile}</span>
+                    <Icon name="trash-2" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} style={{ color: COLOR_TEXT_WHITE }} className="sm:hidden" />
+                    <Icon name="trash-2" size={TASK_DIALOG_DIMENSIONS.footerButton.desktop.iconSize} style={{ color: COLOR_TEXT_WHITE }} className="hidden sm:inline" />
+                    <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.delete.desktop}</span>
+                    <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.delete.mobile}</span>
                   </Button>
                 )}
               </div>
@@ -3500,7 +3503,7 @@ export function TaskDialog({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground h-10 px-5 text-sm font-medium flex-1 sm:flex-initial"
+                className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground font-medium flex-1 sm:flex-initial h-8 sm:h-10 px-3 sm:px-5 text-xs sm:text-sm"
               >
                 {TASK_DIALOG_UI_TEXT.cancel}
               </Button>
@@ -3508,7 +3511,7 @@ export function TaskDialog({
                 type="submit"
                 disabled={task ? !permissions.canEditTask : !permissions.canCreateTask} 
                 className={cn(
-                  "bg-primary hover:bg-primary/90 h-10 px-5 text-sm font-medium flex-1 sm:flex-initial shadow-md",
+                  "bg-primary hover:bg-primary/90 font-medium flex-1 sm:flex-initial shadow-md h-8 sm:h-10 px-3 sm:px-5 text-xs sm:text-sm",
                   COMPONENT_DIMENSIONS.taskDialog.buttonMinWidth
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
