@@ -270,7 +270,8 @@ function FixedMiniCalendar({
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-[10px] font-medium text-muted-foreground py-1 flex items-center justify-center"
+            className="text-center font-medium text-muted-foreground py-1 flex items-center justify-center"
+            style={{ fontSize: TASK_DIALOG_FONT_SIZES.calendarDayHeader }}
           >
             {day}
           </div>
@@ -340,7 +341,11 @@ function FixedMiniCalendar({
               onClick={() => {
               onDateSelect(undefined, activeField);
             }}
-            className="h-6 px-2 text-xs"
+            className="px-2"
+            style={{
+              height: TASK_DIALOG_DIMENSIONS.calendarButton.height,
+              fontSize: TASK_DIALOG_FONT_SIZES.xs,
+            }}
           >
             {TASK_DIALOG_UI_TEXT.clear}
           </Button>
@@ -480,7 +485,8 @@ function SingleDateMiniCalendar({
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center text-[10px] font-medium text-muted-foreground py-1 flex items-center justify-center"
+            className="text-center font-medium text-muted-foreground py-1 flex items-center justify-center"
+            style={{ fontSize: TASK_DIALOG_FONT_SIZES.calendarDayHeader }}
           >
             {day}
           </div>
@@ -543,7 +549,11 @@ function SingleDateMiniCalendar({
             onClick={() => {
               onDateSelect(undefined);
             }}
-            className="h-6 px-2 text-xs"
+            className="px-2"
+            style={{
+              height: TASK_DIALOG_DIMENSIONS.calendarButton.height,
+              fontSize: TASK_DIALOG_FONT_SIZES.xs,
+            }}
           >
             {TASK_DIALOG_UI_TEXT.clear}
           </Button>

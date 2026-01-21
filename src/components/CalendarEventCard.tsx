@@ -3,6 +3,7 @@ import React from 'react';
 import { Icon } from './Icon';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
+import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS } from '../lib/calendar-event-constants';
 
 interface CalendarEventCardProps {
   title: string;
@@ -243,11 +244,9 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   
   // Calculate visual height based on duration (similar to tasks but with different styling)
   // Minimum height for very short events, scale up for longer ones
-  const baseHeight = 48; // Minimum height in pixels
-  const heightPerHour = 40; // Additional height per hour
   const calculatedHeight = Math.min(
-    baseHeight + (durationMinutes / 60) * heightPerHour,
-    160 // Max height
+    CALENDAR_EVENT_DIMENSIONS.height.base + (durationMinutes / 60) * CALENDAR_EVENT_DIMENSIONS.height.perHour,
+    CALENDAR_EVENT_DIMENSIONS.height.max
   );
   
   // Get color based on calendar color (if provided) or fallback to title hash
@@ -277,19 +276,22 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
       {/* Vertical colored line on left */}
       <div 
         className={cn('flex-shrink-0 rounded-full', colors.accent)}
-        style={{ width: '4px', minHeight: '40px' }}
+        style={{ 
+          width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
+          minHeight: CALENDAR_EVENT_DIMENSIONS.verticalLine.minHeight 
+        }}
       />
       
       {/* Content area */}
       <div className="flex-1 py-1 flex flex-col gap-1">
         {/* Header with calendar icon */}
         <div className="flex items-center gap-1.5">
-          <Icon name="calendar" size={12} weight="duotone" className={colors.mutedText} />
-          <span className={cn('text-[10px] font-medium uppercase tracking-wide', colors.mutedText)}>
+          <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
+          <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
             {provider === 'apple' ? 'iCloud' : 'Google'} Calendar
           </span>
           {isRecurring && (
-            <Icon name="repeat" size={10} weight="duotone" className={colors.mutedText} title="Recurring event" />
+            <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} title="Recurring event" />
           )}
         </div>
         
@@ -304,16 +306,16 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         {/* Time and duration */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1">
-            <Icon name="clock" size={12} className={colors.mutedText} />
-            <span className={cn('text-[10px]', colors.mutedText)}>
+            <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
+            <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>
               {startTime} – {endTime}
             </span>
           </div>
           <span className={cn(
-            'text-[9px] font-medium px-1.5 py-0.5 rounded-full',
+            'font-medium px-1.5 py-0.5 rounded-full',
             colors.iconBg,
             colors.mutedText
-          )}>
+          )} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
             {formatDuration(durationMinutes)}
           </span>
         </div>
@@ -321,8 +323,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         {/* Location if present */}
         {location && (
           <div className="flex items-center gap-1 mt-0.5">
-            <Icon name="map-pin" size={12} className={cn('flex-shrink-0', colors.mutedText)} />
-            <span className={cn('text-[10px] truncate', colors.mutedText)}>
+            <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
+            <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>
               {location}
             </span>
           </div>
