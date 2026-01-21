@@ -269,10 +269,9 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   return (
     // Card container with vertical line - similar to task cards
     <div
-      className="flex gap-2 mx-auto transition-all duration-200 cursor-default select-none"
+      className="flex gap-2 w-full transition-all duration-200 cursor-default select-none"
       style={{
         minHeight: `${calculatedHeight}px`,
-        width: '289px', // Match task card width exactly
       }}
     >
       {/* Vertical colored line on left */}

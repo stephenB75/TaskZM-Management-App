@@ -1152,14 +1152,14 @@ export function TodayAgendaView({
                   </div>
                     );
                   } else if (item.type === 'event' && item.event) {
-                    // Calculate margin for events based on previous item
+                    // Calculate margin for events based on previous item (same as tasks)
                     const prevItem = index > 0 ? combinedItems[index - 1] : null;
                     let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
                     
                     if (index === 0) {
                       marginTop = 0;
                     } else if (prevItem) {
-                      // Use fixed spacing between items
+                      // Use fixed spacing between items (same as tasks)
                       marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
                     }
                     
@@ -1171,14 +1171,22 @@ export function TodayAgendaView({
                           marginTop: `${marginTop}px`,
                         }}
                       >
-                        <CalendarEventCard
-                          title={item.event.title}
-                          start={item.event.start}
-                          end={item.event.end}
-                          location={item.event.location}
-                          provider={item.event.provider}
-                          calendarColor={item.event.calendarColor}
-                        />
+                        {/* Apply same scale transform as tasks for vertical alignment */}
+                        <div
+                          style={{
+                            transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                            transformOrigin: 'top center',
+                          }}
+                        >
+                          <CalendarEventCard
+                            title={item.event.title}
+                            start={item.event.start}
+                            end={item.event.end}
+                            location={item.event.location}
+                            provider={item.event.provider}
+                            calendarColor={item.event.calendarColor}
+                          />
+                        </div>
                       </div>
                     );
                   }
