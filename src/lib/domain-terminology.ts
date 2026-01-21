@@ -181,7 +181,38 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'reorganize', 'reorganizing', 'reorganization', 'restructure', 'restructuring',
     'refresh', 'refreshing', 'renew', 'renewing', 'revitalize', 'revitalizing',
     'sanitize', 'sanitizing', 'disinfect', 'disinfecting', 'sterilize', 'sterilizing',
-    'dust', 'dusting', 'wipe', 'wiping', 'sweep', 'sweeping', 'mop', 'mopping', 'vacuum', 'vacuuming'
+    'dust', 'dusting', 'wipe', 'wiping', 'sweep', 'sweeping', 'mop', 'mopping', 'vacuum', 'vacuuming',
+    // Additional business action keywords
+    'execute', 'executing', 'implement', 'implementing', 'deploy', 'deploying', 'launch', 'launching',
+    'initiate', 'initiating', 'start', 'starting', 'begin', 'beginning', 'commence', 'commencing',
+    'complete', 'completing', 'finish', 'finishing', 'finalize', 'finalizing', 'conclude', 'concluding',
+    'submit', 'submitting', 'deliver', 'delivering', 'handoff', 'handing off', 'transfer', 'transferring',
+    'approve', 'approving', 'authorize', 'authorizing', 'validate', 'validating', 'verify', 'verifying',
+    'review', 'reviewing', 'assess', 'assessing', 'evaluate', 'evaluating', 'analyze', 'analyzing',
+    'plan', 'planning', 'strategize', 'strategizing', 'design', 'designing', 'architect', 'architecting',
+    'develop', 'developing', 'build', 'building', 'create', 'creating', 'construct', 'constructing',
+    'integrate', 'integrating', 'connect', 'connecting', 'link', 'linking', 'merge', 'merging',
+    'optimize', 'optimizing', 'improve', 'improving', 'enhance', 'enhancing', 'refine', 'refining',
+    'update', 'updating', 'upgrade', 'upgrading', 'modernize', 'modernizing', 'refresh', 'refreshing',
+    'maintain', 'maintaining', 'support', 'supporting', 'sustain', 'sustaining', 'preserve', 'preserving',
+    'monitor', 'monitoring', 'track', 'tracking', 'observe', 'observing', 'watch', 'watching',
+    'measure', 'measuring', 'quantify', 'quantifying', 'calculate', 'calculating', 'compute', 'computing',
+    'report', 'reporting', 'document', 'documenting', 'record', 'recording', 'log', 'logging',
+    'communicate', 'communicating', 'share', 'sharing', 'inform', 'informing', 'notify', 'notifying',
+    'collaborate', 'collaborating', 'cooperate', 'cooperating', 'coordinate', 'coordinating', 'sync', 'syncing',
+    'train', 'training', 'educate', 'educating', 'teach', 'teaching', 'instruct', 'instructing',
+    'mentor', 'mentoring', 'coach', 'coaching', 'guide', 'guiding', 'advise', 'advising',
+    'negotiate', 'negotiating', 'discuss', 'discussing', 'meet', 'meeting', 'conference', 'conferencing',
+    'present', 'presenting', 'demonstrate', 'demonstrating', 'showcase', 'showcasing', 'exhibit', 'exhibiting',
+    'sell', 'selling', 'market', 'marketing', 'promote', 'promoting', 'advertise', 'advertising',
+    'acquire', 'acquiring', 'obtain', 'obtaining', 'secure', 'securing', 'procure', 'procuring',
+    'manage', 'managing', 'administer', 'administering', 'oversee', 'overseeing', 'supervise', 'supervising',
+    'lead', 'leading', 'direct', 'directing', 'guide', 'guiding', 'steer', 'steering',
+    'organize', 'organizing', 'arrange', 'arranging', 'structure', 'structuring', 'systematize', 'systematizing',
+    'schedule', 'scheduling', 'plan', 'planning', 'arrange', 'arranging', 'coordinate', 'coordinating',
+    'prioritize', 'prioritizing', 'rank', 'ranking', 'order', 'ordering', 'sequence', 'sequencing',
+    'resolve', 'resolving', 'solve', 'solving', 'fix', 'fixing', 'repair', 'repairing',
+    'troubleshoot', 'troubleshooting', 'debug', 'debugging', 'diagnose', 'diagnosing', 'investigate', 'investigating'
   ],
   phrases: [
     'quarterly review', 'client call', 'project milestone', 'stakeholder update',
@@ -283,7 +314,37 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     // Contextual phrases for file/document tasks
     'organize files systematically', 'create logical file structure', 'ensure files are properly categorized',
     'maintain organized file system', 'create efficient document organization', 'ensure documents are easily accessible',
-    'organize documents by category', 'create systematic document filing', 'maintain organized document structure'
+    'organize documents by category', 'create systematic document filing', 'maintain organized document structure',
+    // Additional contextual business phrases
+    'execute project deliverables', 'implement strategic initiatives', 'deploy system updates',
+    'launch new product features', 'initiate business processes', 'start project phases',
+    'complete task assignments', 'finish project milestones', 'finalize business reports',
+    'submit proposals and documents', 'deliver client presentations', 'transfer knowledge and skills',
+    'approve budget allocations', 'authorize project expenditures', 'validate data accuracy',
+    'verify system compliance', 'review performance metrics', 'assess project outcomes',
+    'evaluate business opportunities', 'analyze market trends', 'examine financial statements',
+    'plan strategic initiatives', 'design system architecture', 'develop business solutions',
+    'build customer relationships', 'create marketing campaigns', 'construct business models',
+    'integrate system components', 'connect business processes', 'link data sources',
+    'update business procedures', 'upgrade technology systems', 'modernize workflows',
+    'maintain system performance', 'support team members', 'sustain business operations',
+    'monitor key metrics', 'track project progress', 'observe market changes',
+    'measure business outcomes', 'calculate financial projections', 'compute performance indicators',
+    'report business results', 'document processes and procedures', 'record meeting minutes',
+    'communicate with stakeholders', 'share information and updates', 'inform team members',
+    'train new employees', 'educate staff members', 'teach best practices',
+    'mentor junior colleagues', 'coach team members', 'guide project teams',
+    'negotiate contracts and deals', 'discuss business strategies', 'meet with clients',
+    'present business proposals', 'demonstrate product features', 'showcase company capabilities',
+    'sell products and services', 'market business offerings', 'promote brand awareness',
+    'acquire new customers', 'obtain necessary resources', 'secure business partnerships',
+    'manage project timelines', 'administer business operations', 'oversee team activities',
+    'lead cross-functional teams', 'direct business initiatives', 'steer strategic direction',
+    'schedule meetings and appointments', 'arrange business events', 'coordinate team activities',
+    'prioritize business objectives', 'rank project importance', 'sequence task execution',
+    'resolve business conflicts', 'solve technical problems', 'fix system issues',
+    'troubleshoot technical issues', 'debug application errors', 'diagnose performance problems',
+    'investigate business opportunities', 'research market conditions', 'explore new technologies'
   ],
   verbs: [
     'present', 'negotiate', 'strategize', 'analyze', 'forecast', 'delegate', 'coordinate',
@@ -330,7 +391,19 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'invest', 'investing', 'deposit', 'depositing', 'withdraw', 'withdrawing',
     'transfer', 'transferring', 'calculate', 'calculating', 'analyze', 'analyzing',
     'budget', 'budgeting', 'forecast', 'forecasting', 'reconcile', 'reconciling',
-    'file', 'filing', 'submit', 'submitting', 'approve', 'approving', 'process', 'processing'
+    'file', 'filing', 'submit', 'submitting', 'approve', 'approving', 'process', 'processing',
+    // Additional business action verbs
+    'execute', 'executing', 'implement', 'implementing', 'deploy', 'deploying', 'launch', 'launching',
+    'initiate', 'initiating', 'commence', 'commencing', 'finalize', 'finalizing', 'conclude', 'concluding',
+    'deliver', 'delivering', 'handoff', 'handing off', 'authorize', 'authorizing', 'validate', 'validating',
+    'strategize', 'strategizing', 'architect', 'architecting', 'construct', 'constructing',
+    'integrate', 'integrating', 'merge', 'merging', 'modernize', 'modernizing',
+    'sustain', 'sustaining', 'preserve', 'preserving', 'observe', 'observing',
+    'quantify', 'quantifying', 'compute', 'computing', 'document', 'documenting',
+    'informing', 'notify', 'notifying', 'instruct', 'instructing', 'advise', 'advising',
+    'conferencing', 'showcasing', 'exhibiting', 'advertising', 'obtaining', 'securing', 'procuring',
+    'administering', 'overseeing', 'supervising', 'directing', 'steering',
+    'sequencing', 'solving', 'repairing', 'diagnosing', 'investigating'
   ],
   nouns: [
     'meeting', 'presentation', 'report', 'deadline', 'client', 'stakeholder', 'budget',
@@ -368,7 +441,25 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'dusting', 'wiping', 'sweeping', 'mopping', 'vacuuming', 'cleaning', 'tidying',
     'inspection', 'inspections', 'examination', 'examinations', 'evaluation', 'evaluations', 'assessment', 'assessments',
     'reorganization', 'restructuring', 'revitalization', 'refreshment', 'renewal',
-    'clutter', 'mess', 'disorder', 'chaos', 'untidiness', 'disarray'
+    'clutter', 'mess', 'disorder', 'chaos', 'untidiness', 'disarray',
+    // Additional business nouns
+    'execution', 'implementation', 'deployment', 'launch', 'initiation', 'commencement',
+    'completion', 'finalization', 'conclusion', 'delivery', 'handoff', 'transfer',
+    'authorization', 'validation', 'verification', 'review', 'assessment', 'evaluation',
+    'analysis', 'examination', 'planning', 'strategy', 'design', 'architecture',
+    'development', 'construction', 'creation', 'integration', 'connection', 'linkage',
+    'update', 'upgrade', 'modernization', 'refresh', 'maintenance', 'support',
+    'sustainability', 'preservation', 'monitoring', 'tracking', 'observation',
+    'measurement', 'quantification', 'calculation', 'computation', 'reporting',
+    'documentation', 'recording', 'logging', 'communication', 'sharing', 'information',
+    'notification', 'training', 'education', 'instruction', 'mentoring', 'coaching',
+    'guidance', 'advice', 'negotiation', 'discussion', 'meeting', 'conference',
+    'presentation', 'demonstration', 'showcase', 'exhibition', 'sale', 'marketing',
+    'promotion', 'advertisement', 'acquisition', 'obtainment', 'security', 'procurement',
+    'management', 'administration', 'oversight', 'supervision', 'leadership', 'direction',
+    'guidance', 'scheduling', 'arrangement', 'coordination', 'prioritization', 'ranking',
+    'ordering', 'sequencing', 'resolution', 'solution', 'repair', 'troubleshooting',
+    'debugging', 'diagnosis', 'investigation', 'research', 'exploration'
   ],
   pronouns: [
     'we', 'us', 'our', 'ours', 'ourselves', 'they', 'them', 'their', 'theirs', 'themselves',
@@ -584,7 +675,24 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'resolve home task issues', 'optimize home performance', 'improve home efficiency',
     'document home process', 'review home results', 'finalize home deliverables',
     'prioritize home activities', 'allocate home resources', 'manage home dependencies',
-    'ensure home quality', 'maintain home standards', 'meet home objectives'
+    'ensure home quality', 'maintain home standards', 'meet home objectives',
+    // Additional home contextual phrases
+    'prepare meals for family', 'cook nutritious dinners', 'bake fresh desserts',
+    'plan weekly meal schedule', 'organize grocery shopping list', 'manage food inventory',
+    'maintain clean kitchen', 'organize pantry items', 'ensure food safety',
+    'care for family members', 'support children activities', 'help with homework',
+    'supervise kids playtime', 'encourage learning activities', 'celebrate achievements',
+    'plan family events', 'organize birthday parties', 'coordinate holiday celebrations',
+    'manage household budget', 'track home expenses', 'plan home improvements',
+    'maintain property value', 'ensure home safety', 'protect family security',
+    'research home products', 'compare appliance options', 'evaluate home services',
+    'schedule home maintenance', 'coordinate repairs', 'manage home contractors',
+    'organize home documents', 'manage home records', 'maintain home files',
+    'plan home renovations', 'design home improvements', 'execute home projects',
+    'decorate living spaces', 'arrange furniture', 'create comfortable environment',
+    'maintain yard and garden', 'care for plants', 'manage landscaping',
+    'organize storage areas', 'manage home inventory', 'declutter living spaces',
+    'ensure home cleanliness', 'maintain organized home', 'create functional spaces'
   ],
   verbs: [
     'clean', 'cleaning', 'organize', 'organizing', 'repair', 'maintain', 'cook', 'shop', 'decorate', 'renovate',
@@ -626,7 +734,25 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'declutter', 'decluttering', 'minimize', 'minimizing', 'recycle', 'recycling', 'compost', 'composting',
     'renovate', 'renovating', 'remodel', 'remodeling', 'decorate', 'decorating', 'stage', 'staging',
     'refinance', 'refinancing', 'insure', 'insuring', 'warrant', 'warranting', 'lease', 'leasing',
-    'rent', 'renting', 'manage property', 'managing property', 'maintain property', 'maintaining property'
+    'rent', 'renting', 'manage property', 'managing property', 'maintain property', 'maintaining property',
+    // Additional home action verbs
+    'prepare', 'preparing', 'cook', 'cooking', 'bake', 'baking', 'roast', 'roasting',
+    'grill', 'grilling', 'fry', 'frying', 'boil', 'boiling', 'steam', 'steaming',
+    'sauté', 'sautéing', 'marinate', 'marinating', 'season', 'seasoning', 'mix', 'mixing',
+    'stir', 'stirring', 'chop', 'chopping', 'slice', 'slicing', 'dice', 'dicing',
+    'mince', 'mincing', 'peel', 'peeling', 'grate', 'grating', 'whisk', 'whisking',
+    'beat', 'beating', 'knead', 'kneading', 'roll', 'rolling', 'spread', 'spreading',
+    'garnish', 'garnishing', 'serve', 'serving', 'plate', 'plating', 'present', 'presenting',
+    'shop', 'shopping', 'purchase', 'purchasing', 'buy', 'buying', 'select', 'selecting',
+    'compare', 'comparing', 'evaluate', 'evaluating', 'review', 'reviewing', 'research', 'researching',
+    'appraise', 'appraising', 'inspect', 'inspecting', 'view', 'viewing', 'tour', 'touring',
+    'list', 'listing', 'show', 'showing', 'negotiate', 'negotiating', 'close', 'closing',
+    'sign', 'signing', 'move', 'moving', 'pack', 'packing', 'unpack', 'unpacking',
+    'nurture', 'nurturing', 'care', 'caring', 'support', 'supporting', 'guide', 'guiding',
+    'teach', 'teaching', 'help', 'helping', 'assist', 'assisting', 'supervise', 'supervising',
+    'monitor', 'monitoring', 'encourage', 'encouraging', 'praise', 'praising', 'discipline', 'disciplining',
+    'celebrate', 'celebrating', 'play', 'playing', 'learn', 'learning', 'study', 'studying',
+    'practice', 'practicing', 'rehearse', 'rehearsing', 'perform', 'performing'
   ],
   nouns: [
     'groceries', 'cleaning', 'maintenance', 'repair', 'cooking', 'laundry', 'organization',
@@ -816,7 +942,35 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'follow personal standard procedures', 'document personal process workflow', 'create personal procedure checklist',
     'review personal standard procedures', 'update personal operating guidelines', 'train on personal new procedures',
     'ensure personal procedure compliance', 'audit personal procedure adherence', 'improve personal process efficiency',
-    'standardize personal work processes', 'document personal best practices', 'create personal procedure templates'
+    'standardize personal work processes', 'document personal best practices', 'create personal procedure templates',
+    // Additional personal contextual phrases
+    'improve physical fitness', 'achieve health goals', 'maintain wellness routine',
+    'develop personal skills', 'expand knowledge base', 'pursue personal interests',
+    'express creative vision', 'create meaningful art', 'share artistic work',
+    'build meaningful relationships', 'strengthen social connections', 'create lasting memories',
+    'explore new destinations', 'experience different cultures', 'broaden personal horizons',
+    'contribute to community', 'make positive impact', 'help others in need',
+    'prioritize self-care', 'maintain work-life balance', 'reduce personal stress',
+    'follow exercise routine', 'prevent health issues', 'maximize fitness benefits',
+    'plan personal activities', 'stay personally organized', 'enjoy life experiences',
+    'practice mindfulness daily', 'maintain meditation routine', 'achieve inner peace',
+    'track nutrition goals', 'maintain healthy diet', 'ensure proper hydration',
+    'monitor sleep patterns', 'improve sleep quality', 'establish sleep routine',
+    'manage personal finances', 'plan for retirement', 'build savings account',
+    'invest in future', 'plan estate distribution', 'manage insurance coverage',
+    'develop career skills', 'pursue professional growth', 'achieve career goals',
+    'learn new technologies', 'master new tools', 'expand skill set',
+    'network with professionals', 'build industry connections', 'advance career opportunities',
+    'volunteer for causes', 'support charitable organizations', 'give back to community',
+    'plan personal travel', 'organize vacation itinerary', 'prepare for trips',
+    'create personal art', 'develop creative projects', 'share artistic creations',
+    'practice musical instruments', 'compose original music', 'perform musical pieces',
+    'maintain personal health', 'schedule medical checkups', 'manage medication schedule',
+    'coordinate healthcare services', 'track health metrics', 'follow treatment plans',
+    'research personal purchases', 'compare product options', 'make informed decisions',
+    'maintain personal vehicle', 'schedule car service', 'manage vehicle registration',
+    'organize personal space', 'declutter belongings', 'create organized environment',
+    'manage personal time', 'prioritize activities', 'balance personal commitments'
   ],
   verbs: [
     'exercise', 'workout', 'train', 'practice', 'learn', 'study', 'read', 'write',
@@ -844,7 +998,24 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'visualize', 'visualizing', 'manifest', 'manifesting', 'coach', 'coaching',
     'plan finances', 'planning finances', 'budget', 'budgeting', 'save', 'saving', 'invest', 'investing',
     'learn online', 'learning online', 'develop skills', 'developing skills', 'certify', 'certifying',
-    'network', 'networking', 'mentor', 'mentoring', 'volunteer', 'volunteering', 'donate', 'donating'
+    'network', 'networking', 'mentor', 'mentoring', 'volunteer', 'volunteering', 'donate', 'donating',
+    // Additional personal action verbs
+    'practice', 'practicing', 'train', 'training', 'exercise', 'exercising', 'workout', 'working out',
+    'meditate', 'meditating', 'reflect', 'reflecting', 'journal', 'journaling', 'plan', 'planning',
+    'organize', 'organizing', 'schedule', 'scheduling', 'coordinate', 'coordinating',
+    'socialize', 'socializing', 'connect', 'connecting', 'meet', 'meeting', 'celebrate', 'celebrating',
+    'volunteer', 'volunteering', 'help', 'helping', 'support', 'supporting',
+    'travel', 'traveling', 'explore', 'exploring', 'visit', 'visiting', 'discover', 'discovering',
+    'experience', 'experiencing', 'enjoy', 'enjoying', 'relax', 'relaxing',
+    'create', 'creating', 'make', 'making', 'build', 'building', 'craft', 'crafting',
+    'paint', 'painting', 'draw', 'drawing', 'sketch', 'sketching', 'design', 'designing',
+    'play', 'playing', 'perform', 'performing', 'rehearse', 'rehearsing',
+    'compose', 'composing', 'arrange', 'arranging', 'record', 'recording', 'mix', 'mixing',
+    'master', 'mastering', 'produce', 'producing', 'release', 'releasing', 'publish', 'publishing',
+    'exhibit', 'exhibiting', 'display', 'displaying', 'showcase', 'showcasing', 'curate', 'curating',
+    'book', 'booking', 'reserve', 'reserving', 'pack', 'packing', 'unpack', 'unpacking',
+    'fly', 'flying', 'drive', 'driving', 'navigate', 'navigating', 'tour', 'touring',
+    'sightsee', 'sightseeing', 'photograph', 'photographing'
   ],
   nouns: [
     'exercise', 'workout', 'fitness', 'health', 'wellness', 'hobby', 'learning',
@@ -1024,7 +1195,13 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
     'process international payment', 'processing international payment', 'exchange currency', 'exchanging currency',
     'convert time zone', 'converting time zone', 'translate', 'translating', 'interpret', 'interpreting',
     'attend international conference', 'attending international conference', 'participate globally', 'participating globally',
-    'cooperate internationally', 'cooperating internationally', 'partner globally', 'partnering globally'
+    'cooperate internationally', 'cooperating internationally', 'partner globally', 'partnering globally',
+    // Additional world action verbs
+    'immerse', 'immersing', 'adapt', 'adapting', 'adjust', 'adjusting', 'acclimate', 'acclimating',
+    'orient', 'orienting', 'locate', 'locating', 'translate', 'translating', 'interpret', 'interpreting',
+    'synchronize', 'synchronizing', 'confirm', 'confirming', 'cancel', 'canceling', 'modify', 'modifying',
+    'sail', 'sailing', 'check-in', 'checking-in', 'check-out', 'checking-out', 'board', 'boarding',
+    'depart', 'departing', 'arrive', 'arriving', 'land', 'landing', 'takeoff', 'taking off'
   ],
   nouns: [
     'travel', 'trip', 'journey', 'voyage', 'expedition', 'culture', 'language',
@@ -1041,7 +1218,24 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
     'hotel', 'hotels', 'resort', 'resorts', 'hostel', 'hostels', 'airbnb', 'lodging',
     'restaurant', 'restaurants', 'cafe', 'cafes', 'cuisine', 'cuisines', 'local food',
     'attraction', 'attractions', 'landmark', 'landmarks', 'monument', 'monuments',
-    'museum', 'museums', 'gallery', 'galleries', 'beach', 'beaches', 'mountain', 'mountains'
+    'museum', 'museums', 'gallery', 'galleries', 'beach', 'beaches', 'mountain', 'mountains',
+    // Additional world nouns
+    'immersion', 'adaptation', 'adjustment', 'acclimation', 'orientation', 'location',
+    'translation', 'interpretation', 'synchronization', 'confirmation', 'cancellation', 'modification',
+    'sailing', 'check-in', 'check-out', 'boarding', 'departure', 'arrival', 'landing', 'takeoff',
+    'globalization', 'internationalization', 'diversification', 'sustainability', 'environmental protection',
+    'carbon reduction', 'equality advocacy', 'diversity promotion', 'geopolitical analysis', 'treaty negotiation',
+    'diplomacy', 'international trade', 'export', 'import', 'pandemic response', 'vaccination',
+    'public health', 'world news', 'current events', 'breaking news', 'international news',
+    'travel advisory', 'visa application', 'entry requirement', 'travel documentation',
+    'international flight', 'global shipping', 'cross-border transaction', 'international payment',
+    'currency exchange', 'foreign exchange', 'exchange rate', 'time zone conversion',
+    'world clock', 'international time', 'global time', 'cultural exchange', 'language barrier',
+    'translation service', 'interpreter service', 'international conference', 'global summit',
+    'world forum', 'international event', 'global citizenship', 'world peace',
+    'international cooperation', 'global partnership', 'sustainable development', 'global goals',
+    'international aid', 'humanitarian effort', 'climate summit', 'environmental conference',
+    'global initiative', 'worldwide campaign'
   ],
   pronouns: [
     'i', 'me', 'my', 'mine', 'myself', 'we', 'us', 'our', 'ours', 'ourselves',
@@ -1274,6 +1468,7 @@ export function detectDomain(
     home: [],
     personal: [],
     world: [],
+    mixed: [],
   };
 
   // Split text into words for better matching
@@ -1706,9 +1901,13 @@ export function saveNewTerminologyToLibrary(
 
 /**
  * Cache for shared terminology fetched from the database
- * Stores { terminology: DomainTerminology, timestamp: number }
+ * Stores { terminology: { keywords, phrases, verbs, nouns }, timestamp: number }
+ * Note: Shared terminology only includes keywords, phrases, verbs, nouns (not pronouns, context, effortMultiplier)
  */
-const sharedTerminologyCache = new Map<Domain, { terminology: DomainTerminology; timestamp: number }>();
+const sharedTerminologyCache = new Map<Domain, { 
+  terminology: { keywords: string[]; phrases: string[]; verbs: string[]; nouns: string[]; }; 
+  timestamp: number 
+}>();
 
 /**
  * Get domain-specific terminology (synchronous version, uses cached shared terms)
@@ -1763,8 +1962,13 @@ export async function getDomainTerminologyAsync(domain: Domain): Promise<DomainT
   };
   try {
     const response = await getSharedTerminology(domain);
-    if (response.terminology) {
-      sharedTerms = response.terminology;
+    if (response && (response.keywords.length > 0 || response.phrases.length > 0 || response.verbs.length > 0 || response.nouns.length > 0)) {
+      sharedTerms = {
+        keywords: response.keywords || [],
+        phrases: response.phrases || [],
+        verbs: response.verbs || [],
+        nouns: response.nouns || []
+      };
       // Update cache
       sharedTerminologyCache.set(domain, { terminology: sharedTerms, timestamp: Date.now() });
       logger.debug(`Fetched and cached shared terminology for domain: ${domain}`);

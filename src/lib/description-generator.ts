@@ -76,6 +76,75 @@ function cleanText(text: string): string {
 }
 
 /**
+ * Analyze task name structure to extract main action and object
+ * This helps build more contextual sentences that relate directly to the task
+ */
+function analyzeTaskNameStructure(
+  taskName: string,
+  extractedVerbs: string[],
+  extractedNouns: string[]
+): {
+  mainAction: string | null;
+  mainObject: string | null;
+  taskType: 'action' | 'noun' | 'phrase' | 'mixed';
+  hasExplicitAction: boolean;
+} {
+  const taskNameLower = taskName.toLowerCase();
+  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
+  
+  // Check if task name starts with an action verb
+  const actionVerbs = ['find', 'search', 'research', 'compare', 'buy', 'purchase', 'get', 'locate', 'identify', 'shop', 'select', 'create', 'update', 'delete', 'manage', 'organize', 'plan', 'schedule', 'review', 'analyze', 'evaluate', 'implement', 'develop', 'design', 'build', 'write', 'read', 'study', 'learn', 'teach', 'prepare', 'cook', 'clean', 'repair', 'fix', 'install', 'setup', 'configure'];
+  const firstWord = taskWords[0];
+  const hasExplicitAction = actionVerbs.some(verb => firstWord === verb || firstWord.startsWith(verb));
+  
+  // Extract main action from task name or extracted verbs
+  let mainAction: string | null = null;
+  if (hasExplicitAction) {
+    mainAction = firstWord;
+  } else if (extractedVerbs.length > 0) {
+    // Use extracted verb that appears in task name
+    const verbInTask = extractedVerbs.find(v => taskNameLower.includes(v.toLowerCase()));
+    mainAction = verbInTask || extractedVerbs[0];
+  }
+  
+  // Extract main object/noun from task name
+  let mainObject: string | null = null;
+  // Look for nouns in task name (words that aren't verbs or common words)
+  const commonWords = ['the', 'a', 'an', 'for', 'to', 'of', 'in', 'on', 'at', 'by', 'with', 'from', 'and', 'or', 'but'];
+  const potentialObjects = taskWords.filter(w => 
+    !commonWords.includes(w) && 
+    !actionVerbs.some(av => w === av || w.startsWith(av)) &&
+    w.length >= 3
+  );
+  
+  if (potentialObjects.length > 0) {
+    // Prefer longer, more specific words
+    mainObject = potentialObjects.sort((a, b) => b.length - a.length)[0];
+  } else if (extractedNouns.length > 0) {
+    // Use extracted noun that relates to task
+    const nounInTask = extractedNouns.find(n => taskNameLower.includes(n.toLowerCase()));
+    mainObject = nounInTask || extractedNouns[0];
+  }
+  
+  // Determine task type
+  let taskType: 'action' | 'noun' | 'phrase' | 'mixed' = 'mixed';
+  if (hasExplicitAction && mainObject) {
+    taskType = 'action';
+  } else if (mainObject && !hasExplicitAction) {
+    taskType = 'noun';
+  } else if (taskWords.length > 2) {
+    taskType = 'phrase';
+  }
+  
+  return {
+    mainAction,
+    mainObject,
+    taskType,
+    hasExplicitAction,
+  };
+}
+
+/**
  * Add appropriate article (a, an, the) before a noun if needed
  * Returns the noun with article if it needs one, otherwise returns the noun as-is
  */
@@ -1472,6 +1541,10 @@ function buildElaborateContextualDescription(
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
   
+  // ENHANCED: Analyze task name structure to inform sentence building
+  // Extract the main action and object from task name for better contextual sentences
+  const taskNameAnalysis = analyzeTaskNameStructure(taskName, verbs, nouns);
+  
   // STEP 0: Extract primary topic from task name to filter irrelevant keywords
   // This helps identify the main subject (e.g., "vehicles", "research", "price range")
   // and filter out keywords that don't relate to this topic
@@ -1970,17 +2043,36 @@ function buildElaborateContextualDescription(
       // Clean the best phrase first
       const cleanedPhrase = cleanText(bestPhrase);
       
-      // ENHANCED: Randomly select sentence template for variation (using variation seed)
+      // ENHANCED: Use task name analysis to select more contextual sentence structure
+      // If task has explicit action, use action-oriented templates
+      // If task is noun-based, use descriptive templates
       const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
-      // Ensure we have valid template keys and variation seed
       let selectedTemplate: string;
       let templateOpener: string;
+      
       if (templateKeys.length === 0) {
-        // Fallback to default template if no templates available
         selectedTemplate = 'involves';
         templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
       } else {
-        selectedTemplate = templateKeys[Math.floor(variationSeed * templateKeys.length)];
+        // ENHANCED: Select template based on task name structure for better context
+        if (taskNameAnalysis.hasExplicitAction && taskNameAnalysis.mainAction) {
+          // Action-oriented tasks: use dynamic templates
+          const actionTemplates = ['requires', 'entails', 'involves', 'includes', 'focuses'];
+          const availableActionTemplates = actionTemplates.filter(t => templateKeys.includes(t));
+          selectedTemplate = availableActionTemplates.length > 0
+            ? availableActionTemplates[Math.floor(variationSeed * availableActionTemplates.length)]
+            : templateKeys[Math.floor(variationSeed * templateKeys.length)];
+        } else if (taskNameAnalysis.taskType === 'noun' && taskNameAnalysis.mainObject) {
+          // Noun-based tasks: use descriptive templates
+          const descriptiveTemplates = ['involves', 'concerns', 'relates', 'covers', 'addresses'];
+          const availableDescriptiveTemplates = descriptiveTemplates.filter(t => templateKeys.includes(t));
+          selectedTemplate = availableDescriptiveTemplates.length > 0
+            ? availableDescriptiveTemplates[Math.floor(variationSeed * availableDescriptiveTemplates.length)]
+            : templateKeys[Math.floor(variationSeed * templateKeys.length)];
+        } else {
+          // Mixed/phrase tasks: use varied templates
+          selectedTemplate = templateKeys[Math.floor(variationSeed * templateKeys.length)];
+        }
         templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
       }
       
@@ -2001,22 +2093,41 @@ function buildElaborateContextualDescription(
         connector = DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
       }
       
-      // Build sentence with proper grammar
+      // ENHANCED: Build more contextual sentences that relate to task name structure
+      // Use task name analysis to create sentences that feel more natural and task-specific
       if (verbForm && limitedNouns.length > 0) {
         // Template: "This task [verb] [phrase] for [nouns with articles]"
+        // ENHANCED: If task has main object, incorporate it naturally
         const formattedNouns = formatItemList(limitedNouns, DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, true);
-        description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${formattedNouns}.`;
+        if (taskNameAnalysis.mainObject && !cleanedPhrase.toLowerCase().includes(taskNameAnalysis.mainObject.toLowerCase())) {
+          // Add task object for better context
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${taskNameAnalysis.mainObject} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} ${formattedNouns}.`;
+        } else {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${connector} ${formattedNouns}.`;
+        }
       } else if (verbForm && limitedKeywords.length > 0) {
         // Template: "This task [verb] [phrase] related to [keywords]"
+        // ENHANCED: Incorporate task-specific keywords more naturally
         const formattedKeywords = formatItemList(limitedKeywords, DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false);
         const keywordConnector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
           ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
           : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-        description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${keywordConnector} ${formattedKeywords}.`;
+        
+        // If task has main action, use it to create more contextual sentence
+        if (taskNameAnalysis.mainAction && taskNameAnalysis.mainAction !== verbForm) {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.through} ${taskNameAnalysis.mainAction} ${keywordConnector} ${formattedKeywords}.`;
+        } else {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${keywordConnector} ${formattedKeywords}.`;
+        }
       } else if (limitedNouns.length > 0) {
         // Template: "This task [phrase] for [nouns with articles]"
         const formattedNouns = formatItemList(limitedNouns, DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, true);
-        description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${connector} ${formattedNouns}.`;
+        // ENHANCED: If task has main object, use it for better context
+        if (taskNameAnalysis.mainObject && !cleanedPhrase.toLowerCase().includes(taskNameAnalysis.mainObject.toLowerCase())) {
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} ${formattedNouns}.`;
+        } else {
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${connector} ${formattedNouns}.`;
+        }
       } else if (limitedKeywords.length > 0) {
         // Template: "This task [phrase] related to [keywords]"
         const formattedKeywords = formatItemList(limitedKeywords, DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false);
@@ -2025,18 +2136,37 @@ function buildElaborateContextualDescription(
           : selectedTemplate === 'focuses' || selectedTemplate === 'centers'
           ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
           : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-        description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${keywordConnector} ${formattedKeywords}.`;
+        
+        // ENHANCED: Create more natural sentence structure
+        if (taskNameAnalysis.mainObject) {
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject} ${keywordConnector} ${formattedKeywords}.`;
+        } else {
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${keywordConnector} ${formattedKeywords}.`;
+        }
       } else if (verbForm) {
         // Template: "This task [verb] [phrase]"
-        description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()}.`;
+        // ENHANCED: Add task object if available for better context
+        if (taskNameAnalysis.mainObject && !cleanedPhrase.toLowerCase().includes(taskNameAnalysis.mainObject.toLowerCase())) {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject}.`;
+        } else {
+          description = `${templateOpener} ${verbForm} ${cleanedPhrase.toLowerCase()}.`;
+        }
       } else {
         // Template: "This task [phrase]"
+        // ENHANCED: Add task context for better specificity
         const finalConnector = selectedTemplate === 'focuses' || selectedTemplate === 'centers'
           ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
           : '';
-        description = finalConnector
-          ? `${templateOpener} ${finalConnector} ${cleanedPhrase.toLowerCase()}.`
-          : `${templateOpener} ${cleanedPhrase.toLowerCase()}.`;
+        
+        if (taskNameAnalysis.mainObject && !cleanedPhrase.toLowerCase().includes(taskNameAnalysis.mainObject.toLowerCase())) {
+          description = finalConnector
+            ? `${templateOpener} ${finalConnector} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject}.`
+            : `${templateOpener} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject}.`;
+        } else {
+          description = finalConnector
+            ? `${templateOpener} ${finalConnector} ${cleanedPhrase.toLowerCase()}.`
+            : `${templateOpener} ${cleanedPhrase.toLowerCase()}.`;
+        }
       }
     }
     } // Close else block for sortedPhrases
@@ -2646,22 +2776,39 @@ function buildCompleteSentences(
   const taskNameLower = taskName.toLowerCase();
   
   // Sentence templates for different combinations
-  const sentenceTemplates = [
+  type SentenceTemplate = 
+    | ((v: string, n: string, k: string) => string)
+    | ((p: string, k: string) => string)
+    | ((v: string, k: string[]) => string)
+    | ((p: string, k: string[]) => string)
+    | ((v: string, n: string, k: string[]) => string);
+  
+  const sentenceTemplates: SentenceTemplate[] = [
     // Template 1: Verb + Noun + Context
-    (v: string, n: string, k: string) => 
-      `${v.charAt(0).toUpperCase() + v.slice(1)} ${n} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${k}.`,
+    (v: string, n: string, k: string | string[]) => {
+      const keyword = typeof k === 'string' ? k : k[0];
+      return `${v.charAt(0).toUpperCase() + v.slice(1)} ${n} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keyword}.`;
+    },
     // Template 2: Phrase + Context
-    (p: string, k: string) => 
-      `${p.charAt(0).toUpperCase() + p.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${k}.`,
+    (p: string, k: string | string[]) => {
+      const keyword = typeof k === 'string' ? k : k[0];
+      return `${p.charAt(0).toUpperCase() + p.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.involving} ${keyword}.`;
+    },
     // Template 3: Verb + Keywords
-    (v: string, k: string[]) => 
-      `${v.charAt(0).toUpperCase() + v.slice(1)} ${k.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`,
+    (v: string, k: string | string[]) => {
+      const keywords = typeof k === 'string' ? [k] : k;
+      return `${v.charAt(0).toUpperCase() + v.slice(1)} ${keywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+    },
     // Template 4: Phrase + Keywords
-    (p: string, k: string[]) => 
-      `${p.charAt(0).toUpperCase() + p.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${k.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`,
+    (p: string, k: string | string[]) => {
+      const keywords = typeof k === 'string' ? [k] : k;
+      return `${p.charAt(0).toUpperCase() + p.slice(1)} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+    },
     // Template 5: Complete contextual sentence
-    (v: string, n: string, k: string[]) => 
-      `${v.charAt(0).toUpperCase() + v.slice(1)} ${n} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${k.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`,
+    (v: string, n: string, k: string | string[]) => {
+      const keywords = typeof k === 'string' ? [k] : k;
+      return `${v.charAt(0).toUpperCase() + v.slice(1)} ${n} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${keywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+    },
   ];
   
   // Build sentences using available terms
@@ -2672,7 +2819,8 @@ function buildCompleteSentences(
     if (!taskNameLower.includes(verb.toLowerCase()) && 
         !taskNameLower.includes(noun.toLowerCase()) && 
         !taskNameLower.includes(keyword.toLowerCase())) {
-      sentences.push(sentenceTemplates[0](verb, noun, keyword));
+      const template = sentenceTemplates[0] as (v: string, n: string, k: string | string[]) => string;
+      sentences.push(template(verb, noun, keyword));
     }
   }
   
@@ -2681,7 +2829,8 @@ function buildCompleteSentences(
     const keyword = keywords[0];
     if (!taskNameLower.includes(phrase.toLowerCase()) && 
         !taskNameLower.includes(keyword.toLowerCase())) {
-      sentences.push(sentenceTemplates[1](phrase, keyword));
+      const template = sentenceTemplates[1] as (p: string, k: string | string[]) => string;
+      sentences.push(template(phrase, keyword));
     }
   }
   
@@ -2691,7 +2840,8 @@ function buildCompleteSentences(
       .filter(k => !taskNameLower.includes(k.toLowerCase()))
       .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin);
     if (relevantKeywords.length > 0 && !taskNameLower.includes(verb.toLowerCase())) {
-      sentences.push(sentenceTemplates[2](verb, relevantKeywords));
+      const template = sentenceTemplates[2] as (v: string, k: string | string[]) => string;
+      sentences.push(template(verb, relevantKeywords));
     }
   }
   
@@ -2701,7 +2851,8 @@ function buildCompleteSentences(
       .filter(k => !taskNameLower.includes(k.toLowerCase()))
       .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin);
     if (relevantKeywords.length > 0 && !taskNameLower.includes(phrase.toLowerCase())) {
-      sentences.push(sentenceTemplates[3](phrase, relevantKeywords));
+      const template = sentenceTemplates[3] as (p: string, k: string | string[]) => string;
+      sentences.push(template(phrase, relevantKeywords));
     }
   }
   
