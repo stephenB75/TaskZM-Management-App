@@ -15,6 +15,7 @@ import { ScrollArea } from './ui/scroll-area';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
 import { ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_3XL } from '../lib/layout-constants';
+import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { projectId } from '../utils/supabase/info';

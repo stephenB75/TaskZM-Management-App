@@ -50,7 +50,6 @@ import {
   getRandomDropdownColor,
   TASK_CARD_DROPDOWN,
   TASK_CARD_STANDARD_HEIGHTS,
-  TASK_CARD_OPACITY,
   TASK_CARD_TIMELINE,
   TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE,
 } from "../lib/task-card-constants";
@@ -748,14 +747,14 @@ export const DraggableTaskCard = React.forwardRef<
           {breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 && (() => {
             // Get domain-specific colors
             const domainColors = breakdown.domain === 'business' 
-              ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800' }
+              ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800', border: isDark ? 'border-blue-800/30' : 'border-blue-200' }
               : breakdown.domain === 'home'
-              ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800' }
+              ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800', border: isDark ? 'border-green-800/30' : 'border-green-200' }
               : breakdown.domain === 'personal'
-              ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800' }
+              ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800', border: isDark ? 'border-purple-800/30' : 'border-purple-200' }
               : breakdown.domain === 'world'
-              ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800' }
-              : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800' };
+              ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800', border: isDark ? 'border-orange-800/30' : 'border-orange-200' }
+              : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800', border: isDark ? 'border-gray-800/30' : 'border-gray-200' };
             
             // For short tasks, show only the first step (consistent with desktop view)
             const isShortTask = estimatedTimeValue !== null && estimatedTimeValue <= ACTION_PLAN_CONFIG.SHORT_TASK_THRESHOLD_MINUTES;

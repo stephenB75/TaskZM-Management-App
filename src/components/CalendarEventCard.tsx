@@ -291,7 +291,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             {provider === 'apple' ? 'iCloud' : 'Google'} Calendar
           </span>
           {isRecurring && (
-            <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} title="Recurring event" />
+            <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />
           )}
         </div>
         

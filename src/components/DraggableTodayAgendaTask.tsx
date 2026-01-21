@@ -5,7 +5,6 @@ import { motion } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { ICON_SIZE_XS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
-import { TASK_CARD_ICON_SIZES } from "../lib/task-card-constants";
 import { Badge } from "./ui/badge";
 import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags, getDateString } from "../lib/utils";
 import { toast } from "sonner";
@@ -46,6 +45,8 @@ import {
   TASK_CARD_OPACITY,
   TASK_CARD_TIMELINE,
   TASK_CARD_ADDITIONAL_FONT_SIZES,
+  TASK_CARD_WIDTHS,
+  TASK_CARD_TEXT_COLORS,
 } from "../lib/task-card-constants";
 import { Z_INDEX } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";

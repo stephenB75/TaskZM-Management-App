@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { UI_GRADIENT_COLORS, UI_FOLDER_COLORS } from "../lib/ui-colors";
-import { Z_INDEX, MAX_HEIGHT, COMPONENT_DIMENSIONS, ICON_SIZE_XS } from "../lib/layout-constants";
+import { Z_INDEX, MAX_HEIGHT, ICON_SIZE_XS } from "../lib/layout-constants";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";

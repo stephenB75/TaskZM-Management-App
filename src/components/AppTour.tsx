@@ -61,8 +61,10 @@ export function AppTour({
   useEffect(() => {
     const createSteps = (): Step[] => {
       // Determine placement based on device type
-      const getPlacement = (desktopPlacement: string, mobilePlacement: string = desktopPlacement) => {
-        return shouldUseMobileLayout ? mobilePlacement : desktopPlacement;
+      const getPlacement = (desktopPlacement: string, mobilePlacement: string = desktopPlacement): "auto" | "center" | "top" | "top-start" | "top-end" | "bottom" | "bottom-start" | "bottom-end" | "left" | "left-start" | "left-end" | "right" | "right-start" | "right-end" => {
+        const placement = shouldUseMobileLayout ? mobilePlacement : desktopPlacement;
+        // Type assertion for valid placement values
+        return placement as "auto" | "center" | "top" | "top-start" | "top-end" | "bottom" | "bottom-start" | "bottom-end" | "left" | "left-start" | "left-end" | "right" | "right-start" | "right-end";
       };
 
       const baseSteps: Step[] = [
@@ -446,7 +448,7 @@ export function AppTour({
             step.target === '[data-tour="ai-recommendations-panel"]' ||
             step.target === '[data-tour="ai-schedule-preview-dialog"]' ||
             step.target === '[data-tour="reschedule-dialog"]') {
-          onNavigate(TOUR_CONSTANTS.viewModes.dashboard);
+          onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
           
           // Open AI panel before showing panel step
           if (step.target === '[data-tour="ai-recommendations-panel"]') {

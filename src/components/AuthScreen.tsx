@@ -515,7 +515,7 @@ export function AuthScreen() {
                 className="object-contain"
                 style={{
                   width: logo.width,
-                  maxWidth: logo.maxWidth || '100%',
+                  maxWidth: ('maxWidth' in logo ? logo.maxWidth : undefined) || '100%',
                   height: 'auto',
                   marginTop: '0', // No negative margin - use spacing constants instead
                   marginBottom: spacing.logoMarginBottom,
@@ -529,7 +529,7 @@ export function AuthScreen() {
               <p 
                 className="text-xs sm:text-sm text-muted-foreground text-center max-w-sm px-2 sm:px-4"
                 style={{
-                  marginTop: spacing.taglineMarginTop || spacing.logoMarginBottom,
+                  marginTop: ('taglineMarginTop' in spacing ? spacing.taglineMarginTop : undefined) || ('logoMarginBottom' in spacing ? spacing.logoMarginBottom : '0.75rem'),
                 } as React.CSSProperties}
               >
                 {AUTH_UI_TEXT.subtitle}
@@ -569,7 +569,7 @@ export function AuthScreen() {
                   style={{
                     paddingTop: card.headerPadding?.top || (screenSize === 'mobile' ? '0.75rem' : '1rem'),
                     paddingBottom: card.headerPadding?.bottom || (screenSize === 'mobile' ? '0.5rem' : '0.75rem'),
-                    gap: spacing.cardHeaderSpacing,
+                    gap: ('cardHeaderSpacing' in spacing ? spacing.cardHeaderSpacing : undefined) || '0.375rem',
                   } as React.CSSProperties}
                 >
                   <CardTitle className="text-center text-sm sm:text-base md:text-lg font-semibold text-foreground">

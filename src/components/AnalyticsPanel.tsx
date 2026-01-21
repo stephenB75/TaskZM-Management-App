@@ -738,10 +738,10 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         
         // Add value (bold, primary color)
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.setTextColor(rPrimary, gPrimary, bPrimary);
         doc.text(value, x + ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset, yPos + ANALYTICS_PDF_CONFIG.pdfSpacing.metricBoxValueY);
-        doc.setFont(undefined, 'normal'); // Reset font weight
+        doc.setFont('helvetica', 'normal'); // Reset font weight
       };
 
       // Helper function to add chart image to PDF with visual styling and proper aspect ratio
@@ -760,11 +760,11 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
         
         // Add chart title with styling
         doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.heading);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         const [r, g, b] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
         doc.setTextColor(r, g, b);
         doc.text(title, ANALYTICS_PDF_CONFIG.margins.left, yPos);
-        doc.setFont(undefined, 'normal');
+        doc.setFont('helvetica', 'normal');
         yPos += ANALYTICS_PDF_CONFIG.spacing.afterHeading + ANALYTICS_PDF_CONFIG.pdfSpacing.chartTitleOffset;
         
         // Calculate image dimensions maintaining aspect ratio
@@ -998,7 +998,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             
             // Project name (bold, primary color)
             doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('helvetica', 'bold');
             const [rText, gText, bText] = hexToRgb(ANALYTICS_PDF_CONFIG.colors.primary);
             doc.setTextColor(rText, gText, bText);
             doc.text(
@@ -1006,7 +1006,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               ANALYTICS_PDF_CONFIG.margins.left + ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset,
               yPos - ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset
             );
-            doc.setFont(undefined, 'normal');
+            doc.setFont('helvetica', 'normal');
             
             // Progress info
             const progressText = `${project.completed}/${project.total} tasks`;
@@ -1022,7 +1022,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             // Completion rate (right aligned, bold, success color)
             const [rSuccess, gSuccess, bSuccess] = hexToRgb(COLOR_SUCCESS);
             doc.setFontSize(ANALYTICS_PDF_CONFIG.fontSizes.body);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('helvetica', 'bold');
             doc.setTextColor(rSuccess, gSuccess, bSuccess);
             const rateText = `${project.completionRate.toFixed(0)}%`;
             const textWidth = doc.getTextWidth(rateText);
@@ -1031,7 +1031,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
               pageWidth - ANALYTICS_PDF_CONFIG.margins.right - textWidth - ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset,
               yPos - ANALYTICS_PDF_CONFIG.pdfSpacing.textOffset
             );
-            doc.setFont(undefined, 'normal');
+            doc.setFont('helvetica', 'normal');
             
             yPos += rowHeight + 3;
           });

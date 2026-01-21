@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import type { Task, Folder as FolderType } from "../types";
 import { Z_INDEX } from "../lib/layout-constants";
 import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES } from "../lib/task-card-constants";
+import { TASK_DIALOG_COLORS } from "../lib/task-dialog-constants";
 
 interface FolderViewProps {
   folder: FolderType;
