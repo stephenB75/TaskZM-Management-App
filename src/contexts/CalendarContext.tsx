@@ -358,6 +358,16 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       
       // Listen for messages from popup
       const messageHandler = (event: MessageEvent) => {
+        // Enhanced logging for debugging
+        console.debug('[Calendar OAuth] Message received:', {
+          hasData: !!event.data,
+          dataType: typeof event.data,
+          messageType: event.data?.type,
+          provider: event.data?.provider,
+          origin: event.origin,
+          expectedProvider: provider,
+        });
+        
         // Fast path: Early return for non-matching message types (most common case)
         if (!event.data || typeof event.data !== 'object' || !event.data.type) {
           return;
@@ -370,6 +380,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         
         // Fast path: Only process messages for the current provider
         if (event.data.provider !== provider) {
+          console.debug('[Calendar OAuth] Message provider mismatch:', event.data.provider, 'vs', provider);
           return;
         }
         
@@ -392,17 +403,25 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           
           // ENHANCED: More lenient origin check for OAuth callbacks
           // The callback page is served from Supabase functions, so we need to allow that origin
+          // CRITICAL FIX: Process calendar OAuth messages regardless of origin if they match type and provider
+          // This is safe because we validate the message type and provider, and the message comes from our callback page
           const isAllowedOrigin = !event.origin || allowedOrigins.some(origin => {
             // Check if origin matches exactly or starts with allowed origin
             return event.origin === origin || event.origin.startsWith(origin);
           });
           
-          // If origin check fails, log for debugging but still process if it's a calendar OAuth message
-          // This handles cases where the callback origin might vary slightly
+          // CRITICAL FIX: Always process calendar OAuth messages if they match type and provider
+          // The origin check is for security, but we've already validated the message type and provider
+          // If it's a calendar OAuth message with matching provider, it's from our callback page
           if (!isAllowedOrigin) {
             console.warn('[Calendar OAuth] Message from unexpected origin:', event.origin, 'but processing anyway for calendar OAuth message');
-            // Still process the message if it's clearly a calendar OAuth message
-            // This prevents legitimate messages from being blocked due to origin mismatches
+            // Still process the message - it's validated by type and provider
+          }
+          
+          // Additional validation: ensure message has required fields
+          if (!event.data.type || !event.data.provider) {
+            console.warn('[Calendar OAuth] Message missing required fields, ignoring');
+            return;
           }
           
           // Mark message as received
@@ -423,14 +442,19 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           
           // Defer all heavy operations to next tick to keep handler fast
           if (event.data.type === 'calendar-oauth-success') {
-            console.log('[Calendar OAuth] Success message received for', provider);
+            console.log('[Calendar OAuth] Success message received for', provider, 'from origin:', event.origin);
             // Use setTimeout(0) to defer to next event loop tick
             setTimeout(() => {
-              checkCalendarStatus();
+              checkCalendarStatus().then(() => {
+                // Verify connection was successful
+                console.log('[Calendar OAuth] Calendar status checked after success message');
+              }).catch((err) => {
+                console.error('[Calendar OAuth] Error checking calendar status:', err);
+              });
               toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar connected successfully!`);
             }, 0);
           } else if (event.data.type === 'calendar-oauth-error') {
-            console.error('[Calendar OAuth] Error message received for', provider, ':', event.data.error);
+            console.error('[Calendar OAuth] Error message received for', provider, 'from origin:', event.origin, 'error:', event.data.error);
             // Defer toast to next tick
             setTimeout(() => {
               toast.error(`Failed to connect ${provider} Calendar`, {

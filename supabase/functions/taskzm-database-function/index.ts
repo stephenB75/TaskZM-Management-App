@@ -2392,7 +2392,7 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
 
     console.log('Google token exchange successful for user:', userId);
 
-    // Store tokens
+    // Store tokens with error handling
     const tokens: calendarSync.CalendarTokens = {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
@@ -2400,12 +2400,15 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
       provider: 'google',
     };
 
-    await calendarSync.storeCalendarTokens(userId, 'google', tokens);
-    console.log('Google Calendar tokens stored successfully for user:', userId);
-
-    // Return HTML page that closes popup and notifies parent
     const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
-    const html = `<!DOCTYPE html>
+    
+    // CRITICAL FIX: Wrap token storage in try-catch to ensure we always return HTML with postMessage
+    try {
+      await calendarSync.storeCalendarTokens(userId, 'google', tokens);
+      console.log('Google Calendar tokens stored successfully for user:', userId);
+
+      // Return HTML page that closes popup and notifies parent
+      const html = `<!DOCTYPE html>
 <html>
 <head>
   <title>Calendar Connected</title>
@@ -2444,11 +2447,66 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
   <p>Calendar connected successfully! This window will close automatically.</p>
 </body>
 </html>`;
-    
-    return c.html(html);
+      
+      return c.html(html);
+    } catch (storageError) {
+      // CRITICAL FIX: If token storage fails, still return HTML with error message
+      // This ensures the parent window receives notification instead of showing JSON error
+      console.error('Error storing Google Calendar tokens:', storageError);
+      const errorHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'google',
+        error: 'Failed to store calendar tokens. Please try again.'
+      }, '*');
+      setTimeout(() => {
+        window.close();
+      }, 200);
+    } else {
+      window.location.href = '${appUrl}';
+    }
+  </script>
+  <p>Connection failed: Failed to store calendar tokens. This window will close automatically.</p>
+</body>
+</html>`;
+      return c.html(errorHtml);
+    }
   } catch (error) {
-    console.log('Error in Google OAuth callback:', error);
-    return c.json({ error: getErrorMessage(error) }, 500);
+    // CRITICAL FIX: Catch all errors and return HTML with postMessage instead of JSON
+    // This ensures the parent window always receives notification
+    console.error('Error in Google OAuth callback:', error);
+    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
+    const errorHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Calendar Connection Failed</title>
+</head>
+<body>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        type: 'calendar-oauth-error', 
+        provider: 'google',
+        error: '${String(getErrorMessage(error)).replace(/'/g, "\\'").replace(/"/g, '&quot;')}'
+      }, '*');
+      setTimeout(() => {
+        window.close();
+      }, 200);
+    } else {
+      window.location.href = '${appUrl}';
+    }
+  </script>
+  <p>Connection failed: ${String(getErrorMessage(error)).replace(/</g, '&lt;').replace(/>/g, '&gt;')}. This window will close automatically.</p>
+</body>
+</html>`;
+    return c.html(errorHtml);
   }
 });
 
