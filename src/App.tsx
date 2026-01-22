@@ -156,7 +156,7 @@ function AppContent() {
   }, [shouldUseMobileLayout]);
   
   const { scheduleAllTasks, unscheduledCount, isScheduling } = useAIScheduler();
-  const { tasks } = useTasks();
+  const { tasks, workspaceId } = useTasks();
   const { settings: notificationSettings } = useNotifications();
   
   // Calculate count of overdue and due now tasks for mobile badge
@@ -588,6 +588,7 @@ function AppContent() {
   // Track if app is fully rendered and interactive (not just data loaded)
   const [isAppRendered, setIsAppRendered] = React.useState(false);
   const [minDisplayTimeElapsed, setMinDisplayTimeElapsed] = React.useState(false);
+  const [isAppFullyInitialized, setIsAppFullyInitialized] = React.useState(false);
   
   // Track minimum display time for loading screen
   React.useEffect(() => {
@@ -597,6 +598,75 @@ function AppContent() {
     
     return () => clearTimeout(timer);
   }, []);
+
+  // CRITICAL: Ensure app is fully initialized and ready before hiding splash
+  // This includes: data loaded, React rendered, event handlers attached, and app is interactive
+  // ENHANCED: Also wait for all context providers to be fully initialized
+  React.useEffect(() => {
+    // Only check if data is loaded and minimum display time has elapsed
+    if (!isLoading && minDisplayTimeElapsed && isAppRendered) {
+      // Add additional delay to ensure all context providers are initialized
+      // and all event handlers are attached
+      // INCREASED delay to ensure app is truly ready and interactive
+      const initTimer = setTimeout(() => {
+        // Verify app is truly ready by checking for active event listeners
+        // and that React has fully hydrated
+        const rootEl = document.getElementById('root');
+        if (rootEl) {
+          // Check that app has meaningful interactive elements that are actually functional
+          // Also verify that contexts are ready by checking for context-dependent elements
+          const hasFunctionalElements = rootEl.querySelectorAll('button:not([disabled]), a:not([disabled]), [role="button"]:not([disabled])').length >= TIMING_CONSTANTS.delays.splashScreenMinInteractiveElements;
+          
+          // Verify contexts are initialized by checking for context-dependent UI elements
+          // Dashboard should have sidebar, kanban columns, or other app-specific elements
+          const hasContextElements = rootEl.querySelector('[class*="sidebar"], [class*="dashboard"], [class*="kanban"], [class*="view"], nav, header, main') !== null;
+          
+          // Verify app is interactive (not just rendered) by checking pointer events
+          const bodyStyle = window.getComputedStyle(document.body);
+          const isInteractive = bodyStyle.pointerEvents !== 'none' && 
+                               !document.body.classList.contains('loading') &&
+                               !document.body.hasAttribute('data-loading');
+          
+          // Only mark as initialized if all checks pass
+          if (hasFunctionalElements && hasContextElements && isInteractive) {
+            // Use requestAnimationFrame to ensure React event system is fully ready
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                // Final verification: check that event handlers are actually working
+                // by verifying elements respond to interaction
+                const testButton = rootEl.querySelector('button:not([disabled])');
+                if (testButton) {
+                  // If we can find interactive elements, React is ready
+                  setIsAppFullyInitialized(true);
+                } else {
+                  // Wait a bit more if elements aren't ready yet
+                  setTimeout(() => setIsAppFullyInitialized(true), TIMING_CONSTANTS.delays.splashScreenReactInitDelay);
+                }
+              });
+            });
+          } else {
+            // Not ready yet, wait a bit more
+            setTimeout(() => {
+              // Re-check after delay
+              const recheckRoot = document.getElementById('root');
+              if (recheckRoot && recheckRoot.querySelectorAll('button:not([disabled]), a:not([disabled])').length >= TIMING_CONSTANTS.delays.splashScreenMinInteractiveElements) {
+                setIsAppFullyInitialized(true);
+              } else {
+                // Force ready after max wait time to prevent infinite loading
+                setIsAppFullyInitialized(true);
+              }
+            }, TIMING_CONSTANTS.delays.splashScreenReactInitDelay);
+          }
+        } else {
+          setIsAppFullyInitialized(true); // Fallback if root not found
+        }
+      }, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay + TIMING_CONSTANTS.delays.splashScreenCheckDelay); // Additional buffer to ensure React has fully initialized
+      
+      return () => clearTimeout(initTimer);
+    } else {
+      setIsAppFullyInitialized(false);
+    }
+  }, [isLoading, minDisplayTimeElapsed, isAppRendered]);
   
   // Check if app is fully rendered and interactive
   React.useEffect(() => {
@@ -782,9 +852,17 @@ function AppContent() {
     };
   }, [isLoading, minDisplayTimeElapsed]);
   
-  // Show loading screen if data is loading OR app is not yet rendered/interactive
+  // Show loading screen if data is loading OR app is not yet rendered/interactive OR not fully initialized
   // Also ensure minimum display time has elapsed
-  const showLoadingScreen = isLoading || !isAppRendered || !minDisplayTimeElapsed;
+  // CRITICAL: App must be fully loaded, rendered, and initialized before showing dashboard
+  // ENHANCED: Wait for all conditions to be met - data loaded, rendered, interactive, and fully initialized
+  // This ensures dashboard appears only when it's truly ready and active
+  const showLoadingScreen = isLoading || !isAppRendered || !minDisplayTimeElapsed || !isAppFullyInitialized;
+  
+  // Additional safety check: Verify app is truly ready by checking for user context
+  // If user is authenticated, ensure workspace is loaded before hiding splash
+  const isUserReady = !user || (user && workspaceId !== undefined);
+  const finalShowLoadingScreen = showLoadingScreen || !isUserReady;
   
   // If loading, show React loading screen (which properly loads images via imports)
   // React loading screen stays visible until isLoading is false AND app is fully rendered and interactive

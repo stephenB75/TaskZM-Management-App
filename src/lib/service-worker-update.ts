@@ -185,13 +185,17 @@ function showUpdateAvailableNotification() {
         onClick: () => {
           // User chose to refresh - reload the page
           // Use forced reload to bypass any reload prevention (user-initiated)
-          (window.location as any).reload(true);
+          // Store flag to indicate this is user-initiated
+          (window as any).__userInitiatedReload = true;
+          window.location.reload();
         },
       },
       onClick: () => {
         // Also allow clicking the toast itself to refresh
         // Use forced reload to bypass any reload prevention (user-initiated)
-        (window.location as any).reload(true);
+        // Store flag to indicate this is user-initiated
+        (window as any).__userInitiatedReload = true;
+        window.location.reload();
       },
     }
   );

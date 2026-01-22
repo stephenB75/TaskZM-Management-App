@@ -515,9 +515,16 @@ if ('serviceWorker' in navigator) {
     try {
       Object.defineProperty(window.location, 'reload', {
         value: function(forcedReload?: boolean) {
+          // Check if this is a user-initiated reload (from update notification button)
+          const isUserInitiated = (window as any).__userInitiatedReload === true;
+          
           // Only allow reload if explicitly called by user action (not automatic)
-          if (!preventReloadFlag || forcedReload === true) {
+          if (isUserInitiated || !preventReloadFlag || forcedReload === true) {
             // User-initiated reload - allow it
+            // Clear the flag after allowing reload
+            if (isUserInitiated) {
+              (window as any).__userInitiatedReload = false;
+            }
             originalReload(forcedReload);
           } else {
             // Automatic reload attempt - block it
@@ -534,7 +541,15 @@ if ('serviceWorker' in navigator) {
       // console.debug('[Service Worker] Could not override location.reload, using fallback method');
       (window as any).__originalLocationReload = originalReload;
       (window as any).__locationReloadOverride = function(forcedReload?: boolean) {
-        if (!preventReloadFlag || forcedReload === true) {
+        // Check if this is a user-initiated reload (from update notification button)
+        const isUserInitiated = (window as any).__userInitiatedReload === true;
+        
+        if (isUserInitiated || !preventReloadFlag || forcedReload === true) {
+          // User-initiated reload - allow it
+          // Clear the flag after allowing reload
+          if (isUserInitiated) {
+            (window as any).__userInitiatedReload = false;
+          }
           originalReload(forcedReload);
         } else {
           console.debug('[Service Worker] Blocked automatic page reload - update will apply on next manual refresh');
