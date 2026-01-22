@@ -1316,7 +1316,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Google Calendar - Fully Implemented */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
                     <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                      <Label htmlFor="google-cal" className="text-sm cursor-pointer">Google Calendar</Label>
+                      <Label htmlFor="google-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Google Calendar</Label>
                     </div>
                     <Switch 
                       id="google-cal" 
