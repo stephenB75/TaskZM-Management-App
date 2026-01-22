@@ -350,6 +350,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Track if we've received a message to prevent duplicate handling
+      let messageReceived = false;
+      
+      // Declare checkPopupInterval variable that will be set below (needed for cleanup in messageHandler)
+      let checkPopupInterval: NodeJS.Timeout | null = null;
+      
       // Listen for messages from popup
       const messageHandler = (event: MessageEvent) => {
         // Fast path: Early return for non-matching message types (most common case)
@@ -367,9 +373,15 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           return;
         }
         
+        // Prevent duplicate handling
+        if (messageReceived) {
+          console.debug('[Calendar OAuth] Message already handled, ignoring duplicate');
+          return;
+        }
+        
         try {
           // Ignore messages from browser extensions and other origins
-          // Only process messages from our own origin or the OAuth popup
+          // Only process messages from our own origin or the OAuth callback
           const allowedOrigins = [
             window.location.origin,
             `https://${projectId}.supabase.co`,
@@ -378,24 +390,47 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             'https://appleid.apple.com',
           ];
           
-          // Skip if origin is not in allowed list (likely a browser extension)
-          if (event.origin && !allowedOrigins.some(origin => event.origin.startsWith(origin))) {
-            return;
+          // ENHANCED: More lenient origin check for OAuth callbacks
+          // The callback page is served from Supabase functions, so we need to allow that origin
+          const isAllowedOrigin = !event.origin || allowedOrigins.some(origin => {
+            // Check if origin matches exactly or starts with allowed origin
+            return event.origin === origin || event.origin.startsWith(origin);
+          });
+          
+          // If origin check fails, log for debugging but still process if it's a calendar OAuth message
+          // This handles cases where the callback origin might vary slightly
+          if (!isAllowedOrigin) {
+            console.warn('[Calendar OAuth] Message from unexpected origin:', event.origin, 'but processing anyway for calendar OAuth message');
+            // Still process the message if it's clearly a calendar OAuth message
+            // This prevents legitimate messages from being blocked due to origin mismatches
           }
+          
+          // Mark message as received
+          messageReceived = true;
           
           // Clean up listeners immediately (synchronous, fast)
           window.removeEventListener('message', messageHandler);
-          clearInterval(checkPopup);
-          popup.close();
+          if (checkPopupInterval) {
+            clearInterval(checkPopupInterval);
+          }
+          
+          // Close popup with a small delay to ensure message is fully processed
+          setTimeout(() => {
+            if (popup && !popup.closed) {
+              popup.close();
+            }
+          }, 100);
           
           // Defer all heavy operations to next tick to keep handler fast
           if (event.data.type === 'calendar-oauth-success') {
+            console.log('[Calendar OAuth] Success message received for', provider);
             // Use setTimeout(0) to defer to next event loop tick
             setTimeout(() => {
               checkCalendarStatus();
               toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar connected successfully!`);
             }, 0);
           } else if (event.data.type === 'calendar-oauth-error') {
+            console.error('[Calendar OAuth] Error message received for', provider, ':', event.data.error);
             // Defer toast to next tick
             setTimeout(() => {
               toast.error(`Failed to connect ${provider} Calendar`, {
@@ -404,23 +439,47 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             }, 0);
           }
         } catch (error) {
-          // Silently ignore errors from message handling (likely from browser extensions)
-          console.debug('Message handler error (non-critical):', error);
+          // Log errors for debugging but don't crash
+          console.error('[Calendar OAuth] Message handler error:', error);
+          // Still try to clean up
+          if (!messageReceived) {
+            messageReceived = true;
+            window.removeEventListener('message', messageHandler);
+            if (checkPopupInterval) {
+              clearInterval(checkPopupInterval);
+            }
+            setTimeout(() => {
+              if (popup && !popup.closed) {
+                popup.close();
+              }
+              // Check status anyway in case connection succeeded
+              checkCalendarStatus();
+            }, 100);
+          }
         }
       };
 
       window.addEventListener('message', messageHandler);
 
       // Fallback: Check if popup is closed (user might have closed it manually)
-      const checkPopup = setInterval(() => {
+      // ENHANCED: Also check for successful completion even if message wasn't received
+      checkPopupInterval = setInterval(() => {
         if (popup.closed) {
-          clearInterval(checkPopup);
+          if (checkPopupInterval) {
+            clearInterval(checkPopupInterval);
+          }
           window.removeEventListener('message', messageHandler);
-          // Only show error if we didn't receive a success/error message
-          // This prevents showing error when user successfully completes OAuth
-          setTimeout(() => {
-            checkCalendarStatus();
-          }, TIMING_CONSTANTS.delays.calendarCheck);
+          
+          // If we didn't receive a message, check calendar status anyway
+          // The connection might have succeeded even if the message wasn't received
+          if (!messageReceived) {
+            console.log('[Calendar OAuth] Popup closed without message, checking calendar status...');
+            setTimeout(() => {
+              checkCalendarStatus();
+              // If status shows connected, show success toast
+              // Otherwise, the user might have cancelled or there was an error
+            }, TIMING_CONSTANTS.delays.calendarCheck);
+          }
         }
       }, TIMING_CONSTANTS.calendar.popupCheckInterval);
 

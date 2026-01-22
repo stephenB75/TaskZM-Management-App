@@ -2412,13 +2412,32 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
 </head>
 <body>
   <script>
+    // ENHANCED: Ensure message is sent before closing popup
+    // Add small delay to ensure postMessage is processed by parent window
     if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-success', 
-        provider: 'google' 
-      }, '*');
-      window.close();
+      try {
+        // Send success message to parent window
+        window.opener.postMessage({ 
+          type: 'calendar-oauth-success', 
+          provider: 'google' 
+        }, '*');
+        
+        // Log for debugging
+        console.log('[Google Calendar OAuth] Success message sent to parent window');
+        
+        // Wait a bit before closing to ensure message is received
+        setTimeout(() => {
+          window.close();
+        }, 200);
+      } catch (error) {
+        console.error('[Google Calendar OAuth] Error sending message:', error);
+        // Fallback: redirect to app
+        setTimeout(() => {
+          window.location.href = '${appUrl}';
+        }, 500);
+      }
     } else {
+      // No opener (popup was blocked or closed) - redirect to app
       window.location.href = '${appUrl}';
     }
   </script>
