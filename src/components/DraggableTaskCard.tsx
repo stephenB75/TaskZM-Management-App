@@ -656,9 +656,65 @@ export const DraggableTaskCard = React.forwardRef<
             </h3>
           </div>
 
-          {/* AI Action Plan - Hidden in collapsed state, shown in expanded section */}
+          {/* AI Suggestions - Directly underneath headline (always visible) */}
+          {breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 && (() => {
+            // Get domain-specific colors
+            const domainColors = breakdown.domain === 'business' 
+              ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800', border: isDark ? 'border-blue-800/30' : 'border-blue-200' }
+              : breakdown.domain === 'home'
+              ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800', border: isDark ? 'border-green-800/30' : 'border-green-200' }
+              : breakdown.domain === 'personal'
+              ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800', border: isDark ? 'border-purple-800/30' : 'border-purple-200' }
+              : breakdown.domain === 'world'
+              ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800', border: isDark ? 'border-orange-800/30' : 'border-orange-200' }
+              : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800', border: isDark ? 'border-gray-800/30' : 'border-gray-200' };
+            
+            // For short tasks, show only the first step (consistent with desktop view)
+            const isShortTask = estimatedTimeValue !== null && estimatedTimeValue <= ACTION_PLAN_CONFIG.SHORT_TASK_THRESHOLD_MINUTES;
+            const maxStepsToShow = isShortTask 
+              ? ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.SHORT_TASK 
+              : ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.NORMAL_TASK;
+            
+            return (
+              <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: '0.5rem', marginRight: '0.5rem' }}>
+                <div className="flex items-center gap-1 mb-1">
+                  <Icon name="sparkles" size={12} className={domainColors.text} weight="duotone" />
+                  <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                    AI Suggestions
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  {breakdown.actionPlan.steps.slice(0, maxStepsToShow).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
+                    <div key={idx} className="flex items-start gap-1.5">
+                      <span className={cn("mt-0.5 flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                        {step.order || (idx + 1)}.
+                      </span>
+                      <span className={cn("leading-tight flex-1", domainColors.textLight)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                        {step.action}
+                      </span>
+                      {step.estimatedMinutes > 0 && (
+                        <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                          {step.estimatedMinutes}m
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {breakdown.actionPlan.steps.length > maxStepsToShow && (
+                    <div className={cn("mt-0.5", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                      +{breakdown.actionPlan.steps.length - maxStepsToShow} more steps
+                    </div>
+                  )}
+                  {breakdown.actionPlan.totalEstimatedMinutes > 0 && (
+                    <div className={cn("mt-0.5 pt-0.5 border-t", domainColors.border)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                      Total: {Math.floor(breakdown.actionPlan.totalEstimatedMinutes / 60)}h {breakdown.actionPlan.totalEstimatedMinutes % 60}m
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
-            {/* Pomodoro Controls + Tracked Info + Chevron - Inline underneath headline */}
+            {/* Pomodoro Controls + Tracked Info + Chevron - Inline underneath AI Suggestions */}
           <div className={cn("flex items-center justify-between px-2", isMobile ? "py-1" : "py-1.5")}>
             <div className="flex items-center gap-1.5 flex-1">
               {/* Pomodoro Play/Pause/Stop Controls */}
@@ -737,232 +793,6 @@ export const DraggableTaskCard = React.forwardRef<
               </button>
             )}
           </div>
-
-          {/* Expandable Section - AI Suggestions, Description, Progress, Assignee - Appears below play button/tracked/chevron */}
-          {isExpanded && (
-            <div
-              className="rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden border-t border-gray-200/50 dark:border-border/50"
-              style={{
-                padding: isMobile ? TASK_CARD_BACKGROUNDS.expandable.padding.mobile : TASK_CARD_BACKGROUNDS.expandable.padding.desktop,
-                backgroundColor: isDark ? TASK_CARD_BACKGROUNDS.expandable.dark : TASK_CARD_BACKGROUNDS.expandable.light,
-                marginTop: 0,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-            {/* AI Suggestions Section - Shown in expanded section */}
-            {breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 && (() => {
-              // Get domain-specific colors
-              const domainColors = breakdown.domain === 'business' 
-                ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800', border: isDark ? 'border-blue-800/30' : 'border-blue-200' }
-                : breakdown.domain === 'home'
-                ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800', border: isDark ? 'border-green-800/30' : 'border-green-200' }
-                : breakdown.domain === 'personal'
-                ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800', border: isDark ? 'border-purple-800/30' : 'border-purple-200' }
-                : breakdown.domain === 'world'
-                ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800', border: isDark ? 'border-orange-800/30' : 'border-orange-200' }
-                : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800', border: isDark ? 'border-gray-800/30' : 'border-gray-200' };
-              
-              return (
-                <div className={cn("px-2 py-1.5 mb-4 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                  <div className="flex items-center gap-1 mb-1">
-                    <Icon name="sparkles" size={12} className={domainColors.text} weight="duotone" />
-                    <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                      AI Suggestions
-                    </span>
-                  </div>
-                  <div className="space-y-0.5">
-                    {breakdown.actionPlan.steps.map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
-                      <div key={idx} className="flex items-start gap-1.5">
-                        <span className={cn("mt-0.5 flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                          {step.order || (idx + 1)}.
-                        </span>
-                        <span className={cn("leading-tight flex-1", domainColors.textLight)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                          {step.action}
-                        </span>
-                        {step.estimatedMinutes > 0 && (
-                          <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                            {step.estimatedMinutes}m
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {breakdown.actionPlan.totalEstimatedMinutes > 0 && (
-                      <div className={cn("mt-0.5 pt-0.5 border-t", domainColors.border)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                        Total: {Math.floor(breakdown.actionPlan.totalEstimatedMinutes / 60)}h {breakdown.actionPlan.totalEstimatedMinutes % 60}m
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Description Section */}
-            {task.description && (
-              <div style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px` }}>
-                <div className="flex items-center" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px`, marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottomHeader}px` }}>
-                  <Icon name="file-text" size={isMobile ? TASK_CARD_ICON_SIZES.fileText.mobile : TASK_CARD_ICON_SIZES.fileText.desktop} className="text-gray-500 dark:text-gray-400" />
-                  <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Description</span>
-                </div>
-                <div
-                  className="break-normal leading-relaxed text-sm text-gray-600 dark:text-gray-400"
-                  {...(hasHTMLTags(task.description) 
-                    ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                    : { children: task.description }
-                  )}
-                />
-              </div>
-            )}
-
-            {/* Dependencies Warning */}
-            {task.dependencies && task.dependencies.length > 0 && (
-              <div className="flex items-center text-red-600 dark:text-red-400" style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px`, gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px` }}>
-                <Icon name="link-2" size={isMobile ? TASK_CARD_ICON_SIZES.link.mobile : TASK_CARD_ICON_SIZES.link.desktop} />
-                <span className="font-semibold text-sm">ATTENTION: This task has a dependency.</span>
-              </div>
-            )}
-
-            {/* Progress Circle and Assignee with Tracked Info */}
-            <div className="flex items-center justify-between" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapBetween}px` }}>
-              {/* Progress Circle */}
-              {task.subtasks && task.subtasks.length > 0 && (
-                <div className="flex items-center">
-                  <div className="relative flex-shrink-0" style={{ width: `${TASK_CARD_EXPANDABLE.progressCircle.size}px`, height: `${TASK_CARD_EXPANDABLE.progressCircle.size}px` }}>
-                    <svg className="transform -rotate-90" style={{ width: `${TASK_CARD_EXPANDABLE.progressCircle.size}px`, height: `${TASK_CARD_EXPANDABLE.progressCircle.size}px` }} viewBox={`0 0 ${TASK_CARD_EXPANDABLE.progressCircle.size} ${TASK_CARD_EXPANDABLE.progressCircle.size}`}>
-                      <circle
-                        cx={TASK_CARD_EXPANDABLE.progressCircle.center}
-                        cy={TASK_CARD_EXPANDABLE.progressCircle.center}
-                        r={TASK_CARD_EXPANDABLE.progressCircle.radius}
-                        fill="none"
-                        stroke={isDark ? TASK_CARD_EXPANDABLE.progressCircle.colors.background.dark : TASK_CARD_EXPANDABLE.progressCircle.colors.background.light}
-                        strokeWidth={TASK_CARD_EXPANDABLE.progressCircle.strokeWidth}
-                      />
-                      <circle
-                        cx={TASK_CARD_EXPANDABLE.progressCircle.center}
-                        cy={TASK_CARD_EXPANDABLE.progressCircle.center}
-                        r={TASK_CARD_EXPANDABLE.progressCircle.radius}
-                        fill="none"
-                        stroke={COLOR_PRIMARY}
-                        strokeWidth={TASK_CARD_EXPANDABLE.progressCircle.strokeWidth}
-                        strokeDasharray={`${2 * Math.PI * TASK_CARD_EXPANDABLE.progressCircle.radius}`}
-                        strokeDashoffset={`${2 * Math.PI * TASK_CARD_EXPANDABLE.progressCircle.radius * (1 - calculateProgress(task) / 100)}`}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className={cn("font-bold text-sm", isDark ? "text-gray-200" : "text-gray-700")}>{calculateProgress(task)}%</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Assignee Info with Tracked Time */}
-              {task.assignedTo && task.assignedTo.length > 0 && (
-                <div className="flex items-center flex-1 min-w-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapAssignee}px` }}>
-                  {task.assignedTo.slice(0, 1).map((userId) => {
-                    const member = getTeamMember(userId);
-                    if (!member) return null;
-                    const initials = getInitials(member.name);
-                    const avatarSize = TASK_CARD_EXPANDABLE.avatarSize;
-                    return (
-                      <TooltipProvider key={userId}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              {member.avatar ? (
-                                <div 
-                                  className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
-                                  style={{
-                                    width: `${avatarSize}px`,
-                                    height: `${avatarSize}px`,
-                                  }}
-                                >
-                                  <img
-                                    src={member.avatar}
-                                    alt={member.name}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                      const parent = target.parentElement;
-                                      if (parent) {
-                                        const fallback = document.createElement('div');
-                                        fallback.className = cn(
-                                          `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center font-semibold text-sm`
-                                        );
-                                        fallback.style.width = `${avatarSize}px`;
-                                        fallback.style.height = `${avatarSize}px`;
-                                        fallback.textContent = initials;
-                                        parent.appendChild(fallback);
-                                      }
-                                    }}
-                                  />
-                                </div>
-                              ) : (
-                                <div 
-                                  className={cn(
-                                    `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center font-semibold text-sm flex-shrink-0`
-                                  )}
-                                  style={{
-                                    width: `${avatarSize}px`,
-                                    height: `${avatarSize}px`,
-                                  }}
-                                >
-                                  {initials}
-                                </div>
-                              )}
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate">{member.name}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{member.role || 'Team Member'}</span>
-                              </div>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{member.name}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-300">{member.email}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    );
-                  })}
-                  {/* Tracked Time - Inline with assignee */}
-                  {task.actualTime && task.actualTime > 0 && (
-                    <div className="flex items-center flex-shrink-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapTracked}px` }}>
-                      <Icon 
-                        name="timer" 
-                        size={isMobile ? TASK_CARD_ICON_SIZES.timerExpanded.mobile : TASK_CARD_ICON_SIZES.timerExpanded.desktop}
-                        className="flex-shrink-0" 
-                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                      />
-                      <span 
-                        className="text-sm font-medium whitespace-nowrap"
-                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                      >
-                        {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-              {/* Show tracked time even if no assignee */}
-              {(!task.assignedTo || task.assignedTo.length === 0) && task.actualTime && task.actualTime > 0 && (
-                <div className="flex items-center flex-shrink-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapTracked}px` }}>
-                  <Icon 
-                    name="timer" 
-                    size={isMobile ? TASK_CARD_ICON_SIZES.timerExpanded.mobile : TASK_CARD_ICON_SIZES.timerExpanded.desktop}
-                    className="flex-shrink-0" 
-                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                  />
-                  <span 
-                    className="text-sm font-medium whitespace-nowrap"
-                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                  >
-                    {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-          )}
 
           {/* Bottom Row: Removed - avatar and play button now only appear in expanded section */}
           {false && shouldRenderInlineBottomRow && !isExpanded ? (
@@ -1269,7 +1099,7 @@ export const DraggableTaskCard = React.forwardRef<
             </>
           )}
 
-          {/* Expandable Section - AI Suggestions, Description, Progress, Assignee - Appears below play button/tracked/chevron */}
+          {/* Expandable Section - Description, Progress, Assignee - Appears below play button/tracked/chevron */}
           {isExpanded && (
             <div
               className="rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden border-t border-gray-200/50 dark:border-border/50"
@@ -1280,52 +1110,7 @@ export const DraggableTaskCard = React.forwardRef<
               }}
               onClick={(e) => e.stopPropagation()}
             >
-            {/* AI Suggestions Section - Shown in expanded section */}
-            {breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 && (() => {
-              // Get domain-specific colors
-              const domainColors = breakdown.domain === 'business' 
-                ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800', border: isDark ? 'border-blue-800/30' : 'border-blue-200' }
-                : breakdown.domain === 'home'
-                ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800', border: isDark ? 'border-green-800/30' : 'border-green-200' }
-                : breakdown.domain === 'personal'
-                ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800', border: isDark ? 'border-purple-800/30' : 'border-purple-200' }
-                : breakdown.domain === 'world'
-                ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800', border: isDark ? 'border-orange-800/30' : 'border-orange-200' }
-                : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800', border: isDark ? 'border-gray-800/30' : 'border-gray-200' };
-              
-              return (
-                <div className={cn("px-2 py-1.5 mb-4 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                  <div className="flex items-center gap-1 mb-1">
-                    <Icon name="sparkles" size={12} className={domainColors.text} weight="duotone" />
-                    <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                      AI Suggestions
-                    </span>
-                  </div>
-                  <div className="space-y-0.5">
-                    {breakdown.actionPlan.steps.map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
-                      <div key={idx} className="flex items-start gap-1.5">
-                        <span className={cn("mt-0.5 flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                          {step.order || (idx + 1)}.
-                        </span>
-                        <span className={cn("leading-tight flex-1", domainColors.textLight)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                          {step.action}
-                        </span>
-                        {step.estimatedMinutes > 0 && (
-                          <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                            {step.estimatedMinutes}m
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {breakdown.actionPlan.totalEstimatedMinutes > 0 && (
-                      <div className={cn("mt-0.5 pt-0.5 border-t", domainColors.border)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                        Total: {Math.floor(breakdown.actionPlan.totalEstimatedMinutes / 60)}h {breakdown.actionPlan.totalEstimatedMinutes % 60}m
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+            {/* AI Suggestions removed from expanded section - now always visible under headline */}
 
             {/* Description Section */}
             {task.description && (
