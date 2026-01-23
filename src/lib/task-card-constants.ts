@@ -171,13 +171,19 @@ export const TASK_CARD_BADGE_SIZES = {
 
 // Standard Task Card Heights by Duration
 export const TASK_CARD_STANDARD_HEIGHTS = {
-  at15mins: 100, // 15 minutes = 100px
-  at25mins: 160, // 25 minutes = 160px
-  at30mins: 220, // 30 minutes = 220px
-  at45mins: 300, // 45 minutes = 300px
-  at60mins: 380, // 60 minutes = 380px
-  at80mins: 430, // 80 minutes = 430px
-  at120mins: 500, // 120 minutes = 500px
+  at15mins: 200, // 15 minutes = 200px
+  at20mins: 250, // 20 minutes = 250px
+  at25mins: 280, // 25 minutes = 280px
+  at30mins: 320, // 30 minutes = 320px
+  at35mins: 380, // 35 minutes = 380px
+  at40mins: 430, // 40 minutes = 430px
+  at45mins: 480, // 45 minutes = 480px
+  at50mins: 520, // 50 minutes = 520px
+  at60mins: 580, // 60 minutes = 580px
+  at70mins: 600, // 70 minutes = 600px
+  at80mins: 630, // 80 minutes = 630px
+  at90mins: 680, // 90 minutes = 680px
+  at120mins: 700, // 120 minutes = 700px
 } as const;
 
 // Card Height Configuration

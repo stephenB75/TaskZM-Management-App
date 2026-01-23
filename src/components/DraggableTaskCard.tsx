@@ -381,128 +381,46 @@ export const DraggableTaskCard = React.forwardRef<
       const hasSubtasks = task.subtasks && task.subtasks.length > 0;
       
       // STANDARD HEIGHT CALCULATION: Use standard heights first, then auto-adjust for components
-      // Step 1: Calculate the standard height for this duration using TASK_CARD_STANDARD_HEIGHTS
+      // Calculate the standard height for this duration using TASK_CARD_STANDARD_HEIGHTS
       // Use AI Duration Estimator instead of hardcoded fallback
       const effectiveEstimatedTime = hasEstimatedTime ? currentEstimatedTimeValue! : getTaskMinutes(task);
       
-      // Calculate standard height using TASK_CARD_STANDARD_HEIGHTS mapping
+      // Use new size guide: 15=200px, 20=250px, 25=280px, 30=320px, 35=380px, 40=430px, 45=480px, 50=520px, 60=580px, 70=600px, 80=630px, 90=680px, 120=700px
       let standardHeightForThisDuration: number;
-      // Use effectiveEstimatedTime for consistency (handles null/undefined cases)
-      const isVeryShortTaskInCalc = effectiveEstimatedTime <= 35; // Tasks 35 mins or less need extra compact handling
       
-      // Use standard heights: 15=100px, 25=160px, 30=220px, 45=300px, 60=380px, 80=430px, 120=500px
       if (effectiveEstimatedTime <= 15) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at15mins; // 100px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at15mins; // 200px
+      } else if (effectiveEstimatedTime <= 20) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at20mins; // 250px
       } else if (effectiveEstimatedTime <= 25) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at25mins; // 160px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at25mins; // 280px
       } else if (effectiveEstimatedTime <= 30) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at30mins; // 220px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at30mins; // 320px
+      } else if (effectiveEstimatedTime <= 35) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at35mins; // 380px
+      } else if (effectiveEstimatedTime <= 40) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at40mins; // 430px
       } else if (effectiveEstimatedTime <= 45) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at45mins; // 300px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at45mins; // 480px
+      } else if (effectiveEstimatedTime <= 50) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at50mins; // 520px
       } else if (effectiveEstimatedTime <= 60) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at60mins; // 380px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at60mins; // 580px
+      } else if (effectiveEstimatedTime <= 70) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at70mins; // 600px
       } else if (effectiveEstimatedTime <= 80) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at80mins; // 430px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at80mins; // 630px
+      } else if (effectiveEstimatedTime <= 90) {
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at90mins; // 680px
       } else if (effectiveEstimatedTime <= 120) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 500px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 700px
       } else {
-        // For tasks > 120 mins, use 500px as base (same as 120 mins)
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 500px
+        // For tasks > 120 mins, use 700px as base (same as 120 mins)
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 700px
       }
       
-      // Step 2: Start with the standard height as the base
-      // Components will ADD to this, never reduce it
-      let baseHeight = standardHeightForThisDuration;
-        
-      // Step 2: Now add component heights on top of the standard base height
-      
-      // AUTO-ADJUST: Badge wrapping (if badges wrap to second line)
-      if (badgeWrapHeight > 0) {
-        baseHeight += badgeWrapHeight;
-      }
-        
-      // Description is now in dropdown tab, not in main card - no height calculation needed
-        
-      // AUTO-ADJUST: Inline bottom row components (for tasks < 45 mins)
-      // The bottom row can contain: assigned users, pomodoro timer, or both
-      // We need to add height for the bottom row container when any component is present
-      const hasInlineBottomRow = isShortTask && (hasAssignedUsers || inlinePomodoroPresent);
-      if (hasInlineBottomRow) {
-        // Calculate spacing based on component combination
-        let bottomRowSpacing: number;
-        let bottomRowComponentHeight: number = 0;
-        
-        // Add height for assigned users if present
-        if (hasAssignedUsers) {
-          bottomRowComponentHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base; // 20px for avatar + name
-        }
-        
-        // Add height for inline pomodoro timer if present (approximately 24px for compact timer)
-        if (inlinePomodoroPresent) {
-          bottomRowComponentHeight += 24; // Approximate height for compact inline pomodoro timer
-        }
-        
-        // Calculate spacing based on component combination
-        // For tasks 35 mins or less: use optimized spacing
-        if (isVeryShortTaskInCalc) {
-          bottomRowSpacing = 14; // Reduced spacing
-        } else {
-          bottomRowSpacing = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard; // 20px
-        }
-        
-        // Add bottom padding for the bottom row container to prevent tracker from being cut off
-        // pb-1.5 = 6px mobile, pb-2 = 8px desktop for tasks 35 mins or less
-        // pb-2 = 8px mobile, pb-2.5 = 10px desktop for other short tasks
-        const bottomRowPadding = isVeryShortTaskInCalc
-          ? (isMobile ? 6 : 8) // pb-1.5 mobile, pb-2 desktop
-          : (isMobile ? 8 : 10); // pb-2 mobile, pb-2.5 desktop
-        
-        baseHeight += bottomRowComponentHeight + bottomRowSpacing + bottomRowPadding;
-      }
-      // For medium/long tasks (>= 45 mins), assigned users are absolutely positioned at bottom
-      // We need to reserve space at the bottom to prevent overlap with content
-      // Reserve: assigned user height (20px) + bottom position (8px mobile, 10px desktop) + small buffer (4px) = ~32-34px
-      if (hasAssignedUsers && !isShortTask) {
-        const assignedUsersBottomPosition = isMobile 
-          ? TASK_CARD_POSITIONING.assignedUsers.bottom.mobile // 8px
-          : TASK_CARD_POSITIONING.assignedUsers.bottom.desktop; // 10px
-        const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base; // 20px
-        const bottomBuffer = 4; // Small buffer to prevent overlap
-        baseHeight += assignedUsersBaseHeight + assignedUsersBottomPosition + bottomBuffer; // ~32-34px
-      }
-      
-      // AUTO-ADJUST: Pomodoro timer is absolutely positioned, so it doesn't add to height
-      // It overlays on top of the content at the bottom right corner
-      
-      // AUTO-ADJUST: Tracking badge (if shown at bottom for tasks >= 45 mins)
-      // Rendered when: task.estimatedTime >= 45 mins && pomodoroIsRunning
-      const trackingBadgeAtBottom = hasEstimatedTime && 
-        currentEstimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && 
-        hasPomodoro;
-      if (trackingBadgeAtBottom) {
-        baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime;
-      }
-      
-      // AUTO-ADJUST: Tracked time (if shown at bottom, not at top)
-      // Rendered when: task.estimatedTime >= 45 mins && task.actualTime > 0
-      const trackedTimeAtBottom = hasEstimatedTime && 
-        currentEstimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && 
-        hasTrackedTimeFull;
-      if (trackedTimeAtBottom) {
-        baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.trackedTime;
-        }
-        
-      // Subtasks are now in dropdown tab, not in main card - no height calculation needed
-        
-      // Step 3: Enforce bounds - the standard height IS the absolute minimum
-      // Since we started with standardHeight and only added to it, baseHeight should always be >= standardHeight
-      // But we enforce it anyway to be safe
-      baseHeight = Math.max(baseHeight, standardHeightForThisDuration);
-      
-      // Enforce maximum
-      const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px maximum
-      
-      return Math.min(baseHeight, effectiveMaxHeight);
+      // No auto-adjust - return the standard height directly
+      return standardHeightForThisDuration;
     }, [
       // Base dependencies that affect height calculation
       task.estimatedTime, // CRITICAL: Must include estimatedTime so height recalculates when duration changes
@@ -645,12 +563,13 @@ export const DraggableTaskCard = React.forwardRef<
             }
           }}
         >
-          {/* Top Tab Section - Inside card at the top - Color based on priority */}
+          {/* Top Tab Section - Rounded corners at top, touches card border - Color based on priority */}
           <div 
-            className="flex items-center justify-between px-2 py-1.5 rounded-t-lg"
+            className="flex items-center justify-between px-2 py-1.5 rounded-t-lg -mt-0"
             style={{ 
               gap: isMobile ? '0.5rem' : '0.75rem',
               backgroundColor: getPriorityTabBackgroundColor(task.priority),
+              marginTop: 0,
             }}
           >
             <div className="flex items-center flex-1 min-w-0 flex-wrap" style={{ gap: isMobile ? '0.375rem' : '0.5rem' }}>
@@ -796,7 +715,7 @@ export const DraggableTaskCard = React.forwardRef<
             );
           })()}
 
-          {/* Pomodoro Controls + Chevron - Inline underneath AI Action Plan */}
+            {/* Pomodoro Controls + Tracked Info + Chevron - Inline underneath AI Action Plan */}
           <div className={cn("flex items-center justify-between px-2", isMobile ? "py-1" : "py-1.5")}>
             <div className="flex items-center gap-1.5 flex-1">
               {/* Pomodoro Play/Pause/Stop Controls */}
@@ -835,6 +754,23 @@ export const DraggableTaskCard = React.forwardRef<
                       <Icon name="play" size={16} className="text-gray-700 dark:text-gray-300" weight="fill" />
                     </button>
                   )}
+                </div>
+              )}
+              {/* Tracked Time - Inline with play button */}
+              {!pomodoroIsRunning && task.actualTime && task.actualTime > 0 && (
+                <div className="flex items-center gap-1">
+                  <Icon 
+                    name="timer" 
+                    size={16}
+                    className="flex-shrink-0" 
+                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                  />
+                  <span 
+                    className="text-sm font-medium whitespace-nowrap"
+                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                  >
+                    {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
+                  </span>
                 </div>
               )}
             </div>
