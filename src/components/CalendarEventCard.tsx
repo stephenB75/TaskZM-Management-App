@@ -273,7 +273,9 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     <div
       className={cn(
         "flex w-full transition-all duration-200 cursor-default select-none rounded-lg relative box-border flex-col",
-        // Match task card padding for vertical alignment (px-2 py-1 pb-1 on mobile, px-3 py-1.5 pb-1.5 on desktop)
+        // Match task card container padding for container-level alignment
+        // Task card uses: px-2 py-1 pb-1 on mobile, px-3 py-1.5 pb-1.5 on desktop
+        // Vertical line will be positioned at 8px from container edge to align with task card headline text (which always uses px-2)
         isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
       )}
       style={{
@@ -284,13 +286,13 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
       <div 
         className={cn('absolute top-0 bottom-0 rounded-full', colors.accent)}
         style={{ 
-          left: `${CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset}px`, // Align with task card text start (px-2 = 0.5rem = 8px)
+          left: `${isMobile ? CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.mobile : CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.desktop}px`, // Align with task card text start (px-2 = 0.5rem = 8px)
           width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
         }}
       />
       
       {/* Content area - with left padding to account for vertical line position and gap */}
-      <div className="flex-1 py-1 flex flex-col gap-1" style={{ paddingLeft: `${CALENDAR_EVENT_DIMENSIONS.contentPadding.left}px` }}>
+      <div className="flex-1 py-1 flex flex-col gap-1" style={{ paddingLeft: `${isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.left.desktop}px` }}>
         {/* Header with calendar icon */}
         <div className="flex items-center gap-1.5">
           <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />

@@ -18,10 +18,16 @@ export const CALENDAR_EVENT_DIMENSIONS = {
   verticalLine: {
     width: '4px', // w-1 = 4px (matches task card priority line width)
     minHeight: '40px', // Minimum height for vertical accent line
-    leftOffset: 8, // px-2 = 0.5rem = 8px - aligns with task card text start position
+    leftOffset: {
+      mobile: 8, // px-2 = 0.5rem = 8px - aligns with task card text start position (px-2)
+      desktop: 8, // px-2 = 0.5rem = 8px - task card headline always uses px-2 regardless of container padding
+    },
   },
   contentPadding: {
-    left: 20, // 8px (task card text start) + 4px (vertical line width) + 8px (gap) = 20px left padding for content alignment with task cards
+    left: {
+      mobile: 20, // 8px (vertical line position from container edge) + 4px (vertical line width) + 8px (gap) = 20px left padding for content alignment
+      desktop: 20, // Same calculation - vertical line is always 8px from container edge, regardless of container padding (px-2 or px-3)
+    },
   },
   icon: {
     calendar: 12, // Calendar icon size
