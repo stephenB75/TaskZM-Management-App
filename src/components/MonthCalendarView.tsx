@@ -31,7 +31,7 @@ import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
-import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
+import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM } from "../lib/layout-constants";
 import type { Task } from "../types";
 
 interface MonthCalendarViewProps {
