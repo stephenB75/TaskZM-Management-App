@@ -148,8 +148,8 @@ export const TASK_CARD_ICON_SIZES = {
     desktop: 16, // Increased for better visibility (w-4 = 16px)
   },
   repeat: {
-    mobile: 12, // w-3 = 12px
-    desktop: 14, // w-3.5 = 14px
+    mobile: 16, // w-4 = 16px - increased for better visibility
+    desktop: 18, // w-4.5 = 18px - increased for better visibility
   },
   timer: {
     mobile: 8, // w-2 = 8px
@@ -188,8 +188,8 @@ export const TASK_CARD_ICON_SIZES = {
     desktop: 20, // w-5 = 20px
   },
   sparkles: {
-    mobile: 12, // w-3 = 12px
-    desktop: 12, // w-3 = 12px
+    mobile: 16, // w-4 = 16px - increased for better visibility
+    desktop: 18, // w-4.5 = 18px - increased for better visibility
   },
   playPauseStop: {
     mobile: 16, // w-4 = 16px
