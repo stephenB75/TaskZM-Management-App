@@ -101,6 +101,11 @@ export const DraggableTaskCard = React.forwardRef<
     const [zoomScale, setZoomScale] = React.useState(1);
     const cardRef = React.useRef<HTMLDivElement>(null);
 
+    // Reset expanded state when task changes to ensure cards always start collapsed
+    React.useEffect(() => {
+      setIsExpanded(false);
+    }, [task.id, droppableId]);
+
     // Detect zoom scale from parent container
     React.useEffect(() => {
       if (!cardRef.current) return;
