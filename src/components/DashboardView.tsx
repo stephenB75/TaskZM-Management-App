@@ -57,6 +57,9 @@ import {
   HEADER_GAP_MEDIUM,
   HEADER_GAP_LARGE,
   HEADER_GAP_XSMALL,
+  HEADER_GAP_XLARGE,
+  HEADER_CONTENT_PADDING_LEFT_MOBILE,
+  HEADER_CONTENT_PADDING_LEFT_DESKTOP,
   HEADER_BUTTON_SCALE_SMALL,
   HEADER_BUTTON_SCALE_DESKTOP,
   HEADER_BUTTON_TEXT_SIZE_SMALL,
@@ -1221,9 +1224,10 @@ export function DashboardView({
           <div 
             className="flex items-center min-w-0"
             style={{ 
-              gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_MEDIUM,
+              gap: isSmallScreen ? HEADER_GAP_MEDIUM : HEADER_GAP_LARGE, // Increased spacing between components
               flexShrink: 0, // Prevent actions from shrinking
               flexBasis: 'auto', // Use natural width
+              paddingRight: isSmallScreen ? HEADER_CONTENT_PADDING_LEFT_MOBILE : HEADER_CONTENT_PADDING_LEFT_DESKTOP, // Add right padding to move Re-schedule away from browser border
             }}
           >
             {/* View Mode Toggle with text inline - Desktop Only (not mobile/tablet) */}
@@ -1328,7 +1332,7 @@ export function DashboardView({
               className={cn(
                 !shouldUseMobileLayout ? "flex items-center flex-shrink-0" : "hidden"
               )}
-              style={{ gap: isSmallScreen ? HEADER_GAP_MEDIUM : HEADER_GAP_LARGE }}
+              style={{ gap: isSmallScreen ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE }} // Increased spacing between AI Scheduler and Re-schedule
             >
               <div
                 onClick={handleScheduleUnscheduledTasks}

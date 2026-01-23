@@ -49,7 +49,7 @@ import { getPlatform } from './lib/platform';
 import { cn } from './lib/utils';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, LOADING_SCREEN_LOGO, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, LOADING_SCREEN_LOGO, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
@@ -1215,6 +1215,12 @@ function AppContent() {
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                 className="h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
+                style={{ 
+                  zIndex: HEADER_Z_INDEX + 1, // Ensure panel appears above header
+                  position: 'fixed', // Position fixed relative to viewport to align with header
+                  left: `${SIDEBAR_WIDTH}px`, // Align with header which starts at SIDEBAR_WIDTH from viewport
+                  top: 0, // Start from top
+                }}
               >
                 {/* Panel Content - Allow vertical scroll in landscape mode on tablets */}
                 <div 

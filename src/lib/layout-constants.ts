@@ -243,25 +243,17 @@ export const getPanelWidth = (): number => {
 };
 
 // Calculate main header left position when panel is open
-// When panel is open, header must slide full panel width to avoid overlapping the panel
+// Header always starts at sidebar width - panel overlays on top with higher z-index
 export const getMainHeaderLeft = (panelOpen: boolean): number => {
-  const panelWidth = getPanelWidth();
-  if (panelOpen) {
-    // Slide full panel width to avoid overlap with the side panel
-    return SIDEBAR_WIDTH + panelWidth;
-  }
+  // Always return SIDEBAR_WIDTH - panel will overlay on top of header
   return SIDEBAR_WIDTH;
 };
 
 // Calculate main header width
-// When panel is open, add right padding to prevent components from touching the right edge
+// Header always spans from sidebar to right edge (panel overlays on top)
 export const getMainHeaderWidth = (panelOpen: boolean): string => {
   const left = getMainHeaderLeft(panelOpen);
-  if (panelOpen) {
-    // Add right padding when panel is open to maintain spacing from right edge
-    const rightPadding = 24; // 1.5rem = 24px padding from right edge
-    return `calc(100% - ${left}px - ${rightPadding}px)`;
-  }
+  // Always span full width from left position to right edge
   return `calc(100% - ${left}px)`;
 };
 
