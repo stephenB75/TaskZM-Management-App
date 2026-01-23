@@ -799,7 +799,7 @@ export const DraggableTaskCard = React.forwardRef<
               >
                 <Icon 
                   name={isExpanded ? "chevron-down" : "chevron-right"}
-                  size={20}
+                  size={isMobile ? TASK_CARD_ICON_SIZES.chevron.mobile : TASK_CARD_ICON_SIZES.chevron.desktop}
                   className="text-gray-600 dark:text-gray-400"
                   weight="bold"
                 />

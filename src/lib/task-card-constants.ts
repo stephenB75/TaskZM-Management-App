@@ -163,6 +163,10 @@ export const TASK_CARD_ICON_SIZES = {
     mobile: 14, // w-3.5 = 14px
     desktop: 16, // w-4 = 16px
   },
+  chevron: {
+    mobile: 18, // w-4.5 = 18px (slightly smaller for mobile)
+    desktop: 20, // w-5 = 20px
+  },
 } as const;
 
 // Badge Sizes (font sizes increased by 10%)
