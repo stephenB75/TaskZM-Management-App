@@ -580,8 +580,6 @@ export const DraggableTaskCard = React.forwardRef<
               backgroundColor: getPriorityTabBackgroundColor(task.priority),
               marginTop: isMobile ? '-0.25rem' : '-0.375rem', // Negative margin to offset card's top padding (py-1 = 0.25rem, py-1.5 = 0.375rem)
               paddingTop: 0,
-              marginLeft: isMobile ? '-0.5rem' : '-0.75rem', // Negative margin to offset card's horizontal padding (px-2 = 0.5rem, px-3 = 0.75rem)
-              marginRight: isMobile ? '-0.5rem' : '-0.75rem',
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0,
             }}
