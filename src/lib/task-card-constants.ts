@@ -192,14 +192,14 @@ export const TASK_CARD_STANDARD_HEIGHTS = {
   at25mins: 250, // 25 minutes = 250px
   at30mins: 280, // 30 minutes = 280px
   at35mins: 300, // 35 minutes = 300px
-  at40mins: 350, // 40 minutes = 350px
-  at45mins: 380, // 45 minutes = 380px
-  at50mins: 400, // 50 minutes = 400px
-  at60mins: 450, // 60 minutes = 450px
-  at70mins: 480, // 70 minutes = 480px
-  at80mins: 520, // 80 minutes = 520px
-  at90mins: 550, // 90 minutes = 550px
-  at120mins: 580, // 120 minutes = 580px
+  at40mins: 320, // 40 minutes = 320px
+  at45mins: 360, // 45 minutes = 360px
+  at50mins: 380, // 50 minutes = 380px
+  at60mins: 400, // 60 minutes = 400px
+  at70mins: 430, // 70 minutes = 430px
+  at80mins: 460, // 80 minutes = 460px
+  at90mins: 480, // 90 minutes = 480px
+  at120mins: 520, // 120 minutes = 520px
 } as const;
 
 // Card Height Configuration
