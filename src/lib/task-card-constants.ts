@@ -424,6 +424,11 @@ export const TASK_CARD_BACKGROUNDS = {
     desktop: 'bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm',
     hover: 'hover:bg-white/80 dark:hover:bg-[#4A4A5E]',
   },
+  // Gradient opacity values for lavender gradient background
+  gradient: {
+    lavenderOpacity: 0.25, // 25% tint of lavender at top
+    darkModeWhiteOpacity: 0.05, // 5% white opacity for dark mode bottom
+  },
 } as const;
 
 // Width Values

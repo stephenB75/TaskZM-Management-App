@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
-import { cn, formatTimeAMPM, getInitials, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { cn, formatTimeAMPM, getInitials, sanitizeHTML, hasHTMLTags, calculateProgress } from "../lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
@@ -53,6 +53,7 @@ import {
   TASK_CARD_TIMELINE,
   TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE,
 } from "../lib/task-card-constants";
+import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
 import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT, COLOR_TEXT_WHITE } from "../lib/color-theme";
@@ -91,11 +92,11 @@ export const DraggableTaskCard = React.forwardRef<
       canViewAnalytics: true,
       role: 'admin' as const,
     };
-    const { getTimerState, timers: pomodoroTimers } = usePomodoro();
+    const { getTimerState, timers: pomodoroTimers, startTimer, pauseTimer, stopTimer } = usePomodoro();
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
     const isMobile = useIsMobile();
-    const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+    const [isExpanded, setIsExpanded] = React.useState(false);
     const [zoomScale, setZoomScale] = React.useState(1);
     const cardRef = React.useRef<HTMLDivElement>(null);
 
@@ -229,6 +230,39 @@ export const DraggableTaskCard = React.forwardRef<
       priority: Task["priority"],
     ) => {
       return TASK_CARD_PRIORITY_COLORS[priority]?.badge || TASK_CARD_PRIORITY_COLORS.default.badge;
+    };
+
+    // Get priority-based tab background color
+    const getPriorityTabBackgroundColor = (
+      priority: Task["priority"],
+    ): string => {
+      // Map priority to background colors matching the badge colors
+      const colorMap = {
+        urgent: {
+          light: '#FEF2F2', // red-50
+          dark: 'rgba(127, 29, 29, 0.7)', // red-900/70
+        },
+        high: {
+          light: '#FFF7ED', // orange-50
+          dark: 'rgba(154, 52, 18, 0.7)', // orange-900/70
+        },
+        medium: {
+          light: '#EFF6FF', // blue-50
+          dark: 'rgba(30, 58, 138, 0.7)', // blue-900/70
+        },
+        low: {
+          light: '#F9FAFB', // gray-50
+          dark: 'rgba(55, 65, 81, 0.7)', // gray-700/70
+        },
+        default: {
+          light: '#F9FAFB', // gray-50
+          dark: 'rgba(31, 41, 55, 0.3)', // gray-800/30
+        },
+      };
+      
+      const priorityKey = priority || 'default';
+      const colors = colorMap[priorityKey] || colorMap.default;
+      return isDark ? colors.dark : colors.light;
     };
 
     // Format duration display
@@ -558,30 +592,20 @@ export const DraggableTaskCard = React.forwardRef<
           id={`task-${sortableId}`}
           data-tour="task-card"
         >
-        {/* Vertical colored priority line */}
-        <div
-          className={TASK_CARD_BORDERS.priorityLine.className}
-          style={{
-            width: `${TASK_CARD_CALCULATIONS.priorityLine.width}px`,
-            minHeight: `${TASK_CARD_CALCULATIONS.priorityLine.minHeight}px`,
-            backgroundColor: getPriorityLineColor(task.priority),
-          }}
-        />
-
-        {/* Compact Card - Partial borders, clean background, height represents duration */}
+        {/* Compact Card - Partial borders, lavender gradient background, height represents duration */}
           <div
             className={cn(
-              "rounded-lg relative overflow-hidden box-border flex flex-col",
+              "rounded-lg relative box-border flex flex-col",
+              isExpanded ? "overflow-visible" : "overflow-hidden", // Allow overflow when expanded
+              isExpanded && "rounded-b-none", // Remove bottom radius when expanded
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Background: solid on mobile, semi-transparent on desktop
-              isMobile ? TASK_CARD_BACKGROUNDS.mobile : TASK_CARD_BACKGROUNDS.desktop,
               // Responsive borders: thinner on mobile, standard on desktop
               `border-l border-b border-r ${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
               // Shadows: better blending on mobile
               isMobile ? TASK_CARD_SHADOWS.mobile : TASK_CARD_SHADOWS.desktop,
-              `${TASK_CARD_BACKGROUNDS.hover} ${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
+              `${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: based on components, not description (description is in dropdown)
@@ -593,11 +617,15 @@ export const DraggableTaskCard = React.forwardRef<
                 (isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop),
             )}
           style={{
-            height: `${cardHeight}px`,
-            minHeight: `${cardHeight}px`,
-            maxHeight: `${cardHeight}px`,
+            height: isExpanded ? 'auto' : `${cardHeight}px`,
+            minHeight: isExpanded ? `${cardHeight}px` : `${cardHeight}px`,
+            maxHeight: isExpanded ? 'none' : `${cardHeight}px`,
             boxSizing: 'border-box', // Include padding in height calculation
             flexShrink: 0, // Prevent flex from shrinking the card
+            // Lavender gradient: 25% tint at top fading to white at bottom
+            background: isDark
+              ? `linear-gradient(to bottom, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, TASK_CARD_BACKGROUNDS.gradient.lavenderOpacity)}, ${getColorWithOpacity(COLOR_BACKGROUND_WHITE, TASK_CARD_BACKGROUNDS.gradient.darkModeWhiteOpacity)})`
+              : `linear-gradient(to bottom, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, TASK_CARD_BACKGROUNDS.gradient.lavenderOpacity)}, ${COLOR_BACKGROUND_WHITE})`,
           }}
           onMouseDown={(e) => {
             // Prevent click if user is starting a drag
@@ -617,30 +645,30 @@ export const DraggableTaskCard = React.forwardRef<
             }
           }}
         >
-          {/* Row 1: Time + Priority Badge + Tag + Duration + Tracking Badge (mobile) (left) + Checkbox (right) */}
-      <div className={cn("flex items-center justify-between", isMobile ? "gap-1" : "gap-2")}>
-        <div
-          className={cn(
-            "flex items-center flex-1 min-w-0 flex-wrap",
-            topRowGapClass,
-            // Ensure badges don't collide with the completion button
-            topRowPaddingClass,
-          )}
-        >
-              {/* Scheduled Time with AM/PM */}
-          {scheduledTimeLabel && (
+          {/* Top Tab Section - Inside card at the top - Color based on priority */}
+          <div 
+            className="flex items-center justify-between px-2 py-1.5 rounded-t-lg"
+            style={{ 
+              gap: isMobile ? '0.5rem' : '0.75rem',
+              backgroundColor: getPriorityTabBackgroundColor(task.priority),
+            }}
+          >
+            <div className="flex items-center flex-1 min-w-0 flex-wrap" style={{ gap: isMobile ? '0.375rem' : '0.5rem' }}>
+              {/* Scheduled Time with Clock Icon */}
+              {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-gray-400 dark:text-gray-300" />
-                  <span className={cn("text-gray-600 dark:text-gray-200 font-bold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-                {scheduledTimeLabel}
+                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-gray-600 dark:text-gray-300" />
+                  <span className={cn("text-gray-700 dark:text-gray-200 font-semibold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                    {scheduledTimeLabel}
                   </span>
                 </div>
               )}
 
+              {/* Priority Badge */}
               <Badge
                 variant="outline"
                 className={cn(
-                  "rounded-md border capitalize flex-shrink-0",
+                  "rounded-md border capitalize flex-shrink-0 font-bold",
                   getPriorityBadgeColor(task.priority),
                   isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                 )}
@@ -648,6 +676,7 @@ export const DraggableTaskCard = React.forwardRef<
                 {task.priority}
               </Badge>
 
+              {/* Tag Badge */}
               {task.tags && task.tags.length > 0 && (
                 <Badge
                   variant="secondary"
@@ -664,49 +693,15 @@ export const DraggableTaskCard = React.forwardRef<
                 </Badge>
               )}
 
+              {/* Duration */}
               {task.estimatedTime && (
-                <span className={cn("text-gray-500 dark:text-gray-300 font-medium flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                <span className={cn("text-gray-600 dark:text-gray-300 font-semibold flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
                   {formatDuration(task.estimatedTime)}
                 </span>
               )}
-
-              {/* Tracking Badge - Shown at top with other badges (mobile and desktop for tasks < 45 mins) */}
-              {showTrackingBadgeTopRow && (
-                <div className="flex items-center animate-pulse flex-shrink-0">
-                  <div 
-                    className={cn(
-                      "flex items-center rounded-full",
-                      isMobile ? TASK_CARD_BADGE_SIZES.tracking.mobile : TASK_CARD_BADGE_SIZES.tracking.desktop
-                    )}
-                    style={{
-                      background: `linear-gradient(to right, ${TASK_CARD_THEME_COLORS.gradient.from}, ${TASK_CARD_THEME_COLORS.gradient.to})`,
-                      color: COLOR_TEXT_WHITE,
-                    }}
-                  >
-                    <Icon name="timer" size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop} className="animate-spin" weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
-                    <span className="font-semibold">{TASK_CARD_TEXT.tracking}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
-              {showTrackedTimeTopRow && (
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Icon name="timer" 
-                    size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop}
-                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                    weight="duotone"
-                  />
-                  <span 
-                    className={cn("font-medium", isMobile ? TASK_CARD_FONT_SIZES.trackedTime.mobile : TASK_CARD_FONT_SIZES.trackedTime.desktop)}
-                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                  >
-                    {formatTimer(task.actualTime)}
-                  </span>
-                </div>
-              )}
             </div>
 
+            {/* Complete Checkbox */}
             <button
               onClick={handleToggleComplete}
               onPointerDown={(e) => e.stopPropagation()}
@@ -726,14 +721,14 @@ export const DraggableTaskCard = React.forwardRef<
             </button>
           </div>
 
-          {/* Row 2: H3 Title (Bold) */}
-          <div className={cn("flex items-start mt-1", isMobile ? TASK_CARD_SPACING.title.mobile : TASK_CARD_SPACING.title.desktop)}>
+          {/* Headline (Title) - Underneath the tab */}
+          <div className={cn("flex items-start px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
             {task.recurrence && task.recurrence.type !== "none" && (
-              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className="text-primary flex-shrink-0 mt-0.5" weight="duotone" />
+              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className="text-primary flex-shrink-0 mt-0.5 mr-1" weight="duotone" />
             )}
             <h3
               className={cn(
-                "text-foreground dark:text-gray-100 leading-tight flex-1 font-semibold",
+                "text-foreground dark:text-gray-100 leading-tight flex-1 font-bold",
                 TASK_CARD_LINE_CLAMP.title,
                 task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
                 isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop,
@@ -743,7 +738,7 @@ export const DraggableTaskCard = React.forwardRef<
             </h3>
           </div>
 
-          {/* AI Action Plan Breakdown - Show if available */}
+          {/* AI Action Plan - Underneath headline */}
           {breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 && (() => {
             // Get domain-specific colors
             const domainColors = breakdown.domain === 'business' 
@@ -763,11 +758,11 @@ export const DraggableTaskCard = React.forwardRef<
               : ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.NORMAL_TASK;
             
             return (
-              <div className={cn("px-1.5 py-1 mt-0.5 mb-1 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+              <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: '0.5rem', marginRight: '0.5rem' }}>
                 <div className="flex items-center gap-1 mb-1">
                   <Icon name="sparkles" size={12} className={domainColors.text} weight="duotone" />
-                  <span className={cn("font-medium", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                    AI Action Plan
+                  <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                    AI Suggestions
                   </span>
                 </div>
                 <div className="space-y-0.5">
@@ -801,7 +796,67 @@ export const DraggableTaskCard = React.forwardRef<
             );
           })()}
 
+          {/* Pomodoro Controls + Chevron - Inline underneath AI Action Plan */}
+          <div className={cn("flex items-center justify-between px-2", isMobile ? "py-1" : "py-1.5")}>
+            <div className="flex items-center gap-1.5 flex-1">
+              {/* Pomodoro Play/Pause/Stop Controls */}
+              {canUsePomodoro && (
+                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                  {pomodoroIsRunning ? (
+                    <>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await pauseTimer(pomodoroTimerId);
+                        }}
+                        className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <Icon name="pause" size={16} className="text-gray-700 dark:text-gray-300" weight="fill" />
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await stopTimer(pomodoroTimerId);
+                        }}
+                        className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <Icon name="stop" size={16} className="text-gray-700 dark:text-gray-300" weight="fill" />
+                      </button>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-1">Tracking ....</span>
+                    </>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startTimer(pomodoroTimerId);
+                      }}
+                      className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <Icon name="play" size={16} className="text-gray-700 dark:text-gray-300" weight="fill" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
+            {/* Chevron to Expand/Collapse */}
+            {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0) || (task.assignedTo && task.assignedTo.length > 0)) && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+                className="flex-shrink-0 hover:opacity-80 transition-opacity p-1"
+              >
+                <Icon 
+                  name={isExpanded ? "chevron-left" : "chevron-right"}
+                  size={20}
+                  className="text-gray-600 dark:text-gray-400"
+                  weight="bold"
+                />
+              </button>
+            )}
+          </div>
 
           {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
           {shouldRenderInlineBottomRow ? (
@@ -1109,416 +1164,152 @@ export const DraggableTaskCard = React.forwardRef<
           )}
 
           </div>
-        </div>
 
-        {/* Dropdown Tab - Accordion attached directly to the card, aligned with compact card (excluding priority line) */}
-        {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0)) && (() => {
-          // Get random pastel color for dropdown that's different from column color
-          const randomColors = getRandomDropdownColor(task.id, droppableId, isDark);
-          
-          return (
-            <div 
-              className="rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden"
+          {/* Expandable Section - Description, Progress, Assignee - Inside card */}
+          {isExpanded && (
+            <div
+              className="rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden border-t border-gray-200/50 dark:border-border/50"
               style={{
-                marginTop: `${TASK_CARD_DROPDOWN.spacing.attachmentGap}px`,
-                marginLeft: `${TASK_CARD_DROPDOWN.spacing.cardOffset.left + TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
-                marginRight: `${TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal}px`,
-                width: `calc(100% - ${TASK_CARD_DROPDOWN.spacing.cardOffset.left + (TASK_CARD_DROPDOWN.spacing.cornerInset.horizontal * 2)}px)`,
-                backgroundColor: isDark ? randomColors.dark : randomColors.light,
-                borderTop: `1px solid ${isDark ? TASK_CARD_DROPDOWN_COLORS.border.dark : TASK_CARD_DROPDOWN_COLORS.border.light}`,
-                maxHeight: isDropdownOpen ? 'none' : 'auto',
-                transition: 'max-height 0.3s ease-in-out',
+                padding: isMobile ? '0.75rem' : '1rem',
+                backgroundColor: isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.02)',
+                marginTop: '0',
               }}
               onClick={(e) => e.stopPropagation()}
             >
-            {/* Accordion Tab Header with Badges */}
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={cn(
-                "w-full flex items-center justify-between font-medium transition-colors rounded-b-lg",
-                "border-0 outline-none focus:outline-none focus:ring-0",
-                // Remove default button styles that might create visible box
-                "bg-transparent"
-              )}
-              onMouseEnter={(e) => {
-                if (isDropdownOpen) {
-                  e.currentTarget.style.opacity = `${1 - TASK_CARD_DROPDOWN_COLORS.hover.opacity}`;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (isDropdownOpen) {
-                  e.currentTarget.style.opacity = '1';
-                }
-              }}
-              style={{
-                paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.header.paddingX}px`,
-                paddingRight: `${TASK_CARD_DROPDOWN.dimensions.header.paddingX}px`,
-                paddingTop: `${TASK_CARD_DROPDOWN.dimensions.header.paddingY}px`,
-                paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.header.paddingY}px`,
-                transitionDuration: `${TIMING_CONSTANTS.animations.default}ms`,
-                color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
-                // Use domain-based background when dropdown is open, transparent when closed (badges only)
-                backgroundColor: isDropdownOpen ? (isDark ? randomColors.dark : randomColors.light) : COLOR_BACKGROUND_TRANSPARENT,
-                fontSize: `${dropdownFontSize}px`,
-              }}
-            >
-              {!isDropdownOpen && (
-                <div 
-                  className="flex items-center"
-                  style={{ gap: `${TASK_CARD_DROPDOWN.spacing.badgeGap}px` }}
-                >
-                  {task.description && (
-                    <Badge
-                      variant="secondary"
-                      style={{
-                        height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
-                        paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                        paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                        paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                        paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                        fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                        backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.description.background,
-                        color: TASK_CARD_DROPDOWN_BADGE_COLORS.description.text,
-                      }}
-                    >
-                      <Icon 
-                        name="file-text" 
-                        size={TASK_CARD_DROPDOWN.dimensions.icon.small} 
-                        className="flex-shrink-0" 
-                        style={{ 
-                          marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                        }} 
-                      />
-                      {TASK_CARD_DROPDOWN.text.description}
-                    </Badge>
-                  )}
-                  {task.subtasks && task.subtasks.length > 0 && (
-                    <Badge
-                      variant="secondary"
-                      style={{
-                        height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
-                        paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                        paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                        paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                        paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                        fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                        backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.background,
-                        color: TASK_CARD_DROPDOWN_BADGE_COLORS.subtasks.text,
-                      }}
-                    >
-                      <Icon 
-                        name="list-checks"
-                        size={TASK_CARD_DROPDOWN.dimensions.icon.small}
-                        className="flex-shrink-0"
-                        style={{ 
-                          marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                        }} 
-                      />
-                      {TASK_CARD_DROPDOWN.text.subtasks} ({task.subtasks.length})
-                    </Badge>
-                  )}
-                  {task.dependencies && task.dependencies.length > 0 && (
-                    <Badge
-                      variant="secondary"
-                      style={{
-                        height: `${TASK_CARD_DROPDOWN.dimensions.badge.height}px`,
-                        paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                        paddingRight: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingX}px`,
-                        paddingTop: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                        paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.badge.paddingY}px`,
-                        fontSize: `${TASK_CARD_DROPDOWN.fontSizes.badge}px`,
-                        backgroundColor: TASK_CARD_DROPDOWN_BADGE_COLORS.dependencies.background,
-                        color: TASK_CARD_DROPDOWN_BADGE_COLORS.dependencies.text,
-                      }}
-                    >
-                      <Icon 
-                        name="link-2"
-                        size={TASK_CARD_DROPDOWN.dimensions.icon.small}
-                        className="flex-shrink-0" 
-                        style={{ 
-                          marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                        }} 
-                      />
-                      {TASK_CARD_DROPDOWN.text.dependencies} ({task.dependencies.length})
-                    </Badge>
-                  )}
+            {/* Description Section */}
+            {task.description && (
+              <div className="mb-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Icon name="file-text" size={14} className="text-gray-500 dark:text-gray-400" />
+                  <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Description</span>
                 </div>
-              )}
-              {isDropdownOpen ? (
-                <Icon 
-                  name="chevron-up" 
-                  size={TASK_CARD_DROPDOWN.dimensions.icon.medium} 
+                <div
+                  className="break-normal leading-relaxed text-sm text-gray-600 dark:text-gray-400"
+                  {...(hasHTMLTags(task.description) 
+                    ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
+                    : { children: task.description }
+                  )}
                 />
-              ) : (
-                <Icon 
-                  name="chevron-down" 
-                  size={TASK_CARD_DROPDOWN.dimensions.icon.medium} 
-                />
-              )}
-            </button>
-
-            {/* Accordion Content - Slides down smoothly, no scrolling */}
-            {isDropdownOpen && (
-              <div
-                className="rounded-b-lg transition-all duration-300 ease-in-out"
-                style={{
-                  paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.content.paddingX}px`,
-                  paddingRight: `${TASK_CARD_DROPDOWN.dimensions.content.paddingX}px`,
-                  paddingBottom: `${TASK_CARD_DROPDOWN.dimensions.content.paddingBottom}px`,
-                  backgroundColor: isDark ? randomColors.dark : randomColors.light,
-                }}
-              >
-                <Tabs defaultValue={task.description ? "description" : (task.subtasks && task.subtasks.length > 0 ? "subtasks" : "dependencies")} className="w-full">
-                  <TabsList 
-                    className="w-full justify-start bg-transparent p-0"
-                    style={{
-                      height: `${TASK_CARD_DROPDOWN.dimensions.tabsList.height}px`,
-                      gap: `${TASK_CARD_DROPDOWN.spacing.tabsGap}px`,
-                      color: isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                    }}
-                  >
-                    {task.description && (
-                      <TabsTrigger
-                        value="description"
-                        className=""
-                        style={{
-                          height: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.height}px`,
-                          paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.paddingX}px`,
-                          paddingRight: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.paddingX}px`,
-                          fontSize: `${dropdownFontSize}px`,
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <Icon 
-                          name="file-text" 
-                          size={TASK_CARD_DROPDOWN.dimensions.icon.small} 
-                          style={{ 
-                            marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                          }} 
-                        />
-                        {TASK_CARD_DROPDOWN.text.description}
-                      </TabsTrigger>
-                    )}
-                    {task.subtasks && task.subtasks.length > 0 && (
-                      <TabsTrigger
-                        value="subtasks"
-                        className=""
-                        style={{
-                          height: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.height}px`,
-                          paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.paddingX}px`,
-                          paddingRight: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.paddingX}px`,
-                          fontSize: `${dropdownFontSize}px`,
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <Icon 
-                          name="list-checks"
-                          size={TASK_CARD_DROPDOWN.dimensions.icon.small}
-                          style={{ 
-                            marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                          }} 
-                        />
-                        {TASK_CARD_DROPDOWN.text.subtasks} ({task.subtasks.length})
-                      </TabsTrigger>
-                    )}
-                    {task.dependencies && task.dependencies.length > 0 && (
-                      <TabsTrigger
-                        value="dependencies"
-                        className=""
-                        style={{
-                          height: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.height}px`,
-                          paddingLeft: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.paddingX}px`,
-                          paddingRight: `${TASK_CARD_DROPDOWN.dimensions.tabsTrigger.paddingX}px`,
-                          fontSize: `${dropdownFontSize}px`,
-                          '--tab-active-bg': TASK_CARD_DROPDOWN_COLORS.tab.active.background,
-                          '--tab-active-text': TASK_CARD_DROPDOWN_COLORS.tab.active.text,
-                          '--tab-inactive-text': isDark ? TASK_CARD_DROPDOWN_COLORS.tab.inactive.darkText : TASK_CARD_DROPDOWN_COLORS.tab.inactive.text,
-                        } as React.CSSProperties}
-                      >
-                        <Icon 
-                          name="link-2"
-                          size={TASK_CARD_DROPDOWN.dimensions.icon.small}
-                          style={{ 
-                            marginRight: `${TASK_CARD_DROPDOWN.spacing.iconMargin}px`,
-                          }} 
-                        />
-                        {TASK_CARD_DROPDOWN.text.dependencies} ({task.dependencies.length})
-                      </TabsTrigger>
-                    )}
-                  </TabsList>
-
-                  {task.description && (
-                    <TabsContent 
-                      value="description" 
-                      className="rounded"
-                      style={{
-                        marginTop: `${TASK_CARD_DROPDOWN.dimensions.content.marginTop}px`,
-                        padding: `${TASK_CARD_DROPDOWN.dimensions.content.padding}px`,
-                      }}
-                    >
-                      <div
-                        className="break-normal leading-relaxed"
-                        style={{
-                          fontSize: `${dropdownFontSize}px`,
-                          color: isDark ? TASK_CARD_DROPDOWN_COLORS.content.text.dark : TASK_CARD_DROPDOWN_COLORS.content.text.light,
-                        }}
-                        {...(hasHTMLTags(task.description) 
-                          ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                          : { children: task.description }
-                        )}
-                      />
-                    </TabsContent>
-                  )}
-
-                  {task.subtasks && task.subtasks.length > 0 && (
-                    <TabsContent 
-                      value="subtasks"
-                      style={{
-                        marginTop: `${TASK_CARD_DROPDOWN.dimensions.content.marginTop}px`,
-                        gap: `${TASK_CARD_DROPDOWN.dimensions.subtask.gap / 2}px`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                      }}
-                    >
-                      {task.subtasks.map((subtask) => {
-                        const handleSubtaskToggle = async (e: React.MouseEvent) => {
-                          e.stopPropagation();
-                          const updatedSubtasks = task.subtasks.map((st) =>
-                            st.id === subtask.id
-                              ? { ...st, completed: !st.completed }
-                              : st
-                          );
-                          await updateTask(task.id, { subtasks: updatedSubtasks });
-                        };
-
-                        return (
-                          <div
-                            key={subtask.id}
-                            className="flex items-center rounded cursor-pointer transition-opacity"
-                            style={{
-                              fontSize: `${dropdownFontSize}px`,
-                              gap: `${TASK_CARD_DROPDOWN.dimensions.subtask.gap}px`,
-                              padding: `${TASK_CARD_DROPDOWN.dimensions.subtask.padding}px`,
-                              opacity: subtask.completed ? TASK_CARD_DROPDOWN_COLORS.subtask.completed.opacity : 1,
-                            }}
-                            onClick={handleSubtaskToggle}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = isDark 
-                                ? TASK_CARD_DROPDOWN_COLORS.subtask.hover.background.dark 
-                                : TASK_CARD_DROPDOWN_COLORS.subtask.hover.background.light;
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = COLOR_BACKGROUND_TRANSPARENT;
-                            }}
-                          >
-                            <div
-                              className="rounded-sm border flex-shrink-0 transition-colors"
-                              style={{
-                                width: `${TASK_CARD_DROPDOWN.dimensions.subtask.checkbox.size}px`,
-                                height: `${TASK_CARD_DROPDOWN.dimensions.subtask.checkbox.size}px`,
-                                backgroundColor: subtask.completed ? COLOR_PRIMARY : COLOR_BACKGROUND_TRANSPARENT,
-                                borderColor: subtask.completed 
-                                  ? COLOR_PRIMARY 
-                                  : (isDark 
-                                      ? TASK_CARD_DROPDOWN_COLORS.subtask.border.dark 
-                                      : TASK_CARD_DROPDOWN_COLORS.subtask.border.light),
-                              }}
-                            />
-                            <span
-                              className={cn(
-                                "flex-1",
-                                subtask.completed && "line-through"
-                              )}
-                              style={{
-                                fontSize: `${dropdownFontSize}px`,
-                                color: isDark 
-                                  ? TASK_CARD_DROPDOWN_COLORS.subtask.text.dark 
-                                  : TASK_CARD_DROPDOWN_COLORS.subtask.text.light,
-                              }}
-                            >
-                              {subtask.title}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </TabsContent>
-                  )}
-
-                  {task.dependencies && task.dependencies.length > 0 && (
-                    <TabsContent 
-                      value="dependencies"
-                      style={{
-                        marginTop: `${TASK_CARD_DROPDOWN.dimensions.content.marginTop}px`,
-                        gap: `${TASK_CARD_DROPDOWN.dimensions.dependency.gap / 2}px`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                      }}
-                    >
-                      {task.dependencies.map((depId) => {
-                        const depTask = tasks.find((t) => t?.id === depId);
-                        if (!depTask) return null;
-                        const isComplete = depTask.status === "done";
-                        const depColors = isComplete 
-                          ? TASK_CARD_DROPDOWN_COLORS.dependency.complete
-                          : TASK_CARD_DROPDOWN_COLORS.dependency.incomplete;
-                        
-                        return (
-                          <div
-                            key={depId}
-                            className="flex items-center rounded"
-                            style={{
-                              fontSize: `${dropdownFontSize}px`,
-                              gap: `${TASK_CARD_DROPDOWN.dimensions.dependency.gap}px`,
-                              padding: `${TASK_CARD_DROPDOWN.dimensions.dependency.padding}px`,
-                              backgroundColor: isDark ? depColors.background.dark : depColors.background.light,
-                              border: `1px solid ${isDark ? depColors.border.dark : depColors.border.light}`,
-                            }}
-                          >
-                            <div
-                              className="rounded-full flex items-center justify-center flex-shrink-0"
-                              style={{
-                                width: `${TASK_CARD_DROPDOWN.dimensions.dependency.indicator.size}px`,
-                                height: `${TASK_CARD_DROPDOWN.dimensions.dependency.indicator.size}px`,
-                                backgroundColor: depColors.indicator,
-                              }}
-                            >
-                              {isComplete && (
-                                <span 
-                                  style={{ 
-                                    fontSize: `${TASK_CARD_DROPDOWN.fontSizes.tiny}px`,
-                                    color: COLOR_TEXT_WHITE,
-                                  }}
-                                >
-                                  ✓
-                                </span>
-                              )}
-                            </div>
-                            <span
-                              className="flex-1 truncate"
-                              style={{
-                                fontSize: `${dropdownFontSize}px`,
-                                color: isDark 
-                                  ? TASK_CARD_DROPDOWN_COLORS.dependency.text.dark 
-                                  : TASK_CARD_DROPDOWN_COLORS.dependency.text.light,
-                              }}
-                            >
-                              {depTask.title}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </TabsContent>
-                  )}
-                </Tabs>
               </div>
             )}
+
+            {/* Dependencies Warning */}
+            {task.dependencies && task.dependencies.length > 0 && (
+              <div className="mb-4 flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                <Icon name="link-2" size={14} />
+                <span className="font-semibold text-sm">ATTENTION: This task has a dependency.</span>
+              </div>
+            )}
+
+            {/* Progress Circle and Assignee */}
+            <div className="flex items-center justify-between gap-4">
+              {/* Progress Circle */}
+              {task.subtasks && task.subtasks.length > 0 && (
+                <div className="flex items-center">
+                  <div className="relative w-16 h-16 flex-shrink-0">
+                    <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        fill="none"
+                        stroke={isDark ? '#374151' : '#e5e7eb'}
+                        strokeWidth="4"
+                      />
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        fill="none"
+                        stroke={COLOR_PRIMARY}
+                        strokeWidth="4"
+                        strokeDasharray={`${2 * Math.PI * 28}`}
+                        strokeDashoffset={`${2 * Math.PI * 28 * (1 - calculateProgress(task) / 100)}`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className={cn("font-bold text-sm", isDark ? "text-gray-200" : "text-gray-700")}>{calculateProgress(task)}%</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Assignee Info */}
+              {task.assignedTo && task.assignedTo.length > 0 && (
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {task.assignedTo.slice(0, 1).map((userId) => {
+                    const member = getTeamMember(userId);
+                    if (!member) return null;
+                    const initials = getInitials(member.name);
+                    const avatarSize = 40;
+                    return (
+                      <TooltipProvider key={userId}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              {member.avatar ? (
+                                <div 
+                                  className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
+                                  style={{
+                                    width: `${avatarSize}px`,
+                                    height: `${avatarSize}px`,
+                                  }}
+                                >
+                                  <img
+                                    src={member.avatar}
+                                    alt={member.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const parent = target.parentElement;
+                                      if (parent) {
+                                        const fallback = document.createElement('div');
+                                        fallback.className = cn(
+                                          `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center font-semibold text-sm`
+                                        );
+                                        fallback.style.width = `${avatarSize}px`;
+                                        fallback.style.height = `${avatarSize}px`;
+                                        fallback.textContent = initials;
+                                        parent.appendChild(fallback);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <div 
+                                  className={cn(
+                                    `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center font-semibold text-sm flex-shrink-0`
+                                  )}
+                                  style={{
+                                    width: `${avatarSize}px`,
+                                    height: `${avatarSize}px`,
+                                  }}
+                                >
+                                  {initials}
+                                </div>
+                              )}
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate">{member.name}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{member.role || 'Team Member'}</span>
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{member.name}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-300">{member.email}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-          );
-        })()}
+          )}
+        </div>
       </div>
     );
   },
