@@ -973,7 +973,7 @@ export function SevenDayKanban({
                         </motion.div>
                       ) : (
                           <div
-                            className="flex flex-col items-center gap-3 w-full"
+                            className="flex flex-col gap-3 w-full"
                             style={{
                               padding: 0,
                               // No paddingBottom - nav bar clearance handled by spacer in App.tsx
@@ -1003,7 +1003,7 @@ export function SevenDayKanban({
                                       className="w-full"
                                       style={{ 
                                         transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                        transformOrigin: 'top center',
+                                        transformOrigin: 'top left',
                                       }}
                                     >
                                       <CalendarEventCard
@@ -1024,7 +1024,7 @@ export function SevenDayKanban({
                             className="w-full"
                             style={{ 
                               transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                              transformOrigin: 'top center',
+                              transformOrigin: 'top left',
                             }}
                           >
                             <DraggableTaskCard
@@ -1414,7 +1414,7 @@ export function SevenDayKanban({
                                       <p className="text-sm text-muted-foreground pointer-events-none">No tasks</p>
                               </motion.div>
                             ) : (
-                                  <div className="flex flex-col items-center gap-3">
+                                  <div className="flex flex-col gap-3 w-full">
                                     {combinedItems.map((item, idx) => {
                                       if (item.type === 'event') {
                                         return (
@@ -1427,7 +1427,7 @@ export function SevenDayKanban({
                                             className="w-full"
                                             style={{
                                               transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                              transformOrigin: 'top center',
+                                              transformOrigin: 'top left',
                                             }}
                                           >
                                             <CalendarEventCard
@@ -1447,7 +1447,7 @@ export function SevenDayKanban({
                                     className="w-full"
                                     style={{ 
                                       transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                      transformOrigin: 'top center',
+                                      transformOrigin: 'top left',
                                     }}
                                   >
                                   <DraggableTaskCard
