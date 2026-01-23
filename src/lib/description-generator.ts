@@ -1536,8 +1536,31 @@ function buildElaborateContextualDescription(
   pronouns: string[],
   context: string,
   domain: Domain,
-  domainTerms: ReturnType<typeof getDomainTerminology>
+  domainTerms: ReturnType<typeof getDomainTerminology>,
+  effortScore: number = 2.5
 ): string {
+  // Determine detail level based on effort score
+  // Low effort (1-2): Concise, simple descriptions (1-2 sentences)
+  // Medium effort (2-3): Moderate detail (2-3 sentences)
+  // High effort (3-4): Detailed, comprehensive descriptions (3-4 sentences)
+  // Very high effort (4-5): Extensive, step-by-step descriptions (4-5 sentences)
+  const targetSentences = effortScore <= 2 ? 1 : 
+                          effortScore <= 3 ? 2 : 
+                          effortScore <= 4 ? 3 : 4;
+  
+  // Adjust slice limits based on effort - higher effort uses more terms
+  const keywordLimit = effortScore <= 2 ? DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords :
+                       effortScore <= 3 ? DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsExtended :
+                       DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsExtended * 1.5;
+  const phraseLimit = effortScore <= 2 ? DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrases :
+                      effortScore <= 3 ? DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrases * 1.5 :
+                      DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrases * 2;
+  const verbLimit = effortScore <= 2 ? DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbs :
+                    effortScore <= 3 ? DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbs * 1.5 :
+                    DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbs * 2;
+  const nounLimit = effortScore <= 2 ? DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns :
+                    effortScore <= 3 ? DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns * 1.5 :
+                    DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns * 2;
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
   
@@ -2906,11 +2929,13 @@ function buildContextualDescription(
  * @param taskName - The task title/name
  * @param accessToken - Optional access token for API calls
  * @param existingDescription - Optional existing description to use for domain detection
+ * @param effortScore - Optional effort score (1-5) to adjust description detail level
  */
 export async function generateDescription(
   taskName: string, 
   accessToken?: string | null,
-  existingDescription?: string | null
+  existingDescription?: string | null,
+  effortScore?: number
 ): Promise<GeneratedDescription> {
   try {
   if (!taskName || taskName.trim().length === 0) {
@@ -3016,6 +3041,11 @@ export async function generateDescription(
     contextPreview: searchContext.substring(0, 100)
   });
   
+      // Use effort score to adjust description detail (default to medium effort if not provided)
+      const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
+        ? effortScore 
+        : 2.5;
+      
       description = buildContextualDescription(
         taskName,
     finalKeywords,
@@ -3025,7 +3055,8 @@ export async function generateDescription(
     finalPronouns,
     searchContext, // Use task name as context
         domain,
-        domainTerms
+        domainTerms,
+        normalizedEffortScore
       );
       
   logger.debug(`Description after buildContextualDescription:`, {
@@ -3283,6 +3314,149 @@ export async function generateDescription(
       confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
     };
   }
+}
+
+/**
+ * Generate multiple description options based on task name and effort score
+ * Creates 3-5 variations with different levels of detail/complexity
+ * 
+ * @param taskName - The task title/name
+ * @param effortScore - Effort score (1-5) to adjust description detail level
+ * @param accessToken - Optional access token for API calls
+ * @param existingDescription - Optional existing description to use for domain detection
+ */
+export async function generateDescriptionOptions(
+  taskName: string,
+  effortScore: number,
+  accessToken?: string | null,
+  existingDescription?: string | null
+): Promise<GeneratedDescription[]> {
+  try {
+    if (!taskName || taskName.trim().length === 0) {
+      return [];
+    }
+
+    // Normalize effort score
+    const normalizedEffortScore = effortScore >= 1 && effortScore <= 5 
+      ? effortScore 
+      : 2.5;
+
+    // Generate 3-5 options with varying detail levels
+    // For low effort: 3 options (all concise)
+    // For medium effort: 4 options (mix of concise and moderate)
+    // For high effort: 5 options (mix of moderate and detailed)
+    const numOptions = normalizedEffortScore <= 2 ? 3 : 
+                       normalizedEffortScore <= 3 ? 4 : 5;
+
+    const options: GeneratedDescription[] = [];
+
+    // Generate options with slight variations in effort score to get different detail levels
+    for (let i = 0; i < numOptions; i++) {
+      // Vary the effort score slightly for each option to get different detail levels
+      // Option 0: Base effort score
+      // Option 1: Slightly lower (more concise)
+      // Option 2: Slightly higher (more detailed)
+      // Option 3+: Alternate between base and variations
+      let variantEffortScore = normalizedEffortScore;
+      if (i === 1 && normalizedEffortScore > 1.5) {
+        variantEffortScore = Math.max(1, normalizedEffortScore - 0.5);
+      } else if (i === 2 && normalizedEffortScore < 4.5) {
+        variantEffortScore = Math.min(5, normalizedEffortScore + 0.5);
+      } else if (i >= 3) {
+        // Alternate between base and variations for remaining options
+        variantEffortScore = i % 2 === 0 
+          ? Math.min(5, normalizedEffortScore + 0.3)
+          : Math.max(1, normalizedEffortScore - 0.3);
+      }
+
+      // Generate description with variant effort score
+      const generated = await generateDescription(
+        taskName,
+        accessToken,
+        existingDescription,
+        variantEffortScore
+      );
+
+      // Only add if description is not empty and not duplicate
+      if (generated.description && generated.description.trim().length > 0) {
+        // Check for duplicates (similar descriptions)
+        const isDuplicate = options.some(opt => {
+          const similarity = calculateDescriptionSimilarity(
+            opt.description,
+            generated.description
+          );
+          return similarity > 0.8; // 80% similarity threshold
+        });
+
+        if (!isDuplicate) {
+          options.push(generated);
+        }
+      }
+    }
+
+    // If we didn't get enough unique options, generate more with different variations
+    while (options.length < numOptions && options.length < 5) {
+      // Try with more extreme effort score variations
+      const extremeEffortScore = options.length % 2 === 0
+        ? Math.min(5, normalizedEffortScore + 0.7)
+        : Math.max(1, normalizedEffortScore - 0.7);
+
+      const generated = await generateDescription(
+        taskName,
+        accessToken,
+        existingDescription,
+        extremeEffortScore
+      );
+
+      if (generated.description && generated.description.trim().length > 0) {
+        const isDuplicate = options.some(opt => {
+          const similarity = calculateDescriptionSimilarity(
+            opt.description,
+            generated.description
+          );
+          return similarity > 0.8;
+        });
+
+        if (!isDuplicate) {
+          options.push(generated);
+        }
+      }
+
+      // Safety check to prevent infinite loop
+      if (options.length >= 5) break;
+    }
+
+    // Sort by confidence (highest first) and return
+    return options.sort((a, b) => b.confidence - a.confidence);
+  } catch (error) {
+    logger.error(`Error generating description options for "${taskName}":`, error);
+    // Return at least one fallback option
+    const fallback = await generateDescription(
+      taskName,
+      accessToken,
+      existingDescription,
+      effortScore
+    );
+    return fallback.description ? [fallback] : [];
+  }
+}
+
+/**
+ * Calculate similarity between two descriptions (0-1 scale)
+ * Uses simple word overlap ratio
+ */
+function calculateDescriptionSimilarity(desc1: string, desc2: string): number {
+  if (!desc1 || !desc2) return 0;
+  
+  const words1 = new Set(desc1.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+  const words2 = new Set(desc2.toLowerCase().split(/\s+/).filter(w => w.length > 2));
+  
+  if (words1.size === 0 || words2.size === 0) return 0;
+  
+  const intersection = new Set([...words1].filter(w => words2.has(w)));
+  const union = new Set([...words1, ...words2]);
+  
+  return intersection.size / union.size;
 }
 
 /**

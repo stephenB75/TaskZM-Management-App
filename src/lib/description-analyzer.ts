@@ -37,11 +37,13 @@ export interface DescriptionAnalysis {
  * @param title - Task title
  * @param description - Task description
  * @param aiContext - Optional shared AI context (if provided, uses it instead of re-detecting/re-extracting)
+ * @param effortScore - Optional effort score (1-5) to influence suggestion complexity
  */
 export function analyzeDescription(
   title: string,
   description: string,
-  aiContext?: AIContext
+  aiContext?: AIContext,
+  effortScore?: number
 ): DescriptionAnalysis {
   const fullText = `${title} ${description}`.trim();
   const original = description.trim();
@@ -165,7 +167,12 @@ export function analyzeDescription(
     complexity = 'moderate';
   }
 
-  // Generate enhanced description (pass all extracted terms for better suggestions)
+  // Get effort score from aiContext or use provided parameter
+  const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5
+    ? effortScore
+    : (aiContext?.extractedTerms ? 2.5 : 2.5); // Default to medium effort
+
+  // Generate enhanced description (pass all extracted terms and effort score for better suggestions)
   const { enhanced, suggestions, addedContext } = enhanceDescription(
     original,
     domain,
@@ -173,7 +180,8 @@ export function analyzeDescription(
     primaryVerb,
     uniquePhrases,
     uniqueVerbs,
-    uniqueNouns
+    uniqueNouns,
+    normalizedEffortScore
   );
 
   logger.debug('AI Analyzer: Enhanced extraction', {
@@ -297,19 +305,41 @@ function enhanceDescription(
       break;
   }
 
-  // General enhancements based on content
+  // General enhancements based on content and effort score
+  // Higher effort tasks get more detailed suggestions
   if (original.length < DESCRIPTION_COMPLEXITY_THRESHOLDS.MIN_DESCRIPTION_LENGTH) {
     if (hasJobKeywords && hasLoginKeywords) {
-      suggestions.push('Add details about the login process and what needs to be tracked');
+      if (effortScore >= 3) {
+        suggestions.push('Add comprehensive details about the login process, platform requirements, and what information needs to be tracked');
+      } else {
+        suggestions.push('Add details about the login process and what needs to be tracked');
+      }
     } else if (hasTimeKeywords) {
-      suggestions.push('Specify the time period or duration details');
+      if (effortScore >= 3) {
+        suggestions.push('Specify the time period, duration details, and any scheduling constraints');
+      } else {
+        suggestions.push('Specify the time period or duration details');
+      }
     } else {
-      suggestions.push('Add more details to help with task planning');
+      if (effortScore >= 3) {
+        suggestions.push('Add comprehensive details including steps, requirements, and constraints to help with task planning');
+      } else if (effortScore >= 2) {
+        suggestions.push('Add more details including key steps and requirements to help with task planning');
+      } else {
+        suggestions.push('Add more details to help with task planning');
+      }
     }
   }
 
+  // Effort-aware suggestions for breaking down tasks
   if (!original.includes('?') && !original.includes('.')) {
-    suggestions.push('Break down into specific steps or questions');
+    if (effortScore >= 4) {
+      suggestions.push('Break down into detailed steps with specific questions and requirements');
+    } else if (effortScore >= 3) {
+      suggestions.push('Break down into specific steps, questions, and key considerations');
+    } else {
+      suggestions.push('Break down into specific steps or questions');
+    }
   }
 
   // Build enhanced description (for now, just return original - enhancement can be applied by user)
@@ -325,6 +355,7 @@ function enhanceDescription(
 /**
  * Generate domain-specific suggestions for empty descriptions
  * ENHANCED: Now uses extracted terms for more contextual suggestions
+ * Uses effort score to adjust suggestion complexity
  */
 function generateDomainSuggestions(
   domain: Domain,
@@ -332,7 +363,8 @@ function generateDomainSuggestions(
   keywords?: string[],
   phrases?: string[],
   verbs?: string[],
-  nouns?: string[]
+  nouns?: string[],
+  effortScore: number = 2.5
 ): string[] {
   const suggestions: string[] = [];
   const allTerms = [...(keywords || []), ...(phrases || []), ...(verbs || []), ...(nouns || [])];
@@ -346,44 +378,103 @@ function generateDomainSuggestions(
     return suggestions;
   }
 
+  // Adjust suggestion detail based on effort score
+  const isHighEffort = effortScore >= 3;
+  const isVeryHighEffort = effortScore >= 4;
+
   switch (domain) {
     case 'business':
       if (hasJobTerms) {
-        suggestions.push('Specify the platform or system to access');
-        suggestions.push('Clarify what information needs to be tracked or recorded');
+        if (isVeryHighEffort) {
+          suggestions.push('Specify the platform or system to access, authentication requirements, and data security considerations');
+          suggestions.push('Clarify what information needs to be tracked, recorded, and reported with detailed requirements');
+        } else if (isHighEffort) {
+          suggestions.push('Specify the platform or system to access and authentication requirements');
+          suggestions.push('Clarify what information needs to be tracked or recorded with specific details');
+        } else {
+          suggestions.push('Specify the platform or system to access');
+          suggestions.push('Clarify what information needs to be tracked or recorded');
+        }
       } else {
-        suggestions.push('Add project context, stakeholders, and deadlines');
-        suggestions.push('Include meeting participants or deliverables');
+        if (isVeryHighEffort) {
+          suggestions.push('Add comprehensive project context, key stakeholders, deadlines, deliverables, and success criteria');
+          suggestions.push('Include meeting participants, agenda items, action items, and follow-up requirements');
+        } else if (isHighEffort) {
+          suggestions.push('Add project context, stakeholders, deadlines, and deliverables');
+          suggestions.push('Include meeting participants, agenda items, and action items');
+        } else {
+          suggestions.push('Add project context, stakeholders, and deadlines');
+          suggestions.push('Include meeting participants or deliverables');
+        }
       }
       break;
 
     case 'home':
-      suggestions.push('Specify location, supplies needed, and time estimate');
-      suggestions.push('Include any preparation steps or tools required');
+      if (isVeryHighEffort) {
+        suggestions.push('Specify location, supplies needed, time estimate, safety considerations, and cleanup requirements');
+        suggestions.push('Include detailed preparation steps, tools required, and any special instructions');
+      } else if (isHighEffort) {
+        suggestions.push('Specify location, supplies needed, time estimate, and safety considerations');
+        suggestions.push('Include preparation steps, tools required, and special instructions');
+      } else {
+        suggestions.push('Specify location, supplies needed, and time estimate');
+        suggestions.push('Include any preparation steps or tools required');
+      }
       break;
 
     case 'personal':
       if (hasJobTerms) {
-        suggestions.push('Specify the job platform and login process');
-        suggestions.push('Clarify what hours or time needs to be tracked');
+        if (isHighEffort) {
+          suggestions.push('Specify the job platform, login process, and account requirements');
+          suggestions.push('Clarify what hours or time needs to be tracked with specific details');
+        } else {
+          suggestions.push('Specify the job platform and login process');
+          suggestions.push('Clarify what hours or time needs to be tracked');
+        }
       } else {
-        suggestions.push('Add duration, location, or specific goals');
-        suggestions.push('Include any preparation or resources needed');
+        if (isVeryHighEffort) {
+          suggestions.push('Add duration, location, specific goals, resources needed, and success metrics');
+          suggestions.push('Include detailed preparation steps, required resources, and any constraints');
+        } else if (isHighEffort) {
+          suggestions.push('Add duration, location, specific goals, and resources needed');
+          suggestions.push('Include preparation steps, required resources, and constraints');
+        } else {
+          suggestions.push('Add duration, location, or specific goals');
+          suggestions.push('Include any preparation or resources needed');
+        }
       }
       break;
 
     case 'world':
-      suggestions.push('Include time zones, locations, and cultural context');
-      suggestions.push('Specify international coordination details');
+      if (isHighEffort) {
+        suggestions.push('Include time zones, locations, cultural context, and communication preferences');
+        suggestions.push('Specify international coordination details, language considerations, and scheduling constraints');
+      } else {
+        suggestions.push('Include time zones, locations, and cultural context');
+        suggestions.push('Specify international coordination details');
+      }
       break;
 
     default:
       if (hasJobTerms || hasLoginTerms) {
-        suggestions.push('Specify the platform and what needs to be logged');
-        suggestions.push('Clarify the time period or hours to track');
+        if (isHighEffort) {
+          suggestions.push('Specify the platform, authentication method, and what needs to be logged');
+          suggestions.push('Clarify the time period or hours to track with specific requirements');
+        } else {
+          suggestions.push('Specify the platform and what needs to be logged');
+          suggestions.push('Clarify the time period or hours to track');
+        }
       } else {
-        suggestions.push('Add details about what needs to be done');
-        suggestions.push('Include any constraints, deadlines, or requirements');
+        if (isVeryHighEffort) {
+          suggestions.push('Add comprehensive details about what needs to be done, including steps, requirements, and success criteria');
+          suggestions.push('Include all constraints, deadlines, dependencies, and any special requirements');
+        } else if (isHighEffort) {
+          suggestions.push('Add details about what needs to be done, including key steps and requirements');
+          suggestions.push('Include constraints, deadlines, and any special requirements');
+        } else {
+          suggestions.push('Add details about what needs to be done');
+          suggestions.push('Include any constraints, deadlines, or requirements');
+        }
       }
   }
 

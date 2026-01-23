@@ -66,7 +66,7 @@ import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../l
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
-import { generateDescription } from "../lib/description-generator";
+import { generateDescription, generateDescriptionOptions } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
@@ -667,6 +667,15 @@ export function TaskDialog({
     { debounceMs: 300, enabled: true }
   );
 
+  // Description options state - generated from title keywords/phrases and effort score
+  // AI Flow:
+  // 1. User enters title → useTaskBreakdown extracts keywords/phrases and determines effort score
+  // 2. When title has content and description is empty → generate description options using effort score
+  // 3. User selects description → useTaskBreakdown automatically regenerates action plan (watches description)
+  // 4. Action plan subtasks are created from the chosen description
+  const [descriptionOptions, setDescriptionOptions] = useState<Array<{ description: string; domain: string; confidence: number }>>([]);
+  const [isLoadingDescriptionOptions, setIsLoadingDescriptionOptions] = useState(false);
+
   // Helper function to update scheduled time
   const updateScheduledTime = (
     hours: string,
@@ -987,6 +996,65 @@ export function TaskDialog({
     // Mark this task ID as initialized
     initializedTaskIdRef.current = currentTaskId;
   }, [task?.id, initialDate, open, folders]); // Use task?.id instead of task to prevent re-initialization on object reference changes
+
+  // Generate description options when title changes and breakdown has effort score
+  // AI Flow Step 2: Uses keywords/phrases from user input (title) to analyze effort and suggest descriptions
+  // The breakdown hook (Step 1) extracts keywords/phrases and determines effort score from the title
+  // This effect generates description options based on that effort score
+  useEffect(() => {
+    // Only generate options if:
+    // 1. Dialog is open
+    // 2. Title has content (user has entered task title)
+    // 3. Description is empty (so we show options for user to choose)
+    // 4. Breakdown has effort score (meaning keywords/phrases were analyzed from title)
+    // 5. Not currently loading breakdown
+    if (!open || !title.trim() || description.trim() || !breakdown?.effortScore || isBreakdownLoading) {
+      setDescriptionOptions([]);
+      setIsLoadingDescriptionOptions(false);
+      return;
+    }
+
+    // Debounce description option generation
+    setIsLoadingDescriptionOptions(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        logger.debug('AI: Generating description options from title keywords/phrases', {
+          title,
+          effortScore: breakdown.effortScore,
+          domain: breakdown.domain,
+          keywordsExtracted: 'Yes (via useTaskBreakdown)',
+        });
+
+        // Generate description options using effort score from breakdown
+        // generateDescriptionOptions internally uses extractKeywordsFromTaskName and 
+        // extractTermsFromTaskNameWithBrowserAI to extract keywords/phrases from title
+        // The effort score adjusts the detail level of descriptions (low effort = concise, high effort = detailed)
+        const options = await generateDescriptionOptions(
+          title, // Keywords/phrases are extracted from this title
+          breakdown.effortScore, // Determined from title analysis
+          accessToken,
+          description
+        );
+
+        logger.debug('AI: Description options generated', {
+          count: options.length,
+          options: options.map(o => ({ domain: o.domain, confidence: o.confidence })),
+        });
+
+        setDescriptionOptions(options);
+      } catch (error) {
+        logger.error('AI: Failed to generate description options:', error);
+        setDescriptionOptions([]);
+      } finally {
+        setIsLoadingDescriptionOptions(false);
+      }
+    }, 500); // Debounce 500ms after breakdown is ready
+
+    return () => {
+      clearTimeout(timeoutId);
+      setIsLoadingDescriptionOptions(false);
+    };
+  }, [open, title, description, breakdown?.effortScore, breakdown?.domain, isBreakdownLoading, accessToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2080,7 +2148,12 @@ export function TaskDialog({
                               try {
                                 // Force regeneration by passing empty description to get fresh result
                                 // This ensures we get a new/modified description rather than reusing the existing one
-                                const generated = await generateDescription(title, accessToken, '');
+                                const generated = await generateDescription(
+                                  title, 
+                                  accessToken, 
+                                  '', 
+                                  breakdown?.effortScore
+                                );
                                 logger.debug('AI Refresh description result:', { 
                                   hasDescription: !!generated.description, 
                                   descriptionLength: generated.description?.length || 0,
@@ -2272,7 +2345,49 @@ export function TaskDialog({
                             </div>
                           )}
                         </div>
-                        {breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
+                        {/* Show description options when description is empty, enhancement suggestions when description exists */}
+                        {!description.trim() && (isLoadingDescriptionOptions || descriptionOptions.length > 0) && (
+                          <div className="flex flex-col gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {isLoadingDescriptionOptions ? 'Generating description options...' : 'Choose a description:'}
+                            </span>
+                            {!isLoadingDescriptionOptions && descriptionOptions.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {descriptionOptions.slice(0, 5).map((option, idx) => (
+                                  <Badge
+                                    key={idx}
+                                    variant="secondary"
+                                    className="cursor-pointer hover:bg-primary/10 text-xs max-w-full"
+                                    onClick={async () => {
+                                      // Set the selected description
+                                      setDescription(option.description);
+                                      setDescriptionOptions([]); // Clear options after selection
+                                      
+                                      // The breakdown will automatically update via useTaskBreakdown hook
+                                      // which will regenerate the action plan with the new description
+                                      // This ensures action plan is created from the chosen description
+                                      logger.debug('Description selected, action plan will regenerate', {
+                                        selectedDescription: option.description.substring(0, 50),
+                                        domain: option.domain,
+                                        confidence: option.confidence,
+                                      });
+                                      
+                                      toast.success('Description selected', {
+                                        description: 'AI Action Plan will update automatically based on your description.',
+                                      });
+                                    }}
+                                    title={`${option.domain} (${(option.confidence * 100).toFixed(0)}% confidence)`}
+                                  >
+                                    {option.description.length > 60 
+                                      ? `${option.description.substring(0, 60)}...` 
+                                      : option.description}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {description.trim() && breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {breakdown.descriptionAnalysis.suggestions.slice(0, 2).map((suggestion, idx) => (
                               <Badge
@@ -2280,9 +2395,7 @@ export function TaskDialog({
                                 variant="secondary"
                                 className="cursor-pointer hover:bg-primary/10 text-xs"
                                 onClick={() => {
-                                  const newDescription = description 
-                                    ? `${description}\n\n${suggestion}`
-                                    : suggestion;
+                                  const newDescription = `${description}\n\n${suggestion}`;
                                   setDescription(newDescription);
                                 }}
                               >

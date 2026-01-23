@@ -171,8 +171,8 @@ export function useTaskBreakdown(
           const estimatedHours = estimateTaskHours(taskForEstimation);
           const estimatedMinutes = Math.round(estimatedHours * MINUTES_PER_HOUR);
 
-          // Analyze description (pass shared context to avoid redundant work)
-          const descriptionAnalysis = analyzeDescription(title, description, aiContext);
+          // Analyze description (pass shared context and effort score to avoid redundant work)
+          const descriptionAnalysis = analyzeDescription(title, description, aiContext, verbAnalysis.effortScore);
 
           // Generate action plan (pass shared context to avoid redundant work)
           const actionPlan = generateActionPlan(tempTask as Task, aiContext);
