@@ -785,7 +785,7 @@ export const DraggableTaskCard = React.forwardRef<
                 aria-label={isExpanded ? "Collapse task details" : "Expand task details"}
               >
                 <Icon 
-                  name={isExpanded ? "chevron-left" : "chevron-right"}
+                  name={isExpanded ? "chevron-down" : "chevron-right"}
                   size={20}
                   className="text-gray-600 dark:text-gray-400"
                   weight="bold"
