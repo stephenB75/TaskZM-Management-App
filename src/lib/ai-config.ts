@@ -770,6 +770,7 @@ export const AI_USAGE_STORAGE_KEY = 'ai_scheduler_usage';
  * Debounce delay for real-time task breakdown analysis (milliseconds)
  */
 export const TASK_BREAKDOWN_DEBOUNCE_MS = 300;
+export const DESCRIPTION_OPTIONS_DEBOUNCE_MS = 500; // Debounce delay for generating description options after breakdown is ready
 
 /**
  * Maximum cache size for task breakdown results

@@ -67,7 +67,7 @@ import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription, generateDescriptionOptions } from "../lib/description-generator";
-import { DESCRIPTION_GENERATION_CONFIG } from "../lib/ai-config";
+import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS } from "../lib/task-dialog-constants";
@@ -664,7 +664,7 @@ export function TaskDialog({
   const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
     title,
     description,
-    { debounceMs: 300, enabled: true }
+    { debounceMs: TASK_BREAKDOWN_DEBOUNCE_MS, enabled: true }
   );
 
   // Description options state - generated from title keywords/phrases and effort score
@@ -1048,7 +1048,7 @@ export function TaskDialog({
       } finally {
         setIsLoadingDescriptionOptions(false);
       }
-    }, 500); // Debounce 500ms after breakdown is ready
+    }, DESCRIPTION_OPTIONS_DEBOUNCE_MS); // Debounce delay after breakdown is ready
 
     return () => {
       clearTimeout(timeoutId);
