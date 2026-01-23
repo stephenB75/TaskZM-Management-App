@@ -1354,6 +1354,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const handleActivity = () => {
       lastActivityRef.current = Date.now();
       
+      // Update demo user activity on user interactions
+      if (user?.isDemo) {
+        updateActivity();
+      }
+      
       // Throttle state updates to prevent excessive re-renders
       if (activityThrottleTimeout) return;
       
@@ -1425,7 +1430,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [autoSyncEnabled, workspaceId, accessToken]);
+  }, [autoSyncEnabled, workspaceId, accessToken, user?.isDemo, updateActivity]);
 
   // Auto-sync: Poll server for changes at adaptive intervals
   // Uses requestIdleCallback when available to run syncs in background without blocking UI

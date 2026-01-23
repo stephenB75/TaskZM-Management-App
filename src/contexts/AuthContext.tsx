@@ -245,8 +245,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userId = user?.id;
       
       // If this is a demo user, clean up all their data
-      if (isDemoUser && accessToken) {
-        logger.debug('Demo user signing out - initiating cleanup');
+      if (isDemoUser && accessToken && userId) {
+        logger.debug('Demo user signing out - initiating cleanup', { userId });
         
         try {
           const cleanupResponse = await fetch(
@@ -257,13 +257,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${accessToken}`,
               },
+              body: JSON.stringify({ userId }), // Include userId in body for server verification
             }
           );
 
           if (cleanupResponse.ok) {
-            logger.debug('Demo user cleanup successful');
+            const cleanupData = await cleanupResponse.json().catch(() => ({}));
+            logger.debug('Demo user cleanup successful', cleanupData);
           } else {
-            logger.warn('Demo user cleanup failed, but continuing with signout');
+            const errorData = await cleanupResponse.json().catch(() => ({ error: 'Unknown error' }));
+            logger.warn('Demo user cleanup failed, but continuing with signout', {
+              status: cleanupResponse.status,
+              error: errorData.error || 'Unknown error',
+            });
           }
         } catch (cleanupError) {
           logger.error('Demo cleanup error:', cleanupError);
