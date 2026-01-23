@@ -448,7 +448,7 @@ export const TASK_CARD_BACKGROUNDS = {
   },
   // Gradient opacity values for lavender gradient background
   gradient: {
-    lavenderOpacity: 0.25, // 25% tint of lavender at top
+    lavenderOpacity: 0.40, // 40% tint of lavender at top - increased from 25% for better visibility
     darkModeWhiteOpacity: 0.05, // 5% white opacity for dark mode bottom
   },
   // Expandable section background colors
