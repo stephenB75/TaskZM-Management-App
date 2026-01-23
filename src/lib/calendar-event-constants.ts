@@ -33,7 +33,7 @@ export const CALENDAR_EVENT_DIMENSIONS = {
     calendar: 12, // Calendar icon size
     clock: 12, // Clock icon size
     mapPin: 12, // Map pin icon size
-    repeat: 10, // Repeat icon size for recurring events
+    repeat: 16, // Repeat icon size for recurring events - increased for better visibility
   },
   height: {
     base: 48, // Minimum height in pixels

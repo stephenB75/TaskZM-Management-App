@@ -132,7 +132,7 @@ function DraggableMonthTask({
             <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-600 flex-shrink-0 mt-0.5" />
           )}
           {task.recurrence && task.recurrence.type !== "none" && (
-            <Icon name="repeat" size={ICON_SIZE_XS} weight="duotone" className="text-primary flex-shrink-0 mt-0.5" />
+            <Icon name="repeat" size={ICON_SIZE_SM} weight="duotone" className="text-primary flex-shrink-0 mt-0.5" />
           )}
           <div className="flex-1 min-w-0">
             <p className={cn(

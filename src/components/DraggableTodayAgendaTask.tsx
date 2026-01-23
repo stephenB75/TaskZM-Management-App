@@ -631,7 +631,7 @@ export function DraggableTodayAgendaTask({
             {/* Row 2: H3 Title (Bold) */}
             <div className={cn("flex items-start mt-1", isMobile ? "gap-1 px-1 mb-1" : "gap-1.5 px-1 mb-1")}>
               {task.recurrence && task.recurrence.type !== "none" && (
-                <Icon name="repeat" size={isMobile ? ICON_SIZE_XS : ICON_SIZE_SM} className="text-primary flex-shrink-0 mt-0.5" />
+                <Icon name="repeat" size={isMobile ? ICON_SIZE_MD : ICON_SIZE_LG} className="text-primary flex-shrink-0 mt-0.5" weight="duotone" />
               )}
               <h3
                 className={cn(
