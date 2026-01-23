@@ -564,13 +564,15 @@ export const DraggableTaskCard = React.forwardRef<
             }
           }}
         >
-          {/* Top Tab Section - Rounded corners at top, touches card border - Color based on priority */}
+          {/* Top Tab Section - Rotated 180 degrees: rounded corners at bottom, straight edge at top, touches card top border - Color based on priority */}
           <div 
-            className="flex items-center justify-between px-2 py-1.5 rounded-t-lg -mt-0"
+            className="flex items-center justify-between px-2 py-1.5 rounded-b-lg"
             style={{ 
               gap: isMobile ? '0.5rem' : '0.75rem',
               backgroundColor: getPriorityTabBackgroundColor(task.priority),
               marginTop: 0,
+              borderTopLeftRadius: 0,
+              borderTopRightRadius: 0,
             }}
           >
             <div className="flex items-center flex-1 min-w-0 flex-wrap" style={{ gap: isMobile ? '0.375rem' : '0.5rem' }}>
@@ -795,9 +797,8 @@ export const DraggableTaskCard = React.forwardRef<
             )}
           </div>
 
-          {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
-          {/* Hide bottom row when expanded - content moves to expandable section */}
-          {shouldRenderInlineBottomRow && !isExpanded ? (
+          {/* Bottom Row: Removed - avatar and play button now only appear in expanded section */}
+          {false && shouldRenderInlineBottomRow && !isExpanded ? (
             // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
             // For tasks under 35 mins: use extra compact spacing optimized for component combinations
             // For other short tasks: use reduced spacing when all components are active
@@ -1080,8 +1081,8 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               ) : null}
 
-              {/* Pomodoro Timer - Bottom right on desktop only (mobile is inline with assignee/tracker above) */}
-              {showAbsolutePomodoroTimer && !isMobile && (
+              {/* Pomodoro Timer - Removed from collapsed card, moved to expanded section */}
+              {false && showAbsolutePomodoroTimer && !isMobile && (
                 <div
                   className={cn("absolute flex items-center", "bottom-2.5 right-2.5")}
                   onClick={(e) => e.stopPropagation()}
