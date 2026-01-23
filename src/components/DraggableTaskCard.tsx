@@ -795,7 +795,8 @@ export const DraggableTaskCard = React.forwardRef<
           </div>
 
           {/* Bottom Row: For tasks < 45 mins (mobile and desktop), show inline layout; otherwise absolute positioning */}
-          {shouldRenderInlineBottomRow ? (
+          {/* Hide bottom row when expanded - content moves to expandable section */}
+          {shouldRenderInlineBottomRow && !isExpanded ? (
             // Inline layout for tasks < 45 mins (mobile and desktop): assigned users and pomodoro timer in one row (tracking badge moved to top)
             // For tasks under 35 mins: use extra compact spacing optimized for component combinations
             // For other short tasks: use reduced spacing when all components are active
@@ -1137,7 +1138,7 @@ export const DraggableTaskCard = React.forwardRef<
               </div>
             )}
 
-            {/* Progress Circle and Assignee */}
+            {/* Progress Circle and Assignee with Tracked Info */}
             <div className="flex items-center justify-between gap-4">
               {/* Progress Circle */}
               {task.subtasks && task.subtasks.length > 0 && (
@@ -1171,9 +1172,9 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
 
-              {/* Assignee Info */}
+              {/* Assignee Info with Tracked Time */}
               {task.assignedTo && task.assignedTo.length > 0 && (
-                <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   {task.assignedTo.slice(0, 1).map((userId) => {
                     const member = getTeamMember(userId);
                     if (!member) return null;
@@ -1240,6 +1241,40 @@ export const DraggableTaskCard = React.forwardRef<
                       </TooltipProvider>
                     );
                   })}
+                  {/* Tracked Time - Inline with assignee */}
+                  {task.actualTime && task.actualTime > 0 && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Icon 
+                        name="timer" 
+                        size={16}
+                        className="flex-shrink-0" 
+                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                      />
+                      <span 
+                        className="text-sm font-medium whitespace-nowrap"
+                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                      >
+                        {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Show tracked time even if no assignee */}
+              {(!task.assignedTo || task.assignedTo.length === 0) && task.actualTime && task.actualTime > 0 && (
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Icon 
+                    name="timer" 
+                    size={16}
+                    className="flex-shrink-0" 
+                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                  />
+                  <span 
+                    className="text-sm font-medium whitespace-nowrap"
+                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                  >
+                    {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
+                  </span>
                 </div>
               )}
             </div>
