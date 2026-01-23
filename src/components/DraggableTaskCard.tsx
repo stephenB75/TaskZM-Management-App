@@ -249,27 +249,27 @@ export const DraggableTaskCard = React.forwardRef<
     const getPriorityTabBackgroundColor = (
       priority: Task["priority"],
     ): string => {
-      // Map priority to background colors matching the badge colors
+      // Map priority to background colors - vibrant and saturated to clearly show priority level
       const colorMap = {
         urgent: {
-          light: '#FEF2F2', // red-50
-          dark: 'rgba(127, 29, 29, 0.7)', // red-900/70
+          light: '#FCA5A5', // red-300 - more vibrant red
+          dark: 'rgba(220, 38, 38, 0.9)', // red-600/90 - more saturated
         },
         high: {
-          light: '#FFF7ED', // orange-50
-          dark: 'rgba(154, 52, 18, 0.7)', // orange-900/70
+          light: '#FDBA74', // orange-300 - more vibrant orange
+          dark: 'rgba(234, 88, 12, 0.9)', // orange-600/90 - more saturated
         },
         medium: {
-          light: '#EFF6FF', // blue-50
-          dark: 'rgba(30, 58, 138, 0.7)', // blue-900/70
+          light: '#93C5FD', // blue-300 - more vibrant blue
+          dark: 'rgba(37, 99, 235, 0.9)', // blue-600/90 - more saturated
         },
         low: {
-          light: '#F9FAFB', // gray-50
-          dark: 'rgba(55, 65, 81, 0.7)', // gray-700/70
+          light: '#D1D5DB', // gray-300 - more visible gray
+          dark: 'rgba(107, 114, 128, 0.9)', // gray-500/90 - more visible
         },
         default: {
-          light: '#F9FAFB', // gray-50
-          dark: 'rgba(31, 41, 55, 0.3)', // gray-800/30
+          light: '#D1D5DB', // gray-300
+          dark: 'rgba(107, 114, 128, 0.7)', // gray-500/70
         },
       };
       
@@ -574,11 +574,14 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {/* Top Tab Section - Rotated 180 degrees: rounded corners at bottom, straight edge at top, touches card top border - Color based on priority */}
           <div 
-            className="flex items-center justify-between px-2 py-1.5 rounded-b-lg"
+            className="flex items-center justify-between px-2 pb-1.5 rounded-b-lg"
             style={{ 
               gap: isMobile ? '0.5rem' : '0.75rem',
               backgroundColor: getPriorityTabBackgroundColor(task.priority),
-              marginTop: 0,
+              marginTop: isMobile ? '-0.25rem' : '-0.375rem', // Negative margin to offset card's top padding (py-1 = 0.25rem, py-1.5 = 0.375rem)
+              paddingTop: 0,
+              marginLeft: isMobile ? '-0.5rem' : '-0.75rem', // Negative margin to offset card's horizontal padding (px-2 = 0.5rem, px-3 = 0.75rem)
+              marginRight: isMobile ? '-0.5rem' : '-0.75rem',
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0,
             }}
