@@ -1235,36 +1235,25 @@ export function SevenDayKanban({
                               return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
                             };
                             
-                            // For today, use full pastel color at 100% opacity (no darkening)
+                            // Solid pastel color at 70% opacity (no gradient)
                             const headerOpacity = column.isToday 
-                              ? KANBAN_DAY_COLORS.today.headerOpacity // Full opacity for maximum visibility
-                              : dayColors.header.opacity;
-                            const viaOpacity = column.isToday 
-                              ? KANBAN_DAY_COLORS.today.viaOpacity // Full opacity for via color on today
-                              : KANBAN_DAY_COLORS.standard.viaOpacity; // Standard via opacity for non-today days
+                              ? KANBAN_DAY_COLORS.today.headerOpacity // Full opacity for today
+                              : dayColors.header.opacity; // 70% opacity for non-today days
                             
-                            // Use full pastel colors for today (no darkening when colorDarkeningFactor is 1.0)
-                            const fromColor = column.isToday 
+                            // Use solid pastel color (from color only, no gradient)
+                            const solidColor = column.isToday 
                               ? (KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0 
                                   ? dayColors.header.from 
                                   : darkenColor(dayColors.header.from, KANBAN_DAY_COLORS.today.colorDarkeningFactor))
                               : dayColors.header.from;
-                            const viaColor = column.isToday 
-                              ? (KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0 
-                                  ? dayColors.header.via 
-                                  : darkenColor(dayColors.header.via, KANBAN_DAY_COLORS.today.colorDarkeningFactor))
-                              : dayColors.header.via;
-                            const toColor = column.isToday 
-                              ? (KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0 
-                                  ? dayColors.header.to 
-                                  : darkenColor(dayColors.header.to, KANBAN_DAY_COLORS.today.colorDarkeningFactor))
-                              : dayColors.header.to;
                             
-                            baseStyle.backgroundImage = `linear-gradient(to right, ${fromColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${viaColor}${Math.round(viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${toColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
+                            // Solid color with opacity (no gradient)
+                            baseStyle.backgroundColor = `${solidColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                            baseStyle.backgroundImage = 'none'; // Remove gradient
                             
-                            // For today: no border/frame, just the full pastel gradient at 100% opacity
+                            // For today: no border/frame, just the solid pastel color at 100% opacity
                             if (column.isToday) {
-                              // Remove border/frame - just use the gradient
+                              // Remove border/frame - just use the solid color
                               baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidthNone;
                               baseStyle.borderColor = KANBAN_DAY_COLORS.today.borderColorTransparent;
                               // No ring or shadow - clean gradient only
@@ -1275,22 +1264,29 @@ export function SevenDayKanban({
                             }
                           }
                         } else {
-                          // Dark mode: enhance today column with full pastel gradient at 100% opacity, no frame/border
+                          // Dark mode: solid pastel color (no gradient)
                           if (column.isToday) {
-                            // Get day colors for gradient even in dark mode
+                            // Get day colors for solid color even in dark mode
                             const dayColors = getDayColors(column.dayName);
                             if (hasHeader(dayColors)) {
-                              // Use full pastel gradient at 100% opacity in dark mode too
-                              const fromColor = dayColors.header.from;
-                              const viaColor = dayColors.header.via;
-                              const toColor = dayColors.header.to;
-                              baseStyle.backgroundImage = `linear-gradient(to right, ${fromColor}${Math.round(KANBAN_DAY_COLORS.today.headerOpacity * 2.55).toString(16).padStart(2, '0')}, ${viaColor}${Math.round(KANBAN_DAY_COLORS.today.viaOpacity * 2.55).toString(16).padStart(2, '0')}, ${toColor}${Math.round(KANBAN_DAY_COLORS.today.headerOpacity * 2.55).toString(16).padStart(2, '0')})`;
+                              // Use solid pastel color at 100% opacity in dark mode
+                              const solidColor = dayColors.header.from;
+                              baseStyle.backgroundColor = `${solidColor}${Math.round(KANBAN_DAY_COLORS.today.headerOpacity * 2.55).toString(16).padStart(2, '0')}`;
+                              baseStyle.backgroundImage = 'none'; // Remove gradient
                             }
-                            // Remove border/frame - just use the gradient
+                            // Remove border/frame - just use the solid color
                             baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidthNone;
                             baseStyle.borderColor = KANBAN_DAY_COLORS.today.borderColorTransparent;
-                            // No ring or shadow - clean gradient only
+                            // No ring or shadow - clean solid color only
                             baseStyle.boxShadow = KANBAN_DAY_COLORS.today.boxShadowNone;
+                          } else {
+                            // Non-today days in dark mode: solid pastel color at 70% opacity
+                            const dayColors = getDayColors(column.dayName);
+                            if (hasHeader(dayColors)) {
+                              const solidColor = dayColors.header.from;
+                              baseStyle.backgroundColor = `${solidColor}${Math.round(dayColors.header.opacity * 2.55).toString(16).padStart(2, '0')}`;
+                              baseStyle.backgroundImage = 'none'; // Remove gradient
+                            }
                           }
                         }
                         return baseStyle;

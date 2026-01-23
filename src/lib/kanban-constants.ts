@@ -47,7 +47,7 @@ export const KANBAN_DAY_COLORS = {
       via: darkenColor(COLOR_PASTEL_MINT, 0.9), // Slightly darker for gradient
       to: darkenColor(COLOR_PASTEL_MINT, 0.85), // Darker for gradient end
       border: darkenColor(COLOR_PASTEL_MINT, 0.65), // Border color
-      opacity: 80,
+      opacity: 70, // Solid pastel color at 70% opacity (no gradient)
       borderOpacity: 30,
     },
     background: COLOR_PASTEL_MINT,
@@ -59,7 +59,7 @@ export const KANBAN_DAY_COLORS = {
       via: darkenColor(COLOR_PASTEL_SKY, 0.9), // Slightly darker for gradient
       to: darkenColor(COLOR_PASTEL_SKY, 0.85), // Darker for gradient end
       border: darkenColor(COLOR_PASTEL_SKY, 0.65), // Border color
-      opacity: 80,
+      opacity: 70, // Solid pastel color at 70% opacity (no gradient)
       borderOpacity: 30,
     },
     background: COLOR_PASTEL_SKY,
@@ -71,7 +71,7 @@ export const KANBAN_DAY_COLORS = {
       via: darkenColor(COLOR_PASTEL_LAVENDER, 0.9), // Slightly darker for gradient
       to: darkenColor(COLOR_PASTEL_LAVENDER, 0.85), // Darker for gradient end
       border: darkenColor(COLOR_PASTEL_LAVENDER, 0.65), // Border color
-      opacity: 80,
+      opacity: 70, // Solid pastel color at 70% opacity (no gradient)
       borderOpacity: 30,
     },
     background: COLOR_PASTEL_LAVENDER,
@@ -83,7 +83,7 @@ export const KANBAN_DAY_COLORS = {
       via: darkenColor(COLOR_PASTEL_PEACH, 0.9), // Slightly darker for gradient
       to: darkenColor(COLOR_PASTEL_PEACH, 0.85), // Darker for gradient end
       border: darkenColor(COLOR_PASTEL_PEACH, 0.65), // Border color
-      opacity: 80,
+      opacity: 70, // Solid pastel color at 70% opacity (no gradient)
       borderOpacity: 30,
     },
     background: COLOR_PASTEL_PEACH,
@@ -95,7 +95,7 @@ export const KANBAN_DAY_COLORS = {
       via: darkenColor(COLOR_PASTEL_LILAC, 0.9), // Slightly darker for gradient
       to: darkenColor(COLOR_PASTEL_LILAC, 0.85), // Darker for gradient end
       border: darkenColor(COLOR_PASTEL_LILAC, 0.65), // Border color
-      opacity: 80,
+      opacity: 70, // Solid pastel color at 70% opacity (no gradient)
       borderOpacity: 30,
     },
     background: COLOR_PASTEL_LILAC,
@@ -107,7 +107,7 @@ export const KANBAN_DAY_COLORS = {
       via: darkenColor(COLOR_PASTEL_PINK, 0.9), // Slightly darker for gradient
       to: darkenColor(COLOR_PASTEL_PINK, 0.85), // Darker for gradient end
       border: darkenColor(COLOR_PASTEL_PINK, 0.65), // Border color
-      opacity: 80,
+      opacity: 70, // Solid pastel color at 70% opacity (no gradient)
       borderOpacity: 30,
     },
     background: COLOR_PASTEL_PINK,
@@ -119,7 +119,7 @@ export const KANBAN_DAY_COLORS = {
       via: darkenColor(COLOR_PASTEL_YELLOW, 0.9), // Slightly darker for gradient
       to: darkenColor(COLOR_PASTEL_YELLOW, 0.85), // Darker for gradient end
       border: darkenColor(COLOR_PASTEL_YELLOW, 0.65), // Border color
-      opacity: 80,
+      opacity: 70, // Solid pastel color at 70% opacity (no gradient)
       borderOpacity: 30,
     },
     background: COLOR_PASTEL_YELLOW,
