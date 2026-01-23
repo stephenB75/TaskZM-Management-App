@@ -439,7 +439,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             if (popup && !popup.closed) {
               popup.close();
             }
-          }, 100);
+          }, TIMING_CONSTANTS.delays.calendarPopup);
           
           // Defer all heavy operations to next tick to keep handler fast
           if (event.data.type === 'calendar-oauth-success') {
@@ -479,7 +479,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
               }
               // Check status anyway in case connection succeeded
               checkCalendarStatus();
-            }, 100);
+            }, TIMING_CONSTANTS.delays.calendarPopup);
           }
         }
       };

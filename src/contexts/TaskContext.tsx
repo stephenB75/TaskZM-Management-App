@@ -1313,17 +1313,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         logger.error('Unexpected sync error:', error);
-      } finally {
-        syncLockRef.current = false;
-      }
-    },
-    [workspaceId, accessToken, user?.id, api, setTasks, setIsSyncing, setLastSync, setSyncInterval, isActiveRef, tasksRef, areTasksEqual, saveToLocalStorage, logger, toast, startTransition]
-  );
-  
-  // Update ref when callback changes to avoid dependency issues
-  React.useEffect(() => {
-    syncWithServerRef.current = syncWithServer;
-  }, [syncWithServer]);
         // On error, keep current state (might be offline)
         if (!silent) {
           const errorMessage = 'Please check your internet connection';
@@ -1346,8 +1335,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         syncLockRef.current = false;
       }
     },
-    [workspaceId, accessToken, user?.id] // Removed tasks from dependencies - using tasksRef.current instead to prevent infinite loops
+    [workspaceId, accessToken, user?.id, api, setTasks, setIsSyncing, setLastSync, setSyncInterval, isActiveRef, tasksRef, areTasksEqual, saveToLocalStorage, logger, toast, startTransition]
   );
+  
+  // Update ref when callback changes to avoid dependency issues
+  React.useEffect(() => {
+    syncWithServerRef.current = syncWithServer;
+  }, [syncWithServer]);
 
   // Activity tracking for adaptive polling
   useEffect(() => {
@@ -1505,14 +1499,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     startSyncTimer();
     
     // Update timer when interval changes (without recreating the entire effect)
-    // Check every second if interval has changed
+    // Check periodically if interval has changed
     const intervalUpdateTimer = setInterval(() => {
       const latestInterval = syncIntervalRef.current;
       // Restart timer if interval changed
       if (syncTimerRef.current && latestInterval !== syncTimerIntervalRef.current) {
         startSyncTimer();
       }
-    }, 1000);
+    }, TIMING_CONSTANTS.taskSync.intervalUpdateCheck);
 
     return () => {
       if (syncTimerRef.current) {

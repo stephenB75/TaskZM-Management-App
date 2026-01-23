@@ -139,6 +139,7 @@ export const TIMING_CONSTANTS = {
     serverProcessDelay: 1000, // 1 second - Delay to allow server to process
     networkErrorLogCooldown: 60000, // 1 minute - Don't log network errors more than once per minute
     uiUpdateDelay: 500, // 500ms - Delay for UI updates after server operations
+    intervalUpdateCheck: 1000, // 1 second - Interval for checking if sync interval has changed
   },
   
   // Drag and drop constants
