@@ -151,6 +151,18 @@ export const TASK_CARD_ICON_SIZES = {
     mobile: 12, // w-3 = 12px
     desktop: 16, // w-4 = 16px
   },
+  fileText: {
+    mobile: 12, // w-3 = 12px
+    desktop: 14, // w-3.5 = 14px
+  },
+  link: {
+    mobile: 12, // w-3 = 12px
+    desktop: 14, // w-3.5 = 14px
+  },
+  timerExpanded: {
+    mobile: 14, // w-3.5 = 14px
+    desktop: 16, // w-4 = 16px
+  },
 } as const;
 
 // Badge Sizes (font sizes increased by 10%)
@@ -435,6 +447,15 @@ export const TASK_CARD_BACKGROUNDS = {
     lavenderOpacity: 0.25, // 25% tint of lavender at top
     darkModeWhiteOpacity: 0.05, // 5% white opacity for dark mode bottom
   },
+  // Expandable section background colors
+  expandable: {
+    light: 'rgba(0, 0, 0, 0.02)', // Light mode background
+    dark: 'rgba(0, 0, 0, 0.1)', // Dark mode background
+    padding: {
+      mobile: '0.75rem', // 12px
+      desktop: '1rem', // 16px
+    },
+  },
 } as const;
 
 // Width Values
@@ -636,6 +657,34 @@ export const TASK_CARD_OPACITY = {
   overlay: 95, // opacity-95 for drag overlay
   timelineLine: {
     nextUp: 'CC', // 80% opacity hex for Next Up timeline line
+  },
+} as const;
+
+// Expandable Section Constants
+export const TASK_CARD_EXPANDABLE = {
+  // Progress circle dimensions
+  progressCircle: {
+    size: 64, // w-16 h-16 = 64px
+    radius: 28, // Circle radius
+    center: 32, // Circle center (cx, cy)
+    strokeWidth: 4, // Stroke width
+    colors: {
+      background: {
+        light: '#e5e7eb', // gray-200
+        dark: '#374151', // gray-700
+      },
+    },
+  },
+  // Avatar size in expanded section
+  avatarSize: 40, // 40px for expanded section avatar
+  // Spacing
+  spacing: {
+    gapBetween: 16, // gap-4 = 16px between progress and assignee
+    gapAssignee: 12, // gap-3 = 12px in assignee container
+    gapTracked: 6, // gap-1.5 = 6px for tracked time
+    gapDescription: 6, // gap-1.5 = 6px for description header
+    marginBottom: 16, // mb-4 = 16px for description and dependencies
+    marginBottomHeader: 8, // mb-2 = 8px for description header
   },
 } as const;
 

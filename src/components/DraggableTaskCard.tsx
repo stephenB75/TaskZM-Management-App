@@ -52,6 +52,7 @@ import {
   TASK_CARD_STANDARD_HEIGHTS,
   TASK_CARD_TIMELINE,
   TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE,
+  TASK_CARD_EXPANDABLE,
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -1107,17 +1108,17 @@ export const DraggableTaskCard = React.forwardRef<
             <div
               className="rounded-b-lg transition-all duration-300 ease-in-out overflow-hidden border-t border-gray-200/50 dark:border-border/50"
               style={{
-                padding: isMobile ? '0.75rem' : '1rem',
-                backgroundColor: isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.02)',
-                marginTop: '0',
+                padding: isMobile ? TASK_CARD_BACKGROUNDS.expandable.padding.mobile : TASK_CARD_BACKGROUNDS.expandable.padding.desktop,
+                backgroundColor: isDark ? TASK_CARD_BACKGROUNDS.expandable.dark : TASK_CARD_BACKGROUNDS.expandable.light,
+                marginTop: 0,
               }}
               onClick={(e) => e.stopPropagation()}
             >
             {/* Description Section */}
             {task.description && (
-              <div className="mb-4">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Icon name="file-text" size={14} className="text-gray-500 dark:text-gray-400" />
+              <div style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px` }}>
+                <div className="flex items-center" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px`, marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottomHeader}px` }}>
+                  <Icon name="file-text" size={isMobile ? TASK_CARD_ICON_SIZES.fileText.mobile : TASK_CARD_ICON_SIZES.fileText.desktop} className="text-gray-500 dark:text-gray-400" />
                   <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Description</span>
                 </div>
                 <div
@@ -1132,36 +1133,36 @@ export const DraggableTaskCard = React.forwardRef<
 
             {/* Dependencies Warning */}
             {task.dependencies && task.dependencies.length > 0 && (
-              <div className="mb-4 flex items-center gap-1.5 text-red-600 dark:text-red-400">
-                <Icon name="link-2" size={14} />
+              <div className="flex items-center text-red-600 dark:text-red-400" style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px`, gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px` }}>
+                <Icon name="link-2" size={isMobile ? TASK_CARD_ICON_SIZES.link.mobile : TASK_CARD_ICON_SIZES.link.desktop} />
                 <span className="font-semibold text-sm">ATTENTION: This task has a dependency.</span>
               </div>
             )}
 
             {/* Progress Circle and Assignee with Tracked Info */}
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapBetween}px` }}>
               {/* Progress Circle */}
               {task.subtasks && task.subtasks.length > 0 && (
                 <div className="flex items-center">
-                  <div className="relative w-16 h-16 flex-shrink-0">
-                    <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+                  <div className="relative flex-shrink-0" style={{ width: `${TASK_CARD_EXPANDABLE.progressCircle.size}px`, height: `${TASK_CARD_EXPANDABLE.progressCircle.size}px` }}>
+                    <svg className="transform -rotate-90" style={{ width: `${TASK_CARD_EXPANDABLE.progressCircle.size}px`, height: `${TASK_CARD_EXPANDABLE.progressCircle.size}px` }} viewBox={`0 0 ${TASK_CARD_EXPANDABLE.progressCircle.size} ${TASK_CARD_EXPANDABLE.progressCircle.size}`}>
                       <circle
-                        cx="32"
-                        cy="32"
-                        r="28"
+                        cx={TASK_CARD_EXPANDABLE.progressCircle.center}
+                        cy={TASK_CARD_EXPANDABLE.progressCircle.center}
+                        r={TASK_CARD_EXPANDABLE.progressCircle.radius}
                         fill="none"
-                        stroke={isDark ? '#374151' : '#e5e7eb'}
-                        strokeWidth="4"
+                        stroke={isDark ? TASK_CARD_EXPANDABLE.progressCircle.colors.background.dark : TASK_CARD_EXPANDABLE.progressCircle.colors.background.light}
+                        strokeWidth={TASK_CARD_EXPANDABLE.progressCircle.strokeWidth}
                       />
                       <circle
-                        cx="32"
-                        cy="32"
-                        r="28"
+                        cx={TASK_CARD_EXPANDABLE.progressCircle.center}
+                        cy={TASK_CARD_EXPANDABLE.progressCircle.center}
+                        r={TASK_CARD_EXPANDABLE.progressCircle.radius}
                         fill="none"
                         stroke={COLOR_PRIMARY}
-                        strokeWidth="4"
-                        strokeDasharray={`${2 * Math.PI * 28}`}
-                        strokeDashoffset={`${2 * Math.PI * 28 * (1 - calculateProgress(task) / 100)}`}
+                        strokeWidth={TASK_CARD_EXPANDABLE.progressCircle.strokeWidth}
+                        strokeDasharray={`${2 * Math.PI * TASK_CARD_EXPANDABLE.progressCircle.radius}`}
+                        strokeDashoffset={`${2 * Math.PI * TASK_CARD_EXPANDABLE.progressCircle.radius * (1 - calculateProgress(task) / 100)}`}
                         strokeLinecap="round"
                       />
                     </svg>
@@ -1174,12 +1175,12 @@ export const DraggableTaskCard = React.forwardRef<
 
               {/* Assignee Info with Tracked Time */}
               {task.assignedTo && task.assignedTo.length > 0 && (
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="flex items-center flex-1 min-w-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapAssignee}px` }}>
                   {task.assignedTo.slice(0, 1).map((userId) => {
                     const member = getTeamMember(userId);
                     if (!member) return null;
                     const initials = getInitials(member.name);
-                    const avatarSize = 40;
+                    const avatarSize = TASK_CARD_EXPANDABLE.avatarSize;
                     return (
                       <TooltipProvider key={userId}>
                         <Tooltip>
@@ -1243,10 +1244,10 @@ export const DraggableTaskCard = React.forwardRef<
                   })}
                   {/* Tracked Time - Inline with assignee */}
                   {task.actualTime && task.actualTime > 0 && (
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <div className="flex items-center flex-shrink-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapTracked}px` }}>
                       <Icon 
                         name="timer" 
-                        size={16}
+                        size={isMobile ? TASK_CARD_ICON_SIZES.timerExpanded.mobile : TASK_CARD_ICON_SIZES.timerExpanded.desktop}
                         className="flex-shrink-0" 
                         style={{ color: TASK_CARD_THEME_COLORS.primary }}
                       />
@@ -1262,10 +1263,10 @@ export const DraggableTaskCard = React.forwardRef<
               )}
               {/* Show tracked time even if no assignee */}
               {(!task.assignedTo || task.assignedTo.length === 0) && task.actualTime && task.actualTime > 0 && (
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex items-center flex-shrink-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapTracked}px` }}>
                   <Icon 
                     name="timer" 
-                    size={16}
+                    size={isMobile ? TASK_CARD_ICON_SIZES.timerExpanded.mobile : TASK_CARD_ICON_SIZES.timerExpanded.desktop}
                     className="flex-shrink-0" 
                     style={{ color: TASK_CARD_THEME_COLORS.primary }}
                   />
