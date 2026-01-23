@@ -280,15 +280,16 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         minHeight: `${calculatedHeight}px`,
       }}
     >
-      {/* Vertical colored line on left - positioned at left edge inside padding (like task card priority line) */}
+      {/* Vertical colored line on left - aligned with task card text start (px-2 = 8px from card edge) */}
       <div 
-        className={cn('absolute left-0 top-0 bottom-0 rounded-full', colors.accent)}
+        className={cn('absolute top-0 bottom-0 rounded-full', colors.accent)}
         style={{ 
+          left: isMobile ? '8px' : '8px', // Align with task card text start (px-2 = 0.5rem = 8px)
           width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
         }}
       />
       
-      {/* Content area - with left padding to account for vertical line and match task card content alignment */}
+      {/* Content area - with left padding to account for vertical line position and gap */}
       <div className="flex-1 py-1 flex flex-col gap-1" style={{ paddingLeft: `${CALENDAR_EVENT_DIMENSIONS.contentPadding.left}px` }}>
         {/* Header with calendar icon */}
         <div className="flex items-center gap-1.5">

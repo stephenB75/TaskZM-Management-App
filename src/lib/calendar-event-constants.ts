@@ -20,7 +20,7 @@ export const CALENDAR_EVENT_DIMENSIONS = {
     minHeight: '40px', // Minimum height for vertical accent line
   },
   contentPadding: {
-    left: 12, // 4px vertical line + 8px gap = 12px left padding for content alignment with task cards
+    left: 20, // 8px (task card text start) + 4px (vertical line width) + 8px (gap) = 20px left padding for content alignment with task cards
   },
   icon: {
     calendar: 12, // Calendar icon size
