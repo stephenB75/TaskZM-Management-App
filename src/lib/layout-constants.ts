@@ -454,10 +454,13 @@ export const EMPTY_STATE_MARGIN_BOTTOM_SMALL = '0.75rem'; // mb-3 = 0.75rem (12p
 export const EMPTY_STATE_MARGIN_BOTTOM_LARGE = '1.5rem'; // mb-6 = 1.5rem (24px)
 export const EMPTY_STATE_PADDING_X = '1rem'; // px-4 = 1rem (16px)
 // Inbox checkbox sizes for responsive layouts
-export const INBOX_CHECKBOX_SIZE_MOBILE = '14px'; // w-3.5 h-3.5 = 14px - mobile/tablet checkbox
+export const INBOX_CHECKBOX_SIZE_MOBILE = '16px'; // w-4 h-4 = 16px - standard size for mobile/tablet checkbox
 export const INBOX_CHECKBOX_SIZE_SMALL_MONITOR = '16px'; // w-4 h-4 = 16px - small monitor checkbox
-export const INBOX_CHECKBOX_SIZE_LANDSCAPE = '14px'; // w-3.5 h-3.5 = 14px - landscape mode checkbox
+export const INBOX_CHECKBOX_SIZE_LANDSCAPE = '16px'; // w-4 h-4 = 16px - standard size for landscape mode checkbox
 export const INBOX_CHECKBOX_SIZE_DESKTOP = '16px'; // w-4 h-4 = 16px - desktop checkbox
+
+// Checkbox check icon size (proportional to 16px checkbox)
+export const CHECKBOX_CHECK_ICON_SIZE = 12; // w-3 = 12px - standard check icon size for 16px checkbox
 // Inbox card shadow for mobile/tablet layout
 export const INBOX_CARD_SHADOW_MOBILE = '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)';
 
@@ -842,7 +845,7 @@ export const AUTH_SCREEN = {
 export const DIALOG_CLOSE_BUTTON = {
   mobile: {
     size: '1.5rem', // w-6 h-6 = 1.5rem (24px) - smaller for mobile
-    iconSize: '0.875rem', // w-3.5 h-3.5 = 0.875rem (14px)
+    iconSize: '1rem', // w-4 h-4 = 1rem (16px) - standard size
     top: '0.5rem', // top-2 = 0.5rem (8px)
     right: '0.5rem', // right-2 = 0.5rem (8px)
     padding: '0', // No padding - just the icon

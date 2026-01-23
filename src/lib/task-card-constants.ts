@@ -160,8 +160,8 @@ export const TASK_CARD_ICON_SIZES = {
     desktop: 12, // w-3 = 12px
   },
   checkbox: {
-    mobile: 14, // w-3.5 = 14px
-    desktop: 16, // w-4 = 16px
+    mobile: 16, // w-4 = 16px (standard size)
+    desktop: 16, // w-4 = 16px (standard size)
   },
   subtask: {
     mobile: 8, // w-2 = 8px

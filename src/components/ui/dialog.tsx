@@ -6,6 +6,7 @@ import { Icon } from "../Icon";
 
 import { cn } from "./utils";
 import { UI_GRADIENT_COLORS } from "../../lib/ui-colors";
+import { DIALOG_CLOSE_BUTTON } from "../../lib/layout-constants";
 
 function Dialog({
   ...props
@@ -76,12 +77,36 @@ const DialogContent = React.forwardRef<
     >
       {children}
       <DialogPrimitive.Close 
-        className="ring-offset-background focus:ring-ring absolute rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none text-foreground/70 hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 flex items-center justify-center p-0 w-6 h-6 top-2 right-2 sm:w-8 sm:h-8 sm:top-4 sm:right-4"
+        className={cn(
+          "ring-offset-background focus:ring-ring absolute rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none text-foreground/70 hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 flex items-center justify-center p-0",
+          // Mobile: use mobile constants via inline styles, Desktop: use Tailwind classes
+          "sm:w-8 sm:h-8 sm:top-4 sm:right-4"
+        )}
+        style={{
+          width: DIALOG_CLOSE_BUTTON.mobile.size,
+          height: DIALOG_CLOSE_BUTTON.mobile.size,
+          top: DIALOG_CLOSE_BUTTON.mobile.top,
+          right: DIALOG_CLOSE_BUTTON.mobile.right,
+          padding: DIALOG_CLOSE_BUTTON.mobile.padding,
+        }}
       >
         <Icon 
           name="x" 
-          size={14}
-          className="w-3.5 h-3.5 sm:w-4 sm:h-4" 
+          size={parseInt(DIALOG_CLOSE_BUTTON.mobile.iconSize.replace('rem', '')) * 16}
+          className="sm:hidden"
+          style={{
+            width: DIALOG_CLOSE_BUTTON.mobile.iconSize,
+            height: DIALOG_CLOSE_BUTTON.mobile.iconSize,
+          }}
+        />
+        <Icon 
+          name="x" 
+          size={parseInt(DIALOG_CLOSE_BUTTON.desktop.iconSize.replace('rem', '')) * 16}
+          className="hidden sm:block"
+          style={{
+            width: DIALOG_CLOSE_BUTTON.desktop.iconSize,
+            height: DIALOG_CLOSE_BUTTON.desktop.iconSize,
+          }}
         />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
