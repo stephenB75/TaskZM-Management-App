@@ -19,6 +19,8 @@ import {
   HEADER_PADDING_Y_MOBILE,
   HEADER_PADDING_X_DESKTOP,
   HEADER_PADDING_Y_DESKTOP,
+  HEADER_CONTENT_PADDING_LEFT_MOBILE,
+  HEADER_CONTENT_PADDING_LEFT_DESKTOP,
   HEADER_ICON_SIZE_SMALL,
   HEADER_ICON_SIZE_SMALL_SCREEN,
   HEADER_ICON_SIZE_BUTTON_SMALL,
@@ -201,8 +203,8 @@ export function AppHeader({
             ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
             : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
           borderColor: HEADER_BORDER_COLOR,
-          paddingLeft: HEADER_PADDING_X_MOBILE,
-          paddingRight: HEADER_PADDING_X_MOBILE,
+          paddingLeft: '0', // No left padding - header extends to left browser edge
+          paddingRight: HEADER_PADDING_X_MOBILE, // Keep original right padding
           // Add safe area inset to top padding to account for notched devices
           // Header extends into safe area, content is pushed down below notch
           paddingTop: `calc(${HEADER_PADDING_Y_MOBILE} + env(safe-area-inset-top, 0px))`,
@@ -216,7 +218,7 @@ export function AppHeader({
           transition: 'none', // Disable transitions for instant theme updates
         }}
       >
-        <div className="flex items-center justify-between" style={{ gap: HEADER_GAP_MEDIUM }}>
+        <div className="flex items-center justify-between" style={{ gap: HEADER_GAP_MEDIUM, paddingLeft: HEADER_CONTENT_PADDING_LEFT_MOBILE }}>
           <div className="flex items-center min-w-0 flex-1" style={{ gap: HEADER_GAP_MEDIUM }}>
             {/* Back Button (if onBack provided) or Menu Button */}
             {onBack ? (
@@ -281,9 +283,9 @@ export function AppHeader({
               ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
               : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
             borderColor: HEADER_BORDER_COLOR,
-            // Responsive padding: reduce for small monitors and landscape
-            paddingLeft: isSmallMonitor && isLandscape ? '0.75rem' : HEADER_SIDE_PANEL_PADDING_X,
-            paddingRight: isSmallMonitor && isLandscape ? '0.75rem' : HEADER_SIDE_PANEL_PADDING_X,
+            // No horizontal padding - header extends to panel edge
+            paddingLeft: '0',
+            paddingRight: '0',
             paddingTop: isSmallMonitor && isLandscape ? '0.375rem' : HEADER_PADDING_Y_DESKTOP,
             paddingBottom: isSmallMonitor && isLandscape ? '0.375rem' : HEADER_PADDING_Y_DESKTOP,
             minHeight: `${HEADER_HEIGHT}px`, 
@@ -294,7 +296,7 @@ export function AppHeader({
         >
           <motion.div 
             className="flex items-center justify-between" 
-            style={{ gap: HEADER_SIDE_PANEL_GAP_MAIN }}
+            style={{ gap: HEADER_SIDE_PANEL_GAP_MAIN, paddingLeft: isSmallMonitor && isLandscape ? '0.75rem' : HEADER_SIDE_PANEL_PADDING_X, paddingRight: isSmallMonitor && isLandscape ? '0.75rem' : HEADER_SIDE_PANEL_PADDING_X }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: HEADER_SIDE_PANEL_ANIMATION_DURATION_CONTENT, delay: HEADER_SIDE_PANEL_ANIMATION_DELAY_CONTENT }}
@@ -417,9 +419,9 @@ export function AppHeader({
               : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
             backgroundImage: getHeaderGradient(isDark),
             borderColor: HEADER_BORDER_COLOR,
-            // Responsive padding: reduce for small monitors and landscape views
-            paddingLeft: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_PADDING_X_DESKTOP),
-            paddingRight: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_PADDING_X_DESKTOP),
+            // No left padding - header extends to left browser edge
+            paddingLeft: '0',
+            paddingRight: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_PADDING_X_DESKTOP), // Keep original right padding
             paddingTop: isSmallMonitor && isLandscape ? '0.375rem' : (isSmallMonitor ? HEADER_PADDING_Y_DESKTOP : HEADER_PADDING_Y_DESKTOP),
             paddingBottom: isSmallMonitor && isLandscape ? '0.375rem' : (isSmallMonitor ? HEADER_PADDING_Y_DESKTOP : HEADER_PADDING_Y_DESKTOP),
             minHeight: `${HEADER_HEIGHT}px`, 
@@ -436,7 +438,8 @@ export function AppHeader({
           {/* Static container for logo and title - no animations */}
           <div 
             className="flex h-full items-center"
-            style={{ 
+            style={{
+              paddingLeft: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_CONTENT_PADDING_LEFT_DESKTOP), // Left side internal spacing only 
               // Responsive gap: smaller for small monitors and landscape
               gap: isSmallMonitor && isLandscape 
                 ? HEADER_GAP_XSMALL 

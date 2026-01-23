@@ -24,10 +24,13 @@ export const HEADER_MOBILE_SPACER_HEIGHT = 73; // Matches header height exactly 
 export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 73px + safe area
 
 // Header-specific constants
-export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px)
+export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px) - right padding only
 export const HEADER_PADDING_Y_MOBILE = '1rem'; // py-4 = 1rem (16px)
-export const HEADER_PADDING_X_DESKTOP = '0.5rem'; // px-2 = 0.5rem (8px) - minimal padding to eliminate gap from screen border
+export const HEADER_PADDING_X_DESKTOP = '0.5rem'; // px-2 = 0.5rem (8px) - right padding only
 export const HEADER_PADDING_Y_DESKTOP = '0.5rem'; // py-2 = 0.5rem (8px)
+// Internal content padding for left side only (applied to inner container)
+export const HEADER_CONTENT_PADDING_LEFT_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px) - left side internal spacing
+export const HEADER_CONTENT_PADDING_LEFT_DESKTOP = '1rem'; // px-4 = 1rem (16px) - left side internal spacing
 export const HEADER_ICON_SIZE_SMALL = '1rem'; // w-4 h-4 = 1rem (16px)
 export const HEADER_BUTTON_SIZE = '2rem'; // h-8 w-8 = 2rem (32px)
 export const HEADER_BUTTON_SIZE_SMALL_SCREEN = '1.75rem'; // h-7 w-7 = 1.75rem (28px) - for laptops and small screens
