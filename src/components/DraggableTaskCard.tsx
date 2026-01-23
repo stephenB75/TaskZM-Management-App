@@ -166,31 +166,8 @@ export const DraggableTaskCard = React.forwardRef<
     // AI Task Breakdown
     const { breakdown } = useTaskBreakdown(task.title || '', task.description || '', { enabled: true });
 
-    // Sync AI Suggestions steps to subtasks (only add new steps, don't overwrite existing)
-    React.useEffect(() => {
-      if (breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0) {
-        const existingSubtaskTitles = new Set((task.subtasks || []).map(st => st.title.toLowerCase().trim()));
-        const existingSubtaskIds = new Set((task.subtasks || []).map(st => st.id));
-        const stepsToAdd = breakdown.actionPlan.steps
-          .filter(step => {
-            const stepTitle = step.action.toLowerCase().trim();
-            const stepId = `ai-step-${task.id}-${step.order || breakdown.actionPlan.steps.indexOf(step) + 1}`;
-            // Only add if title doesn't exist AND id doesn't exist (avoid duplicates)
-            return !existingSubtaskTitles.has(stepTitle) && !existingSubtaskIds.has(stepId);
-          })
-          .map((step, idx) => ({
-            id: `ai-step-${task.id}-${step.order || idx + 1}`,
-            title: step.action,
-            completed: false,
-            createdAt: new Date().toISOString(),
-          }));
-
-        if (stepsToAdd.length > 0) {
-          const updatedSubtasks = [...(task.subtasks || []), ...stepsToAdd];
-          updateTask(task.id, { subtasks: updatedSubtasks });
-        }
-      }
-    }, [breakdown?.actionPlan?.steps, task.id, task.subtasks, updateTask]);
+    // Removed auto-sync effect - user subtasks and AI suggestions are now separate
+    // AI Suggestions will show user subtasks if they exist, otherwise show AI suggestions
     
     // Use task.id for all tasks to ensure timer sync across all components
     // (TaskDialog, TaskCard, TodayAgenda) - when timer is activated in one location,
@@ -675,15 +652,29 @@ export const DraggableTaskCard = React.forwardRef<
           </div>
 
           {/* AI Suggestions - Directly underneath headline (always visible) */}
-          {breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 && (() => {
+          {/* Show user subtasks if they exist, otherwise show AI suggestions */}
+          {(() => {
+            // Check if user has custom subtasks (not from AI)
+            const hasUserSubtasks = task.subtasks && task.subtasks.length > 0 && 
+              task.subtasks.some(st => !st.id.startsWith(`ai-step-${task.id}-`));
+            
+            // Determine what to show: user subtasks or AI suggestions
+            const itemsToShow = hasUserSubtasks 
+              ? task.subtasks.filter(st => !st.id.startsWith(`ai-step-${task.id}-`)) // Show only user-created subtasks
+              : (breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 
+                  ? breakdown.actionPlan.steps 
+                  : null);
+            
+            if (!itemsToShow || itemsToShow.length === 0) return null;
+            
             // Get domain-specific colors
-            const domainColors = breakdown.domain === 'business' 
+            const domainColors = breakdown?.domain === 'business' 
               ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800', border: isDark ? 'border-blue-800/30' : 'border-blue-200' }
-              : breakdown.domain === 'home'
+              : breakdown?.domain === 'home'
               ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800', border: isDark ? 'border-green-800/30' : 'border-green-200' }
-              : breakdown.domain === 'personal'
+              : breakdown?.domain === 'personal'
               ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800', border: isDark ? 'border-purple-800/30' : 'border-purple-200' }
-              : breakdown.domain === 'world'
+              : breakdown?.domain === 'world'
               ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800', border: isDark ? 'border-orange-800/30' : 'border-orange-200' }
               : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800', border: isDark ? 'border-gray-800/30' : 'border-gray-200' };
             
@@ -692,6 +683,11 @@ export const DraggableTaskCard = React.forwardRef<
             const maxStepsToShow = isShortTask 
               ? ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.SHORT_TASK 
               : ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.NORMAL_TASK;
+            
+            // Calculate total estimated minutes for AI suggestions
+            const totalEstimatedMinutes = hasUserSubtasks 
+              ? 0 // User subtasks don't have estimated time
+              : (breakdown?.actionPlan?.totalEstimatedMinutes || 0);
             
             return (
               <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
@@ -702,13 +698,19 @@ export const DraggableTaskCard = React.forwardRef<
                   </span>
                 </div>
                 <div className="space-y-0.5">
-                  {breakdown.actionPlan.steps.slice(0, maxStepsToShow).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => {
-                    // Find corresponding subtask
-                    const stepSubtask = task.subtasks?.find(st => 
-                      st.title.toLowerCase().trim() === step.action.toLowerCase().trim() ||
-                      st.id === `ai-step-${task.id}-${step.order || idx + 1}`
-                    );
-                    const isCompleted = stepSubtask?.completed || false;
+                  {(hasUserSubtasks 
+                    ? itemsToShow.slice(0, maxStepsToShow)
+                    : (itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).slice(0, maxStepsToShow)
+                  ).map((item: any, idx: number) => {
+                    // Handle both user subtasks and AI steps
+                    const isUserSubtask = hasUserSubtasks;
+                    const itemTitle = isUserSubtask ? item.title : item.action;
+                    const itemId = isUserSubtask ? item.id : `ai-step-${task.id}-${item.order || idx + 1}`;
+                    const estimatedMinutes = isUserSubtask ? 0 : (item.estimatedMinutes || 0);
+                    const isCompleted = isUserSubtask ? item.completed : (task.subtasks?.find(st => 
+                      st.title.toLowerCase().trim() === itemTitle.toLowerCase().trim() ||
+                      st.id === itemId
+                    )?.completed || false);
 
                     const handleToggle = async (e: React.MouseEvent) => {
                       e.stopPropagation();
@@ -719,29 +721,44 @@ export const DraggableTaskCard = React.forwardRef<
                         return;
                       }
 
-                      if (stepSubtask) {
-                        // Update existing subtask
+                      if (isUserSubtask) {
+                        // Update user subtask
                         const updatedSubtasks = task.subtasks.map(st =>
-                          st.id === stepSubtask.id
+                          st.id === itemId
                             ? { ...st, completed: !st.completed }
                             : st
                         );
                         await updateTask(task.id, { subtasks: updatedSubtasks });
                       } else {
-                        // Create new subtask
-                        const newSubtask = {
-                          id: `ai-step-${task.id}-${step.order || idx + 1}`,
-                          title: step.action,
-                          completed: true,
-                          createdAt: new Date().toISOString(),
-                        };
-                        const updatedSubtasks = [...(task.subtasks || []), newSubtask];
-                        await updateTask(task.id, { subtasks: updatedSubtasks });
+                        // Handle AI step
+                        const stepSubtask = task.subtasks?.find(st => 
+                          st.title.toLowerCase().trim() === itemTitle.toLowerCase().trim() ||
+                          st.id === itemId
+                        );
+                        if (stepSubtask) {
+                          // Update existing subtask
+                          const updatedSubtasks = task.subtasks.map(st =>
+                            st.id === stepSubtask.id
+                              ? { ...st, completed: !st.completed }
+                              : st
+                          );
+                          await updateTask(task.id, { subtasks: updatedSubtasks });
+                        } else {
+                          // Create new subtask from AI step
+                          const newSubtask = {
+                            id: itemId,
+                            title: itemTitle,
+                            completed: true,
+                            createdAt: new Date().toISOString(),
+                          };
+                          const updatedSubtasks = [...(task.subtasks || []), newSubtask];
+                          await updateTask(task.id, { subtasks: updatedSubtasks });
+                        }
                       }
                     };
 
                     return (
-                      <div key={idx} className="flex items-start gap-1.5">
+                      <div key={isUserSubtask ? itemId : idx} className="flex items-start gap-1.5">
                         <Checkbox
                           checked={isCompleted}
                           onCheckedChange={(checked) => {
@@ -756,24 +773,24 @@ export const DraggableTaskCard = React.forwardRef<
                           }}
                         />
                         <span className={cn("leading-tight flex-1", domainColors.textLight, isCompleted && "line-through opacity-60")} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                          {step.action}
+                          {itemTitle}
                         </span>
-                        {step.estimatedMinutes > 0 && (
+                        {!isUserSubtask && estimatedMinutes > 0 && (
                           <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                            {step.estimatedMinutes}m
+                            {estimatedMinutes}m
                           </span>
                         )}
                       </div>
                     );
                   })}
-                  {breakdown.actionPlan.steps.length > maxStepsToShow && (
+                  {!hasUserSubtasks && (itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).length > maxStepsToShow && (
                     <div className={cn("mt-0.5", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                      +{breakdown.actionPlan.steps.length - maxStepsToShow} more steps
+                      +{(itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).length - maxStepsToShow} more steps
                     </div>
                   )}
-                  {breakdown.actionPlan.totalEstimatedMinutes > 0 && (
+                  {!hasUserSubtasks && totalEstimatedMinutes > 0 && (
                     <div className={cn("mt-0.5 pt-0.5 border-t", domainColors.border)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                      Total: {Math.floor(breakdown.actionPlan.totalEstimatedMinutes / 60)}h {breakdown.actionPlan.totalEstimatedMinutes % 60}m
+                      Total: {Math.floor(totalEstimatedMinutes / 60)}h {totalEstimatedMinutes % 60}m
                     </div>
                   )}
                 </div>
@@ -901,80 +918,8 @@ export const DraggableTaskCard = React.forwardRef<
               </div>
             )}
 
-            {/* Subtasks Display with Checkboxes */}
+            {/* Add New Subtask Input - Subtasks list removed, only input field remains */}
             <div className="space-y-1.5" style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px` }}>
-              <div className="flex items-center gap-1.5">
-                <Icon name="list-checks" size={isMobile ? TASK_CARD_ICON_SIZES.subtask.mobile : TASK_CARD_ICON_SIZES.subtask.desktop} className="text-gray-600 dark:text-gray-400" />
-                <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Subtasks</span>
-              </div>
-              {task.subtasks && task.subtasks.length > 0 && (
-                <div className="space-y-1">
-                  {task.subtasks.map((subtask) => {
-                    const handleSubtaskToggle = async (e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      if (!permissions.canEditTask) {
-                        toast.error('Permission Denied', {
-                          description: 'Viewer role does not have permission to edit tasks.',
-                        });
-                        return;
-                      }
-                      const updatedSubtasks = task.subtasks.map((st) =>
-                        st.id === subtask.id
-                          ? { ...st, completed: !st.completed }
-                          : st
-                      );
-                      await updateTask(task.id, { subtasks: updatedSubtasks });
-                    };
-
-                    const handleSubtaskDelete = async (e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      if (!permissions.canEditTask) {
-                        toast.error('Permission Denied', {
-                          description: 'Viewer role does not have permission to edit tasks.',
-                        });
-                        return;
-                      }
-                      const updatedSubtasks = task.subtasks.filter((st) => st.id !== subtask.id);
-                      await updateTask(task.id, { subtasks: updatedSubtasks });
-                    };
-
-                    return (
-                      <div key={subtask.id} className="flex items-start gap-2 group">
-                        <Checkbox
-                          checked={subtask.completed}
-                          onCheckedChange={(checked) => {
-                            const syntheticEvent = { stopPropagation: () => {} } as React.MouseEvent;
-                            handleSubtaskToggle(syntheticEvent);
-                          }}
-                          onClick={handleSubtaskToggle}
-                          className="mt-0.5 flex-shrink-0"
-                          style={{ 
-                            width: `${isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}px`,
-                            height: `${isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}px`,
-                          }}
-                        />
-                        <span 
-                          className={cn(
-                            "text-sm flex-1",
-                            subtask.completed && "line-through text-gray-500 dark:text-gray-500",
-                            !subtask.completed && "text-gray-700 dark:text-gray-300"
-                          )}
-                        >
-                          {subtask.title}
-                        </span>
-                        <button
-                          onClick={handleSubtaskDelete}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                          aria-label="Delete subtask"
-                        >
-                          <Icon name="x" size={isMobile ? TASK_CARD_ICON_SIZES.subtask.mobile : TASK_CARD_ICON_SIZES.subtask.desktop} className="text-gray-500 dark:text-gray-400" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {/* Add New Subtask Input */}
               <div className="flex items-center gap-2 pt-1">
                 <Input
                   type="text"
@@ -1110,40 +1055,7 @@ export const DraggableTaskCard = React.forwardRef<
                       </TooltipProvider>
                     );
                   })}
-                  {/* Tracked Time - Inline with assignee */}
-                  {task.actualTime && task.actualTime > 0 && (
-                    <div className="flex items-center flex-shrink-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapTracked}px` }}>
-                      <Icon 
-                        name="timer" 
-                        size={isMobile ? TASK_CARD_ICON_SIZES.timerExpanded.mobile : TASK_CARD_ICON_SIZES.timerExpanded.desktop}
-                        className="flex-shrink-0" 
-                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                      />
-                      <span 
-                        className="text-sm font-medium whitespace-nowrap"
-                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                      >
-                        {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-              {/* Show tracked time even if no assignee */}
-              {(!task.assignedTo || task.assignedTo.length === 0) && task.actualTime && task.actualTime > 0 && (
-                <div className="flex items-center flex-shrink-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapTracked}px` }}>
-                  <Icon 
-                    name="timer" 
-                    size={isMobile ? TASK_CARD_ICON_SIZES.timerExpanded.mobile : TASK_CARD_ICON_SIZES.timerExpanded.desktop}
-                    className="flex-shrink-0" 
-                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                  />
-                  <span 
-                    className="text-sm font-medium whitespace-nowrap"
-                    style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                  >
-                    {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
-                  </span>
+                  {/* Tracked Time removed from expanded section - already shown at top */}
                 </div>
               )}
             </div>
