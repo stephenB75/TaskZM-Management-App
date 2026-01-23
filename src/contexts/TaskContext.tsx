@@ -157,6 +157,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const consecutiveNoChangeSyncsRef = useRef<number>(0); // Track backoff when no changes detected
   const consecutiveNetworkErrorsRef = useRef<number>(0); // Track consecutive network errors for backoff
   const syncIntervalRef = useRef<number>(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Keep latest interval in ref to avoid stale closures
+  const syncWithServerRef = useRef<((wsId?: string, silent?: boolean) => Promise<void>) | null>(null); // Store latest sync function to avoid dependency issues
   const lastErrorToastRef = useRef<{ message: string; timestamp: number } | null>(null); // Track last error toast to prevent duplicates
   const lastNetworkErrorLogRef = useRef<number>(0); // Track last network error log time to suppress repeated warnings
   // Lock to prevent concurrent next occurrence creation for the same recurring task
@@ -1312,6 +1313,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         logger.error('Unexpected sync error:', error);
+      } finally {
+        syncLockRef.current = false;
+      }
+    },
+    [workspaceId, accessToken, user?.id, api, setTasks, setIsSyncing, setLastSync, setSyncInterval, isActiveRef, tasksRef, areTasksEqual, saveToLocalStorage, logger, toast, startTransition]
+  );
+  
+  // Update ref when callback changes to avoid dependency issues
+  React.useEffect(() => {
+    syncWithServerRef.current = syncWithServer;
+  }, [syncWithServer]);
         // On error, keep current state (might be offline)
         if (!silent) {
           const errorMessage = 'Please check your internet connection';
@@ -1430,7 +1442,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const runBackgroundSync = async () => {
       try {
         // Only sync tasks on regular interval (most frequently changing)
-        await syncWithServer(workspaceId, true); // Silent sync
+        if (syncWithServerRef.current) {
+        await syncWithServerRef.current(workspaceId, true);
+      } // Silent sync
         
         // Sync folders more frequently (every interval) for better cross-device sync
         // Projects and settings change less frequently, so sync them every N intervals based on activity
@@ -1506,7 +1520,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
       clearInterval(intervalUpdateTimer);
     };
-  }, [autoSyncEnabled, workspaceId, accessToken, syncWithServer]); // Removed syncInterval from dependencies to prevent refresh loops
+  }, [autoSyncEnabled, workspaceId, accessToken]); // Removed syncWithServer and syncInterval from dependencies to prevent refresh loops
 
   // Debounce helper to prevent multiple rapid syncs
   const lastEventSyncRef = useRef<number>(0);
@@ -1538,7 +1552,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     
     try {
       // Always sync tasks (most frequently changing)
-      await syncWithServer(workspaceId, true);
+      if (syncWithServerRef.current) {
+        await syncWithServerRef.current(workspaceId, true);
+      }
       
       // Only sync other resources on full sync
       if (shouldFullSync) {
@@ -1551,7 +1567,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       logger.error('Debounced sync error:', error);
     }
-  }, [workspaceId, accessToken, syncWithServer]);
+  }, [workspaceId, accessToken]); // Removed syncWithServer from dependencies
 
   // REMOVED: Visibility change handler that triggers syncs on tab switch
   // This was causing app refreshes when users switched tabs/apps
@@ -2175,8 +2191,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         debouncedSync(false);
         // Also trigger a direct sync after a short delay to ensure other devices get updates quickly
         setTimeout(() => {
-          if (workspaceId && accessToken) {
-            syncWithServer(workspaceId, false).catch(err => {
+          if (workspaceId && accessToken && syncWithServerRef.current) {
+            syncWithServerRef.current(workspaceId, false).catch((err: any) => {
               logger.debug('Background sync after task update:', err);
             });
           }
@@ -2215,8 +2231,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               debouncedSync(false);
               // Also trigger a direct sync after a short delay to ensure other devices get updates quickly
               setTimeout(() => {
-                if (workspaceId && accessToken) {
-                  syncWithServer(workspaceId, false).catch(err => {
+                if (workspaceId && accessToken && syncWithServerRef.current) {
+                  syncWithServerRef.current(workspaceId, false).catch((err: any) => {
                     logger.debug('Background sync after task update retry:', err);
                   });
                 }
@@ -2281,7 +2297,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         nextOccurrenceCreationLock.current.delete(taskId);
       }
     }
-  }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrenceDate, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync, syncWithServer]);
+  }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrenceDate, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]); // Removed syncWithServer from dependencies
 
   const deleteTask = useCallback(async (taskId: string) => {
     updateActivity(); // Track demo user activity

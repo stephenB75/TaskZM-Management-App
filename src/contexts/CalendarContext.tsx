@@ -64,6 +64,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const isSyncingRef = useRef(false);
   const lastAutoSyncRef = useRef<number>(0);
   const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const syncAppleCalendarInternalRef = useRef<((silent?: boolean) => Promise<boolean>) | null>(null);
   
   // Calendar sync interval - use constant from TIMING_CONSTANTS
   const CALENDAR_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.syncInterval;
@@ -957,9 +958,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     // Trigger initial sync after setup
     // Use a small delay to ensure setup is complete
     setTimeout(() => {
-      syncAppleCalendarInternal(false);
+      if (syncAppleCalendarInternalRef.current) {
+        syncAppleCalendarInternalRef.current(false);
+      }
     }, TIMING_CONSTANTS.intervals.taskContext); // Use task context delay constant (1 second)
-  }, [user, calendarStatus, syncAppleCalendarInternal]);
+  }, [user, calendarStatus]); // Removed syncAppleCalendarInternal from dependencies
 
   // Automatic Apple Calendar sync on mount (if connected)
   // Defer to idle time to avoid blocking initial render and causing performance violations
@@ -998,7 +1001,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         (window as any).cancelIdleCallback(initialSyncTimer);
       }
     };
-  }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal]);
+  }, [user, accessToken, calendarStatus.apple]); // Removed syncAppleCalendarInternal from dependencies
 
   // Periodic automatic sync for Apple Calendar
   useEffect(() => {
@@ -1012,9 +1015,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
     
     // Set up periodic sync
+    // Use ref to avoid recreating interval when callback changes
     autoSyncIntervalRef.current = setInterval(() => {
       console.debug('Periodic Apple Calendar sync triggered...');
-      syncAppleCalendarInternal(true);
+      if (syncAppleCalendarInternalRef.current) {
+        syncAppleCalendarInternalRef.current(true);
+      }
     }, CALENDAR_SYNC_INTERVAL);
     
     return () => {
@@ -1023,7 +1029,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         autoSyncIntervalRef.current = null;
       }
     };
-  }, [user, accessToken, calendarStatus.apple, syncAppleCalendarInternal, CALENDAR_SYNC_INTERVAL]);
+  }, [user, accessToken, calendarStatus.apple]); // Removed syncAppleCalendarInternal and CALENDAR_SYNC_INTERVAL from dependencies
 
   // REMOVED: Visibility change handlers that trigger syncs on tab switch
   // These were causing app refreshes when users switched tabs/apps
