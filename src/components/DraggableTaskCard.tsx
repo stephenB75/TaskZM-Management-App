@@ -515,7 +515,7 @@ export const DraggableTaskCard = React.forwardRef<
           <div
             className={cn(
               "rounded-lg relative box-border flex flex-col",
-              isExpanded ? "overflow-visible" : "overflow-hidden", // Allow overflow when expanded
+              isExpanded ? "overflow-visible" : "overflow-hidden", // Strictly hide overflow when collapsed to enforce size guide
               isExpanded && "rounded-b-none", // Remove bottom radius when expanded
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
@@ -527,17 +527,13 @@ export const DraggableTaskCard = React.forwardRef<
               `${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
-              // Padding: based on components, not description (description is in dropdown)
-              // Tasks with components: standard padding
-              ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
-                (isMobile ? TASK_CARD_SPACING.medium.mobile.withComponents : TASK_CARD_SPACING.medium.desktop.withComponents),
-              // Tasks without components: minimal padding
-              !((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.assignedTo && task.assignedTo.length > 0)) && 
-                (isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop),
+              // Padding: minimal padding for collapsed cards
+              isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
             )}
           style={{
+            // Strictly enforce size guide: exact height when collapsed, auto when expanded
             height: isExpanded ? 'auto' : `${cardHeight}px`,
-            minHeight: isExpanded ? `${cardHeight}px` : `${cardHeight}px`,
+            minHeight: isExpanded ? 'auto' : `${cardHeight}px`,
             maxHeight: isExpanded ? 'none' : `${cardHeight}px`,
             boxSizing: 'border-box', // Include padding in height calculation
             flexShrink: 0, // Prevent flex from shrinking the card
@@ -778,7 +774,7 @@ export const DraggableTaskCard = React.forwardRef<
               )}
             </div>
 
-            {/* Chevron to Expand/Collapse */}
+            {/* Chevron to Expand/Collapse - Show if there's description, subtasks, dependencies, or assignee to expand */}
             {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0) || (task.assignedTo && task.assignedTo.length > 0)) && (
               <button
                 onClick={(e) => {
@@ -786,6 +782,7 @@ export const DraggableTaskCard = React.forwardRef<
                   setIsExpanded(!isExpanded);
                 }}
                 className="flex-shrink-0 hover:opacity-80 transition-opacity p-1"
+                aria-label={isExpanded ? "Collapse task details" : "Expand task details"}
               >
                 <Icon 
                   name={isExpanded ? "chevron-left" : "chevron-right"}
