@@ -97,14 +97,22 @@ export const DraggableTaskCard = React.forwardRef<
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
     const isMobile = useIsMobile();
+    // Use a unique key for each task instance to ensure fresh state on mount
+    // This ensures cards always start collapsed, even if React reuses component instances
+    const taskInstanceKey = `${task.id}-${droppableId}`;
     const [isExpanded, setIsExpanded] = React.useState(false);
     const [zoomScale, setZoomScale] = React.useState(1);
     const cardRef = React.useRef<HTMLDivElement>(null);
+    const previousTaskInstanceKeyRef = React.useRef<string | null>(null);
 
-    // Reset expanded state when task changes to ensure cards always start collapsed
+    // Reset expanded state when task instance changes to ensure cards always start collapsed
+    // This runs on mount and whenever the task instance changes
     React.useEffect(() => {
-      setIsExpanded(false);
-    }, [task.id, droppableId]);
+      if (previousTaskInstanceKeyRef.current === null || previousTaskInstanceKeyRef.current !== taskInstanceKey) {
+        setIsExpanded(false);
+        previousTaskInstanceKeyRef.current = taskInstanceKey;
+      }
+    }, [taskInstanceKey]);
 
     // Detect zoom scale from parent container
     React.useEffect(() => {
