@@ -284,7 +284,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
       <div 
         className={cn('absolute top-0 bottom-0 rounded-full', colors.accent)}
         style={{ 
-          left: isMobile ? '8px' : '8px', // Align with task card text start (px-2 = 0.5rem = 8px)
+          left: `${CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset}px`, // Align with task card text start (px-2 = 0.5rem = 8px)
           width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
         }}
       />
