@@ -245,37 +245,13 @@ export const DraggableTaskCard = React.forwardRef<
       return TASK_CARD_PRIORITY_COLORS[priority]?.badge || TASK_CARD_PRIORITY_COLORS.default.badge;
     };
 
-    // Get priority-based tab background color
+    // Get priority-based tab background color - using constants (NO HARDCODE)
     const getPriorityTabBackgroundColor = (
       priority: Task["priority"],
     ): string => {
-      // Map priority to background colors - vibrant and saturated to clearly show priority level
-      const colorMap = {
-        urgent: {
-          light: '#FCA5A5', // red-300 - more vibrant red
-          dark: 'rgba(220, 38, 38, 0.9)', // red-600/90 - more saturated
-        },
-        high: {
-          light: '#FDBA74', // orange-300 - more vibrant orange
-          dark: 'rgba(234, 88, 12, 0.9)', // orange-600/90 - more saturated
-        },
-        medium: {
-          light: '#93C5FD', // blue-300 - more vibrant blue
-          dark: 'rgba(37, 99, 235, 0.9)', // blue-600/90 - more saturated
-        },
-        low: {
-          light: '#D1D5DB', // gray-300 - more visible gray
-          dark: 'rgba(107, 114, 128, 0.9)', // gray-500/90 - more visible
-        },
-        default: {
-          light: '#D1D5DB', // gray-300
-          dark: 'rgba(107, 114, 128, 0.7)', // gray-500/70
-        },
-      };
-      
       const priorityKey = priority || 'default';
-      const colors = colorMap[priorityKey] || colorMap.default;
-      return isDark ? colors.dark : colors.light;
+      const priorityColors = TASK_CARD_PRIORITY_COLORS[priorityKey] || TASK_CARD_PRIORITY_COLORS.default;
+      return isDark ? priorityColors.tab.dark : priorityColors.tab.light;
     };
 
     // Format duration display
@@ -691,7 +667,7 @@ export const DraggableTaskCard = React.forwardRef<
             return (
               <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: '0.5rem', marginRight: '0.5rem' }}>
                 <div className="flex items-center gap-1 mb-1">
-                  <Icon name="sparkles" size={12} className={domainColors.text} weight="duotone" />
+                  <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={domainColors.text} weight="duotone" />
                   <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                     AI Suggestions
                   </span>
@@ -751,7 +727,7 @@ export const DraggableTaskCard = React.forwardRef<
                         }}
                         className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       >
-                        <Icon name="stop" size={16} className="text-gray-700 dark:text-gray-300" weight="fill" />
+                        <Icon name="stop" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className="text-gray-700 dark:text-gray-300" weight="fill" />
                       </button>
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-1">Tracking ....</span>
                     </>
@@ -773,7 +749,7 @@ export const DraggableTaskCard = React.forwardRef<
                 <div className="flex items-center gap-1">
                   <Icon 
                     name="timer" 
-                    size={16}
+                    size={isMobile ? TASK_CARD_ICON_SIZES.timerInline.mobile : TASK_CARD_ICON_SIZES.timerInline.desktop}
                     className="flex-shrink-0" 
                     style={{ color: TASK_CARD_THEME_COLORS.primary }}
                   />
