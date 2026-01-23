@@ -714,7 +714,7 @@ export const DraggableTaskCard = React.forwardRef<
             );
           })()}
 
-            {/* Pomodoro Controls + Tracked Info + Chevron - Inline underneath AI Action Plan */}
+            {/* Pomodoro Controls + Tracked Info + Chevron - Inline underneath AI Suggestions */}
           <div className={cn("flex items-center justify-between px-2", isMobile ? "py-1" : "py-1.5")}>
             <div className="flex items-center gap-1.5 flex-1">
               {/* Pomodoro Play/Pause/Stop Controls */}
@@ -774,8 +774,8 @@ export const DraggableTaskCard = React.forwardRef<
               )}
             </div>
 
-            {/* Chevron to Expand/Collapse - Show if there's description, subtasks, dependencies, or assignee to expand */}
-            {(task.description || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0) || (task.assignedTo && task.assignedTo.length > 0)) && (
+            {/* Chevron to Expand/Collapse - Always show if there's any expandable content */}
+            {(task.description || (breakdown?.actionPlan?.steps && breakdown.actionPlan.steps.length > 0) || (task.subtasks && task.subtasks.length > 0) || (task.dependencies && task.dependencies.length > 0) || (task.assignedTo && task.assignedTo.length > 0)) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1112,6 +1112,7 @@ export const DraggableTaskCard = React.forwardRef<
               }}
               onClick={(e) => e.stopPropagation()}
             >
+
             {/* Description Section */}
             {task.description && (
               <div style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px` }}>
