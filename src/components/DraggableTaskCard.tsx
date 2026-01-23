@@ -398,38 +398,38 @@ export const DraggableTaskCard = React.forwardRef<
       // Use AI Duration Estimator instead of hardcoded fallback
       const effectiveEstimatedTime = hasEstimatedTime ? currentEstimatedTimeValue! : getTaskMinutes(task);
       
-      // Use new size guide: 15=200px, 20=250px, 25=280px, 30=320px, 35=380px, 40=430px, 45=480px, 50=520px, 60=580px, 70=600px, 80=630px, 90=680px, 120=700px
+      // Use standard heights from TASK_CARD_STANDARD_HEIGHTS constants
       let standardHeightForThisDuration: number;
       
       if (effectiveEstimatedTime <= 15) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at15mins; // 200px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at15mins;
       } else if (effectiveEstimatedTime <= 20) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at20mins; // 250px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at20mins;
       } else if (effectiveEstimatedTime <= 25) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at25mins; // 280px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at25mins;
       } else if (effectiveEstimatedTime <= 30) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at30mins; // 320px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at30mins;
       } else if (effectiveEstimatedTime <= 35) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at35mins; // 380px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at35mins;
       } else if (effectiveEstimatedTime <= 40) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at40mins; // 430px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at40mins;
       } else if (effectiveEstimatedTime <= 45) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at45mins; // 480px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at45mins;
       } else if (effectiveEstimatedTime <= 50) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at50mins; // 520px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at50mins;
       } else if (effectiveEstimatedTime <= 60) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at60mins; // 580px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at60mins;
       } else if (effectiveEstimatedTime <= 70) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at70mins; // 600px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at70mins;
       } else if (effectiveEstimatedTime <= 80) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at80mins; // 630px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at80mins;
       } else if (effectiveEstimatedTime <= 90) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at90mins; // 680px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at90mins;
       } else if (effectiveEstimatedTime <= 120) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 700px
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins;
       } else {
-        // For tasks > 120 mins, use 700px as base (same as 120 mins)
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 700px
+        // For tasks > 120 mins, use same height as 120 mins
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at120mins;
       }
       
       // No auto-adjust - return the standard height directly

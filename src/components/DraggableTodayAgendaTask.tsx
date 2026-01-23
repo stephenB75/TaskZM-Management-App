@@ -172,36 +172,36 @@ export function DraggableTodayAgendaTask({
     const effectiveEstimatedTime = hasEstimatedTime ? currentEstimatedTimeValue! : getTaskMinutes(task);
     
     let baseHeight: number;
-    // Use new size guide: 15=200px, 20=250px, 25=280px, 30=320px, 35=380px, 40=430px, 45=480px, 50=520px, 60=580px, 70=600px, 80=630px, 90=680px, 120=700px
+    // Use standard heights from TASK_CARD_STANDARD_HEIGHTS constants
     if (effectiveEstimatedTime <= 15) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at15mins; // 200px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at15mins;
     } else if (effectiveEstimatedTime <= 20) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at20mins; // 250px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at20mins;
     } else if (effectiveEstimatedTime <= 25) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at25mins; // 280px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at25mins;
     } else if (effectiveEstimatedTime <= 30) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at30mins; // 320px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at30mins;
     } else if (effectiveEstimatedTime <= 35) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at35mins; // 380px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at35mins;
     } else if (effectiveEstimatedTime <= 40) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at40mins; // 430px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at40mins;
     } else if (effectiveEstimatedTime <= 45) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at45mins; // 480px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at45mins;
     } else if (effectiveEstimatedTime <= 50) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at50mins; // 520px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at50mins;
     } else if (effectiveEstimatedTime <= 60) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at60mins; // 580px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at60mins;
     } else if (effectiveEstimatedTime <= 70) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at70mins; // 600px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at70mins;
     } else if (effectiveEstimatedTime <= 80) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at80mins; // 630px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at80mins;
     } else if (effectiveEstimatedTime <= 90) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at90mins; // 680px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at90mins;
     } else if (effectiveEstimatedTime <= 120) {
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 700px
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at120mins;
     } else {
-      // For tasks > 120 mins, use 700px as base (same as 120 mins)
-      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at120mins; // 700px
+      // For tasks > 120 mins, use same height as 120 mins
+      baseHeight = TASK_CARD_STANDARD_HEIGHTS.at120mins;
     }
     
     // Step 2: Now add component heights on top of the standard base height
