@@ -5,6 +5,15 @@
 
 import { DEFAULT_WEEKDAY_WORK_START } from './business-constants';
 import { NAV_BAR_BOTTOM_PADDING_MOBILE } from './layout-constants';
+import { 
+  COLOR_PASTEL_MINT,
+  COLOR_PASTEL_SKY,
+  COLOR_PASTEL_LAVENDER,
+  COLOR_PASTEL_PEACH,
+  COLOR_PASTEL_LILAC,
+  COLOR_PASTEL_PINK,
+  COLOR_PASTEL_YELLOW,
+} from './color-theme';
 
 // Helper to parse time string to hour
 const parseTimeToHour = (timeStr: string): number => {
@@ -12,95 +21,113 @@ const parseTimeToHour = (timeStr: string): number => {
   return hours;
 };
 
-// Day Column Colors
+// Helper function to darken a color for gradient variations
+const darkenColor = (hex: string, factor: number): string => {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.max(0, Math.floor((num >> 16) * factor));
+  const g = Math.max(0, Math.floor(((num >> 8) & 0x00FF) * factor));
+  const b = Math.max(0, Math.floor((num & 0x0000FF) * factor));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+};
+
+// Helper function to lighten a color for gradient variations
+const lightenColor = (hex: string, factor: number): string => {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, Math.floor((num >> 16) + (255 - (num >> 16)) * (1 - factor)));
+  const g = Math.min(255, Math.floor(((num >> 8) & 0x00FF) + (255 - ((num >> 8) & 0x00FF)) * (1 - factor)));
+  const b = Math.min(255, Math.floor((num & 0x0000FF) + (255 - (num & 0x0000FF)) * (1 - factor)));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+};
+
+// Day Column Colors - Using pastel color constants (NO HARDCODE)
 export const KANBAN_DAY_COLORS = {
   monday: {
     header: {
-      from: '#B4E4CE',
-      via: '#A8DCC4',
-      to: '#9FD9BF',
-      border: '#7BC9A5',
+      from: COLOR_PASTEL_MINT, // Mint green pastel
+      via: darkenColor(COLOR_PASTEL_MINT, 0.9), // Slightly darker for gradient
+      to: darkenColor(COLOR_PASTEL_MINT, 0.85), // Darker for gradient end
+      border: darkenColor(COLOR_PASTEL_MINT, 0.65), // Border color
       opacity: 80,
       borderOpacity: 30,
     },
-    background: '#B4E4CE',
+    background: COLOR_PASTEL_MINT,
     backgroundOpacity: 20,
   },
   tuesday: {
     header: {
-      from: '#C9E4F7',
-      via: '#B3D9F2',
-      to: '#A8DAFF',
-      border: '#7BC8FF',
+      from: COLOR_PASTEL_SKY, // Sky blue pastel
+      via: darkenColor(COLOR_PASTEL_SKY, 0.9), // Slightly darker for gradient
+      to: darkenColor(COLOR_PASTEL_SKY, 0.85), // Darker for gradient end
+      border: darkenColor(COLOR_PASTEL_SKY, 0.65), // Border color
       opacity: 80,
       borderOpacity: 30,
     },
-    background: '#C9E4F7',
+    background: COLOR_PASTEL_SKY,
     backgroundOpacity: 20,
   },
   wednesday: {
     header: {
-      from: '#E6D5F0',
-      via: '#D4C5F9',
-      to: '#C7B8EA',
-      border: '#B8A4E6',
+      from: COLOR_PASTEL_LAVENDER, // Lavender pastel
+      via: darkenColor(COLOR_PASTEL_LAVENDER, 0.9), // Slightly darker for gradient
+      to: darkenColor(COLOR_PASTEL_LAVENDER, 0.85), // Darker for gradient end
+      border: darkenColor(COLOR_PASTEL_LAVENDER, 0.65), // Border color
       opacity: 80,
       borderOpacity: 30,
     },
-    background: '#E6D5F0',
+    background: COLOR_PASTEL_LAVENDER,
     backgroundOpacity: 20,
   },
   thursday: {
     header: {
-      from: '#FFD6BA',
-      via: '#FFC9A3',
-      to: '#FFB88C',
-      border: '#FFA875',
+      from: COLOR_PASTEL_PEACH, // Peach pastel
+      via: darkenColor(COLOR_PASTEL_PEACH, 0.9), // Slightly darker for gradient
+      to: darkenColor(COLOR_PASTEL_PEACH, 0.85), // Darker for gradient end
+      border: darkenColor(COLOR_PASTEL_PEACH, 0.65), // Border color
       opacity: 80,
       borderOpacity: 30,
     },
-    background: '#FFD6BA',
+    background: COLOR_PASTEL_PEACH,
     backgroundOpacity: 20,
   },
   friday: {
     header: {
-      from: '#F4D9F4',
-      via: '#E8C5E8',
-      to: '#DFB8DF',
-      border: '#D4A6D4',
+      from: COLOR_PASTEL_LILAC, // Lilac pastel
+      via: darkenColor(COLOR_PASTEL_LILAC, 0.9), // Slightly darker for gradient
+      to: darkenColor(COLOR_PASTEL_LILAC, 0.85), // Darker for gradient end
+      border: darkenColor(COLOR_PASTEL_LILAC, 0.65), // Border color
       opacity: 80,
       borderOpacity: 30,
     },
-    background: '#F4D9F4',
+    background: COLOR_PASTEL_LILAC,
     backgroundOpacity: 20,
   },
   saturday: {
     header: {
-      from: '#FFD9E8',
-      via: '#FFC9DD',
-      to: '#FFB5D5',
-      border: '#FFA0CC',
+      from: COLOR_PASTEL_PINK, // Pink pastel
+      via: darkenColor(COLOR_PASTEL_PINK, 0.9), // Slightly darker for gradient
+      to: darkenColor(COLOR_PASTEL_PINK, 0.85), // Darker for gradient end
+      border: darkenColor(COLOR_PASTEL_PINK, 0.65), // Border color
       opacity: 80,
       borderOpacity: 30,
     },
-    background: '#FFD9E8',
+    background: COLOR_PASTEL_PINK,
     backgroundOpacity: 20,
   },
   sunday: {
     header: {
-      from: '#FFF9E3',
-      via: '#FFF4D1',
-      to: '#FFEFC0',
-      border: '#FFE8A0',
+      from: COLOR_PASTEL_YELLOW, // Yellow pastel
+      via: darkenColor(COLOR_PASTEL_YELLOW, 0.9), // Slightly darker for gradient
+      to: darkenColor(COLOR_PASTEL_YELLOW, 0.85), // Darker for gradient end
+      border: darkenColor(COLOR_PASTEL_YELLOW, 0.65), // Border color
       opacity: 80,
       borderOpacity: 30,
     },
-    background: '#FFF9E3',
+    background: COLOR_PASTEL_YELLOW,
     backgroundOpacity: 20,
   },
   weekend: {
-    from: '#E6D5F0',
-    to: '#E1D4F0',
+    from: COLOR_PASTEL_LAVENDER, // Use lavender for weekend
+    to: darkenColor(COLOR_PASTEL_LAVENDER, 0.98), // Slightly darker variant
     opacity: 50,
   },
   today: {
@@ -142,11 +169,11 @@ export const KANBAN_DAY_COLORS = {
   standard: {
     viaOpacity: 70, // Standard via opacity for non-today days
   },
-  // Column background gradient settings
+  // Column background gradient settings - gradient of column tab color
   columnGradient: {
-    startOpacity: 15, // Starting opacity percentage for column gradient (fades from tab color)
+    startOpacity: 25, // Starting opacity percentage for column gradient (fades from tab color) - increased for better visibility
     endOpacity: 0, // Ending opacity (fades to white/transparent)
-    darkModeStartOpacity: 6, // Starting opacity for dark mode gradient
+    darkModeStartOpacity: 12, // Starting opacity for dark mode gradient - increased for better visibility
     darkModeEndOpacity: 2, // Ending opacity for dark mode gradient
   },
 } as const;

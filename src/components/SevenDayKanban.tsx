@@ -146,22 +146,35 @@ export function SevenDayKanban({
     return `#${clean}${val}`;
   };
 
-  const getColumnBgGradient = (dayName: string) => {
+  const getColumnBgGradient = (dayName: string, isDarkMode: boolean = false) => {
     const dayColors = getDayColors(dayName);
-    // Light mode: use header color (tab color) fading to white
+    // Use header color (tab color) fading to transparent/background
     if (hasHeader(dayColors)) {
       // Use the header 'from' color (main tab color) as the starting point
       const headerColor = dayColors.header.from;
-      const start = toAlphaHex(headerColor, KANBAN_DAY_COLORS.columnGradient.startOpacity);
-      // End with white (fully transparent of the header color = white background)
-      const end = COLOR_BACKGROUND_WHITE;
-      return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
+      if (isDarkMode) {
+        // Dark mode: use tab color with dark mode opacity settings, fading to transparent
+        const start = toAlphaHex(headerColor, KANBAN_DAY_COLORS.columnGradient.darkModeStartOpacity);
+        const end = toAlphaHex(headerColor, KANBAN_DAY_COLORS.columnGradient.darkModeEndOpacity);
+        return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
+      } else {
+        // Light mode: use tab color fading to white
+        const start = toAlphaHex(headerColor, KANBAN_DAY_COLORS.columnGradient.startOpacity);
+        const end = COLOR_BACKGROUND_WHITE;
+        return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
+      }
     }
-    // Fallback for weekend colors - fade to white
-    return `linear-gradient(180deg, rgba(255,255,255,0) 0%, ${COLOR_BACKGROUND_WHITE} 100%)`;
+    // Fallback for weekend colors - fade to transparent/white
+    // Use white color constant with opacity helper for consistency
+    const whiteWithOpacity = (opacity: number) => {
+      // Convert COLOR_BACKGROUND_WHITE (#FFFFFF) to rgba format with opacity
+      return `rgba(255, 255, 255, ${opacity / 100})`;
+    };
+    if (isDarkMode) {
+      return `linear-gradient(180deg, ${whiteWithOpacity(KANBAN_DAY_COLORS.columnGradient.darkModeStartOpacity)} 0%, ${whiteWithOpacity(KANBAN_DAY_COLORS.columnGradient.darkModeEndOpacity)} 100%)`;
+    }
+    return `linear-gradient(180deg, ${whiteWithOpacity(0)} 0%, ${COLOR_BACKGROUND_WHITE} 100%)`;
   };
-
-  const darkColumnGradient = `linear-gradient(180deg, rgba(255,255,255,${KANBAN_DAY_COLORS.columnGradient.darkModeStartOpacity / 100}) 0%, rgba(255,255,255,${KANBAN_DAY_COLORS.columnGradient.darkModeEndOpacity / 100}) 100%)`;
 
   // Get week start setting
   const weekStart = getWeekStart();
@@ -1385,7 +1398,7 @@ export function SevenDayKanban({
                           )}
                           style={{
                             backgroundImage: isDark
-                              ? darkColumnGradient
+                              ? getColumnBgGradient(column.dayName, isDark)
                               : getColumnBgGradient(column.dayName),
                                   minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
                           }}
