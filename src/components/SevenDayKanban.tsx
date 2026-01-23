@@ -973,12 +973,16 @@ export function SevenDayKanban({
                         </motion.div>
                       ) : (
                           <div
-                            className="flex flex-col gap-3 w-full"
+                            className="flex flex-col gap-3"
                             style={{
                               padding: 0,
                               // No paddingBottom - nav bar clearance handled by spacer in App.tsx
                               minHeight: 0,
                               height: 'auto',
+                              maxWidth: shouldUseMobileLayout 
+                                ? KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.mobile
+                                : KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.desktop,
+                              width: '100%',
                               // On mobile/tablet, make background transparent to show parent gradient
                               // On desktop, use the gradient background
                               backgroundImage: shouldUseMobileLayout
@@ -1414,7 +1418,15 @@ export function SevenDayKanban({
                                       <p className="text-sm text-muted-foreground pointer-events-none">No tasks</p>
                               </motion.div>
                             ) : (
-                                  <div className="flex flex-col gap-3 w-full max-w-full">
+                                  <div 
+                                    className="flex flex-col gap-3"
+                                    style={{
+                                      maxWidth: shouldUseMobileLayout 
+                                        ? KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.mobile
+                                        : KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.desktop,
+                                      width: '100%',
+                                    }}
+                                  >
                                     {combinedItems.map((item, idx) => {
                                       if (item.type === 'event') {
                                         return (
