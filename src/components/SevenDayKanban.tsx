@@ -919,7 +919,7 @@ export function SevenDayKanban({
                       
                       return (
                     <div 
-                      className="w-full flex flex-col" 
+                      className="w-full flex flex-col items-center" 
                       style={{ 
                         minHeight: 0, 
                         height: '100%',
@@ -1389,7 +1389,7 @@ export function SevenDayKanban({
                           return (
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 flex flex-col h-full min-h-full',
+                            'p-2 sm:p-3 flex flex-col items-center h-full min-h-full',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
@@ -1414,7 +1414,7 @@ export function SevenDayKanban({
                                       <p className="text-sm text-muted-foreground pointer-events-none">No tasks</p>
                               </motion.div>
                             ) : (
-                                  <div className="flex flex-col gap-3 w-full">
+                                  <div className="flex flex-col gap-3 w-full max-w-full">
                                     {combinedItems.map((item, idx) => {
                                       if (item.type === 'event') {
                                         return (
