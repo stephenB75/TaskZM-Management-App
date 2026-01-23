@@ -98,8 +98,8 @@ export const TASK_CARD_THEME_COLORS = {
 // Font Sizes (increased by 10%)
 export const TASK_CARD_FONT_SIZES = {
   time: {
-    mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
-    desktop: 'text-[11px]', // 10px * 1.1 = 11px
+    mobile: 'text-[13px]', // Increased for better visibility
+    desktop: 'text-[14px]', // Increased for better visibility
   },
   priority: {
     mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
@@ -114,8 +114,8 @@ export const TASK_CARD_FONT_SIZES = {
     desktop: 'text-[18px]', // Increased from 12px to 18px (50% larger)
   },
   title: {
-    mobile: 'text-[15px]', // text-sm (14px) * 1.1 = 15.4px ≈ 15px
-    desktop: 'text-[18px]', // text-base (16px) * 1.1 = 17.6px ≈ 18px
+    mobile: 'text-[17px]', // Increased for better visibility (removed bold)
+    desktop: 'text-[20px]', // Increased for better visibility (removed bold)
   },
   description: 'text-[13px]', // 12px * 1.1 = 13.2px ≈ 13px
   tracking: {
@@ -144,8 +144,8 @@ export const TASK_CARD_FONT_SIZES = {
 // Tailwind: w-2 = 0.5rem = 8px, w-2.5 = 0.625rem = 10px, w-3 = 0.75rem = 12px, w-3.5 = 0.875rem = 14px, w-4 = 1rem = 16px
 export const TASK_CARD_ICON_SIZES = {
   clock: {
-    mobile: 10, // w-2.5 = 10px
-    desktop: 12, // w-3 = 12px
+    mobile: 14, // Increased for better visibility (w-3.5 = 14px)
+    desktop: 16, // Increased for better visibility (w-4 = 16px)
   },
   repeat: {
     mobile: 12, // w-3 = 12px
@@ -721,6 +721,10 @@ export const TASK_CARD_EXPANDABLE = {
     gapDescription: 6, // gap-1.5 = 6px for description header
     marginBottom: 16, // mb-4 = 16px for description and dependencies
     marginBottomHeader: 8, // mb-2 = 8px for description header
+    aiSuggestionsMargin: {
+      mobile: 8, // 0.5rem = 8px horizontal margin for AI Suggestions box
+      desktop: 8, // 0.5rem = 8px horizontal margin for AI Suggestions box
+    },
   },
 } as const;
 

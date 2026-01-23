@@ -12,6 +12,8 @@ import {
 } from "./ui/tooltip";
 import { cn, formatTimeAMPM, getInitials, sanitizeHTML, hasHTMLTags, calculateProgress } from "../lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+import { Checkbox } from "./ui/checkbox";
+import { Input } from "./ui/input";
 import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
@@ -102,6 +104,7 @@ export const DraggableTaskCard = React.forwardRef<
     // Chevron-down (v) = open state
     const [isExpanded, setIsExpanded] = React.useState(false);
     const [zoomScale, setZoomScale] = React.useState(1);
+    const [newSubtaskTitle, setNewSubtaskTitle] = React.useState('');
     const cardRef = React.useRef<HTMLDivElement>(null);
     const taskInstanceKey = `${task.id}-${droppableId}`;
     const previousTaskInstanceKeyRef = React.useRef<string | null>(null);
@@ -162,6 +165,32 @@ export const DraggableTaskCard = React.forwardRef<
     
     // AI Task Breakdown
     const { breakdown } = useTaskBreakdown(task.title || '', task.description || '', { enabled: true });
+
+    // Sync AI Suggestions steps to subtasks (only add new steps, don't overwrite existing)
+    React.useEffect(() => {
+      if (breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0) {
+        const existingSubtaskTitles = new Set((task.subtasks || []).map(st => st.title.toLowerCase().trim()));
+        const existingSubtaskIds = new Set((task.subtasks || []).map(st => st.id));
+        const stepsToAdd = breakdown.actionPlan.steps
+          .filter(step => {
+            const stepTitle = step.action.toLowerCase().trim();
+            const stepId = `ai-step-${task.id}-${step.order || breakdown.actionPlan.steps.indexOf(step) + 1}`;
+            // Only add if title doesn't exist AND id doesn't exist (avoid duplicates)
+            return !existingSubtaskTitles.has(stepTitle) && !existingSubtaskIds.has(stepId);
+          })
+          .map((step, idx) => ({
+            id: `ai-step-${task.id}-${step.order || idx + 1}`,
+            title: step.action,
+            completed: false,
+            createdAt: new Date().toISOString(),
+          }));
+
+        if (stepsToAdd.length > 0) {
+          const updatedSubtasks = [...(task.subtasks || []), ...stepsToAdd];
+          updateTask(task.id, { subtasks: updatedSubtasks });
+        }
+      }
+    }, [breakdown?.actionPlan?.steps, task.id, task.subtasks, updateTask]);
     
     // Use task.id for all tasks to ensure timer sync across all components
     // (TaskDialog, TaskCard, TodayAgenda) - when timer is activated in one location,
@@ -565,7 +594,7 @@ export const DraggableTaskCard = React.forwardRef<
               {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-gray-600 dark:text-gray-300" />
-                  <span className={cn("text-gray-700 dark:text-gray-200 font-semibold", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                  <span className={cn("text-gray-700 dark:text-gray-200 font-normal", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                     {scheduledTimeLabel}
                   </span>
                 </div>
@@ -635,7 +664,7 @@ export const DraggableTaskCard = React.forwardRef<
             )}
             <h3
               className={cn(
-                "text-foreground dark:text-gray-100 leading-tight flex-1 font-bold",
+                "text-foreground dark:text-gray-100 leading-tight flex-1 font-normal",
                 TASK_CARD_LINE_CLAMP.title,
                 task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
                 isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop,
@@ -665,7 +694,7 @@ export const DraggableTaskCard = React.forwardRef<
               : ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.NORMAL_TASK;
             
             return (
-              <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: '0.5rem', marginRight: '0.5rem' }}>
+              <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
                 <div className="flex items-center gap-1 mb-1">
                   <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={domainColors.text} weight="duotone" />
                   <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
@@ -673,21 +702,70 @@ export const DraggableTaskCard = React.forwardRef<
                   </span>
                 </div>
                 <div className="space-y-0.5">
-                  {breakdown.actionPlan.steps.slice(0, maxStepsToShow).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => (
-                    <div key={idx} className="flex items-start gap-1.5">
-                      <span className={cn("mt-0.5 flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                        {step.order || (idx + 1)}.
-                      </span>
-                      <span className={cn("leading-tight flex-1", domainColors.textLight)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                        {step.action}
-                      </span>
-                      {step.estimatedMinutes > 0 && (
-                        <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                          {step.estimatedMinutes}m
+                  {breakdown.actionPlan.steps.slice(0, maxStepsToShow).map((step: { action: string; estimatedMinutes: number; order?: number }, idx: number) => {
+                    // Find corresponding subtask
+                    const stepSubtask = task.subtasks?.find(st => 
+                      st.title.toLowerCase().trim() === step.action.toLowerCase().trim() ||
+                      st.id === `ai-step-${task.id}-${step.order || idx + 1}`
+                    );
+                    const isCompleted = stepSubtask?.completed || false;
+
+                    const handleToggle = async (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      if (!permissions.canEditTask) {
+                        toast.error('Permission Denied', {
+                          description: 'Viewer role does not have permission to edit tasks.',
+                        });
+                        return;
+                      }
+
+                      if (stepSubtask) {
+                        // Update existing subtask
+                        const updatedSubtasks = task.subtasks.map(st =>
+                          st.id === stepSubtask.id
+                            ? { ...st, completed: !st.completed }
+                            : st
+                        );
+                        await updateTask(task.id, { subtasks: updatedSubtasks });
+                      } else {
+                        // Create new subtask
+                        const newSubtask = {
+                          id: `ai-step-${task.id}-${step.order || idx + 1}`,
+                          title: step.action,
+                          completed: true,
+                          createdAt: new Date().toISOString(),
+                        };
+                        const updatedSubtasks = [...(task.subtasks || []), newSubtask];
+                        await updateTask(task.id, { subtasks: updatedSubtasks });
+                      }
+                    };
+
+                    return (
+                      <div key={idx} className="flex items-start gap-1.5">
+                        <Checkbox
+                          checked={isCompleted}
+                          onCheckedChange={(checked) => {
+                            const syntheticEvent = { stopPropagation: () => {} } as React.MouseEvent;
+                            handleToggle(syntheticEvent);
+                          }}
+                          onClick={handleToggle}
+                          className="mt-0.5 flex-shrink-0"
+                          style={{ 
+                            width: `${isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}px`,
+                            height: `${isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}px`,
+                          }}
+                        />
+                        <span className={cn("leading-tight flex-1", domainColors.textLight, isCompleted && "line-through opacity-60")} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                          {step.action}
                         </span>
-                      )}
-                    </div>
-                  ))}
+                        {step.estimatedMinutes > 0 && (
+                          <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                            {step.estimatedMinutes}m
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                   {breakdown.actionPlan.steps.length > maxStepsToShow && (
                     <div className={cn("mt-0.5", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                       +{breakdown.actionPlan.steps.length - maxStepsToShow} more steps
@@ -822,6 +900,112 @@ export const DraggableTaskCard = React.forwardRef<
                 <span className="font-semibold text-sm">ATTENTION: This task has a dependency.</span>
               </div>
             )}
+
+            {/* Subtasks Display with Checkboxes */}
+            <div className="space-y-1.5" style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px` }}>
+              <div className="flex items-center gap-1.5">
+                <Icon name="list-checks" size={isMobile ? TASK_CARD_ICON_SIZES.subtask.mobile : TASK_CARD_ICON_SIZES.subtask.desktop} className="text-gray-600 dark:text-gray-400" />
+                <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Subtasks</span>
+              </div>
+              {task.subtasks && task.subtasks.length > 0 && (
+                <div className="space-y-1">
+                  {task.subtasks.map((subtask) => {
+                    const handleSubtaskToggle = async (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      if (!permissions.canEditTask) {
+                        toast.error('Permission Denied', {
+                          description: 'Viewer role does not have permission to edit tasks.',
+                        });
+                        return;
+                      }
+                      const updatedSubtasks = task.subtasks.map((st) =>
+                        st.id === subtask.id
+                          ? { ...st, completed: !st.completed }
+                          : st
+                      );
+                      await updateTask(task.id, { subtasks: updatedSubtasks });
+                    };
+
+                    const handleSubtaskDelete = async (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      if (!permissions.canEditTask) {
+                        toast.error('Permission Denied', {
+                          description: 'Viewer role does not have permission to edit tasks.',
+                        });
+                        return;
+                      }
+                      const updatedSubtasks = task.subtasks.filter((st) => st.id !== subtask.id);
+                      await updateTask(task.id, { subtasks: updatedSubtasks });
+                    };
+
+                    return (
+                      <div key={subtask.id} className="flex items-start gap-2 group">
+                        <Checkbox
+                          checked={subtask.completed}
+                          onCheckedChange={(checked) => {
+                            const syntheticEvent = { stopPropagation: () => {} } as React.MouseEvent;
+                            handleSubtaskToggle(syntheticEvent);
+                          }}
+                          onClick={handleSubtaskToggle}
+                          className="mt-0.5 flex-shrink-0"
+                          style={{ 
+                            width: `${isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}px`,
+                            height: `${isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}px`,
+                          }}
+                        />
+                        <span 
+                          className={cn(
+                            "text-sm flex-1",
+                            subtask.completed && "line-through text-gray-500 dark:text-gray-500",
+                            !subtask.completed && "text-gray-700 dark:text-gray-300"
+                          )}
+                        >
+                          {subtask.title}
+                        </span>
+                        <button
+                          onClick={handleSubtaskDelete}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                          aria-label="Delete subtask"
+                        >
+                          <Icon name="x" size={isMobile ? TASK_CARD_ICON_SIZES.subtask.mobile : TASK_CARD_ICON_SIZES.subtask.desktop} className="text-gray-500 dark:text-gray-400" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Add New Subtask Input */}
+              <div className="flex items-center gap-2 pt-1">
+                <Input
+                  type="text"
+                  placeholder="Add a subtask..."
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter' && newSubtaskTitle.trim()) {
+                      e.stopPropagation();
+                      if (!permissions.canEditTask) {
+                        toast.error('Permission Denied', {
+                          description: 'Viewer role does not have permission to edit tasks.',
+                        });
+                        return;
+                      }
+                      const newSubtask = {
+                        id: `subtask-${task.id}-${Date.now()}`,
+                        title: newSubtaskTitle.trim(),
+                        completed: false,
+                        createdAt: new Date().toISOString(),
+                      };
+                      const updatedSubtasks = [...(task.subtasks || []), newSubtask];
+                      await updateTask(task.id, { subtasks: updatedSubtasks });
+                      setNewSubtaskTitle('');
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-7 text-sm"
+                />
+              </div>
+            </div>
 
             {/* Progress Circle and Assignee with Tracked Info */}
             <div className="flex items-center justify-between" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapBetween}px` }}>

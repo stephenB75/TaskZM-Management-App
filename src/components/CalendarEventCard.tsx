@@ -4,6 +4,8 @@ import { Icon } from './Icon';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS } from '../lib/calendar-event-constants';
+import { TASK_CARD_SPACING } from '../lib/task-card-constants';
+import { useIsMobile } from './ui/use-mobile';
 
 interface CalendarEventCardProps {
   title: string;
@@ -237,6 +239,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const mode = isDark ? 'dark' : 'light';
+  const isMobile = useIsMobile();
   
   const durationMinutes = getDurationMinutes(start, end);
   const startTime = formatTimeAMPM(start);
@@ -266,24 +269,27 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   };
 
   return (
-    // Card container with vertical line - similar to task cards
+    // Card container with vertical line - aligned with task cards
     <div
-      className="flex gap-2 w-full transition-all duration-200 cursor-default select-none"
+      className={cn(
+        "flex w-full transition-all duration-200 cursor-default select-none rounded-lg relative box-border flex-col",
+        // Match task card padding for vertical alignment (px-2 py-1 pb-1 on mobile, px-3 py-1.5 pb-1.5 on desktop)
+        isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
+      )}
       style={{
         minHeight: `${calculatedHeight}px`,
       }}
     >
-      {/* Vertical colored line on left */}
+      {/* Vertical colored line on left - positioned at left edge inside padding (like task card priority line) */}
       <div 
-        className={cn('flex-shrink-0 rounded-full', colors.accent)}
+        className={cn('absolute left-0 top-0 bottom-0 rounded-full', colors.accent)}
         style={{ 
           width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
-          minHeight: CALENDAR_EVENT_DIMENSIONS.verticalLine.minHeight 
         }}
       />
       
-      {/* Content area */}
-      <div className="flex-1 py-1 flex flex-col gap-1">
+      {/* Content area - with left padding to account for vertical line and match task card content alignment */}
+      <div className="flex-1 py-1 flex flex-col gap-1" style={{ paddingLeft: `${CALENDAR_EVENT_DIMENSIONS.contentPadding.left}px` }}>
         {/* Header with calendar icon */}
         <div className="flex items-center gap-1.5">
           <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
