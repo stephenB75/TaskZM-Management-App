@@ -1303,7 +1303,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         const syncKey = `synced_local_data_${targetWorkspaceId}`;
         localStorage.removeItem(syncKey);
 
-        if (!silent && serverTasks.length > 0) {
+        // Only show success notification if tasks actually changed (not on every routine sync)
+        // This reduces notification noise - users only see notifications when something meaningful happened
+        if (!silent && tasksChanged && serverTasks.length > 0) {
           toast.success('Synced with server', {
             description: `Loaded ${serverTasks.length} task${serverTasks.length !== 1 ? 's' : ''}`,
           });

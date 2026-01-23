@@ -670,7 +670,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         
         console.log(`[Apple Calendar Sync] Success: ${data.created} created, ${data.updated} updated, ${data.deleted} deleted`);
         
-        if (!silent) {
+        // Only show notification if there were actual changes (not on every routine sync)
+        const hasChanges = (data.created || 0) > 0 || (data.updated || 0) > 0 || (data.deleted || 0) > 0;
+        if (!silent && hasChanges) {
           toast.success('iCloud Calendar synced!', {
             description: `Imported ${data.created} new, updated ${data.updated}, removed ${data.deleted} events`,
           });
@@ -758,7 +760,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         
         console.log(`[Google Calendar Sync] Success: ${data.created} created, ${data.updated} updated, ${data.deleted} deleted`);
         
-        if (!silent) {
+        // Only show notification if there were actual changes (not on every routine sync)
+        const hasChanges = (data.created || 0) > 0 || (data.updated || 0) > 0 || (data.deleted || 0) > 0;
+        if (!silent && hasChanges) {
           toast.success('Google Calendar synced!', {
             description: `Imported ${data.created} new, updated ${data.updated}, removed ${data.deleted} events`,
           });
@@ -924,9 +928,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         } else {
           toast.warning('Calendar sync partially completed', { description: details.join(' | ') });
         }
-      } else {
+      } else if (syncedCount > 0) {
+        // Only show success notification if tasks were actually synced (not on every routine sync with no changes)
         toast.success('Calendar sync complete!', { description: summary });
       }
+      // If syncedCount is 0 and failedCount is 0, no notification (nothing to sync or already in sync)
     } catch (error) {
       console.error(`Failed to sync all tasks to ${provider}:`, error);
       toast.error('Failed to sync tasks', {
