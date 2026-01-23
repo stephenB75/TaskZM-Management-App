@@ -74,6 +74,35 @@ export function getDateString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Calculate total tracked time across all occurrences in a recurring task series
+ * Includes both completed occurrences and active occurrences
+ * @param baseTaskId - The base recurring task ID (without date suffix)
+ * @param allTasks - All tasks to search through
+ * @returns Total minutes tracked across all occurrences
+ */
+export function calculateRecurringTaskSeriesTotalTime(baseTaskId: string, allTasks: Array<{ id: string; actualTime?: number | null }>): number {
+  // Find all tasks that belong to this recurring series:
+  // 1. Tasks with the exact base ID (active occurrence on current date)
+  // 2. Active occurrences with ID pattern: `${baseTaskId}__${dateString}` (used in kanban/today views)
+  // 3. Completed occurrences with ID pattern: `${baseTaskId}_completed_${dateString}`
+  const seriesTasks = allTasks.filter(t => {
+    // Match base task ID (active occurrence)
+    if (t.id === baseTaskId) return true;
+    // Match active occurrences with date suffix (used in kanban/today views for occurrence-specific tracking)
+    if (t.id.startsWith(`${baseTaskId}__`)) return true;
+    // Match completed occurrences
+    if (t.id.startsWith(`${baseTaskId}_completed_`)) return true;
+    return false;
+  });
+  
+  // Sum up all actualTime values
+  return seriesTasks.reduce((total, task) => {
+    const time = task.actualTime || 0;
+    return total + time;
+  }, 0);
+}
+
 export function isOverdue(dueDate: string | null): boolean {
   if (!dueDate) return false;
   const due = new Date(dueDate);

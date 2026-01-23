@@ -1981,6 +1981,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             // Continue with next occurrence logic below
           } else {
             // 1. Create completed occurrence (stays visible, grayed out on original date)
+            // Preserve actualTime from the current occurrence so time tracking is per-occurrence
             completedOccurrence = {
               ...currentTask,
               id: completedOccurrenceId,
@@ -1988,6 +1989,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               status: 'done',
               completedAt: completedAt,
               updatedAt: completedAt,
+              // Preserve actualTime so tracked time is maintained for this specific occurrence
+              actualTime: currentTask.actualTime || 0,
               // Keep original scheduledDate so it appears on the correct date
             };
           }

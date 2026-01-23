@@ -9,6 +9,9 @@ import { Badge } from "./ui/badge";
 import { cn, getInitials, formatTimeAMPM, sanitizeHTML, hasHTMLTags, getDateString } from "../lib/utils";
 import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
+import { useAuth } from "../contexts/AuthContext";
+import * as api from "../lib/api";
+import { getDateString } from "../lib/utils";
 import { useTeam } from "../contexts/TeamContext";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePomodoro } from "../contexts/PomodoroContext";
@@ -75,7 +78,7 @@ export function DraggableTodayAgendaTask({
   isNextUp = false,
   onComplete,
 }: DraggableTodayAgendaTaskProps) {
-  const { updateTask } = useTasks();
+  const { updateTask, addTask, tasks } = useTasks();
   const { getTeamMember } = useTeam();
   const { hasFeature } = useSubscription();
   const permissionsResult = usePermissions();
@@ -104,8 +107,9 @@ export function DraggableTodayAgendaTask({
   
   // Subscribe to timer state changes to ensure re-render when timer is activated in other components
   React.useEffect(() => {
-    // Accessing pomodoroTimers[task.id] ensures re-render when that timer changes
-  }, [pomodoroTimers[task.id]]);
+    // Accessing pomodoroTimers[pomodoroTimerId] ensures re-render when that timer changes
+    // Use occurrence-specific ID for recurring tasks to track the correct timer
+  }, [pomodoroTimers[pomodoroTimerId], pomodoroTimerId]);
   
   // Memoize key values that affect height to create stable dependencies
   const assignedToKey = React.useMemo(() => 
@@ -384,9 +388,67 @@ export function DraggableTodayAgendaTask({
 
   const handlePomodoroTimeUpdate = async (minutes: number) => {
     try {
-      await updateTask(task.id, {
-        actualTime: minutes,
-      });
+      // For recurring tasks, update the specific occurrence (completed occurrence if exists, otherwise current task)
+      // This ensures time is tracked per occurrence, not shared across the series
+      if (isRecurringTask && task.scheduledDate) {
+        const scheduledDate = new Date(task.scheduledDate);
+        scheduledDate.setHours(0, 0, 0, 0);
+        const scheduledDateKey = getDateString(new Date(task.scheduledDate));
+        const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
+        
+        // Check if completed occurrence exists (task was already marked done)
+        const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
+        if (completedOccurrence) {
+          // Update the completed occurrence with tracked time
+          await updateTask(completedOccurrenceId, {
+            actualTime: minutes,
+          });
+        } else {
+          // For active occurrences, ensure we're updating the occurrence-specific task
+          // Check if occurrence-specific task exists (using same ID pattern as pomodoro timer)
+          const activeOccurrenceId = `${task.id}__${scheduledDateKey}`;
+          const activeOccurrence = tasks.find(t => t.id === activeOccurrenceId);
+          
+          if (activeOccurrence) {
+            // Update the occurrence-specific task
+            await updateTask(activeOccurrenceId, {
+              actualTime: minutes,
+            });
+            } else {
+              // No occurrence-specific task exists - create one to track time per occurrence
+              // This ensures time is always stored per occurrence, not on the base task
+              const baseTask = tasks.find(t => t.id === task.id);
+              if (baseTask && baseTask.recurrence && baseTask.recurrence.type !== 'none' && workspaceId && accessToken) {
+                // Create occurrence-specific task for time tracking (similar to completed occurrences)
+                // Mark as non-recurring to prevent it from creating additional occurrences
+                const occurrenceTask: Task = {
+                  ...baseTask,
+                  id: activeOccurrenceId,
+                  actualTime: minutes,
+                  recurrence: { type: 'none', interval: 1 }, // Mark as non-recurring (this is a specific occurrence)
+                  // Keep the same scheduledDate so it appears on the correct date
+                  scheduledDate: baseTask.scheduledDate,
+                  // Preserve all other properties from base task
+                  updatedAt: new Date().toISOString(),
+                };
+                // Save directly to API (similar to how completed occurrences are created)
+                await api.saveTask(workspaceId, occurrenceTask);
+                // Reload tasks to get the new occurrence-specific task
+                await syncWithServer(workspaceId, true);
+              } else {
+                // Fallback: update current task if we can't create occurrence-specific task
+                await updateTask(task.id, {
+                  actualTime: minutes,
+                });
+              }
+            }
+        }
+      } else {
+        // Non-recurring task - update normally
+        await updateTask(task.id, {
+          actualTime: minutes,
+        });
+      }
     } catch (error) {
       console.error("Failed to update task time:", error);
     }
@@ -868,42 +930,72 @@ export function DraggableTodayAgendaTask({
                 )}
 
                 {/* Pomodoro Timer - Inline on mobile, separate on desktop */}
-                {isMobile && task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (
-                  <div
-                    className="flex items-center flex-shrink-0 ml-auto"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <PomodoroTimer
-                      taskId={pomodoroTimerId}
-                      taskTitle={task.title}
-                      onTimeUpdate={handlePomodoroTimeUpdate}
-                      compact={true}
-                      initialTime={task.actualTime || 0}
-                      estimatedTime={task.estimatedTime || undefined}
-                      isMobile={isMobile}
-                    />
-                  </div>
-                )}
+                {isMobile && task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (() => {
+                  // For recurring tasks, get the correct occurrence's time (completed occurrence if exists, otherwise current task)
+                  let occurrenceTime = task.actualTime || 0;
+                  if (isRecurringTask && task.scheduledDate) {
+                    const scheduledDate = new Date(task.scheduledDate);
+                    scheduledDate.setHours(0, 0, 0, 0);
+                    const scheduledDateKey = getDateString(scheduledDate);
+                    const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
+                    const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
+                    if (completedOccurrence && completedOccurrence.actualTime) {
+                      occurrenceTime = completedOccurrence.actualTime;
+                    }
+                  }
+                  
+                  return (
+                    <div
+                      className="flex items-center flex-shrink-0 ml-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <PomodoroTimer
+                        taskId={pomodoroTimerId}
+                        taskTitle={task.title}
+                        onTimeUpdate={handlePomodoroTimeUpdate}
+                        compact={true}
+                        initialTime={occurrenceTime}
+                        estimatedTime={task.estimatedTime || undefined}
+                        isMobile={isMobile}
+                      />
+                    </div>
+                  );
+                })()}
               </div>
             ) : null}
 
             {/* Pomodoro Timer - Bottom right on desktop only (mobile is inline with assignee/tracker above) */}
-            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && !isMobile && (
-              <div
-                className={cn("absolute flex items-center", "bottom-2.5 right-2.5")}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <PomodoroTimer
-                  taskId={task.id}
-                  taskTitle={task.title}
-                  onTimeUpdate={handlePomodoroTimeUpdate}
-                  compact={true}
-                  initialTime={task.actualTime || 0}
-                  estimatedTime={task.estimatedTime || undefined}
-                  isMobile={isMobile}
-                />
-              </div>
-            )}
+            {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && !isMobile && (() => {
+              // For recurring tasks, get the correct occurrence's time (completed occurrence if exists, otherwise current task)
+              let occurrenceTime = task.actualTime || 0;
+              if (isRecurringTask && task.scheduledDate) {
+                const scheduledDate = new Date(task.scheduledDate);
+                scheduledDate.setHours(0, 0, 0, 0);
+                const scheduledDateKey = getDateString(scheduledDate);
+                const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
+                const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
+                if (completedOccurrence && completedOccurrence.actualTime) {
+                  occurrenceTime = completedOccurrence.actualTime;
+                }
+              }
+              
+              return (
+                <div
+                  className={cn("absolute flex items-center", "bottom-2.5 right-2.5")}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <PomodoroTimer
+                    taskId={pomodoroTimerId}
+                    taskTitle={task.title}
+                    onTimeUpdate={handlePomodoroTimeUpdate}
+                    compact={true}
+                    initialTime={occurrenceTime}
+                    estimatedTime={task.estimatedTime || undefined}
+                    isMobile={isMobile}
+                  />
+                </div>
+              );
+            })()}
           </div>
         </div>
       </motion.div>

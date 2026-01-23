@@ -55,6 +55,7 @@ import { usePermissions } from "../hooks/usePermissions";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useAI } from "../contexts/AIContext";
 import { useAuth } from "../contexts/AuthContext";
+import * as api from "../lib/api";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
@@ -582,6 +583,8 @@ export function TaskDialog({
     projects,
     folders,
     hoursSettings,
+    workspaceId,
+    syncWithServer,
   } = useTasks();
   const { teamMembers, getTeamMember } = useTeam();
   const { hasFeature, features } = useSubscription();
@@ -1723,9 +1726,68 @@ export function TaskDialog({
   const handlePomodoroTimeUpdate = async (minutes: number) => {
     if (task) {
       try {
-        await updateTask(task.id, {
-          actualTime: minutes,
-        });
+        // For recurring tasks, update the specific occurrence (completed occurrence if exists, otherwise current task)
+        // This ensures time is tracked per occurrence, not shared across the series
+        const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
+        if (isRecurringTask && task.scheduledDate) {
+          const scheduledDate = new Date(task.scheduledDate);
+          scheduledDate.setHours(0, 0, 0, 0);
+          const scheduledDateKey = getDateString(scheduledDate);
+          const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
+          
+          // Check if completed occurrence exists (task was already marked done)
+          const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
+          if (completedOccurrence) {
+            // Update the completed occurrence with tracked time
+            await updateTask(completedOccurrenceId, {
+              actualTime: minutes,
+            });
+          } else {
+            // For active occurrences, ensure we're updating the occurrence-specific task
+            // Check if occurrence-specific task exists (using same ID pattern as pomodoro timer)
+            const activeOccurrenceId = `${task.id}__${scheduledDateKey}`;
+            const activeOccurrence = tasks.find(t => t.id === activeOccurrenceId);
+            
+            if (activeOccurrence) {
+              // Update the occurrence-specific task
+              await updateTask(activeOccurrenceId, {
+                actualTime: minutes,
+              });
+            } else {
+              // No occurrence-specific task exists - create one to track time per occurrence
+              // This ensures time is always stored per occurrence, not on the base task
+              const baseTask = tasks.find(t => t.id === task.id);
+              if (baseTask && baseTask.recurrence && baseTask.recurrence.type !== 'none' && workspaceId && accessToken) {
+                // Create occurrence-specific task for time tracking (similar to completed occurrences)
+                // Mark as non-recurring to prevent it from creating additional occurrences
+                const occurrenceTask: Task = {
+                  ...baseTask,
+                  id: activeOccurrenceId,
+                  actualTime: minutes,
+                  recurrence: { type: 'none', interval: 1 }, // Mark as non-recurring (this is a specific occurrence)
+                  // Keep the same scheduledDate so it appears on the correct date
+                  scheduledDate: baseTask.scheduledDate,
+                  // Preserve all other properties from base task
+                  updatedAt: new Date().toISOString(),
+                };
+                // Save directly to API (similar to how completed occurrences are created)
+                await api.saveTask(workspaceId, occurrenceTask);
+                // Reload tasks to get the new occurrence-specific task
+                await syncWithServer(workspaceId, true);
+              } else {
+                // Fallback: update current task if we can't create occurrence-specific task
+                await updateTask(task.id, {
+                  actualTime: minutes,
+                });
+              }
+            }
+          }
+        } else {
+          // Non-recurring task - update normally
+          await updateTask(task.id, {
+            actualTime: minutes,
+          });
+        }
         toast.success(
           `Time tracked: ${Math.floor(minutes / MINUTES_PER_HOUR)}h ${minutes % MINUTES_PER_HOUR}m`,
         );
@@ -3437,21 +3499,43 @@ export function TaskDialog({
                 <Separator className="bg-primary/20" />
 
                 {/* Pomodoro Timer - Moved from Advanced */}
-                {task && hasFeature("pomodoroTimer") && (
-                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                    <Label className="text-sm font-semibold flex items-center gap-2">
-                      🍅 Pomodoro Timer
-                    </Label>
-                    <PomodoroTimer
-                      taskId={task.id}
-                      taskTitle={task.title}
-                      onTimeUpdate={handlePomodoroTimeUpdate}
-                      compact={false}
-                      initialTime={task.actualTime || 0}
-                      estimatedTime={task.estimatedTime || undefined}
-                    />
-                  </div>
-                )}
+                {task && hasFeature("pomodoroTimer") && (() => {
+                  // For recurring tasks, use occurrence-specific ID for pomodoro timer to ensure each occurrence has its own timer state
+                  // This prevents the timer from being shared across all occurrences in the series
+                  const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
+                  const pomodoroTimerId = isRecurringTask && task.scheduledDate
+                    ? `${task.id}__${getDateString(new Date(task.scheduledDate))}`
+                    : task.id;
+                  
+                  // For recurring tasks, get the correct occurrence's time (completed occurrence if exists, otherwise current task)
+                  let occurrenceTime = task.actualTime || 0;
+                  if (isRecurringTask && task.scheduledDate) {
+                    const scheduledDate = new Date(task.scheduledDate);
+                    scheduledDate.setHours(0, 0, 0, 0);
+                    const scheduledDateKey = getDateString(scheduledDate);
+                    const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
+                    const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
+                    if (completedOccurrence && completedOccurrence.actualTime) {
+                      occurrenceTime = completedOccurrence.actualTime;
+                    }
+                  }
+                  
+                  return (
+                    <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                      <Label className="text-sm font-semibold flex items-center gap-2">
+                        🍅 Pomodoro Timer
+                      </Label>
+                      <PomodoroTimer
+                        taskId={pomodoroTimerId}
+                        taskTitle={task.title}
+                        onTimeUpdate={handlePomodoroTimeUpdate}
+                        compact={false}
+                        initialTime={occurrenceTime}
+                        estimatedTime={task.estimatedTime || undefined}
+                      />
+                    </div>
+                  );
+                })()}
               </TabsContent>
 
               {/* Advanced Tab - Removed (merged into Organization) */}
