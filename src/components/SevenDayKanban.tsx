@@ -1027,7 +1027,7 @@ export function SevenDayKanban({
                             className="w-full"
                             style={{ 
                               transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                              transformOrigin: 'top left',
+                              transformOrigin: 'top center',
                             }}
                           >
                             <DraggableTaskCard
@@ -1437,7 +1437,7 @@ export function SevenDayKanban({
                                             className="w-full"
                                             style={{
                                               transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                              transformOrigin: 'top left',
+                                              transformOrigin: 'top center',
                                             }}
                                           >
                                             <CalendarEventCard
@@ -1457,7 +1457,7 @@ export function SevenDayKanban({
                                     className="w-full"
                                     style={{ 
                                       transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                      transformOrigin: 'top left',
+                                      transformOrigin: 'top center',
                                     }}
                                   >
                                   <DraggableTaskCard
