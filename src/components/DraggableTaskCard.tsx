@@ -521,7 +521,6 @@ export const DraggableTaskCard = React.forwardRef<
       task.dependencies,
       hasFeature, // Include hasFeature function to ensure recalculation when feature availability changes
       isMobile,
-      currentCanUsePomodoro, // Include pomodoro availability for inline controls height
     ]);
     
     const topRowItemCount = [
