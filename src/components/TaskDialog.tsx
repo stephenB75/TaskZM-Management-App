@@ -71,6 +71,7 @@ import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BR
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS } from "../lib/task-dialog-constants";
+import { useIsMobile } from "./ui/use-mobile";
 import type {
   Task,
   TaskPriority,
@@ -185,7 +186,7 @@ function FixedMiniCalendar({
   const activeDate = activeField === "scheduled" ? scheduledDate : dueDate;
 
   return (
-    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3 border-2 border-primary/30 shadow-lg">
+    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3">
       {/* Toggle Buttons */}
       <div className="flex gap-2 mb-3">
         <Button
@@ -442,7 +443,7 @@ function SingleDateMiniCalendar({
   const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   return (
-    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3 border-2 border-primary/30 shadow-lg">
+    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3">
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-3">
         <Button
@@ -573,6 +574,7 @@ export function TaskDialog({
   onShowUpgradePrompt,
 }: TaskDialogProps) {
   const { accessToken } = useAuth();
+  const isMobile = useIsMobile();
   const {
     addTask,
     updateTask,
@@ -2040,100 +2042,104 @@ export function TaskDialog({
             <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 px-4 sm:px-6 pb-4">
               {/* Basic Info Tab - Redesigned Flow */}
               <TabsContent value="basic" className="mt-0 space-y-4 sm:space-y-5">
-                {/* Step 1: Name the Task */}
-                <div className="space-y-3 sm:space-y-4 bg-white dark:bg-card rounded-lg p-4 sm:p-5 border-2 border-primary/30 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div 
-                      className="rounded-full bg-primary/20 flex items-center justify-center"
-                      style={{
-                        width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.medium.width,
-                        height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.medium.height,
-                      }}
-                    >
-                      <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>1</span>
+                {/* Unified Container: Steps 1-3 and Description */}
+                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 sm:p-5 border-2 border-primary/30 shadow-sm">
+                  {/* Step 1: Name the Task */}
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div 
+                        className="rounded-full bg-primary/20 flex items-center justify-center"
+                        style={{
+                          width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.medium.width,
+                          height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.medium.height,
+                        }}
+                      >
+                        <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>1</span>
+                      </div>
+                      <Label htmlFor="title" className="text-base font-semibold text-foreground">{TASK_DIALOG_UI_TEXT.taskName}</Label>
                     </div>
-                    <Label htmlFor="title" className="text-base font-semibold text-foreground">{TASK_DIALOG_UI_TEXT.taskName}</Label>
-                  </div>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder={TASK_DIALOG_UI_TEXT.taskNamePlaceholder}
-                    autoFocus
-                    disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                    className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-11 text-base"
-                  />
-                </div>
-
-                {/* Step 2: Quick Actions Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                    <Label htmlFor="status" className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <div 
-                        className="rounded-full bg-primary/20 flex items-center justify-center"
-                        style={{
-                          width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.width,
-                          height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.height,
-                        }}
-                      >
-                        <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>2</span>
-                      </div>
-                      {TASK_DIALOG_UI_TEXT.status}
-                    </Label>
-                    <Select
-                      value={status}
-                      onValueChange={(value) =>
-                        setStatus(value as TaskStatus)
-                      }
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder={TASK_DIALOG_UI_TEXT.taskNamePlaceholder}
+                      autoFocus
                       disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                    >
-                      <SelectTrigger className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                        <SelectItem value="todo">{TASK_DIALOG_UI_TEXT.statusOptions.todo}</SelectItem>
-                        <SelectItem value="in-progress">{TASK_DIALOG_UI_TEXT.statusOptions.inProgress}</SelectItem>
-                        <SelectItem value="done">{TASK_DIALOG_UI_TEXT.statusOptions.done}</SelectItem>
-                        <SelectItem value="on-hold">{TASK_DIALOG_UI_TEXT.statusOptions.onHold}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-11 text-base"
+                    />
                   </div>
 
-                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                    <Label htmlFor="priority" className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <div 
-                        className="rounded-full bg-primary/20 flex items-center justify-center"
-                        style={{
-                          width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.width,
-                          height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.height,
-                        }}
-                      >
-                        <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>3</span>
+                  {/* Step 2 & 3: Status and Priority Grid */}
+                  <div className="pt-4 border-t border-primary/20">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="status" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          <div 
+                            className="rounded-full bg-primary/20 flex items-center justify-center"
+                            style={{
+                              width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.width,
+                              height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.height,
+                            }}
+                          >
+                            <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>2</span>
+                          </div>
+                          {TASK_DIALOG_UI_TEXT.status}
+                        </Label>
+                        <Select
+                          value={status}
+                          onValueChange={(value) =>
+                            setStatus(value as TaskStatus)
+                          }
+                          disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
+                        >
+                          <SelectTrigger className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                            <SelectItem value="todo">{TASK_DIALOG_UI_TEXT.statusOptions.todo}</SelectItem>
+                            <SelectItem value="in-progress">{TASK_DIALOG_UI_TEXT.statusOptions.inProgress}</SelectItem>
+                            <SelectItem value="done">{TASK_DIALOG_UI_TEXT.statusOptions.done}</SelectItem>
+                            <SelectItem value="on-hold">{TASK_DIALOG_UI_TEXT.statusOptions.onHold}</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      {TASK_DIALOG_UI_TEXT.priority}
-                    </Label>
-                    <Select
-                      value={priority}
-                      onValueChange={(value) =>
-                        setPriority(value as TaskPriority)
-                      }
-                      disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                    >
-                      <SelectTrigger className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                        <SelectItem value="low">{TASK_DIALOG_UI_TEXT.priorityOptions.low}</SelectItem>
-                        <SelectItem value="medium">{TASK_DIALOG_UI_TEXT.priorityOptions.medium}</SelectItem>
-                        <SelectItem value="high">{TASK_DIALOG_UI_TEXT.priorityOptions.high}</SelectItem>
-                        <SelectItem value="urgent">{TASK_DIALOG_UI_TEXT.priorityOptions.urgent}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
-                {/* Description - Optional */}
-                <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                      <div className="space-y-2">
+                        <Label htmlFor="priority" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          <div 
+                            className="rounded-full bg-primary/20 flex items-center justify-center"
+                            style={{
+                              width: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.width,
+                              height: TASK_DIALOG_DIMENSIONS.stepNumberCircle.small.height,
+                            }}
+                          >
+                            <span className="font-bold text-primary" style={{ fontSize: TASK_DIALOG_FONT_SIZES.stepNumber }}>3</span>
+                          </div>
+                          {TASK_DIALOG_UI_TEXT.priority}
+                        </Label>
+                        <Select
+                          value={priority}
+                          onValueChange={(value) =>
+                            setPriority(value as TaskPriority)
+                          }
+                          disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
+                        >
+                          <SelectTrigger className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                            <SelectItem value="low">{TASK_DIALOG_UI_TEXT.priorityOptions.low}</SelectItem>
+                            <SelectItem value="medium">{TASK_DIALOG_UI_TEXT.priorityOptions.medium}</SelectItem>
+                            <SelectItem value="high">{TASK_DIALOG_UI_TEXT.priorityOptions.high}</SelectItem>
+                            <SelectItem value="urgent">{TASK_DIALOG_UI_TEXT.priorityOptions.urgent}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description - Optional */}
+                  <div className="pt-4 border-t border-primary/20 space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="description" className="text-sm font-semibold text-foreground">{TASK_DIALOG_UI_TEXT.description}</Label>
                     {title.trim() && (
@@ -2291,6 +2297,7 @@ export function TaskDialog({
                     rows={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.rows}
                     className={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.focusClassName}
                   />
+                  </div>
                 </div>
 
                 {/* AI Task Breakdown Panel - Simplified (no action plan, inline components) */}
@@ -2473,7 +2480,7 @@ export function TaskDialog({
                         }
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
                         <SelectValue placeholder="No folder" />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2863,10 +2870,11 @@ export function TaskDialog({
                             }
                           }
                         }}
-                        className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10"
+                        className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10"
                       />
                     </div>
                   </div>
+                </div>
 
                   {/* Estimated Time with Slider */}
                   <div className="space-y-3 sm:space-y-4">
@@ -2929,7 +2937,7 @@ export function TaskDialog({
                         value={timezone}
                         onValueChange={setTimezone}
                       >
-                        <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent 
@@ -2996,7 +3004,7 @@ export function TaskDialog({
                         }
                       }}
                     >
-                      <SelectTrigger className="flex-1 h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className="flex-1 h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
                         <SelectValue placeholder="Select or add tag..." />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3034,14 +3042,14 @@ export function TaskDialog({
                         }
                       }}
                       placeholder="Enter new tag name..."
-                      className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10"
+                      className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10"
                     />
                     <Button
                       type="button"
                       onClick={addTag}
                       variant="outline"
                       size="icon"
-                      className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 w-10"
+                      className="border hover:border-primary hover:bg-primary/10 h-10 w-10"
                     >
                       <Icon name="plus" size={ICON_SIZE_MD} />
                     </Button>
@@ -3054,7 +3062,7 @@ export function TaskDialog({
                             <Badge
                           key={tag}
                               variant="secondary"
-                              className="cursor-pointer hover:bg-destructive/10 border-2 border-primary/30 px-3 py-1"
+                              className="cursor-pointer hover:bg-destructive/10 border border-primary/30 px-3 py-1"
                           onClick={() => removeTag(tag)}
                             >
                               <div className="flex items-center gap-1.5">
@@ -3088,14 +3096,14 @@ export function TaskDialog({
                         (e.preventDefault(), addSubtask())
                       }
                       placeholder="Enter subtask name..."
-                      className="bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 h-10"
+                      className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10"
                     />
                     <Button
                       type="button"
                       onClick={addSubtask}
                       variant="outline"
                       size="icon"
-                      className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 h-10 w-10"
+                      className="border hover:border-primary hover:bg-primary/10 h-10 w-10"
                     >
                       <Icon name="plus" size={ICON_SIZE_MD} />
                     </Button>
@@ -3212,7 +3220,7 @@ export function TaskDialog({
                               }
                             }}
                           >
-                            <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3287,7 +3295,7 @@ export function TaskDialog({
                               setRecurrenceDayOfMonth(parseInt(value))
                             }
                           >
-                            <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent 
@@ -3520,7 +3528,7 @@ export function TaskDialog({
                         }
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
                         <SelectValue placeholder="Add assignee..." />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3680,25 +3688,38 @@ export function TaskDialog({
                   type="button"
                   variant="outline"
                   onClick={handleDuplicate}
-                  className="gap-1.5 sm:gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground font-medium h-8 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
+                  className={cn(
+                    "gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground font-medium h-8 sm:h-10",
+                    isMobile ? "px-2" : "px-4",
+                    "text-xs sm:text-sm"
+                  )}
+                  title={isMobile ? TASK_DIALOG_UI_TEXT.buttonTooltips.duplicate : undefined}
                 >
-                  <Icon name="copy" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} className="sm:hidden" />
-                  <Icon name="copy" size={TASK_DIALOG_DIMENSIONS.footerButton.desktop.iconSize} className="hidden sm:inline" />
-                  <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.duplicate.desktop}</span>
-                  <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.duplicate.mobile}</span>
+                  <Icon 
+                    name="copy" 
+                    size={isMobile ? TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize : TASK_DIALOG_DIMENSIONS.footerButton.desktop.iconSize} 
+                  />
+                  {!isMobile && <span>{TASK_DIALOG_UI_TEXT.duplicate.desktop}</span>}
                 </Button>
                 {task.status !== "done" && (
                   <Button
                     type="button"
                     variant="destructive"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="gap-1.5 sm:gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium h-8 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
+                    className={cn(
+                      "gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium h-8 sm:h-10",
+                      isMobile ? "px-2" : "px-4",
+                      "text-xs sm:text-sm"
+                    )}
                     style={{ color: COLOR_TEXT_WHITE }}
+                    title={isMobile ? TASK_DIALOG_UI_TEXT.buttonTooltips.delete : undefined}
                   >
-                    <Icon name="trash-2" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} style={{ color: COLOR_TEXT_WHITE }} className="sm:hidden" />
-                    <Icon name="trash-2" size={TASK_DIALOG_DIMENSIONS.footerButton.desktop.iconSize} style={{ color: COLOR_TEXT_WHITE }} className="hidden sm:inline" />
-                    <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.delete.desktop}</span>
-                    <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.delete.mobile}</span>
+                    <Icon 
+                      name="trash-2" 
+                      size={isMobile ? TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize : TASK_DIALOG_DIMENSIONS.footerButton.desktop.iconSize}
+                      style={{ color: COLOR_TEXT_WHITE }}
+                    />
+                    {!isMobile && <span>{TASK_DIALOG_UI_TEXT.delete.desktop}</span>}
                   </Button>
                 )}
               </div>
@@ -3710,20 +3731,36 @@ export function TaskDialog({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground font-medium flex-1 sm:flex-initial h-8 sm:h-10 px-3 sm:px-5 text-xs sm:text-sm"
+                className={cn(
+                  "border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground font-medium flex-1 sm:flex-initial h-8 sm:h-10",
+                  isMobile ? "px-2" : "px-5",
+                  "text-xs sm:text-sm"
+                )}
+                title={isMobile ? TASK_DIALOG_UI_TEXT.buttonTooltips.cancel : undefined}
               >
-                {TASK_DIALOG_UI_TEXT.cancel}
+                {isMobile ? (
+                  <Icon name="x" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} />
+                ) : (
+                  TASK_DIALOG_UI_TEXT.cancel
+                )}
               </Button>
               <Button 
                 type="submit"
                 disabled={task ? !permissions.canEditTask : !permissions.canCreateTask} 
                 className={cn(
-                  "bg-primary hover:bg-primary/90 font-medium flex-1 sm:flex-initial shadow-md h-8 sm:h-10 px-3 sm:px-5 text-xs sm:text-sm",
+                  "bg-primary hover:bg-primary/90 font-medium flex-1 sm:flex-initial shadow-md h-8 sm:h-10",
+                  isMobile ? "px-2" : "px-5",
+                  "text-xs sm:text-sm",
                   COMPONENT_DIMENSIONS.taskDialog.buttonMinWidth
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
+                title={isMobile ? (task ? TASK_DIALOG_UI_TEXT.buttonTooltips.updateTask : TASK_DIALOG_UI_TEXT.buttonTooltips.createTask) : undefined}
               >
-                {task ? TASK_DIALOG_UI_TEXT.updateTask : TASK_DIALOG_UI_TEXT.createTask}
+                {isMobile ? (
+                  <Icon name="check" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} style={{ color: COLOR_TEXT_WHITE }} />
+                ) : (
+                  task ? TASK_DIALOG_UI_TEXT.updateTask : TASK_DIALOG_UI_TEXT.createTask
+                )}
               </Button>
             </div>
           </div>
