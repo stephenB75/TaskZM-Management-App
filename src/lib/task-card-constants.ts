@@ -309,6 +309,10 @@ export const TASK_CARD_HEIGHT_CONFIG = {
     },
     pomodoroTimer: 40, // Height for pomodoro timer (long tasks only)
     trackedTime: 24, // Height for tracked time display (medium and long tasks)
+    inlineControls: {
+      mobile: 36, // Height for inline play button + chevron row on mobile (py-1 = 4px + button height 24px + spacing 8px)
+      desktop: 40, // Height for inline play button + chevron row on desktop (py-1.5 = 6px + button height 24px + spacing 10px)
+    },
     description: {
       bottomPadding: {
         standard: 6, // mb-1.5 = 6px when subtasks present or no assigned users

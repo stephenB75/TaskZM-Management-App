@@ -457,14 +457,29 @@ export const DraggableTaskCard = React.forwardRef<
       // Use standard heights from TASK_CARD_STANDARD_HEIGHTS constants
       let standardHeightForThisDuration: number;
       
+      // For tasks under 30 minutes, add height for inline play button and chevron
+      // Always add height if pomodoro is available or if there's any expandable content
+      const hasExpandableContent = Boolean(
+        task.description || 
+        (task.subtasks && task.subtasks.length > 0) || 
+        (task.dependencies && task.dependencies.length > 0) || 
+        (task.assignedTo && task.assignedTo.length > 0)
+      );
+      const needsInlineControlsHeight = effectiveEstimatedTime <= 30 && (
+        currentCanUsePomodoro || hasExpandableContent
+      );
+      const inlineControlsHeight = needsInlineControlsHeight 
+        ? (isMobile ? TASK_CARD_HEIGHT_CONFIG.componentHeights.inlineControls.mobile : TASK_CARD_HEIGHT_CONFIG.componentHeights.inlineControls.desktop)
+        : 0;
+      
       if (effectiveEstimatedTime <= 15) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at15mins;
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at15mins + inlineControlsHeight;
       } else if (effectiveEstimatedTime <= 20) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at20mins;
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at20mins + inlineControlsHeight;
       } else if (effectiveEstimatedTime <= 25) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at25mins;
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at25mins + inlineControlsHeight;
       } else if (effectiveEstimatedTime <= 30) {
-        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at30mins;
+        standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at30mins + inlineControlsHeight;
       } else if (effectiveEstimatedTime <= 35) {
         standardHeightForThisDuration = TASK_CARD_STANDARD_HEIGHTS.at35mins;
       } else if (effectiveEstimatedTime <= 40) {
@@ -502,8 +517,11 @@ export const DraggableTaskCard = React.forwardRef<
       task.scheduledDate,
       task.dueDate,
       task.assignedTo,
+      task.subtasks,
+      task.dependencies,
       hasFeature, // Include hasFeature function to ensure recalculation when feature availability changes
       isMobile,
+      currentCanUsePomodoro, // Include pomodoro availability for inline controls height
     ]);
     
     const topRowItemCount = [
