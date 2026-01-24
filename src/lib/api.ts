@@ -1018,6 +1018,35 @@ export async function createTeam(workspaceId: string, name: string, description?
   return response.json();
 }
 
+export async function updateTeam(teamId: string, name: string, description?: string) {
+  const response = await fetch(`${API_BASE}/teams/${teamId}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ name, description }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update team');
+  }
+
+  return response.json();
+}
+
+export async function deleteTeam(teamId: string) {
+  const response = await fetch(`${API_BASE}/teams/${teamId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete team');
+  }
+
+  return response.json();
+}
+
 export async function getTeams(workspaceId: string) {
   try {
     const response = await fetch(`${API_BASE}/teams/${workspaceId}`, {

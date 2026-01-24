@@ -182,6 +182,8 @@ export function TeamPanel() {
     currentTeamMembers,
     isLoadingTeams,
     createTeam,
+    updateTeam,
+    deleteTeam,
     selectTeam,
     syncTeams,
     addTeamMemberToTeam,
@@ -209,6 +211,15 @@ export function TeamPanel() {
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDescription, setNewTeamDescription] = useState("");
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  // Team editing state
+  const [showEditTeam, setShowEditTeam] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editTeamName, setEditTeamName] = useState("");
+  const [editTeamDescription, setEditTeamDescription] = useState("");
+  const [isUpdatingTeam, setIsUpdatingTeam] = useState(false);
+  const [showDeleteTeamConfirm, setShowDeleteTeamConfirm] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
 
   const handleAddMember = async () => {
     if (!newMemberName.trim() || !newMemberEmail.trim()) {
@@ -461,6 +472,59 @@ export function TeamPanel() {
       console.error("Failed to create team:", error);
     } finally {
       setIsCreatingTeam(false);
+    }
+  };
+
+  const handleEditTeam = (team: Team) => {
+    setEditingTeam(team);
+    setEditTeamName(team.name);
+    setEditTeamDescription(team.description || "");
+    setShowEditTeam(true);
+  };
+
+  const handleUpdateTeam = async () => {
+    if (!editTeamName.trim()) {
+      toast.error(TEAM_PANEL_UI_TEXT.teamNameRequired);
+      return;
+    }
+
+    if (!editingTeam) {
+      return;
+    }
+
+    setIsUpdatingTeam(true);
+    try {
+      await updateTeam(editingTeam.id, editTeamName.trim(), editTeamDescription.trim() || undefined);
+      setShowEditTeam(false);
+      setEditingTeam(null);
+      setEditTeamName("");
+      setEditTeamDescription("");
+    } catch (error) {
+      console.error("Failed to update team:", error);
+    } finally {
+      setIsUpdatingTeam(false);
+    }
+  };
+
+  const handleDeleteTeam = (team: Team) => {
+    setTeamToDelete(team);
+    setShowDeleteTeamConfirm(true);
+  };
+
+  const confirmDeleteTeam = async () => {
+    if (!teamToDelete) {
+      return;
+    }
+
+    setIsDeletingTeam(true);
+    try {
+      await deleteTeam(teamToDelete.id);
+      setShowDeleteTeamConfirm(false);
+      setTeamToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete team:", error);
+    } finally {
+      setIsDeletingTeam(false);
     }
   };
 
@@ -1338,6 +1402,70 @@ export function TeamPanel() {
         </Tabs>
       </div>
 
+      {/* Team Settings Bar - Only show when a specific team is selected */}
+      {currentTeamId && isCurrentUserAdmin && (() => {
+        const selectedTeam = teams.find(t => t.id === currentTeamId);
+        return selectedTeam ? (
+          <div 
+            className="border-b border-primary/10 bg-muted/30"
+            style={{ 
+              paddingLeft: PANEL_PADDING,
+              paddingRight: PANEL_PADDING,
+              paddingTop: PANEL_GAP_SMALL,
+              paddingBottom: PANEL_GAP_SMALL
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="users" size={TEAM_PANEL_ICON_SIZE_MEDIUM} className="text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm">{selectedTeam.name}</span>
+                  {selectedTeam.description && (
+                    <span className="text-xs text-muted-foreground">{selectedTeam.description}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditTeam(selectedTeam)}
+                        className="h-8 w-8"
+                      >
+                        <Icon name="pencil" size={TEAM_PANEL_ICON_SIZE_SMALL} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit Team</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteTeam(selectedTeam)}
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                      >
+                        <Icon name="trash" size={TEAM_PANEL_ICON_SIZE_SMALL} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete Team</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+        ) : null;
+      })()}
+
       {/* Search Bar */}
       <div 
         className="border-b border-primary/10"
@@ -1655,6 +1783,98 @@ export function TeamPanel() {
               disabled={!newTeamName.trim() || isCreatingTeam}
             >
               {isCreatingTeam ? AVATAR_UI_TEXT.saving : TEAM_PANEL_UI_TEXT.createTeam}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Team Dialog */}
+      <Dialog
+        open={showEditTeam}
+        onOpenChange={setShowEditTeam}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Team</DialogTitle>
+            <DialogDescription>
+              Update team name and description
+            </DialogDescription>
+          </DialogHeader>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingTop: PANEL_PADDING, paddingBottom: PANEL_PADDING }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label htmlFor="edit-team-name">{TEAM_PANEL_UI_TEXT.teamName} *</Label>
+              <Input
+                id="edit-team-name"
+                value={editTeamName}
+                onChange={(e) => setEditTeamName(e.target.value)}
+                placeholder={TEAM_PANEL_UI_TEXT.enterTeamName}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label htmlFor="edit-team-description">{TEAM_PANEL_UI_TEXT.teamDescription}</Label>
+              <Input
+                id="edit-team-description"
+                value={editTeamDescription}
+                onChange={(e) => setEditTeamDescription(e.target.value)}
+                placeholder={TEAM_PANEL_UI_TEXT.optionalDescription}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end" style={{ gap: PANEL_GAP_MEDIUM }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditTeam(false);
+                setEditingTeam(null);
+                setEditTeamName("");
+                setEditTeamDescription("");
+              }}
+            >
+              {AVATAR_UI_TEXT.cancel}
+            </Button>
+            <Button
+              onClick={handleUpdateTeam}
+              disabled={!editTeamName.trim() || isUpdatingTeam}
+            >
+              {isUpdatingTeam ? AVATAR_UI_TEXT.saving : 'Update Team'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Team Confirmation Dialog */}
+      <Dialog
+        open={showDeleteTeamConfirm}
+        onOpenChange={setShowDeleteTeamConfirm}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Team</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{teamToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end" style={{ gap: PANEL_GAP_MEDIUM, paddingTop: PANEL_PADDING }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteTeamConfirm(false);
+                setTeamToDelete(null);
+              }}
+              disabled={isDeletingTeam}
+            >
+              {AVATAR_UI_TEXT.cancel}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteTeam}
+              disabled={isDeletingTeam}
+            >
+              {isDeletingTeam ? 'Deleting...' : 'Delete Team'}
             </Button>
           </div>
         </DialogContent>

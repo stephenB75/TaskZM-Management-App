@@ -245,6 +245,8 @@ export function createDefaultTeamContext() {
     currentTeamMembers: [],
     isLoadingTeams: false,
     createTeam: async () => {},
+    updateTeam: async () => {},
+    deleteTeam: async () => {},
     selectTeam: () => {},
     syncTeams: async () => {},
     addTeamMemberToTeam: async () => {},

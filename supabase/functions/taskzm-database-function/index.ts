@@ -5340,6 +5340,117 @@ app.post("/taskzm-database-function/teams/:workspaceId", async (c) => {
   }
 });
 
+// Update team
+app.put("/taskzm-database-function/teams/:teamId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const teamId = c.req.param('teamId');
+    const { name, description } = await c.req.json();
+
+    if (!name || !name.trim()) {
+      return c.json({ error: 'Team name is required' }, 400);
+    }
+
+    // Get team info
+    const teamData = await kv.get(`team_${teamId}`);
+    if (!teamData) {
+      return c.json({ error: 'Team not found' }, 404);
+    }
+
+    const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+
+    // Verify user has access to workspace
+    const workspaceId = team.workspaceId;
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    let members = await kv.get(`workspace_${workspaceId}_members`);
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        members = [workspaceOwner];
+      }
+    }
+    if (!members || !Array.isArray(members)) {
+      members = [workspaceOwner];
+    }
+    
+    if (!members.includes(userId) && workspaceOwner !== userId) {
+      return c.json({ error: 'Unauthorized' }, 403);
+    }
+
+    // Update team
+    team.name = name.trim();
+    team.description = description?.trim() || '';
+    team.updatedAt = new Date().toISOString();
+
+    // Save updated team
+    await kv.set(`team_${teamId}`, JSON.stringify(team));
+
+    return c.json(team);
+  } catch (error) {
+    console.error('Error updating team:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Delete team
+app.delete("/taskzm-database-function/teams/:teamId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const teamId = c.req.param('teamId');
+
+    // Get team info
+    const teamData = await kv.get(`team_${teamId}`);
+    if (!teamData) {
+      return c.json({ error: 'Team not found' }, 404);
+    }
+
+    const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+
+    // Verify user has access to workspace (admin check)
+    const workspaceId = team.workspaceId;
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    let members = await kv.get(`workspace_${workspaceId}_members`);
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        members = [workspaceOwner];
+      }
+    }
+    
+    // Only workspace owner or team creator can delete
+    if (workspaceOwner !== userId && team.createdBy !== userId) {
+      return c.json({ error: 'Unauthorized: Only team creator or workspace owner can delete teams' }, 403);
+    }
+
+    // Delete team data
+    await kv.delete(`team_${teamId}`);
+    await kv.delete(`team_${teamId}_members`);
+
+    // Remove from workspace teams list
+    const teamsData = await kv.get(`workspace_${workspaceId}_teams`);
+    if (teamsData) {
+      const teamIds = JSON.parse(teamsData);
+      const updatedTeamIds = teamIds.filter((id: string) => id !== teamId);
+      await kv.set(`workspace_${workspaceId}_teams`, JSON.stringify(updatedTeamIds));
+    }
+
+    return c.json({ success: true, message: 'Team deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting team:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
 // Get all teams for a workspace
 app.get("/taskzm-database-function/teams/:workspaceId", async (c) => {
   try {

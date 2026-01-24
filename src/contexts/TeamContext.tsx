@@ -28,6 +28,8 @@ interface TeamContextType {
   currentTeamMembers: User[];
   isLoadingTeams: boolean;
   createTeam: (name: string, description?: string) => Promise<void>;
+  updateTeam: (teamId: string, name: string, description?: string) => Promise<void>;
+  deleteTeam: (teamId: string) => Promise<void>;
   selectTeam: (teamId: string | null) => void;
   syncTeams: (workspaceId: string) => Promise<void>;
   addTeamMemberToTeam: (teamId: string, member: Omit<User, 'id'>, avatar?: string) => Promise<void>;
@@ -373,6 +375,52 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   }, [accessToken, workspaceId, user, teamMembers, syncTeams]);
 
+  const updateTeam = useCallback(async (teamId: string, name: string, description?: string) => {
+    if (!accessToken || !workspaceId) {
+      toast.error('Cannot update team: No workspace access');
+      return;
+    }
+
+    if (!name || !name.trim()) {
+      toast.error('Team name is required');
+      return;
+    }
+
+    try {
+      await api.updateTeam(teamId, name, description);
+      // Sync teams to refresh the list
+      await syncTeams(workspaceId);
+      toast.success(`Team "${name}" updated successfully`);
+    } catch (error) {
+      console.error('Failed to update team:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update team');
+    }
+  }, [accessToken, workspaceId, syncTeams]);
+
+  const deleteTeam = useCallback(async (teamId: string) => {
+    if (!accessToken || !workspaceId) {
+      toast.error('Cannot delete team: No workspace access');
+      return;
+    }
+
+    try {
+      await api.deleteTeam(teamId);
+      
+      // If deleted team was selected, switch to workspace view
+      if (currentTeamId === teamId) {
+        setCurrentTeamId(null);
+        setCurrentTeamMembers([]);
+      }
+      
+      // Sync teams to refresh the list
+      await syncTeams(workspaceId);
+      toast.success('Team deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete team:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete team');
+    }
+  }, [accessToken, workspaceId, currentTeamId, syncTeams]);
+
   const selectTeam = useCallback((teamId: string | null) => {
     setCurrentTeamId(teamId);
     if (teamId) {
@@ -488,6 +536,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         currentTeamMembers,
         isLoadingTeams,
         createTeam,
+        updateTeam,
+        deleteTeam,
         selectTeam,
         syncTeams,
         addTeamMemberToTeam,
