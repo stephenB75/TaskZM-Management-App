@@ -9,6 +9,7 @@ import {
   NAV_BAR_BOTTOM_PADDING_MOBILE, 
   MOBILE_PADDING_BOTTOM,
   ARCHIVE_CHECKBOX_SIZE,
+  INBOX_CHECKBOX_SIZE_MOBILE,
   ARCHIVE_TITLE_TEXT_SIZE,
 } from "../lib/layout-constants";
 import { Button } from "./ui/button";
@@ -413,10 +414,10 @@ export function ArchiveView() {
                               }}
                               onClick={(e) => e.stopPropagation()}
                               style={{ 
-                                width: ARCHIVE_CHECKBOX_SIZE, 
-                                height: ARCHIVE_CHECKBOX_SIZE,
-                                minWidth: ARCHIVE_CHECKBOX_SIZE,
-                                minHeight: ARCHIVE_CHECKBOX_SIZE,
+                                width: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE, 
+                                height: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
+                                minWidth: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
+                                minHeight: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
                               }}
                             />
                             {/* Task Title - Just the headline */}

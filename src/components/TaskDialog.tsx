@@ -2554,7 +2554,7 @@ export function TaskDialog({
                   <div className="pt-4 border-t border-primary/20">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Scheduled Date & Time */}
-                    <div className="space-y-3">
+                      <div className="space-y-3">
                       <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
                         <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" weight="duotone" />
                         Scheduled Date & Time
@@ -2874,8 +2874,8 @@ export function TaskDialog({
                         }}
                         className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10"
                       />
+                      </div>
                     </div>
-                  </div>
                   </div>
 
                   {/* Estimated Time with Slider */}
@@ -2930,7 +2930,7 @@ export function TaskDialog({
 
                   {/* Timezone Selector */}
                   {scheduledDate && (
-                    <div className="space-y-2 sm:space-y-3">
+                    <div className="pt-4 border-t border-primary/20 space-y-2 sm:space-y-3">
                       <Label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
                         <Icon name="globe" size={ICON_SIZE_XS} />
                         Timezone
@@ -2971,8 +2971,9 @@ export function TaskDialog({
                             📍 Selected timezone: {getTimezoneDisplay()}
                           </p>
                         )}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </TabsContent>
 

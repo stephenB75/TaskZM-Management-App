@@ -1006,7 +1006,7 @@ export function AuthScreen() {
                           id="accept-terms"
                           checked={acceptedTerms}
                           onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                          className="mt-0.5 !h-3.5 !w-3.5 sm:!h-4 sm:!w-4 flex-shrink-0"
+                          className="mt-0.5 !h-4 !w-4 flex-shrink-0"
                         />
                         <Label
                           htmlFor="accept-terms"
