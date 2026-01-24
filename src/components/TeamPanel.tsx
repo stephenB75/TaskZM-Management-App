@@ -734,7 +734,7 @@ export function TeamPanel() {
     
     return (
       <div 
-        className="relative w-full bg-white dark:bg-card rounded-lg shadow-sm border border-border/40 overflow-hidden"
+        className="relative w-full bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg shadow-sm border border-border/40 overflow-hidden"
         onClick={(e) => {
           // Don't trigger card click if clicking on dropdown area or if dropdown is open
           const target = e.target as HTMLElement;

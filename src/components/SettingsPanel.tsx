@@ -588,7 +588,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
               {/* Profile Card - Redesigned */}
               <div 
-                className="relative w-full bg-white dark:bg-card rounded-xl shadow-sm border border-border/40 overflow-hidden"
+                className="relative w-full bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl shadow-sm border border-border/40 overflow-hidden"
               >
                 {/* Blue Header Banner */}
                 <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: SETTINGS_PANEL_PROFILE_BANNER_HEIGHT }}>

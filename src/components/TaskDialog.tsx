@@ -186,7 +186,7 @@ function FixedMiniCalendar({
   const activeDate = activeField === "scheduled" ? scheduledDate : dueDate;
 
   return (
-    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3">
+    <div className="w-full bg-white/80 dark:bg-card/80 text-foreground dark:text-foreground rounded-lg p-3">
       {/* Toggle Buttons */}
       <div className="flex gap-2 mb-3">
         <Button
@@ -443,7 +443,7 @@ function SingleDateMiniCalendar({
   const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   return (
-    <div className="w-full bg-white/80 dark:bg-card/80 rounded-lg p-3">
+    <div className="w-full bg-white/80 dark:bg-card/80 text-foreground dark:text-foreground rounded-lg p-3">
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-3">
         <Button
@@ -2043,7 +2043,7 @@ export function TaskDialog({
               {/* Basic Info Tab - Redesigned Flow */}
               <TabsContent value="basic" className="mt-0 space-y-4 sm:space-y-5">
                 {/* Unified Container: Steps 1-3 and Description */}
-                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 sm:p-5 border-2 border-primary/30 shadow-sm">
+                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 sm:p-5 border-2 border-primary/30 shadow-sm">
                   {/* Step 1: Name the Task */}
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -2065,7 +2065,7 @@ export function TaskDialog({
                       placeholder={TASK_DIALOG_UI_TEXT.taskNamePlaceholder}
                       autoFocus
                       disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                      className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-11 text-base"
+                      className="bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20 h-11 text-base"
                     />
                   </div>
 
@@ -2092,7 +2092,7 @@ export function TaskDialog({
                           }
                           disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                         >
-                          <SelectTrigger className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
+                          <SelectTrigger className="bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2124,7 +2124,7 @@ export function TaskDialog({
                           }
                           disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                         >
-                          <SelectTrigger className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
+                          <SelectTrigger className="bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2302,7 +2302,7 @@ export function TaskDialog({
 
                 {/* AI Task Breakdown Panel - Simplified (no action plan, inline components) */}
                 {(title.trim() || description.trim()) && (
-                  <div className="bg-white dark:bg-card rounded-lg p-3 border-2 border-primary/30 shadow-sm">
+                  <div className="bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-3 border-2 border-primary/30 shadow-sm">
                     {isBreakdownLoading ? (
                       <div className="flex items-center gap-2 text-muted-foreground text-sm">
                         <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse" />
@@ -2443,7 +2443,7 @@ export function TaskDialog({
 
                 {/* Folder Selector */}
                 {folders.length > 0 && (
-                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className="space-y-2 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                     <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2 text-foreground">
                       <Icon name="folder" size={ICON_SIZE_MD} className="text-primary" />
                       Folder
@@ -2480,7 +2480,7 @@ export function TaskDialog({
                         }
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
                         <SelectValue placeholder="No folder" />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2507,7 +2507,7 @@ export function TaskDialog({
               {/* Scheduling Tab - Step 2: Select Date */}
               <TabsContent value="scheduling" className="mt-0 space-y-4 sm:space-y-5">
                 {/* Unified Container: Calendar and Time Selection */}
-                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                   {/* Fixed Mini Calendar */}
                   <div className="w-full flex justify-center py-2">
                     <FixedMiniCalendar
@@ -2872,7 +2872,7 @@ export function TaskDialog({
                             }
                           }
                         }}
-                        className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10"
+                        className="bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10"
                       />
                       </div>
                     </div>
@@ -2939,7 +2939,7 @@ export function TaskDialog({
                         value={timezone}
                         onValueChange={setTimezone}
                       >
-                        <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent 
@@ -2979,7 +2979,7 @@ export function TaskDialog({
               {/* Organization & Advanced Tab - Consolidated */}
               <TabsContent value="organization" className="mt-0 space-y-4 sm:space-y-5">
                 {/* Step 3: Assign Tags */}
-                  <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className="space-y-3 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
                         <span className="text-xs font-bold text-primary">3</span>
@@ -3006,7 +3006,7 @@ export function TaskDialog({
                         }
                       }}
                     >
-                      <SelectTrigger className="flex-1 h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className="flex-1 h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
                         <SelectValue placeholder="Select or add tag..." />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3158,7 +3158,7 @@ export function TaskDialog({
                 <Separator className="bg-primary/20" />
 
                 {/* Recurrence with Toggle - Moved from Advanced */}
-                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Icon name="repeat" size={ICON_SIZE_MD} className="text-primary" />
@@ -3228,7 +3228,7 @@ export function TaskDialog({
                               }
                             }}
                           >
-                            <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3303,7 +3303,7 @@ export function TaskDialog({
                               setRecurrenceDayOfMonth(parseInt(value))
                             }
                           >
-                            <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent 
@@ -3324,7 +3324,7 @@ export function TaskDialog({
                       {(recurrenceType === "daily" || recurrenceType === "weekly" || recurrenceType === "monthly") && (
                         <div className="space-y-2">
                           <Label className="text-xs text-muted-foreground">Ends</Label>
-                          <div className="w-full flex justify-center py-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                          <div className="w-full flex justify-center py-2 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                             <SingleDateMiniCalendar
                               selectedDate={recurrenceEndDate}
                               onDateSelect={(date) => {
@@ -3395,7 +3395,7 @@ export function TaskDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="h-10 bg-white dark:bg-card border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
                           <SelectValue placeholder="Add dependency..." />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3518,7 +3518,7 @@ export function TaskDialog({
 
                 {/* Team Assignment - Moved from Advanced */}
                 {teamMembers.length > 0 && (
-                  <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className="space-y-2 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                     <div className="flex items-center gap-2">
                       <Icon name="users" size={ICON_SIZE_MD} className="text-primary" />
                       <Label className="text-sm font-semibold">Assign To</Label>
@@ -3536,7 +3536,7 @@ export function TaskDialog({
                         }
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
                         <SelectValue placeholder="Add assignee..." />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3650,7 +3650,7 @@ export function TaskDialog({
                   }
                   
                   return (
-                    <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <div className="space-y-2 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
                       <Label className="text-sm font-semibold flex items-center gap-2">
                         🍅 Pomodoro Timer
                       </Label>
