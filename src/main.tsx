@@ -47,7 +47,8 @@ if (typeof window !== 'undefined') {
         lowerFullMessage.includes('taskzm-logo.png') ||
         (lowerFullMessage.includes('the resource') && (lowerFullMessage.includes('rokt') || lowerFullMessage.includes('apps.rokt.com'))) ||
         (lowerFullMessage.includes('preload') && (lowerFullMessage.includes('rokt') || lowerFullMessage.includes('apps.rokt.com'))) ||
-        (lowerFullMessage.includes('not used within a few seconds') && lowerFullMessage.includes('rokt'))) {
+        (lowerFullMessage.includes('not used within a few seconds') && (lowerFullMessage.includes('rokt') || lowerFullMessage.includes('apps.rokt.com'))) ||
+        (lowerFullMessage.includes('window\'s load event') && lowerFullMessage.includes('rokt'))) {
       // Completely suppress - these are from browser extensions, not our app
       return;
     }
