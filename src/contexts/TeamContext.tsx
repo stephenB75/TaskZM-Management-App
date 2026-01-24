@@ -350,8 +350,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
 
     // Check if user is admin (can create teams)
+    // If user is not in teamMembers yet, check their role property
+    // Default to admin if not explicitly set (workspace owners can create teams)
     const userMember = teamMembers.find(m => m.id === user.id);
-    if (userMember?.role !== 'admin') {
+    const userRole = userMember?.role || user.role || 'admin';
+    
+    if (userRole !== 'admin') {
       toast.error(TEAM_PANEL_UI_TEXT.onlyAdminsCanCreateTeams);
       return;
     }
