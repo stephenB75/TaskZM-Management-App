@@ -185,9 +185,9 @@ export const KANBAN_BACKGROUND_GRADIENTS = {
     to: '#DCD6EB',
   },
   desktop: {
-    from: '#F9F7FD',
-    via: '#FFFFFF',
-    to: '#F3F0F9',
+    from: 'rgba(128, 128, 128, 0.45)', // 45% gray at the top
+    via: 'rgba(200, 200, 200, 0.2)', // Light gray in the middle
+    to: '#FFFFFF', // White at the bottom
   },
   dark: {
     from: '#1F2937', // gray-800
