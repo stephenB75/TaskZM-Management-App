@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import type { User, Team } from '../types';
 import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
@@ -51,6 +51,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
   const [currentTeamMembers, setCurrentTeamMembers] = useState<User[]>([]);
   const [isLoadingTeams, setIsLoadingTeams] = useState(false);
+  // Prevent concurrent sync operations
+  const syncTeamsInProgressRef = useRef(false);
+  // Track the team ID for which we're currently loading members (prevent stale updates)
+  const loadingTeamIdRef = useRef<string | null>(null);
 
   const syncTeamMembers = useCallback(async (wsId: string) => {
     if (!accessToken) return;
@@ -325,16 +329,26 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   }, [accessToken, teamMembers, syncTeamMembers]);
 
   // New multi-team functions
-  const syncTeams = useCallback(async (wsId: string) => {
+  const syncTeams = useCallback(async (wsId: string, preserveSelection: boolean = false) => {
     if (!accessToken || !wsId) return;
     
+    // Prevent concurrent sync operations
+    if (syncTeamsInProgressRef.current) {
+      console.debug('Sync teams already in progress, skipping...');
+      return;
+    }
+    
+    syncTeamsInProgressRef.current = true;
     setIsLoadingTeams(true);
     try {
       const fetchedTeams = await api.getTeams(wsId);
       setTeams(fetchedTeams);
       
-      // If no team is selected and teams exist, select the first one
-      if (!currentTeamId && fetchedTeams.length > 0) {
+      // Only auto-select first team if:
+      // 1. No team is currently selected
+      // 2. Teams exist
+      // 3. We're not preserving the current selection (e.g., after creating a new team)
+      if (!preserveSelection && !currentTeamId && fetchedTeams.length > 0) {
         setCurrentTeamId(fetchedTeams[0].id);
       }
     } catch (error) {
@@ -342,6 +356,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       setTeams([]);
     } finally {
       setIsLoadingTeams(false);
+      syncTeamsInProgressRef.current = false;
     }
   }, [accessToken, currentTeamId]);
 
@@ -365,7 +380,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     try {
       const newTeam = await api.createTeam(workspaceId, name, description);
       // Sync teams from server to get the complete list with all metadata
-      await syncTeams(workspaceId);
+      // Preserve selection to prevent auto-selection from overriding our new team selection
+      await syncTeams(workspaceId, true);
       // Select the newly created team after sync
       setCurrentTeamId(newTeam.id);
       toast.success(TEAM_PANEL_UI_TEXT.teamCreatedSuccessfully(name));
@@ -412,8 +428,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         setCurrentTeamMembers([]);
       }
       
-      // Sync teams to refresh the list
-      await syncTeams(workspaceId);
+      // Sync teams to refresh the list, preserve selection (workspace team is already selected)
+      await syncTeams(workspaceId, true);
       toast.success(TEAM_PANEL_UI_TEXT.teamDeletedSuccessfully);
     } catch (error) {
       console.error('Failed to delete team:', error);
@@ -423,13 +439,22 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const selectTeam = useCallback((teamId: string | null) => {
     setCurrentTeamId(teamId);
+    // Track which team we're loading members for
+    loadingTeamIdRef.current = teamId;
+    
     if (teamId) {
       // Load members for selected team
       api.getTeamMembersByTeam(teamId).then(members => {
-        setCurrentTeamMembers(members);
+        // Only update if this is still the selected team (prevent stale updates)
+        if (loadingTeamIdRef.current === teamId) {
+          setCurrentTeamMembers(members);
+        }
       }).catch(error => {
         console.error('Failed to load team members:', error);
-        setCurrentTeamMembers([]);
+        // Only clear if this is still the selected team
+        if (loadingTeamIdRef.current === teamId) {
+          setCurrentTeamMembers([]);
+        }
       });
     } else {
       // Workspace team selected - sync workspace team members
@@ -459,7 +484,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       await api.inviteTeamMemberToTeam(teamId, member.email, member.name, member.role || 'member', avatar);
       toast.success(`Invitation sent to ${member.email}`);
       await selectTeam(teamId); // Refresh team members
-      await syncTeams(workspaceId || '');
+      // Preserve selection since we're already on this team
+      await syncTeams(workspaceId || '', true);
     } catch (error) {
       console.error('Failed to invite team member:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to invite team member');
@@ -477,7 +503,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       // await api.removeTeamMemberFromTeam(teamId, memberId);
       setCurrentTeamMembers(prev => prev.filter(m => m.id !== memberId));
       toast.success('Team member removed');
-      await syncTeams(workspaceId || '');
+      // Preserve selection since we're already on this team
+      await syncTeams(workspaceId || '', true);
     } catch (error) {
       console.error('Failed to remove team member:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to remove team member');
@@ -509,15 +536,27 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   }, [user, accessToken, workspaceId, syncTeams]);
 
-  // Load members when team is selected
+  // Load members when team is selected (backup for when currentTeamId changes externally)
   useEffect(() => {
     if (currentTeamId && accessToken) {
+      // Update loading ref to match current selection
+      loadingTeamIdRef.current = currentTeamId;
       api.getTeamMembersByTeam(currentTeamId).then(members => {
-        setCurrentTeamMembers(members);
+        // Only update if this is still the selected team (prevent stale updates)
+        if (loadingTeamIdRef.current === currentTeamId) {
+          setCurrentTeamMembers(members);
+        }
       }).catch(error => {
         console.error('Failed to load team members:', error);
-        setCurrentTeamMembers([]);
+        // Only clear if this is still the selected team
+        if (loadingTeamIdRef.current === currentTeamId) {
+          setCurrentTeamMembers([]);
+        }
       });
+    } else if (!currentTeamId) {
+      // Workspace team selected - clear members
+      loadingTeamIdRef.current = null;
+      setCurrentTeamMembers([]);
     }
   }, [currentTeamId, accessToken]);
 
