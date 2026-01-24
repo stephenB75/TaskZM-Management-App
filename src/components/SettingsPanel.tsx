@@ -12,6 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTasks } from '../contexts/TaskContext';
+import { useTeam } from '../contexts/TeamContext';
 import { useAI } from '../contexts/AIContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useCalendar } from '../contexts/CalendarContext';
@@ -194,11 +195,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { theme, setTheme, actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const { syncWithServer, isSyncing, lastSync, hoursSettings, updateHoursSettings, rolloverSettings, updateRolloverSettings, availableTags, addAvailableTag, removeAvailableTag } = useTasks();
+  const { teams, currentTeamMembers, teamMembers, getTeamMember } = useTeam();
   const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks, updateSettings } = useAI();
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
   const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
   const { awards, earnedAwards, getAwardProgress } = useAwards();
   const { permission, settings: notificationSettings, badgeCount, requestPermission, updateSettings: updateNotificationSettings } = useNotifications();
+  const { teams, currentTeamMembers, teamMembers } = useTeam();
   const [dayType, setDayType] = useState<'weekday' | 'weekend'>('weekday');
   const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
@@ -686,10 +689,37 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Username/Email */}
                   <div className="flex items-center text-muted-foreground" style={{ 
                     fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
-                    marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM,
+                    marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
                   }}>
                     <span className="truncate">@{user?.email?.split('@')[0] || SETTINGS_PANEL_UI_TEXT.profile.user}</span>
                   </div>
+
+                  {/* Role */}
+                  {user?.role && (
+                    <div className="flex items-center text-muted-foreground capitalize" style={{ 
+                      fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+                      marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
+                    }}>
+                      <span className="truncate">{user.role}</span>
+                    </div>
+                  )}
+
+                  {/* Team Information */}
+                  {(() => {
+                    // Find team by checking if user is in any team
+                    const userTeamMember = currentTeamMembers.find(m => m.id === user?.id) || teamMembers.find(m => m.id === user?.id);
+                    const teamId = userTeamMember?.teamId || user?.teamId;
+                    const team = teamId ? teams.find(t => t.id === teamId) : null;
+                    return team ? (
+                      <div className="flex items-center text-muted-foreground" style={{ 
+                        fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
+                        marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM,
+                      }}>
+                        <Icon name="users" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="mr-1.5 flex-shrink-0" />
+                        <span className="truncate">{team.name}</span>
+                      </div>
+                    ) : null;
+                  })()}
 
                   {/* Subscription Badge */}
                   <div className="flex items-center flex-wrap" style={{ 
