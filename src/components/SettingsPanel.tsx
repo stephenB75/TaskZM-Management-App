@@ -201,7 +201,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
   const { awards, earnedAwards, getAwardProgress } = useAwards();
   const { permission, settings: notificationSettings, badgeCount, requestPermission, updateSettings: updateNotificationSettings } = useNotifications();
-  const { teams, currentTeamMembers, teamMembers } = useTeam();
   const [dayType, setDayType] = useState<'weekday' | 'weekend'>('weekday');
   const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
