@@ -1439,7 +1439,7 @@ export function TeamPanel() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Edit Team</p>
+                      <p>{TEAM_PANEL_UI_TEXT.editTeam}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1456,7 +1456,7 @@ export function TeamPanel() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Delete Team</p>
+                      <p>{TEAM_PANEL_UI_TEXT.deleteTeam}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1795,9 +1795,9 @@ export function TeamPanel() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Team</DialogTitle>
+            <DialogTitle>{TEAM_PANEL_UI_TEXT.editTeam}</DialogTitle>
             <DialogDescription>
-              Update team name and description
+              {TEAM_PANEL_UI_TEXT.editTeamDescription}
             </DialogDescription>
           </DialogHeader>
 
@@ -1839,7 +1839,7 @@ export function TeamPanel() {
               onClick={handleUpdateTeam}
               disabled={!editTeamName.trim() || isUpdatingTeam}
             >
-              {isUpdatingTeam ? AVATAR_UI_TEXT.saving : 'Update Team'}
+              {isUpdatingTeam ? TEAM_PANEL_UI_TEXT.updatingTeam : TEAM_PANEL_UI_TEXT.updateTeam}
             </Button>
           </div>
         </DialogContent>
@@ -1852,9 +1852,9 @@ export function TeamPanel() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Team</DialogTitle>
+            <DialogTitle>{TEAM_PANEL_UI_TEXT.deleteTeam}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{teamToDelete?.name}"? This action cannot be undone.
+              {TEAM_PANEL_UI_TEXT.deleteTeamConfirmation(teamToDelete?.name || '')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1874,7 +1874,7 @@ export function TeamPanel() {
               onClick={confirmDeleteTeam}
               disabled={isDeletingTeam}
             >
-              {isDeletingTeam ? 'Deleting...' : 'Delete Team'}
+              {isDeletingTeam ? TEAM_PANEL_UI_TEXT.deletingTeam : TEAM_PANEL_UI_TEXT.deleteTeam}
             </Button>
           </div>
         </DialogContent>

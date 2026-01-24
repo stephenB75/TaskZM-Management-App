@@ -377,12 +377,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const updateTeam = useCallback(async (teamId: string, name: string, description?: string) => {
     if (!accessToken || !workspaceId) {
-      toast.error('Cannot update team: No workspace access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotUpdateTeamNoAccess);
       return;
     }
 
     if (!name || !name.trim()) {
-      toast.error('Team name is required');
+      toast.error(TEAM_PANEL_UI_TEXT.teamNameRequired);
       return;
     }
 
@@ -390,7 +390,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       await api.updateTeam(teamId, name, description);
       // Sync teams to refresh the list
       await syncTeams(workspaceId);
-      toast.success(`Team "${name}" updated successfully`);
+      toast.success(TEAM_PANEL_UI_TEXT.teamUpdatedSuccessfully(name));
     } catch (error) {
       console.error('Failed to update team:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update team');
@@ -399,7 +399,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const deleteTeam = useCallback(async (teamId: string) => {
     if (!accessToken || !workspaceId) {
-      toast.error('Cannot delete team: No workspace access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotDeleteTeamNoAccess);
       return;
     }
 
@@ -414,7 +414,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       
       // Sync teams to refresh the list
       await syncTeams(workspaceId);
-      toast.success('Team deleted successfully');
+      toast.success(TEAM_PANEL_UI_TEXT.teamDeletedSuccessfully);
     } catch (error) {
       console.error('Failed to delete team:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to delete team');

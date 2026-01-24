@@ -51,6 +51,18 @@ export const TEAM_PANEL_UI_TEXT = {
   onlyAdminsCanCreateTeams: 'Only admins can create teams',
   failedToCreateTeam: 'Failed to create team',
   teamCreatedSuccessfully: (teamName: string) => `Team "${teamName}" created successfully`,
+  // Team editing
+  editTeam: 'Edit Team',
+  updateTeam: 'Update Team',
+  editTeamDescription: 'Update team name and description',
+  deleteTeam: 'Delete Team',
+  deleteTeamConfirmation: (teamName: string) => `Are you sure you want to delete "${teamName}"? This action cannot be undone.`,
+  updatingTeam: 'Updating...',
+  deletingTeam: 'Deleting...',
+  teamUpdatedSuccessfully: (teamName: string) => `Team "${teamName}" updated successfully`,
+  teamDeletedSuccessfully: 'Team deleted successfully',
+  cannotUpdateTeamNoAccess: 'Cannot update team: No workspace access',
+  cannotDeleteTeamNoAccess: 'Cannot delete team: No workspace access',
   stats: {
     task: 'task',
     tasks: 'tasks',
