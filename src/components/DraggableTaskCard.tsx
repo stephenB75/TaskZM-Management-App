@@ -48,6 +48,7 @@ import {
   TASK_CARD_POSITIONING,
   TASK_CARD_ADDITIONAL_FONT_SIZES,
   TASK_CARD_OPACITY,
+  TASK_CARD_TAB_HEIGHT,
   TASK_CARD_DROPDOWN_COLORS,
   TASK_CARD_DROPDOWN_DOMAIN_COLORS,
   TASK_CARD_DROPDOWN_BADGE_COLORS,
@@ -637,6 +638,8 @@ export const DraggableTaskCard = React.forwardRef<
               paddingTop: 0,
               borderTopLeftRadius: 0,
               borderTopRightRadius: 0,
+              height: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
+              minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
             }}
           >
             <div className="flex items-center flex-1 min-w-0 flex-wrap" style={{ gap: isMobile ? '0.375rem' : '0.5rem' }}>

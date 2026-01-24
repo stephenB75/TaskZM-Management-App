@@ -217,6 +217,12 @@ export const TASK_CARD_BADGE_SIZES = {
   },
 } as const;
 
+// Task Card Tab Height
+export const TASK_CARD_TAB_HEIGHT = {
+  mobile: 50, // Base height + 20px extension = 50px
+  desktop: 54, // Base height + 20px extension = 54px
+} as const;
+
 // Standard Task Card Heights by Duration
 export const TASK_CARD_STANDARD_HEIGHTS = {
   at15mins: 200, // 15 minutes = 200px
