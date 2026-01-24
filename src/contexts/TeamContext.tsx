@@ -459,13 +459,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     } else {
       // Workspace team selected - sync workspace team members
       setCurrentTeamMembers([]);
-      if (workspaceId && accessToken) {
+      // Sync workspace team members if not already loading
+      if (workspaceId && accessToken && !isLoading) {
         syncTeamMembers(workspaceId).catch(error => {
           console.error('Failed to sync workspace team members:', error);
         });
       }
     }
-  }, [workspaceId, accessToken, syncTeamMembers]);
+  }, [workspaceId, accessToken, syncTeamMembers, isLoading]);
 
   const addTeamMemberToTeam = useCallback(async (teamId: string, member: Omit<User, 'id'>, avatar?: string) => {
     if (!accessToken || !teamId) {
@@ -530,9 +531,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   }, [accessToken]);
 
   // Sync teams when workspace changes
+  // Don't auto-select teams on initial load - default to workspace team
   useEffect(() => {
     if (user && accessToken && workspaceId) {
-      syncTeams(workspaceId);
+      syncTeams(workspaceId, true); // Preserve selection (don't auto-select first team)
     }
   }, [user, accessToken, workspaceId, syncTeams]);
 
@@ -554,11 +556,19 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         }
       });
     } else if (!currentTeamId) {
-      // Workspace team selected - clear members
+      // Workspace team selected - clear current team members
+      // Don't sync teamMembers here - selectTeam already handles it
+      // This prevents double syncing
       loadingTeamIdRef.current = null;
       setCurrentTeamMembers([]);
+      // Ensure workspace team members are synced (only if not already syncing)
+      if (workspaceId && accessToken && !isLoading) {
+        syncTeamMembers(workspaceId).catch(error => {
+          console.error('Failed to sync workspace team members:', error);
+        });
+      }
     }
-  }, [currentTeamId, accessToken]);
+  }, [currentTeamId, accessToken, workspaceId, isLoading, syncTeamMembers]);
 
   return (
     <TeamContext.Provider
