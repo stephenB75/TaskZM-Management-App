@@ -47,11 +47,11 @@ export const KANBAN_DAY_COLORS = {
       via: darkenColor(COLOR_PASTEL_MINT, 0.9), // Slightly darker for gradient
       to: darkenColor(COLOR_PASTEL_MINT, 0.85), // Darker for gradient end
       border: darkenColor(COLOR_PASTEL_MINT, 0.65), // Border color
-      opacity: 70, // Solid pastel color at 70% opacity (no gradient)
+      opacity: 85, // Solid pastel color at 85% opacity (increased for better visibility)
       borderOpacity: 30,
     },
     background: COLOR_PASTEL_MINT,
-    backgroundOpacity: 20,
+    backgroundOpacity: 35, // Increased from 20% to 35% for better color visibility
   },
   tuesday: {
     header: {
@@ -128,7 +128,7 @@ export const KANBAN_DAY_COLORS = {
   weekend: {
     from: COLOR_PASTEL_LAVENDER, // Use lavender for weekend
     to: darkenColor(COLOR_PASTEL_LAVENDER, 0.98), // Slightly darker variant
-    opacity: 50,
+    opacity: 70, // Increased from 50% to 70% for better color visibility
   },
   today: {
     ring: '#7B68EE',
@@ -171,9 +171,9 @@ export const KANBAN_DAY_COLORS = {
   },
   // Column background gradient settings - gradient of column tab color
   columnGradient: {
-    startOpacity: 25, // Starting opacity percentage for column gradient (fades from tab color) - increased for better visibility
+    startOpacity: 45, // Starting opacity percentage for column gradient (increased from 25% to 45% for better color visibility)
     endOpacity: 0, // Ending opacity (fades to white/transparent)
-    darkModeStartOpacity: 12, // Starting opacity for dark mode gradient - increased for better visibility
+    darkModeStartOpacity: 20, // Starting opacity for dark mode gradient (increased from 12% to 20% for better visibility)
     darkModeEndOpacity: 2, // Ending opacity for dark mode gradient
   },
 } as const;
