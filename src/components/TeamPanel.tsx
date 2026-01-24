@@ -1269,55 +1269,26 @@ export function TeamPanel() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      onClick={() => setShowCreateTeam(true)}
+                      onClick={() => currentTeamId ? setShowAddMember(true) : setShowCreateTeam(true)}
                       className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          setShowCreateTeam(true);
+                          currentTeamId ? setShowAddMember(true) : setShowCreateTeam(true);
                         }
                       }}
                     >
                       <Icon 
-                        name="user-three"
+                        name={currentTeamId ? "user-plus" : "user-three"}
                         size={ICON_SIZE_XL}
                         className="text-primary dark:text-primary-foreground flex-shrink-0"
                       />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{TEAM_PANEL_UI_TEXT.createNewTeam}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            {isCurrentUserAdmin && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      onClick={() => setShowAddMember(true)}
-                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setShowAddMember(true);
-                        }
-                      }}
-                    >
-                      <Icon 
-                        name="user-plus"
-                        size={ICON_SIZE_XL}
-                        className="text-primary dark:text-primary-foreground flex-shrink-0"
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{currentTeamId ? TEAM_PANEL_UI_TEXT.addMemberToTeam : TEAM_PANEL_UI_TEXT.addMember}</p>
+                    <p>{currentTeamId ? TEAM_PANEL_UI_TEXT.addMemberToTeam : TEAM_PANEL_UI_TEXT.createNewTeam}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

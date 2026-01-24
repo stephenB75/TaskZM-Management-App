@@ -432,9 +432,15 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         setCurrentTeamMembers([]);
       });
     } else {
+      // Workspace team selected - sync workspace team members
       setCurrentTeamMembers([]);
+      if (workspaceId && accessToken) {
+        syncTeamMembers(workspaceId).catch(error => {
+          console.error('Failed to sync workspace team members:', error);
+        });
+      }
     }
-  }, []);
+  }, [workspaceId, accessToken, syncTeamMembers]);
 
   const addTeamMemberToTeam = useCallback(async (teamId: string, member: Omit<User, 'id'>, avatar?: string) => {
     if (!accessToken || !teamId) {
