@@ -2974,7 +2974,6 @@ export function TaskDialog({
                       </div>
                     )}
                   </div>
-                </div>
               </TabsContent>
 
               {/* Organization & Advanced Tab - Consolidated */}
