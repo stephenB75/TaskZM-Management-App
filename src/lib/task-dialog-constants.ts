@@ -152,3 +152,20 @@ export const TASK_DIALOG_COLORS = {
   // instead of purple gradient like other task cards
   assigneeFallbackGradient: 'bg-gradient-to-br from-primary/20 to-primary/40',
 } as const;
+
+// Menu Dimensions
+export const TASK_DIALOG_MENU_WIDTH = {
+  desktop: '14rem', // 224px
+  mobile: '100%',
+} as const;
+
+export const TASK_DIALOG_MENU_ITEM_HEIGHT = {
+  desktop: '3rem', // 48px
+  mobile: '2.5rem', // 40px
+} as const;
+
+// Spacing Improvements
+export const TASK_DIALOG_SECTION_SPACING = {
+  mobile: '1.5rem', // space-y-6
+  desktop: '2rem', // space-y-8
+} as const;

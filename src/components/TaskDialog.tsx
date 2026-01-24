@@ -37,7 +37,7 @@ import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Slider } from "./ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Tabs, TabsContent } from "./ui/tabs";
 import { PomodoroTimer } from "./PomodoroTimer";
 import {
   cn,
@@ -70,8 +70,9 @@ import { generateDescription, generateDescriptionOptions } from "../lib/descript
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, INBOX_CHECKBOX_SIZE_MOBILE } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
-import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS } from "../lib/task-dialog-constants";
+import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING } from "../lib/task-dialog-constants";
 import { useIsMobile } from "./ui/use-mobile";
+import { TaskDialogMenu } from "./TaskDialogMenu";
 import type {
   Task,
   TaskPriority,
@@ -635,6 +636,7 @@ export function TaskDialog({
   const [scheduledMinutes, setScheduledMinutes] = useState("");
   const [timeFormat, setTimeFormat] = useState<"12hr" | "24hr">("12hr");
   const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
+  const [activeTab, setActiveTab] = useState<string>("basic");
   
   // Conflict detection state
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
@@ -2001,7 +2003,12 @@ export function TaskDialog({
         }
       }}
     >
-      <DialogContent className={`max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full ${UI_GRADIENT_COLORS.dialog.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
+      <DialogContent className={cn(
+        "max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full",
+        isMobile ? "max-w-3xl" : "max-w-6xl lg:max-w-7xl",
+        UI_GRADIENT_COLORS.dialog.className,
+        "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950"
+      )}>
         <DialogHeader className="flex-shrink-0 pb-4 sm:pb-5 md:pb-6 border-b border-primary/25 dark:border-primary/30">
           <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground dark:text-foreground">
             {task ? TASK_DIALOG_UI_TEXT.editTask : TASK_DIALOG_UI_TEXT.createNewTask}
@@ -2020,30 +2027,61 @@ export function TaskDialog({
           }}
           className="flex-1 overflow-hidden flex flex-col"
         >
-          {/* Tabbed Interface */}
-          <Tabs defaultValue="basic" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="w-full justify-start px-4 sm:px-6 mb-4 bg-transparent border-b border-primary/10 rounded-none h-auto py-2 sm:py-3">
-              <TabsTrigger value="basic" className="text-xs sm:text-sm">
-                <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.basicInfo.desktop}</span>
-                <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.basicInfo.mobile}</span>
-              </TabsTrigger>
-              <TabsTrigger value="scheduling" className="text-xs sm:text-sm">
-                <Icon name="calendar" size={16} className="mr-1" weight="duotone" />
-                <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.schedule.desktop}</span>
-                <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.schedule.mobile}</span>
-              </TabsTrigger>
-              <TabsTrigger value="organization" className="text-xs sm:text-sm">
-                <Icon name="settings" size={ICON_SIZE_SM} className="mr-1" />
-                <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.organize.desktop}</span>
-                <span className="sm:hidden">{TASK_DIALOG_UI_TEXT.organize.mobile}</span>
-              </TabsTrigger>
-            </TabsList>
+          {/* Mobile: Dropdown Select for Tab Navigation */}
+          {isMobile && (
+            <div className="px-4 pt-4 pb-2">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                  <SelectItem value="basic">
+                    <div className="flex items-center gap-2">
+                      <Icon name="file-text" size={ICON_SIZE_SM} />
+                      <span>{TASK_DIALOG_UI_TEXT.basicInfo.desktop}</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="scheduling">
+                    <div className="flex items-center gap-2">
+                      <Icon name="calendar" size={ICON_SIZE_SM} weight="duotone" />
+                      <span>{TASK_DIALOG_UI_TEXT.schedule.desktop}</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="organization">
+                    <div className="flex items-center gap-2">
+                      <Icon name="settings" size={ICON_SIZE_SM} />
+                      <span>{TASK_DIALOG_UI_TEXT.organize.desktop}</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-            <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 px-4 sm:px-6 pb-4">
-              {/* Basic Info Tab - Redesigned Flow */}
-              <TabsContent value="basic" className="mt-0 space-y-4 sm:space-y-5">
+          {/* Tabbed Interface */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+            {/* Desktop: Two-Column Layout */}
+            <div className={cn(
+              "flex-1 flex overflow-hidden",
+              isMobile ? "flex-col" : "flex-row gap-4"
+            )}>
+              {/* Left Column - Content Area */}
+              <div className={cn(
+                "flex-1 overflow-y-auto",
+                isMobile ? "px-4 pb-4" : "px-6 pb-4",
+                !isMobile && "pr-2"
+              )}>
+                {/* Basic Info Tab - Redesigned Flow */}
+                <TabsContent value="basic" className={cn(
+                  "mt-0",
+                  isMobile ? "space-y-6" : "space-y-8"
+                )}>
                 {/* Unified Container: Steps 1-3 and Description */}
-                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 sm:p-5 border-2 border-primary/30 shadow-sm">
+                <div className={cn(
+                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  isMobile ? "p-4 space-y-4" : "p-5 space-y-5",
+                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                )}>
                   {/* Step 1: Name the Task */}
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -2302,7 +2340,11 @@ export function TaskDialog({
 
                 {/* AI Task Breakdown Panel - Simplified (no action plan, inline components) */}
                 {(title.trim() || description.trim()) && (
-                  <div className="bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-3 border-2 border-primary/30 shadow-sm">
+                  <div className={cn(
+                    "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                    isMobile ? "p-3" : "p-4",
+                    "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                  )}>
                     {isBreakdownLoading ? (
                       <div className="flex items-center gap-2 text-muted-foreground text-sm">
                         <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse" />
@@ -2443,7 +2485,11 @@ export function TaskDialog({
 
                 {/* Folder Selector */}
                 {folders.length > 0 && (
-                  <div className="space-y-2 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className={cn(
+                    "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                    isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                    "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                  )}>
                     <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2 text-foreground">
                       <Icon name="folder" size={ICON_SIZE_MD} className="text-primary" />
                       Folder
@@ -2504,10 +2550,17 @@ export function TaskDialog({
                 )}
               </TabsContent>
 
-              {/* Scheduling Tab - Step 2: Select Date */}
-              <TabsContent value="scheduling" className="mt-0 space-y-4 sm:space-y-5">
+                {/* Scheduling Tab - Step 2: Select Date */}
+                <TabsContent value="scheduling" className={cn(
+                  "mt-0",
+                  isMobile ? "space-y-6" : "space-y-8"
+                )}>
                 {/* Unified Container: Calendar and Time Selection */}
-                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                <div className={cn(
+                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  isMobile ? "p-4 space-y-4" : "p-5 space-y-5",
+                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                )}>
                   {/* Fixed Mini Calendar */}
                   <div className="w-full flex justify-center py-2">
                     <FixedMiniCalendar
@@ -2977,9 +3030,16 @@ export function TaskDialog({
               </TabsContent>
 
               {/* Organization & Advanced Tab - Consolidated */}
-              <TabsContent value="organization" className="mt-0 space-y-4 sm:space-y-5">
+                <TabsContent value="organization" className={cn(
+                  "mt-0",
+                  isMobile ? "space-y-6" : "space-y-8"
+                )}>
                 {/* Step 3: Assign Tags */}
-                  <div className="space-y-3 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className={cn(
+                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  isMobile ? "p-3 space-y-3" : "p-4 space-y-3",
+                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                )}>
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
                         <span className="text-xs font-bold text-primary">3</span>
@@ -3079,7 +3139,11 @@ export function TaskDialog({
                   </div>
 
                 {/* Step 4: Create Subtask */}
-                <div className="space-y-3 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                <div className={cn(
+                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  isMobile ? "p-3 space-y-3" : "p-4 space-y-3",
+                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                )}>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
                       <span className="text-xs font-bold text-primary">4</span>
@@ -3158,7 +3222,11 @@ export function TaskDialog({
                 <Separator className="bg-primary/20" />
 
                 {/* Recurrence with Toggle - Moved from Advanced */}
-                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                <div className={cn(
+                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  isMobile ? "p-4 space-y-4" : "p-5 space-y-5",
+                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                )}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Icon name="repeat" size={ICON_SIZE_MD} className="text-primary" />
@@ -3324,7 +3392,11 @@ export function TaskDialog({
                       {(recurrenceType === "daily" || recurrenceType === "weekly" || recurrenceType === "monthly") && (
                         <div className="space-y-2">
                           <Label className="text-xs text-muted-foreground">Ends</Label>
-                          <div className="w-full flex justify-center py-2 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                          <div className={cn(
+                            "w-full flex justify-center bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                            isMobile ? "p-3 py-2" : "p-4 py-2",
+                            "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                          )}>
                             <SingleDateMiniCalendar
                               selectedDate={recurrenceEndDate}
                               onDateSelect={(date) => {
@@ -3368,7 +3440,11 @@ export function TaskDialog({
                 <Separator className="bg-primary/20" />
 
                 {/* Task Dependencies - Pro Yearly Feature */}
-                <div className="space-y-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                <div className={cn(
+                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                )}>
                   <div className="flex items-center gap-2">
                     <Icon name="link-2" size={ICON_SIZE_MD} className="text-primary" />
                     <Label className="text-sm font-semibold">Dependencies</Label>
@@ -3518,7 +3594,11 @@ export function TaskDialog({
 
                 {/* Team Assignment - Moved from Advanced */}
                 {teamMembers.length > 0 && (
-                  <div className="space-y-2 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  <div className={cn(
+                    "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                    isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                    "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                  )}>
                     <div className="flex items-center gap-2">
                       <Icon name="users" size={ICON_SIZE_MD} className="text-primary" />
                       <Label className="text-sm font-semibold">Assign To</Label>
@@ -3650,7 +3730,11 @@ export function TaskDialog({
                   }
                   
                   return (
-                    <div className="space-y-2 bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                    <div className={cn(
+                    "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                    isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                    "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                  )}>
                       <Label className="text-sm font-semibold flex items-center gap-2">
                         🍅 Pomodoro Timer
                       </Label>
@@ -3665,10 +3749,23 @@ export function TaskDialog({
                     </div>
                   );
                 })()}
-              </TabsContent>
+                </TabsContent>
 
-              {/* Advanced Tab - Removed (merged into Organization) */}
+                {/* Advanced Tab - Removed (merged into Organization) */}
+              </div>
 
+              {/* Right Column - Menu (Desktop Only) */}
+              {!isMobile && (
+                <div 
+                  className="flex-shrink-0 border-l border-primary/20 bg-white/50 dark:bg-card/50"
+                  style={{ width: TASK_DIALOG_MENU_WIDTH.desktop }}
+                >
+                  <TaskDialogMenu 
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                  />
+                </div>
+              )}
             </div>
           </Tabs>
 
