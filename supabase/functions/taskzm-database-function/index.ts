@@ -5261,6 +5261,337 @@ app.post("/taskzm-database-function/team/:workspaceId/invitations/decline", asyn
 });
 
 // ============================================================================
+// MULTI-TEAM ENDPOINTS
+// ============================================================================
+
+// Create a new team
+app.post("/taskzm-database-function/teams/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+    const { name, description } = await c.req.json();
+
+    if (!name || !name.trim()) {
+      return c.json({ error: 'Team name is required' }, 400);
+    }
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ error: 'Workspace not found' }, 404);
+    }
+
+    // Verify user is workspace member (admin check done on frontend)
+    let members = await kv.get(`workspace_${workspaceId}_members`);
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        members = [workspaceOwner];
+      }
+    }
+    if (!members || !Array.isArray(members)) {
+      members = [workspaceOwner];
+    }
+    
+    if (!members.includes(userId) && workspaceOwner !== userId) {
+      return c.json({ error: 'Unauthorized: Not a workspace member' }, 403);
+    }
+
+    // Generate team ID
+    const teamId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    // Create team object
+    const team = {
+      id: teamId,
+      name: name.trim(),
+      description: description?.trim() || '',
+      workspaceId,
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+      maxMembers: 8,
+      memberCount: 0,
+    };
+
+    // Store team
+    await kv.set(`team_${teamId}`, JSON.stringify(team));
+
+    // Add team to workspace's teams list
+    const existingTeams = await kv.get(`workspace_${workspaceId}_teams`);
+    const teams = existingTeams ? JSON.parse(existingTeams) : [];
+    if (!teams.includes(teamId)) {
+      teams.push(teamId);
+      await kv.set(`workspace_${workspaceId}_teams`, JSON.stringify(teams));
+    }
+
+    // Initialize empty members list for team
+    await kv.set(`team_${teamId}_members`, JSON.stringify([]));
+
+    return c.json(team);
+  } catch (error) {
+    console.error('Error creating team:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Get all teams for a workspace
+app.get("/taskzm-database-function/teams/:workspaceId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const workspaceId = c.req.param('workspaceId');
+
+    // Verify workspace exists
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    if (!workspaceOwner) {
+      return c.json({ teams: [] });
+    }
+
+    // Verify user is workspace member
+    let members = await kv.get(`workspace_${workspaceId}_members`);
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        members = [workspaceOwner];
+      }
+    }
+    if (!members || !Array.isArray(members)) {
+      members = [workspaceOwner];
+    }
+    
+    if (!members.includes(userId) && workspaceOwner !== userId) {
+      return c.json({ teams: [] });
+    }
+
+    // Get teams for workspace
+    const teamsData = await kv.get(`workspace_${workspaceId}_teams`);
+    const teamIds = teamsData ? JSON.parse(teamsData) : [];
+
+    // Fetch all team objects
+    const teams = [];
+    for (const teamId of teamIds) {
+      const teamData = await kv.get(`team_${teamId}`);
+      if (teamData) {
+        const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+        
+        // Get current member count
+        const membersData = await kv.get(`team_${teamId}_members`);
+        const membersList = membersData ? JSON.parse(membersData) : [];
+        team.memberCount = membersList.length;
+        
+        teams.push(team);
+      }
+    }
+
+    return c.json({ teams });
+  } catch (error) {
+    console.error('Error fetching teams:', error);
+    return c.json({ teams: [] });
+  }
+});
+
+// Get members for a specific team
+app.get("/taskzm-database-function/teams/:teamId/members", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const teamId = c.req.param('teamId');
+
+    // Get team info
+    const teamData = await kv.get(`team_${teamId}`);
+    if (!teamData) {
+      return c.json({ error: 'Team not found' }, 404);
+    }
+
+    const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+
+    // Verify user has access to workspace
+    const workspaceId = team.workspaceId;
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    let members = await kv.get(`workspace_${workspaceId}_members`);
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        members = [workspaceOwner];
+      }
+    }
+    if (!members || !Array.isArray(members)) {
+      members = [workspaceOwner];
+    }
+    
+    if (!members.includes(userId) && workspaceOwner !== userId) {
+      return c.json({ error: 'Unauthorized' }, 403);
+    }
+
+    // Get team members
+    const teamMembersData = await kv.get(`team_${teamId}_members`);
+    const teamMemberIds = teamMembersData ? JSON.parse(teamMembersData) : [];
+
+    // Fetch member details
+    const supabase = getSupabaseClient();
+    const teamMembers = [];
+
+    for (const memberId of teamMemberIds) {
+      try {
+        const { data: userData } = await supabase.auth.admin.getUserById(memberId);
+        if (userData?.user) {
+          const user = userData.user;
+          const memberData = await kv.get(`workspace_${workspaceId}_member_${memberId}`);
+          const memberInfo = memberData ? (typeof memberData === 'string' ? JSON.parse(memberData) : memberData) : {};
+
+          teamMembers.push({
+            id: user.id,
+            email: user.email || '',
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
+            avatar: user.user_metadata?.avatar,
+            role: memberInfo.role || 'member',
+            teamId: teamId,
+          });
+        }
+      } catch (err) {
+        console.log('Error fetching team member:', err);
+      }
+    }
+
+    return c.json(teamMembers);
+  } catch (error) {
+    console.error('Error fetching team members:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Invite member to specific team
+app.post("/taskzm-database-function/teams/:teamId/invite", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const teamId = c.req.param('teamId');
+    const { email, name, role, avatar } = await c.req.json();
+
+    if (!email || !name) {
+      return c.json({ error: 'Email and name are required' }, 400);
+    }
+
+    // Get team info
+    const teamData = await kv.get(`team_${teamId}`);
+    if (!teamData) {
+      return c.json({ error: 'Team not found' }, 404);
+    }
+
+    const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+    const workspaceId = team.workspaceId;
+
+    // Check team member limit
+    const teamMembersData = await kv.get(`team_${teamId}_members`);
+    const teamMemberIds = teamMembersData ? JSON.parse(teamMembersData) : [];
+    if (teamMemberIds.length >= team.maxMembers) {
+      return c.json({ error: `Maximum of ${team.maxMembers} members per team` }, 400);
+    }
+
+    // Verify user has access
+    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+    let members = await kv.get(`workspace_${workspaceId}_members`);
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        members = [workspaceOwner];
+      }
+    }
+    
+    if (!members.includes(userId) && workspaceOwner !== userId) {
+      return c.json({ error: 'Unauthorized' }, 403);
+    }
+
+    // Check if already a member
+    const supabase = getSupabaseClient();
+    const { data: existingUser } = await supabase.auth.admin.listUsers();
+    const existingMember = existingUser?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    
+    if (existingMember && teamMemberIds.includes(existingMember.id)) {
+      return c.json({ error: 'User is already a team member' }, 400);
+    }
+
+    // If user exists, add them directly
+    if (existingMember) {
+      teamMemberIds.push(existingMember.id);
+      await kv.set(`team_${teamId}_members`, JSON.stringify(teamMemberIds));
+      
+      // Update member count
+      team.memberCount = teamMemberIds.length;
+      await kv.set(`team_${teamId}`, JSON.stringify(team));
+
+      // Store member info with teamId
+      await kv.set(`workspace_${workspaceId}_member_${existingMember.id}`, JSON.stringify({
+        role: role || 'member',
+        teamId: teamId,
+      }));
+
+      return c.json({ 
+        success: true, 
+        message: 'Team member added',
+        member: {
+          id: existingMember.id,
+          email: existingMember.email,
+          name: existingMember.user_metadata?.name || name,
+          avatar: avatar || existingMember.user_metadata?.avatar,
+          role: role || 'member',
+          teamId: teamId,
+        }
+      });
+    }
+
+    // Otherwise create invitation (similar to workspace invitation)
+    const invitationToken = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const invitation = {
+      token: invitationToken,
+      workspaceId,
+      teamId,
+      email: email.toLowerCase(),
+      name,
+      role: role || 'member',
+      avatar,
+      invitedBy: userId,
+      createdAt: new Date().toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      status: 'pending',
+    };
+
+    await kv.set(`invitation_${invitationToken}`, JSON.stringify(invitation));
+    
+    return c.json({ 
+      success: true,
+      token: invitationToken,
+      expiresAt: expiresAt.toISOString(),
+      message: 'Invitation created' 
+    });
+  } catch (error) {
+    console.error('Error inviting team member:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// ============================================================================
 // USER AWARDS ENDPOINTS
 // ============================================================================
 // IMPORTANT: These routes must be defined BEFORE the catch-all route
