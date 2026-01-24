@@ -2506,9 +2506,10 @@ export function TaskDialog({
 
               {/* Scheduling Tab - Step 2: Select Date */}
               <TabsContent value="scheduling" className="mt-0 space-y-4 sm:space-y-5">
-                <div className="space-y-4 sm:space-y-5">
-                  {/* Fixed Mini Calendar - Keep as is per requirements */}
-                  <div className="w-full flex justify-center py-2 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                {/* Unified Container: Calendar and Time Selection */}
+                <div className="space-y-4 sm:space-y-5 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
+                  {/* Fixed Mini Calendar */}
+                  <div className="w-full flex justify-center py-2">
                     <FixedMiniCalendar
                       scheduledDate={scheduledDate}
                       dueDate={dueDate}
@@ -2550,8 +2551,9 @@ export function TaskDialog({
                   </div>
 
                   {/* Time Selection - Two Column Layout */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white dark:bg-card rounded-lg p-4 border-2 border-primary/30 shadow-sm">
-                    {/* Scheduled Date & Time */}
+                  <div className="pt-4 border-t border-primary/20">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Scheduled Date & Time */}
                     <div className="space-y-3">
                       <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
                         <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" weight="duotone" />
@@ -2874,10 +2876,10 @@ export function TaskDialog({
                       />
                     </div>
                   </div>
-                </div>
+                  </div>
 
                   {/* Estimated Time with Slider */}
-                  <div className="space-y-3 sm:space-y-4">
+                  <div className="pt-4 border-t border-primary/20 space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-semibold flex items-center gap-2">
                         <Icon name="clock" size={ICON_SIZE_XS} className="text-primary" />
