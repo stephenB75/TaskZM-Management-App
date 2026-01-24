@@ -441,6 +441,12 @@ export function TeamPanel() {
   // Check if current user is admin
   const isCurrentUserAdmin = useMemo(() => {
     if (!currentUser) return false;
+    
+    // First check user's role property (workspace owners have admin role)
+    if (currentUser.role === 'admin') {
+      return true;
+    }
+    
     if (currentTeamId) {
       // Check if user is admin in current team
       const member = currentTeamMembers.find(m => m.id === currentUser.id);
