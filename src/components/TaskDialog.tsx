@@ -68,7 +68,7 @@ import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription, generateDescriptionOptions } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS } from "../lib/ai-config";
-import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, INBOX_CHECKBOX_SIZE_MOBILE } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS } from "../lib/task-dialog-constants";
 import { useIsMobile } from "./ui/use-mobile";
@@ -3122,6 +3122,12 @@ export function TaskDialog({
                               checked={subtask.completed}
                               onCheckedChange={() => toggleSubtask(subtask.id)}
                               className="mt-1"
+                              style={isMobile ? {
+                                width: INBOX_CHECKBOX_SIZE_MOBILE,
+                                height: INBOX_CHECKBOX_SIZE_MOBILE,
+                                minWidth: INBOX_CHECKBOX_SIZE_MOBILE,
+                                minHeight: INBOX_CHECKBOX_SIZE_MOBILE,
+                              } : undefined}
                             />
                             <div className="flex-1 min-w-0">
                               <span

@@ -454,18 +454,20 @@ export const EMPTY_STATE_MARGIN_BOTTOM_SMALL = '0.75rem'; // mb-3 = 0.75rem (12p
 export const EMPTY_STATE_MARGIN_BOTTOM_LARGE = '1.5rem'; // mb-6 = 1.5rem (24px)
 export const EMPTY_STATE_PADDING_X = '1rem'; // px-4 = 1rem (16px)
 // Inbox checkbox sizes for responsive layouts
-export const INBOX_CHECKBOX_SIZE_MOBILE = '16px'; // w-4 h-4 = 16px - standard size for mobile/tablet checkbox
+export const INBOX_CHECKBOX_SIZE_MOBILE = '20px'; // w-5 h-5 = 20px - increased for better mobile touch target (minimum 20px recommended)
 export const INBOX_CHECKBOX_SIZE_SMALL_MONITOR = '16px'; // w-4 h-4 = 16px - small monitor checkbox
-export const INBOX_CHECKBOX_SIZE_LANDSCAPE = '16px'; // w-4 h-4 = 16px - standard size for landscape mode checkbox
+export const INBOX_CHECKBOX_SIZE_LANDSCAPE = '20px'; // w-5 h-5 = 20px - increased for better touch target in landscape mode
 export const INBOX_CHECKBOX_SIZE_DESKTOP = '16px'; // w-4 h-4 = 16px - desktop checkbox
 
-// Checkbox check icon size (proportional to 16px checkbox)
+// Checkbox check icon sizes (proportional to checkbox size)
 export const CHECKBOX_CHECK_ICON_SIZE = 12; // w-3 = 12px - standard check icon size for 16px checkbox
+export const CHECKBOX_CHECK_ICON_SIZE_MOBILE = 14; // w-3.5 = 14px - check icon size for 20px mobile checkbox
 // Inbox card shadow for mobile/tablet layout
 export const INBOX_CARD_SHADOW_MOBILE = '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)';
 
 // Archive Panel Sizes
-export const ARCHIVE_CHECKBOX_SIZE = '12px'; // w-3 h-3 = 12px - compact checkbox for archive panel
+export const ARCHIVE_CHECKBOX_SIZE = '12px'; // w-3 h-3 = 12px - compact checkbox for archive panel (desktop)
+export const ARCHIVE_CHECKBOX_SIZE_MOBILE = '20px'; // w-5 h-5 = 20px - larger checkbox for mobile touch target
 export const ARCHIVE_CHECKMARK_CONTAINER_SIZE = '1.25rem'; // w-5 h-5 = 1.25rem (20px) - checkmark icon container
 export const ARCHIVE_CHECKMARK_ICON_SIZE = '0.75rem'; // w-3 h-3 = 0.75rem (12px) - checkmark icon
 export const ARCHIVE_TITLE_TEXT_SIZE = '0.8125rem'; // text-[13px] = 0.8125rem (13px) - task title text size
