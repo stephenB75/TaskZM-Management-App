@@ -1061,7 +1061,8 @@ export async function getTeamMembersByTeam(teamId: string) {
     }
 
     const data = await response.json();
-    return data.members || [];
+    // Backend returns array directly, not wrapped in object
+    return Array.isArray(data) ? data : (data.members || []);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes('404') || errorMessage.includes('Not found')) {

@@ -1304,7 +1304,10 @@ export function TeamPanel() {
       >
         <Tabs 
           value={currentTeamId || "workspace"} 
-          onValueChange={(value) => selectTeam(value === "workspace" ? null : value)}
+          onValueChange={(value) => {
+            console.log('Team tab clicked:', value);
+            selectTeam(value === "workspace" ? null : value);
+          }}
         >
           <TabsList className="w-full justify-start overflow-x-auto" style={{ height: TEAM_PANEL_TAB_HEIGHT }}>
             <TabsTrigger value="workspace">
