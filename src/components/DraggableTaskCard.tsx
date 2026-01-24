@@ -66,6 +66,7 @@ import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { ACTION_PLAN_CONFIG } from "../lib/ai-config";
+import { INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CHECKBOX_SIZE_DESKTOP } from "../lib/layout-constants";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -86,7 +87,7 @@ export const DraggableTaskCard = React.forwardRef<
   ) => {
     const { updateTask, tasks, workspaceId, syncWithServer } = useTasks();
     const { accessToken } = useAuth();
-    const { getTeamMember } = useTeam();
+    const { getTeamMember, teams } = useTeam();
     const { hasFeature } = useSubscription();
     const permissionsResult = usePermissions();
     const permissions = permissionsResult || {
@@ -839,6 +840,12 @@ export const DraggableTaskCard = React.forwardRef<
                           }}
                           onClick={handleToggle}
                           className="mt-0.5 flex-shrink-0"
+                          style={{
+                            width: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                            height: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                            minWidth: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                            minHeight: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                          }}
                         />
                         <span className={cn("leading-tight flex-1", domainColors.textLight, isCompleted && "line-through opacity-60")} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                           {itemTitle}
@@ -1169,12 +1176,24 @@ export const DraggableTaskCard = React.forwardRef<
                               <div className="flex flex-col min-w-0">
                                 <span className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate">{member.name}</span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{member.role || 'Team Member'}</span>
+                                {member.teamId && (() => {
+                                  const team = teams.find(t => t.id === member.teamId);
+                                  return team ? (
+                                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate">{team.name}</span>
+                                  ) : null;
+                                })()}
                               </div>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{member.name}</p>
                             <p className="text-xs text-gray-400 dark:text-gray-300">{member.email}</p>
+                            {member.teamId && (() => {
+                              const team = teams.find(t => t.id === member.teamId);
+                              return team ? (
+                                <p className="text-xs text-gray-400 dark:text-gray-300">Team: {team.name}</p>
+                              ) : null;
+                            })()}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
