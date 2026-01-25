@@ -42,12 +42,16 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
   
   document.addEventListener('visibilitychange', handleVisibilityChange);
   
-  // Check for updates after a delay (non-blocking, background only)
-  // Use a delay to ensure it doesn't block initial page load
-  // Note: Initial check will likely be skipped since page is visible
+  // CRITICAL: Don't check for updates immediately
+  // Wait longer to ensure page is fully loaded and user session is established
+  // Initial check will be skipped since page is visible, but we still delay to be safe
   setTimeout(() => {
-    checkForUpdates();
-  }, INITIAL_UPDATE_CHECK_DELAY);
+    // Only check if page is still hidden (unlikely on initial load)
+    // This ensures we never check for updates when user is actively using the app
+    if (document.hidden) {
+      checkForUpdates();
+    }
+  }, Math.max(INITIAL_UPDATE_CHECK_DELAY, 30000)); // Wait at least 30 seconds
   
   // Set up periodic background checks ONLY (no visibility change triggers)
   // This ensures updates are checked in the background without disrupting user sessions
@@ -119,12 +123,11 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
 function checkForUpdates() {
   if (!registration) return;
   
-  // Track visibility changes to determine how long page has been hidden
+  // CRITICAL: NEVER check for updates when page is visible
+  // This prevents any refresh behavior during active user sessions
   if (!document.hidden) {
     // Page is visible - update last visible time and skip update check
     lastVisibleTime = Date.now();
-    // Suppress this debug message - it's expected behavior
-    // console.debug('[Service Worker] Skipping update check (page is visible)');
     return;
   }
   
@@ -141,14 +144,10 @@ function checkForUpdates() {
     // It will only activate when user manually refreshes the page
     registration.update().catch((error) => {
       // Silently fail - update checking is non-critical
-      console.debug('Service worker update check failed (non-critical):', error);
+      // Suppress error logging to avoid console noise
     });
-  } else {
-    // Page hasn't been hidden long enough - skip update check
-    // This prevents checks during brief tab switches or accidental visibility changes
-    // Suppress this debug message - it's expected behavior
-    // console.debug(`[Service Worker] Skipping update check (page hidden for only ${Math.round(hiddenDuration / 1000)}s, need ${Math.round(MIN_HIDDEN_TIME / 1000)}s)`);
   }
+  // If page hasn't been hidden long enough, silently skip (expected behavior)
 }
 
 /**

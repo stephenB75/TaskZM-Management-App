@@ -456,16 +456,21 @@ if ('serviceWorker' in navigator) {
     try {
       const registration = await navigator.serviceWorker.register('/service-worker.js', { 
         scope: '/',
-        // Allow background updates - we handle them gracefully
-        updateViaCache: 'none'
+        // CRITICAL: Use 'all' instead of 'none' to prevent immediate update checks
+        // 'none' can cause the service worker to check for updates immediately on registration
+        // 'all' allows caching but prevents aggressive update checks
+        updateViaCache: 'all'
       });
       
       console.log('✅ Service Worker registered:', registration.scope);
       
-      // Initialize background update checking (non-disruptive)
-      // This will check for updates periodically and show notifications when available
-      const { initServiceWorkerUpdates } = await import('./lib/service-worker-update');
-      initServiceWorkerUpdates(registration);
+      // CRITICAL: Don't check for updates immediately on registration
+      // Wait a bit to ensure the page is fully loaded and user is not disrupted
+      // Initialize background update checking (non-disruptive) after a delay
+      setTimeout(async () => {
+        const { initServiceWorkerUpdates } = await import('./lib/service-worker-update');
+        initServiceWorkerUpdates(registration);
+      }, 10000); // Wait 10 seconds after page load before starting update checks
       
     } catch (error) {
       console.error('❌ Service Worker registration failed:', error);
@@ -478,6 +483,9 @@ if ('serviceWorker' in navigator) {
     let controllerChangeHandled = false;
     let preventReloadFlag = true; // Global flag to prevent any automatic reloads
     
+    // Store preventReloadFlag globally so it persists across scopes
+    (window as any).__preventAutoReload = true;
+    
     const controllerChangeHandler = (event: Event) => {
       // Prevent handling the same controller change multiple times
       if (controllerChangeHandled) {
@@ -489,9 +497,17 @@ if ('serviceWorker' in navigator) {
       
       // CRITICAL: Prevent reload by setting flag and stopping event
       preventReloadFlag = true;
+      (window as any).__preventAutoReload = true; // Set global flag
       event.preventDefault?.();
       event.stopPropagation?.();
       event.stopImmediatePropagation?.();
+      
+      // CRITICAL: Explicitly prevent any reload attempts
+      // Clear any pending reload timeouts
+      if ((window as any).__reloadTimeout) {
+        clearTimeout((window as any).__reloadTimeout);
+        (window as any).__reloadTimeout = null;
+      }
       
       // Completely ignore controller changes - don't reload
       // The new service worker will take control on next page load
@@ -519,18 +535,23 @@ if ('serviceWorker' in navigator) {
           // Check if this is a user-initiated reload (from update notification button)
           const isUserInitiated = (window as any).__userInitiatedReload === true;
           
+          // Check global flag as well
+          const globalPreventFlag = (window as any).__preventAutoReload !== false;
+          
           // Only allow reload if explicitly called by user action (not automatic)
-          if (isUserInitiated || !preventReloadFlag || forcedReload === true) {
+          if (isUserInitiated || (!preventReloadFlag && !globalPreventFlag) || forcedReload === true) {
             // User-initiated reload - allow it
             // Clear the flag after allowing reload
             if (isUserInitiated) {
               (window as any).__userInitiatedReload = false;
+              (window as any).__preventAutoReload = false; // Allow this reload
             }
             originalReload(forcedReload);
           } else {
             // Automatic reload attempt - block it
             console.debug('[Service Worker] Blocked automatic page reload - update will apply on next manual refresh');
             preventReloadFlag = true; // Keep flag set to prevent future automatic reloads
+            (window as any).__preventAutoReload = true; // Keep global flag set
           }
         },
         writable: false,
@@ -544,19 +565,40 @@ if ('serviceWorker' in navigator) {
       (window as any).__locationReloadOverride = function(forcedReload?: boolean) {
         // Check if this is a user-initiated reload (from update notification button)
         const isUserInitiated = (window as any).__userInitiatedReload === true;
+        const currentPreventFlag = (window as any).__preventReloadFlag !== false;
         
-        if (isUserInitiated || !preventReloadFlag || forcedReload === true) {
+        if (isUserInitiated || !currentPreventFlag || forcedReload === true) {
           // User-initiated reload - allow it
           // Clear the flag after allowing reload
           if (isUserInitiated) {
             (window as any).__userInitiatedReload = false;
           }
+          (window as any).__preventReloadFlag = false; // Allow reload
           originalReload(forcedReload);
         } else {
           console.debug('[Service Worker] Blocked automatic page reload - update will apply on next manual refresh');
+          (window as any).__preventReloadFlag = true;
           preventReloadFlag = true;
         }
       };
+      
+      // Also override any direct calls to location.reload
+      // Mark when reload is called
+      const originalReloadWrapper = function(forcedReload?: boolean) {
+        (window as any).__locationReloadCalled = true;
+        (window as any).__locationReloadOverride(forcedReload);
+      };
+      
+      // Try to override location.reload in multiple ways
+      try {
+        Object.defineProperty(window.location, 'reload', {
+          value: originalReloadWrapper,
+          writable: false,
+          configurable: true,
+        });
+      } catch (e) {
+        // Fallback already set above
+      }
     }
     
     // Additional safeguard: Listen for messages from service worker
@@ -591,22 +633,21 @@ if ('serviceWorker' in navigator) {
     // Use non-passive listener to prevent reload
     navigator.serviceWorker.addEventListener('message', messageHandler, { capture: true, passive: false });
     
-    // Final safeguard: Prevent beforeunload if it's a service worker-related reload
-    window.addEventListener('beforeunload', (event) => {
-      // Only prevent if it's an automatic reload (not user-initiated navigation)
-      if (preventReloadFlag && !event.defaultPrevented) {
-        // Check if this is a service worker-related reload
-        const isServiceWorkerReload = navigator.serviceWorker.controller !== null && 
-                                      navigator.serviceWorker.controller.state === 'activated';
-        if (isServiceWorkerReload) {
-          console.debug('[Service Worker] Preventing automatic reload from beforeunload');
-          event.preventDefault();
-          event.stopPropagation();
-          preventReloadFlag = true; // Keep flag set
-          return false;
-        }
+    // CRITICAL: Additional safeguard - prevent any navigation-based reloads
+    // Intercept popstate and hashchange events that might trigger reloads
+    const preventNavigationReload = (event: Event) => {
+      // Only prevent if it's an automatic reload (not user-initiated)
+      if ((window as any).__preventAutoReload && !(window as any).__userInitiatedReload) {
+        console.debug('[Service Worker] Blocked navigation-based reload attempt');
+        event.preventDefault?.();
+        event.stopPropagation?.();
+        event.stopImmediatePropagation?.();
       }
-    }, { capture: true, passive: false });
+    };
+    
+    // Listen for navigation events that might trigger reloads
+    window.addEventListener('popstate', preventNavigationReload, { capture: true, passive: false });
+    window.addEventListener('hashchange', preventNavigationReload, { capture: true, passive: false });
   });
 }
 
