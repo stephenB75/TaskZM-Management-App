@@ -67,7 +67,7 @@ import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription, generateDescriptionOptions } from "../lib/description-generator";
-import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS } from "../lib/ai-config";
+import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS, EFFORT_SCORE_THRESHOLDS, DESCRIPTION_UI_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, INBOX_CHECKBOX_SIZE_MOBILE } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING } from "../lib/task-dialog-constants";
@@ -2381,12 +2381,12 @@ export function TaskDialog({
                           {breakdown.effortScore > 0 && (
                             <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
                               <span className="text-xs font-medium text-foreground">
-                                Effort: {breakdown.effortScore.toFixed(1)}/5
+                                Effort: {breakdown.effortScore.toFixed(EFFORT_SCORE_THRESHOLDS.DISPLAY_DECIMAL_PLACES)}/{EFFORT_SCORE_THRESHOLDS.DISPLAY_MAX}
                               </span>
                             </div>
                           )}
                           {/* Show primary verb if available */}
-                          {breakdown.primaryVerb && breakdown.primaryVerb !== 'unknown' && (
+                          {breakdown.primaryVerb && breakdown.primaryVerb !== DESCRIPTION_UI_CONFIG.UNKNOWN_VERB && (
                             <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
                               <span className="text-xs font-medium text-foreground capitalize">
                                 {breakdown.primaryVerb}
@@ -2402,7 +2402,7 @@ export function TaskDialog({
                             </span>
                             {!isLoadingDescriptionOptions && descriptionOptions.length > 0 && (
                               <div className="flex flex-wrap gap-1.5">
-                                {descriptionOptions.slice(0, 5).map((option, idx) => (
+                                {descriptionOptions.slice(0, DESCRIPTION_UI_CONFIG.MAX_DESCRIPTION_OPTIONS).map((option, idx) => (
                                   <Badge
                                     key={idx}
                                     variant="secondary"
@@ -2427,8 +2427,8 @@ export function TaskDialog({
                                     }}
                                     title={`${option.domain} (${(option.confidence * 100).toFixed(0)}% confidence)`}
                                   >
-                                    {option.description.length > 60 
-                                      ? `${option.description.substring(0, 60)}...` 
+                                    {option.description.length > DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH
+                                      ? `${option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)}...` 
                                       : option.description}
                                   </Badge>
                                 ))}
@@ -2438,13 +2438,15 @@ export function TaskDialog({
                         )}
                         {description.trim() && breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
-                            {breakdown.descriptionAnalysis.suggestions.slice(0, 2).map((suggestion, idx) => (
+                            {breakdown.descriptionAnalysis.suggestions.slice(0, DESCRIPTION_UI_CONFIG.MAX_SUGGESTIONS_DISPLAY).map((suggestion, idx) => (
                               <Badge
                                 key={idx}
                                 variant="secondary"
                                 className="cursor-pointer hover:bg-primary/10 text-xs"
                                 onClick={() => {
-                                  const newDescription = `${description}\n\n${suggestion}`;
+                                  const newDescription = description 
+                                    ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${suggestion}`
+                                    : suggestion;
                                   setDescription(newDescription);
                                 }}
                               >

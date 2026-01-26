@@ -720,6 +720,22 @@ export const EFFORT_SCORE_THRESHOLDS = {
   LOW: 2,
   // Medium effort threshold (3-) - uses verb + noun
   MEDIUM: 3,
+  // Display formatting
+  DISPLAY_DECIMAL_PLACES: 1, // Decimal places for effort score display (e.g., 3.5)
+  DISPLAY_MAX: 5, // Maximum value for effort score display (e.g., "/5")
+} as const;
+
+/**
+ * Description UI configuration constants
+ */
+export const DESCRIPTION_UI_CONFIG = {
+  // Description options display limits
+  MAX_DESCRIPTION_OPTIONS: 5, // Maximum number of description options to display
+  MAX_SUGGESTIONS_DISPLAY: 2, // Maximum number of enhancement suggestions to display
+  // Description preview limits
+  DESCRIPTION_PREVIEW_LENGTH: 60, // Maximum characters for description preview in badges
+  // Primary verb fallback
+  UNKNOWN_VERB: 'unknown', // Fallback verb when no verb is detected
 } as const;
 
 /**

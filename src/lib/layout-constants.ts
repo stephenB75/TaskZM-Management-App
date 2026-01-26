@@ -928,10 +928,10 @@ export const COMPONENT_DIMENSIONS = {
       iconSize: '0.75rem', // w-3 h-3 = 0.75rem (12px)
     },
     descriptionTextarea: {
-      rows: 3, // rows={3} - initial visible rows
-      placeholder: 'Add a description... (Editable - AI Action Plan updates automatically as you type)',
-      focusClassName: 'focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary', // Focus styles for description textarea
-      maxHeight: 2000, // Maximum height in pixels (increased to allow unlimited text with scrolling)
+      rows: 3, // rows={3} - initial visible rows (using constant value for consistency)
+      placeholder: 'Add a description... (Editable - AI Action Plan updates automatically as you type)', // Placeholder text (using constant string for consistency)
+      focusClassName: 'focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary', // Focus styles for description textarea (using constant classes for consistency)
+      maxHeight: 2000, // Maximum height in pixels (increased to allow unlimited text with scrolling) - using constant value for consistency
       // No character limit - standard practice is to allow unlimited text with proper wrapping
       // Text will wrap naturally and scroll if content exceeds max height
     },

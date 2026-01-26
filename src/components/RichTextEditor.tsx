@@ -68,7 +68,13 @@ export function RichTextEditor({
         // Trim leading/trailing whitespace and ensure sentences start at first line
         const paragraphs = value.split('\n').map(p => p.trim()).filter(p => p.length > 0);
         if (paragraphs.length > 0) {
-          editorRef.current.innerHTML = paragraphs.map(p => `<p style="font-size: ${STANDARD_FONT_SIZE}; margin: 0.25rem 0; padding: 0; text-align: left; text-indent: 0;">${p.trim()}</p>`).join('');
+          editorRef.current.innerHTML = paragraphs.map((p, idx) => {
+            const isFirst = idx === 0;
+            const isLast = idx === paragraphs.length - 1;
+            const marginTop = isFirst ? '0' : '0.5rem';
+            const marginBottom = isLast ? '0' : '0';
+            return `<p style="font-size: ${STANDARD_FONT_SIZE}; margin-top: ${marginTop}; margin-bottom: ${marginBottom}; padding: 0; text-align: left; text-indent: 0;">${p.trim()}</p>`;
+          }).join('');
         } else {
           editorRef.current.innerHTML = '';
         }
@@ -78,7 +84,8 @@ export function RichTextEditor({
         // Remove leading/trailing whitespace from HTML content
         htmlContent = htmlContent.trim();
         // Ensure paragraphs don't have leading whitespace and start at first line
-        htmlContent = htmlContent.replace(/<p[^>]*>\s+/g, '<p style="font-size: ' + STANDARD_FONT_SIZE + '; margin: 0.25rem 0; padding: 0; text-align: left; text-indent: 0;">');
+        // Improved spacing: normalize paragraph margins (will be handled by CSS classes)
+        htmlContent = htmlContent.replace(/<p[^>]*>\s+/g, '<p style="font-size: ' + STANDARD_FONT_SIZE + '; margin-top: 0; margin-bottom: 0; padding: 0; text-align: left; text-indent: 0;">');
         htmlContent = htmlContent.replace(/\s+<\/p>/g, '</p>');
         // Remove text-indent from all paragraphs
         htmlContent = htmlContent.replace(/text-indent[^;]*;?/g, 'text-indent: 0;');
@@ -124,10 +131,15 @@ export function RichTextEditor({
     const text = e.clipboardData.getData('text/plain');
     
     // Convert plain text to paragraphs with 12pt font size, ensuring sentences start at first line
+    // Improved spacing: first paragraph no top margin, consistent spacing between paragraphs
     const paragraphs = text.split('\n').map(p => p.trim()).filter(p => p.length > 0);
     const formattedText = paragraphs.length > 0
-      ? paragraphs.map(p => `<p style="font-size: ${STANDARD_FONT_SIZE}; margin: 0.25rem 0; padding: 0; text-align: left; text-indent: 0;">${p}</p>`).join('')
-      : `<p style="font-size: ${STANDARD_FONT_SIZE}; margin: 0.25rem 0; padding: 0; text-align: left; text-indent: 0;">${text.trim()}</p>`;
+      ? paragraphs.map((p, idx) => {
+          const isFirst = idx === 0;
+          const marginTop = isFirst ? '0' : '0.5rem';
+          return `<p style="font-size: ${STANDARD_FONT_SIZE}; margin-top: ${marginTop}; margin-bottom: 0; padding: 0; text-align: left; text-indent: 0;">${p}</p>`;
+        }).join('')
+      : `<p style="font-size: ${STANDARD_FONT_SIZE}; margin-top: 0; margin-bottom: 0; padding: 0; text-align: left; text-indent: 0;">${text.trim()}</p>`;
     
     // Insert the formatted text
     const selection = window.getSelection();
@@ -622,8 +634,10 @@ export function RichTextEditor({
           "[&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:my-1 [&_ol]:space-y-1 [&_ol]:block",
           "[&_li]:ml-2 [&_li]:leading-relaxed [&_li]:block",
           // Paragraph and indentation styling - ensure sentences start at first line
-          "[&_p]:my-1 [&_p]:leading-relaxed [&_p]:block [&_p:empty]:hidden [&_p]:pl-0 [&_p]:ml-0 [&_p]:text-left",
-          "[&_p+p]:mt-1",
+          // Improved spacing: first paragraph no top margin, last paragraph no bottom margin, consistent spacing between
+          "[&_p]:leading-relaxed [&_p]:block [&_p]:empty:hidden [&_p]:pl-0 [&_p]:ml-0 [&_p]:text-left [&_p]:mt-0 [&_p]:mb-0",
+          "[&_p:not(:first-child)]:mt-2 [&_p:not(:last-child)]:mb-0",
+          "[&_p:first-child]:mt-0 [&_p:last-child]:mb-0",
           // Text alignment support - preserve alignment styles
           "[&_p[style*='text-align:left']]:text-left",
           "[&_p[style*='text-align:center']]:text-center",
