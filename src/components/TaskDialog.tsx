@@ -2254,8 +2254,8 @@ export function TaskDialog({
                           size="sm"
                             onClick={async () => {
                               try {
-                                logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken });
-                                const generated = await generateDescription(title, accessToken, description);
+                                logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken, effortScore: breakdown?.effortScore });
+                                const generated = await generateDescription(title, accessToken, description, breakdown?.effortScore);
                                 logger.debug('AI Generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,
