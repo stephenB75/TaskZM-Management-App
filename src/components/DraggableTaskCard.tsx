@@ -334,6 +334,50 @@ export const DraggableTaskCard = React.forwardRef<
       return isDark ? priorityColors.tab.dark : priorityColors.tab.light;
     };
 
+    // Get priority-based background gradient color (much lighter version of tab color)
+    // Creates a subtle gradient that matches the priority tab but with low opacity for contrast
+    const getPriorityBackgroundGradient = (
+      priority: Task["priority"],
+    ): string => {
+      const priorityKey = priority || 'default';
+      const priorityColors = TASK_CARD_PRIORITY_COLORS[priorityKey] || TASK_CARD_PRIORITY_COLORS.default;
+      const tabColor = isDark ? priorityColors.tab.dark : priorityColors.tab.light;
+      
+      // Parse the tab color - handle both hex and rgba formats
+      let baseColor: string;
+      let existingOpacity: number = 1;
+      
+      if (tabColor.startsWith('rgba')) {
+        // Extract rgba values
+        const rgbaMatch = tabColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (rgbaMatch) {
+          const r = parseInt(rgbaMatch[1]);
+          const g = parseInt(rgbaMatch[2]);
+          const b = parseInt(rgbaMatch[3]);
+          existingOpacity = rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1;
+          // Convert to hex for base color
+          baseColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        } else {
+          baseColor = tabColor;
+        }
+      } else {
+        baseColor = tabColor;
+      }
+      
+      // Use very light opacity (15-20%) for the gradient to create subtle contrast
+      // This makes the background match the tab color but much lighter
+      // Multiply by existing opacity if it was already in rgba format
+      const gradientOpacity = (isDark ? 0.15 : 0.20) * existingOpacity;
+      const gradientColor = getColorWithOpacity(baseColor, gradientOpacity);
+      
+      // Gradient from priority color (light) at top to white/background at bottom
+      const endColor = isDark 
+        ? getColorWithOpacity(COLOR_BACKGROUND_WHITE, TASK_CARD_BACKGROUNDS.gradient.darkModeWhiteOpacity)
+        : COLOR_BACKGROUND_WHITE;
+      
+      return `linear-gradient(to bottom, ${gradientColor}, ${endColor})`;
+    };
+
     // Format duration display
     const formatDuration = (minutes: number | null) => {
       if (!minutes) return null;
@@ -622,10 +666,8 @@ export const DraggableTaskCard = React.forwardRef<
             maxHeight: isExpanded ? 'none' : `${cardHeight}px`,
             boxSizing: 'border-box', // Include padding in height calculation
             flexShrink: 0, // Prevent flex from shrinking the card
-            // Lavender gradient: 25% tint at top fading to white at bottom
-            background: isDark
-              ? `linear-gradient(to bottom, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, TASK_CARD_BACKGROUNDS.gradient.lavenderOpacity)}, ${getColorWithOpacity(COLOR_BACKGROUND_WHITE, TASK_CARD_BACKGROUNDS.gradient.darkModeWhiteOpacity)})`
-              : `linear-gradient(to bottom, ${getColorWithOpacity(COLOR_PASTEL_LAVENDER, TASK_CARD_BACKGROUNDS.gradient.lavenderOpacity)}, ${COLOR_BACKGROUND_WHITE})`,
+            // Priority-based gradient: lighter version of tab color at top fading to white at bottom
+            background: getPriorityBackgroundGradient(task.priority),
           }}
           onMouseDown={(e) => {
             // Prevent click if user is starting a drag
