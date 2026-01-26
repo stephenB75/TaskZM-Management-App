@@ -44,6 +44,10 @@ export interface AIContext {
     pronouns: string[];
   };
   
+  // Effort analysis (shared across all components for coordinated intelligence)
+  effortScore?: number; // 1-5 effort score from verb analysis
+  primaryVerb?: string; // Primary verb from task analysis
+  
   // Full text for reference
   fullText: string;
   title: string;

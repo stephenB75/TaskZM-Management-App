@@ -702,6 +702,27 @@ export const MAX_TASK_DURATION_MINUTES = 300;
 export const EFFORT_NORMALIZATION_DIVISOR = 2.5;
 
 /**
+ * Effort score thresholds for action plan and description generation
+ * Used to determine detail level and complexity based on effort
+ */
+export const EFFORT_SCORE_THRESHOLDS = {
+  // Default effort score when not provided
+  DEFAULT: 2.5,
+  // Minimum valid effort score
+  MIN: 1,
+  // Maximum valid effort score
+  MAX: 5,
+  // High effort threshold (3+) - uses keywords + nouns for context
+  HIGH: 3,
+  // Very high effort threshold (4+) - uses contextual phrases for detailed actions
+  VERY_HIGH: 4,
+  // Low effort threshold (2-) - uses simple verb + noun
+  LOW: 2,
+  // Medium effort threshold (3-) - uses verb + noun
+  MEDIUM: 3,
+} as const;
+
+/**
  * Complexity score normalization divisor
  * Used to normalize complexity scores (1-5 scale)
  * Default: 2.5 (middle of 1-5 scale)

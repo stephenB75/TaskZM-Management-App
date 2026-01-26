@@ -10,7 +10,7 @@ import { detectDomain, type Domain, getDomainTerminology } from './domain-termin
 import { analyzeTaskVerbs } from './verb-analysis';
 import { estimateTaskHours } from './daily-hours-utils';
 import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from './business-constants';
-import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS, DESCRIPTION_GENERATION_CONFIG, ACTION_PLAN_CONFIG } from './ai-config';
+import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS, DESCRIPTION_GENERATION_CONFIG, ACTION_PLAN_CONFIG, EFFORT_SCORE_THRESHOLDS } from './ai-config';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY } from './task-constants';
 import { extractTermsFromTaskNameWithBrowserAI } from './description-generator';
 import type { AIContext } from './ai-context';
@@ -33,6 +33,7 @@ export interface ActionPlan {
 
 /**
  * Generate action plan from task description
+ * ENHANCED: Now uses effort score from AIContext to adjust step complexity and detail
  * 
  * @param task - Task to generate action plan for
  * @param aiContext - Optional shared AI context (if provided, uses it instead of re-detecting/re-extracting)
@@ -84,7 +85,7 @@ export function generateActionPlan(
 
   // Estimate total time
   const taskForEstimation: Task = {
-    id: task.id || 'temp',
+    id: task.id || 'temp', // Temporary ID for estimation (not a constant as it's a placeholder)
     title,
     description,
     status: (task.status as any) || DEFAULT_TASK_STATUS,
@@ -111,13 +112,17 @@ export function generateActionPlan(
   const totalMinutes = Math.round(totalHours * MINUTES_PER_HOUR);
 
   // Generate steps based on domain and description
+  // ENHANCED: Pass effort score and enhanced terms for better coordination
+  const effortScore = aiContext?.effortScore;
   const steps = generateSteps(
     title,
     description,
     domain,
     terminology,
     totalMinutes,
-    extractedTerms
+    extractedTerms,
+    aiContext?.enhancedTerms,
+    effortScore
   );
 
   // Generate suggested subtasks
@@ -148,7 +153,11 @@ export function generateActionPlan(
 
 /**
  * Generate action plan steps based on domain and description
- * Uses Browser AI to extract keywords, phrases, verbs, and nouns for context-aware step generation
+ * ENHANCED: Uses effort score and enhanced terms for coordinated intelligence
+ * Uses Browser AI extracted terms + enhanced terms for context-aware step generation
+ * 
+ * @param effortScore - Optional effort score (1-5) to adjust step complexity and detail
+ * @param enhancedTerms - Optional enhanced terms from AIContext for better coordination
  */
 function generateSteps(
   title: string,
@@ -156,7 +165,9 @@ function generateSteps(
   domain: Domain,
   terminology: ReturnType<typeof getDomainTerminology>,
   totalMinutes: number,
-  extractedTerms?: ReturnType<typeof extractTermsFromTaskNameWithBrowserAI>
+  extractedTerms?: ReturnType<typeof extractTermsFromTaskNameWithBrowserAI>,
+  enhancedTerms?: AIContext['enhancedTerms'],
+  effortScore?: number
 ): ActionPlanStep[] {
   const steps: ActionPlanStep[] = [];
   const fullText = `${title} ${description}`.trim();
@@ -189,26 +200,27 @@ function generateSteps(
                       keywords.some(kw => SEQUENTIAL_INDICATORS.some(ind => kw.includes(ind))) ||
                       phrases.some(ph => SEQUENTIAL_INDICATORS.some(ind => ph.includes(ind)));
 
-  // Domain-specific step generation using Browser AI extracted terms
+  // ENHANCED: Domain-specific step generation using Browser AI extracted terms + enhanced terms
+  // Pass effort score to adjust step complexity and detail level
   switch (domain) {
     case 'business':
-      steps.push(...generateBusinessSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence));
+      steps.push(...generateBusinessSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence, effortScore));
       break;
 
     case 'home':
-      steps.push(...generateHomeSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence));
+      steps.push(...generateHomeSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence, effortScore));
       break;
 
     case 'personal':
-      steps.push(...generatePersonalSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence));
+      steps.push(...generatePersonalSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence, effortScore));
       break;
 
     case 'world':
-      steps.push(...generateWorldSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence));
+      steps.push(...generateWorldSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence, effortScore));
       break;
 
     default:
-      steps.push(...generateGenericSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence));
+      steps.push(...generateGenericSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence, effortScore));
   }
 
   // If no steps generated, create a default step
@@ -246,6 +258,7 @@ function generateSteps(
 
 /**
  * Generate business-specific steps using Browser AI extracted terms
+ * ENHANCED: Uses effort score to adjust step complexity and detail
  */
 function generateBusinessSteps(
   text: string,
@@ -254,7 +267,8 @@ function generateBusinessSteps(
   verbs: string[],
   nouns: string[],
   totalMinutes: number,
-  hasSequence: boolean
+  hasSequence: boolean,
+  effortScore?: number
 ): ActionPlanStep[] {
   const steps: ActionPlanStep[] = [];
   let order = 1;
@@ -296,11 +310,24 @@ function generateBusinessSteps(
     });
   }
 
-  // Execution step - use extracted verbs to create more specific action
+  // ENHANCED: Execution step - use extracted verbs and effort score for more intelligent action
   const executionMinutes = Math.round(totalMinutes * ACTION_PLAN_TIME_DISTRIBUTION.EXECUTION.BUSINESS);
-  const executionAction = verbs.length > 0 && verbs[0] 
-    ? `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)} ${nouns.length > 0 ? nouns[0] : 'main task'}`
-    : 'Execute main task';
+  
+  // Higher effort = more detailed action descriptions using keywords/phrases
+  let executionAction: string;
+  if (effortScore && effortScore >= EFFORT_SCORE_THRESHOLDS.VERY_HIGH && phrases.length > 0) {
+    // Very high effort: use contextual phrases for detailed action
+    executionAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Execute'} ${phrases[0] || (nouns.length > 0 ? nouns[0] : 'main task')}`;
+  } else if (effortScore && effortScore >= EFFORT_SCORE_THRESHOLDS.HIGH && keywords.length > 0 && nouns.length > 0) {
+    // High effort: combine verb + keyword + noun for context
+    executionAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Execute'} ${keywords[0]} ${nouns[0]}`;
+  } else if (verbs.length > 0 && verbs[0]) {
+    // Medium/low effort: use verb + noun
+    executionAction = `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)} ${nouns.length > 0 ? nouns[0] : 'main task'}`;
+  } else {
+    executionAction = 'Execute main task';
+  }
+  
   steps.push({
     action: executionAction,
     estimatedMinutes: executionMinutes,
@@ -334,6 +361,7 @@ function generateBusinessSteps(
 
 /**
  * Generate home-specific steps using Browser AI extracted terms
+ * ENHANCED: Uses effort score to adjust step complexity and detail
  */
 function generateHomeSteps(
   text: string,
@@ -342,7 +370,8 @@ function generateHomeSteps(
   verbs: string[],
   nouns: string[],
   totalMinutes: number,
-  hasSequence: boolean
+  hasSequence: boolean,
+  effortScore?: number
 ): ActionPlanStep[] {
   const steps: ActionPlanStep[] = [];
   let order = 1;
@@ -384,11 +413,21 @@ function generateHomeSteps(
     });
   }
 
-  // Execution step - use extracted verbs to create more specific action
+  // ENHANCED: Execution step - use extracted verbs and effort score for more intelligent action
   const executionMinutes = Math.round(totalMinutes * ACTION_PLAN_TIME_DISTRIBUTION.EXECUTION.HOME);
-  const executionAction = verbs.length > 0 && verbs[0] 
-    ? `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)} ${nouns.length > 0 ? nouns[0] : 'main task'}`
-    : 'Complete main task';
+  
+  // Higher effort = more detailed action descriptions using keywords/phrases
+  let executionAction: string;
+  if (effortScore && effortScore >= 4 && phrases.length > 0) {
+    executionAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Complete'} ${phrases[0] || (nouns.length > 0 ? nouns[0] : 'main task')}`;
+  } else if (effortScore && effortScore >= 3 && keywords.length > 0 && nouns.length > 0) {
+    executionAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Complete'} ${keywords[0]} ${nouns[0]}`;
+  } else if (verbs.length > 0 && verbs[0]) {
+    executionAction = `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)} ${nouns.length > 0 ? nouns[0] : 'main task'}`;
+  } else {
+    executionAction = 'Complete main task';
+  }
+  
   steps.push({
     action: executionAction,
     estimatedMinutes: executionMinutes,
@@ -411,6 +450,7 @@ function generateHomeSteps(
 
 /**
  * Generate personal-specific steps using Browser AI extracted terms
+ * ENHANCED: Uses effort score to adjust step complexity and detail
  */
 function generatePersonalSteps(
   text: string,
@@ -419,7 +459,8 @@ function generatePersonalSteps(
   verbs: string[],
   nouns: string[],
   totalMinutes: number,
-  hasSequence: boolean
+  hasSequence: boolean,
+  effortScore?: number
 ): ActionPlanStep[] {
   const steps: ActionPlanStep[] = [];
   let order = 1;
@@ -461,11 +502,21 @@ function generatePersonalSteps(
     });
   }
 
-  // Execution step - use extracted verbs to create more specific action
+  // ENHANCED: Execution step - use extracted verbs and effort score for more intelligent action
   const executionMinutes = Math.round(totalMinutes * ACTION_PLAN_TIME_DISTRIBUTION.EXECUTION.PERSONAL);
-  const executionAction = verbs.length > 0 && verbs[0] 
-    ? `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)} ${nouns.length > 0 ? nouns[0] : 'activity'}`
-    : 'Complete activity';
+  
+  // Higher effort = more detailed action descriptions using keywords/phrases
+  let executionAction: string;
+  if (effortScore && effortScore >= 4 && phrases.length > 0) {
+    executionAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Complete'} ${phrases[0] || (nouns.length > 0 ? nouns[0] : 'activity')}`;
+  } else if (effortScore && effortScore >= 3 && keywords.length > 0 && nouns.length > 0) {
+    executionAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Complete'} ${keywords[0]} ${nouns[0]}`;
+  } else if (verbs.length > 0 && verbs[0]) {
+    executionAction = `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)} ${nouns.length > 0 ? nouns[0] : 'activity'}`;
+  } else {
+    executionAction = 'Complete activity';
+  }
+  
   steps.push({
     action: executionAction,
     estimatedMinutes: executionMinutes,
@@ -488,6 +539,7 @@ function generatePersonalSteps(
 
 /**
  * Generate world/global-specific steps using Browser AI extracted terms
+ * ENHANCED: Uses effort score to adjust step complexity and detail
  */
 function generateWorldSteps(
   text: string,
@@ -496,7 +548,8 @@ function generateWorldSteps(
   verbs: string[],
   nouns: string[],
   totalMinutes: number,
-  hasSequence: boolean
+  hasSequence: boolean,
+  effortScore?: number
 ): ActionPlanStep[] {
   const steps: ActionPlanStep[] = [];
   let order = 1;
@@ -544,11 +597,21 @@ function generateWorldSteps(
     });
   }
 
-  // Execution step - use extracted verbs to create more specific action
+  // ENHANCED: Execution step - use extracted verbs and effort score for more intelligent action
   const executionMinutes = Math.round(totalMinutes * ACTION_PLAN_TIME_DISTRIBUTION.EXECUTION.WORLD);
-  const executionAction = verbs.length > 0 && verbs[0] 
-    ? `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)} ${nouns.length > 0 ? nouns[0] : 'main task'}`
-    : 'Execute main task';
+  
+  // Higher effort = more detailed action descriptions using keywords/phrases
+  let executionAction: string;
+  if (effortScore && effortScore >= 4 && phrases.length > 0) {
+    executionAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Execute'} ${phrases[0] || (nouns.length > 0 ? nouns[0] : 'main task')}`;
+  } else if (effortScore && effortScore >= 3 && keywords.length > 0 && nouns.length > 0) {
+    executionAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Execute'} ${keywords[0]} ${nouns[0]}`;
+  } else if (verbs.length > 0 && verbs[0]) {
+    executionAction = `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)} ${nouns.length > 0 ? nouns[0] : 'main task'}`;
+  } else {
+    executionAction = 'Execute main task';
+  }
+  
   steps.push({
     action: executionAction,
     estimatedMinutes: executionMinutes,
@@ -561,6 +624,7 @@ function generateWorldSteps(
 
 /**
  * Generate generic steps for unknown/mixed domains using Browser AI extracted terms
+ * ENHANCED: Uses effort score to adjust step complexity and detail
  */
 function generateGenericSteps(
   text: string,
@@ -569,20 +633,38 @@ function generateGenericSteps(
   verbs: string[],
   nouns: string[],
   totalMinutes: number,
-  hasSequence: boolean
+  hasSequence: boolean,
+  effortScore?: number
 ): ActionPlanStep[] {
   const steps: ActionPlanStep[] = [];
 
-  // Use extracted verbs and nouns to create more specific steps
-  const prepAction = verbs.length > 0 && verbs[0]
-    ? `Prepare and plan for ${verbs[0]}${nouns.length > 0 ? ` ${nouns[0]}` : ''}`
-    : 'Prepare and plan';
-  const execAction = verbs.length > 0 && verbs[0]
-    ? `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)}${nouns.length > 0 ? ` ${nouns[0]}` : ' task'}`
-    : 'Execute task';
-  const reviewAction = verbs.length > 0
-    ? `Review and complete ${verbs[0]}`
-    : 'Review and complete';
+  // ENHANCED: Use extracted verbs, nouns, keywords, and phrases with effort score for more intelligent steps
+  let prepAction: string;
+  let execAction: string;
+  let reviewAction: string;
+  
+  if (effortScore && effortScore >= EFFORT_SCORE_THRESHOLDS.VERY_HIGH && phrases.length > 0) {
+    // Very high effort: use contextual phrases
+    prepAction = `Prepare and plan for ${phrases[0] || (verbs.length > 0 ? verbs[0] : 'task')}`;
+    execAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Execute'} ${phrases[0] || (nouns.length > 0 ? nouns[0] : 'task')}`;
+    reviewAction = `Review and finalize ${phrases[0] || (verbs.length > 0 ? verbs[0] : 'task')}`;
+  } else if (effortScore && effortScore >= EFFORT_SCORE_THRESHOLDS.HIGH && keywords.length > 0) {
+    // High effort: use keywords for context
+    prepAction = `Prepare and plan for ${keywords[0]}${verbs.length > 0 ? ` ${verbs[0]}` : ''}${nouns.length > 0 ? ` ${nouns[0]}` : ''}`;
+    execAction = `${verbs.length > 0 ? verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1) : 'Execute'} ${keywords[0]}${nouns.length > 0 ? ` ${nouns[0]}` : ' task'}`;
+    reviewAction = `Review and complete ${keywords[0]}${verbs.length > 0 ? ` ${verbs[0]}` : ''}`;
+  } else {
+    // Medium/low effort: use verbs and nouns
+    prepAction = verbs.length > 0 && verbs[0]
+      ? `Prepare and plan for ${verbs[0]}${nouns.length > 0 ? ` ${nouns[0]}` : ''}`
+      : 'Prepare and plan';
+    execAction = verbs.length > 0 && verbs[0]
+      ? `${verbs[0].charAt(0).toUpperCase() + verbs[0].slice(1)}${nouns.length > 0 ? ` ${nouns[0]}` : ' task'}`
+      : 'Execute task';
+    reviewAction = verbs.length > 0
+      ? `Review and complete ${verbs[0]}`
+      : 'Review and complete';
+  }
 
   // Simple breakdown: preparation, execution, follow-up
   steps.push({
@@ -613,13 +695,15 @@ function generateGenericSteps(
 
 /**
  * Generate suggested subtasks based on domain and description using Browser AI extracted terms
+ * ENHANCED: Uses enhanced terms for better coordination with other AI components
  */
 function generateSubtasks(
   title: string,
   description: string,
   domain: Domain,
   terminology: ReturnType<typeof getDomainTerminology>,
-  extractedTerms?: ReturnType<typeof extractTermsFromTaskNameWithBrowserAI>
+  extractedTerms?: ReturnType<typeof extractTermsFromTaskNameWithBrowserAI>,
+  enhancedTerms?: AIContext['enhancedTerms']
 ): string[] {
   const subtasks: string[] = [];
   const fullText = `${title} ${description}`.trim();
@@ -627,7 +711,20 @@ function generateSubtasks(
 
   // Use provided extracted terms or extract them
   const terms = extractedTerms || extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
-  const { keywords, phrases, verbs, nouns } = terms;
+  
+  // ENHANCED: Combine extracted terms with enhanced terms for better coordination
+  const keywords = enhancedTerms?.keywords.length > 0
+    ? [...new Set([...terms.keywords, ...enhancedTerms.keywords])]
+    : terms.keywords;
+  const phrases = enhancedTerms?.phrases.length > 0
+    ? [...new Set([...terms.phrases, ...enhancedTerms.phrases])]
+    : terms.phrases;
+  const verbs = enhancedTerms?.verbs.length > 0
+    ? [...new Set([...terms.verbs, ...enhancedTerms.verbs])]
+    : terms.verbs;
+  const nouns = enhancedTerms?.nouns.length > 0
+    ? [...new Set([...terms.nouns, ...enhancedTerms.nouns])]
+    : terms.nouns;
 
   // Helper function to check if terms match concepts
   const hasTerm = (searchTerms: string[], matchTerms: string[]) => 

@@ -120,17 +120,6 @@ export function useTaskBreakdown(
       // Use requestAnimationFrame to avoid blocking UI
       requestAnimationFrame(() => {
         try {
-          // Create shared AI context once (eliminates redundant domain detection and term extraction)
-          const aiContext = createAIContextSync(title, description);
-          
-          // Log for debugging
-          console.log('AI Analysis: Creating context', {
-            title: title.substring(0, 50),
-            description: description.substring(0, 50),
-            domain: aiContext.domain,
-            confidence: aiContext.domainConfidence,
-          });
-
           // Create temporary task for analysis
           const tempTask: Partial<Task> = {
             title,
@@ -140,8 +129,25 @@ export function useTaskBreakdown(
             tags: [],
           };
 
-          // Analyze verbs
+          // Analyze verbs FIRST to get effort score
           const verbAnalysis = analyzeTaskVerbs(tempTask as Task);
+          
+          // Create shared AI context once (eliminates redundant domain detection and term extraction)
+          // ENHANCED: Include effort score and primary verb in context for coordinated intelligence
+          const aiContext = createAIContextSync(title, description);
+          // Add effort analysis to context for coordination
+          (aiContext as any).effortScore = verbAnalysis.effortScore;
+          (aiContext as any).primaryVerb = verbAnalysis.primaryVerb;
+          
+          // Log for debugging
+          console.log('AI Analysis: Creating context with effort score', {
+            title: title.substring(0, 50),
+            description: description.substring(0, 50),
+            domain: aiContext.domain,
+            confidence: aiContext.domainConfidence,
+            effortScore: verbAnalysis.effortScore,
+            primaryVerb: verbAnalysis.primaryVerb,
+          });
 
           // Estimate hours
           const taskForEstimation: Task = {
