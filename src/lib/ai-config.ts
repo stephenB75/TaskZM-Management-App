@@ -824,6 +824,35 @@ export const DESCRIPTION_DEDUPLICATION_CONFIG = {
 } as const;
 
 /**
+ * Description options generation configuration
+ * Used for generating multiple description variations
+ */
+export const DESCRIPTION_OPTIONS_CONFIG = {
+  // Number of options based on effort score
+  MIN_OPTIONS: 3, // Minimum number of options (low effort)
+  MID_OPTIONS: 4, // Medium number of options (medium effort)
+  MAX_OPTIONS: 5, // Maximum number of options (high effort)
+  
+  // Effort score thresholds for determining number of options
+  LOW_EFFORT_THRESHOLD: 2, // <= 2 = low effort (3 options)
+  MEDIUM_EFFORT_THRESHOLD: 3, // <= 3 = medium effort (4 options)
+  
+  // Effort score variations for generating different detail levels
+  VARIATION_SMALL: 0.3, // Small variation for alternating options
+  VARIATION_MEDIUM: 0.5, // Medium variation for option 1 and 2
+  VARIATION_LARGE: 0.7, // Large variation for retry attempts
+  
+  // Retry configuration
+  MAX_RETRIES: 3, // Maximum additional attempts to generate unique options
+  
+  // Similarity threshold for duplicate detection
+  DUPLICATE_SIMILARITY_THRESHOLD: 0.8, // 80% similarity threshold for duplicate descriptions (0-1 scale)
+  
+  // Event loop yielding delay (milliseconds)
+  EVENT_LOOP_YIELD_DELAY: 0, // Yield to event loop (0ms = next tick)
+} as const;
+
+/**
  * Maximum cache size for task breakdown results
  */
 export const TASK_BREAKDOWN_CACHE_SIZE = 100;

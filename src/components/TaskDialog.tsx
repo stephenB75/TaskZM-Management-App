@@ -70,7 +70,7 @@ import { generateDescription, generateDescriptionOptions } from "../lib/descript
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS, EFFORT_SCORE_THRESHOLDS, DESCRIPTION_UI_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, INBOX_CHECKBOX_SIZE_MOBILE } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
-import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING } from "../lib/task-dialog-constants";
+import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS } from "../lib/task-dialog-constants";
 import { useIsMobile } from "./ui/use-mobile";
 import { TaskDialogMenu } from "./TaskDialogMenu";
 import type {
@@ -139,8 +139,8 @@ function FixedMiniCalendar({
     const daysToSubtract = startDay;
     startDate.setDate(startDate.getDate() - daysToSubtract);
     
-    // Generate 35 days (5 weeks) for a full calendar grid
-    for (let i = 0; i < 35; i++) {
+    // Generate calendar grid days (5 weeks = 35 days)
+    for (let i = 0; i < TASK_DIALOG_CALENDAR.DAYS_IN_GRID; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       days.push(date);
@@ -183,7 +183,7 @@ function FixedMiniCalendar({
            date.getFullYear() === viewDate.getFullYear();
   };
 
-  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const weekDays = TASK_DIALOG_CALENDAR.WEEK_DAYS_SHORT;
   const activeDate = activeField === "scheduled" ? scheduledDate : dueDate;
 
   return (
@@ -206,7 +206,7 @@ function FixedMiniCalendar({
             height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
           }}
         >
-          <Icon name="calendar" size={14} className="mr-1.5" weight="duotone" />
+          <Icon name="calendar" size={TASK_DIALOG_CALENDAR.ICON_SIZE} className="mr-1.5" weight="duotone" />
           {TASK_DIALOG_UI_TEXT.scheduledDate}
         </Button>
         <Button
@@ -398,8 +398,8 @@ function SingleDateMiniCalendar({
     const daysToSubtract = startDay;
     startDate.setDate(startDate.getDate() - daysToSubtract);
     
-    // Generate 35 days (5 weeks) for a full calendar grid
-    for (let i = 0; i < 35; i++) {
+    // Generate calendar grid days (5 weeks = 35 days)
+    for (let i = 0; i < TASK_DIALOG_CALENDAR.DAYS_IN_GRID; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       days.push(date);
@@ -441,7 +441,7 @@ function SingleDateMiniCalendar({
            date.getFullYear() === viewDate.getFullYear();
   };
 
-  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const weekDays = TASK_DIALOG_CALENDAR.WEEK_DAYS_SHORT;
 
   return (
     <div className="w-full bg-white/80 dark:bg-card/80 text-foreground dark:text-foreground rounded-lg p-3">
@@ -1170,7 +1170,7 @@ export function TaskDialog({
               // Try different UTC offsets to find the correct UTC time
               // that produces our target time in the selected timezone
               let found = false;
-              for (let offsetHours = -12; offsetHours <= 14; offsetHours++) {
+              for (let offsetHours = TASK_DIALOG_TIMEZONE.MIN_OFFSET_HOURS; offsetHours <= TASK_DIALOG_TIMEZONE.MAX_OFFSET_HOURS; offsetHours++) {
                 const testUTC = new Date(Date.UTC(year, month, day, hour - offsetHours, minute, second));
                 const testParts = targetTzFormatter.formatToParts(testUTC);
                 const getPart = (type: string) => parseInt(testParts.find(p => p.type === type)?.value || "0", 10);
@@ -2202,25 +2202,27 @@ export function TaskDialog({
                     <Label htmlFor="description" className="text-sm font-semibold text-foreground">{TASK_DIALOG_UI_TEXT.description}</Label>
                     {title.trim() && (
                       <div className="flex items-center gap-1">
-                        {/* Refresh/Regenerate Description Button - Only show if description exists */}
+                        {/* Redo/Regenerate Description Button - Only show if description exists */}
                         {description.trim() && (
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             disabled={isGeneratingDescription || isBreakdownLoading}
-                            onClick={async () => {
+                            onClick={() => {
                               if (isGeneratingDescription) return; // Prevent multiple clicks
                               setIsGeneratingDescription(true);
-                              try {
-                                // Force regeneration by passing empty description to get fresh result
-                                // This ensures we get a new/modified description rather than reusing the existing one
-                                const generated = await generateDescription(
-                                  title, 
-                                  accessToken, 
-                                  '', 
-                                  breakdown?.effortScore
-                                );
+                              // Defer async operation to avoid blocking click handler
+                              setTimeout(async () => {
+                                try {
+                                  // Force regeneration by passing empty description to get fresh result
+                                  // This ensures we get a new/modified description rather than reusing the existing one
+                                  const generated = await generateDescription(
+                                    title, 
+                                    accessToken, 
+                                    '', 
+                                    breakdown?.effortScore
+                                  );
                                 logger.debug('AI Refresh description result:', { 
                                   hasDescription: !!generated.description, 
                                   descriptionLength: generated.description?.length || 0,
@@ -2247,15 +2249,24 @@ export function TaskDialog({
                                     description: 'The AI could not generate a description. Please try again or enter description manually.',
                                   });
                                 }
-                              } catch (error) {
-                                logger.warn('Description regeneration failed:', error);
-                                toast.error('Failed to regenerate description', {
-                                  description: 'Please try again',
-                                });
-                              } finally {
-                                setIsGeneratingDescription(false);
-                              }
+                                } catch (error) {
+                                  logger.warn('Description regeneration failed:', error);
+                                  toast.error('Failed to regenerate description', {
+                                    description: 'Please try again',
+                                  });
+                                } finally {
+                                  setIsGeneratingDescription(false);
+                                }
+                              }, 0); // Defer to next event loop tick
                             }}
+                            className={cn(
+                              "border-2 border-primary/30 dark:border-primary/50",
+                              "hover:border-primary/50 dark:hover:border-primary/70",
+                              "hover:bg-accent/50 dark:hover:bg-accent/30",
+                              `transition-all ${TASK_DIALOG_TRANSITIONS.BUTTON_HOVER_DURATION_CLASS}`,
+                              "font-medium",
+                              isGeneratingDescription && "opacity-50 cursor-not-allowed"
+                            )}
                             style={{ 
                               height: COMPONENT_DIMENSIONS.taskDialog.aiButton.height,
                               paddingLeft: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
@@ -2263,13 +2274,17 @@ export function TaskDialog({
                               fontSize: COMPONENT_DIMENSIONS.taskDialog.aiButton.textSize,
                               gap: SETTINGS_PANEL_GAP_SMALL 
                             }}
-                            title="Refresh/Regenerate description (replaces current)"
+                            title="Redo/Regenerate description (replaces current)"
                           >
                             <Icon 
-                              name="refresh-cw"
+                              name="arrow-clockwise"
                               size={COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize}
+                              weight={isGeneratingDescription ? "regular" : "duotone"}
+                              className={cn(
+                                isGeneratingDescription && "animate-spin"
+                              )}
                             />
-                            <span className="hidden sm:inline">Refresh</span>
+                            <span className="hidden sm:inline">Redo</span>
                           </Button>
                         )}
                         {/* Generate New Description Button - Appends to existing or creates new */}
@@ -2278,12 +2293,14 @@ export function TaskDialog({
                           variant="ghost"
                           size="sm"
                           disabled={isGeneratingDescription || isBreakdownLoading}
-                          onClick={async () => {
+                          onClick={() => {
                             if (isGeneratingDescription) return; // Prevent multiple clicks
                             setIsGeneratingDescription(true);
-                            try {
-                              logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken, effortScore: breakdown?.effortScore });
-                              const generated = await generateDescription(title, accessToken, description, breakdown?.effortScore);
+                            // Defer async operation to avoid blocking click handler
+                            setTimeout(async () => {
+                              try {
+                                logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken, effortScore: breakdown?.effortScore });
+                                const generated = await generateDescription(title, accessToken, description, breakdown?.effortScore);
                                 logger.debug('AI Generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,
@@ -2301,8 +2318,8 @@ export function TaskDialog({
                                   oldLength: description.length,
                                   newLength: newDescription.length,
                                   newDescriptionPreview: newDescription.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH),
-                                  oldDescription: description.substring(0, Math.floor(DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH * 0.5)),
-                                  newDescription: newDescription.substring(0, Math.floor(DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH * 0.5))
+                                  oldDescription: description.substring(0, Math.floor(DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH * TASK_DIALOG_CALCULATIONS.DESCRIPTION_PREVIEW_RATIO)),
+                                  newDescription: newDescription.substring(0, Math.floor(DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH * TASK_DIALOG_CALCULATIONS.DESCRIPTION_PREVIEW_RATIO))
                                 });
                                 
                                 setDescription(newDescription);
@@ -2329,14 +2346,15 @@ export function TaskDialog({
                                   description: 'The AI could not generate a description. Please try again or enter description manually.',
                                 });
                               }
-                            } catch (error) {
-                              logger.warn('Description generation failed:', error);
-                              toast.error('Failed to generate description', {
-                                description: 'Please try again or enter description manually',
-                              });
-                            } finally {
-                              setIsGeneratingDescription(false);
-                            }
+                              } catch (error) {
+                                logger.warn('Description generation failed:', error);
+                                toast.error('Failed to generate description', {
+                                  description: 'Please try again or enter description manually',
+                                });
+                              } finally {
+                                setIsGeneratingDescription(false);
+                              }
+                            }, 0); // Defer to next event loop tick
                           }}
                           style={{ 
                             height: COMPONENT_DIMENSIONS.taskDialog.aiButton.height,
@@ -3362,7 +3380,7 @@ export function TaskDialog({
                         <div className="space-y-2">
                           <Label className="text-xs text-muted-foreground">Repeat on</Label>
                           <div className="flex flex-wrap gap-2">
-                            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+                            {TASK_DIALOG_CALENDAR.WEEK_DAYS_FULL.map((day, index) => (
                               <Badge
                                 key={index}
                                 variant={

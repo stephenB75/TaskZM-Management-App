@@ -169,3 +169,39 @@ export const TASK_DIALOG_SECTION_SPACING = {
   mobile: '1.5rem', // space-y-6
   desktop: '2rem', // space-y-8
 } as const;
+
+// Calendar Constants
+export const TASK_DIALOG_CALENDAR = {
+  // Calendar grid configuration
+  DAYS_IN_GRID: 35, // 5 weeks * 7 days = 35 days for full calendar grid
+  WEEKS_IN_GRID: 5, // 5 weeks for full calendar display
+  
+  // Week day abbreviations (short format for calendar headers)
+  WEEK_DAYS_SHORT: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const,
+  
+  // Week day names (full format for recurrence selection)
+  WEEK_DAYS_FULL: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const,
+  
+  // Icon size for calendar buttons
+  ICON_SIZE: 14, // ICON_SIZE_SM = 14px
+} as const;
+
+// Timezone Constants
+export const TASK_DIALOG_TIMEZONE = {
+  // UTC offset range for timezone detection
+  MIN_OFFSET_HOURS: -12, // Minimum UTC offset (UTC-12)
+  MAX_OFFSET_HOURS: 14, // Maximum UTC offset (UTC+14)
+} as const;
+
+// Transition Constants
+export const TASK_DIALOG_TRANSITIONS = {
+  // Button hover transition duration
+  BUTTON_HOVER_DURATION: 200, // duration-200 = 200ms
+  BUTTON_HOVER_DURATION_CLASS: 'duration-200', // Tailwind class
+} as const;
+
+// Calculation Constants
+export const TASK_DIALOG_CALCULATIONS = {
+  // Used in Math.floor for description preview calculations
+  DESCRIPTION_PREVIEW_RATIO: 0.5, // 50% ratio for preview calculations
+} as const;

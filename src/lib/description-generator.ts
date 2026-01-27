@@ -8,7 +8,7 @@
  */
 
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, saveNewTerminologyToLibrary, DOMAIN_TERMINOLOGIES } from './domain-terminology';
-import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_DEDUPLICATION_CONFIG } from './ai-config';
+import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_DEDUPLICATION_CONFIG, DESCRIPTION_OPTIONS_CONFIG } from './ai-config';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
 
@@ -3031,8 +3031,21 @@ export async function generateDescription(
     const descriptionForDetection = existingDescription?.trim() || '';
     const domainResult = detectDomain(taskName, descriptionForDetection);
     const domain = domainResult.domain;
-    // Use async version to fetch shared terminology from database
-    const domainTerms = await getDomainTerminologyAsync(domain);
+    
+    // Defer async terminology fetch to avoid blocking UI
+    // Use setTimeout(0) to yield to event loop before heavy async operation
+    const domainTerms = await new Promise<ReturnType<typeof getDomainTerminology>>((resolve) => {
+      setTimeout(async () => {
+        try {
+          const terms = await getDomainTerminologyAsync(domain);
+          resolve(terms);
+        } catch (error) {
+          logger.warn('Error fetching domain terminology, using sync version:', error);
+          // Fallback to sync version if async fails
+          resolve(getDomainTerminology(domain));
+        }
+      }, 0);
+    });
 
   logger.debug(`📝 Description Generation: Using domain detection with description`, {
     taskName,
@@ -3426,12 +3439,53 @@ export async function generateDescriptionOptions(
     // For low effort: 3 options (all concise)
     // For medium effort: 4 options (mix of concise and moderate)
     // For high effort: 5 options (mix of moderate and detailed)
-    const numOptions = normalizedEffortScore <= 2 ? 3 : 
-                       normalizedEffortScore <= 3 ? 4 : 5;
+    const numOptions = normalizedEffortScore <= DESCRIPTION_OPTIONS_CONFIG.LOW_EFFORT_THRESHOLD 
+      ? DESCRIPTION_OPTIONS_CONFIG.MIN_OPTIONS
+      : normalizedEffortScore <= DESCRIPTION_OPTIONS_CONFIG.MEDIUM_EFFORT_THRESHOLD 
+      ? DESCRIPTION_OPTIONS_CONFIG.MID_OPTIONS 
+      : DESCRIPTION_OPTIONS_CONFIG.MAX_OPTIONS;
 
     const options: GeneratedDescription[] = [];
 
+    // Defer heavy async operations to avoid blocking UI
+    // Use setTimeout(0) to yield to the event loop between operations
+    const generateWithDelay = async (index: number, variantEffortScore: number): Promise<void> => {
+      return new Promise((resolve) => {
+        // Yield to event loop before each async operation
+        setTimeout(async () => {
+          try {
+            const generated = await generateDescription(
+              taskName,
+              accessToken,
+              existingDescription,
+              variantEffortScore
+            );
+
+            // Only add if description is not empty and not duplicate
+            if (generated.description && generated.description.trim().length > 0) {
+              // Check for duplicates (similar descriptions)
+              const isDuplicate = options.some(opt => {
+                const similarity = calculateDescriptionSimilarity(
+                  opt.description,
+                  generated.description
+                );
+                return similarity > DESCRIPTION_OPTIONS_CONFIG.DUPLICATE_SIMILARITY_THRESHOLD;
+              });
+
+              if (!isDuplicate) {
+                options.push(generated);
+              }
+            }
+          } catch (error) {
+            logger.warn(`Error generating description option ${index}:`, error);
+          }
+          resolve();
+        }, DESCRIPTION_OPTIONS_CONFIG.EVENT_LOOP_YIELD_DELAY);
+      });
+    };
+
     // Generate options with slight variations in effort score to get different detail levels
+    // Process sequentially but yield to event loop between operations
     for (let i = 0; i < numOptions; i++) {
       // Vary the effort score slightly for each option to get different detail levels
       // Option 0: Base effort score
@@ -3440,85 +3494,59 @@ export async function generateDescriptionOptions(
       // Option 3+: Alternate between base and variations
       let variantEffortScore = normalizedEffortScore;
       if (i === 1 && normalizedEffortScore > 1.5) {
-        variantEffortScore = Math.max(1, normalizedEffortScore - 0.5);
+        variantEffortScore = Math.max(1, normalizedEffortScore - DESCRIPTION_OPTIONS_CONFIG.VARIATION_MEDIUM);
       } else if (i === 2 && normalizedEffortScore < 4.5) {
-        variantEffortScore = Math.min(5, normalizedEffortScore + 0.5);
+        variantEffortScore = Math.min(5, normalizedEffortScore + DESCRIPTION_OPTIONS_CONFIG.VARIATION_MEDIUM);
       } else if (i >= 3) {
         // Alternate between base and variations for remaining options
         variantEffortScore = i % 2 === 0 
-          ? Math.min(5, normalizedEffortScore + 0.3)
-          : Math.max(1, normalizedEffortScore - 0.3);
+          ? Math.min(5, normalizedEffortScore + DESCRIPTION_OPTIONS_CONFIG.VARIATION_SMALL)
+          : Math.max(1, normalizedEffortScore - DESCRIPTION_OPTIONS_CONFIG.VARIATION_SMALL);
       }
 
-      // Generate description with variant effort score
-      const generated = await generateDescription(
-        taskName,
-        accessToken,
-        existingDescription,
-        variantEffortScore
-      );
-
-      // Only add if description is not empty and not duplicate
-      if (generated.description && generated.description.trim().length > 0) {
-        // Check for duplicates (similar descriptions)
-        const isDuplicate = options.some(opt => {
-          const similarity = calculateDescriptionSimilarity(
-            opt.description,
-            generated.description
-          );
-          return similarity > 0.8; // 80% similarity threshold
-        });
-
-        if (!isDuplicate) {
-          options.push(generated);
-        }
-      }
+      // Generate with delay to avoid blocking
+      await generateWithDelay(i, variantEffortScore);
     }
 
     // If we didn't get enough unique options, generate more with different variations
-    while (options.length < numOptions && options.length < 5) {
+    // Limit iterations to prevent infinite loops
+    let retryCount = 0;
+    while (options.length < numOptions && options.length < DESCRIPTION_OPTIONS_CONFIG.MAX_OPTIONS && retryCount < DESCRIPTION_OPTIONS_CONFIG.MAX_RETRIES) {
       // Try with more extreme effort score variations
       const extremeEffortScore = options.length % 2 === 0
-        ? Math.min(5, normalizedEffortScore + 0.7)
-        : Math.max(1, normalizedEffortScore - 0.7);
+        ? Math.min(5, normalizedEffortScore + DESCRIPTION_OPTIONS_CONFIG.VARIATION_LARGE)
+        : Math.max(1, normalizedEffortScore - DESCRIPTION_OPTIONS_CONFIG.VARIATION_LARGE);
 
-      const generated = await generateDescription(
-        taskName,
-        accessToken,
-        existingDescription,
-        extremeEffortScore
-      );
-
-      if (generated.description && generated.description.trim().length > 0) {
-        const isDuplicate = options.some(opt => {
-          const similarity = calculateDescriptionSimilarity(
-            opt.description,
-            generated.description
-          );
-          return similarity > 0.8;
-        });
-
-        if (!isDuplicate) {
-          options.push(generated);
-        }
-      }
-
+      // Generate with delay to avoid blocking
+      await generateWithDelay(options.length, extremeEffortScore);
+      
+      retryCount++;
+      
       // Safety check to prevent infinite loop
-      if (options.length >= 5) break;
+      if (options.length >= DESCRIPTION_OPTIONS_CONFIG.MAX_OPTIONS) break;
     }
 
     // Sort by confidence (highest first) and return
     return options.sort((a, b) => b.confidence - a.confidence);
   } catch (error) {
     logger.error(`Error generating description options for "${taskName}":`, error);
-    // Return at least one fallback option
-    const fallback = await generateDescription(
-      taskName,
-      accessToken,
-      existingDescription,
-      effortScore
-    );
-    return fallback.description ? [fallback] : [];
+    // Return at least one fallback option (defer to avoid blocking)
+    return new Promise((resolve) => {
+      setTimeout(async () => {
+        try {
+          const fallback = await generateDescription(
+            taskName,
+            accessToken,
+            existingDescription,
+            effortScore
+          );
+          resolve(fallback.description ? [fallback] : []);
+        } catch (fallbackError) {
+          logger.error('Error generating fallback description:', fallbackError);
+          resolve([]);
+        }
+      }, DESCRIPTION_OPTIONS_CONFIG.EVENT_LOOP_YIELD_DELAY);
+    });
   }
 }
 
