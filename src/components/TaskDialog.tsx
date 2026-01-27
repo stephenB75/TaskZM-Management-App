@@ -679,6 +679,7 @@ export function TaskDialog({
   // 4. Action plan subtasks are created from the chosen description
   const [descriptionOptions, setDescriptionOptions] = useState<Array<{ description: string; domain: string; confidence: number }>>([]);
   const [isLoadingDescriptionOptions, setIsLoadingDescriptionOptions] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
   // Helper function to update scheduled time
   const updateScheduledTime = (
@@ -1012,7 +1013,8 @@ export function TaskDialog({
     // 3. Description is empty (so we show options for user to choose)
     // 4. Breakdown has effort score (meaning keywords/phrases were analyzed from title)
     // 5. Not currently loading breakdown
-    if (!open || !title.trim() || description.trim() || !breakdown?.effortScore || isBreakdownLoading) {
+    // 6. Not currently generating description (prevent conflicts)
+    if (!open || !title.trim() || description.trim() || !breakdown?.effortScore || isBreakdownLoading || isGeneratingDescription) {
       setDescriptionOptions([]);
       setIsLoadingDescriptionOptions(false);
       return;
@@ -1020,7 +1022,10 @@ export function TaskDialog({
 
     // Debounce description option generation
     setIsLoadingDescriptionOptions(true);
+    let cancelled = false;
     const timeoutId = setTimeout(async () => {
+      if (cancelled) return;
+      
       try {
         logger.debug('AI: Generating description options from title keywords/phrases', {
           title,
@@ -1040,6 +1045,8 @@ export function TaskDialog({
           description
         );
 
+        if (cancelled) return; // Check again after async operation
+
         logger.debug('AI: Description options generated', {
           count: options.length,
           options: options.map(o => ({ domain: o.domain, confidence: o.confidence })),
@@ -1047,18 +1054,22 @@ export function TaskDialog({
 
         setDescriptionOptions(options);
       } catch (error) {
+        if (cancelled) return;
         logger.error('AI: Failed to generate description options:', error);
         setDescriptionOptions([]);
       } finally {
-        setIsLoadingDescriptionOptions(false);
+        if (!cancelled) {
+          setIsLoadingDescriptionOptions(false);
+        }
       }
     }, DESCRIPTION_OPTIONS_DEBOUNCE_MS); // Debounce delay after breakdown is ready
 
     return () => {
+      cancelled = true;
       clearTimeout(timeoutId);
       setIsLoadingDescriptionOptions(false);
     };
-  }, [open, title, description, breakdown?.effortScore, breakdown?.domain, isBreakdownLoading, accessToken]);
+  }, [open, title, description, breakdown?.effortScore, isBreakdownLoading, isGeneratingDescription, accessToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2188,7 +2199,10 @@ export function TaskDialog({
                             type="button"
                             variant="ghost"
                             size="sm"
+                            disabled={isGeneratingDescription || isBreakdownLoading}
                             onClick={async () => {
+                              if (isGeneratingDescription) return; // Prevent multiple clicks
+                              setIsGeneratingDescription(true);
                               try {
                                 // Force regeneration by passing empty description to get fresh result
                                 // This ensures we get a new/modified description rather than reusing the existing one
@@ -2229,6 +2243,8 @@ export function TaskDialog({
                                 toast.error('Failed to regenerate description', {
                                   description: 'Please try again',
                                 });
+                              } finally {
+                                setIsGeneratingDescription(false);
                               }
                             }}
                             style={{ 
@@ -2252,10 +2268,13 @@ export function TaskDialog({
                           type="button"
                           variant="ghost"
                           size="sm"
-                            onClick={async () => {
-                              try {
-                                logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken, effortScore: breakdown?.effortScore });
-                                const generated = await generateDescription(title, accessToken, description, breakdown?.effortScore);
+                          disabled={isGeneratingDescription || isBreakdownLoading}
+                          onClick={async () => {
+                            if (isGeneratingDescription) return; // Prevent multiple clicks
+                            setIsGeneratingDescription(true);
+                            try {
+                              logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken, effortScore: breakdown?.effortScore });
+                              const generated = await generateDescription(title, accessToken, description, breakdown?.effortScore);
                                 logger.debug('AI Generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,

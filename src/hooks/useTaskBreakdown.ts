@@ -116,30 +116,31 @@ export function useTaskBreakdown(
     setIsLoading(true);
     setError(null);
 
-    try {
-      // Use requestAnimationFrame to avoid blocking UI
-      requestAnimationFrame(() => {
-        try {
-          // Create temporary task for analysis
-          const tempTask: Partial<Task> = {
-            title,
-            description,
-            status: DEFAULT_TASK_STATUS,
-            priority: 'medium',
-            tags: [],
-          };
+    // Use setTimeout with 0 delay to defer heavy computation and avoid blocking UI
+    // This allows the UI to remain responsive while analysis runs
+    const timeoutId = setTimeout(() => {
+      try {
+        // Create temporary task for analysis
+        const tempTask: Partial<Task> = {
+          title,
+          description,
+          status: DEFAULT_TASK_STATUS,
+          priority: 'medium',
+          tags: [],
+        };
 
-          // Analyze verbs FIRST to get effort score
-          const verbAnalysis = analyzeTaskVerbs(tempTask as Task);
-          
-          // Create shared AI context once (eliminates redundant domain detection and term extraction)
-          // ENHANCED: Include effort score and primary verb in context for coordinated intelligence
-          const aiContext = createAIContextSync(title, description);
-          // Add effort analysis to context for coordination
-          (aiContext as any).effortScore = verbAnalysis.effortScore;
-          (aiContext as any).primaryVerb = verbAnalysis.primaryVerb;
-          
-          // Log for debugging
+        // Analyze verbs FIRST to get effort score
+        const verbAnalysis = analyzeTaskVerbs(tempTask as Task);
+        
+        // Create shared AI context once (eliminates redundant domain detection and term extraction)
+        // ENHANCED: Include effort score and primary verb in context for coordinated intelligence
+        const aiContext = createAIContextSync(title, description);
+        // Add effort analysis to context for coordination
+        (aiContext as any).effortScore = verbAnalysis.effortScore;
+        (aiContext as any).primaryVerb = verbAnalysis.primaryVerb;
+        
+        // Log for debugging (only in development)
+        if (process.env.NODE_ENV === 'development') {
           console.log('AI Analysis: Creating context with effort score', {
             title: title.substring(0, 50),
             description: description.substring(0, 50),
@@ -148,87 +149,89 @@ export function useTaskBreakdown(
             effortScore: verbAnalysis.effortScore,
             primaryVerb: verbAnalysis.primaryVerb,
           });
+        }
 
-          // Estimate hours
-          const taskForEstimation: Task = {
-            id: 'temp',
-            title,
-            description,
-            status: DEFAULT_TASK_STATUS,
-            priority: 'medium',
-            tags: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            projectId: 'default',
-            folderId: null,
-            dueDate: null,
-            scheduledDate: null,
-            estimatedTime: null,
-            actualTime: null,
-            dependencies: [],
-            subtasks: [],
-            recurrence: { type: 'none', interval: 1 },
-            notes: '',
-            assignedTo: [],
-            createdBy: 'local',
-            completedAt: null,
-          };
+        // Estimate hours
+        const taskForEstimation: Task = {
+          id: 'temp',
+          title,
+          description,
+          status: DEFAULT_TASK_STATUS,
+          priority: 'medium',
+          tags: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          projectId: 'default',
+          folderId: null,
+          dueDate: null,
+          scheduledDate: null,
+          estimatedTime: null,
+          actualTime: null,
+          dependencies: [],
+          subtasks: [],
+          recurrence: { type: 'none', interval: 1 },
+          notes: '',
+          assignedTo: [],
+          createdBy: 'local',
+          completedAt: null,
+        };
 
-          const estimatedHours = estimateTaskHours(taskForEstimation);
-          const estimatedMinutes = Math.round(estimatedHours * MINUTES_PER_HOUR);
+        const estimatedHours = estimateTaskHours(taskForEstimation);
+        const estimatedMinutes = Math.round(estimatedHours * MINUTES_PER_HOUR);
 
-          // Analyze description (pass shared context and effort score to avoid redundant work)
-          const descriptionAnalysis = analyzeDescription(title, description, aiContext, verbAnalysis.effortScore);
+        // Analyze description (pass shared context and effort score to avoid redundant work)
+        const descriptionAnalysis = analyzeDescription(title, description, aiContext, verbAnalysis.effortScore);
 
-          // Generate action plan (pass shared context to avoid redundant work)
-          const actionPlan = generateActionPlan(tempTask as Task, aiContext);
+        // Generate action plan (pass shared context to avoid redundant work)
+        const actionPlan = generateActionPlan(tempTask as Task, aiContext);
 
-          // Determine suggested category from domain
-          let suggestedCategory: 'work' | 'personal' | 'projects' | null = null;
-          if (aiContext.domain === 'business') {
-            suggestedCategory = 'work';
-          } else if (aiContext.domain === 'personal') {
-            suggestedCategory = 'personal';
-          } else if (aiContext.domain === 'home' || aiContext.domain === 'world') {
-            suggestedCategory = 'personal'; // Default to personal for home/world
-          }
+        // Determine suggested category from domain
+        let suggestedCategory: 'work' | 'personal' | 'projects' | null = null;
+        if (aiContext.domain === 'business') {
+          suggestedCategory = 'work';
+        } else if (aiContext.domain === 'personal') {
+          suggestedCategory = 'personal';
+        } else if (aiContext.domain === 'home' || aiContext.domain === 'world') {
+          suggestedCategory = 'personal'; // Default to personal for home/world
+        }
 
-          const result: TaskBreakdown = {
-            estimatedMinutes,
-            estimatedHours,
-            effortScore: verbAnalysis.effortScore,
-            primaryVerb: verbAnalysis.primaryVerb,
-            suggestedCategory,
-            actionPlan,
-            descriptionAnalysis,
-            domain: aiContext.domain,
-            confidence: aiContext.domainConfidence,
-          };
+        const result: TaskBreakdown = {
+          estimatedMinutes,
+          estimatedHours,
+          effortScore: verbAnalysis.effortScore,
+          primaryVerb: verbAnalysis.primaryVerb,
+          suggestedCategory,
+          actionPlan,
+          descriptionAnalysis,
+          domain: aiContext.domain,
+          confidence: aiContext.domainConfidence,
+        };
 
-          // Cache result using current hash (not from closure)
-          const resultHashKey = currentText.length > 0 ? hashText(currentText) : '';
-          if (resultHashKey) {
-            breakdownCache.set(resultHashKey, result);
-            // Limit cache size
-            if (breakdownCache.size > TASK_BREAKDOWN_CACHE_SIZE) {
-              const firstKey = breakdownCache.keys().next().value;
-              if (firstKey !== undefined) {
-                breakdownCache.delete(firstKey);
-              }
+        // Cache result using current hash (not from closure)
+        const resultHashKey = currentText.length > 0 ? hashText(currentText) : '';
+        if (resultHashKey) {
+          breakdownCache.set(resultHashKey, result);
+          // Limit cache size
+          if (breakdownCache.size > TASK_BREAKDOWN_CACHE_SIZE) {
+            const firstKey = breakdownCache.keys().next().value;
+            if (firstKey !== undefined) {
+              breakdownCache.delete(firstKey);
             }
           }
+        }
 
-          // Cache AI Analysis results for use by scheduler
-          // This ensures the scheduler uses the same effort score and time estimate
-          // that was shown to the user in the AI Analysis suggestions
-          cacheAIAnalysis(
-            title,
-            description,
-            verbAnalysis.effortScore,
-            estimatedMinutes,
-            verbAnalysis.primaryVerb
-          );
+        // Cache AI Analysis results for use by scheduler
+        // This ensures the scheduler uses the same effort score and time estimate
+        // that was shown to the user in the AI Analysis suggestions
+        cacheAIAnalysis(
+          title,
+          description,
+          verbAnalysis.effortScore,
+          estimatedMinutes,
+          verbAnalysis.primaryVerb
+        );
 
+        if (process.env.NODE_ENV === 'development') {
           console.log('AI Analysis: Breakdown generated', {
             estimatedMinutes: result.estimatedMinutes,
             effortScore: result.effortScore,
@@ -236,22 +239,21 @@ export function useTaskBreakdown(
             hasActionPlan: !!result.actionPlan,
             hasDescriptionAnalysis: !!result.descriptionAnalysis,
           });
-
-          setBreakdown(result);
-          setIsLoading(false);
-        } catch (err) {
-          const error = err instanceof Error ? err : new Error('Failed to analyze breakdown');
-          console.error('AI Analysis: Error in breakdown analysis', error);
-          setError(error);
-          setIsLoading(false);
-          setBreakdown(null); // Ensure breakdown is null on error
         }
-      });
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to analyze breakdown');
-      setError(error);
-      setIsLoading(false);
-    }
+
+        setBreakdown(result);
+        setIsLoading(false);
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to analyze breakdown');
+        console.error('AI Analysis: Error in breakdown analysis', error);
+        setError(error);
+        setIsLoading(false);
+        setBreakdown(null); // Ensure breakdown is null on error
+      }
+    }, 0);
+    
+    // Store timeout ID in a way that can be cleaned up by the useEffect
+    // Note: The actual cleanup happens in the useEffect that calls this function
   }, [title, description, enabled]);
 
   // Debounce analysis
@@ -284,7 +286,10 @@ export function useTaskBreakdown(
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [title, description, debounceMs, enabled, cacheKey, cachedBreakdown, analyzeBreakdown]);
+    // Remove analyzeBreakdown from dependencies to prevent infinite loops
+    // analyzeBreakdown is stable (useCallback with title/description deps)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, description, debounceMs, enabled, cacheKey, cachedBreakdown]);
 
   return {
     breakdown,
