@@ -810,6 +810,20 @@ export const TASK_BREAKDOWN_DEBOUNCE_MS = 300;
 export const DESCRIPTION_OPTIONS_DEBOUNCE_MS = 500; // Debounce delay for generating description options after breakdown is ready
 
 /**
+ * Description deduplication configuration
+ * Used to prevent duplicate words and sentences in generated descriptions
+ */
+export const DESCRIPTION_DEDUPLICATION_CONFIG = {
+  // Word-level deduplication
+  MAX_RECENT_WORDS: 5, // Track last N words to catch immediate duplicates
+  MIN_WORD_DISTANCE: 2, // Minimum words apart before allowing same word again (natural repetition)
+  
+  // Sentence-level deduplication
+  SENTENCE_SIMILARITY_THRESHOLD: 0.7, // 70% similarity threshold for duplicate sentence detection (0-1 scale)
+  MIN_SENTENCE_LENGTH: 5, // Minimum sentence length (characters) to consider for deduplication
+} as const;
+
+/**
  * Maximum cache size for task breakdown results
  */
 export const TASK_BREAKDOWN_CACHE_SIZE = 100;

@@ -1269,7 +1269,18 @@ export const DOMAIN_TERMINOLOGIES: Record<Domain, DomainTerminology> = {
  * Context-specific keywords that are unique to each domain (higher priority)
  */
 const CONTEXT_KEYWORDS: Record<Domain, string[]> = {
-  business: ['work', 'office', 'professional', 'corporate', 'workplace', 'colleague', 'coworker', 'business', 'company', 'organization', 'enterprise', 'firm'],
+  business: [
+    'work', 'office', 'professional', 'corporate', 'workplace', 'colleague', 'coworker', 
+    'business', 'company', 'organization', 'enterprise', 'firm',
+    // Technical/programming keywords (HIGH PRIORITY for business domain)
+    'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
+    'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'fix', 'bugfix',
+    'feature', 'implementation', 'deployment', 'release', 'version', 'update', 'patch',
+    'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
+    'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
+    'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
+    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
+  ],
   home: ['household', 'residential', 'domestic', 'homeowner', 'home', 'house', 'residence'],
   personal: [
     'self', 'individual', 'myself', 'personal', 'private', 'self-care', 'wellbeing',
@@ -1293,7 +1304,17 @@ const NEGATIVE_KEYWORDS: Record<Domain, string[]> = {
     'prescription', 'medication', 'pharmacy', 'hospital visit', 'clinic visit',
     'dental appointment', 'dental checkup', 'eye exam', 'vision test', 'hearing test'
   ],
-  home: ['work meeting', 'office', 'business', 'professional', 'corporate'],
+  home: [
+    'work meeting', 'office', 'business', 'professional', 'corporate',
+    // Technical/programming terms - these should NOT be categorized as home
+    'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
+    'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'fix', 'bugfix',
+    'feature', 'implementation', 'deployment', 'release', 'version', 'update', 'patch',
+    'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
+    'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
+    'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
+    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
+  ],
   personal: ['work', 'office', 'business', 'corporate', 'professional'],
   world: [],
   mixed: [],

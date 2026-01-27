@@ -8,7 +8,7 @@
  */
 
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, saveNewTerminologyToLibrary, DOMAIN_TERMINOLOGIES } from './domain-terminology';
-import { DESCRIPTION_GENERATION_CONFIG } from './ai-config';
+import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_DEDUPLICATION_CONFIG } from './ai-config';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
 
@@ -25,12 +25,18 @@ function cleanText(text: string): string {
     .replace(/<[^>]*>/g, '')
     // Remove style attributes and their values
     .replace(/style\s*=\s*["'][^"']*["']/gi, '')
-    // Remove CSS property fragments (more comprehensive)
+    // Remove CSS property fragments (more comprehensive) - CRITICAL: Remove text-indent and other CSS properties
+    .replace(/text-indent\s*:\s*[^;]+;?/gi, '') // Remove text-indent CSS property
+    .replace(/text-indent\s*:\s*code/gi, '') // Remove "text-indent:code" specifically
+    .replace(/text-indent[^;]*;?/gi, '') // Remove any text-indent variations
     .replace(/\d+px;?/gi, '') // Remove any pixel values like "12px;", "10px", etc.
     .replace(/font-size\s*:\s*[^;]+;?/gi, '')
     .replace(/color\s*:\s*[^;]+;?/gi, '')
     .replace(/font-family\s*:\s*[^;]+;?/gi, '')
     .replace(/line-height\s*:\s*[^;]+;?/gi, '')
+    // Remove CSS property names that might appear as text
+    .replace(/\btext-indent\b/gi, '') // Remove standalone "text-indent" word
+    .replace(/\bcode\s*:\s*/gi, '') // Remove "code:" patterns
     // Remove quote and bracket fragments (more patterns)
     .replace(/["']>/g, '')
     .replace(/;\s*>/g, '')
@@ -57,6 +63,8 @@ function cleanText(text: string): string {
   
   // Additional pass to catch any remaining fragments
   cleaned = cleaned
+    .replace(/text-indent[^;]*;?/gi, '') // Remove any remaining text-indent
+    .replace(/\btext-indent\b/gi, '') // Remove standalone text-indent
     .replace(/px;?/gi, '') // Remove any remaining px fragments
     .replace(/">/g, '') // Remove any remaining quote-bracket fragments
     .replace(/;\s*>/g, '') // Remove any remaining semicolon-bracket fragments
@@ -64,8 +72,27 @@ function cleanText(text: string): string {
     .replace(/\s+/g, ' ') // Normalize whitespace again
     .trim();
   
+  // Remove duplicate words/phrases (fixes "tesing task involves tesing" issues)
+  const words = cleaned.split(/\s+/);
+  const uniqueWords: string[] = [];
+  const seenWords = new Set<string>();
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i].toLowerCase();
+    // Allow same word if it's more than 3 words apart (natural repetition)
+    if (!seenWords.has(word) || (i > 0 && words[i-1]?.toLowerCase() !== word)) {
+      uniqueWords.push(words[i]);
+      seenWords.add(word);
+    } else if (i > 0 && words[i-1]?.toLowerCase() === word) {
+      // Skip immediate duplicates
+      continue;
+    } else {
+      uniqueWords.push(words[i]);
+    }
+  }
+  cleaned = uniqueWords.join(' ').trim();
+  
   // Final validation: if the cleaned text is mostly fragments, return empty
-  const fragmentPatterns = /(px|">|;>|font-size|color:)/gi;
+  const fragmentPatterns = /(px|">|;>|font-size|color:|text-indent)/gi;
   const fragmentMatches = (cleaned.match(fragmentPatterns) || []).length;
   const wordCount = cleaned.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength).length;
   if (fragmentMatches > wordCount) {
@@ -2735,6 +2762,34 @@ function buildElaborateContextualDescription(
   // Clean HTML fragments and ensure proper capitalization and punctuation
   description = cleanText(description).trim();
   
+  // Remove duplicate words/phrases within sentences (fixes "tesing task involves tesing" issues)
+  const words = description.split(/\s+/);
+  const deduplicatedWords: string[] = [];
+  const recentWords = new Set<string>();
+  
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i].toLowerCase();
+    const isDuplicate = recentWords.has(word);
+    
+    // Skip if it's an immediate duplicate (same word repeated within last few words)
+    if (isDuplicate && i > 0 && words[i-1]?.toLowerCase() === word) {
+      continue; // Skip immediate duplicate
+    }
+    
+    // Add word if not a recent duplicate
+    if (!isDuplicate || (i > DESCRIPTION_DEDUPLICATION_CONFIG.MIN_WORD_DISTANCE && words[i - DESCRIPTION_DEDUPLICATION_CONFIG.MIN_WORD_DISTANCE]?.toLowerCase() !== word)) {
+      deduplicatedWords.push(words[i]);
+      recentWords.add(word);
+      // Keep only recent words in set
+      if (recentWords.size > DESCRIPTION_DEDUPLICATION_CONFIG.MAX_RECENT_WORDS) {
+        const oldestWord = Array.from(recentWords)[0];
+        recentWords.delete(oldestWord);
+      }
+    }
+  }
+  
+  description = deduplicatedWords.join(' ').trim();
+  
   // Remove duplicate sentences (check for repeated patterns)
   const sentences = description.split(/[.!?]+/).filter(s => s.trim().length > 0);
   const uniqueSentences: string[] = [];
@@ -2742,7 +2797,13 @@ function buildElaborateContextualDescription(
   
   for (const sentence of sentences) {
     const cleanedSentence = sentence.trim().toLowerCase();
-    if (!seenSentences.has(cleanedSentence) && cleanedSentence.length > 5) {
+    // More aggressive duplicate detection - check for similar sentences
+    const isSimilar = Array.from(seenSentences).some(seen => {
+      const similarity = calculateSentenceSimilarity(cleanedSentence, seen);
+      return similarity > DESCRIPTION_DEDUPLICATION_CONFIG.SENTENCE_SIMILARITY_THRESHOLD;
+    });
+    
+    if (!isSimilar && cleanedSentence.length > DESCRIPTION_DEDUPLICATION_CONFIG.MIN_SENTENCE_LENGTH) {
       seenSentences.add(cleanedSentence);
       uniqueSentences.push(sentence.trim());
     }
@@ -2758,6 +2819,26 @@ function buildElaborateContextualDescription(
   }
   
   return description;
+}
+
+/**
+ * Calculate similarity between two sentences (0-1 scale)
+ * Used to detect duplicate or very similar sentences
+ */
+function calculateSentenceSimilarity(sentence1: string, sentence2: string): number {
+  const words1 = sentence1.split(/\s+/).filter(w => w.length >= 2);
+  const words2 = sentence2.split(/\s+/).filter(w => w.length >= 2);
+  
+  if (words1.length === 0 || words2.length === 0) return 0;
+  
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
+  
+  const intersection = new Set([...set1].filter(w => set2.has(w)));
+  const union = new Set([...set1, ...set2]);
+  
+  // Jaccard similarity
+  return intersection.size / union.size;
 }
 
 /**
