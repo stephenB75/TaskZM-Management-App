@@ -133,14 +133,17 @@ export const TIMING_CONSTANTS = {
   },
   
   // Task sync constants
-  taskSync: {
-    errorToastCooldown: 5000, // 5 seconds - Don't show same error within cooldown period
-    debounceInterval: 2000, // 2 seconds - Only sync once per interval from events
-    serverProcessDelay: 1000, // 1 second - Delay to allow server to process
-    networkErrorLogCooldown: 60000, // 1 minute - Don't log network errors more than once per minute
-    uiUpdateDelay: 500, // 500ms - Delay for UI updates after server operations
-    intervalUpdateCheck: 1000, // 1 second - Interval for checking if sync interval has changed
-  },
+    taskSync: {
+      errorToastCooldown: 5000, // 5 seconds - Don't show same error within cooldown period
+      debounceInterval: 2000, // 2 seconds - Only sync once per interval from events
+      serverProcessDelay: 1000, // 1 second - Delay to allow server to process
+      networkErrorLogCooldown: 60000, // 1 minute - Don't log network errors more than once per minute
+      uiUpdateDelay: 500, // 500ms - Delay for UI updates after server operations
+      intervalUpdateCheck: 1000, // 1 second - Interval for checking if sync interval has changed
+    },
+    
+    // State update logging delay (for development debugging)
+    STATE_UPDATE_LOG_DELAY: 100, // 100ms - Delay before logging state updates
   
   // Drag and drop constants
   dragDrop: {

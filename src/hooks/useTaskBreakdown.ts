@@ -118,7 +118,9 @@ export function useTaskBreakdown(
 
     // Use setTimeout with 0 delay to defer heavy computation and avoid blocking UI
     // This allows the UI to remain responsive while analysis runs
-    const timeoutId = setTimeout(() => {
+    // Note: This timeout cannot be cancelled from here, but the useEffect that calls
+    // this function will handle cleanup by preventing state updates if dependencies change
+    setTimeout(() => {
       try {
         // Create temporary task for analysis
         const tempTask: Partial<Task> = {

@@ -1014,6 +1014,7 @@ export function TaskDialog({
     // 4. Breakdown has effort score (meaning keywords/phrases were analyzed from title)
     // 5. Not currently loading breakdown
     // 6. Not currently generating description (prevent conflicts)
+    // CRITICAL: Check description first to prevent race conditions when AI generates description
     if (!open || !title.trim() || description.trim() || !breakdown?.effortScore || isBreakdownLoading || isGeneratingDescription) {
       setDescriptionOptions([]);
       setIsLoadingDescriptionOptions(false);
@@ -1024,7 +1025,11 @@ export function TaskDialog({
     setIsLoadingDescriptionOptions(true);
     let cancelled = false;
     const timeoutId = setTimeout(async () => {
-      if (cancelled) return;
+      // Double-check conditions after debounce (description might have been set by AI)
+      if (cancelled || description.trim() || isGeneratingDescription) {
+        setIsLoadingDescriptionOptions(false);
+        return;
+      }
       
       try {
         logger.debug('AI: Generating description options from title keywords/phrases', {
@@ -1045,7 +1050,11 @@ export function TaskDialog({
           description
         );
 
-        if (cancelled) return; // Check again after async operation
+        // Triple-check conditions after async operation (description might have been set during async call)
+        if (cancelled || description.trim() || isGeneratingDescription) {
+          setIsLoadingDescriptionOptions(false);
+          return;
+        }
 
         logger.debug('AI: Description options generated', {
           count: options.length,
@@ -2217,8 +2226,8 @@ export function TaskDialog({
                                   descriptionLength: generated.description?.length || 0,
                                   confidence: generated.confidence,
                                   domain: generated.domain,
-                                  previousDescription: description.substring(0, 50),
-                                  newDescription: generated.description?.substring(0, 50)
+                                  previousDescription: description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH),
+                                  newDescription: generated.description?.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)
                                 });
                                 
                                 if (generated.description && generated.description.trim().length > 0) {
@@ -2278,7 +2287,7 @@ export function TaskDialog({
                                 logger.debug('AI Generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,
-                                descriptionPreview: generated.description?.substring(0, 50) || 'empty',
+                                descriptionPreview: generated.description?.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH) || 'empty',
                                 confidence: generated.confidence,
                                 domain: generated.domain
                               });
@@ -2291,20 +2300,22 @@ export function TaskDialog({
                                 logger.debug('Setting description:', { 
                                   oldLength: description.length,
                                   newLength: newDescription.length,
-                                  newDescriptionPreview: newDescription.substring(0, 50),
-                                  oldDescription: description.substring(0, 30),
-                                  newDescription: newDescription.substring(0, 30)
+                                  newDescriptionPreview: newDescription.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH),
+                                  oldDescription: description.substring(0, Math.floor(DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH * 0.5)),
+                                  newDescription: newDescription.substring(0, Math.floor(DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH * 0.5))
                                 });
                                 
                                 setDescription(newDescription);
                                 
-                                // Log after state update to verify it was set
-                                setTimeout(() => {
-                                  logger.debug('Description state after update:', { 
-                                    currentDescription: description,
-                                    expectedDescription: newDescription.substring(0, 50)
-                                  });
-                                }, 100);
+                                // Log after state update to verify it was set (only in development)
+                                if (process.env.NODE_ENV === 'development') {
+                                  setTimeout(() => {
+                                    logger.debug('Description state after update:', { 
+                                      currentDescription: description,
+                                      expectedDescription: newDescription.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)
+                                    });
+                                  }, TIMING_CONSTANTS.STATE_UPDATE_LOG_DELAY);
+                                }
                                 
                                 const source = generated.confidence >= DESCRIPTION_GENERATION_CONFIG.highConfidenceThreshold 
                                   ? DESCRIPTION_GENERATION_CONFIG.sourceLabels.browserAI 
@@ -2323,6 +2334,8 @@ export function TaskDialog({
                               toast.error('Failed to generate description', {
                                 description: 'Please try again or enter description manually',
                               });
+                            } finally {
+                              setIsGeneratingDescription(false);
                             }
                           }}
                           style={{ 
@@ -2435,7 +2448,7 @@ export function TaskDialog({
                                       // which will regenerate the action plan with the new description
                                       // This ensures action plan is created from the chosen description
                                       logger.debug('Description selected, action plan will regenerate', {
-                                        selectedDescription: option.description.substring(0, 50),
+                                        selectedDescription: option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH),
                                         domain: option.domain,
                                         confidence: option.confidence,
                                       });
