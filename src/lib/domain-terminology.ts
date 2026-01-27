@@ -8,6 +8,8 @@
 import {
   DOMAIN_DETECTION_THRESHOLDS,
   DOMAIN_SCORING_WEIGHTS,
+  DOMAIN_EXCLUSION_TERMS,
+  DESCRIPTION_GENERATION_CONFIG,
 } from './ai-config';
 import { logger } from './logger';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
@@ -1272,14 +1274,16 @@ const CONTEXT_KEYWORDS: Record<Domain, string[]> = {
   business: [
     'work', 'office', 'professional', 'corporate', 'workplace', 'colleague', 'coworker', 
     'business', 'company', 'organization', 'enterprise', 'firm',
-    // Technical/programming keywords (HIGH PRIORITY for business domain)
-    'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
-    'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'fix', 'bugfix',
-    'feature', 'implementation', 'deployment', 'release', 'version', 'update', 'patch',
-    'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
-    'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
-    'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
-    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
+    // Technical/programming keywords (HIGH PRIORITY for business domain - INCREASED coverage)
+    'test', 'testing', 'tests', 'conduct test', 'test code', 'code test', 'codebase', 'code base', 
+    'software', 'application', 'app', 'development', 'programming', 'coding', 
+    'debug', 'debugging', 'bug', 'fix', 'bugfix', 'feature', 'implementation', 
+    'deployment', 'release', 'version', 'update', 'patch', 'api', 'database', 
+    'backend', 'frontend', 'ui', 'ux', 'interface', 'component', 'dialog', 'box', 
+    'section', 'module', 'function', 'method', 'class', 'file', 'repository', 
+    'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr', 'technical', 
+    'architecture', 'design', 'specification', 'requirement', 'spec', 'task dialog',
+    'dialog box', 'task code', 'code base', 'base for', 'for the task'
   ],
   home: ['household', 'residential', 'domestic', 'homeowner', 'home', 'house', 'residence'],
   personal: [
@@ -1316,7 +1320,18 @@ const NEGATIVE_KEYWORDS: Record<Domain, string[]> = {
     'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
   ],
   personal: ['work', 'office', 'business', 'corporate', 'professional'],
-  world: [],
+  world: [
+    // Technical/programming terms - these should NOT be categorized as world
+    'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
+    'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'fix', 'bugfix',
+    'feature', 'implementation', 'deployment', 'release', 'version', 'update', 'patch',
+    'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
+    'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
+    'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
+    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec',
+    // Workout/fitness terms - these should NOT be categorized as world
+    'workout', 'fitness', 'exercise', 'gym', 'training', 'cardio', 'strength'
+  ],
   mixed: [],
 };
 
@@ -1360,8 +1375,8 @@ function calculateContextBonus(
 function calculateWordSimilarity(word1: string, word2: string): number {
   const w1 = word1.toLowerCase();
   const w2 = word2.toLowerCase();
-  if (w1 === w2) return 1.0;
-  if (w1.includes(w2) || w2.includes(w1)) return 0.8;
+  if (w1 === w2) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch;
+  if (w1.includes(w2) || w2.includes(w1)) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.substringMatch;
   
   // Check for common prefixes/suffixes
   const minLen = Math.min(w1.length, w2.length);
@@ -1374,7 +1389,11 @@ function calculateWordSimilarity(word1: string, word2: string): number {
   // Check for stem similarity (remove common suffixes)
   const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
   const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-  const stemMatch = stem1 === stem2 ? 0.9 : (stem1.includes(stem2) || stem2.includes(stem1) ? 0.7 : 0);
+  const stemMatch = stem1 === stem2 
+    ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactStemMatch 
+    : (stem1.includes(stem2) || stem2.includes(stem1) 
+      ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.partialStemMatch 
+      : 0);
   
   return Math.max(prefixSimilarity, stemMatch);
 }
@@ -1384,7 +1403,7 @@ function calculateWordSimilarity(word1: string, word2: string): number {
  */
 function areWordsRelated(word1: string, word2: string): boolean {
   const similarity = calculateWordSimilarity(word1, word2);
-  return similarity >= 0.6; // Threshold for word relationship
+  return similarity >= DESCRIPTION_GENERATION_CONFIG.wordSimilarity.wordRelationshipThreshold;
 }
 
 /**
@@ -1432,7 +1451,9 @@ function matchesPhraseFuzzy(text: string, phrase: string): boolean {
   
   // Check if matched words are reasonably close together (within phrase length * 2)
   const matchedIndices = Array.from(matchedWords).sort((a, b) => a - b);
-  if (matchedIndices.length < phraseWords.length * 0.7) return false; // Need at least 70% of words
+  if (matchedIndices.length < phraseWords.length * DESCRIPTION_GENERATION_CONFIG.wordSimilarity.phraseMatchThreshold) {
+    return false; // Need at least threshold percentage of words
+  }
   
   const maxDistance = phraseWords.length * 2;
   const distance = matchedIndices[matchedIndices.length - 1] - matchedIndices[0];
@@ -1561,7 +1582,7 @@ export function detectDomain(
         // Try fuzzy matching for context keywords
         const fuzzyMatch = textWords.some(tw => areWordsRelated(tw, keyword));
         if (fuzzyMatch) {
-          const weight = DOMAIN_SCORING_WEIGHTS.CONTEXT_KEYWORD * 0.8; // Slightly lower weight for fuzzy match
+          const weight = DOMAIN_SCORING_WEIGHTS.CONTEXT_KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_CONTEXT_KEYWORD_MULTIPLIER;
           matchedTerms[domain] += weight;
           contextKeywords[domain].push(keyword);
           if (!foundKeywords.includes(keyword)) {
@@ -1588,7 +1609,7 @@ export function detectDomain(
         // Try fuzzy matching for compound keywords (e.g., "social media")
         if (keyword.split(/\s+/).length > 1) {
           if (matchesPhraseFuzzy(text, keyword)) {
-            matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * 0.9; // Slightly lower for fuzzy
+            matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_PHRASE_MULTIPLIER;
             if (!foundKeywords.includes(keyword)) {
               foundKeywords.push(keyword);
             }
@@ -1597,7 +1618,7 @@ export function detectDomain(
           // Single word fuzzy match
           const fuzzyMatch = textWords.some(tw => areWordsRelated(tw, keyword));
           if (fuzzyMatch) {
-            matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * 0.8;
+            matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_KEYWORD_MULTIPLIER;
             if (!foundKeywords.includes(keyword)) {
               foundKeywords.push(keyword);
             }
@@ -1624,8 +1645,8 @@ export function detectDomain(
         if (matchesPhraseFuzzy(text, phrase)) {
           const hasContextKeyword = contextKeywords[domain].some(ck => phrase.toLowerCase().includes(ck.toLowerCase()));
           const weight = hasContextKeyword 
-            ? DOMAIN_SCORING_WEIGHTS.CONTEXT_PHRASE * 0.9 
-            : DOMAIN_SCORING_WEIGHTS.PHRASE * 0.9; // Slightly lower for fuzzy
+            ? DOMAIN_SCORING_WEIGHTS.CONTEXT_PHRASE * DOMAIN_SCORING_WEIGHTS.FUZZY_PHRASE_MULTIPLIER
+            : DOMAIN_SCORING_WEIGHTS.PHRASE * DOMAIN_SCORING_WEIGHTS.FUZZY_PHRASE_MULTIPLIER;
           matchedTerms[domain] += weight;
           if (!foundKeywords.includes(phrase)) {
             foundKeywords.push(phrase);
@@ -1652,7 +1673,7 @@ export function detectDomain(
           return areWordsRelated(tw, verb) || areWordsRelated(twBase, verbBase);
         });
         if (fuzzyMatch) {
-          matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.VERB * 0.8;
+          matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.VERB * DOMAIN_SCORING_WEIGHTS.FUZZY_VERB_MULTIPLIER;
           if (!foundKeywords.includes(verb)) {
             foundKeywords.push(verb);
           }
@@ -1666,6 +1687,21 @@ export function detectDomain(
       if (contextBonus > 0) {
         matchedTerms[domain] += contextBonus;
         logger.debug(`🎯 Domain Detection: Context bonus for ${domain}: +${contextBonus.toFixed(2)} (keywords appear near each other)`);
+      }
+    }
+    
+    // CRITICAL: Additional boost for technical keywords in business domain
+    // If multiple technical keywords are detected, significantly boost business domain score
+    if (domain === 'business' && contextKeywords[domain].length >= DOMAIN_DETECTION_THRESHOLDS.MIN_TECHNICAL_KEYWORDS_FOR_BOOST) {
+      const technicalCount = contextKeywords[domain].filter(ck => 
+        DOMAIN_EXCLUSION_TERMS.TECHNICAL_KEYWORDS.some(tk => 
+          ck.toLowerCase().includes(tk) || tk.includes(ck.toLowerCase())
+        )
+      ).length;
+      if (technicalCount >= DOMAIN_DETECTION_THRESHOLDS.MIN_TECHNICAL_KEYWORDS_FOR_BOOST) {
+        const technicalBoost = DOMAIN_DETECTION_THRESHOLDS.TECHNICAL_KEYWORD_BOOST * technicalCount;
+        matchedTerms[domain] += technicalBoost;
+        logger.debug(`🚀 Domain Detection: Technical keyword boost for business: +${technicalBoost.toFixed(2)} (${technicalCount} technical keywords detected)`);
       }
     }
   }

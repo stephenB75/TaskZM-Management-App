@@ -8,7 +8,7 @@
  */
 
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, saveNewTerminologyToLibrary, DOMAIN_TERMINOLOGIES } from './domain-terminology';
-import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_DEDUPLICATION_CONFIG, DESCRIPTION_OPTIONS_CONFIG } from './ai-config';
+import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_DEDUPLICATION_CONFIG, DESCRIPTION_OPTIONS_CONFIG, DOMAIN_EXCLUSION_TERMS } from './ai-config';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
 
@@ -1623,9 +1623,40 @@ function buildElaborateContextualDescription(
   
   // Helper function to check if a keyword/noun is semantically relevant to the task
   // ENHANCED: Better context understanding with conceptual relationships
+  // CRITICAL: Filters out irrelevant terms from wrong domains (e.g., workout/fitness in coding tasks)
   const isSemanticallyRelevant = (term: string): boolean => {
     const termLower = term.toLowerCase();
     const termWords = termLower.split(/\s+/);
+    
+    // CRITICAL: Explicit exclusion of irrelevant terms based on detected domain
+    // If domain is business/technical, exclude personal/health terms
+    if (domain === 'business') {
+      if (DOMAIN_EXCLUSION_TERMS.BUSINESS_EXCLUDE_PERSONAL.some(irrelevant => 
+        termLower.includes(irrelevant) || irrelevant.includes(termLower)
+      )) {
+        // Only exclude if task doesn't relate to these terms
+        const taskHasHealthTerms = DOMAIN_EXCLUSION_TERMS.HEALTH_TASK_INDICATORS.some(indicator => 
+          taskNameLower.includes(indicator)
+        );
+        if (!taskHasHealthTerms) {
+          return false; // Exclude irrelevant personal/health terms from business domain
+        }
+      }
+    }
+    
+    // If domain is personal, exclude technical terms unless task relates to them
+    if (domain === 'personal') {
+      if (DOMAIN_EXCLUSION_TERMS.PERSONAL_EXCLUDE_TECHNICAL.some(tech => 
+        termLower.includes(tech) || tech.includes(termLower)
+      )) {
+        const taskHasTechTerms = DOMAIN_EXCLUSION_TERMS.TECHNICAL_TASK_INDICATORS.some(indicator => 
+          taskNameLower.includes(indicator)
+        );
+        if (!taskHasTechTerms) {
+          return false; // Exclude irrelevant technical terms from personal domain
+        }
+      }
+    }
     
     // Check if term relates to primary topics (with conceptual relationships)
     const relatesToPrimaryTopic = primaryTopics.some(topic => {

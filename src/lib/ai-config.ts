@@ -441,9 +441,10 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   wordSimilarity: {
     exactMatch: 1.0, // Exact word match similarity
     substringMatch: 0.8, // Substring match similarity (word contains another)
-    exactStemMatch: 0.7, // Exact stem match similarity (same base word)
-    partialStemMatch: 0.5, // Partial stem match similarity (stem contains another)
-    relationshipThreshold: 0.6, // Minimum similarity threshold for word relationship
+    exactStemMatch: 0.9, // Exact stem match similarity (same base word)
+    partialStemMatch: 0.7, // Partial stem match similarity (stem contains another)
+    wordRelationshipThreshold: 0.6, // Minimum similarity threshold for word relationship
+    phraseMatchThreshold: 0.7, // Minimum percentage of phrase words that must match (70%)
   },
   // Variation configuration for description generation
   variation: {
@@ -862,10 +863,39 @@ export const TASK_BREAKDOWN_CACHE_SIZE = 100;
  */
 export const DOMAIN_DETECTION_THRESHOLDS = {
   MIN_CONFIDENCE: 0.1, // Minimum confidence to return a domain
-  MIXED_THRESHOLD: 0.5, // Below this, mark as mixed if multiple domains are close (increased from 0.4)
-  MIXED_SIMILARITY: 0.7, // Second domain must be at least this % of top domain to be mixed
+  MIXED_THRESHOLD: 0.4, // Below this, mark as mixed if multiple domains are close (REDUCED to prevent false mixed)
+  MIXED_SIMILARITY: 0.8, // Second domain must be at least this % of top domain to be mixed (INCREASED to require closer scores)
   CONTEXT_PROXIMITY: 3, // Maximum word distance for context scoring (words within 3 positions get bonus)
   CONTEXT_BONUS: 0.5, // Bonus multiplier for context-aware matches
+  // Technical keyword boost - additional weight when multiple technical keywords are present
+  TECHNICAL_KEYWORD_BOOST: 1.5, // Multiplier for technical keywords when 2+ are present
+  MIN_TECHNICAL_KEYWORDS_FOR_BOOST: 2, // Minimum number of technical keywords to trigger boost
+} as const;
+
+/**
+ * Domain-specific exclusion terms configuration
+ * Used to filter out irrelevant terms from wrong domains
+ */
+export const DOMAIN_EXCLUSION_TERMS = {
+  // Personal/health terms that should be excluded from business domain
+  BUSINESS_EXCLUDE_PERSONAL: [
+    'workout', 'fitness', 'exercise', 'gym', 'training', 'cardio', 'strength',
+    'health', 'wellness', 'meditation', 'yoga', 'diet', 'nutrition'
+  ] as const,
+  // Technical terms that should be excluded from personal domain
+  PERSONAL_EXCLUDE_TECHNICAL: [
+    'code', 'codebase', 'software', 'application', 'programming', 'debugging',
+    'api', 'database', 'backend', 'frontend', 'repository', 'git'
+  ] as const,
+  // Technical keywords used for business domain boost detection
+  TECHNICAL_KEYWORDS: [
+    'test', 'testing', 'code', 'codebase', 'software', 'programming',
+    'debugging', 'dialog', 'box', 'section', 'component', 'api'
+  ] as const,
+  // Health-related task indicators (if task contains these, don't exclude health terms)
+  HEALTH_TASK_INDICATORS: ['health', 'fitness', 'workout', 'exercise'] as const,
+  // Technical task indicators (if task contains these, don't exclude technical terms)
+  TECHNICAL_TASK_INDICATORS: ['code', 'software', 'programming', 'test'] as const,
 } as const;
 
 /**
@@ -875,8 +905,13 @@ export const DOMAIN_SCORING_WEIGHTS = {
   KEYWORD: 1.0, // Weight for keyword matches
   PHRASE: 2.0, // Weight for phrase matches (more specific)
   VERB: 1.5, // Weight for verb matches (action-oriented)
-  CONTEXT_KEYWORD: 1.5, // Weight for context-specific keywords (higher priority)
-  CONTEXT_PHRASE: 3.0, // Weight for context-specific phrases (highest priority)
+  CONTEXT_KEYWORD: 2.5, // Weight for context-specific keywords (INCREASED - higher priority for technical terms)
+  CONTEXT_PHRASE: 4.0, // Weight for context-specific phrases (INCREASED - highest priority for technical phrases)
+  // Fuzzy match multipliers (applied when using fuzzy matching instead of exact matching)
+  FUZZY_KEYWORD_MULTIPLIER: 0.8, // Slightly lower weight for fuzzy keyword matches
+  FUZZY_PHRASE_MULTIPLIER: 0.9, // Slightly lower weight for fuzzy phrase matches
+  FUZZY_CONTEXT_KEYWORD_MULTIPLIER: 0.8, // Slightly lower weight for fuzzy context keyword matches
+  FUZZY_VERB_MULTIPLIER: 0.8, // Slightly lower weight for fuzzy verb matches
 } as const;
 
 /**

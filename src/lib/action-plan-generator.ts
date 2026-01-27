@@ -466,11 +466,15 @@ function generatePersonalSteps(
   let order = 1;
 
   // Helper function to check if terms match personal concepts
-  const hasExerciseTerms = (terms: string[]) => terms.some(term => 
-    ['exercise', 'workout', 'fitness', 'train', 'run', 'gym'].some(match => 
-      term.toLowerCase().includes(match)
-    )
-  );
+  const hasExerciseTerms = (terms: string[]) => {
+    // CRITICAL: Only detect exercise terms if domain is personal, not business/technical
+    if (domain !== 'personal') return false;
+    return terms.some(term => 
+      ['exercise', 'workout', 'fitness', 'train', 'run', 'gym'].some(match => 
+        term.toLowerCase().includes(match)
+      )
+    );
+  };
   const hasTravelTerms = (terms: string[]) => terms.some(term => 
     ['travel', 'trip', 'journey', 'vacation'].some(match => 
       term.toLowerCase().includes(match)
@@ -478,8 +482,11 @@ function generatePersonalSteps(
   );
 
   // Check using Browser AI extracted terms
-  const hasExercise = text.includes('exercise') || text.includes('workout') || text.includes('fitness') ||
-                      hasExerciseTerms(keywords) || hasExerciseTerms(phrases) || hasExerciseTerms(verbs);
+  // CRITICAL: Only detect exercise if domain is personal, not business/technical
+  const hasExercise = domain === 'personal' && (
+    text.includes('exercise') || text.includes('workout') || text.includes('fitness') ||
+    hasExerciseTerms(keywords) || hasExerciseTerms(phrases) || hasExerciseTerms(verbs)
+  );
   const hasTravel = text.includes('travel') || text.includes('trip') ||
                     hasTravelTerms(keywords) || hasTravelTerms(phrases) || hasTravelTerms(verbs);
 
@@ -772,8 +779,9 @@ function generateSubtasks(
       break;
 
     case 'personal':
-      if (text.includes('exercise') || text.includes('workout') || 
-          hasTerm(keywords, ['exercise', 'workout']) || hasTerm(verbs, ['exercise', 'workout'])) {
+      // CRITICAL: Only add exercise subtasks if domain is personal, not business/technical
+      if (domain === 'personal' && (text.includes('exercise') || text.includes('workout') || 
+          hasTerm(keywords, ['exercise', 'workout']) || hasTerm(verbs, ['exercise', 'workout']))) {
         subtasks.push('Warm up');
         subtasks.push('Main workout');
         subtasks.push('Cool down');
