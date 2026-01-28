@@ -60,6 +60,7 @@ import {
   TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE,
   TASK_CARD_EXPANDABLE,
   TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR,
+  TASK_CARD_AI_SUGGESTIONS_IN_EXPANDED_MAX_MINUTES,
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -349,6 +350,8 @@ export const DraggableTaskCard = React.forwardRef<
     const isShortTask = typeof estimatedTimeValue === "number" && estimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
     const isMediumTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && estimatedTimeValue < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
     const isLongTask = typeof estimatedTimeValue === "number" && estimatedTimeValue >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
+    // Tasks under 30 mins: show AI Suggestions only in expanded section (user opens via chevron)
+    const isShortTaskForAIPlacement = estimatedTimeValue !== null && estimatedTimeValue < TASK_CARD_AI_SUGGESTIONS_IN_EXPANDED_MAX_MINUTES;
     // Tasks 35 mins or less need extra compact handling for auto-adjust
     const isVeryShortTask = typeof estimatedTimeValue === "number" && estimatedTimeValue <= 35;
     const canUsePomodoro = hasFeature("pomodoroTimer");
@@ -542,6 +545,143 @@ export const DraggableTaskCard = React.forwardRef<
         ? "pr-3"
         : "pr-4";
 
+    // Shared AI Suggestions block: under headline for 30+ min tasks, in expanded section for under 30 min
+    const renderAISuggestions = () => {
+      const hasUserSubtasks = task.subtasks && task.subtasks.length > 0 &&
+        task.subtasks.some(st => !st.id.startsWith(`ai-step-${task.id}-`));
+      const itemsToShow = hasUserSubtasks
+        ? task.subtasks.filter(st => !st.id.startsWith(`ai-step-${task.id}-`))
+        : (breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0
+            ? breakdown.actionPlan.steps
+            : null);
+
+      if (!itemsToShow || itemsToShow.length === 0) return null;
+
+      const domainColors = breakdown?.domain === 'business'
+        ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800', border: isDark ? 'border-blue-800/30' : 'border-blue-200' }
+        : breakdown?.domain === 'home'
+        ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800', border: isDark ? 'border-green-800/30' : 'border-green-200' }
+        : breakdown?.domain === 'personal'
+        ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800', border: isDark ? 'border-purple-800/30' : 'border-purple-200' }
+        : breakdown?.domain === 'world'
+        ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800', border: isDark ? 'border-orange-800/30' : 'border-orange-200' }
+        : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800', border: isDark ? 'border-gray-800/30' : 'border-gray-200' };
+
+      const isShortTaskDisplay = estimatedTimeValue !== null && estimatedTimeValue <= ACTION_PLAN_CONFIG.SHORT_TASK_THRESHOLD_MINUTES;
+      const maxStepsToShow = isShortTaskDisplay
+        ? ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.SHORT_TASK
+        : ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.NORMAL_TASK;
+
+      const totalEstimatedMinutes = hasUserSubtasks
+        ? 0
+        : (breakdown?.actionPlan?.totalEstimatedMinutes || 0);
+
+      return (
+        <div className="px-2 py-1.5 mb-1.5" style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
+          <div className="flex items-center gap-1 mb-1">
+            <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={isDark ? domainColors.text : domainColors.text} weight="duotone" />
+            <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+              AI Suggestions
+            </span>
+          </div>
+          <div className="space-y-0.5">
+            {(hasUserSubtasks
+              ? itemsToShow.slice(0, maxStepsToShow)
+              : (itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).slice(0, maxStepsToShow)
+            ).map((item: any, idx: number) => {
+              const isUserSubtask = hasUserSubtasks;
+              const itemTitle = isUserSubtask ? item.title : item.action;
+              const itemId = isUserSubtask ? item.id : `ai-step-${task.id}-${item.order || idx + 1}`;
+              const itemEstimatedMinutes = isUserSubtask ? 0 : (item.estimatedMinutes || 0);
+              const isCompleted = isUserSubtask ? item.completed : (task.subtasks?.find(st =>
+                st.title.toLowerCase().trim() === itemTitle.toLowerCase().trim() ||
+                st.id === itemId
+              )?.completed || false);
+
+              const handleToggle = async (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (!permissions.canEditTask) {
+                  toast.error('Permission Denied', {
+                    description: 'Viewer role does not have permission to edit tasks.',
+                  });
+                  return;
+                }
+
+                if (isUserSubtask) {
+                  const updatedSubtasks = task.subtasks.map(st =>
+                    st.id === itemId
+                      ? { ...st, completed: !st.completed }
+                      : st
+                  );
+                  await updateTask(task.id, { subtasks: updatedSubtasks });
+                } else {
+                  const stepSubtask = task.subtasks?.find(st =>
+                    st.title.toLowerCase().trim() === itemTitle.toLowerCase().trim() ||
+                    st.id === itemId
+                  );
+                  if (stepSubtask) {
+                    const updatedSubtasks = task.subtasks.map(st =>
+                      st.id === stepSubtask.id
+                        ? { ...st, completed: !st.completed }
+                        : st
+                    );
+                    await updateTask(task.id, { subtasks: updatedSubtasks });
+                  } else {
+                    const newSubtask = {
+                      id: itemId,
+                      title: itemTitle,
+                      completed: true,
+                      createdAt: new Date().toISOString(),
+                    };
+                    const updatedSubtasks = [...(task.subtasks || []), newSubtask];
+                    await updateTask(task.id, { subtasks: updatedSubtasks });
+                  }
+                }
+              };
+
+              return (
+                <div key={isUserSubtask ? itemId : idx} className="flex items-start gap-1.5">
+                  <Checkbox
+                    checked={isCompleted}
+                    onCheckedChange={(checked) => {
+                      const syntheticEvent = { stopPropagation: () => {} } as React.MouseEvent;
+                      handleToggle(syntheticEvent);
+                    }}
+                    onClick={handleToggle}
+                    className="mt-0.5 flex-shrink-0"
+                    style={{
+                      width: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                      height: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                      minWidth: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                      minHeight: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                    }}
+                  />
+                  <span className={cn("leading-tight flex-1", domainColors.textLight, isCompleted && "line-through opacity-60")} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                    {itemTitle}
+                  </span>
+                  {!isUserSubtask && itemEstimatedMinutes > 0 && (
+                    <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                      {itemEstimatedMinutes}m
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            {!hasUserSubtasks && (itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).length > maxStepsToShow && (
+              <div className={cn("mt-0.5", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                +{(itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).length - maxStepsToShow} more steps
+              </div>
+            )}
+            {!hasUserSubtasks && totalEstimatedMinutes > 0 && (
+              <div className={cn("mt-0.5 pt-0.5 border-t", domainColors.border)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
+                Total: {Math.floor(totalEstimatedMinutes / 60)}h {totalEstimatedMinutes % 60}m
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
     return (
       <div
         ref={cardRef}
@@ -733,7 +873,7 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Headline (Title) - Underneath the tab */}
           <div className={cn("flex items-start px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
             {task.recurrence && task.recurrence.type !== "none" && (
-              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn(isDark ? "text-purple-300" : "text-purple-700", "flex-shrink-0 mt-0.5 mr-1")} weight="duotone" />
+              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn(isDark ? "text-purple-300" : "text-violet-800", "flex-shrink-0 mt-0.5 mr-1")} weight="duotone" />
             )}
             <h3
               className={cn(
@@ -747,151 +887,8 @@ export const DraggableTaskCard = React.forwardRef<
             </h3>
           </div>
 
-          {/* AI Suggestions - Data from useTaskBreakdown -> actionPlan.steps (or user subtasks) */}
-          {(() => {
-            const hasUserSubtasks = task.subtasks && task.subtasks.length > 0 && 
-              task.subtasks.some(st => !st.id.startsWith(`ai-step-${task.id}-`));
-            // When no user subtasks: show action plan subtasks from breakdown.actionPlan.steps
-            const itemsToShow = hasUserSubtasks 
-              ? task.subtasks.filter(st => !st.id.startsWith(`ai-step-${task.id}-`))
-              : (breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 
-                  ? breakdown.actionPlan.steps 
-                  : null);
-            
-            if (!itemsToShow || itemsToShow.length === 0) return null;
-            
-            // Get domain-specific colors
-            const domainColors = breakdown?.domain === 'business' 
-              ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800', border: isDark ? 'border-blue-800/30' : 'border-blue-200' }
-              : breakdown?.domain === 'home'
-              ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800', border: isDark ? 'border-green-800/30' : 'border-green-200' }
-              : breakdown?.domain === 'personal'
-              ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800', border: isDark ? 'border-purple-800/30' : 'border-purple-200' }
-              : breakdown?.domain === 'world'
-              ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800', border: isDark ? 'border-orange-800/30' : 'border-orange-200' }
-              : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800', border: isDark ? 'border-gray-800/30' : 'border-gray-200' };
-            
-            // For short tasks, show only the first step (consistent with desktop view)
-            const isShortTask = estimatedTimeValue !== null && estimatedTimeValue <= ACTION_PLAN_CONFIG.SHORT_TASK_THRESHOLD_MINUTES;
-            const maxStepsToShow = isShortTask 
-              ? ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.SHORT_TASK 
-              : ACTION_PLAN_CONFIG.MAX_STEPS_DISPLAY.NORMAL_TASK;
-            
-            // Calculate total estimated minutes for AI suggestions
-            const totalEstimatedMinutes = hasUserSubtasks 
-              ? 0 // User subtasks don't have estimated time
-              : (breakdown?.actionPlan?.totalEstimatedMinutes || 0);
-            
-            return (
-              <div className="px-2 py-1.5 mb-1.5" style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
-                <div className="flex items-center gap-1 mb-1">
-                  <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={isDark ? domainColors.text : domainColors.text} weight="duotone" />
-                  <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                    AI Suggestions
-                  </span>
-                </div>
-                <div className="space-y-0.5">
-                  {(hasUserSubtasks 
-                    ? itemsToShow.slice(0, maxStepsToShow)
-                    : (itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).slice(0, maxStepsToShow)
-                  ).map((item: any, idx: number) => {
-                    // Handle both user subtasks and AI steps
-                    const isUserSubtask = hasUserSubtasks;
-                    const itemTitle = isUserSubtask ? item.title : item.action;
-                    const itemId = isUserSubtask ? item.id : `ai-step-${task.id}-${item.order || idx + 1}`;
-                    const estimatedMinutes = isUserSubtask ? 0 : (item.estimatedMinutes || 0);
-                    const isCompleted = isUserSubtask ? item.completed : (task.subtasks?.find(st => 
-                      st.title.toLowerCase().trim() === itemTitle.toLowerCase().trim() ||
-                      st.id === itemId
-                    )?.completed || false);
-
-                    const handleToggle = async (e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      if (!permissions.canEditTask) {
-                        toast.error('Permission Denied', {
-                          description: 'Viewer role does not have permission to edit tasks.',
-                        });
-                        return;
-                      }
-
-                      if (isUserSubtask) {
-                        // Update user subtask
-                        const updatedSubtasks = task.subtasks.map(st =>
-                          st.id === itemId
-                            ? { ...st, completed: !st.completed }
-                            : st
-                        );
-                        await updateTask(task.id, { subtasks: updatedSubtasks });
-                      } else {
-                        // Handle AI step
-                        const stepSubtask = task.subtasks?.find(st => 
-                          st.title.toLowerCase().trim() === itemTitle.toLowerCase().trim() ||
-                          st.id === itemId
-                        );
-                        if (stepSubtask) {
-                          // Update existing subtask
-                          const updatedSubtasks = task.subtasks.map(st =>
-                            st.id === stepSubtask.id
-                              ? { ...st, completed: !st.completed }
-                              : st
-                          );
-                          await updateTask(task.id, { subtasks: updatedSubtasks });
-                        } else {
-                          // Create new subtask from AI step
-                          const newSubtask = {
-                            id: itemId,
-                            title: itemTitle,
-                            completed: true,
-                            createdAt: new Date().toISOString(),
-                          };
-                          const updatedSubtasks = [...(task.subtasks || []), newSubtask];
-                          await updateTask(task.id, { subtasks: updatedSubtasks });
-                        }
-                      }
-                    };
-
-                    return (
-                      <div key={isUserSubtask ? itemId : idx} className="flex items-start gap-1.5">
-                        <Checkbox
-                          checked={isCompleted}
-                          onCheckedChange={(checked) => {
-                            const syntheticEvent = { stopPropagation: () => {} } as React.MouseEvent;
-                            handleToggle(syntheticEvent);
-                          }}
-                          onClick={handleToggle}
-                          className="mt-0.5 flex-shrink-0"
-                          style={{
-                            width: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
-                            height: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
-                            minWidth: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
-                            minHeight: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
-                          }}
-                        />
-                        <span className={cn("leading-tight flex-1", domainColors.textLight, isCompleted && "line-through opacity-60")} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                          {itemTitle}
-                        </span>
-                        {!isUserSubtask && estimatedMinutes > 0 && (
-                          <span className={cn("flex-shrink-0", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                            {estimatedMinutes}m
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {!hasUserSubtasks && (itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).length > maxStepsToShow && (
-                    <div className={cn("mt-0.5", domainColors.textMuted)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                      +{(itemsToShow as Array<{ action: string; estimatedMinutes: number; order?: number }>).length - maxStepsToShow} more steps
-                    </div>
-                  )}
-                  {!hasUserSubtasks && totalEstimatedMinutes > 0 && (
-                    <div className={cn("mt-0.5 pt-0.5 border-t", domainColors.border)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                      Total: {Math.floor(totalEstimatedMinutes / 60)}h {totalEstimatedMinutes % 60}m
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
+          {/* AI Suggestions - Under headline for tasks 30+ mins; in expanded section for under 30 mins */}
+          {!isShortTaskForAIPlacement && renderAISuggestions()}
 
             {/* Pomodoro Controls + Tracked Info + Chevron - Inline underneath AI Suggestions */}
           <div className={cn("flex items-center justify-between px-2", isMobile ? "py-1" : "py-1.5")}>
@@ -961,11 +958,11 @@ export const DraggableTaskCard = React.forwardRef<
                         name="timer" 
                         size={isMobile ? TASK_CARD_ICON_SIZES.timerInline.mobile : TASK_CARD_ICON_SIZES.timerInline.desktop}
                         className="flex-shrink-0" 
-                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                        style={{ color: isDark ? TASK_CARD_THEME_COLORS.primary : TASK_CARD_THEME_COLORS.primaryDark }}
                       />
                       <span 
                         className="text-sm font-medium whitespace-nowrap"
-                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                        style={{ color: isDark ? TASK_CARD_THEME_COLORS.primary : TASK_CARD_THEME_COLORS.primaryDark }}
                       >
                         {formatTimer(occurrenceTime)} {TASK_CARD_TEXT.tracked}
                       </span>
@@ -1009,7 +1006,8 @@ export const DraggableTaskCard = React.forwardRef<
               }}
               onClick={(e) => e.stopPropagation()}
             >
-            {/* AI Suggestions removed from expanded section - now always visible under headline */}
+            {/* AI Suggestions - for tasks under 30 mins, shown here when user expands the card */}
+            {isShortTaskForAIPlacement && renderAISuggestions()}
 
             {/* Description Section */}
             {task.description && (

@@ -92,6 +92,8 @@ export const TASK_CARD_TAG_COLORS = {
 export const TASK_CARD_THEME_COLORS = {
   primary: '#7B68EE',
   primaryLight: '#9B87E8',
+  /** Darker lavender/violet for icons and text on light card background (better visibility) */
+  primaryDark: '#5B4FCF',
   gradient: {
     from: '#7B68EE',
     to: '#9B87E8',
@@ -673,6 +675,8 @@ export const TASK_CARD_ASSIGNED_USER_COLORS = {
 // Text Colors - Light colors for dark backgrounds in dark mode
 // AI Action Plan text size
 export const TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE = '16px'; // All text in AI Action Plan uses 16px (increased from 12px for better readability when zoomed out)
+/** Tasks under this duration (minutes) show AI Suggestions only in the expanded section */
+export const TASK_CARD_AI_SUGGESTIONS_IN_EXPANDED_MAX_MINUTES = 30;
 
 export const TASK_CARD_TEXT_COLORS = {
   description: 'text-gray-500 dark:text-gray-300',
