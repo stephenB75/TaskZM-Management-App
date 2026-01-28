@@ -144,8 +144,8 @@ export const TASK_CARD_FONT_SIZES = {
 // Tailwind: w-2 = 0.5rem = 8px, w-2.5 = 0.625rem = 10px, w-3 = 0.75rem = 12px, w-3.5 = 0.875rem = 14px, w-4 = 1rem = 16px
 export const TASK_CARD_ICON_SIZES = {
   clock: {
-    mobile: 16, // Increased for better tab visibility (w-4 = 16px)
-    desktop: 18, // Increased for better tab visibility (w-4.5 = 18px)
+    mobile: 18, // Increased for better tab visibility (w-4.5 = 18px)
+    desktop: 20, // Increased for better tab visibility (w-5 = 20px)
   },
   repeat: {
     mobile: 18, // w-4.5 = 18px - increased for better visibility
@@ -160,8 +160,8 @@ export const TASK_CARD_ICON_SIZES = {
     desktop: 12, // w-3 = 12px
   },
   checkbox: {
-    mobile: 22, // Increased for better tab visibility
-    desktop: 20, // Increased for better tab visibility
+    mobile: 24, // Increased for better tab visibility
+    desktop: 22, // Increased for better tab visibility
   },
   subtask: {
     mobile: 8, // w-2 = 8px

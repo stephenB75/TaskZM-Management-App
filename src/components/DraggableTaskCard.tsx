@@ -658,8 +658,8 @@ export const DraggableTaskCard = React.forwardRef<
                 {/* Scheduled Time with Clock Icon */}
                 {scheduledTimeLabel && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={isDark ? "text-white" : "text-gray-800"} />
-                    <span className={cn(isDark ? "text-white" : "text-gray-800", "font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                    <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={isDark ? "text-white" : "text-gray-900"} weight="bold" />
+                    <span className={cn(isDark ? "text-white" : "text-gray-900", "font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                       {scheduledTimeLabel}
                     </span>
                   </div>
@@ -672,7 +672,7 @@ export const DraggableTaskCard = React.forwardRef<
                     "rounded-md border capitalize flex-shrink-0 font-bold bg-transparent whitespace-nowrap",
                     isDark 
                       ? "border-white text-white" 
-                      : "border-gray-800 text-gray-800",
+                      : "border-gray-900 text-gray-900",
                     isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                   )}
                 >
@@ -685,7 +685,7 @@ export const DraggableTaskCard = React.forwardRef<
                     variant="secondary"
                     className={cn(
                       "border-0 flex-shrink-0 bg-transparent whitespace-nowrap",
-                      isDark ? "text-white" : "text-gray-800",
+                      isDark ? "text-white" : "text-gray-900",
                       isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
                     )}
                   >
@@ -695,7 +695,7 @@ export const DraggableTaskCard = React.forwardRef<
 
                 {/* Duration */}
                 {task.estimatedTime && (
-                  <span className={cn(isDark ? "text-white" : "text-gray-800", "font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                  <span className={cn(isDark ? "text-white" : "text-gray-900", "font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
@@ -712,10 +712,10 @@ export const DraggableTaskCard = React.forwardRef<
                   size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
                   className={cn(
                     "transition-colors flex-shrink-0",
-                    isDark ? "text-white" : "text-gray-800",
-                    task.status === "done" && (isDark ? "fill-white" : "fill-gray-800"),
+                    isDark ? "text-white" : "text-gray-900",
+                    task.status === "done" && (isDark ? "fill-white" : "fill-gray-900"),
                   )}
-                  weight={task.status === "done" ? "fill" : "regular"}
+                  weight={task.status === "done" ? "fill" : "bold"}
                 />
               </button>
             </div>
