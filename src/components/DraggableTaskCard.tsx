@@ -49,6 +49,7 @@ import {
   TASK_CARD_ADDITIONAL_FONT_SIZES,
   TASK_CARD_OPACITY,
   TASK_CARD_TAB_HEIGHT,
+  TASK_CARD_TAB_SPACING,
   TASK_CARD_DROPDOWN_COLORS,
   TASK_CARD_DROPDOWN_DOMAIN_COLORS,
   TASK_CARD_DROPDOWN_BADGE_COLORS,
@@ -638,21 +639,21 @@ export const DraggableTaskCard = React.forwardRef<
             }
           }}
         >
-          {/* Top Tab Section - Pill-shaped tab (rounded square with very rounded corners) centered at the top with content inside */}
-          <div className="flex justify-center" style={{ marginTop: isMobile ? '-0.25rem' : '-0.375rem' }}>
-            {/* Pill-shaped tab with priority color - centered, containing all content, wider to fit content */}
+          {/* Top Tab Section - Pill-shaped tab (rounded square with moderate rounded corners) centered with space from top */}
+          <div className="flex justify-center" style={{ marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop }}>
+            {/* Pill-shaped tab with priority color - centered, containing all content, wider to fit content, less rounded corners */}
             <div 
-              className="rounded-full flex items-center justify-between px-2"
+              className="rounded-lg flex items-center justify-between px-2"
               style={{ 
                 backgroundColor: getPriorityTabBackgroundColor(task.priority),
                 height: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-                gap: isMobile ? '0.375rem' : '0.5rem',
+                gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
                 width: 'auto',
                 minWidth: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
               }}
             >
-              <div className="flex items-center flex-1 min-w-0 flex-wrap justify-center" style={{ gap: isMobile ? '0.375rem' : '0.5rem' }}>
+              <div className="flex items-center flex-1 min-w-0 flex-wrap justify-center" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
                 {/* Scheduled Time with Clock Icon */}
                 {scheduledTimeLabel && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">

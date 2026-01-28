@@ -223,6 +223,20 @@ export const TASK_CARD_TAB_HEIGHT = {
   desktop: 54, // Base height + 20px extension = 54px
 } as const;
 
+// Task Card Tab Spacing
+export const TASK_CARD_TAB_SPACING = {
+  // Margin from top of card to tab
+  marginTop: {
+    mobile: '0.5rem', // 8px - space between card top and tab
+    desktop: '0.75rem', // 12px - space between card top and tab
+  } as const,
+  // Gap between items inside tab
+  gap: {
+    mobile: '0.375rem', // 6px - gap between tab content items
+    desktop: '0.5rem', // 8px - gap between tab content items
+  } as const,
+} as const;
+
 // Standard Task Card Heights by Duration
 export const TASK_CARD_STANDARD_HEIGHTS = {
   at15mins: 200, // 15 minutes = 200px
