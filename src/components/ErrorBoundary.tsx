@@ -109,7 +109,10 @@ export class ErrorBoundary extends Component<Props, State> {
               Try Again
             </button>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                (window as any).__userInitiatedReload = true;
+                window.location.reload();
+              }}
               className="w-full mt-2 px-4 py-2 bg-gray-200 dark:bg-muted text-gray-800 dark:text-foreground rounded-lg hover:bg-gray-300 dark:hover:bg-muted/80 transition-colors"
             >
               Refresh Page

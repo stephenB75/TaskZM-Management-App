@@ -958,7 +958,7 @@ try {
           The application failed to initialize. Please refresh the page.
         </p>
         <button 
-          onclick="window.location.reload()" 
+          onclick="window.__userInitiatedReload = true; window.location.reload();" 
           style="background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-size: 1rem;"
         >
           Refresh Page
