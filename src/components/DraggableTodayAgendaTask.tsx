@@ -53,6 +53,7 @@ import {
   TASK_CARD_ICON_COLORS,
 } from "../lib/task-card-constants";
 import { Z_INDEX } from "../lib/layout-constants";
+import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 
@@ -487,7 +488,7 @@ export function DraggableTodayAgendaTask({
             )}
             style={{ zIndex: Z_INDEX.BADGE }}
           >
-            NEXT UP
+            {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
           </span>
         </div>
       )}
@@ -602,20 +603,9 @@ export function DraggableTodayAgendaTask({
               }
             }}
           >
-            {/* Row 1: Priority Badge + Tag + Duration + Tracking Badge (no checkbox - moved to headline) */}
+            {/* Row 1: Tag + Priority Badge + Duration + Tracking Badge (no checkbox - moved to headline) */}
             <div className={cn("flex items-center justify-between", isMobile ? "gap-1" : "gap-2")}>
               <div className={cn("flex items-center flex-1 min-w-0", isMobile ? "gap-1" : "gap-1.5")}>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "rounded-md border capitalize flex-shrink-0",
-                    getPriorityBadgeColor(task.priority),
-                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
-                  )}
-                >
-                  {task.priority}
-                </Badge>
-
                 {task.tags && task.tags.length > 0 && (
                 <Badge
                   variant="secondary"
@@ -632,10 +622,26 @@ export function DraggableTodayAgendaTask({
                 </Badge>
                 )}
 
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "rounded-md border capitalize flex-shrink-0",
+                    getPriorityBadgeColor(task.priority),
+                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
+                  )}
+                >
+                  {task.priority}
+                </Badge>
+
                 {task.estimatedTime && (
                   <span className={cn("text-gray-500 dark:text-gray-300 font-medium flex-shrink-0", isMobile ? "text-[11px]" : "text-[12px]")}>
                     {formatDuration(task.estimatedTime)}
                   </span>
+                )}
+
+                {/* Row 1 Col 4: Recurring icon (when task repeats) */}
+                {task.recurrence && task.recurrence.type !== "none" && (
+                  <Icon name="repeat" size={isMobile ? ICON_SIZE_MD : ICON_SIZE_LG} className={cn("flex-shrink-0", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
                 )}
 
                 {/* Tracking Badge - Shown at top with other badges (mobile and desktop for tasks < 45 mins) */}
@@ -700,7 +706,7 @@ export function DraggableTodayAgendaTask({
                 onClick={handleToggleComplete}
                 onPointerDown={(e) => e.stopPropagation()}
                 className={cn("flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")}
-                aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
+                aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
               >
                 <Icon
                   name="circle"
@@ -724,13 +730,6 @@ export function DraggableTodayAgendaTask({
                 {task.title}
               </h3>
             </div>
-
-            {/* Row 3: Recurring icon - next line (only when task repeats) */}
-            {task.recurrence && task.recurrence.type !== "none" && (
-              <div className={cn("flex items-center px-1", isMobile ? "mb-1" : "mb-1")}>
-                <Icon name="repeat" size={isMobile ? ICON_SIZE_MD : ICON_SIZE_LG} className={cn("flex-shrink-0", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
-              </div>
-            )}
 
             {/* Row 3: Subhead (Description) - Show if description exists */}
             {task.description && (

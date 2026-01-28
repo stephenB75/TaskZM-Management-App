@@ -787,7 +787,7 @@ export const DraggableTaskCard = React.forwardRef<
                 backgroundColor: getPriorityTabBackgroundColor(task.priority),
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 gridTemplateColumns: '1fr auto auto 1fr',
-                gridTemplateRows: task.tags && task.tags.length > 0 ? 'auto auto' : 'auto',
+                gridTemplateRows: 'auto auto',
                 gap: `0 ${isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop}`,
                 rowGap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
                 width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop,
@@ -797,7 +797,7 @@ export const DraggableTaskCard = React.forwardRef<
                 paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
               }}
             >
-              {/* Row 1: Col 1 = time, Col 2 = priority, Col 3 = duration, Col 4 = spacer (mark complete moved to headline row) */}
+              {/* Row 1: Col 1 = time, Col 2 = tag, Col 3 = duration, Col 4 = spacer (mark complete moved to headline row) */}
               {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1 }}>
                   <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
@@ -807,7 +807,39 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
 
-              <div style={{ gridColumn: scheduledTimeLabel ? 2 : 1 }}>
+              {/* Tag in row 1 (priority badge place) */}
+              {task.tags && task.tags.length > 0 && (
+                <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 1 }}>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap",
+                      "text-white",
+                      isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
+                    )}
+                  >
+                    {task.tags[0]}
+                  </Badge>
+                </div>
+              )}
+
+              {task.estimatedTime && (
+                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: scheduledTimeLabel ? 3 : 2 }}>
+                  {formatDuration(task.estimatedTime)}
+                </span>
+              )}
+
+              {/* Row 1 Col 4: Recurring icon (when task repeats) */}
+              {task.recurrence && task.recurrence.type !== "none" ? (
+                <div className="flex items-center justify-center justify-self-end" style={{ gridColumn: 4, gridRow: 1 }}>
+                  <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="duotone" />
+                </div>
+              ) : (
+                <div style={{ gridColumn: 4 }} />
+              )}
+
+              {/* Row 2: Priority badge (tag place) */}
+              <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
                 <Badge
                   variant="secondary"
                   className={cn(
@@ -823,31 +855,6 @@ export const DraggableTaskCard = React.forwardRef<
                   {task.priority}
                 </Badge>
               </div>
-
-              {task.estimatedTime && (
-                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: scheduledTimeLabel ? 3 : 2 }}>
-                  {formatDuration(task.estimatedTime)}
-                </span>
-              )}
-
-              {/* Spacer column 4 - empty */}
-              <div style={{ gridColumn: 4 }} />
-
-              {/* Row 2: Tag badge under priority (same column as priority) */}
-              {task.tags && task.tags.length > 0 && (
-                <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap",
-                      "text-white",
-                      isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
-                    )}
-                  >
-                    {task.tags[0]}
-                  </Badge>
-                </div>
-              )}
             </div>
           </div>
 
@@ -858,7 +865,7 @@ export const DraggableTaskCard = React.forwardRef<
               onClick={handleToggleComplete}
               onPointerDown={(e) => e.stopPropagation()}
               className="flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5 mr-1"
-              aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
+              aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
             >
               <Icon 
                 name="circle"
@@ -882,13 +889,6 @@ export const DraggableTaskCard = React.forwardRef<
               {task.title}
             </h3>
           </div>
-
-          {/* Recurring icon - next line (only when task repeats) */}
-          {task.recurrence && task.recurrence.type !== "none" && (
-            <div className={cn("flex items-center px-2", isMobile ? "pb-0.5" : "pb-1")}>
-              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
-            </div>
-          )}
 
           {/* AI Suggestions - Under headline for tasks 30+ mins; in expanded section for under 30 mins */}
           {!isShortTaskForAIPlacement && renderAISuggestions()}
@@ -919,7 +919,7 @@ export const DraggableTaskCard = React.forwardRef<
                       >
                         <Icon name="stop" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
                       </button>
-                      <span className={cn("text-sm font-medium ml-1", TASK_CARD_ICON_COLORS.trackedLabel)}>Tracking ....</span>
+                      <span className={cn("text-sm font-medium ml-1", TASK_CARD_ICON_COLORS.trackedLabel)}>{TASK_CARD_TEXT.tracking}</span>
                     </>
                   ) : (
                     <button
@@ -1015,7 +1015,7 @@ export const DraggableTaskCard = React.forwardRef<
               <div style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px` }}>
                 <div className="flex items-center" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px`, marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottomHeader}px` }}>
                   <Icon name="file-text" size={isMobile ? TASK_CARD_ICON_SIZES.fileText.mobile : TASK_CARD_ICON_SIZES.fileText.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} />
-                  <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Description</span>
+                  <span className={cn("font-semibold text-sm", TASK_CARD_TEXT_COLORS.expandableSectionHeader)}>{TASK_CARD_DROPDOWN.text.description}</span>
                 </div>
                 <div
                   className="break-normal leading-relaxed text-sm text-gray-600 dark:text-gray-400"
