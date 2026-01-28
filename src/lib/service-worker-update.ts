@@ -55,8 +55,16 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
   
   // Set up periodic background checks ONLY (no visibility change triggers)
   // This ensures updates are checked in the background without disrupting user sessions
+  // CRITICAL: Only check when page is hidden - never when visible
   updateCheckInterval = window.setInterval(() => {
-    checkForUpdates();
+    // CRITICAL: Only check for updates when page is hidden
+    // Never check when user is actively using the app
+    if (document.hidden) {
+      checkForUpdates();
+    } else {
+      // Page is visible - update last visible time and skip check
+      lastVisibleTime = Date.now();
+    }
   }, UPDATE_CHECK_INTERVAL);
   
   // Listen for updatefound event (new service worker detected)
