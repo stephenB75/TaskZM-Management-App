@@ -641,19 +641,22 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {/* Top Tab Section - Pill-shaped tab (rounded square with moderate rounded corners) centered with space from top */}
           <div className="flex justify-center" style={{ marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop }}>
-            {/* Pill-shaped tab with priority color - centered, containing all content, consistent width, less rounded corners */}
+            {/* Pill-shaped tab with priority color - centered, containing all content, auto width to fit contents, less rounded corners */}
             <div 
-              className="rounded-lg flex items-center justify-between px-2"
+              className="rounded-lg flex items-center justify-between"
               style={{ 
                 backgroundColor: getPriorityTabBackgroundColor(task.priority),
                 height: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
-                width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop,
+                width: 'auto',
                 minWidth: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
+                maxWidth: '95%', // Allow tab to expand but keep some margin from card edges
+                paddingLeft: isMobile ? '0.5rem' : '0.75rem', // px-2 or px-3
+                paddingRight: isMobile ? '0.5rem' : '0.75rem',
               }}
             >
-              <div className="flex items-center flex-1 min-w-0 flex-wrap justify-center" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
+              <div className="flex items-center flex-1 min-w-0 justify-center whitespace-nowrap" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
                 {/* Scheduled Time with Clock Icon */}
                 {scheduledTimeLabel && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -723,7 +726,7 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Headline (Title) - Underneath the tab */}
           <div className={cn("flex items-start px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
             {task.recurrence && task.recurrence.type !== "none" && (
-              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className="text-primary flex-shrink-0 mt-0.5 mr-1" weight="duotone" />
+              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn(isDark ? "text-purple-300" : "text-purple-700", "flex-shrink-0 mt-0.5 mr-1")} weight="duotone" />
             )}
             <h3
               className={cn(
@@ -778,7 +781,7 @@ export const DraggableTaskCard = React.forwardRef<
             return (
               <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
                 <div className="flex items-center gap-1 mb-1">
-                  <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={domainColors.text} weight="duotone" />
+                  <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={isDark ? domainColors.text : domainColors.textMuted} weight="duotone" />
                   <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                     AI Suggestions
                   </span>
