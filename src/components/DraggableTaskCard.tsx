@@ -118,6 +118,7 @@ export const DraggableTaskCard = React.forwardRef<
     const [zoomScale, setZoomScale] = React.useState(1);
     const [newSubtaskTitle, setNewSubtaskTitle] = React.useState('');
     const cardRef = React.useRef<HTMLDivElement>(null);
+    const cardContentRef = React.useRef<HTMLDivElement>(null);
     const taskInstanceKey = `${task.id}-${droppableId}`;
     const previousTaskInstanceKeyRef = React.useRef<string | null>(null);
 
