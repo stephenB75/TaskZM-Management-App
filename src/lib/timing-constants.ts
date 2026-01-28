@@ -130,6 +130,8 @@ export const TIMING_CONSTANTS = {
     visibilityCheckInterval: 5 * 60 * 1000, // 5 minutes - Minimum time between visibility-based update checks (not used - kept for reference)
     initialUpdateCheckDelay: 60 * 1000, // 60 seconds - Delay for initial update check to ensure page is fully loaded (increased to prevent early checks)
     minHiddenTime: 5 * 60 * 1000, // 5 minutes - Page must be hidden for this long before checking for updates (prevents checks during brief tab switches)
+    postRegisterInitDelay: 10 * 1000, // 10 seconds - Delay after SW registration before starting update checks
+    controllerChangeHistoryRestoreDelay: 1000, // 1 second - Delay before restoring history methods after blocking controller change
   },
   
   // Task sync constants

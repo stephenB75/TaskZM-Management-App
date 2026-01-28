@@ -484,7 +484,7 @@ if ('serviceWorker' in navigator) {
       setTimeout(async () => {
         const { initServiceWorkerUpdates } = await import('./lib/service-worker-update');
         initServiceWorkerUpdates(registration);
-      }, 10000); // Wait 10 seconds after page load before starting update checks
+      }, TIMING_CONSTANTS.serviceWorker.postRegisterInitDelay);
       
     } catch (error) {
       console.error('❌ Service Worker registration failed:', error);
@@ -553,7 +553,7 @@ if ('serviceWorker' in navigator) {
       setTimeout(() => {
         history.pushState = originalPushState;
         history.replaceState = originalReplaceState;
-      }, 1000);
+      }, TIMING_CONSTANTS.serviceWorker.controllerChangeHistoryRestoreDelay);
       
       // Completely ignore controller changes - don't reload
       // The new service worker will take control on next page load
