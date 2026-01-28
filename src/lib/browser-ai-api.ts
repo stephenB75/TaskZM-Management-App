@@ -31,11 +31,26 @@ interface BrowserAIResponse {
 
 /**
  * Check if Browser AI API is available
+ * Supports multiple Browser AI API formats:
+ * - window.ai (standard Browser AI API)
+ * - navigator.ai (Chrome built-in AI)
  */
 export function isBrowserAIAvailable(): boolean {
-  return typeof window !== 'undefined' && 
-         typeof (window as any).ai !== 'undefined' && 
-         (window as any).ai !== null;
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  
+  // Check for window.ai
+  if (typeof (window as any).ai !== 'undefined' && (window as any).ai !== null) {
+    return true;
+  }
+  
+  // Check for navigator.ai (Chrome built-in AI)
+  if (typeof navigator !== 'undefined' && typeof (navigator as any).ai !== 'undefined' && (navigator as any).ai !== null) {
+    return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -62,6 +77,7 @@ export async function getBrowserAIModels(): Promise<BrowserAIModel[]> {
 
 /**
  * Generate text using Browser AI API
+ * Supports multiple Browser AI API formats for maximum compatibility
  * 
  * @param prompt - The prompt text
  * @param options - Optional generation options
@@ -76,39 +92,103 @@ export async function generateTextWithBrowserAI(
   } = {}
 ): Promise<string | null> {
   if (!isBrowserAIAvailable()) {
+    logger.debug('Browser AI API not available');
     return null;
   }
 
   try {
-    const ai = (window as any).ai;
-    
-    // Try languageModel API (standard Browser AI API)
-    if (ai && typeof ai.languageModel === 'function') {
-      const promptConfig: BrowserAIPrompt = {
-        text: prompt,
-        temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
-        maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
-      };
-
-      const response = await ai.languageModel.generateText(promptConfig);
-      
-      if (response && typeof response === 'string') {
-        return response;
+    // Try window.ai first (standard Browser AI API)
+    const windowAI = (window as any).ai;
+    if (windowAI) {
+      // Format 1: window.ai with getWindowAI() pattern
+      if (typeof windowAI.getWindowAI === 'function') {
+        try {
+          const ai = await windowAI.getWindowAI();
+          if (ai && typeof ai.generateText === 'function') {
+            const response = await ai.generateText({
+              prompt,
+              temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
+              maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
+            });
+            if (response && typeof response === 'string') {
+              logger.debug('✅ Browser AI API: Generated text using window.ai.getWindowAI()');
+              return response;
+            }
+            if (response && typeof response === 'object' && 'text' in response) {
+              logger.debug('✅ Browser AI API: Generated text using window.ai.getWindowAI()');
+              return (response as BrowserAIResponse).text;
+            }
+          }
+        } catch (error) {
+          logger.debug('window.ai.getWindowAI() format failed, trying alternatives:', error);
+        }
       }
       
-      if (response && typeof response === 'object' && 'text' in response) {
-        return (response as BrowserAIResponse).text;
+      // Format 2: window.ai.languageModel.generateText()
+      if (windowAI && typeof windowAI.languageModel === 'function') {
+        try {
+          const promptConfig: BrowserAIPrompt = {
+            text: prompt,
+            temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
+            maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
+          };
+
+          const response = await windowAI.languageModel.generateText(promptConfig);
+          
+          if (response && typeof response === 'string') {
+            logger.debug('✅ Browser AI API: Generated text using window.ai.languageModel.generateText()');
+            return response;
+          }
+          
+          if (response && typeof response === 'object' && 'text' in response) {
+            logger.debug('✅ Browser AI API: Generated text using window.ai.languageModel.generateText()');
+            return (response as BrowserAIResponse).text;
+          }
+        } catch (error) {
+          logger.debug('window.ai.languageModel.generateText() format failed, trying alternatives:', error);
+        }
+      }
+
+      // Format 3: window.ai.generateText() (direct method)
+      if (windowAI && typeof windowAI.generateText === 'function') {
+        try {
+          const response = await windowAI.generateText(prompt, options);
+          if (response && typeof response === 'string') {
+            logger.debug('✅ Browser AI API: Generated text using window.ai.generateText()');
+            return response;
+          }
+          if (response && typeof response === 'object' && 'text' in response) {
+            logger.debug('✅ Browser AI API: Generated text using window.ai.generateText()');
+            return (response as BrowserAIResponse).text;
+          }
+        } catch (error) {
+          logger.debug('window.ai.generateText() format failed, trying alternatives:', error);
+        }
       }
     }
 
-    // Try alternative API format (some implementations use different structure)
-    if (ai && typeof ai.generateText === 'function') {
-      const response = await ai.generateText(prompt, options);
-      if (response && typeof response === 'string') {
-        return response;
-      }
-      if (response && typeof response === 'object' && 'text' in response) {
-        return (response as BrowserAIResponse).text;
+    // Try navigator.ai (Chrome built-in AI)
+    const navigatorAI = typeof navigator !== 'undefined' ? (navigator as any).ai : null;
+    if (navigatorAI) {
+      // Format 4: navigator.ai.languageModel.generateText()
+      if (navigatorAI.languageModel && typeof navigatorAI.languageModel.generateText === 'function') {
+        try {
+          const response = await navigatorAI.languageModel.generateText({
+            prompt,
+            temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
+            maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
+          });
+          if (response && typeof response === 'string') {
+            logger.debug('✅ Browser AI API: Generated text using navigator.ai.languageModel.generateText()');
+            return response;
+          }
+          if (response && typeof response === 'object' && 'text' in response) {
+            logger.debug('✅ Browser AI API: Generated text using navigator.ai.languageModel.generateText()');
+            return (response as BrowserAIResponse).text;
+          }
+        } catch (error) {
+          logger.debug('navigator.ai.languageModel.generateText() format failed:', error);
+        }
       }
     }
   } catch (error) {
@@ -116,6 +196,7 @@ export async function generateTextWithBrowserAI(
     return null;
   }
 
+  logger.debug('Browser AI API: All API format attempts failed');
   return null;
 }
 
@@ -141,16 +222,28 @@ export async function extractTermsWithBrowserAI(
   }
 
   try {
-    const prompt = `Extract key information from this ${domain} task: "${text}"
+    const prompt = `You are analyzing a ${domain} task. Extract key information from this task: "${text}"
 
-Return a JSON object with:
-- keywords: array of important keywords
-- phrases: array of key phrases (${BROWSER_AI_CONFIG.PROMPT.PHRASE_LENGTH_RANGE})
-- verbs: array of action verbs
-- nouns: array of important nouns
-- summary: a brief contextual summary (${BROWSER_AI_CONFIG.PROMPT.SUMMARY_LENGTH})
+IMPORTANT: Extract terms that are SPECIFIC to this task, not generic terms.
 
-Format: {"keywords": [...], "phrases": [...], "verbs": [...], "nouns": [...], "summary": "..."}`;
+Return ONLY a valid JSON object with:
+- keywords: array of 3-8 important, specific keywords from the task (avoid generic words like "task", "work", "do")
+- phrases: array of 2-5 key phrases (${BROWSER_AI_CONFIG.PROMPT.PHRASE_LENGTH_RANGE}) that capture the task's essence
+- verbs: array of 2-5 action verbs that describe what needs to be done
+- nouns: array of 3-8 important nouns that identify the objects/subjects involved
+- summary: a brief, contextual summary (${BROWSER_AI_CONFIG.PROMPT.SUMMARY_LENGTH}) explaining what this task involves
+
+Example for "Fix login bug in authentication system":
+{
+  "keywords": ["login", "bug", "authentication", "system", "fix"],
+  "phrases": ["login bug", "authentication system", "fix login"],
+  "verbs": ["fix", "debug", "test", "resolve"],
+  "nouns": ["bug", "login", "authentication", "system"],
+  "summary": "This task involves fixing a login bug in the authentication system."
+}
+
+Return ONLY the JSON object, no other text:
+{"keywords": [...], "phrases": [...], "verbs": [...], "nouns": [...], "summary": "..."}`;
 
     const response = await generateTextWithBrowserAI(prompt, {
       temperature: BROWSER_AI_CONFIG.TEMPERATURE.EXTRACTION, // Lower temperature for more consistent extraction
@@ -231,20 +324,38 @@ export async function generateDescriptionWithBrowserAI(
   }
 
   try {
-    const termsContext = extractedTerms
-      ? `\n\nContext: Keywords: ${extractedTerms.keywords.join(', ')}, Phrases: ${extractedTerms.phrases.join(', ')}, Verbs: ${extractedTerms.verbs.join(', ')}, Nouns: ${extractedTerms.nouns.join(', ')}`
+    const termsContext = extractedTerms && (
+      extractedTerms.keywords.length > 0 || 
+      extractedTerms.phrases.length > 0 || 
+      extractedTerms.verbs.length > 0 || 
+      extractedTerms.nouns.length > 0
+    )
+      ? `\n\nRelevant context extracted from this task:
+- Keywords: ${extractedTerms.keywords.slice(0, 5).join(', ')}${extractedTerms.keywords.length > 5 ? '...' : ''}
+- Key Phrases: ${extractedTerms.phrases.slice(0, 3).join(', ')}${extractedTerms.phrases.length > 3 ? '...' : ''}
+- Action Verbs: ${extractedTerms.verbs.slice(0, 3).join(', ')}${extractedTerms.verbs.length > 3 ? '...' : ''}
+- Important Nouns: ${extractedTerms.nouns.slice(0, 5).join(', ')}${extractedTerms.nouns.length > 5 ? '...' : ''}`
       : '';
 
-    const prompt = `Generate a clear, contextual description for this ${domain} task: "${taskName}"${termsContext}
+    const prompt = `Generate a clear, contextual description for this ${domain} task.
+
+Task Name: "${taskName}"${termsContext}
 
 Requirements:
-- Be specific and contextual
-- Don't repeat the task name
-- Use professional language
-- Keep it concise (${BROWSER_AI_CONFIG.PROMPT.SUMMARY_LENGTH})
-- Focus on what the task involves or aims to accomplish
+- Be SPECIFIC and CONTEXTUAL - explain what the task involves, not just restate the name
+- DO NOT repeat the task name verbatim
+- Use professional, clear language appropriate for ${domain} tasks
+- Keep it concise: ${BROWSER_AI_CONFIG.PROMPT.SUMMARY_LENGTH}
+- Focus on WHAT the task involves, WHY it's needed, or HOW it should be accomplished
+- Use the extracted keywords, phrases, verbs, and nouns to build a meaningful description
+- Start with "This task involves", "This task requires", "This task focuses on", or similar contextual opener
 
-Description:`;
+Example:
+Task: "Fix login bug"
+Good Description: "This task involves debugging and resolving authentication issues in the login system to restore user access functionality."
+Bad Description: "Fix login bug" (just repeats the task name)
+
+Generate the description now:`;
 
     const response = await generateTextWithBrowserAI(prompt, {
       temperature: BROWSER_AI_CONFIG.TEMPERATURE.DESCRIPTION,

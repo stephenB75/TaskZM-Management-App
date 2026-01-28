@@ -3346,33 +3346,58 @@ export async function generateDescription(
   });
   
   // Try Browser AI API for description generation (if available)
-  if (isBrowserAIAvailable() && finalKeywords.length > 0) {
+  // ENHANCED: Try even if no keywords - Browser AI can work with just the task name
+  if (isBrowserAIAvailable()) {
     try {
+      logger.debug(`🤖 Browser AI API: Attempting to generate description for task: "${taskName}"`);
+      
       const browserAIDescription = await generateDescriptionWithBrowserAI(
         taskName,
         domain,
-        {
-          keywords: finalKeywords,
-          phrases: finalPhrases,
-          verbs: finalVerbs,
-          nouns: finalNouns,
-        }
+        // Only pass terms if we have meaningful ones
+        (finalKeywords.length > 0 || finalPhrases.length > 0 || finalVerbs.length > 0 || finalNouns.length > 0)
+          ? {
+              keywords: finalKeywords,
+              phrases: finalPhrases,
+              verbs: finalVerbs,
+              nouns: finalNouns,
+            }
+          : undefined
       );
       
       if (browserAIDescription && browserAIDescription.trim().length > 0) {
-        logger.debug(`✅ Browser AI API: Generated description successfully`);
-        description = cleanText(browserAIDescription);
-        usedSearchResults = true; // Mark as using Browser AI API
-        confidence = Math.min(
-          DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
-          (finalKeywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) +
-          (finalPhrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight),
-          DESCRIPTION_GENERATION_CONFIG.maxConfidence
-        );
+        const cleanedDescription = cleanText(browserAIDescription);
+        
+        // Validate the description is meaningful (not just task name repeated)
+        const taskNameLower = taskName.toLowerCase().trim();
+        const descLower = cleanedDescription.toLowerCase().trim();
+        
+        // Check if description is different from task name
+        if (descLower !== taskNameLower && !descLower.startsWith(taskNameLower) && descLower.length > taskNameLower.length) {
+          logger.debug(`✅ Browser AI API: Generated description successfully`, {
+            description: cleanedDescription.substring(0, 100),
+            length: cleanedDescription.length,
+          });
+          description = cleanedDescription;
+          usedSearchResults = true; // Mark as using Browser AI API
+          confidence = Math.min(
+            DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
+            (finalKeywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) +
+            (finalPhrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
+            0.2, // Boost confidence when Browser AI is used
+            DESCRIPTION_GENERATION_CONFIG.maxConfidence
+          );
+        } else {
+          logger.debug(`⚠️ Browser AI API: Generated description too similar to task name, using local processing`);
+        }
+      } else {
+        logger.debug(`⚠️ Browser AI API: No description generated or empty response`);
       }
     } catch (error) {
       logger.warn('Browser AI API description generation failed, using local processing:', error);
     }
+  } else {
+    logger.debug(`ℹ️ Browser AI API: Not available, using local processing`);
   }
   
   // If Browser AI API didn't generate a description, use local sentence building
