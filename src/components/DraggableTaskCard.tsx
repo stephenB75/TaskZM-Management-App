@@ -65,6 +65,7 @@ import {
   TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS,
   TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS_LIGHT,
   TASK_CARD_ARIA_AND_LABELS,
+  TASK_CARD_EXPANDABLE_LABELS,
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -983,7 +984,7 @@ export const DraggableTaskCard = React.forwardRef<
                   setIsExpanded(!isExpanded);
                 }}
                 className="flex-shrink-0 hover:opacity-80 transition-opacity p-1"
-                aria-label={isExpanded ? "Collapse task details" : "Expand task details"}
+                aria-label={isExpanded ? TASK_CARD_ARIA_AND_LABELS.collapseDetails : TASK_CARD_ARIA_AND_LABELS.expandDetails}
               >
                 <Icon 
                   name={isExpanded ? "chevron-down" : "chevron-right"}
@@ -1019,7 +1020,7 @@ export const DraggableTaskCard = React.forwardRef<
                   <span className={cn("font-semibold text-sm", TASK_CARD_TEXT_COLORS.expandableSectionHeader)}>{TASK_CARD_DROPDOWN.text.description}</span>
                 </div>
                 <div
-                  className="break-normal leading-relaxed text-sm text-gray-600 dark:text-gray-400"
+                  className={cn("break-normal leading-relaxed text-sm", TASK_CARD_TEXT_COLORS.description)}
                   {...(hasHTMLTags(task.description) 
                     ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
                     : { children: task.description }
@@ -1030,9 +1031,9 @@ export const DraggableTaskCard = React.forwardRef<
 
             {/* Dependencies Warning */}
             {task.dependencies && task.dependencies.length > 0 && (
-              <div className="flex items-center text-red-600 dark:text-red-400" style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px`, gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px` }}>
+              <div className={cn("flex items-center", TASK_CARD_TEXT_COLORS.dependencyError)} style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px`, gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px` }}>
                 <Icon name="link-2" size={isMobile ? TASK_CARD_ICON_SIZES.link.mobile : TASK_CARD_ICON_SIZES.link.desktop} />
-                <span className="font-semibold text-sm">ATTENTION: This task has a dependency.</span>
+                <span className="font-semibold text-sm">{TASK_CARD_EXPANDABLE_LABELS.dependencyMessage}</span>
               </div>
             )}
 
@@ -1098,7 +1099,7 @@ export const DraggableTaskCard = React.forwardRef<
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className={cn("font-bold text-sm", isDark ? "text-gray-200" : "text-gray-700")}>{calculateProgress(task)}%</span>
+                      <span className={cn("font-bold text-sm", TASK_CARD_TEXT_COLORS.progressText)}>{calculateProgress(task)}%</span>
                     </div>
                   </div>
                 </div>
@@ -1165,7 +1166,7 @@ export const DraggableTaskCard = React.forwardRef<
                                 {member.teamId && (() => {
                                   const team = teams.find(t => t.id === member.teamId);
                                   return team ? (
-                                    <span className="text-xs text-gray-400 dark:text-gray-500 truncate">{team.name}</span>
+                                    <span className={cn("text-xs truncate", TASK_CARD_TEXT_COLORS.assigneeTeam)}>{team.name}</span>
                                   ) : null;
                                 })()}
                               </div>
@@ -1173,7 +1174,7 @@ export const DraggableTaskCard = React.forwardRef<
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{member.name}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-300">{member.email}</p>
+                            <p className={cn("text-xs", TASK_CARD_TEXT_COLORS.assigneeEmail)}>{member.email}</p>
                             {member.teamId && (() => {
                               const team = teams.find(t => t.id === member.teamId);
                               return team ? (

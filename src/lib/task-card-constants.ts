@@ -553,6 +553,14 @@ export const TASK_CARD_ARIA_AND_LABELS = {
   collapseDetails: 'Collapse task details',
 } as const;
 
+/** Expandable section: dependency warning, add subtask, assignee fallbacks */
+export const TASK_CARD_EXPANDABLE_LABELS = {
+  dependencyMessage: 'ATTENTION: This task has a dependency.',
+  addSubtaskPlaceholder: 'Add a subtask...',
+  teamMemberFallback: 'Team Member',
+  teamLabel: (teamName: string) => `Team: ${teamName}`,
+} as const;
+
 // Shadow Values
 export const TASK_CARD_SHADOWS = {
   mobile: 'shadow-[0_2px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.12)]',
@@ -753,10 +761,19 @@ export const TASK_CARD_TEXT_COLORS = {
   description: 'text-gray-500 dark:text-gray-300',
   /** Expandable section headers (Description, etc.) */
   expandableSectionHeader: 'text-gray-700 dark:text-gray-300',
+  /** Dependency warning text (expandable section) */
+  dependencyError: 'text-red-600 dark:text-red-400',
+  /** Progress percentage text (expandable section) */
+  progressText: 'text-gray-700 dark:text-gray-200',
   assignedUserName: 'text-gray-600 dark:text-gray-200',
   assignedUserCount: 'text-gray-500 dark:text-gray-300',
   subtaskCompleted: 'text-gray-400 dark:text-gray-400',
   tooltipEmail: 'text-gray-400 dark:text-gray-300',
+  /** Assignee card: name, role, team, email */
+  assigneeName: 'text-gray-700 dark:text-gray-300',
+  assigneeRole: 'text-gray-500 dark:text-gray-400',
+  assigneeTeam: 'text-gray-400 dark:text-gray-500',
+  assigneeEmail: 'text-gray-400 dark:text-gray-300',
   icon: 'text-gray-400 dark:text-gray-300',
   checkbox: {
     default: 'text-gray-300 dark:text-gray-400',
