@@ -65,7 +65,8 @@ interface DraggableTodayAgendaTaskProps {
   getTaskTime: (task: Task) => string;
   getPriorityColor: (priority: Task["priority"]) => string;
   isNextUp?: boolean;
-  onComplete?: () => void;
+  /** Called when task is marked complete; pass card element for confetti origin. */
+  onComplete?: (originElement?: HTMLElement | null) => void;
 }
 
 export function DraggableTodayAgendaTask({
@@ -383,7 +384,7 @@ export function DraggableTodayAgendaTask({
 
     // Show confetti when marking as complete
     if (willBeDone && onComplete) {
-      onComplete();
+      onComplete(cardContentRef.current ?? undefined);
     }
   };
 
@@ -563,6 +564,7 @@ export function DraggableTodayAgendaTask({
         <div className={cn("flex", TASK_CARD_SPACING.gap.card, "flex-1 min-w-0", isDragging && TASK_CARD_WIDTHS.dragging)}>
           {/* Compact Card - Match Kanban styling (priority line removed for timeline view) */}
           <div
+            ref={cardContentRef}
             className={cn(
               "rounded-lg relative flex-1 overflow-hidden box-border",
               isDragging && TASK_CARD_TIMELINE.scale.dragging,

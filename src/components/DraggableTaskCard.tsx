@@ -81,7 +81,8 @@ interface DraggableTaskCardProps {
   droppableId: string;
   isDragging?: boolean;
   isNextUp?: boolean;
-  onComplete?: () => void;
+  /** Called when task is marked complete; pass card element for confetti origin. */
+  onComplete?: (originElement?: HTMLElement | null) => void;
 }
 
 export const DraggableTaskCard = React.forwardRef<
@@ -235,9 +236,9 @@ export const DraggableTaskCard = React.forwardRef<
         completedAt: willBeDone ? new Date().toISOString() : null,
       });
 
-      // Trigger confetti when marking as complete
+      // Trigger confetti when marking as complete (pass card element for origin)
       if (willBeDone && onComplete) {
-        onComplete();
+        onComplete(cardContentRef.current ?? undefined);
       }
     };
 
@@ -731,6 +732,7 @@ export const DraggableTaskCard = React.forwardRef<
         >
         {/* Compact Card - Partial borders, lavender gradient background, height represents duration */}
           <div
+            ref={cardContentRef}
             className={cn(
               "rounded-lg relative box-border flex flex-col",
               isExpanded ? "overflow-visible" : "overflow-hidden", // Strictly hide overflow when collapsed to enforce size guide

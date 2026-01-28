@@ -50,6 +50,7 @@ export function TodayAgendaView({
     null,
   );
   const [showConfetti, setShowConfetti] = useState(false);
+  const [confettiOrigin, setConfettiOrigin] = useState<{ x: number; y: number } | null>(null);
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
   // ScrollArea ref for programmatic scrolling (Layer 3 - optional)
@@ -449,7 +450,8 @@ export function TodayAgendaView({
   return (
     <>
       <Confetti 
-        trigger={showConfetti} 
+        trigger={showConfetti}
+        origin={confettiOrigin}
         onComplete={() => {
           // Use timeout to ensure state update happens after animation cleanup
           if (confettiTimeoutRef.current) {
@@ -457,6 +459,7 @@ export function TodayAgendaView({
           }
           confettiTimeoutRef.current = setTimeout(() => {
             setShowConfetti(false);
+            setConfettiOrigin(null);
             confettiTimeoutRef.current = null;
           }, 100);
         }} 

@@ -4,6 +4,8 @@ import { useTheme } from '../contexts/ThemeContext';
 
 interface ConfettiProps {
   trigger: boolean;
+  /** Viewport origin (e.g. from getBoundingClientRect). If provided, confetti spawns at this point instead of screen center. */
+  origin?: { x: number; y: number } | null;
   onComplete?: () => void;
 }
 
@@ -18,7 +20,7 @@ interface Particle {
   rotationSpeed: number;
 }
 
-export function Confetti({ trigger, onComplete }: ConfettiProps) {
+export function Confetti({ trigger, origin, onComplete }: ConfettiProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,6 +71,10 @@ export function Confetti({ trigger, onComplete }: ConfettiProps) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // Spawn origin: card center when origin provided, else screen center
+    const originX = origin != null ? origin.x : canvas.width / 2;
+    const originY = origin != null ? origin.y : canvas.height / 2;
+
     // Create particles with theme-aware colors
     // Use brighter, more vibrant colors in dark mode for better visibility
     const colors = isDark 
@@ -80,8 +86,8 @@ export function Confetti({ trigger, onComplete }: ConfettiProps) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 2 + Math.random() * 4;
       return {
-        x: canvas.width / 2,
-        y: canvas.height / 2,
+        x: originX,
+        y: originY,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 2,
         color: colors[Math.floor(Math.random() * colors.length)],
@@ -190,7 +196,7 @@ export function Confetti({ trigger, onComplete }: ConfettiProps) {
         }
       }
     };
-  }, [trigger]);
+  }, [trigger, origin?.x, origin?.y]);
 
   return (
     <canvas
