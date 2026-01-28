@@ -98,20 +98,20 @@ export const TASK_CARD_THEME_COLORS = {
 // Font Sizes (increased for tab content visibility)
 export const TASK_CARD_FONT_SIZES = {
   time: {
-    mobile: 'text-[15px]', // Increased for better tab visibility
-    desktop: 'text-[16px]', // Increased for better tab visibility
+    mobile: 'text-[17px]', // Larger for tab visibility
+    desktop: 'text-[18px]', // Larger for tab visibility
   },
   priority: {
-    mobile: 'text-[12px]', // Increased for better tab visibility
-    desktop: 'text-[13px]', // Increased for better tab visibility
+    mobile: 'text-[13px]', // Larger for tab visibility
+    desktop: 'text-[14px]', // Larger for tab visibility
   },
   tag: {
-    mobile: 'text-[12px]', // Increased for better tab visibility
-    desktop: 'text-[13px]', // Increased for better tab visibility
+    mobile: 'text-[13px]', // Larger for tab visibility
+    desktop: 'text-[14px]', // Larger for tab visibility
   },
   duration: {
-    mobile: 'text-[18px]', // Increased for better tab visibility
-    desktop: 'text-[20px]', // Increased for better tab visibility
+    mobile: 'text-[20px]', // Larger for tab visibility
+    desktop: 'text-[22px]', // Larger for tab visibility
   },
   title: {
     mobile: 'text-[17px]', // Increased for better visibility (removed bold)
@@ -144,8 +144,8 @@ export const TASK_CARD_FONT_SIZES = {
 // Tailwind: w-2 = 0.5rem = 8px, w-2.5 = 0.625rem = 10px, w-3 = 0.75rem = 12px, w-3.5 = 0.875rem = 14px, w-4 = 1rem = 16px
 export const TASK_CARD_ICON_SIZES = {
   clock: {
-    mobile: 18, // Increased for better tab visibility (w-4.5 = 18px)
-    desktop: 20, // Increased for better tab visibility (w-5 = 20px)
+    mobile: 20, // Larger for tab visibility
+    desktop: 22, // Larger for tab visibility
   },
   repeat: {
     mobile: 18, // w-4.5 = 18px - increased for better visibility
@@ -160,8 +160,8 @@ export const TASK_CARD_ICON_SIZES = {
     desktop: 12, // w-3 = 12px
   },
   checkbox: {
-    mobile: 24, // Increased for better tab visibility
-    desktop: 22, // Increased for better tab visibility
+    mobile: 26, // Larger for tab visibility (mark as complete)
+    desktop: 24, // Larger for tab visibility
   },
   subtask: {
     mobile: 8, // w-2 = 8px
@@ -201,15 +201,15 @@ export const TASK_CARD_ICON_SIZES = {
   },
 } as const;
 
-// Badge Sizes (font sizes increased by 10%)
+// Badge Sizes (increased for tab visibility)
 export const TASK_CARD_BADGE_SIZES = {
   priority: {
-    mobile: 'text-[10px] px-1 py-0 h-[16px]', // 9px * 1.1 = 9.9px ≈ 10px
-    desktop: 'text-[11px] px-1.5 py-0 h-[18px]', // 10px * 1.1 = 11px
+    mobile: 'text-[13px] px-1.5 py-0.5 h-[20px]', // Larger for tab
+    desktop: 'text-[14px] px-2 py-0.5 h-[22px]', // Larger for tab
   },
   tag: {
-    mobile: 'text-[10px] px-1 py-0 h-[16px]', // 9px * 1.1 = 9.9px ≈ 10px
-    desktop: 'text-[11px] px-1.5 py-0 h-[18px]', // 10px * 1.1 = 11px
+    mobile: 'text-[13px] px-1.5 py-0.5 h-[20px]', // Larger for tab (second line)
+    desktop: 'text-[14px] px-2 py-0.5 h-[22px]', // Larger for tab
   },
   tracking: {
     mobile: 'px-1 py-0.5 gap-0.5 text-[8px]', // 7px * 1.1 = 7.7px ≈ 8px
@@ -217,10 +217,10 @@ export const TASK_CARD_BADGE_SIZES = {
   },
 } as const;
 
-// Task Card Tab Height
+// Task Card Tab Height (minHeight - tab auto-adjusts when content wraps)
 export const TASK_CARD_TAB_HEIGHT = {
-  mobile: 50, // Base height + 20px extension = 50px
-  desktop: 54, // Base height + 20px extension = 54px
+  mobile: 50, // Minimum height - grows when content wraps to second line
+  desktop: 54, // Minimum height - grows when content wraps to second line
 } as const;
 
 // Task Card Tab Spacing
@@ -240,10 +240,14 @@ export const TASK_CARD_TAB_SPACING = {
     mobile: '96%', // 96% width - full width with small margin from card borders on mobile
     desktop: '96%', // 96% width - full width with small margin from card borders on desktop
   } as const,
-  // Tab padding - horizontal padding inside tab
+  // Tab padding - horizontal and vertical padding inside tab
   padding: {
-    mobile: '0.75rem', // 12px - increased padding for larger content
-    desktop: '1rem', // 16px - increased padding for larger content
+    mobile: '0.75rem', // 12px - horizontal
+    desktop: '1rem', // 16px - horizontal
+  } as const,
+  paddingVertical: {
+    mobile: '0.5rem', // 8px - vertical (allows auto height)
+    desktop: '0.625rem', // 10px - vertical
   } as const,
 } as const;
 

@@ -639,33 +639,35 @@ export const DraggableTaskCard = React.forwardRef<
             }
           }}
         >
-          {/* Top Tab Section - Pill-shaped tab (rounded square with moderate rounded corners) centered with space from top */}
+          {/* Top Tab Section - Pill-shaped tab, auto height; tag centered under priority badge (grid col 2) */}
           <div className="flex justify-center" style={{ marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop }}>
-            {/* Pill-shaped tab with priority color - centered, full width with small margin, containing all content, less rounded corners */}
             <div 
-              className="rounded-lg flex items-center justify-between"
+              className="rounded-lg grid items-center"
               style={{ 
                 backgroundColor: getPriorityTabBackgroundColor(task.priority),
-                height: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-                gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
-                width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop, // Full width with small margin from card borders
+                gridTemplateColumns: '1fr auto auto 1fr auto',
+                gridTemplateRows: task.tags && task.tags.length > 0 ? 'auto auto' : 'auto',
+                gap: `0 ${isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop}`,
+                rowGap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
+                width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop,
                 paddingLeft: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
                 paddingRight: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
+                paddingTop: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
+                paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
               }}
             >
-              <div className="flex items-center flex-1 min-w-0 justify-center whitespace-nowrap overflow-hidden text-ellipsis" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
-                {/* Scheduled Time with Clock Icon */}
-                {scheduledTimeLabel && (
-                  <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap">
-                    <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-white flex-shrink-0" weight="bold" />
-                    <span className={cn("text-white", "font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-                      {scheduledTimeLabel}
-                    </span>
-                  </div>
-                )}
+              {/* Row 1: Col 1 = time, Col 2 = priority, Col 3 = duration, Col 4 = spacer, Col 5 = checkbox */}
+              {scheduledTimeLabel && (
+                <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1 }}>
+                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-white flex-shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]" weight="fill" />
+                  <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                    {scheduledTimeLabel}
+                  </span>
+                </div>
+              )}
 
-                {/* Priority Badge */}
+              <div style={{ gridColumn: scheduledTimeLabel ? 2 : 1 }}>
                 <Badge
                   variant="outline"
                   className={cn(
@@ -676,9 +678,37 @@ export const DraggableTaskCard = React.forwardRef<
                 >
                   {task.priority}
                 </Badge>
+              </div>
 
-                {/* Tag Badge */}
-                {task.tags && task.tags.length > 0 && (
+              {task.estimatedTime && (
+                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: scheduledTimeLabel ? 3 : 2 }}>
+                  {formatDuration(task.estimatedTime)}
+                </span>
+              )}
+
+              {/* Spacer column 4 - empty */}
+              <div style={{ gridColumn: 4 }} />
+
+              <button
+                onClick={handleToggleComplete}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="flex-shrink-0 hover:opacity-80 transition-opacity justify-self-end"
+                style={{ gridColumn: 5, gridRow: 1 }}
+              >
+                <Icon 
+                  name="circle"
+                  size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
+                  className={cn(
+                    "transition-colors flex-shrink-0 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]",
+                    task.status === "done" && "fill-white",
+                  )}
+                  weight={task.status === "done" ? "fill" : "bold"}
+                />
+              </button>
+
+              {/* Row 2: Tag badge under priority (same column as priority) */}
+              {task.tags && task.tags.length > 0 && (
+                <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -689,32 +719,8 @@ export const DraggableTaskCard = React.forwardRef<
                   >
                     {task.tags[0]}
                   </Badge>
-                )}
-
-                {/* Duration */}
-                {task.estimatedTime && (
-                  <span className={cn("text-white", "font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
-                    {formatDuration(task.estimatedTime)}
-                  </span>
-                )}
-              </div>
-
-              {/* Complete Checkbox */}
-              <button
-                onClick={handleToggleComplete}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="flex-shrink-0 hover:opacity-80 transition-opacity"
-              >
-                <Icon 
-                  name="circle"
-                  size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
-                  className={cn(
-                    "transition-colors flex-shrink-0 text-white",
-                    task.status === "done" && "fill-white",
-                  )}
-                  weight={task.status === "done" ? "fill" : "bold"}
-                />
-              </button>
+                </div>
+              )}
             </div>
           </div>
 
