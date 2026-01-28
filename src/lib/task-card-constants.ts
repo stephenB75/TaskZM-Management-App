@@ -469,10 +469,73 @@ export const TASK_CARD_TEXT = {
   tracking: 'Tracking...',
   tracked: 'tracked',
   nextUp: 'NEXT UP',
+  aiSuggestions: 'AI Suggestions',
   moreSubtasks: (count: number) => `+${count} more`,
   moreAssigned: (count: number) => `+${count} more`,
   moreSubtasksFull: (count: number) => `+${count} more subtasks`,
 } as const;
+
+/** Domain-based Tailwind class sets for AI Suggestions block (action plan steps) on task card */
+export const TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS: Record<
+  string,
+  { bg: string; text: string; textMuted: string; textLight: string; border: string }
+> = {
+  business: {
+    bg: 'bg-blue-950/20 border-blue-800/30',
+    text: 'text-blue-300',
+    textMuted: 'text-blue-400',
+    textLight: 'text-blue-200',
+    border: 'border-blue-800/30',
+  },
+  home: {
+    bg: 'bg-green-950/20 border-green-800/30',
+    text: 'text-green-300',
+    textMuted: 'text-green-400',
+    textLight: 'text-green-200',
+    border: 'border-green-800/30',
+  },
+  personal: {
+    bg: 'bg-purple-950/20 border-purple-800/30',
+    text: 'text-purple-300',
+    textMuted: 'text-purple-400',
+    textLight: 'text-purple-200',
+    border: 'border-purple-800/30',
+  },
+  world: {
+    bg: 'bg-orange-950/20 border-orange-800/30',
+    text: 'text-orange-300',
+    textMuted: 'text-orange-400',
+    textLight: 'text-orange-200',
+    border: 'border-orange-800/30',
+  },
+  mixed: {
+    bg: 'bg-gray-950/20 border-gray-800/30',
+    text: 'text-gray-300',
+    textMuted: 'text-gray-400',
+    textLight: 'text-gray-200',
+    border: 'border-gray-800/30',
+  },
+  default: {
+    bg: 'bg-gray-950/20 border-gray-800/30',
+    text: 'text-gray-300',
+    textMuted: 'text-gray-400',
+    textLight: 'text-gray-200',
+    border: 'border-gray-800/30',
+  },
+};
+
+/** Light-mode domain Tailwind classes for AI Suggestions block */
+export const TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS_LIGHT: Record<
+  string,
+  { bg: string; text: string; textMuted: string; textLight: string; border: string }
+> = {
+  business: { bg: 'bg-blue-50/50 border-blue-200', text: 'text-blue-700', textMuted: 'text-blue-600', textLight: 'text-blue-800', border: 'border-blue-200' },
+  home: { bg: 'bg-green-50/50 border-green-200', text: 'text-green-700', textMuted: 'text-green-600', textLight: 'text-green-800', border: 'border-green-200' },
+  personal: { bg: 'bg-purple-50/50 border-purple-200', text: 'text-purple-700', textMuted: 'text-purple-600', textLight: 'text-purple-800', border: 'border-purple-200' },
+  world: { bg: 'bg-orange-50/50 border-orange-200', text: 'text-orange-700', textMuted: 'text-orange-600', textLight: 'text-orange-800', border: 'border-orange-200' },
+  mixed: { bg: 'bg-gray-50/50 border-gray-200', text: 'text-gray-700', textMuted: 'text-gray-600', textLight: 'text-gray-800', border: 'border-gray-200' },
+  default: { bg: 'bg-gray-50/50 border-gray-200', text: 'text-gray-700', textMuted: 'text-gray-600', textLight: 'text-gray-800', border: 'border-gray-200' },
+};
 
 // Dropdown Menu Text
 export const TASK_CARD_MENU_TEXT = {

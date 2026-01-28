@@ -35,7 +35,9 @@ export function cacheAIAnalysis(
   estimatedMinutes: number,
   primaryVerb: string
 ): void {
-  const cacheKey = `${taskTitle.trim()}_${taskDescription.trim()}`;
+  const title = (taskTitle ?? '').trim();
+  const description = (taskDescription ?? '').trim();
+  const cacheKey = `${title}_${description}`;
   aiAnalysisCache.set(cacheKey, { effortScore, estimatedMinutes, primaryVerb });
   
   // Limit cache size to prevent memory issues
@@ -53,7 +55,9 @@ export function cacheAIAnalysis(
  * @returns Cached AI Analysis results or null if not found
  */
 export function getCachedAIAnalysis(task: Task): { effortScore: number; estimatedMinutes: number; primaryVerb: string } | null {
-  const cacheKey = `${task.title.trim()}_${task.description.trim()}`;
+  const title = (task.title ?? '').trim();
+  const description = (task.description ?? '').trim();
+  const cacheKey = `${title}_${description}`;
   return aiAnalysisCache.get(cacheKey) || null;
 }
 
@@ -204,7 +208,7 @@ export function estimateTaskHours(
   estimatedMinutes = Math.round(estimatedMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
   
   // Convert to hours
-  let estimatedHours = estimatedMinutes / 60;
+  let estimatedHours = estimatedMinutes / MINUTES_PER_HOUR;
   
   // Final validation - ensure we return a valid number
   if (typeof estimatedHours !== 'number' || isNaN(estimatedHours) || !isFinite(estimatedHours) || estimatedHours <= 0) {

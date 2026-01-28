@@ -26,3 +26,8 @@ export const DEFAULT_TASK_DOMAIN = 'personal' as const;
  */
 export const DEFAULT_CREATED_BY = 'local' as const;
 
+/**
+ * Placeholder task ID used only for in-memory analysis (e.g. useTaskBreakdown)
+ */
+export const TEMP_TASK_ID = 'temp';
+

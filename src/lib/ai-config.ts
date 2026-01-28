@@ -997,6 +997,8 @@ export const ACTION_PLAN_TIME_DISTRIBUTION = {
 export const ACTION_PLAN_CONFIG = {
   // Default minutes for empty tasks or when time estimation is 0
   DEFAULT_MINUTES: MIN_TASK_DURATION_MINUTES, // 15 minutes (uses existing constant)
+  // Default step label when task has no title/description
+  DEFAULT_STEP_ACTION: 'Complete task',
   // Minimum minutes per step when totalMinutes is 0
   MIN_MINUTES_PER_STEP: 1,
   // Maximum steps to display in task card

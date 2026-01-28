@@ -61,6 +61,9 @@ import {
   TASK_CARD_EXPANDABLE,
   TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR,
   TASK_CARD_AI_SUGGESTIONS_IN_EXPANDED_MAX_MINUTES,
+  TASK_CARD_TEXT,
+  TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS,
+  TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS_LIGHT,
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -557,15 +560,10 @@ export const DraggableTaskCard = React.forwardRef<
 
       if (!itemsToShow || itemsToShow.length === 0) return null;
 
-      const domainColors = breakdown?.domain === 'business'
-        ? { bg: isDark ? 'bg-blue-950/20 border-blue-800/30' : 'bg-blue-50/50 border-blue-200', text: isDark ? 'text-blue-300' : 'text-blue-700', textMuted: isDark ? 'text-blue-400' : 'text-blue-600', textLight: isDark ? 'text-blue-200' : 'text-blue-800', border: isDark ? 'border-blue-800/30' : 'border-blue-200' }
-        : breakdown?.domain === 'home'
-        ? { bg: isDark ? 'bg-green-950/20 border-green-800/30' : 'bg-green-50/50 border-green-200', text: isDark ? 'text-green-300' : 'text-green-700', textMuted: isDark ? 'text-green-400' : 'text-green-600', textLight: isDark ? 'text-green-200' : 'text-green-800', border: isDark ? 'border-green-800/30' : 'border-green-200' }
-        : breakdown?.domain === 'personal'
-        ? { bg: isDark ? 'bg-purple-950/20 border-purple-800/30' : 'bg-purple-50/50 border-purple-200', text: isDark ? 'text-purple-300' : 'text-purple-700', textMuted: isDark ? 'text-purple-400' : 'text-purple-600', textLight: isDark ? 'text-purple-200' : 'text-purple-800', border: isDark ? 'border-purple-800/30' : 'border-purple-200' }
-        : breakdown?.domain === 'world'
-        ? { bg: isDark ? 'bg-orange-950/20 border-orange-800/30' : 'bg-orange-50/50 border-orange-200', text: isDark ? 'text-orange-300' : 'text-orange-700', textMuted: isDark ? 'text-orange-400' : 'text-orange-600', textLight: isDark ? 'text-orange-200' : 'text-orange-800', border: isDark ? 'border-orange-800/30' : 'border-orange-200' }
-        : { bg: isDark ? 'bg-gray-950/20 border-gray-800/30' : 'bg-gray-50/50 border-gray-200', text: isDark ? 'text-gray-300' : 'text-gray-700', textMuted: isDark ? 'text-gray-400' : 'text-gray-600', textLight: isDark ? 'text-gray-200' : 'text-gray-800', border: isDark ? 'border-gray-800/30' : 'border-gray-200' };
+      const domainKey = (breakdown?.domain && ['business', 'home', 'personal', 'world', 'mixed'].includes(breakdown.domain)) ? breakdown.domain : 'default';
+      const domainColors = isDark
+        ? (TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS[domainKey] ?? TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS.default)
+        : (TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS_LIGHT[domainKey] ?? TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS_LIGHT.default);
 
       const isShortTaskDisplay = estimatedTimeValue !== null && estimatedTimeValue <= ACTION_PLAN_CONFIG.SHORT_TASK_THRESHOLD_MINUTES;
       const maxStepsToShow = isShortTaskDisplay
@@ -581,7 +579,7 @@ export const DraggableTaskCard = React.forwardRef<
           <div className="flex items-center gap-1 mb-1">
             <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={isDark ? domainColors.text : domainColors.text} weight="duotone" />
             <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-              AI Suggestions
+              {TASK_CARD_TEXT.aiSuggestions}
             </span>
           </div>
           <div className="space-y-0.5">
@@ -674,7 +672,7 @@ export const DraggableTaskCard = React.forwardRef<
             )}
             {!hasUserSubtasks && totalEstimatedMinutes > 0 && (
               <div className={cn("mt-0.5 pt-0.5 border-t", domainColors.border)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
-                Total: {Math.floor(totalEstimatedMinutes / 60)}h {totalEstimatedMinutes % 60}m
+                Total: {Math.floor(totalEstimatedMinutes / MINUTES_PER_HOUR)}h {totalEstimatedMinutes % MINUTES_PER_HOUR}m
               </div>
             )}
           </div>

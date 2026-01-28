@@ -12,12 +12,12 @@ import { analyzeDescription, type DescriptionAnalysis } from '../lib/description
 import { generateActionPlan, type ActionPlan } from '../lib/action-plan-generator';
 import { estimateTaskHours, cacheAIAnalysis } from '../lib/daily-hours-utils';
 import { analyzeTaskVerbs } from '../lib/verb-analysis';
-import { MINUTES_PER_HOUR } from '../lib/business-constants';
+import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from '../lib/business-constants';
 import {
   TASK_BREAKDOWN_DEBOUNCE_MS,
   TASK_BREAKDOWN_CACHE_SIZE,
 } from '../lib/ai-config';
-import { DEFAULT_TASK_STATUS, DEFAULT_TASK_DOMAIN } from '../lib/task-constants';
+import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY, TEMP_TASK_ID } from '../lib/task-constants';
 import { createAIContextSync, type AIContext } from '../lib/ai-context';
 import { getDomainTerminology } from '../lib/domain-terminology';
 import { DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from '../lib/ai-config';
@@ -206,15 +206,15 @@ export function useTaskBreakdown(
 
         // Estimate hours
         const taskForEstimation: Task = {
-          id: 'temp',
+          id: TEMP_TASK_ID,
           title,
           description,
           status: DEFAULT_TASK_STATUS,
-          priority: 'medium',
+          priority: DEFAULT_TASK_PRIORITY,
           tags: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          projectId: 'default',
+          projectId: DEFAULT_PROJECT_ID,
           folderId: null,
           dueDate: null,
           scheduledDate: null,
@@ -225,7 +225,7 @@ export function useTaskBreakdown(
           recurrence: { type: 'none', interval: 1 },
           notes: '',
           assignedTo: [],
-          createdBy: 'local',
+          createdBy: DEFAULT_CREATED_BY,
           completedAt: null,
         };
 

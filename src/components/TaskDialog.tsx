@@ -2377,12 +2377,12 @@ export function TaskDialog({
                           >
                             {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
                           </Badge>
-                          {/* Show estimated time if available */}
+                          {/* Show estimated time if available (derive from minutes for correct h/m display) */}
                           {breakdown.estimatedMinutes > 0 && (
                             <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
                               <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary" />
                               <span className="text-xs font-medium text-foreground">
-                                {breakdown.estimatedHours}h {breakdown.estimatedMinutes % 60}m
+                                {Math.floor(breakdown.estimatedMinutes / 60)}h {breakdown.estimatedMinutes % 60}m
                               </span>
                             </div>
                           )}

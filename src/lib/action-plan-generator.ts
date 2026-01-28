@@ -50,7 +50,7 @@ export function generateActionPlan(
     // Even for empty tasks, return at least one default step to ensure action plan displays
     return {
       steps: [{
-        action: 'Complete task',
+        action: ACTION_PLAN_CONFIG.DEFAULT_STEP_ACTION,
         estimatedMinutes: ACTION_PLAN_CONFIG.DEFAULT_MINUTES,
         category: 'execution' as const,
         order: 1,
@@ -163,7 +163,7 @@ export function generateActionPlan(
 
   // Ensure we always have at least one step (safety check)
   const finalSteps = steps.length > 0 ? steps : [{
-    action: title || 'Complete task',
+    action: title || ACTION_PLAN_CONFIG.DEFAULT_STEP_ACTION,
     estimatedMinutes: totalMinutes > 0 ? totalMinutes : ACTION_PLAN_CONFIG.DEFAULT_MINUTES,
     category: 'execution' as const,
     order: 1,
@@ -267,7 +267,7 @@ function generateSteps(
     // Ensure we always have at least one step, even if totalMinutes is 0
     const defaultMinutes = totalMinutes > 0 ? totalMinutes : ACTION_PLAN_CONFIG.DEFAULT_MINUTES;
     steps.push({
-      action: title || 'Complete task',
+      action: title || ACTION_PLAN_CONFIG.DEFAULT_STEP_ACTION,
       estimatedMinutes: defaultMinutes,
       category: 'execution',
       order: 1,
