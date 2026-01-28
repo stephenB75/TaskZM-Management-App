@@ -76,8 +76,9 @@ export function analyzeDescription(
   const primaryVerb = verbAnalysis.primaryVerb;
 
   // Use shared context if provided, otherwise detect/extract independently
-  let domain: Domain;
-  let domainConfidence: number;
+  // Initialize domain so it is never uninitialized (avoids "Can't find variable: domain")
+  let domain: Domain = DEFAULT_TASK_DOMAIN;
+  let domainConfidence: number = 0;
   let uniqueKeywords: string[];
   let uniquePhrases: string[];
   let uniqueVerbs: string[];
@@ -88,9 +89,9 @@ export function analyzeDescription(
     // Use shared context (no redundant work)
     // CRITICAL: Validate domain is defined before using it
     const contextDomain = aiContext.domain;
-    domain = (contextDomain && 
-      (contextDomain === 'business' || contextDomain === 'home' || 
-       contextDomain === 'personal' || contextDomain === 'world' || 
+    domain = (contextDomain &&
+      (contextDomain === 'business' || contextDomain === 'home' ||
+       contextDomain === 'personal' || contextDomain === 'world' ||
        contextDomain === 'mixed'))
       ? contextDomain
       : DEFAULT_TASK_DOMAIN;
@@ -103,8 +104,8 @@ export function analyzeDescription(
   } else {
     // Fallback: detect and extract independently (backward compatibility)
     const domainDetection = detectDomain(title, description);
-    domain = domainDetection.domain;
-    domainConfidence = domainDetection.confidence;
+    domain = domainDetection?.domain ?? DEFAULT_TASK_DOMAIN;
+    domainConfidence = domainDetection?.confidence ?? 0;
     domainTerms = getDomainTerminology(domain);
 
     // ENHANCED: Use sophisticated extraction methods from description-generator

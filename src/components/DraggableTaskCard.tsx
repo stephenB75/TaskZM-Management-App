@@ -29,7 +29,6 @@ import type { Task } from "../types";
 import {
   TASK_CARD_PRIORITY_COLORS,
   TASK_CARD_TAG_COLORS,
-  TASK_CARD_THEME_COLORS,
   TASK_CARD_FONT_SIZES,
   TASK_CARD_ICON_SIZES,
   TASK_CARD_BADGE_SIZES,
@@ -45,6 +44,7 @@ import {
   TASK_CARD_RICH_TEXT_COLORS,
   TASK_CARD_ASSIGNED_USER_COLORS,
   TASK_CARD_TEXT_COLORS,
+  TASK_CARD_ICON_COLORS,
   TASK_CARD_POSITIONING,
   TASK_CARD_ADDITIONAL_FONT_SIZES,
   TASK_CARD_OPACITY,
@@ -797,7 +797,7 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Row 1: Col 1 = time, Col 2 = priority, Col 3 = duration, Col 4 = spacer, Col 5 = checkbox */}
               {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1 }}>
-                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? "text-white" : "text-gray-900")} weight="fill" />
+                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
                   <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                     {scheduledTimeLabel}
                   </span>
@@ -843,8 +843,8 @@ export const DraggableTaskCard = React.forwardRef<
                   size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
                   className={cn(
                     "transition-colors flex-shrink-0",
-                    isDark ? "text-white" : "text-gray-900",
-                    task.status === "done" && (isDark ? "fill-white" : "fill-gray-900"),
+                    isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
+                    task.status === "done" && (isDark ? TASK_CARD_ICON_COLORS.tabCheckboxFill.dark : TASK_CARD_ICON_COLORS.tabCheckboxFill.light),
                   )}
                   weight={task.status === "done" ? "fill" : "bold"}
                 />
@@ -871,7 +871,7 @@ export const DraggableTaskCard = React.forwardRef<
           {/* Headline (Title) - Underneath the tab */}
           <div className={cn("flex items-start px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
             {task.recurrence && task.recurrence.type !== "none" && (
-              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn(isDark ? "text-purple-300" : "text-violet-800", "flex-shrink-0 mt-0.5 mr-1")} weight="duotone" />
+              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0 mt-0.5 mr-1", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
             )}
             <h3
               className={cn(
@@ -903,7 +903,7 @@ export const DraggableTaskCard = React.forwardRef<
                         }}
                         className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       >
-                        <Icon name="pause" size={16} className="text-gray-700 dark:text-gray-300" weight="fill" />
+                        <Icon name="pause" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
                       </button>
                       <button
                         onClick={async (e) => {
@@ -912,9 +912,9 @@ export const DraggableTaskCard = React.forwardRef<
                         }}
                         className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       >
-                        <Icon name="stop" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className="text-gray-700 dark:text-gray-300" weight="fill" />
+                        <Icon name="stop" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
                       </button>
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-1">Tracking ....</span>
+                      <span className={cn("text-sm font-medium ml-1", TASK_CARD_ICON_COLORS.trackedLabel)}>Tracking ....</span>
                     </>
                   ) : (
                     <button
@@ -924,7 +924,7 @@ export const DraggableTaskCard = React.forwardRef<
                       }}
                       className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     >
-                      <Icon name="play" size={16} className="text-gray-700 dark:text-gray-300" weight="fill" />
+                      <Icon name="play" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
                     </button>
                   )}
                 </div>
@@ -955,12 +955,10 @@ export const DraggableTaskCard = React.forwardRef<
                       <Icon 
                         name="timer" 
                         size={isMobile ? TASK_CARD_ICON_SIZES.timerInline.mobile : TASK_CARD_ICON_SIZES.timerInline.desktop}
-                        className="flex-shrink-0" 
-                        style={{ color: isDark ? TASK_CARD_THEME_COLORS.primary : TASK_CARD_THEME_COLORS.primaryDark }}
+                        className={cn("flex-shrink-0", TASK_CARD_ICON_COLORS.body)}
                       />
                       <span 
-                        className="text-sm font-medium whitespace-nowrap"
-                        style={{ color: isDark ? TASK_CARD_THEME_COLORS.primary : TASK_CARD_THEME_COLORS.primaryDark }}
+                        className={cn("text-sm font-medium whitespace-nowrap", TASK_CARD_ICON_COLORS.trackedLabel)}
                       >
                         {formatTimer(occurrenceTime)} {TASK_CARD_TEXT.tracked}
                       </span>
@@ -984,7 +982,7 @@ export const DraggableTaskCard = React.forwardRef<
                 <Icon 
                   name={isExpanded ? "chevron-down" : "chevron-right"}
                   size={isMobile ? TASK_CARD_ICON_SIZES.chevron.mobile : TASK_CARD_ICON_SIZES.chevron.desktop}
-                  className="text-gray-600 dark:text-gray-400"
+                  className={TASK_CARD_ICON_COLORS.body}
                   weight="bold"
                 />
               </button>
@@ -1011,7 +1009,7 @@ export const DraggableTaskCard = React.forwardRef<
             {task.description && (
               <div style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px` }}>
                 <div className="flex items-center" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px`, marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottomHeader}px` }}>
-                  <Icon name="file-text" size={isMobile ? TASK_CARD_ICON_SIZES.fileText.mobile : TASK_CARD_ICON_SIZES.fileText.desktop} className="text-gray-700 dark:text-gray-300" />
+                  <Icon name="file-text" size={isMobile ? TASK_CARD_ICON_SIZES.fileText.mobile : TASK_CARD_ICON_SIZES.fileText.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} />
                   <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Description</span>
                 </div>
                 <div

@@ -145,24 +145,24 @@ export const TASK_CARD_FONT_SIZES = {
   },
 } as const;
 
-// Icon Sizes (numeric pixel values for Icon component)
+// Icon Sizes (numeric pixel values for Icon component) - increased for visibility
 // Tailwind: w-2 = 0.5rem = 8px, w-2.5 = 0.625rem = 10px, w-3 = 0.75rem = 12px, w-3.5 = 0.875rem = 14px, w-4 = 1rem = 16px
 export const TASK_CARD_ICON_SIZES = {
   clock: {
-    mobile: 20, // Larger for tab visibility
-    desktop: 22, // Larger for tab visibility
+    mobile: 22, // Increased for tab visibility
+    desktop: 24, // Increased for tab visibility
   },
   repeat: {
-    mobile: 18, // w-4.5 = 18px - increased for better visibility
-    desktop: 20, // w-5 = 20px - increased for better visibility
+    mobile: 20, // Increased for visibility
+    desktop: 22, // Increased for visibility
   },
   timer: {
-    mobile: 8, // w-2 = 8px
-    desktop: 10, // w-2.5 = 10px
-  },
-  timerLarge: {
     mobile: 10, // w-2.5 = 10px
     desktop: 12, // w-3 = 12px
+  },
+  timerLarge: {
+    mobile: 12, // w-3 = 12px
+    desktop: 14, // w-3.5 = 14px
   },
   checkbox: {
     mobile: 26, // Larger for tab visibility (mark as complete)
@@ -177,32 +177,32 @@ export const TASK_CARD_ICON_SIZES = {
     desktop: 16, // w-4 = 16px
   },
   fileText: {
-    mobile: 12, // w-3 = 12px
-    desktop: 14, // w-3.5 = 14px
+    mobile: 14, // Increased for visibility
+    desktop: 16, // Increased for visibility
   },
   link: {
     mobile: 12, // w-3 = 12px
     desktop: 14, // w-3.5 = 14px
   },
   timerExpanded: {
-    mobile: 14, // w-3.5 = 14px
-    desktop: 16, // w-4 = 16px
+    mobile: 16, // w-4 = 16px
+    desktop: 18, // Increased for visibility
   },
   chevron: {
-    mobile: 18, // w-4.5 = 18px (slightly smaller for mobile)
-    desktop: 20, // w-5 = 20px
+    mobile: 20, // Increased for visibility
+    desktop: 22, // Increased for visibility
   },
   sparkles: {
-    mobile: 16, // w-4 = 16px - increased for better visibility
-    desktop: 18, // w-4.5 = 18px - increased for better visibility
+    mobile: 18, // Increased for visibility
+    desktop: 20, // Increased for visibility
   },
   playPauseStop: {
-    mobile: 16, // w-4 = 16px
-    desktop: 16, // w-4 = 16px
+    mobile: 18, // Increased for visibility
+    desktop: 20, // Increased for visibility
   },
   timerInline: {
-    mobile: 16, // w-4 = 16px
-    desktop: 16, // w-4 = 16px
+    mobile: 18, // Increased for visibility (tracked time icon)
+    desktop: 20, // Increased for visibility
   },
 } as const;
 
@@ -752,6 +752,26 @@ export const TASK_CARD_TEXT_COLORS = {
     default: 'text-gray-300 dark:text-gray-400',
     hover: 'hover:text-gray-400 dark:hover:text-gray-300',
   },
+} as const;
+
+/** Icon colors on task card body (repeat, timer, play/pause, chevron, etc.) - dark gray for visibility */
+export const TASK_CARD_ICON_COLORS = {
+  /** Body icons (below tab): dark gray light mode, medium gray dark mode */
+  body: 'text-gray-700 dark:text-gray-400',
+  /** Tab icons (clock, time, priority, duration, checkbox): white on dark tab, dark on light tab */
+  tab: {
+    light: 'text-gray-900',
+    dark: 'text-white',
+  },
+  /** Tab checkbox fill when checked (mark complete) */
+  tabCheckboxFill: {
+    light: 'fill-gray-900',
+    dark: 'fill-white',
+  },
+  /** Pomodoro controls and tracking text */
+  pomodoro: 'text-gray-700 dark:text-gray-300',
+  /** Tracked time label next to timer icon */
+  trackedLabel: 'text-gray-700 dark:text-gray-400',
 } as const;
 
 // Positioning Values
