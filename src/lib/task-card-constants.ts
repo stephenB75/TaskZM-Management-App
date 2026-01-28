@@ -35,7 +35,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
     line: '#EF4444', // Red
     badge: 'bg-red-50 dark:bg-red-900/70 text-red-700 dark:text-red-100 border-red-200 dark:border-red-700',
     tab: {
-      light: '#FCA5A5', // red-300 - more vibrant red
+      light: '#DC2626', // red-600 - darker for better contrast with dark text
       dark: 'rgba(220, 38, 38, 0.9)', // red-600/90 - more saturated
     },
   },
@@ -43,7 +43,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
     line: '#F97316', // Orange
     badge: 'bg-orange-50 dark:bg-orange-900/70 text-orange-700 dark:text-orange-100 border-orange-200 dark:border-orange-700',
     tab: {
-      light: '#FDBA74', // orange-300 - more vibrant orange
+      light: '#EA580C', // orange-600 - darker for better contrast with dark text
       dark: 'rgba(234, 88, 12, 0.9)', // orange-600/90 - more saturated
     },
   },
@@ -51,7 +51,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
     line: '#3B82F6', // Blue
     badge: 'bg-blue-50 dark:bg-blue-900/70 text-blue-700 dark:text-blue-100 border-blue-200 dark:border-blue-700',
     tab: {
-      light: '#93C5FD', // blue-300 - more vibrant blue
+      light: '#2563EB', // blue-600 - darker for better contrast with dark text
       dark: 'rgba(37, 99, 235, 0.9)', // blue-600/90 - more saturated
     },
   },
@@ -59,7 +59,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
     line: '#9CA3AF', // Grey
     badge: 'bg-gray-50 dark:bg-gray-700/70 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600',
     tab: {
-      light: '#D1D5DB', // gray-300 - more visible gray
+      light: '#6B7280', // gray-500 - darker for better contrast with dark text
       dark: 'rgba(107, 114, 128, 0.9)', // gray-500/90 - more visible
     },
   },
@@ -67,7 +67,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
     line: '#E5E7EB',
     badge: 'bg-gray-50 dark:bg-gray-700/70 text-gray-600 dark:text-gray-200 border-gray-200 dark:border-gray-600',
     tab: {
-      light: '#D1D5DB', // gray-300
+      light: '#6B7280', // gray-500 - darker for better contrast with dark text
       dark: 'rgba(107, 114, 128, 0.7)', // gray-500/70
     },
   },
@@ -234,6 +234,11 @@ export const TASK_CARD_TAB_SPACING = {
   gap: {
     mobile: '0.375rem', // 6px - gap between tab content items
     desktop: '0.5rem', // 8px - gap between tab content items
+  } as const,
+  // Tab width - consistent width for all tabs
+  width: {
+    mobile: '90%', // 90% of card width on mobile
+    desktop: '90%', // 90% of card width on desktop
   } as const,
 } as const;
 

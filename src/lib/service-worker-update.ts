@@ -56,13 +56,16 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
   // Set up periodic background checks ONLY (no visibility change triggers)
   // This ensures updates are checked in the background without disrupting user sessions
   // CRITICAL: Only check when page is hidden - never when visible
+  // ENHANCED: Double-check visibility before calling checkForUpdates to prevent any race conditions
   updateCheckInterval = window.setInterval(() => {
     // CRITICAL: Only check for updates when page is hidden
     // Never check when user is actively using the app
-    if (document.hidden) {
+    // Double-check visibility to prevent race conditions
+    if (document.hidden && !document.hasFocus()) {
+      // Page is hidden AND not focused - safe to check for updates
       checkForUpdates();
     } else {
-      // Page is visible - update last visible time and skip check
+      // Page is visible or focused - update last visible time and skip check
       lastVisibleTime = Date.now();
     }
   }, UPDATE_CHECK_INTERVAL);
@@ -131,10 +134,11 @@ export function initServiceWorkerUpdates(swRegistration: ServiceWorkerRegistrati
 function checkForUpdates() {
   if (!registration) return;
   
-  // CRITICAL: NEVER check for updates when page is visible
+  // CRITICAL: NEVER check for updates when page is visible or focused
   // This prevents any refresh behavior during active user sessions
-  if (!document.hidden) {
-    // Page is visible - update last visible time and skip update check
+  // ENHANCED: Double-check both hidden and focus state to prevent race conditions
+  if (!document.hidden || document.hasFocus()) {
+    // Page is visible or focused - update last visible time and skip update check
     lastVisibleTime = Date.now();
     return;
   }
@@ -145,8 +149,9 @@ function checkForUpdates() {
   // CRITICAL: Only check for updates if page has been hidden for minimum duration
   // This prevents update checks during brief tab switches or accidental visibility changes
   // The page must be hidden for at least MIN_HIDDEN_TIME before we check for updates
-  if (hiddenDuration >= MIN_HIDDEN_TIME) {
-    // Page has been hidden long enough - safe to check for updates in the background
+  // ENHANCED: Also verify page is still hidden before calling update() to prevent race conditions
+  if (hiddenDuration >= MIN_HIDDEN_TIME && document.hidden && !document.hasFocus()) {
+    // Page has been hidden long enough AND is still hidden - safe to check for updates in the background
     // The update() call itself doesn't cause refreshes - it only checks for new versions
     // The new service worker will install but wait (not activate) due to our configuration
     // It will only activate when user manually refreshes the page
@@ -155,7 +160,7 @@ function checkForUpdates() {
       // Suppress error logging to avoid console noise
     });
   }
-  // If page hasn't been hidden long enough, silently skip (expected behavior)
+  // If page hasn't been hidden long enough or is now visible, silently skip (expected behavior)
 }
 
 /**
