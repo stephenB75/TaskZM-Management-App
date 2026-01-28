@@ -1955,8 +1955,17 @@ function buildElaborateContextualDescription(
   // Priority: Use domain phrases > domain verbs+nouns > extracted phrases > extracted verbs+nouns > keywords
   // Goal: Build complete contextual sentences that explain what the task involves
   // ENHANCED: Adds variation by randomly selecting different sentence structures and term combinations
+  // ENHANCED: Detects and handles multi-part tasks (e.g., fix + presentation + report)
   
   let description = '';
+  
+  // ENHANCED: Detect multi-part tasks by identifying distinct action groups
+  // For example: "fix recurring task issue" + "presentation" + "report"
+  const multiPartIndicators = ['and', 'plus', 'also', 'including', 'along with', 'as well as'];
+  const hasMultipleParts = multiPartIndicators.some(indicator => 
+    context.toLowerCase().includes(` ${indicator} `) || 
+    taskNameLower.includes(` ${indicator} `)
+  ) || (phrases.length >= 2 && verbs.length >= 2);
   
   // ENHANCED: Add variation - randomly select which priority to start with (for different results each time)
   // This ensures descriptions change each time the button is pressed
@@ -2069,9 +2078,51 @@ function buildElaborateContextualDescription(
     if (!description) {
       // ENHANCED: Build complete sentences from keywords and phrases
       // Use sentence templates to construct natural, contextual descriptions
+      // ENHANCED: For multi-part tasks, build sentences that properly combine all parts
       
       // Get action verb (prefer extracted, fallback to domain)
       const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
+      
+      // ENHANCED: For multi-part tasks, identify distinct parts and build combined sentences
+      if (hasMultipleParts && phrases.length >= 2) {
+        // Build a sentence that combines multiple parts
+        const primaryPhrase = cleanText(elaboratingPhrases[0] || phrases[0]);
+        const secondaryPhrase = cleanText(elaboratingPhrases[1] || phrases[1]);
+        
+        // Get relevant keywords for context
+        const relevantKeywords = keywords
+          .filter(kw => {
+            if (!isValidKeyword(kw)) return false;
+            const kwLower = cleanText(kw).toLowerCase();
+            return !primaryPhrase.toLowerCase().includes(kwLower) && 
+                   !secondaryPhrase.toLowerCase().includes(kwLower) &&
+                   !taskNameLower.includes(kwLower) &&
+                   isSemanticallyRelevant(kw);
+          })
+          .map(kw => cleanText(kw))
+          .filter(kw => kw.length > 0)
+          .slice(0, 2);
+        
+        // Build combined sentence
+        const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
+        const selectedTemplate = templateKeys[Math.floor(variationSeed * templateKeys.length)];
+        const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+        
+        if (actionVerb) {
+          const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
+          if (relevantKeywords.length > 0) {
+            description = `${templateOpener} ${verbForm} ${primaryPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} ${secondaryPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+          } else {
+            description = `${templateOpener} ${verbForm} ${primaryPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} ${secondaryPhrase.toLowerCase()}.`;
+          }
+        } else {
+          if (relevantKeywords.length > 0) {
+            description = `${templateOpener} ${primaryPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} ${secondaryPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo} ${relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `)}.`;
+          } else {
+            description = `${templateOpener} ${primaryPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} ${secondaryPhrase.toLowerCase()}.`;
+          }
+        }
+      }
       
       // Check if phrase is action-oriented (contains action words from domain terminology)
       const domainActionVerbs = domainTerms.verbs.map(v => v.toLowerCase());
@@ -2999,6 +3050,7 @@ function buildCompleteSentences(
  * NEW FLOW: Constructs natural description from search results that contain keywords and phrases
  * UPDATED: Now uses elaborate description builder to avoid repeating task name
  * ENHANCED: Adds variation by shuffling terms and using different sentence structures
+ * ENHANCED: Now accepts effortScore parameter for better detail control
  */
 function buildContextualDescription(
   taskName: string,
@@ -3009,7 +3061,8 @@ function buildContextualDescription(
   pronouns: string[],
   context: string,
   domain: Domain,
-  domainTerms: ReturnType<typeof getDomainTerminology>
+  domainTerms: ReturnType<typeof getDomainTerminology>,
+  effortScore: number = 2.5
 ): string {
   // ENHANCED: Add variation - shuffle terms to get different results each time
   // Use timestamp-based seed for additional variation to ensure refresh always produces different results
@@ -3029,7 +3082,8 @@ function buildContextualDescription(
     pronouns,
     context,
     domain,
-    domainTerms
+    domainTerms,
+    effortScore
   );
 }
 
@@ -3107,14 +3161,57 @@ export async function generateDescription(
     context: ''
   };
 
-  // STEP 1: Use Browser AI to extract terms directly from task name
+  // STEP 1: Use Browser AI to extract terms from BOTH task name AND existing description
   // Browser AI analyzes user input and extracts keywords, phrases, verbs, nouns
   // Local Terminology acts as a cache/dictionary to enhance extracted terms
-  logger.debug(`Using Browser AI to extract terms from task name: "${taskName}", domain: ${domain}`);
+  // ENHANCED: Extract from both task name and description to get complete context
+  logger.debug(`Using Browser AI to extract terms from task name: "${taskName}", domain: ${domain}`, {
+    hasExistingDescription: !!existingDescription,
+    existingDescriptionLength: existingDescription?.length || 0
+  });
   
-  // Extract terms directly from task name using Browser AI
-  searchExtracted = extractTermsFromTaskNameWithBrowserAI(taskName, domainTerms);
-  searchContext = searchExtracted.context; // Task name itself as context
+  // Extract terms from task name
+  const taskNameExtracted = extractTermsFromTaskNameWithBrowserAI(taskName, domainTerms);
+  
+  // ENHANCED: Also extract terms from existing description if available
+  // This allows us to parse poorly written descriptions and extract meaningful terms
+  let descriptionExtracted = {
+    keywords: [] as string[],
+    phrases: [] as string[],
+    verbs: [] as string[],
+    nouns: [] as string[],
+    pronouns: [] as string[],
+    context: ''
+  };
+  
+  if (existingDescription && existingDescription.trim().length > 0) {
+    // Extract terms from existing description to get additional context
+    // This helps parse poorly written descriptions and extract meaningful information
+    descriptionExtracted = extractTermsFromTaskNameWithBrowserAI(existingDescription.trim(), domainTerms);
+    logger.debug(`Extracted terms from existing description: ${descriptionExtracted.keywords.length} keywords, ${descriptionExtracted.phrases.length} phrases, ${descriptionExtracted.verbs.length} verbs, ${descriptionExtracted.nouns.length} nouns`);
+  }
+  
+  // Combine terms from both task name and description
+  // Merge unique terms, prioritizing task name terms but including description terms
+  const combinedKeywords = [...new Set([...taskNameExtracted.keywords, ...descriptionExtracted.keywords])];
+  const combinedPhrases = [...new Set([...taskNameExtracted.phrases, ...descriptionExtracted.phrases])];
+  const combinedVerbs = [...new Set([...taskNameExtracted.verbs, ...descriptionExtracted.verbs])];
+  const combinedNouns = [...new Set([...taskNameExtracted.nouns, ...descriptionExtracted.nouns])];
+  const combinedPronouns = [...new Set([...taskNameExtracted.pronouns, ...descriptionExtracted.pronouns])];
+  
+  // Use combined context (task name + description)
+  const combinedContext = `${taskName} ${existingDescription || ''}`.trim();
+  
+  searchExtracted = {
+    keywords: combinedKeywords,
+    phrases: combinedPhrases,
+    verbs: combinedVerbs,
+    nouns: combinedNouns,
+    pronouns: combinedPronouns,
+    context: combinedContext
+  };
+  
+  searchContext = combinedContext; // Combined task name + description as context
   usedSearchResults = false; // Not using external search, using Browser AI only
   
   logger.debug(`✅ Local Terminology extraction COMPLETE: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns`, {

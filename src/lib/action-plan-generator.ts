@@ -738,23 +738,70 @@ function generateSubtasks(
     searchTerms.some(term => matchTerms.some(match => term.toLowerCase().includes(match)));
 
   // Domain-specific subtask suggestions using Browser AI extracted terms
+  // ENHANCED: More contextual and specific subtasks based on actual task content
   switch (domain) {
     case 'business':
+      // Technical/development tasks
+      if (text.includes('fix') || text.includes('bug') || text.includes('issue') || 
+          hasTerm(keywords, ['fix', 'bug', 'issue', 'error', 'problem']) || 
+          hasTerm(verbs, ['fix', 'debug', 'resolve', 'repair']) ||
+          hasTerm(phrases, ['fix issue', 'bug fix', 'system issue', 'resolve problem'])) {
+        if (text.includes('recurring') || text.includes('re-occurring') || hasTerm(keywords, ['recurring', 'recurrence'])) {
+          subtasks.push('Identify root cause of recurring issue');
+          subtasks.push('Review recurrence logic and patterns');
+          subtasks.push('Test fix with multiple occurrences');
+          subtasks.push('Document solution and prevention steps');
+        } else {
+          subtasks.push('Reproduce the issue');
+          subtasks.push('Identify root cause');
+          subtasks.push('Implement fix');
+          subtasks.push('Test solution');
+        }
+      }
+      
+      // System/technical tasks
+      if (text.includes('system') || hasTerm(keywords, ['system', 'code', 'application', 'software']) ||
+          hasTerm(phrases, ['system issue', 'code base', 'application'])) {
+        if (!subtasks.some(s => s.toLowerCase().includes('fix') || s.toLowerCase().includes('issue'))) {
+          subtasks.push('Analyze system architecture');
+          subtasks.push('Review code and dependencies');
+          subtasks.push('Test system components');
+        }
+      }
+      
       if (text.includes('meeting') || hasTerm(keywords, ['meeting']) || hasTerm(phrases, ['meeting'])) {
         subtasks.push('Prepare agenda');
         subtasks.push('Review previous notes');
         subtasks.push('Send meeting invite');
       }
+      
+      // Report tasks - more specific based on context
       if (text.includes('report') || text.includes('analysis') || 
           hasTerm(keywords, ['report', 'analysis']) || hasTerm(phrases, ['report', 'analysis'])) {
-        subtasks.push('Collect data');
-        subtasks.push('Analyze findings');
-        subtasks.push('Create summary');
+        // Check if it's a technical report
+        if (text.includes('system') || text.includes('code') || hasTerm(keywords, ['system', 'technical', 'code'])) {
+          subtasks.push('Gather technical data and logs');
+          subtasks.push('Analyze system performance');
+          subtasks.push('Document findings and recommendations');
+        } else {
+          subtasks.push('Collect data');
+          subtasks.push('Analyze findings');
+          subtasks.push('Create summary');
+        }
       }
+      
+      // Presentation tasks - more specific
       if (text.includes('presentation') || hasTerm(keywords, ['presentation']) || hasTerm(phrases, ['presentation'])) {
-        subtasks.push('Create slides');
-        subtasks.push('Practice delivery');
-        subtasks.push('Prepare Q&A');
+        // Check if it's a technical presentation
+        if (text.includes('system') || text.includes('technical') || hasTerm(keywords, ['system', 'technical'])) {
+          subtasks.push('Prepare technical slides');
+          subtasks.push('Create diagrams and examples');
+          subtasks.push('Practice technical delivery');
+        } else {
+          subtasks.push('Create slides');
+          subtasks.push('Practice delivery');
+          subtasks.push('Prepare Q&A');
+        }
       }
       break;
 
