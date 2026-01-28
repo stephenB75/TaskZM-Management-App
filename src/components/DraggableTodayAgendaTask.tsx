@@ -50,6 +50,7 @@ import {
   TASK_CARD_ADDITIONAL_FONT_SIZES,
   TASK_CARD_WIDTHS,
   TASK_CARD_TEXT_COLORS,
+  TASK_CARD_ICON_COLORS,
 } from "../lib/task-card-constants";
 import { Z_INDEX } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
@@ -701,7 +702,7 @@ export function DraggableTodayAgendaTask({
                   className={cn(
                     "transition-colors",
                     task.status === "done"
-                      ? "text-primary fill-primary"
+                      ? isDark ? TASK_CARD_ICON_COLORS.tab.dark + " " + TASK_CARD_ICON_COLORS.tabCheckboxFill.dark : TASK_CARD_ICON_COLORS.tab.light + " " + TASK_CARD_ICON_COLORS.tabCheckboxFill.light
                       : "text-gray-300 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300",
                   )}
                   weight={task.status === "done" ? "fill" : "regular"}
@@ -712,7 +713,7 @@ export function DraggableTodayAgendaTask({
             {/* Row 2: H3 Title (Bold) */}
             <div className={cn("flex items-start mt-1", isMobile ? "gap-1 px-1 mb-1" : "gap-1.5 px-1 mb-1")}>
               {task.recurrence && task.recurrence.type !== "none" && (
-                <Icon name="repeat" size={isMobile ? ICON_SIZE_MD : ICON_SIZE_LG} className="text-primary flex-shrink-0 mt-0.5" weight="duotone" />
+                <Icon name="repeat" size={isMobile ? ICON_SIZE_MD : ICON_SIZE_LG} className={cn("flex-shrink-0 mt-0.5", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
               )}
               <h3
                 className={cn(

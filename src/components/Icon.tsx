@@ -242,9 +242,12 @@ function Icon({
   const shouldUseDuotone = useDuotone || DUOTONE_ICONS.has(name.toLowerCase());
   const iconWeight: IconWeight = weight || (shouldUseDuotone ? 'duotone' : 'regular');
 
-  // Set colors for duotone
-  const primaryColor = color || COLOR_PRIMARY;
-  const secondary = secondaryColor || (iconWeight === 'duotone' ? COLOR_PRIMARY_LIGHT : undefined);
+  // When color is not passed, use currentColor so caller's className (e.g. text-gray-700) controls icon color.
+  // This prevents Icon from overriding Tailwind text-* classes with COLOR_PRIMARY (lavender).
+  const primaryColor = color != null && color !== '' ? color : 'currentColor';
+  const secondary = secondaryColor != null && secondaryColor !== ''
+    ? secondaryColor
+    : (iconWeight === 'duotone' && (color != null && color !== '') ? COLOR_PRIMARY_LIGHT : undefined);
 
   // Build props
   const iconProps: any = {
@@ -262,7 +265,7 @@ function Icon({
     iconProps.style = style;
   }
 
-  // Add colors based on weight
+  // Add colors based on weight (only set when not currentColor so Phosphor uses CSS from className)
   if (iconWeight === 'duotone' && secondary) {
     iconProps.color = primaryColor;
     iconProps.secondaryColor = secondary;

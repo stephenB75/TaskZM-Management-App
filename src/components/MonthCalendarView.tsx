@@ -32,6 +32,8 @@ import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
 import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM } from "../lib/layout-constants";
+import { TASK_CARD_ICON_COLORS } from "../lib/task-card-constants";
+import { useTheme } from "../contexts/ThemeContext";
 import type { Task } from "../types";
 
 interface MonthCalendarViewProps {
@@ -56,6 +58,8 @@ function DraggableMonthTask({
   onToggleComplete?: (task: Task) => void;
 }) {
   const isMobile = useIsMobile();
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === "dark";
   const {
     attributes,
     listeners,
@@ -122,7 +126,7 @@ function DraggableMonthTask({
             className={cn(
               "w-3 h-3 transition-colors",
               task.status === "done"
-                ? "text-primary fill-primary"
+                ? isDark ? `${TASK_CARD_ICON_COLORS.tab.dark} ${TASK_CARD_ICON_COLORS.tabCheckboxFill.dark}` : `${TASK_CARD_ICON_COLORS.tab.light} ${TASK_CARD_ICON_COLORS.tabCheckboxFill.light}`
                 : "text-gray-300 hover:text-gray-400",
             )}
           />
@@ -132,7 +136,7 @@ function DraggableMonthTask({
             <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-600 flex-shrink-0 mt-0.5" />
           )}
           {task.recurrence && task.recurrence.type !== "none" && (
-            <Icon name="repeat" size={ICON_SIZE_SM} weight="duotone" className="text-primary flex-shrink-0 mt-0.5" />
+            <Icon name="repeat" size={ICON_SIZE_SM} weight="duotone" className={cn("flex-shrink-0 mt-0.5", TASK_CARD_ICON_COLORS.body)} />
           )}
           <div className="flex-1 min-w-0">
             <p className={cn(
