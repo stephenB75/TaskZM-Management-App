@@ -43,10 +43,11 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
   // Check if we're before the base date
   if (checkDateOnly < baseDateOnly) return false;
 
-  // Check if recurrence has ended
+  // Check if recurrence has ended (normalize endDate to date-only in local time so the end day is inclusive)
   if (task.recurrence.endDate) {
     const endDate = new Date(task.recurrence.endDate);
-    if (checkDateOnly > endDate) return false;
+    const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    if (checkDateOnly > endDateOnly) return false;
   }
 
   const recurrence = task.recurrence;

@@ -235,10 +235,10 @@ export const TASK_CARD_TAB_SPACING = {
     mobile: '0.5rem', // 8px - space between card top and tab
     desktop: '0.75rem', // 12px - space between card top and tab
   } as const,
-  // Gap between items inside tab
+  // Gap between items inside tab (time, tag, duration, recurring icon, priority badge)
   gap: {
-    mobile: '0.5rem', // 8px - increased gap for better spacing
-    desktop: '0.625rem', // 10px - increased gap for better spacing
+    mobile: '0.75rem', // 12px - more space between each item
+    desktop: '0.875rem', // 14px - more space between each item
   } as const,
   // Tab width - full width with small margin from card borders
   width: {
@@ -251,8 +251,8 @@ export const TASK_CARD_TAB_SPACING = {
     desktop: '1rem', // 16px - horizontal
   } as const,
   paddingVertical: {
-    mobile: '0.5rem', // 8px - vertical (allows auto height)
-    desktop: '0.625rem', // 10px - vertical
+    mobile: '0.625rem', // 10px - vertical (allows auto height)
+    desktop: '0.75rem', // 12px - vertical
   } as const,
   /** Tab grid: time | priority | duration | spacer | checkbox */
   gridTemplateColumns: '1fr auto auto 1fr auto' as const,

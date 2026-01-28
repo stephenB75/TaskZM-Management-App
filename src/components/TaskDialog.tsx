@@ -1328,8 +1328,8 @@ export function TaskDialog({
       let firstOccurrenceDate: Date | null = null;
       
       if (recurrenceType === "daily") {
+        // First occurrence is today so "every N days" includes today
         firstOccurrenceDate = new Date(today);
-        firstOccurrenceDate.setDate(today.getDate() + recurrenceInterval);
       } else if (recurrenceType === "weekly" && recurrenceDaysOfWeek && recurrenceDaysOfWeek.length > 0) {
         const currentDay = today.getDay();
         const sortedDays = [...recurrenceDaysOfWeek].sort((a, b) => a - b);
