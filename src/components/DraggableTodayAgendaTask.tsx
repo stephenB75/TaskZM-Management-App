@@ -602,7 +602,7 @@ export function DraggableTodayAgendaTask({
               }
             }}
           >
-            {/* Row 1: Priority Badge + Tag + Duration + Tracking Badge (mobile) (left) + Checkbox (right) */}
+            {/* Row 1: Priority Badge + Tag + Duration + Tracking Badge (no checkbox - moved to headline) */}
             <div className={cn("flex items-center justify-between", isMobile ? "gap-1" : "gap-2")}>
               <div className={cn("flex items-center flex-1 min-w-0", isMobile ? "gap-1" : "gap-1.5")}>
                 <Badge
@@ -692,11 +692,15 @@ export function DraggableTodayAgendaTask({
                   ) : null;
                 })()}
               </div>
+            </div>
 
+            {/* Row 2: Mark complete + H3 Title */}
+            <div className={cn("flex items-start mt-1", isMobile ? "gap-1 px-1 mb-0" : "gap-1.5 px-1 mb-0")}>
               <button
                 onClick={handleToggleComplete}
                 onPointerDown={(e) => e.stopPropagation()}
-                className={cn("flex-shrink-0 hover:opacity-80 transition-opacity", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")}
+                className={cn("flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")}
+                aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
               >
                 <Icon
                   name="circle"
@@ -710,16 +714,9 @@ export function DraggableTodayAgendaTask({
                   weight={task.status === "done" ? "fill" : "regular"}
                 />
               </button>
-            </div>
-
-            {/* Row 2: H3 Title (Bold) */}
-            <div className={cn("flex items-start mt-1", isMobile ? "gap-1 px-1 mb-1" : "gap-1.5 px-1 mb-1")}>
-              {task.recurrence && task.recurrence.type !== "none" && (
-                <Icon name="repeat" size={isMobile ? ICON_SIZE_MD : ICON_SIZE_LG} className={cn("flex-shrink-0 mt-0.5", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
-              )}
               <h3
                 className={cn(
-                  "text-foreground dark:text-gray-100 leading-tight line-clamp-2 flex-1 font-semibold",
+                  "text-foreground dark:text-gray-100 leading-tight line-clamp-2 flex-1 font-semibold min-w-0",
                   task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
                   isMobile ? "text-[15px]" : "text-[18px]",
                 )}
@@ -727,6 +724,13 @@ export function DraggableTodayAgendaTask({
                 {task.title}
               </h3>
             </div>
+
+            {/* Row 3: Recurring icon - next line (only when task repeats) */}
+            {task.recurrence && task.recurrence.type !== "none" && (
+              <div className={cn("flex items-center px-1", isMobile ? "mb-1" : "mb-1")}>
+                <Icon name="repeat" size={isMobile ? ICON_SIZE_MD : ICON_SIZE_LG} className={cn("flex-shrink-0", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
+              </div>
+            )}
 
             {/* Row 3: Subhead (Description) - Show if description exists */}
             {task.description && (

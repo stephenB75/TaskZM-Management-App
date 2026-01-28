@@ -785,7 +785,7 @@ export const DraggableTaskCard = React.forwardRef<
               style={{ 
                 backgroundColor: getPriorityTabBackgroundColor(task.priority),
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-                gridTemplateColumns: TASK_CARD_TAB_SPACING.gridTemplateColumns,
+                gridTemplateColumns: '1fr auto auto 1fr',
                 gridTemplateRows: task.tags && task.tags.length > 0 ? 'auto auto' : 'auto',
                 gap: `0 ${isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop}`,
                 rowGap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
@@ -796,7 +796,7 @@ export const DraggableTaskCard = React.forwardRef<
                 paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
               }}
             >
-              {/* Row 1: Col 1 = time, Col 2 = priority, Col 3 = duration, Col 4 = spacer, Col 5 = checkbox */}
+              {/* Row 1: Col 1 = time, Col 2 = priority, Col 3 = duration, Col 4 = spacer (mark complete moved to headline row) */}
               {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1 }}>
                   <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
@@ -832,26 +832,6 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Spacer column 4 - empty */}
               <div style={{ gridColumn: 4 }} />
 
-              <button
-                type="button"
-                onClick={handleToggleComplete}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="flex-shrink-0 hover:opacity-80 transition-opacity justify-self-end"
-                style={{ gridColumn: 5, gridRow: 1 }}
-                aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
-              >
-                <Icon 
-                  name="circle"
-                  size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
-                  className={cn(
-                    "transition-colors flex-shrink-0",
-                    isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
-                    task.status === "done" && (isDark ? TASK_CARD_ICON_COLORS.tabCheckboxFill.dark : TASK_CARD_ICON_COLORS.tabCheckboxFill.light),
-                  )}
-                  weight={task.status === "done" ? "fill" : "bold"}
-                />
-              </button>
-
               {/* Row 2: Tag badge under priority (same column as priority) */}
               {task.tags && task.tags.length > 0 && (
                 <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
@@ -870,14 +850,29 @@ export const DraggableTaskCard = React.forwardRef<
             </div>
           </div>
 
-          {/* Headline (Title) - Underneath the tab */}
+          {/* Headline (Title) - Mark complete at start, then title */}
           <div className={cn("flex items-start px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
-            {task.recurrence && task.recurrence.type !== "none" && (
-              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0 mt-0.5 mr-1", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
-            )}
+            <button
+              type="button"
+              onClick={handleToggleComplete}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5 mr-1"
+              aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
+            >
+              <Icon 
+                name="circle"
+                size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
+                className={cn(
+                  "transition-colors flex-shrink-0",
+                  isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
+                  task.status === "done" && (isDark ? TASK_CARD_ICON_COLORS.tabCheckboxFill.dark : TASK_CARD_ICON_COLORS.tabCheckboxFill.light),
+                )}
+                weight={task.status === "done" ? "fill" : "bold"}
+              />
+            </button>
             <h3
               className={cn(
-                "text-foreground dark:text-gray-100 leading-tight flex-1 font-normal",
+                "text-foreground dark:text-gray-100 leading-tight flex-1 font-normal min-w-0",
                 TASK_CARD_LINE_CLAMP.title,
                 task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
                 isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop,
@@ -886,6 +881,13 @@ export const DraggableTaskCard = React.forwardRef<
               {task.title}
             </h3>
           </div>
+
+          {/* Recurring icon - next line (only when task repeats) */}
+          {task.recurrence && task.recurrence.type !== "none" && (
+            <div className={cn("flex items-center px-2", isMobile ? "pb-0.5" : "pb-1")}>
+              <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0", TASK_CARD_ICON_COLORS.body)} weight="duotone" />
+            </div>
+          )}
 
           {/* AI Suggestions - Under headline for tasks 30+ mins; in expanded section for under 30 mins */}
           {!isShortTaskForAIPlacement && renderAISuggestions()}
