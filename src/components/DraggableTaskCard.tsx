@@ -799,7 +799,7 @@ export const DraggableTaskCard = React.forwardRef<
             >
               {/* Row 1: Col 1 = time, Col 2 = tag, Col 3 = duration, Col 4 = spacer (mark complete moved to headline row) */}
               {scheduledTimeLabel && (
-                <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1 }}>
+                <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1, gridRow: 1 }}>
                   <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
                   <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                     {scheduledTimeLabel}
@@ -824,18 +824,18 @@ export const DraggableTaskCard = React.forwardRef<
               )}
 
               {task.estimatedTime && (
-                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: scheduledTimeLabel ? 3 : 2 }}>
+                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: scheduledTimeLabel ? 3 : 2, gridRow: 1 }}>
                   {formatDuration(task.estimatedTime)}
                 </span>
               )}
 
-              {/* Row 1 Col 4: Recurring icon (when task repeats) */}
+              {/* Row 1 Col 4: Recurring icon in task card tab (when task repeats) */}
               {task.recurrence && task.recurrence.type !== "none" ? (
                 <div className="flex items-center justify-center justify-self-end" style={{ gridColumn: 4, gridRow: 1 }}>
                   <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="duotone" />
                 </div>
               ) : (
-                <div style={{ gridColumn: 4 }} />
+                <div style={{ gridColumn: 4, gridRow: 1 }} aria-hidden="true" />
               )}
 
               {/* Row 2: Priority badge (tag place) */}

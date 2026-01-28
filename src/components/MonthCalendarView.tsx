@@ -135,9 +135,6 @@ function DraggableMonthTask({
           {task.priority === "urgent" && (
             <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-600 flex-shrink-0 mt-0.5" />
           )}
-          {task.recurrence && task.recurrence.type !== "none" && (
-            <Icon name="repeat" size={ICON_SIZE_SM} weight="duotone" className={cn("flex-shrink-0 mt-0.5", TASK_CARD_ICON_COLORS.body)} />
-          )}
           <div className="flex-1 min-w-0">
             <p className={cn(
               "truncate font-medium leading-tight text-[11px]",
@@ -162,6 +159,10 @@ function DraggableMonthTask({
               </div>
             )}
           </div>
+          {/* Recurring icon in row 1 column 4 (end of row) */}
+          {task.recurrence && task.recurrence.type !== "none" && (
+            <Icon name="repeat" size={ICON_SIZE_SM} weight="duotone" className={cn("flex-shrink-0 mt-0.5", TASK_CARD_ICON_COLORS.body)} />
+          )}
         </div>
       </div>
     </div>
