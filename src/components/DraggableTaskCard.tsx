@@ -59,6 +59,7 @@ import {
   TASK_CARD_TIMELINE,
   TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE,
   TASK_CARD_EXPANDABLE,
+  TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR,
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -316,10 +317,8 @@ export const DraggableTaskCard = React.forwardRef<
         baseColor = tabColor;
       }
       
-      // Use increased opacity (30-40%) for the gradient to create more prominent priority color
-      // This makes the background match the tab color with increased visibility
-      // Multiply by existing opacity if it was already in rgba format
-      const gradientOpacity = (isDark ? 0.30 : 0.40) * existingOpacity;
+      // Use opacity from constants for the gradient to create more prominent priority color
+      const gradientOpacity = (isDark ? TASK_CARD_BACKGROUNDS.gradient.priorityGradientOpacityDark : TASK_CARD_BACKGROUNDS.gradient.priorityGradientOpacityLight) * existingOpacity;
       const gradientColor = getColorWithOpacity(baseColor, gradientOpacity);
       
       // Gradient from priority color (light) at top to white/background at bottom
@@ -646,7 +645,7 @@ export const DraggableTaskCard = React.forwardRef<
               style={{ 
                 backgroundColor: getPriorityTabBackgroundColor(task.priority),
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-                gridTemplateColumns: '1fr auto auto 1fr auto',
+                gridTemplateColumns: TASK_CARD_TAB_SPACING.gridTemplateColumns,
                 gridTemplateRows: task.tags && task.tags.length > 0 ? 'auto auto' : 'auto',
                 gap: `0 ${isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop}`,
                 rowGap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
@@ -660,7 +659,7 @@ export const DraggableTaskCard = React.forwardRef<
               {/* Row 1: Col 1 = time, Col 2 = priority, Col 3 = duration, Col 4 = spacer, Col 5 = checkbox */}
               {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1 }}>
-                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-white flex-shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]" weight="fill" />
+                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? "text-white" : "text-gray-900")} weight="fill" />
                   <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                     {scheduledTimeLabel}
                   </span>
@@ -669,12 +668,16 @@ export const DraggableTaskCard = React.forwardRef<
 
               <div style={{ gridColumn: scheduledTimeLabel ? 2 : 1 }}>
                 <Badge
-                  variant="outline"
+                  variant="secondary"
                   className={cn(
-                    "rounded-md border capitalize flex-shrink-0 font-bold bg-transparent whitespace-nowrap",
-                    "border-white text-white",
+                    "rounded-md border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
                     isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                   )}
+                  style={{
+                    color: !task.priority || task.priority === 'default'
+                      ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
+                      : getPriorityLineColor(task.priority),
+                  }}
                 >
                   {task.priority}
                 </Badge>
@@ -690,17 +693,20 @@ export const DraggableTaskCard = React.forwardRef<
               <div style={{ gridColumn: 4 }} />
 
               <button
+                type="button"
                 onClick={handleToggleComplete}
                 onPointerDown={(e) => e.stopPropagation()}
                 className="flex-shrink-0 hover:opacity-80 transition-opacity justify-self-end"
                 style={{ gridColumn: 5, gridRow: 1 }}
+                aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
               >
                 <Icon 
                   name="circle"
                   size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
                   className={cn(
-                    "transition-colors flex-shrink-0 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)]",
-                    task.status === "done" && "fill-white",
+                    "transition-colors flex-shrink-0",
+                    isDark ? "text-white" : "text-gray-900",
+                    task.status === "done" && (isDark ? "fill-white" : "fill-gray-900"),
                   )}
                   weight={task.status === "done" ? "fill" : "bold"}
                 />
@@ -741,16 +747,13 @@ export const DraggableTaskCard = React.forwardRef<
             </h3>
           </div>
 
-          {/* AI Suggestions - Directly underneath headline (always visible) */}
-          {/* Show user subtasks if they exist, otherwise show AI suggestions */}
+          {/* AI Suggestions - Data from useTaskBreakdown -> actionPlan.steps (or user subtasks) */}
           {(() => {
-            // Check if user has custom subtasks (not from AI)
             const hasUserSubtasks = task.subtasks && task.subtasks.length > 0 && 
               task.subtasks.some(st => !st.id.startsWith(`ai-step-${task.id}-`));
-            
-            // Determine what to show: user subtasks or AI suggestions
+            // When no user subtasks: show action plan subtasks from breakdown.actionPlan.steps
             const itemsToShow = hasUserSubtasks 
-              ? task.subtasks.filter(st => !st.id.startsWith(`ai-step-${task.id}-`)) // Show only user-created subtasks
+              ? task.subtasks.filter(st => !st.id.startsWith(`ai-step-${task.id}-`))
               : (breakdown?.actionPlan?.steps && Array.isArray(breakdown.actionPlan.steps) && breakdown.actionPlan.steps.length > 0 
                   ? breakdown.actionPlan.steps 
                   : null);
@@ -780,7 +783,7 @@ export const DraggableTaskCard = React.forwardRef<
               : (breakdown?.actionPlan?.totalEstimatedMinutes || 0);
             
             return (
-              <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
+              <div className="px-2 py-1.5 mb-1.5" style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
                 <div className="flex items-center gap-1 mb-1">
                   <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={isDark ? domainColors.text : domainColors.text} weight="duotone" />
                   <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>

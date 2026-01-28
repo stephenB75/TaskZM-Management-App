@@ -73,6 +73,9 @@ export const TASK_CARD_PRIORITY_COLORS = {
   },
 } as const;
 
+/** Dark gray for priority badge text on white when priority is default (light gray would be hard to see) */
+export const TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR = '#374151'; // gray-700
+
 // Tag Colors
 export const TASK_CARD_TAG_COLORS = {
   background: {
@@ -249,6 +252,8 @@ export const TASK_CARD_TAB_SPACING = {
     mobile: '0.5rem', // 8px - vertical (allows auto height)
     desktop: '0.625rem', // 10px - vertical
   } as const,
+  /** Tab grid: time | priority | duration | spacer | checkbox */
+  gridTemplateColumns: '1fr auto auto 1fr auto' as const,
 } as const;
 
 // Standard Task Card Heights by Duration
@@ -520,6 +525,9 @@ export const TASK_CARD_BACKGROUNDS = {
   gradient: {
     lavenderOpacity: 0.40, // 40% tint of lavender at top - increased from 25% for better visibility
     darkModeWhiteOpacity: 0.05, // 5% white opacity for dark mode bottom
+    /** Priority tab gradient: light mode (40%), dark mode (30%) */
+    priorityGradientOpacityLight: 0.40,
+    priorityGradientOpacityDark: 0.30,
   },
   // Expandable section background colors
   expandable: {
