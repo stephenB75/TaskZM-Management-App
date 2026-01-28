@@ -181,8 +181,9 @@ export function findNextAvailableSlot(
     });
   }
 
-  // Sort tasks by scheduled time
+  // Sort tasks by scheduled time in chronological order (earliest first)
   // IMPORTANT: Ensure we properly parse scheduledDate (could be ISO string or Date object)
+  // CRITICAL: Filter out invalid dates to ensure proper sorting
   const sortedTasks = dateTasks
     .filter((task) => task.scheduledDate)
     .map((task) => {
@@ -191,13 +192,26 @@ export function findNextAvailableSlot(
         ? new Date(task.scheduledDate)
         : new Date(task.scheduledDate);
       
+      // Validate date is not invalid
+      if (isNaN(scheduledDate.getTime())) {
+        return null;
+      }
+      
       const start = scheduledDate.getTime();
       const duration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
       const end = start + duration;
       
       return { task, start, end };
     })
-    .sort((a, b) => a.start - b.start);
+    .filter((item): item is { task: Task; start: number; end: number } => item !== null) // Remove null entries from invalid dates
+    .sort((a, b) => {
+      // Ensure chronological order: earliest time first (ascending)
+      // If start times are equal, sort by end time to maintain consistent ordering
+      if (a.start !== b.start) {
+        return a.start - b.start;
+      }
+      return a.end - b.end;
+    });
   
   // Add calendar events to the conflict list
   const calendarConflicts: Array<{ start: number; end: number; title: string }> = [];
@@ -480,8 +494,9 @@ export function reorganizeAllTasksForDate(
     return isDateInRecurrence(task, targetDate);
   });
 
-  // Sort tasks by scheduled time
+  // Sort tasks by scheduled time in chronological order (earliest first)
   // IMPORTANT: Ensure we properly parse scheduledDate (could be ISO string or Date object)
+  // CRITICAL: Filter out invalid dates to ensure proper sorting
   const sortedTasks = dateTasks
     .filter((task) => task.scheduledDate)
     .map((task) => {
@@ -490,13 +505,26 @@ export function reorganizeAllTasksForDate(
         ? new Date(task.scheduledDate)
         : new Date(task.scheduledDate);
       
+      // Validate date is not invalid
+      if (isNaN(scheduledDate.getTime())) {
+        return null;
+      }
+      
       const start = scheduledDate.getTime();
       const duration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
       const end = start + duration;
       
       return { task, start, end };
     })
-    .sort((a, b) => a.start - b.start);
+    .filter((item): item is { task: Task; start: number; end: number } => item !== null) // Remove null entries from invalid dates
+    .sort((a, b) => {
+      // Ensure chronological order: earliest time first (ascending)
+      // If start times are equal, sort by end time to maintain consistent ordering
+      if (a.start !== b.start) {
+        return a.start - b.start;
+      }
+      return a.end - b.end;
+    });
 
   const reorganizations: Array<{ taskId: string; newTime: Date }> = [];
   let lastScheduledEnd = 0;

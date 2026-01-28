@@ -13,7 +13,8 @@
 
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync } from './domain-terminology';
 import { extractTermsFromTaskNameWithBrowserAI, validateAndEnhanceTermsWithDictionary } from './description-generator';
-import { DESCRIPTION_GENERATION_CONFIG } from './ai-config';
+import { DESCRIPTION_GENERATION_CONFIG, DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from './ai-config';
+import { DEFAULT_TASK_DOMAIN } from './task-constants';
 import { logger } from './logger';
 
 export interface AIContext {
@@ -72,12 +73,12 @@ export async function createAIContext(
   
   if (!fullText || fullText.length === 0) {
     // Return minimal context for empty tasks
-    const defaultDomain = 'personal';
+    const defaultDomain = DEFAULT_TASK_DOMAIN;
     const defaultTerms = getDomainTerminology(defaultDomain);
     
     return {
       domain: defaultDomain,
-      domainConfidence: 0,
+      domainConfidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
       domainKeywords: [],
       domainTerms: defaultTerms,
       extractedTerms: {
@@ -101,9 +102,34 @@ export async function createAIContext(
     };
   }
 
-  // STEP 1: Detect domain once (shared across all components)
-  const domainDetection = detectDomain(title, description);
-  const domain = domainDetection.domain;
+  // STEP 1: Detect domain once (shared across all components) with error handling
+  let domainDetection;
+  let domain: Domain;
+  try {
+    domainDetection = detectDomain(title, description);
+    domain = domainDetection?.domain || DEFAULT_TASK_DOMAIN; // Fallback to default domain if undefined
+  } catch (error) {
+    logger.error('Error detecting domain in createAIContext, defaulting to default domain:', error);
+    domain = DEFAULT_TASK_DOMAIN;
+    domainDetection = {
+      domain: DEFAULT_TASK_DOMAIN,
+      confidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+      keywords: [],
+      matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
+    };
+  }
+  
+  // Ensure domain is valid (fallback if somehow still undefined)
+  if (!domain || (domain !== 'business' && domain !== 'home' && domain !== 'personal' && domain !== 'world' && domain !== 'mixed')) {
+    logger.warn('Invalid domain detected, defaulting to default domain', { domain, title, description });
+    domain = DEFAULT_TASK_DOMAIN;
+    domainDetection = {
+      domain: DEFAULT_TASK_DOMAIN,
+      confidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+      keywords: [],
+      matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
+    };
+  }
   
   logger.debug('AI Context: Domain detected', {
     domain,
@@ -171,8 +197,8 @@ export async function createAIContext(
 
   return {
     domain,
-    domainConfidence: domainDetection.confidence,
-    domainKeywords: domainDetection.keywords,
+    domainConfidence: domainDetection?.confidence || DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+    domainKeywords: domainDetection?.keywords || [],
     domainTerms,
     extractedTerms: combinedExtracted,
     enhancedTerms: {
@@ -203,12 +229,12 @@ export function createAIContextSync(
   const fullText = `${title} ${description}`.trim();
   
   if (!fullText || fullText.length === 0) {
-    const defaultDomain = 'personal';
+    const defaultDomain = DEFAULT_TASK_DOMAIN;
     const defaultTerms = getDomainTerminology(defaultDomain);
     
     return {
       domain: defaultDomain,
-      domainConfidence: 0,
+      domainConfidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
       domainKeywords: [],
       domainTerms: defaultTerms,
       extractedTerms: {
@@ -232,9 +258,29 @@ export function createAIContextSync(
     };
   }
 
-  // Detect domain
-  const domainDetection = detectDomain(title, description);
-  const domain = domainDetection.domain;
+  // Detect domain with error handling to ensure domain is always defined
+  let domainDetection;
+  let domain: Domain;
+  try {
+    domainDetection = detectDomain(title, description);
+    domain = domainDetection?.domain || DEFAULT_TASK_DOMAIN; // Fallback to default domain if undefined
+  } catch (error) {
+    logger.error('Error detecting domain in createAIContextSync, defaulting to default domain:', error);
+    domain = DEFAULT_TASK_DOMAIN;
+    domainDetection = {
+      domain: DEFAULT_TASK_DOMAIN,
+      confidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+      keywords: [],
+      matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
+    };
+  }
+  
+  // Ensure domain is valid (fallback if somehow still undefined)
+  if (!domain || (domain !== 'business' && domain !== 'home' && domain !== 'personal' && domain !== 'world' && domain !== 'mixed')) {
+    logger.warn('Invalid domain detected, defaulting to default domain', { domain, title, description });
+    domain = DEFAULT_TASK_DOMAIN;
+  }
+  
   const domainTerms = getDomainTerminology(domain);
 
   // Extract terms
@@ -282,8 +328,8 @@ export function createAIContextSync(
 
   return {
     domain,
-    domainConfidence: domainDetection.confidence,
-    domainKeywords: domainDetection.keywords,
+    domainConfidence: domainDetection?.confidence || DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+    domainKeywords: domainDetection?.keywords || [],
     domainTerms,
     extractedTerms: combinedExtracted,
     enhancedTerms: {

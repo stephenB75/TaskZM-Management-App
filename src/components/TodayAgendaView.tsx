@@ -112,26 +112,32 @@ export function TodayAgendaView({
   // Completed tasks remain visible but grayed out like recurring tasks
   const incompleteTasks = allTodayTasks;
 
-  // Sort tasks by time - use useMemo to prevent recreation on every render
+  // Sort tasks by time in chronological order - use useMemo to prevent recreation on every render
   // This prevents infinite loops in useEffect dependencies
   // Completed tasks stay in chronological order (not moved to bottom)
   const todayTasks = useMemo(() => {
     return [...incompleteTasks].sort((a, b) => {
       try {
-        // Sort by TIME OF DAY only (hours and minutes), not full timestamp
-        // This is important for recurring tasks where scheduledDate is the base date
-        // Completed tasks stay in their chronological position
+        // Sort by full timestamp to ensure proper chronological order
+        // This ensures tasks are sorted by actual scheduled time, not just time of day
+        // This is important for recurring tasks and tasks scheduled at different times
         const dateA = a.scheduledDate ? new Date(a.scheduledDate) : null;
         const dateB = b.scheduledDate ? new Date(b.scheduledDate) : null;
         
+        // Tasks without scheduled dates go to the end
         if (!dateA || isNaN(dateA.getTime())) return 1;
         if (!dateB || isNaN(dateB.getTime())) return -1;
         
-        // Extract time of day in minutes (hours * 60 + minutes)
-        const timeOfDayA = dateA.getHours() * 60 + dateA.getMinutes();
-        const timeOfDayB = dateB.getHours() * 60 + dateB.getMinutes();
+        // Sort by full timestamp (chronological order: earliest first)
+        const timeA = dateA.getTime();
+        const timeB = dateB.getTime();
         
-        return timeOfDayA - timeOfDayB;
+        // If times are equal, maintain stable sort order by task ID
+        if (timeA === timeB) {
+          return a.id.localeCompare(b.id);
+        }
+        
+        return timeA - timeB;
       } catch (error) {
         console.error('Error sorting tasks:', error, a, b);
         return 0;

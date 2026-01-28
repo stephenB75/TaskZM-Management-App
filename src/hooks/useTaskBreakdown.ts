@@ -17,8 +17,10 @@ import {
   TASK_BREAKDOWN_DEBOUNCE_MS,
   TASK_BREAKDOWN_CACHE_SIZE,
 } from '../lib/ai-config';
-import { DEFAULT_TASK_STATUS } from '../lib/task-constants';
+import { DEFAULT_TASK_STATUS, DEFAULT_TASK_DOMAIN } from '../lib/task-constants';
 import { createAIContextSync, type AIContext } from '../lib/ai-context';
+import { getDomainTerminology } from '../lib/domain-terminology';
+import { DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from '../lib/ai-config';
 
 export interface TaskBreakdown {
   estimatedMinutes: number;
@@ -136,7 +138,56 @@ export function useTaskBreakdown(
         
         // Create shared AI context once (eliminates redundant domain detection and term extraction)
         // ENHANCED: Include effort score and primary verb in context for coordinated intelligence
-        const aiContext = createAIContextSync(title, description);
+        // CRITICAL: Add error handling to ensure domain is always defined
+        let aiContext;
+        try {
+          aiContext = createAIContextSync(title, description);
+          
+          // Validate that domain is defined
+          if (!aiContext.domain || (aiContext.domain !== 'business' && aiContext.domain !== 'home' && aiContext.domain !== 'personal' && aiContext.domain !== 'world' && aiContext.domain !== 'mixed')) {
+            console.error('AI Analysis: Invalid domain detected, using fallback', { 
+              domain: aiContext.domain, 
+              title: title.substring(0, LOGGING_CONFIG.MAX_LOG_TEXT_LENGTH),
+              description: description.substring(0, LOGGING_CONFIG.MAX_LOG_TEXT_LENGTH)
+            });
+            // Create fallback context with default domain
+            aiContext = {
+              ...aiContext,
+              domain: DEFAULT_TASK_DOMAIN,
+              domainConfidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+              domainKeywords: [],
+            };
+          }
+        } catch (error) {
+          console.error('AI Analysis: Error creating AI context, using fallback:', error);
+          // Create minimal fallback context
+          const defaultDomain = DEFAULT_TASK_DOMAIN;
+          aiContext = {
+            domain: defaultDomain,
+            domainConfidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+            domainKeywords: [],
+            domainTerms: getDomainTerminology(defaultDomain),
+            extractedTerms: {
+              keywords: [],
+              phrases: [],
+              verbs: [],
+              nouns: [],
+              pronouns: [],
+              context: '',
+            },
+            enhancedTerms: {
+              keywords: [],
+              phrases: [],
+              verbs: [],
+              nouns: [],
+              pronouns: [],
+            },
+            fullText: `${title} ${description}`.trim(),
+            title: title.trim(),
+            description: description.trim(),
+          };
+        }
+        
         // Add effort analysis to context for coordination
         (aiContext as any).effortScore = verbAnalysis.effortScore;
         (aiContext as any).primaryVerb = verbAnalysis.primaryVerb;
@@ -144,8 +195,8 @@ export function useTaskBreakdown(
         // Log for debugging (only in development)
         if (process.env.NODE_ENV === 'development') {
           console.log('AI Analysis: Creating context with effort score', {
-            title: title.substring(0, 50),
-            description: description.substring(0, 50),
+            title: title.substring(0, LOGGING_CONFIG.MAX_LOG_TEXT_LENGTH),
+            description: description.substring(0, LOGGING_CONFIG.MAX_LOG_TEXT_LENGTH),
             domain: aiContext.domain,
             confidence: aiContext.domainConfidence,
             effortScore: verbAnalysis.effortScore,

@@ -870,6 +870,16 @@ export const DOMAIN_DETECTION_THRESHOLDS = {
   // Technical keyword boost - additional weight when multiple technical keywords are present
   TECHNICAL_KEYWORD_BOOST: 1.5, // Multiplier for technical keywords when 2+ are present
   MIN_TECHNICAL_KEYWORDS_FOR_BOOST: 2, // Minimum number of technical keywords to trigger boost
+  // Default values for domain detection fallbacks
+  DEFAULT_CONFIDENCE: 0, // Default confidence when domain detection fails
+  DEFAULT_MATCHED_TERMS: { business: 0, home: 0, personal: 0, world: 0 }, // Default matched terms structure
+} as const;
+
+/**
+ * Logging and debugging constants
+ */
+export const LOGGING_CONFIG = {
+  MAX_LOG_TEXT_LENGTH: 50, // Maximum length for text in log messages (for truncation)
 } as const;
 
 /**
