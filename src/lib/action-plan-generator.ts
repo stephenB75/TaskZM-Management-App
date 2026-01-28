@@ -12,7 +12,7 @@ import { estimateTaskHours } from './daily-hours-utils';
 import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from './business-constants';
 import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS, DESCRIPTION_GENERATION_CONFIG, ACTION_PLAN_CONFIG, EFFORT_SCORE_THRESHOLDS } from './ai-config';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY } from './task-constants';
-import { extractTermsFromTaskNameWithBrowserAI } from './description-generator';
+import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName } from './description-generator';
 import type { AIContext } from './ai-context';
 
 export interface ActionPlanStep {
@@ -70,17 +70,44 @@ export function generateActionPlan(
 
   if (aiContext) {
     // Use shared context (no redundant work)
-    domain = aiContext.domain;
-    domainConfidence = aiContext.domainConfidence;
-    terminology = aiContext.domainTerms;
-    extractedTerms = aiContext.extractedTerms;
+    // CRITICAL: Validate domain is defined before using it
+    const contextDomain = aiContext.domain;
+    domain = (contextDomain && 
+      (contextDomain === 'business' || contextDomain === 'home' || 
+       contextDomain === 'personal' || contextDomain === 'world' || 
+       contextDomain === 'mixed'))
+      ? contextDomain
+      : DEFAULT_TASK_DOMAIN;
+    domainConfidence = aiContext.domainConfidence ?? 0;
+    terminology = aiContext.domainTerms || getDomainTerminology(domain);
+    // Use AIContext extracted terms if available, otherwise do quick local extraction (sync fallback)
+    extractedTerms = aiContext.extractedTerms || (() => {
+      const localExtracted = extractTermsFromTaskName(fullText, terminology);
+      return {
+        keywords: localExtracted.keywords,
+        phrases: localExtracted.phrases,
+        verbs: localExtracted.verbs,
+        nouns: localExtracted.nouns,
+        pronouns: localExtracted.pronouns,
+        context: fullText,
+      };
+    })();
   } else {
     // Fallback: detect and extract independently (backward compatibility)
     const domainDetection = detectDomain(title, description);
     domain = domainDetection.domain;
     domainConfidence = domainDetection.confidence;
     terminology = getDomainTerminology(domain);
-    extractedTerms = extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
+    // Quick local extraction for sync version
+    const localExtracted = extractTermsFromTaskName(fullText, terminology);
+    extractedTerms = {
+      keywords: localExtracted.keywords,
+      phrases: localExtracted.phrases,
+      verbs: localExtracted.verbs,
+      nouns: localExtracted.nouns,
+      pronouns: localExtracted.pronouns,
+      context: fullText,
+    };
   }
 
   // Estimate total time
@@ -173,8 +200,20 @@ function generateSteps(
   const fullText = `${title} ${description}`.trim();
   const text = fullText.toLowerCase();
 
-  // Use provided extracted terms or extract them
-  const terms = extractedTerms || extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
+  // Use provided extracted terms or extract them (sync fallback for when async Browser AI cannot be used)
+  // NOTE: If extractedTerms is provided from AIContext, it already includes Browser AI terms (from async createAIContext)
+  // If not provided, use sync local extraction (Browser AI would require async/await which isn't available here)
+  const terms = extractedTerms || (() => {
+    const localExtracted = extractTermsFromTaskName(fullText, terminology);
+    return {
+      keywords: localExtracted.keywords,
+      phrases: localExtracted.phrases,
+      verbs: localExtracted.verbs,
+      nouns: localExtracted.nouns,
+      pronouns: localExtracted.pronouns,
+      context: fullText,
+    };
+  })();
   const { keywords, phrases, verbs, nouns } = terms;
   
   // Log confirmation that both Browser AI and Local Terminology are being used
@@ -716,8 +755,20 @@ function generateSubtasks(
   const fullText = `${title} ${description}`.trim();
   const text = fullText.toLowerCase();
 
-  // Use provided extracted terms or extract them
-  const terms = extractedTerms || extractTermsFromTaskNameWithBrowserAI(fullText, terminology);
+  // Use provided extracted terms or extract them (sync fallback for when async Browser AI cannot be used)
+  // NOTE: If extractedTerms is provided from AIContext, it already includes Browser AI terms (from async createAIContext)
+  // If not provided, use sync local extraction (Browser AI would require async/await which isn't available here)
+  const terms = extractedTerms || (() => {
+    const localExtracted = extractTermsFromTaskName(fullText, terminology);
+    return {
+      keywords: localExtracted.keywords,
+      phrases: localExtracted.phrases,
+      verbs: localExtracted.verbs,
+      nouns: localExtracted.nouns,
+      pronouns: localExtracted.pronouns,
+      context: fullText,
+    };
+  })();
   
   // ENHANCED: Combine extracted terms with enhanced terms for better coordination
   const keywords = enhancedTerms?.keywords.length > 0

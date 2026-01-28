@@ -883,6 +883,32 @@ export const LOGGING_CONFIG = {
 } as const;
 
 /**
+ * Browser AI API Configuration
+ * Constants for Browser AI API (window.ai) integration
+ */
+export const BROWSER_AI_CONFIG = {
+  // Temperature settings (0.0 - 1.0)
+  TEMPERATURE: {
+    DEFAULT: 0.7, // Default temperature for general text generation
+    EXTRACTION: 0.3, // Lower temperature for consistent term extraction
+    DESCRIPTION: 0.7, // Temperature for description generation
+  } as const,
+  // Max tokens settings
+  MAX_TOKENS: {
+    DEFAULT: 200, // Default max tokens for general text generation
+    EXTRACTION: 300, // Max tokens for term extraction (needs more for JSON)
+    DESCRIPTION: 150, // Max tokens for description generation (concise)
+  } as const,
+  // Prompt template constants
+  PROMPT: {
+    PHRASE_LENGTH_RANGE: '2-4 words', // Range for phrase extraction in prompts
+    SUMMARY_LENGTH: '1-2 sentences', // Summary length specification in prompts
+  } as const,
+  // Status check delay (ms)
+  STATUS_CHECK_DELAY_MS: 1000, // Delay before checking Browser AI API status on startup
+} as const;
+
+/**
  * Domain-specific exclusion terms configuration
  * Used to filter out irrelevant terms from wrong domains
  */

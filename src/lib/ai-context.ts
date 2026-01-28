@@ -12,7 +12,7 @@
  */
 
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync } from './domain-terminology';
-import { extractTermsFromTaskNameWithBrowserAI, validateAndEnhanceTermsWithDictionary } from './description-generator';
+import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName, validateAndEnhanceTermsWithDictionary } from './description-generator';
 import { DESCRIPTION_GENERATION_CONFIG, DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from './ai-config';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
 import { logger } from './logger';
@@ -144,9 +144,10 @@ export async function createAIContext(
 
   // STEP 3: Extract terms once (shared across all components)
   // Extract from both title and description for comprehensive analysis
-  const titleExtracted = extractTermsFromTaskNameWithBrowserAI(title, domainTerms);
+  // NOTE: extractTermsFromTaskNameWithBrowserAI is now async (uses Browser AI API if available)
+  const titleExtracted = await extractTermsFromTaskNameWithBrowserAI(title, domainTerms);
   const descriptionExtracted = description.trim().length > 0
-    ? extractTermsFromTaskNameWithBrowserAI(description, domainTerms)
+    ? await extractTermsFromTaskNameWithBrowserAI(description, domainTerms)
     : { keywords: [], phrases: [], verbs: [], nouns: [], pronouns: [], context: '' };
 
   // Combine extracted terms
@@ -195,8 +196,16 @@ export async function createAIContext(
     pronouns: uniquePronouns.length,
   });
 
+  // CRITICAL: Final validation - ensure domain is always a valid Domain type
+  const finalDomain: Domain = (domain && 
+    (domain === 'business' || domain === 'home' || 
+     domain === 'personal' || domain === 'world' || 
+     domain === 'mixed'))
+    ? domain
+    : DEFAULT_TASK_DOMAIN;
+
   return {
-    domain,
+    domain: finalDomain,
     domainConfidence: domainDetection?.confidence || DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
     domainKeywords: domainDetection?.keywords || [],
     domainTerms,
@@ -284,9 +293,32 @@ export function createAIContextSync(
   const domainTerms = getDomainTerminology(domain);
 
   // Extract terms
-  const titleExtracted = extractTermsFromTaskNameWithBrowserAI(title, domainTerms);
+  // NOTE: extractTermsFromTaskNameWithBrowserAI is now async (uses Browser AI API if available)
+  // For sync version, we'll do a quick local extraction
+  const titleExtracted = (() => {
+    // Quick local extraction for sync version (fallback)
+    const localExtracted = extractTermsFromTaskName(title, domainTerms);
+    return {
+      keywords: localExtracted.keywords,
+      phrases: localExtracted.phrases,
+      verbs: localExtracted.verbs,
+      nouns: localExtracted.nouns,
+      pronouns: localExtracted.pronouns,
+      context: title,
+    };
+  })();
   const descriptionExtracted = description.trim().length > 0
-    ? extractTermsFromTaskNameWithBrowserAI(description, domainTerms)
+    ? (() => {
+        const localExtracted = extractTermsFromTaskName(description, domainTerms);
+        return {
+          keywords: localExtracted.keywords,
+          phrases: localExtracted.phrases,
+          verbs: localExtracted.verbs,
+          nouns: localExtracted.nouns,
+          pronouns: localExtracted.pronouns,
+          context: description,
+        };
+      })()
     : { keywords: [], phrases: [], verbs: [], nouns: [], pronouns: [], context: '' };
 
   const combinedExtracted = {
@@ -326,8 +358,16 @@ export function createAIContextSync(
     .map(p => enhancedTerms.pronouns.find(ep => ep.toLowerCase() === p)!)
     .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns);
 
+  // CRITICAL: Final validation - ensure domain is always a valid Domain type
+  const finalDomain: Domain = (domain && 
+    (domain === 'business' || domain === 'home' || 
+     domain === 'personal' || domain === 'world' || 
+     domain === 'mixed'))
+    ? domain
+    : DEFAULT_TASK_DOMAIN;
+
   return {
-    domain,
+    domain: finalDomain,
     domainConfidence: domainDetection?.confidence || DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
     domainKeywords: domainDetection?.keywords || [],
     domainTerms,

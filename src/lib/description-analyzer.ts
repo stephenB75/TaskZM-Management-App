@@ -11,8 +11,8 @@ import type { Task } from '../types';
 import { detectDomain, type Domain, getDomainTerminology } from './domain-terminology';
 import { analyzeTaskVerbs } from './verb-analysis';
 import { DESCRIPTION_COMPLEXITY_THRESHOLDS, DESCRIPTION_GENERATION_CONFIG } from './ai-config';
-import { DEFAULT_TASK_STATUS } from './task-constants';
-import { extractTermsFromTaskNameWithBrowserAI, validateAndEnhanceTermsWithDictionary } from './description-generator';
+import { DEFAULT_TASK_STATUS, DEFAULT_TASK_DOMAIN } from './task-constants';
+import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName, validateAndEnhanceTermsWithDictionary } from './description-generator';
 import { logger } from './logger';
 import type { AIContext } from './ai-context';
 
@@ -86,13 +86,20 @@ export function analyzeDescription(
 
   if (aiContext) {
     // Use shared context (no redundant work)
-    domain = aiContext.domain;
-    domainConfidence = aiContext.domainConfidence;
-    uniqueKeywords = aiContext.enhancedTerms.keywords;
-    uniquePhrases = aiContext.enhancedTerms.phrases;
-    uniqueVerbs = aiContext.enhancedTerms.verbs;
-    uniqueNouns = aiContext.enhancedTerms.nouns;
-    domainTerms = aiContext.domainTerms;
+    // CRITICAL: Validate domain is defined before using it
+    const contextDomain = aiContext.domain;
+    domain = (contextDomain && 
+      (contextDomain === 'business' || contextDomain === 'home' || 
+       contextDomain === 'personal' || contextDomain === 'world' || 
+       contextDomain === 'mixed'))
+      ? contextDomain
+      : DEFAULT_TASK_DOMAIN;
+    domainConfidence = aiContext.domainConfidence ?? 0;
+    uniqueKeywords = aiContext.enhancedTerms?.keywords || [];
+    uniquePhrases = aiContext.enhancedTerms?.phrases || [];
+    uniqueVerbs = aiContext.enhancedTerms?.verbs || [];
+    uniqueNouns = aiContext.enhancedTerms?.nouns || [];
+    domainTerms = aiContext.domainTerms || getDomainTerminology(domain);
   } else {
     // Fallback: detect and extract independently (backward compatibility)
     const domainDetection = detectDomain(title, description);
@@ -102,9 +109,30 @@ export function analyzeDescription(
 
     // ENHANCED: Use sophisticated extraction methods from description-generator
     // Extract terms from both title and description for comprehensive analysis
-    const titleExtracted = extractTermsFromTaskNameWithBrowserAI(title, domainTerms);
+    // NOTE: For sync version, use local extraction (Browser AI API is async)
+    const titleExtracted = (() => {
+      const localExtracted = extractTermsFromTaskName(title, domainTerms);
+      return {
+        keywords: localExtracted.keywords,
+        phrases: localExtracted.phrases,
+        verbs: localExtracted.verbs,
+        nouns: localExtracted.nouns,
+        pronouns: localExtracted.pronouns,
+        context: title,
+      };
+    })();
     const descriptionExtracted = description.trim().length > 0 
-      ? extractTermsFromTaskNameWithBrowserAI(description, domainTerms)
+      ? (() => {
+          const localExtracted = extractTermsFromTaskName(description, domainTerms);
+          return {
+            keywords: localExtracted.keywords,
+            phrases: localExtracted.phrases,
+            verbs: localExtracted.verbs,
+            nouns: localExtracted.nouns,
+            pronouns: localExtracted.pronouns,
+            context: description,
+          };
+        })()
       : { keywords: [], phrases: [], verbs: [], nouns: [], pronouns: [], context: '' };
 
     // Combine and enhance extracted terms
@@ -497,7 +525,16 @@ export function extractKeyPhrases(description: string, title?: string): string[]
   const domainTerms = getDomainTerminology(domainDetection.domain);
 
   // Use sophisticated extraction method
-  const extracted = extractTermsFromTaskNameWithBrowserAI(fullText, domainTerms);
+  // NOTE: For sync version, use local extraction (Browser AI API is async)
+  const localExtracted = extractTermsFromTaskName(fullText, domainTerms);
+  const extracted = {
+    keywords: localExtracted.keywords,
+    phrases: localExtracted.phrases,
+    verbs: localExtracted.verbs,
+    nouns: localExtracted.nouns,
+    pronouns: localExtracted.pronouns,
+    context: fullText,
+  };
   
   // Enhance with domain terminology
   const enhanced = validateAndEnhanceTermsWithDictionary(

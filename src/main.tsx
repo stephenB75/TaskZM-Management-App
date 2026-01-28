@@ -4,6 +4,8 @@ import App from './App';
 import './styles/globals.css';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { logger } from './lib/logger';
+import { checkBrowserAIStatus } from './lib/browser-ai-api';
+import { BROWSER_AI_CONFIG } from './lib/ai-config';
 import { COLOR_BACKGROUND_LIGHT } from './lib/color-theme';
 
 // Suppress browser extension errors that are not from our code
@@ -438,6 +440,18 @@ if (typeof window !== 'undefined') {
   // Also suppress network errors that appear in the console from failed resource loads
   // These are logged by the browser itself, so we intercept them via error events
   // (already handled above in window.addEventListener('error'))
+  
+  // Check Browser AI API availability on startup
+  if (typeof window !== 'undefined') {
+    setTimeout(() => {
+      const browserAIStatus = checkBrowserAIStatus();
+      if (browserAIStatus.available) {
+        logger.info('✅ Browser AI API is available - enhanced AI features enabled');
+      } else {
+        logger.debug('ℹ️ Browser AI API not available - using local processing');
+      }
+    }, BROWSER_AI_CONFIG.STATUS_CHECK_DELAY_MS); // Check after delay to allow Browser AI API to initialize
+  }
 }
 
 // Capacitor

@@ -14,6 +14,7 @@ import {
 import { logger } from './logger';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
 import { getSharedTerminology, saveSharedTerminology } from './api';
+import { DEFAULT_TASK_DOMAIN } from './task-constants';
 
 export type Domain = 'business' | 'home' | 'personal' | 'world' | 'mixed';
 
@@ -1283,7 +1284,13 @@ const CONTEXT_KEYWORDS: Record<Domain, string[]> = {
     'section', 'module', 'function', 'method', 'class', 'file', 'repository', 
     'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr', 'technical', 
     'architecture', 'design', 'specification', 'requirement', 'spec', 'task dialog',
-    'dialog box', 'task code', 'code base', 'base for', 'for the task'
+    'dialog box', 'task code', 'code base', 'base for', 'for the task',
+    // Product/Project Management keywords
+    'prd', 'product requirements document', 'product requirement', 'requirements document',
+    're-occurring', 'recurring', 'recurring issue', 'recurring task', 'recurring problem',
+    'recurrence', 'recurrence issue', 'recurrence problem', 'recurring bug',
+    'issue', 'issues', 'problem', 'problems', 'bug', 'bugs', 'error', 'errors',
+    'fix issue', 'fix problem', 'resolve issue', 'resolve problem', 'troubleshoot issue'
   ],
   home: ['household', 'residential', 'domestic', 'homeowner', 'home', 'house', 'residence'],
   personal: [
@@ -1488,12 +1495,12 @@ export function detectDomain(
   });
   
   if (!text || text.length === 0) {
-    logger.debug('⚠️ Domain Detection: Empty text, defaulting to personal');
+    logger.debug('⚠️ Domain Detection: Empty text, defaulting to default domain');
     return {
-      domain: 'personal',
-      confidence: 0,
+      domain: DEFAULT_TASK_DOMAIN,
+      confidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
       keywords: [],
-      matchedTerms: { business: 0, home: 0, personal: 0, world: 0 },
+      matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
     };
   }
 
@@ -1730,7 +1737,15 @@ export function detectDomain(
   }
 
   // Find the winning domain
-  const winningDomain = scores.find(([, score]) => score === maxScore)?.[0] || 'personal';
+  // CRITICAL: Ensure we always return a valid domain
+  const winningDomainEntry = scores.find(([, score]) => score === maxScore);
+  // Use DEFAULT_TASK_DOMAIN constant instead of hardcoded 'personal'
+  const winningDomain = (winningDomainEntry?.[0] && 
+    (winningDomainEntry[0] === 'business' || winningDomainEntry[0] === 'home' || 
+     winningDomainEntry[0] === 'personal' || winningDomainEntry[0] === 'world' || 
+     winningDomainEntry[0] === 'mixed'))
+    ? winningDomainEntry[0]
+    : DEFAULT_TASK_DOMAIN;
 
   // Calculate confidence (0-1 scale)
   // Higher confidence if one domain clearly dominates

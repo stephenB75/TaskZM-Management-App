@@ -232,19 +232,35 @@ export function useTaskBreakdown(
         const estimatedHours = estimateTaskHours(taskForEstimation);
         const estimatedMinutes = Math.round(estimatedHours * MINUTES_PER_HOUR);
 
+        // CRITICAL: Ensure domain is defined before using it
+        // Double-check domain is valid (defensive programming)
+        const validDomain = aiContext.domain && 
+          (aiContext.domain === 'business' || aiContext.domain === 'home' || 
+           aiContext.domain === 'personal' || aiContext.domain === 'world' || 
+           aiContext.domain === 'mixed')
+          ? aiContext.domain
+          : DEFAULT_TASK_DOMAIN;
+        
+        // Ensure aiContext has valid domain before passing to other functions
+        const safeAIContext = {
+          ...aiContext,
+          domain: validDomain,
+          domainConfidence: aiContext.domainConfidence ?? DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+        };
+        
         // Analyze description (pass shared context and effort score to avoid redundant work)
-        const descriptionAnalysis = analyzeDescription(title, description, aiContext, verbAnalysis.effortScore);
+        const descriptionAnalysis = analyzeDescription(title, description, safeAIContext, verbAnalysis.effortScore);
 
         // Generate action plan (pass shared context to avoid redundant work)
-        const actionPlan = generateActionPlan(tempTask as Task, aiContext);
+        const actionPlan = generateActionPlan(tempTask as Task, safeAIContext);
 
         // Determine suggested category from domain
         let suggestedCategory: 'work' | 'personal' | 'projects' | null = null;
-        if (aiContext.domain === 'business') {
+        if (validDomain === 'business') {
           suggestedCategory = 'work';
-        } else if (aiContext.domain === 'personal') {
+        } else if (validDomain === 'personal') {
           suggestedCategory = 'personal';
-        } else if (aiContext.domain === 'home' || aiContext.domain === 'world') {
+        } else if (validDomain === 'home' || validDomain === 'world') {
           suggestedCategory = 'personal'; // Default to personal for home/world
         }
 
@@ -256,8 +272,8 @@ export function useTaskBreakdown(
           suggestedCategory,
           actionPlan,
           descriptionAnalysis,
-          domain: aiContext.domain,
-          confidence: aiContext.domainConfidence,
+          domain: validDomain,
+          confidence: safeAIContext.domainConfidence,
         };
 
         // Cache result using current hash (not from closure)

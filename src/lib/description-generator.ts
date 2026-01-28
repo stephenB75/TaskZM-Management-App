@@ -11,6 +11,12 @@ import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAs
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_DEDUPLICATION_CONFIG, DESCRIPTION_OPTIONS_CONFIG, DOMAIN_EXCLUSION_TERMS } from './ai-config';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
+import { 
+  isBrowserAIAvailable, 
+  extractTermsWithBrowserAI, 
+  generateDescriptionWithBrowserAI,
+  checkBrowserAIStatus 
+} from './browser-ai-api';
 
 /**
  * Clean HTML/CSS fragments and invalid characters from text
@@ -817,23 +823,55 @@ function findPhrasesUsingKeywords(
 
 /**
  * Extract keywords, phrases, verbs, nouns, and pronouns from task name
- * FLOW: Local Terminology extracts terms first, then provides them to Browser AI
- * 1. Local Terminology extracts keywords/phrases from task name using domain dictionary
- * 2. Local Terminology provides extracted terms to Browser AI
- * 3. Browser AI uses those terms to build contextual sentences
+ * ENHANCED: Now uses Browser AI API (window.ai) when available, with local processing as fallback
+ * FLOW: 
+ * 1. Try Browser AI API for enhanced term extraction (if available)
+ * 2. Local Terminology extracts keywords/phrases from task name using domain dictionary
+ * 3. Combine Browser AI results with Local Terminology results
+ * 4. Browser AI uses combined terms to build contextual sentences
  */
-export function extractTermsFromTaskNameWithBrowserAI(
+export async function extractTermsFromTaskNameWithBrowserAI(
   taskName: string,
   domainTerms: ReturnType<typeof getDomainTerminology>
-): { 
+): Promise<{ 
   keywords: string[]; 
   phrases: string[];
   verbs: string[]; 
   nouns: string[];
   pronouns: string[];
   context: string;
-} {
-  // STEP 1: LOCAL TERMINOLOGY extracts keywords and phrases from task name
+}> {
+  const domain = domainTerms.context || DEFAULT_TASK_DOMAIN;
+  
+  // STEP 1: Try Browser AI API for enhanced term extraction (if available)
+  let browserAITerms: {
+    keywords: string[];
+    phrases: string[];
+    verbs: string[];
+    nouns: string[];
+    summary: string;
+  } | null = null;
+  
+  if (isBrowserAIAvailable()) {
+    try {
+      logger.debug(`🤖 Browser AI API: Attempting to extract terms from task name: "${taskName}"`);
+      browserAITerms = await extractTermsWithBrowserAI(taskName, domain);
+      
+      if (browserAITerms) {
+        logger.debug(`✅ Browser AI API: Successfully extracted terms`, {
+          keywords: browserAITerms.keywords.length,
+          phrases: browserAITerms.phrases.length,
+          verbs: browserAITerms.verbs.length,
+          nouns: browserAITerms.nouns.length,
+          hasSummary: !!browserAITerms.summary,
+        });
+      }
+    } catch (error) {
+      logger.warn('Browser AI API extraction failed, falling back to local processing:', error);
+    }
+  }
+  
+  // STEP 2: LOCAL TERMINOLOGY extracts keywords and phrases from task name
   // Local Terminology uses domain dictionary to extract relevant terms
   logger.debug(`🔍 Local Terminology: Extracting keywords and phrases from task name: "${taskName}"`);
   
@@ -846,21 +884,38 @@ export function extractTermsFromTaskNameWithBrowserAI(
     nouns: localTerminologyExtracted.nouns.slice(0, 10),
   });
   
-  // STEP 2: Browser AI receives extracted terms from Local Terminology
-  // Browser AI will use these terms to build contextual sentences
-  // Also extract additional keywords from task name for Browser AI context
+  // STEP 3: Combine Browser AI API results with Local Terminology results
+  // Browser AI provides enhanced understanding, Local Terminology provides domain-specific terms
+  // Also extract additional keywords from task name for context
   const taskKeywords = extractKeywordsFromTaskName(taskName);
   
-  // STEP 3: Browser AI receives and uses Local Terminology extracted terms
-  // Combine Local Terminology extracted terms with additional task name analysis
-  // Browser AI will use these terms to build contextual sentences
+  // STEP 3: Combine Browser AI API results with Local Terminology results
+  // Browser AI provides enhanced understanding, Local Terminology provides domain-specific terms
+  // Priority: Browser AI terms (if available) + Local Terminology terms (domain-specific)
   
-  // Start with Local Terminology extracted terms (primary source)
-  let foundKeywords = [...localTerminologyExtracted.keywords];
-  let foundPhrases = [...localTerminologyExtracted.phrases];
-  let foundVerbs = [...localTerminologyExtracted.verbs];
-  let foundNouns = [...localTerminologyExtracted.nouns];
-  let foundPronouns = [...localTerminologyExtracted.pronouns];
+  // Start with Browser AI terms if available (enhanced understanding)
+  let foundKeywords = browserAITerms ? [...browserAITerms.keywords] : [];
+  let foundPhrases = browserAITerms ? [...browserAITerms.phrases] : [];
+  let foundVerbs = browserAITerms ? [...browserAITerms.verbs] : [];
+  let foundNouns = browserAITerms ? [...browserAITerms.nouns] : [];
+  let foundPronouns = [...localTerminologyExtracted.pronouns]; // Pronouns from local only
+  
+  // Merge with Local Terminology terms (domain-specific, no duplicates)
+  const mergeUnique = (arr1: string[], arr2: string[]) => {
+    const combined = [...arr1, ...arr2];
+    const seen = new Set<string>();
+    return combined.filter(item => {
+      const lower = item.toLowerCase();
+      if (seen.has(lower)) return false;
+      seen.add(lower);
+      return true;
+    });
+  };
+  
+  foundKeywords = mergeUnique(foundKeywords, localTerminologyExtracted.keywords);
+  foundPhrases = mergeUnique(foundPhrases, localTerminologyExtracted.phrases);
+  foundVerbs = mergeUnique(foundVerbs, localTerminologyExtracted.verbs);
+  foundNouns = mergeUnique(foundNouns, localTerminologyExtracted.nouns);
   
   // Add task name keywords that aren't already in Local Terminology results
   taskKeywords.forEach(keyword => {
@@ -980,7 +1035,7 @@ export function extractTermsFromTaskNameWithBrowserAI(
     verbs: finalVerbs,
     nouns: finalNouns,
     pronouns: finalPronouns,
-    context: taskName, // Task name as context for Browser AI
+    context: browserAITerms?.summary || taskName, // Use Browser AI summary if available, otherwise task name
   };
 }
 
@@ -1319,8 +1374,9 @@ export function validateAndEnhanceTermsWithDictionary(
 /**
  * Extract keywords, phrases, verbs, nouns, and pronouns from task name using domain terminology
  * NOTE: This is now primarily used as a fallback when search results are completely unavailable
+ * Exported for use in sync contexts where async Browser AI API cannot be used
  */
-function extractTermsFromTaskName(
+export function extractTermsFromTaskName(
   taskName: string,
   domainTerms: ReturnType<typeof getDomainTerminology>
 ): {
@@ -3113,8 +3169,33 @@ export async function generateDescription(
   }
 
     // Detect domain from task name AND description (if available) for better accuracy
+    // ENHANCED: If existing description is clearly wrong/irrelevant, prioritize task name for domain detection
     const descriptionForDetection = existingDescription?.trim() || '';
-    const domainResult = detectDomain(taskName, descriptionForDetection);
+    
+    // Check if existing description is clearly wrong (contains personal/fitness terms for technical tasks)
+    // Use constants from DOMAIN_EXCLUSION_TERMS for technical task detection
+    const taskNameLower = taskName.toLowerCase();
+    const descriptionLower = descriptionForDetection.toLowerCase();
+    
+    // Use TECHNICAL_TASK_INDICATORS constant for technical task detection
+    const technicalIndicators = DOMAIN_EXCLUSION_TERMS.TECHNICAL_TASK_INDICATORS;
+    const isTechnicalTask = technicalIndicators.some(indicator => taskNameLower.includes(indicator)) ||
+                           taskNameLower.includes('prd') || taskNameLower.includes('bug') ||
+                           taskNameLower.includes('issue') || taskNameLower.includes('fix') ||
+                           taskNameLower.includes('recurring') || taskNameLower.includes('re-occurring');
+    
+    // Use BUSINESS_EXCLUDE_PERSONAL constant for wrong personal terms detection
+    const personalExcludeTerms = DOMAIN_EXCLUSION_TERMS.BUSINESS_EXCLUDE_PERSONAL;
+    const hasWrongPersonalTerms = personalExcludeTerms.some(term => descriptionLower.includes(term)) ||
+                                  descriptionLower.includes('purchase') || descriptionLower.includes('travel') ||
+                                  (descriptionLower.includes('personal') && !taskNameLower.includes('personal'));
+    
+    // If task is clearly technical but description has wrong personal terms, prioritize task name
+    const textForDetection = (isTechnicalTask && hasWrongPersonalTerms && descriptionForDetection.length > 0)
+      ? taskName  // Use only task name if description is clearly wrong
+      : `${taskName} ${descriptionForDetection}`.trim(); // Otherwise use both
+    
+    const domainResult = detectDomain(taskName, isTechnicalTask && hasWrongPersonalTerms ? '' : descriptionForDetection);
     const domain = domainResult.domain;
     
     // Defer async terminology fetch to avoid blocking UI
@@ -3170,8 +3251,8 @@ export async function generateDescription(
     existingDescriptionLength: existingDescription?.length || 0
   });
   
-  // Extract terms from task name
-  const taskNameExtracted = extractTermsFromTaskNameWithBrowserAI(taskName, domainTerms);
+  // Extract terms from task name (now async - uses Browser AI API if available)
+  const taskNameExtracted = await extractTermsFromTaskNameWithBrowserAI(taskName, domainTerms);
   
   // ENHANCED: Also extract terms from existing description if available
   // This allows us to parse poorly written descriptions and extract meaningful terms
@@ -3187,7 +3268,7 @@ export async function generateDescription(
   if (existingDescription && existingDescription.trim().length > 0) {
     // Extract terms from existing description to get additional context
     // This helps parse poorly written descriptions and extract meaningful information
-    descriptionExtracted = extractTermsFromTaskNameWithBrowserAI(existingDescription.trim(), domainTerms);
+    descriptionExtracted = await extractTermsFromTaskNameWithBrowserAI(existingDescription.trim(), domainTerms);
     logger.debug(`Extracted terms from existing description: ${descriptionExtracted.keywords.length} keywords, ${descriptionExtracted.phrases.length} phrases, ${descriptionExtracted.verbs.length} verbs, ${descriptionExtracted.nouns.length} nouns`);
   }
   
@@ -3252,34 +3333,70 @@ export async function generateDescription(
     domainTermsLoaded: !!domainTerms && (domainTerms.phrases.length > 0 || domainTerms.verbs.length > 0 || domainTerms.nouns.length > 0)
   });
 
-  // STEP 3: Browser AI builds contextual sentences using terms from Local Terminology
-  logger.debug(`🤖 Browser AI: Building contextual sentences with terms from Local Terminology:`, {
+  // STEP 3: Try Browser AI API for description generation first, then fallback to local sentence building
+  logger.debug(`🤖 Browser AI: Building contextual sentences with terms:`, {
     keywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
     phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
     verbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
     nouns: finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging),
     hasContext: searchContext.length > 0,
     contextLength: searchContext.length,
-    contextPreview: searchContext.substring(0, 100)
+    contextPreview: searchContext.substring(0, 100),
+    browserAIAvailable: isBrowserAIAvailable(),
   });
   
-      // Use effort score to adjust description detail (default to medium effort if not provided)
-      const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
-        ? effortScore 
-        : 2.5;
-      
-      description = buildContextualDescription(
+  // Try Browser AI API for description generation (if available)
+  if (isBrowserAIAvailable() && finalKeywords.length > 0) {
+    try {
+      const browserAIDescription = await generateDescriptionWithBrowserAI(
         taskName,
-    finalKeywords,
-    finalPhrases,
-    finalVerbs,
-    finalNouns,
-    finalPronouns,
-    searchContext, // Use task name as context
         domain,
-        domainTerms,
-        normalizedEffortScore
+        {
+          keywords: finalKeywords,
+          phrases: finalPhrases,
+          verbs: finalVerbs,
+          nouns: finalNouns,
+        }
       );
+      
+      if (browserAIDescription && browserAIDescription.trim().length > 0) {
+        logger.debug(`✅ Browser AI API: Generated description successfully`);
+        description = cleanText(browserAIDescription);
+        usedSearchResults = true; // Mark as using Browser AI API
+        confidence = Math.min(
+          DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
+          (finalKeywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) +
+          (finalPhrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight),
+          DESCRIPTION_GENERATION_CONFIG.maxConfidence
+        );
+      }
+    } catch (error) {
+      logger.warn('Browser AI API description generation failed, using local processing:', error);
+    }
+  }
+  
+  // If Browser AI API didn't generate a description, use local sentence building
+  if (!description || description.trim().length === 0) {
+    logger.debug(`🔧 Using local sentence building (Browser AI API unavailable or failed)`);
+    
+    // Use effort score to adjust description detail (default to medium effort if not provided)
+    const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
+      ? effortScore 
+      : 2.5;
+    
+    description = buildContextualDescription(
+      taskName,
+      finalKeywords,
+      finalPhrases,
+      finalVerbs,
+      finalNouns,
+      finalPronouns,
+      searchContext, // Use task name as context
+      domain,
+      domainTerms,
+      normalizedEffortScore
+    );
+  }
       
   logger.debug(`Description after buildContextualDescription:`, {
     description,
@@ -3289,23 +3406,24 @@ export async function generateDescription(
   });
 
   // STEP 5: Check if description is too similar to task name or needs improvement
-  const taskNameLower = taskName.toLowerCase().trim();
-  const descriptionLower = description ? description.toLowerCase().trim() : '';
+  // Use taskNameLower and descriptionLower already declared above for domain detection
+  const taskNameLowerForComparison = taskName.toLowerCase().trim();
+  const descriptionLowerForComparison = description ? description.toLowerCase().trim() : '';
   
   // Check if description is identical to task name
-  const isIdenticalToTaskName = descriptionLower === taskNameLower;
+  const isIdenticalToTaskName = descriptionLowerForComparison === taskNameLowerForComparison;
   
   // Check if description contains all task name words (too similar)
-  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= 2);
-  const descriptionWords = descriptionLower.split(/\s+/).filter(w => w.length >= 2);
-  const containsAllTaskWords = taskWords.length > 0 && 
-    taskWords.every(word => descriptionLower.includes(word));
+  const taskWordsForComparison = taskNameLowerForComparison.split(/\s+/).filter(w => w.length >= 2);
+  const descriptionWordsForComparison = descriptionLowerForComparison.split(/\s+/).filter(w => w.length >= 2);
+  const containsAllTaskWords = taskWordsForComparison.length > 0 && 
+    taskWordsForComparison.every(word => descriptionLowerForComparison.includes(word));
   
   // Check if description is mostly task name words (80%+ overlap)
-  const commonWords = taskWords.filter(word => descriptionWords.includes(word));
-  const wordOverlapRatio = taskWords.length > 0 ? commonWords.length / taskWords.length : 0;
+  const commonWordsForComparison = taskWordsForComparison.filter(word => descriptionWordsForComparison.includes(word));
+  const wordOverlapRatio = taskWordsForComparison.length > 0 ? commonWordsForComparison.length / taskWordsForComparison.length : 0;
   const isTooSimilarToTaskName = wordOverlapRatio >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.wordOverlapRatio && 
-    descriptionWords.length <= taskWords.length + DESCRIPTION_GENERATION_CONFIG.similarityThresholds.maxWordDifference;
+    descriptionWordsForComparison.length <= taskWordsForComparison.length + DESCRIPTION_GENERATION_CONFIG.similarityThresholds.maxWordDifference;
   
       const isDescriptionTooShort = description && description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.descriptionTooShortThreshold;
   // Check if description is too generic (very short or uses common generic verbs)
@@ -3322,14 +3440,15 @@ export async function generateDescription(
     // Never use task name directly - always build a contextual sentence
     logger.debug(`Description is empty/short/generic, rebuilding with domain terminology`);
     
-    const taskNameLower = taskName.toLowerCase();
+    // Use the already declared taskNameLower from domain detection above
+    const taskNameLowerForRebuild = taskName.toLowerCase();
     const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
     
     // Get domain phrases, verbs, and nouns for building contextual description
     const domainPhrases = domainTerms.phrases.filter(phrase => {
       const phraseLower = phrase.toLowerCase();
       // Use phrases that add context, not just repeat task name
-      return !taskNameLower.includes(phraseLower) && phraseLower.length > DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minPhraseLength;
+      return !taskNameLowerForRebuild.includes(phraseLower) && phraseLower.length > DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minPhraseLength;
     }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
     
     const domainVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
@@ -3340,7 +3459,7 @@ export async function generateDescription(
     const contextNouns = finalNouns.length > 0 ? finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (domainNouns.length > 0 ? domainNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
     const relevantKeywords = finalKeywords.filter(kw => {
       const kwLower = kw.toLowerCase();
-      return !taskNameLower.includes(kwLower) && kwLower.length >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minKeywordLength;
+      return !taskNameLowerForRebuild.includes(kwLower) && kwLower.length >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minKeywordLength;
     }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Build contextual sentence using available terms - clean all inputs first
@@ -3731,8 +3850,17 @@ export function getSuggestivePhrases(
     const domain = domainResult.domain;
     const domainTerms = getDomainTerminology(domain);
 
-    // Extract terms using Browser AI
-    const extracted = extractTermsFromTaskNameWithBrowserAI(taskName, domainTerms);
+    // Extract terms using Browser AI (async, but this function needs to be sync for now)
+    // Use local extraction as fallback for sync version
+    const localExtracted = extractTermsFromTaskName(taskName, domainTerms);
+    const extracted = {
+      keywords: localExtracted.keywords,
+      phrases: localExtracted.phrases,
+      verbs: localExtracted.verbs,
+      nouns: localExtracted.nouns,
+      pronouns: localExtracted.pronouns,
+      context: taskName,
+    };
     
     // Enhance with Local Terminology (proactively provides additional keywords)
     const enhanced = validateAndEnhanceTermsWithDictionary(extracted, taskName, domainTerms);
