@@ -641,7 +641,7 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {/* Top Tab Section - Pill-shaped tab (rounded square with moderate rounded corners) centered with space from top */}
           <div className="flex justify-center" style={{ marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop }}>
-            {/* Pill-shaped tab with priority color - centered, containing all content, auto width to fit contents, less rounded corners */}
+            {/* Pill-shaped tab with priority color - centered, fixed width, containing all content, less rounded corners */}
             <div 
               className="rounded-lg flex items-center justify-between"
               style={{ 
@@ -649,19 +649,17 @@ export const DraggableTaskCard = React.forwardRef<
                 height: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
-                width: 'auto',
-                minWidth: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-                maxWidth: '95%', // Allow tab to expand but keep some margin from card edges
-                paddingLeft: isMobile ? '0.5rem' : '0.75rem', // px-2 or px-3
-                paddingRight: isMobile ? '0.5rem' : '0.75rem',
+                width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop, // Fixed width for all tabs
+                paddingLeft: isMobile ? '0.75rem' : '1rem', // Increased padding for larger content
+                paddingRight: isMobile ? '0.75rem' : '1rem',
               }}
             >
-              <div className="flex items-center flex-1 min-w-0 justify-center whitespace-nowrap" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
+              <div className="flex items-center flex-1 min-w-0 justify-center whitespace-nowrap overflow-hidden" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
                 {/* Scheduled Time with Clock Icon */}
                 {scheduledTimeLabel && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">
                     <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={isDark ? "text-white" : "text-gray-800"} />
-                    <span className={cn(isDark ? "text-white" : "text-gray-800", "font-normal", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                    <span className={cn(isDark ? "text-white" : "text-gray-800", "font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                       {scheduledTimeLabel}
                     </span>
                   </div>
@@ -671,7 +669,7 @@ export const DraggableTaskCard = React.forwardRef<
                 <Badge
                   variant="outline"
                   className={cn(
-                    "rounded-md border capitalize flex-shrink-0 font-bold bg-transparent",
+                    "rounded-md border capitalize flex-shrink-0 font-bold bg-transparent whitespace-nowrap",
                     isDark 
                       ? "border-white text-white" 
                       : "border-gray-800 text-gray-800",
@@ -686,7 +684,7 @@ export const DraggableTaskCard = React.forwardRef<
                   <Badge
                     variant="secondary"
                     className={cn(
-                      "border-0 flex-shrink-0 bg-transparent",
+                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap",
                       isDark ? "text-white" : "text-gray-800",
                       isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
                     )}
@@ -697,7 +695,7 @@ export const DraggableTaskCard = React.forwardRef<
 
                 {/* Duration */}
                 {task.estimatedTime && (
-                  <span className={cn(isDark ? "text-white" : "text-gray-800", "font-semibold flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                  <span className={cn(isDark ? "text-white" : "text-gray-800", "font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
@@ -781,7 +779,7 @@ export const DraggableTaskCard = React.forwardRef<
             return (
               <div className={cn("px-2 py-1.5 mb-1.5 rounded border", domainColors.bg)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
                 <div className="flex items-center gap-1 mb-1">
-                  <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={isDark ? domainColors.text : domainColors.textMuted} weight="duotone" />
+                  <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={isDark ? domainColors.text : domainColors.text} weight="duotone" />
                   <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
                     AI Suggestions
                   </span>
@@ -1011,7 +1009,7 @@ export const DraggableTaskCard = React.forwardRef<
             {task.description && (
               <div style={{ marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottom}px` }}>
                 <div className="flex items-center" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapDescription}px`, marginBottom: `${TASK_CARD_EXPANDABLE.spacing.marginBottomHeader}px` }}>
-                  <Icon name="file-text" size={isMobile ? TASK_CARD_ICON_SIZES.fileText.mobile : TASK_CARD_ICON_SIZES.fileText.desktop} className="text-gray-500 dark:text-gray-400" />
+                  <Icon name="file-text" size={isMobile ? TASK_CARD_ICON_SIZES.fileText.mobile : TASK_CARD_ICON_SIZES.fileText.desktop} className="text-gray-700 dark:text-gray-300" />
                   <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Description</span>
                 </div>
                 <div

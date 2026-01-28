@@ -95,23 +95,23 @@ export const TASK_CARD_THEME_COLORS = {
   },
 } as const;
 
-// Font Sizes (increased by 10%)
+// Font Sizes (increased for tab content visibility)
 export const TASK_CARD_FONT_SIZES = {
   time: {
-    mobile: 'text-[13px]', // Increased for better visibility
-    desktop: 'text-[14px]', // Increased for better visibility
+    mobile: 'text-[15px]', // Increased for better tab visibility
+    desktop: 'text-[16px]', // Increased for better tab visibility
   },
   priority: {
-    mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
-    desktop: 'text-[11px]', // 10px * 1.1 = 11px
+    mobile: 'text-[12px]', // Increased for better tab visibility
+    desktop: 'text-[13px]', // Increased for better tab visibility
   },
   tag: {
-    mobile: 'text-[10px]', // 9px * 1.1 = 9.9px ≈ 10px
-    desktop: 'text-[11px]', // 10px * 1.1 = 11px
+    mobile: 'text-[12px]', // Increased for better tab visibility
+    desktop: 'text-[13px]', // Increased for better tab visibility
   },
   duration: {
-    mobile: 'text-[16px]', // Increased from 11px to 16px (45% larger)
-    desktop: 'text-[18px]', // Increased from 12px to 18px (50% larger)
+    mobile: 'text-[18px]', // Increased for better tab visibility
+    desktop: 'text-[20px]', // Increased for better tab visibility
   },
   title: {
     mobile: 'text-[17px]', // Increased for better visibility (removed bold)
@@ -144,8 +144,8 @@ export const TASK_CARD_FONT_SIZES = {
 // Tailwind: w-2 = 0.5rem = 8px, w-2.5 = 0.625rem = 10px, w-3 = 0.75rem = 12px, w-3.5 = 0.875rem = 14px, w-4 = 1rem = 16px
 export const TASK_CARD_ICON_SIZES = {
   clock: {
-    mobile: 14, // Increased for better visibility (w-3.5 = 14px)
-    desktop: 16, // Increased for better visibility (w-4 = 16px)
+    mobile: 16, // Increased for better tab visibility (w-4 = 16px)
+    desktop: 18, // Increased for better tab visibility (w-4.5 = 18px)
   },
   repeat: {
     mobile: 18, // w-4.5 = 18px - increased for better visibility
@@ -160,8 +160,8 @@ export const TASK_CARD_ICON_SIZES = {
     desktop: 12, // w-3 = 12px
   },
   checkbox: {
-    mobile: 20, // w-5 = 20px - increased for better mobile touch target (minimum 20px recommended)
-    desktop: 16, // w-4 = 16px (standard size)
+    mobile: 22, // Increased for better tab visibility
+    desktop: 20, // Increased for better tab visibility
   },
   subtask: {
     mobile: 8, // w-2 = 8px
@@ -232,13 +232,13 @@ export const TASK_CARD_TAB_SPACING = {
   } as const,
   // Gap between items inside tab
   gap: {
-    mobile: '0.375rem', // 6px - gap between tab content items
-    desktop: '0.5rem', // 8px - gap between tab content items
+    mobile: '0.5rem', // 8px - increased gap for better spacing
+    desktop: '0.625rem', // 10px - increased gap for better spacing
   } as const,
-  // Tab width - consistent width for all tabs
+  // Tab width - fixed width for all tabs (same size)
   width: {
-    mobile: '90%', // 90% of card width on mobile
-    desktop: '90%', // 90% of card width on desktop
+    mobile: '92%', // Fixed 92% width for all tabs on mobile
+    desktop: '92%', // Fixed 92% width for all tabs on desktop
   } as const,
 } as const;
 
