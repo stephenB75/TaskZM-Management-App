@@ -654,21 +654,40 @@ export function DraggableTodayAgendaTask({
                 )}
 
                 {/* Tracked Time (if exists and not running) - shown at top (mobile and desktop for tasks < 45 mins) */}
-                {task.estimatedTime && task.estimatedTime < 45 && task.actualTime && task.actualTime > 0 && !timerState.isRunning && (
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <Icon 
-                      name="timer"
-                      size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop}
-                      style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                    />
-                    <span 
-                      className={cn("font-medium", isMobile ? TASK_CARD_FONT_SIZES.trackedTime.mobile : TASK_CARD_FONT_SIZES.trackedTime.desktop)}
-                      style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                    >
-                      {formatTimer(task.actualTime)}
-                    </span>
-                  </div>
-                )}
+                {task.estimatedTime && task.estimatedTime < 45 && (() => {
+                  // UPDATED: For recurring tasks, time is tracked on the base task to maintain series progress
+                  let displayTime = task.actualTime || 0;
+                  if (isRecurringTask) {
+                    // Extract base task ID (remove any existing occurrence suffix)
+                    const baseTaskId = task.id.includes('__') 
+                      ? task.id.split('__')[0] 
+                      : task.id.includes('_completed_')
+                        ? task.id.split('_completed_')[0]
+                        : task.id;
+                    
+                    // Use base task time - time tracking is on the base task for series progress
+                    const baseTask = tasks.find(t => t.id === baseTaskId);
+                    if (baseTask && baseTask.actualTime) {
+                      displayTime = baseTask.actualTime;
+                    }
+                  }
+                  
+                  return displayTime > 0 && !timerState.isRunning ? (
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      <Icon 
+                        name="timer"
+                        size={isMobile ? TASK_CARD_ICON_SIZES.timer.mobile : TASK_CARD_ICON_SIZES.timer.desktop}
+                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                      />
+                      <span 
+                        className={cn("font-medium", isMobile ? TASK_CARD_FONT_SIZES.trackedTime.mobile : TASK_CARD_FONT_SIZES.trackedTime.desktop)}
+                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                      >
+                        {formatTimer(displayTime)}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
 
               <button
@@ -795,7 +814,20 @@ export function DraggableTodayAgendaTask({
 
             {/* Assignee Display and Time Tracker - Inline Layout at bottom left */}
             {(task.assignedTo && task.assignedTo.length > 0) || 
-             (task.estimatedTime && task.estimatedTime >= 45 && ((hasFeature("pomodoroTimer") && timerState.isRunning) || (task.actualTime && task.actualTime > 0))) ||
+             (task.estimatedTime && task.estimatedTime >= 45 && (() => {
+               // UPDATED: For recurring tasks, check base task time
+               let hasTime = task.actualTime && task.actualTime > 0;
+               if (isRecurringTask && !hasTime) {
+                 const baseTaskId = task.id.includes('__') 
+                   ? task.id.split('__')[0] 
+                   : task.id.includes('_completed_')
+                     ? task.id.split('_completed_')[0]
+                     : task.id;
+                 const baseTask = tasks.find(t => t.id === baseTaskId);
+                 hasTime = baseTask && baseTask.actualTime && baseTask.actualTime > 0;
+               }
+               return (hasFeature("pomodoroTimer") && timerState.isRunning) || hasTime;
+             })()) ||
              (isMobile && task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer")) ? (
               <div
                 className={cn(
@@ -912,35 +944,58 @@ export function DraggableTodayAgendaTask({
                 )}
 
                 {/* Tracked Time (if exists) - only for tasks >= 45 mins, tasks < 45 mins show at top) */}
-                {task.estimatedTime && task.estimatedTime >= 45 && task.actualTime && task.actualTime > 0 && !(hasFeature("pomodoroTimer") && timerState.isRunning) && (
-                  <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
-                    <Icon 
-                      name="timer"
-                      size={isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop}
-                      className="flex-shrink-0"
-                      style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                    />
-                    <span 
-                      className={cn("font-medium whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}
-                      style={{ color: TASK_CARD_THEME_COLORS.primary }}
-                    >
-                      {formatTimer(task.actualTime)} {TASK_CARD_TEXT.tracked}
-                    </span>
-                  </div>
-                )}
+                {task.estimatedTime && task.estimatedTime >= 45 && (() => {
+                  // UPDATED: For recurring tasks, time is tracked on the base task to maintain series progress
+                  let displayTime = task.actualTime || 0;
+                  if (isRecurringTask) {
+                    // Extract base task ID (remove any existing occurrence suffix)
+                    const baseTaskId = task.id.includes('__') 
+                      ? task.id.split('__')[0] 
+                      : task.id.includes('_completed_')
+                        ? task.id.split('_completed_')[0]
+                        : task.id;
+                    
+                    // Use base task time - time tracking is on the base task for series progress
+                    const baseTask = tasks.find(t => t.id === baseTaskId);
+                    if (baseTask && baseTask.actualTime) {
+                      displayTime = baseTask.actualTime;
+                    }
+                  }
+                  
+                  return displayTime > 0 && !(hasFeature("pomodoroTimer") && timerState.isRunning) ? (
+                    <div className={cn("flex items-center flex-shrink-0", isMobile ? "gap-0.5" : "gap-1")}>
+                      <Icon 
+                        name="timer"
+                        size={isMobile ? TASK_CARD_ICON_SIZES.timerLarge.mobile : TASK_CARD_ICON_SIZES.timerLarge.desktop}
+                        className="flex-shrink-0"
+                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                      />
+                      <span 
+                        className={cn("font-medium whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}
+                        style={{ color: TASK_CARD_THEME_COLORS.primary }}
+                      >
+                        {formatTimer(displayTime)} {TASK_CARD_TEXT.tracked}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
 
                 {/* Pomodoro Timer - Inline on mobile, separate on desktop */}
                 {isMobile && task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && (() => {
-                  // For recurring tasks, get the correct occurrence's time (completed occurrence if exists, otherwise current task)
+                  // UPDATED: For recurring tasks, time is tracked on the base task to maintain series progress
                   let occurrenceTime = task.actualTime || 0;
-                  if (isRecurringTask && task.scheduledDate) {
-                    const scheduledDate = new Date(task.scheduledDate);
-                    scheduledDate.setHours(0, 0, 0, 0);
-                    const scheduledDateKey = getDateString(scheduledDate);
-                    const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
-                    const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
-                    if (completedOccurrence && completedOccurrence.actualTime) {
-                      occurrenceTime = completedOccurrence.actualTime;
+                  if (isRecurringTask) {
+                    // Extract base task ID (remove any existing occurrence suffix)
+                    const baseTaskId = task.id.includes('__') 
+                      ? task.id.split('__')[0] 
+                      : task.id.includes('_completed_')
+                        ? task.id.split('_completed_')[0]
+                        : task.id;
+                    
+                    // Use base task time - time tracking is on the base task for series progress
+                    const baseTask = tasks.find(t => t.id === baseTaskId);
+                    if (baseTask && baseTask.actualTime) {
+                      occurrenceTime = baseTask.actualTime;
                     }
                   }
                   
@@ -966,16 +1021,20 @@ export function DraggableTodayAgendaTask({
 
             {/* Pomodoro Timer - Bottom right on desktop only (mobile is inline with assignee/tracker above) */}
             {task.estimatedTime && task.estimatedTime >= 45 && hasFeature("pomodoroTimer") && !isMobile && (() => {
-              // For recurring tasks, get the correct occurrence's time (completed occurrence if exists, otherwise current task)
+              // UPDATED: For recurring tasks, time is tracked on the base task to maintain series progress
               let occurrenceTime = task.actualTime || 0;
-              if (isRecurringTask && task.scheduledDate) {
-                const scheduledDate = new Date(task.scheduledDate);
-                scheduledDate.setHours(0, 0, 0, 0);
-                const scheduledDateKey = getDateString(scheduledDate);
-                const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
-                const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
-                if (completedOccurrence && completedOccurrence.actualTime) {
-                  occurrenceTime = completedOccurrence.actualTime;
+              if (isRecurringTask) {
+                // Extract base task ID (remove any existing occurrence suffix)
+                const baseTaskId = task.id.includes('__') 
+                  ? task.id.split('__')[0] 
+                  : task.id.includes('_completed_')
+                    ? task.id.split('_completed_')[0]
+                    : task.id;
+                
+                // Use base task time - time tracking is on the base task for series progress
+                const baseTask = tasks.find(t => t.id === baseTaskId);
+                if (baseTask && baseTask.actualTime) {
+                  occurrenceTime = baseTask.actualTime;
                 }
               }
               

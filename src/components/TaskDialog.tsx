@@ -1347,17 +1347,17 @@ export function TaskDialog({
               firstOccurrenceDate.setDate(today.getDate() + (nextAfterToday - currentDay));
             } else {
               // First occurrence is in the next interval week
-              const daysUntilNextWeek = 7 - currentDay;
+              const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
               const daysToFirstDay = sortedDays[0];
-              const daysToAdd = daysUntilNextWeek + daysToFirstDay + (7 * (recurrenceInterval - 1));
+              const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (recurrenceInterval - 1));
               firstOccurrenceDate.setDate(today.getDate() + daysToAdd);
             }
           }
         } else {
           // First occurrence is in the next interval week
-          const daysUntilNextWeek = 7 - currentDay;
+          const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - currentDay;
           const daysToFirstDay = sortedDays[0];
-          const daysToAdd = daysUntilNextWeek + daysToFirstDay + (7 * (recurrenceInterval - 1));
+          const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (recurrenceInterval - 1));
           firstOccurrenceDate = new Date(today);
           firstOccurrenceDate.setDate(today.getDate() + daysToAdd);
         }
@@ -1818,62 +1818,21 @@ export function TaskDialog({
   const handlePomodoroTimeUpdate = async (minutes: number) => {
     if (task) {
       try {
-        // For recurring tasks, update the specific occurrence (completed occurrence if exists, otherwise current task)
-        // This ensures time is tracked per occurrence, not shared across the series
+        // UPDATED: For recurring tasks, track time on the base task to maintain series progress
+        // Time tracking is on the initial/base task, not per-occurrence
         const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
-        if (isRecurringTask && task.scheduledDate) {
-          const scheduledDate = new Date(task.scheduledDate);
-          scheduledDate.setHours(0, 0, 0, 0);
-          const scheduledDateKey = getDateString(scheduledDate);
-          const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
+        if (isRecurringTask) {
+          // Extract base task ID (remove any existing occurrence suffix)
+          const baseTaskId = task.id.includes('__') 
+            ? task.id.split('__')[0] 
+            : task.id.includes('_completed_')
+              ? task.id.split('_completed_')[0]
+              : task.id;
           
-          // Check if completed occurrence exists (task was already marked done)
-          const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
-          if (completedOccurrence) {
-            // Update the completed occurrence with tracked time
-            await updateTask(completedOccurrenceId, {
-              actualTime: minutes,
-            });
-          } else {
-            // For active occurrences, ensure we're updating the occurrence-specific task
-            // Check if occurrence-specific task exists (using same ID pattern as pomodoro timer)
-            const activeOccurrenceId = `${task.id}__${scheduledDateKey}`;
-            const activeOccurrence = tasks.find(t => t.id === activeOccurrenceId);
-            
-            if (activeOccurrence) {
-              // Update the occurrence-specific task
-              await updateTask(activeOccurrenceId, {
-                actualTime: minutes,
-              });
-            } else {
-              // No occurrence-specific task exists - create one to track time per occurrence
-              // This ensures time is always stored per occurrence, not on the base task
-              const baseTask = tasks.find(t => t.id === task.id);
-              if (baseTask && baseTask.recurrence && baseTask.recurrence.type !== 'none' && workspaceId && accessToken) {
-                // Create occurrence-specific task for time tracking (similar to completed occurrences)
-                // Mark as non-recurring to prevent it from creating additional occurrences
-                const occurrenceTask: Task = {
-                  ...baseTask,
-                  id: activeOccurrenceId,
-                  actualTime: minutes,
-                  recurrence: { type: 'none', interval: 1 }, // Mark as non-recurring (this is a specific occurrence)
-                  // Keep the same scheduledDate so it appears on the correct date
-                  scheduledDate: baseTask.scheduledDate,
-                  // Preserve all other properties from base task
-                  updatedAt: new Date().toISOString(),
-                };
-                // Save directly to API (similar to how completed occurrences are created)
-                await api.saveTask(workspaceId, occurrenceTask);
-                // Reload tasks to get the new occurrence-specific task
-                await syncWithServer(workspaceId, true);
-              } else {
-                // Fallback: update current task if we can't create occurrence-specific task
-                await updateTask(task.id, {
-                  actualTime: minutes,
-                });
-              }
-            }
-          }
+          // Update the base task with tracked time - this maintains progress across the series
+          await updateTask(baseTaskId, {
+            actualTime: minutes,
+          });
         } else {
           // Non-recurring task - update normally
           await updateTask(task.id, {

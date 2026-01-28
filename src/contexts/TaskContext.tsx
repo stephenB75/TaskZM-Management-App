@@ -1956,16 +1956,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       ...statusUpdates
     };
     
-    // Handle recurring task completion: create completed occurrence and advance to next occurrence
+    // Handle recurring task completion: create completed occurrence only (don't advance to next occurrence)
+    // UPDATED: When closing a recurring task, only close the current occurrence, don't create next occurrence
     const isRecurringTask = currentTask.recurrence && currentTask.recurrence.type !== 'none';
     let completedOccurrence: Task | null = null;
-    let nextOccurrenceTask: Task | null = null;
     
     if (isRecurringTask && isBeingMarkedComplete && currentTask.scheduledDate) {
       // Check if this task is already being processed (prevent race conditions)
       if (nextOccurrenceCreationLock.current.has(taskId)) {
         logger.debug('Recurring task completion already in progress, skipping duplicate creation');
-        // Still need to update the task status to done, just don't create next occurrence
+        // Still need to update the task status to done
         // Continue with normal update flow below
       } else {
         // Acquire lock only if not already locked
@@ -1982,11 +1982,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const existingCompletedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
           if (existingCompletedOccurrence) {
             logger.debug('Completed occurrence already exists, skipping creation', { completedOccurrenceId });
-            // Don't create completed occurrence, but still need to check/update main task
-            // Continue with next occurrence logic below
+            // Don't create completed occurrence if it already exists
           } else {
-            // 1. Create completed occurrence (stays visible, grayed out on original date)
-            // Preserve actualTime from the current occurrence so time tracking is per-occurrence
+            // Create completed occurrence (stays visible, grayed out on original date)
+            // UPDATED: Don't preserve actualTime here - time is tracked on base task for series progress
             completedOccurrence = {
               ...currentTask,
               id: completedOccurrenceId,
@@ -1994,106 +1993,28 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               status: 'done',
               completedAt: completedAt,
               updatedAt: completedAt,
-              // Preserve actualTime so tracked time is maintained for this specific occurrence
-              actualTime: currentTask.actualTime || 0,
+              // Don't preserve actualTime - time tracking is on base task for series progress
+              actualTime: null,
               // Keep original scheduledDate so it appears on the correct date
             };
           }
           
-          // 2. Calculate next occurrence date (from the scheduled date, not today)
-          const nextDate = calculateNextOccurrenceDate(currentTask.recurrence, scheduledDate);
-          
-          // Check if next occurrence already exists (same task ID with next date)
-          // This prevents duplicates if the task was already advanced to the next occurrence
-          let shouldCreateNextOccurrence = true;
-          if (nextDate) {
-            nextDate.setHours(0, 0, 0, 0); // Normalize to start of day
-            const nextDateKey = getDateString(nextDate);
-            const currentDateKey = scheduledDateKey;
-            
-            // Check if task is already at the next occurrence date (from a previous completion)
-            if (currentDateKey === nextDateKey) {
-              logger.debug('Task is already at next occurrence date, marking as done without creating new occurrence', { 
-                taskId, 
-                currentDate: currentDateKey,
-                nextDate: nextDateKey
-              });
-              // Task is already at next occurrence - just mark as done, don't create another
-              shouldCreateNextOccurrence = false;
-              nextOccurrenceTask = null;
-            } else {
-              // Check if a task with same ID already exists at the next date
-              // Exclude completed occurrences (they have _completed_ in their ID)
-              const existingNextOccurrence = tasks.find(t => {
-                if (t.id !== taskId) return false; // Must be same task ID
-                if (t.id.includes('_completed_')) return false; // Exclude completed occurrences
-                if (!t.scheduledDate) return false;
-                try {
-                  const tDate = new Date(t.scheduledDate);
-                  tDate.setHours(0, 0, 0, 0);
-                  const tDateKey = getDateString(tDate);
-                  return tDateKey === nextDateKey && t.status !== 'done'; // Same date and not completed
-                } catch {
-                  return false;
-                }
-              });
-              
-              if (existingNextOccurrence) {
-                logger.debug('Next occurrence already exists, skipping creation', { 
-                  taskId, 
-                  nextDate: nextDateKey,
-                  existingTaskId: existingNextOccurrence.id,
-                  existingTaskStatus: existingNextOccurrence.status
-                });
-                // Don't create next occurrence, the task is already at the next date
-                shouldCreateNextOccurrence = false;
-                nextOccurrenceTask = null;
-              }
-            }
-          }
-          
-          // Only create next occurrence if it doesn't already exist
-          if (shouldCreateNextOccurrence && nextDate) {
-            // Check if recurrence has ended
-            if (currentTask.recurrence.endDate) {
-              const endDate = new Date(currentTask.recurrence.endDate);
-              endDate.setHours(23, 59, 59, 999);
-              if (nextDate > endDate) {
-                // Recurrence has ended, don't create next occurrence
-                logger.debug('Recurrence has ended, not creating next occurrence');
-                nextOccurrenceTask = null;
-              } else {
-                // 3. Update main task to next occurrence
-                nextOccurrenceTask = {
-                  ...currentTask,
-                  scheduledDate: nextDate.toISOString(),
-                  status: 'todo',
-                  completedAt: null,
-                  updatedAt: completedAt,
-                  // Keep recurrence config unchanged
-                };
-              }
-            } else {
-              // 3. Update main task to next occurrence (no end date)
-              nextOccurrenceTask = {
-                ...currentTask,
-                scheduledDate: nextDate.toISOString(),
-                status: 'todo',
-                completedAt: null,
-                updatedAt: completedAt,
-                // Keep recurrence config unchanged
-              };
-            }
-          } else if (!nextDate) {
-            // No next occurrence possible (invalid recurrence config)
-            logger.warn('Could not calculate next occurrence date for recurring task', currentTask);
-            nextOccurrenceTask = null;
-          }
+          // UPDATED: Don't create next occurrence - just mark current occurrence as done
+          // The base recurring task remains active and will appear on future dates via isDateInRecurrence()
+          logger.debug('Recurring task marked complete - only closing current occurrence, not advancing to next', {
+            taskId,
+            scheduledDate: scheduledDateKey,
+          });
         } catch (error) {
-          logger.error('Error creating next occurrence for recurring task:', error);
+          logger.error('Error creating completed occurrence for recurring task:', error);
           // Release lock on error
           nextOccurrenceCreationLock.current.delete(taskId);
           throw error;
+        } finally {
+          // Release lock after a short delay to ensure server save completes
+          setTimeout(() => {
+            nextOccurrenceCreationLock.current.delete(taskId);
+          }, TIMING_CONSTANTS.taskSync.uiUpdateDelay);
         }
       }
     }
@@ -2145,46 +2066,25 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        // Save next occurrence task if created, otherwise save the updated task
-        // Always save if:
-        // 1. We created a next occurrence task (recurring task marked complete)
-        // 2. We're updating a non-recurring task
-        // 3. We're updating a recurring task's scheduledDate (not marking complete)
-        const taskToSave = nextOccurrenceTask || updatedTask;
+        // UPDATED: For recurring tasks marked complete, don't advance to next occurrence
+        // Just save the completed occurrence and keep the base task unchanged
+        // The base task will continue to appear on future dates via isDateInRecurrence()
         const hasScheduledDateUpdate = updates.scheduledDate !== undefined;
         
-        if (nextOccurrenceTask) {
-          // We created a next occurrence - always save it
-          // For recurring tasks, only update if the scheduled date actually changed
-          if (isRecurringTask) {
-            const currentScheduledDate = currentTask.scheduledDate ? getDateString(new Date(currentTask.scheduledDate)) : null;
-            const newScheduledDate = nextOccurrenceTask.scheduledDate ? getDateString(new Date(nextOccurrenceTask.scheduledDate)) : null;
-            if (currentScheduledDate === newScheduledDate) {
-              logger.debug('Task scheduled date unchanged, skipping save to prevent duplicate', { 
-                taskId, 
-                scheduledDate: newScheduledDate 
-              });
-            } else {
-              await api.saveTask(validWorkspaceId, taskToSave);
-            }
-          } else {
-            await api.saveTask(validWorkspaceId, taskToSave);
-          }
-        } else if (!isRecurringTask || hasScheduledDateUpdate) {
+        if (!isRecurringTask || hasScheduledDateUpdate) {
           // Save non-recurring tasks, or recurring tasks when scheduledDate is being updated
-          await api.saveTask(validWorkspaceId, taskToSave);
+          await api.saveTask(validWorkspaceId, updatedTask);
+        } else if (isRecurringTask && isBeingMarkedComplete) {
+          // For recurring tasks marked complete, don't update the base task
+          // The base task stays active and will appear on future dates
+          // Only the completed occurrence is saved (already saved above)
+          logger.debug('Recurring task marked complete - base task unchanged, only completed occurrence saved', {
+            taskId,
+            completedOccurrenceId: completedOccurrence?.id,
+          });
         } else {
-          // Recurring task update without scheduledDate change and not creating next occurrence
-          // This might be a status change or other update - still save it
-          await api.saveTask(validWorkspaceId, taskToSave);
-        }
-        
-        // Release lock after save completes
-        if (isRecurringTask && isBeingMarkedComplete) {
-          // Release lock after a short delay to ensure server save completes
-          setTimeout(() => {
-            nextOccurrenceCreationLock.current.delete(taskId);
-          }, TIMING_CONSTANTS.taskSync.uiUpdateDelay);
+          // Other recurring task updates (status change, etc.) - save normally
+          await api.saveTask(validWorkspaceId, updatedTask);
         }
         
         // Reload from server to get the authoritative version

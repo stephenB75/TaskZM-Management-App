@@ -239,13 +239,9 @@ export const DraggableTaskCard = React.forwardRef<
       minutes: number,
     ) => {
       try {
-        // For recurring tasks, update the specific occurrence using the same ID pattern as pomodoro timer
-        // This ensures time is tracked per occurrence and matches the timer ID
+        // UPDATED: For recurring tasks, track time on the base task to maintain series progress
+        // Time tracking is on the initial/base task, not per-occurrence
         if (isRecurringTask && task.scheduledDate) {
-          const scheduledDate = new Date(task.scheduledDate);
-          scheduledDate.setHours(0, 0, 0, 0);
-          const scheduledDateKey = getDateString(scheduledDate);
-          
           // Extract base task ID (remove any existing occurrence suffix)
           const baseTaskId = task.id.includes('__') 
             ? task.id.split('__')[0] 
@@ -253,55 +249,10 @@ export const DraggableTaskCard = React.forwardRef<
               ? task.id.split('_completed_')[0]
               : task.id;
           
-          const completedOccurrenceId = `${baseTaskId}_completed_${scheduledDateKey}`;
-          const activeOccurrenceId = `${baseTaskId}__${scheduledDateKey}`;
-          
-          // Check if completed occurrence exists (task was already marked done)
-          const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
-          if (completedOccurrence) {
-            // Update the completed occurrence with tracked time
-            await updateTask(completedOccurrenceId, {
-              actualTime: minutes,
-            });
-          } else {
-            // For active occurrences, check if occurrence-specific task exists
-            // If not, create one to ensure time is tracked per occurrence (not on base task)
-            const activeOccurrence = tasks.find(t => t.id === activeOccurrenceId);
-            if (activeOccurrence) {
-              // Update the occurrence-specific task
-              await updateTask(activeOccurrenceId, {
-                actualTime: minutes,
-              });
-            } else {
-              // No occurrence-specific task exists - create one to track time per occurrence
-              // This ensures time is always stored per occurrence, not on the base task
-              const baseTask = tasks.find(t => t.id === baseTaskId);
-              if (baseTask && workspaceId && accessToken) {
-                // Create occurrence-specific task for time tracking (similar to completed occurrences)
-                // Mark as non-recurring to prevent it from creating additional occurrences
-                const occurrenceTask: Task = {
-                  ...baseTask,
-                  id: activeOccurrenceId,
-                  actualTime: minutes,
-                  recurrence: { type: 'none', interval: 1 }, // Mark as non-recurring (this is a specific occurrence)
-                  // Keep the same scheduledDate so it appears on the correct date
-                  scheduledDate: baseTask.scheduledDate,
-                  // Preserve all other properties from base task
-                  updatedAt: new Date().toISOString(),
-                };
-                // Save directly to API (similar to how completed occurrences are created)
-                await api.saveTask(workspaceId, occurrenceTask);
-                // Reload tasks to get the new occurrence-specific task
-                // The sync will pick it up automatically, but we can trigger a reload
-                await syncWithServer(workspaceId, true);
-              } else {
-                // Fallback: update base task if we can't create occurrence-specific task
-                await updateTask(baseTaskId, {
-                  actualTime: minutes,
-                });
-              }
-            }
-          }
+          // Update the base task with tracked time - this maintains progress across the series
+          await updateTask(baseTaskId, {
+            actualTime: minutes,
+          });
         } else {
           // Non-recurring task - update normally
           await updateTask(task.id, {
@@ -980,38 +931,19 @@ export const DraggableTaskCard = React.forwardRef<
               {!pomodoroIsRunning && (() => {
                 // For recurring tasks, get the correct occurrence's time (completed occurrence if exists, otherwise current task)
                 let occurrenceTime = task.actualTime || 0;
-                if (isRecurringTask && task.scheduledDate) {
-                  const scheduledDate = new Date(task.scheduledDate);
-                  scheduledDate.setHours(0, 0, 0, 0);
-                  const scheduledDateKey = getDateString(scheduledDate);
-                  
-                  // Extract base task ID
+                // UPDATED: For recurring tasks, time is tracked on the base task to maintain series progress
+                if (isRecurringTask) {
+                  // Extract base task ID (remove any existing occurrence suffix)
                   const baseTaskId = task.id.includes('__') 
                     ? task.id.split('__')[0] 
                     : task.id.includes('_completed_')
                       ? task.id.split('_completed_')[0]
                       : task.id;
                   
-                  const completedOccurrenceId = `${baseTaskId}_completed_${scheduledDateKey}`;
-                  const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
-                  
-                  // Use completed occurrence time if it exists
-                  // For active occurrences, check if there's an occurrence-specific task, otherwise use base task time
-                  if (completedOccurrence && completedOccurrence.actualTime) {
-                    occurrenceTime = completedOccurrence.actualTime;
-                  } else {
-                    // For active occurrences, check if occurrence-specific task exists, otherwise use base task
-                    const activeOccurrenceId = `${baseTaskId}__${scheduledDateKey}`;
-                    const activeOccurrence = tasks.find(t => t.id === activeOccurrenceId);
-                    if (activeOccurrence && activeOccurrence.actualTime) {
-                      occurrenceTime = activeOccurrence.actualTime;
-                    } else {
-                      // Use base task time (for active occurrences, time is stored on base task)
-                      const baseTask = tasks.find(t => t.id === baseTaskId);
-                      if (baseTask && baseTask.actualTime) {
-                        occurrenceTime = baseTask.actualTime;
-                      }
-                    }
+                  // Use base task time - time tracking is on the base task for series progress
+                  const baseTask = tasks.find(t => t.id === baseTaskId);
+                  if (baseTask && baseTask.actualTime) {
+                    occurrenceTime = baseTask.actualTime;
                   }
                 }
                 
@@ -1029,21 +961,6 @@ export const DraggableTaskCard = React.forwardRef<
                         style={{ color: TASK_CARD_THEME_COLORS.primary }}
                       >
                         {formatTimer(occurrenceTime)} {TASK_CARD_TEXT.tracked}
-                        {/* Show series total for recurring tasks */}
-                        {isRecurringTask && (() => {
-                          // Extract base task ID (remove occurrence suffix if present)
-                          const baseTaskId = task.id.includes('__') 
-                            ? task.id.split('__')[0] 
-                            : task.id.includes('_completed_')
-                              ? task.id.split('_completed_')[0]
-                              : task.id;
-                          const seriesTotal = calculateRecurringTaskSeriesTotalTime(baseTaskId, tasks);
-                          // Only show total if it's different from current (meaning other occurrences have time tracked)
-                          if (seriesTotal > occurrenceTime) {
-                            return ` (Series: ${formatTimer(seriesTotal)})`;
-                          }
-                          return null;
-                        })()}
                       </span>
                     </div>
                   );
