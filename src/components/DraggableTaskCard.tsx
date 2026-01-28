@@ -64,6 +64,7 @@ import {
   TASK_CARD_TEXT,
   TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS,
   TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS_LIGHT,
+  TASK_CARD_ARIA_AND_LABELS,
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";

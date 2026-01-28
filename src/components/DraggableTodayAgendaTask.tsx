@@ -51,6 +51,7 @@ import {
   TASK_CARD_WIDTHS,
   TASK_CARD_TEXT_COLORS,
   TASK_CARD_ICON_COLORS,
+  TASK_CARD_ARIA_AND_LABELS,
 } from "../lib/task-card-constants";
 import { Z_INDEX } from "../lib/layout-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
