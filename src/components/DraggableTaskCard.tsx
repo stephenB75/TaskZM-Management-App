@@ -641,7 +641,7 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {/* Top Tab Section - Pill-shaped tab (rounded square with moderate rounded corners) centered with space from top */}
           <div className="flex justify-center" style={{ marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop }}>
-            {/* Pill-shaped tab with priority color - centered, fixed width, containing all content, less rounded corners */}
+            {/* Pill-shaped tab with priority color - centered, full width with small margin, containing all content, less rounded corners */}
             <div 
               className="rounded-lg flex items-center justify-between"
               style={{ 
@@ -649,16 +649,16 @@ export const DraggableTaskCard = React.forwardRef<
                 height: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
-                width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop, // Fixed width for all tabs
+                width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop, // Full width with small margin from card borders
                 paddingLeft: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
                 paddingRight: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
               }}
             >
-              <div className="flex items-center flex-1 min-w-0 justify-center whitespace-nowrap overflow-hidden" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
+              <div className="flex items-center flex-1 min-w-0 justify-center whitespace-nowrap overflow-hidden text-ellipsis" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
                 {/* Scheduled Time with Clock Icon */}
                 {scheduledTimeLabel && (
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-white" weight="bold" />
+                  <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap">
+                    <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-white flex-shrink-0" weight="bold" />
                     <span className={cn("text-white", "font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                       {scheduledTimeLabel}
                     </span>

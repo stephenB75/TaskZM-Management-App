@@ -235,10 +235,10 @@ export const TASK_CARD_TAB_SPACING = {
     mobile: '0.5rem', // 8px - increased gap for better spacing
     desktop: '0.625rem', // 10px - increased gap for better spacing
   } as const,
-  // Tab width - fixed width for all tabs (same size)
+  // Tab width - full width with small margin from card borders
   width: {
-    mobile: '92%', // Fixed 92% width for all tabs on mobile
-    desktop: '92%', // Fixed 92% width for all tabs on desktop
+    mobile: '96%', // 96% width - full width with small margin from card borders on mobile
+    desktop: '96%', // 96% width - full width with small margin from card borders on desktop
   } as const,
   // Tab padding - horizontal padding inside tab
   padding: {
