@@ -315,10 +315,10 @@ export const DraggableTaskCard = React.forwardRef<
         baseColor = tabColor;
       }
       
-      // Use very light opacity (15-20%) for the gradient to create subtle contrast
-      // This makes the background match the tab color but much lighter
+      // Use increased opacity (30-40%) for the gradient to create more prominent priority color
+      // This makes the background match the tab color with increased visibility
       // Multiply by existing opacity if it was already in rgba format
-      const gradientOpacity = (isDark ? 0.15 : 0.20) * existingOpacity;
+      const gradientOpacity = (isDark ? 0.30 : 0.40) * existingOpacity;
       const gradientColor = getColorWithOpacity(baseColor, gradientOpacity);
       
       // Gradient from priority color (light) at top to white/background at bottom
@@ -638,86 +638,82 @@ export const DraggableTaskCard = React.forwardRef<
             }
           }}
         >
-          {/* Top Tab Section - Rotated 180 degrees: rounded corners at bottom, straight edge at top, touches card top border - Color based on priority */}
-          <div 
-            className="flex items-center justify-between px-2 pb-1.5 rounded-b-lg"
-            style={{ 
-              gap: isMobile ? '0.5rem' : '0.75rem',
-              backgroundColor: getPriorityTabBackgroundColor(task.priority),
-              marginTop: isMobile ? '-0.25rem' : '-0.375rem', // Negative margin to offset card's top padding (py-1 = 0.25rem, py-1.5 = 0.375rem)
-              paddingTop: 0,
-              borderTopLeftRadius: 0,
-              borderTopRightRadius: 0,
-              height: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-              minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-            }}
-          >
-            <div className="flex items-center flex-1 min-w-0 flex-wrap" style={{ gap: isMobile ? '0.375rem' : '0.5rem' }}>
-              {/* Scheduled Time with Clock Icon */}
-              {scheduledTimeLabel && (
-                <div className="flex items-center gap-0.5 flex-shrink-0">
-                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-gray-600 dark:text-gray-300" />
-                  <span className={cn("text-gray-700 dark:text-gray-200 font-normal", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-                    {scheduledTimeLabel}
-                  </span>
-                </div>
-              )}
-
-              {/* Priority Badge */}
-              <Badge
-                variant="outline"
-                className={cn(
-                  "rounded-md border capitalize flex-shrink-0 font-bold",
-                  getPriorityBadgeColor(task.priority),
-                  isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
-                )}
-              >
-                {task.priority}
-              </Badge>
-
-              {/* Tag Badge */}
-              {task.tags && task.tags.length > 0 && (
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "border-0 flex-shrink-0",
-                    isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
-                  )}
-                  style={{
-                    backgroundColor: isDark ? TASK_CARD_TAG_COLORS.background.dark : TASK_CARD_TAG_COLORS.background.light,
-                    color: isDark ? TASK_CARD_TAG_COLORS.text.dark : TASK_CARD_TAG_COLORS.text.light,
-                  }}
-                >
-                  {task.tags[0]}
-                </Badge>
-              )}
-
-              {/* Duration */}
-              {task.estimatedTime && (
-                <span className={cn("text-gray-600 dark:text-gray-300 font-semibold flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
-                  {formatDuration(task.estimatedTime)}
-                </span>
-              )}
-            </div>
-
-            {/* Complete Checkbox */}
-            <button
-              onClick={handleToggleComplete}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="flex-shrink-0 hover:opacity-80 transition-opacity"
+          {/* Top Tab Section - Pill-shaped tab (rounded square with very rounded corners) centered at the top with content inside */}
+          <div className="flex justify-center" style={{ marginTop: isMobile ? '-0.25rem' : '-0.375rem' }}>
+            {/* Pill-shaped tab with priority color - centered, containing all content, wider to fit content */}
+            <div 
+              className="rounded-full flex items-center justify-between px-2"
+              style={{ 
+                backgroundColor: getPriorityTabBackgroundColor(task.priority),
+                height: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
+                minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
+                gap: isMobile ? '0.375rem' : '0.5rem',
+                width: 'auto',
+                minWidth: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
+              }}
             >
-              <Icon 
-                name="circle"
-                size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
-                className={cn(
-                  "transition-colors flex-shrink-0",
-                  task.status === "done"
-                    ? "text-primary fill-primary"
-                    : "text-gray-300 dark:text-gray-400 hover:text-gray-400 dark:hover:text-gray-300",
+              <div className="flex items-center flex-1 min-w-0 flex-wrap justify-center" style={{ gap: isMobile ? '0.375rem' : '0.5rem' }}>
+                {/* Scheduled Time with Clock Icon */}
+                {scheduledTimeLabel && (
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-white" />
+                    <span className={cn("text-white font-normal", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                      {scheduledTimeLabel}
+                    </span>
+                  </div>
                 )}
-                weight={task.status === "done" ? "fill" : "regular"}
-              />
-            </button>
+
+                {/* Priority Badge */}
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "rounded-md border capitalize flex-shrink-0 font-bold bg-transparent border-white text-white",
+                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
+                  )}
+                >
+                  {task.priority}
+                </Badge>
+
+                {/* Tag Badge */}
+                {task.tags && task.tags.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "border-0 flex-shrink-0 bg-transparent text-white",
+                      isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
+                    )}
+                  >
+                    {task.tags[0]}
+                  </Badge>
+                )}
+
+                {/* Duration */}
+                {task.estimatedTime && (
+                  <span className={cn("text-white font-semibold flex-shrink-0", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                    {formatDuration(task.estimatedTime)}
+                  </span>
+                )}
+              </div>
+
+              {/* Complete Checkbox */}
+              <button
+                onClick={handleToggleComplete}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="flex-shrink-0 hover:opacity-80 transition-opacity"
+              >
+                <Icon 
+                  name="circle"
+                  size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
+                  className={cn(
+                    "transition-colors flex-shrink-0 text-white",
+                    task.status === "done"
+                      ? "fill-white"
+                      : "text-white",
+                  )}
+                  weight={task.status === "done" ? "fill" : "regular"}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Headline (Title) - Underneath the tab */}
