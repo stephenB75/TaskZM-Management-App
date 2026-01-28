@@ -3,7 +3,7 @@
 import { useTheme } from "../../contexts/ThemeContext";
 import { Toaster as Sonner, ToasterProps } from "sonner";
 import { useEffect, useState } from "react";
-import { TOAST_DURATION_DEFAULT_MS, VIEWPORT_BREAKPOINTS } from "../../lib/layout-constants";
+import { TOAST_DURATION_DEFAULT_MS, VIEWPORT_BREAKPOINTS, Z_INDEX } from "../../lib/layout-constants";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { actualTheme } = useTheme();
@@ -63,6 +63,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
+          zIndex: Z_INDEX.TOAST, // Ensure toasts appear above dialogs (z-100 > z-50)
         } as React.CSSProperties
       }
       {...props}

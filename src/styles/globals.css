@@ -719,6 +719,11 @@ body {
   }
 }
 
+/* Toaster Notifications - Ensure they appear above dialogs (z-100 > z-50) */
+[data-sonner-toaster] {
+  z-index: 100 !important; /* Higher than dialogs (z-50) to appear in front */
+}
+
 /* Mobile Toaster Notifications - Top Position */
 @media (max-width: 767px) {
   [data-sonner-toaster][data-position="top-center"] {
@@ -727,7 +732,7 @@ body {
     transform: translateX(-50%) !important;
     right: auto !important;
     bottom: auto !important;
-    z-index: 9999 !important;
+    z-index: 100 !important; /* Higher than dialogs (z-50) to appear in front */
   }
 
   [data-sonner-toast] {
