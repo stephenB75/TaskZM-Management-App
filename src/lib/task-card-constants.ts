@@ -240,6 +240,11 @@ export const TASK_CARD_TAB_SPACING = {
     mobile: '92%', // Fixed 92% width for all tabs on mobile
     desktop: '92%', // Fixed 92% width for all tabs on desktop
   } as const,
+  // Tab padding - horizontal padding inside tab
+  padding: {
+    mobile: '0.75rem', // 12px - increased padding for larger content
+    desktop: '1rem', // 16px - increased padding for larger content
+  } as const,
 } as const;
 
 // Standard Task Card Heights by Duration

@@ -650,16 +650,16 @@ export const DraggableTaskCard = React.forwardRef<
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
                 width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop, // Fixed width for all tabs
-                paddingLeft: isMobile ? '0.75rem' : '1rem', // Increased padding for larger content
-                paddingRight: isMobile ? '0.75rem' : '1rem',
+                paddingLeft: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
+                paddingRight: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
               }}
             >
               <div className="flex items-center flex-1 min-w-0 justify-center whitespace-nowrap overflow-hidden" style={{ gap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop }}>
                 {/* Scheduled Time with Clock Icon */}
                 {scheduledTimeLabel && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={isDark ? "text-white" : "text-gray-900"} weight="bold" />
-                    <span className={cn(isDark ? "text-white" : "text-gray-900", "font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                    <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className="text-white" weight="bold" />
+                    <span className={cn("text-white", "font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                       {scheduledTimeLabel}
                     </span>
                   </div>
@@ -670,9 +670,7 @@ export const DraggableTaskCard = React.forwardRef<
                   variant="outline"
                   className={cn(
                     "rounded-md border capitalize flex-shrink-0 font-bold bg-transparent whitespace-nowrap",
-                    isDark 
-                      ? "border-white text-white" 
-                      : "border-gray-900 text-gray-900",
+                    "border-white text-white",
                     isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                   )}
                 >
@@ -685,7 +683,7 @@ export const DraggableTaskCard = React.forwardRef<
                     variant="secondary"
                     className={cn(
                       "border-0 flex-shrink-0 bg-transparent whitespace-nowrap",
-                      isDark ? "text-white" : "text-gray-900",
+                      "text-white",
                       isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
                     )}
                   >
@@ -695,7 +693,7 @@ export const DraggableTaskCard = React.forwardRef<
 
                 {/* Duration */}
                 {task.estimatedTime && (
-                  <span className={cn(isDark ? "text-white" : "text-gray-900", "font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                  <span className={cn("text-white", "font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
@@ -711,9 +709,8 @@ export const DraggableTaskCard = React.forwardRef<
                   name="circle"
                   size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
                   className={cn(
-                    "transition-colors flex-shrink-0",
-                    isDark ? "text-white" : "text-gray-900",
-                    task.status === "done" && (isDark ? "fill-white" : "fill-gray-900"),
+                    "transition-colors flex-shrink-0 text-white",
+                    task.status === "done" && "fill-white",
                   )}
                   weight={task.status === "done" ? "fill" : "bold"}
                 />
