@@ -1343,12 +1343,8 @@ export function TaskDialog({
         : null,
     };
 
-    // For recurring tasks, if no scheduledDate is set: require date when editing (user cleared), auto-fill when creating
-    if (recurrenceType !== "none" && !finalScheduledDate) {
-      if (task?.scheduledDate) {
-        toast.error(TASK_DIALOG_UI_TEXT.recurrenceScheduleRequired);
-        return;
-      }
+    // For recurring tasks with no scheduledDate: allow unscheduling if already scheduled; auto-fill first occurrence only when creating
+    if (recurrenceType !== "none" && !finalScheduledDate && !task?.scheduledDate) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
