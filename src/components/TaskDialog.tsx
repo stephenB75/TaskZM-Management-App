@@ -1087,6 +1087,9 @@ export function TaskDialog({
       return;
     }
 
+    // Duration for slot search (used when assigning default time so tasks don't all get same time)
+    const durationForSlot = ((parseInt(estimatedHours) || 0) * 60 + (parseInt(estimatedMinutes) || 0)) || 60;
+
     // Combine scheduledDate and scheduledTime
     let finalScheduledDate = null;
     // Use month/day/year selectors if available, otherwise fall back to scheduledDate
@@ -1128,7 +1131,9 @@ export function TaskDialog({
           if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < HOURS_PER_DAY && minutes >= 0 && minutes < MINUTES_PER_HOUR) {
             dateWithTime.setHours(hours, minutes, 0, 0);
           } else if (recurrenceType !== "none") {
-            dateWithTime.setHours(9, 0, 0, 0); // Recurring: default 9 AM when time invalid
+            dateWithTime.setHours(9, 0, 0, 0);
+            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
+            dateWithTime.setTime(slot.getTime());
           }
         } else if (scheduledTime) {
           // Fallback to old format if needed
@@ -1140,10 +1145,13 @@ export function TaskDialog({
             dateWithTime.setHours(hours, minutes, 0, 0);
           } else if (recurrenceType !== "none") {
             dateWithTime.setHours(9, 0, 0, 0);
+            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
+            dateWithTime.setTime(slot.getTime());
           }
         } else if (recurrenceType !== "none") {
-          // Recurring with no time set: default to 9 AM instead of 12 AM
           dateWithTime.setHours(9, 0, 0, 0);
+          const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
+          dateWithTime.setTime(slot.getTime());
         }
 
         // Final validation before converting to ISO
@@ -1383,7 +1391,7 @@ export function TaskDialog({
       }
       
       if (firstOccurrenceDate) {
-        // Apply user's time if set; otherwise default to 9:00 AM so recurring tasks don't default to 12 AM
+        const taskDuration = durationForSlot;
         if (scheduledHours && scheduledMinutes) {
           let hours = parseInt(scheduledHours, 10);
           const minutes = parseInt(scheduledMinutes, 10);
@@ -1395,9 +1403,13 @@ export function TaskDialog({
             firstOccurrenceDate.setHours(hours, minutes, 0, 0);
           } else {
             firstOccurrenceDate.setHours(9, 0, 0, 0);
+            const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
+            firstOccurrenceDate.setTime(slot.getTime());
           }
         } else {
           firstOccurrenceDate.setHours(9, 0, 0, 0);
+          const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
+          firstOccurrenceDate.setTime(slot.getTime());
         }
         finalScheduledDate = firstOccurrenceDate.toISOString();
       }
