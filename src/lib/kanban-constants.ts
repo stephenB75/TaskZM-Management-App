@@ -356,6 +356,10 @@ export const KANBAN_TEXT_SIZES = {
     mobile: 12, // text-xs = 12px
     tablet: 14, // sm:text-sm = 14px
   },
+  weekLabel: {
+    mobile: 17, // WEEK ONE / WEEK TWO label (20% larger base)
+    desktop: 18, // sm and up
+  },
 } as const;
 
 // Spacing

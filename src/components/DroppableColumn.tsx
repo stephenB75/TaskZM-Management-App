@@ -2,6 +2,7 @@ import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
+import { DROPPABLE_COLUMN_MIN_HEIGHT_PX } from "../lib/layout-constants";
 
 interface DroppableColumnProps {
   id: string;
@@ -26,7 +27,7 @@ export function DroppableColumn({
       data-droppable-id={id}
       className={cn(
         "select-none transition-all duration-300",
-        isMobile ? "min-h-0 [background:transparent!important] [background-color:transparent!important]" : "min-h-[200px]", // No min-height on mobile to prevent white box
+        isMobile ? "min-h-0 [background:transparent!important] [background-color:transparent!important]" : "min-h-[200px]", // No min-height on mobile; desktop uses DROPPABLE_COLUMN_MIN_HEIGHT_PX in style below
         className,
         !isMobile &&
           isOver &&
@@ -36,7 +37,7 @@ export function DroppableColumn({
         // Ensure drop zone is always accessible, even when empty (inline minHeight overrides parent min-h-0)
         position: 'relative',
         zIndex: isOver ? 100 : 'auto',
-        ...(isMobile ? {} : { minHeight: 200 }),
+        ...(isMobile ? {} : { minHeight: DROPPABLE_COLUMN_MIN_HEIGHT_PX }),
         backgroundColor: isMobile ? 'transparent' : undefined, // Transparent background on mobile to prevent white box
         background: isMobile ? 'transparent' : undefined,
       }}

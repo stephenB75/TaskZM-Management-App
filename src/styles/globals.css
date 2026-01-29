@@ -226,8 +226,8 @@ img[alt="TaskZM Logo"] {
   background: transparent !important;
 }
 
-/* Mobile optimizations */
-@media (max-width: 768px) {
+/* Mobile and tablet optimizations (matches useMobileLayout: < 1024px) */
+@media (max-width: 1023px) {
   html {
     -webkit-tap-highlight-color: transparent;
   }
@@ -235,13 +235,13 @@ img[alt="TaskZM Logo"] {
   * {
     -webkit-touch-callout: none;
   }
-  
-  /* Ensure touch-friendly tap targets */
+
+  /* Ensure touch-friendly tap targets (44px minimum per WCAG / Apple HIG) */
   button, a {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* Optimize font rendering on mobile */
   body {
     -webkit-font-smoothing: antialiased;

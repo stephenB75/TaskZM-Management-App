@@ -1145,9 +1145,10 @@ export function SevenDayKanban({
                     <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
                       <span
                         className={cn(
-                          'text-[17px] sm:text-[18px] font-bold tracking-[0.5em] uppercase',
+                          'font-bold tracking-[0.5em] uppercase',
                           groupIndex === 1 ? 'text-primary dark:text-primary/80' : 'text-muted-foreground'
                         )}
+                        style={{ fontSize: shouldUseMobileLayout ? KANBAN_TEXT_SIZES.weekLabel.mobile : KANBAN_TEXT_SIZES.weekLabel.desktop }}
                       >
                         {groupIndex === 0 ? 'WEEK ONE' : 'WEEK TWO'}
                       </span>

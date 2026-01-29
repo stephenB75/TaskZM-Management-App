@@ -37,6 +37,7 @@ import {
   HEADER_MIN_WIDTH_DESKTOP,
   HEADER_LOGO_HEIGHT,
   HEADER_LOGO_HEIGHT_DESKTOP,
+  HEADER_LOGO_SCALE,
   HEADER_LOGO_SPACE_RATIO,
   HEADER_BORDER_BOTTOM,
   HEADER_TITLE_SIZE_MOBILE,
@@ -124,20 +125,24 @@ export function AppHeader({
   const orientation = useOrientation(); // Detect landscape/portrait orientation
   const isLandscape = orientation === 'landscape';
   
-  // Detect laptop/small screen (1024px - 1279px) for responsive adjustments
+  // Detect laptop/small screen (1024px - 1279px) and small desktop (1280px - 1439px) for responsive logo sizing
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [isSmallMonitor, setIsSmallMonitor] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
   useEffect(() => {
     const checkScreenSize = () => {
       const width = window.innerWidth;
       setIsSmallScreen(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
-      // Small monitor: 1024px - 1279px (includes landscape tablets and small desktop monitors)
       setIsSmallMonitor(width >= VIEWPORT_BREAKPOINTS.tablet && width < VIEWPORT_BREAKPOINTS.desktop);
+      // Small desktop: 1280px - 1439px (tablet/laptop/smaller screens view - slightly smaller logo)
+      setIsSmallDesktop(width >= VIEWPORT_BREAKPOINTS.desktop && width < VIEWPORT_BREAKPOINTS.largeDesktop);
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+  // Logo scale: laptop (1024-1279), laptop landscape, small desktop (1280-largeDesktop-1), full desktop (largeDesktop+)
+  const logoScale = isSmallMonitor && isLandscape ? HEADER_LOGO_SCALE.laptopLandscape : isSmallMonitor ? HEADER_LOGO_SCALE.laptop : isSmallDesktop ? HEADER_LOGO_SCALE.smallDesktop : HEADER_LOGO_SCALE.desktop;
 
   // Use state to force re-render when panelOpen, panelKey, or theme changes
   // This ensures the header position and theme updates immediately
@@ -340,21 +345,13 @@ export function AppHeader({
                   alt="TaskZM Logo"
                   className="object-contain"
                   style={{ 
-                    // Responsive logo height: smaller for small monitors and landscape, with more aggressive scaling
-                    height: isSmallMonitor && isLandscape 
-                      ? `calc(${HEADER_LOGO_HEIGHT} * 0.75)`
-                      : (isSmallMonitor 
-                        ? `calc(${HEADER_LOGO_HEIGHT} * 0.85)`
-                        : HEADER_LOGO_HEIGHT),
-                    maxWidth: isSmallMonitor && isLandscape 
-                      ? '100px' 
-                      : (isSmallMonitor 
-                        ? '120px' 
-                        : '150px'), // Constrain width to prevent overlap
-                    width: 'auto', // Maintain aspect ratio
+                    // Responsive logo: tablet/laptop/small desktop use HEADER_LOGO_SCALE
+                    height: `calc(${HEADER_LOGO_HEIGHT} * ${logoScale})`,
+                    maxWidth: `${Math.round(150 * logoScale)}px`,
+                    width: 'auto',
                     backgroundColor: 'transparent',
-                    flexShrink: 1, // Allow logo to shrink when space is constrained
-                    minWidth: 0, // Allow logo to shrink below content size
+                    flexShrink: 1,
+                    minWidth: 0,
                   }}
                   initial={{ opacity: 0, scale: HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -495,27 +492,16 @@ export function AppHeader({
                   alt="TaskZM Logo"
                   className="object-contain self-center"
                   style={{ 
-                    // Responsive logo height: smaller for small monitors and landscape, with more aggressive scaling
-                    height: isSmallMonitor && isLandscape 
-                      ? `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * 0.75)`
-                      : (isSmallMonitor 
-                        ? `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * 0.85)`
-                        : HEADER_LOGO_HEIGHT_DESKTOP),
-                    maxHeight: isSmallMonitor && isLandscape
-                      ? `calc(${HEADER_HEIGHT}px - 0.75rem - 0.75rem - ${HEADER_BORDER_BOTTOM}px)`
-                      : `calc(${HEADER_HEIGHT}px - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_BORDER_BOTTOM}px)`,
-                    maxWidth: isSmallMonitor && isLandscape 
-                      ? '120px' 
-                      : (isSmallMonitor 
-                        ? '140px' 
-                        : '180px'), // Constrain width to prevent overlap
-                    width: 'auto', // Maintain aspect ratio
+                    // Responsive logo: tablet/laptop/small desktop use HEADER_LOGO_SCALE (shifts with header when panel open)
+                    height: `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * ${logoScale})`,
+                    maxHeight: `calc(${HEADER_HEIGHT}px - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_BORDER_BOTTOM}px)`,
+                    maxWidth: `${Math.round(180 * logoScale)}px`,
+                    width: 'auto',
                     backgroundColor: 'transparent',
                     display: 'block',
-                    objectFit: 'contain', // Ensure logo fits within bounds
-                    flexShrink: 1, // Allow logo to shrink when space is constrained
-                    minWidth: 0, // Allow logo to shrink below content size
-                    // No transition on logo itself - it moves smoothly with the header container
+                    objectFit: 'contain',
+                    flexShrink: 1,
+                    minWidth: 0,
                     transition: 'none',
                   }}
                 />

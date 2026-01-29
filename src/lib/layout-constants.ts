@@ -103,6 +103,15 @@ export const HEADER_LOGO_HEIGHT_DESKTOP = calculateLogoHeight(HEADER_HEIGHT, HEA
 
 // Keep HEADER_LOGO_HEIGHT for backward compatibility (defaults to mobile)
 export const HEADER_LOGO_HEIGHT = HEADER_LOGO_HEIGHT_MOBILE;
+
+// Header logo scale by viewport (desktop header only: >= 1024px)
+// Laptop/small monitor (1024-1279): smaller logo; small desktop (1280-1439): slightly smaller; desktop (1440+): full
+export const HEADER_LOGO_SCALE = {
+  laptop: 0.85,           // 1024-1279px
+  laptopLandscape: 0.75,   // 1024-1279px landscape
+  smallDesktop: 0.92,     // 1280-1439px
+  desktop: 1,             // 1440px+
+} as const;
 export const HEADER_TITLE_SIZE_MOBILE = '1.25rem'; // text-xl = 1.25rem (20px)
 export const HEADER_TITLE_SIZE_DESKTOP = '0.875rem'; // text-sm = 0.875rem (14px)
 export const HEADER_TITLE_SIZE_SMALL_SCREEN = '0.8125rem'; // ~text-xs = 0.8125rem (13px) - for laptops and small screens
@@ -177,6 +186,7 @@ export const VIEWPORT_BREAKPOINTS = {
   mobile: 768, // md breakpoint - below this is mobile phones
   tablet: 1024, // lg breakpoint - iPad Pro portrait width
   desktop: 1280, // xl breakpoint - standard desktop
+  largeDesktop: 1440, // 2xl - full-size logo and layout (small desktop: 1280-1439)
   // Mobile phones: < 768px (use mobile layout - one-column)
   // Tablets/iPad: 768px - 1023px (use mobile layout - one-column)
   // Laptops and small monitors: 1024px - 1279px (use desktop layout - multi-column)
@@ -222,6 +232,9 @@ export const MOBILE_SPACING = {
   emptyStateMinHeight: 200, // min-h-[200px] = 200px
 } as const;
 
+// Droppable column (Kanban) - minimum height so drop zone is always accessible when empty
+export const DROPPABLE_COLUMN_MIN_HEIGHT_PX = 200;
+
 // Calculate panel width based on viewport and orientation
 export const getPanelWidth = (): number => {
   if (typeof window === 'undefined') return PANEL_WIDTH;
@@ -243,10 +256,10 @@ export const getPanelWidth = (): number => {
 };
 
 // Calculate main header left position when panel is open
-// Header always starts at sidebar width - panel overlays on top with higher z-index
+// When panel is open, shift header right so logo stays visible (not under the panel)
 export const getMainHeaderLeft = (panelOpen: boolean): number => {
-  // Always return SIDEBAR_WIDTH - panel will overlay on top of header
-  return SIDEBAR_WIDTH;
+  if (!panelOpen) return SIDEBAR_WIDTH;
+  return SIDEBAR_WIDTH + getPanelWidth();
 };
 
 // Calculate main header width
