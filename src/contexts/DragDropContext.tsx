@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, pointerWithin, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from './TaskContext';
 // DraggableTaskCard import removed - using lightweight drag overlay instead
 import { isTaskBlocked, getIncompleteDependencies, cn, getDateString } from '../lib/utils';
@@ -1109,11 +1109,18 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     setPendingTaskUpdate(null);
   };
 
+  // Prefer pointerWithin so dropping on a column (including empty area) registers that column; fallback to closestCenter for sortable ordering
+  const collisionDetection = (args: Parameters<typeof pointerWithin>[0]) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    return closestCenter(args);
+  };
+
   return (
     <DragDropContext.Provider value={{ activeId }}>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={collisionDetection}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
