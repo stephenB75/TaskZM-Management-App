@@ -1343,9 +1343,12 @@ export function TaskDialog({
         : null,
     };
 
-    // For recurring tasks, if no scheduledDate is set, calculate the first occurrence date
-    // This ensures recurring tasks always have a base date for the recurrence pattern to work
+    // For recurring tasks, if no scheduledDate is set: require date when editing (user cleared), auto-fill when creating
     if (recurrenceType !== "none" && !finalScheduledDate) {
+      if (task?.scheduledDate) {
+        toast.error(TASK_DIALOG_UI_TEXT.recurrenceScheduleRequired);
+        return;
+      }
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -1411,12 +1414,12 @@ export function TaskDialog({
           if (!Number.isNaN(hours) && !Number.isNaN(minutes) && hours >= 0 && hours < HOURS_PER_DAY && minutes >= 0 && minutes < MINUTES_PER_HOUR) {
             firstOccurrenceDate.setHours(hours, minutes, 0, 0);
           } else {
-            firstOccurrenceDate.setHours(9, 0, 0, 0);
+            firstOccurrenceDate.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
             const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
             firstOccurrenceDate.setTime(slot.getTime());
           }
         } else {
-          firstOccurrenceDate.setHours(9, 0, 0, 0);
+          firstOccurrenceDate.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
           const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
           firstOccurrenceDate.setTime(slot.getTime());
         }

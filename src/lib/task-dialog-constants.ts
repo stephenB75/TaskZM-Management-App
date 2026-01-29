@@ -84,6 +84,9 @@ export const TASK_DIALOG_UI_TEXT = {
     hasSubtasks: (count: number) => `This task has ${count} subtask${count !== 1 ? 's' : ''} that will also be deleted.`,
   },
   
+  // Recurrence + Schedule validation
+  recurrenceScheduleRequired: 'Recurring tasks need a start date. Please pick a date or turn off recurrence.',
+
   // Conflict Resolution Dialog
   conflictResolution: {
     title: 'Time Slot Already Taken',
