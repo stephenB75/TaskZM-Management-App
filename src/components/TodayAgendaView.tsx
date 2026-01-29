@@ -669,6 +669,7 @@ export function TodayAgendaView({
                           task={item.task}
                           onClick={() => item.task && handleTaskClick(item.task)}
                           droppableId="today-agenda"
+                          occurrenceDate={todayString}
                           isNextUp={item.task.id === nextUpTaskId}
                           onComplete={handleTaskComplete}
                         />
@@ -925,6 +926,7 @@ export function TodayAgendaView({
                           task={item.task}
                           onClick={() => item.task && handleTaskClick(item.task)}
                           droppableId="today-agenda"
+                          occurrenceDate={todayString}
                           isNextUp={item.task.id === nextUpTaskId}
                           onComplete={handleTaskComplete}
                         />
@@ -1154,6 +1156,7 @@ export function TodayAgendaView({
                         task={item.task}
                         onClick={() => item.task && handleTaskClick(item.task)}
                         droppableId="today-agenda"
+                        occurrenceDate={todayString}
                         isNextUp={item.task.id === nextUpTaskId}
                         onComplete={handleTaskComplete}
                       />
@@ -1406,6 +1409,7 @@ export function TodayAgendaView({
                               task={item.task}
                               onClick={() => item.task && handleTaskClick(item.task)}
                               droppableId="today-agenda"
+                              occurrenceDate={todayString}
                               isNextUp={item.task.id === nextUpTaskId}
                               onComplete={handleTaskComplete}
                             />

@@ -1034,6 +1034,7 @@ export function SevenDayKanban({
                                         task={item.task}
                                         onClick={() => handleTaskClick(item.task)}
                             droppableId={currentColumn.dateString}
+                            occurrenceDate={currentColumn.dateString}
                           />
                           </div>
                                   );
@@ -1464,6 +1465,7 @@ export function SevenDayKanban({
                                               task={item.task}
                                               onClick={() => handleTaskClick(item.task)}
                                     droppableId={column.dateString}
+                                    occurrenceDate={column.dateString}
                                   />
                                   </div>
                                         );

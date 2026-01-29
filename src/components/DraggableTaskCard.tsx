@@ -81,6 +81,8 @@ interface DraggableTaskCardProps {
   task: Task;
   onClick: () => void;
   droppableId: string;
+  /** For recurring tasks: date string (YYYY-MM-DD) for this occurrence so timer/tracking is per day, not shared across series. */
+  occurrenceDate?: string;
   isDragging?: boolean;
   isNextUp?: boolean;
   /** Called when task is marked complete; pass card element for confetti origin. */
@@ -92,7 +94,7 @@ export const DraggableTaskCard = React.forwardRef<
   DraggableTaskCardProps
 >(
   (
-    { task, onClick, droppableId, isDragging = false, isNextUp = false, onComplete },
+    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete },
     forwardedRef,
   ) => {
     const { updateTask, tasks, workspaceId, syncWithServer } = useTasks();
@@ -191,11 +193,10 @@ export const DraggableTaskCard = React.forwardRef<
     const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
     const sortableId = isRecurringTask ? `${task.id}__${droppableId}` : task.id;
     
-    // For recurring tasks, use occurrence-specific ID for pomodoro timer to ensure each occurrence has its own timer state
-    // This prevents the timer from being shared across all occurrences in the series
-    // Use task.scheduledDate to get the actual occurrence date (not droppableId which is the column date)
-    const pomodoroTimerId = isRecurringTask && task.scheduledDate
-      ? `${task.id}__${getDateString(new Date(task.scheduledDate))}`
+    // For recurring tasks, use occurrence-specific ID so tracking is per day, not the whole series
+    // occurrenceDate is the column/day this card is for (from Kanban/Agenda); fallback to task.scheduledDate for single occurrence
+    const pomodoroTimerId = isRecurringTask && (occurrenceDate ?? task.scheduledDate)
+      ? `${task.id}__${occurrenceDate ?? getDateString(new Date(task.scheduledDate))}`
       : task.id;
     const timerState = getTimerState(pomodoroTimerId);
     
