@@ -2,16 +2,31 @@ import type { Task, RecurrenceConfig } from '../types';
 import { TIMING_CONSTANTS } from './timing-constants';
 
 /**
+ * Parse a scheduledDate string to local date-only.
+ * Date-only strings (YYYY-MM-DD) are parsed as UTC by JavaScript, which shifts the day in timezones behind UTC.
+ * We treat YYYY-MM-DD as local date so tasks appear on the correct calendar day everywhere.
+ */
+function parseToLocalDateOnly(dateString: string): Date {
+  const s = dateString.trim();
+  // Match YYYY-MM-DD (optionally with nothing or only whitespace after)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number);
+    if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) {
+      return new Date(y, m - 1, d);
+    }
+  }
+  const d = new Date(dateString);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
  * Check if a date matches a task's recurrence pattern
  */
 export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
-  // If task has no recurrence, only match exact scheduled date
-  if (!task.recurrence || task.recurrence.type === 'none') {
+  const recurrenceType = task.recurrence ? String(task.recurrence.type || 'none').toLowerCase() : 'none';
+  if (!task.recurrence || recurrenceType === 'none') {
     if (!task.scheduledDate) return false;
-    const taskDate = new Date(task.scheduledDate);
-    // Normalize both dates to local time (date only, no time component)
-    // This ensures timezone differences don't cause mismatches
-    const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+    const taskDateOnly = parseToLocalDateOnly(task.scheduledDate);
     const checkDateOnly = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
     return (
       taskDateOnly.getFullYear() === checkDateOnly.getFullYear() &&
@@ -23,16 +38,13 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
   // If task has no scheduled date, it can't recur
   if (!task.scheduledDate) return false;
 
-  const baseDate = new Date(task.scheduledDate);
+  const baseDateOnly = parseToLocalDateOnly(task.scheduledDate);
+  if (Number.isNaN(baseDateOnly.getTime())) return false;
+
   const checkDateOnly = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
-  const baseDateOnly = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
 
   // For recurring tasks that are completed: only show if the scheduledDate matches the exact checkDate
-  // This ensures that when a recurring task is marked as done, only that specific occurrence is affected
-  // Note: Completed occurrences have recurrence.type === 'none', so they won't reach this point
-  // This check is for the main recurring task that was marked as done (shouldn't happen in normal flow)
-  if (task.status === 'done' && task.recurrence.type !== 'none') {
-    // If the main recurring task is marked as done, only show on its scheduled date
+  if (task.status === 'done' && recurrenceType !== 'none') {
     return (
       baseDateOnly.getFullYear() === checkDateOnly.getFullYear() &&
       baseDateOnly.getMonth() === checkDateOnly.getMonth() &&
@@ -43,32 +55,35 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
   // Check if we're before the base date
   if (checkDateOnly < baseDateOnly) return false;
 
-  // Check if recurrence has ended (normalize endDate to date-only in local time so the end day is inclusive)
+  // Check if recurrence has ended (normalize endDate to local date-only so the end day is inclusive)
   if (task.recurrence.endDate) {
-    const endDate = new Date(task.recurrence.endDate);
-    const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-    if (checkDateOnly > endDateOnly) return false;
+    const endDateOnly = parseToLocalDateOnly(task.recurrence.endDate);
+    if (!Number.isNaN(endDateOnly.getTime()) && checkDateOnly > endDateOnly) return false;
   }
 
   const recurrence = task.recurrence;
+  const interval = Math.max(1, Number(recurrence.interval) || 1);
   const daysDiff = Math.floor((checkDateOnly.getTime() - baseDateOnly.getTime()) / TIMING_CONSTANTS.timeConversions.daysToMs);
 
-  switch (recurrence.type) {
+  switch (recurrenceType) {
     case 'daily':
-      return daysDiff >= 0 && daysDiff % recurrence.interval === 0;
+      return daysDiff >= 0 && daysDiff % interval === 0;
 
     case 'weekly':
-      if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-        // Check if the day of week matches
+      // Normalize to numbers (API/JSON may return strings); 0–6 = Sun–Sat
+      const daysOfWeek =
+        recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0
+          ? recurrence.daysOfWeek.map((d) => Number(d)).filter((d) => !Number.isNaN(d) && d >= 0 && d <= 6)
+          : null;
+      if (daysOfWeek && daysOfWeek.length > 0) {
         const checkDayOfWeek = checkDateOnly.getDay();
-        if (!recurrence.daysOfWeek.includes(checkDayOfWeek)) return false;
+        if (!daysOfWeek.includes(checkDayOfWeek)) return false;
 
         // Find the first occurrence of any of the specified days starting from the base date
         let firstOccurrence = new Date(baseDateOnly);
         const baseDayOfWeek = baseDateOnly.getDay();
-        
-        // Find the first matching day on or after the base date
-        const sortedDays = [...recurrence.daysOfWeek].sort((a, b) => a - b);
+
+        const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
         const nextDayInWeek = sortedDays.find(day => day >= baseDayOfWeek);
         
         if (nextDayInWeek !== undefined) {
@@ -78,7 +93,7 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
           // First occurrence is in the next interval week
           const daysUntilNextWeek = TIMING_CONSTANTS.calendar.daysPerWeek - baseDayOfWeek;
           const daysToFirstDay = sortedDays[0];
-          const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (recurrence.interval - 1));
+          const daysToAdd = daysUntilNextWeek + daysToFirstDay + (TIMING_CONSTANTS.calendar.daysPerWeek * (interval - 1));
           firstOccurrence.setDate(baseDateOnly.getDate() + daysToAdd);
         }
         firstOccurrence.setHours(0, 0, 0, 0);
@@ -101,30 +116,31 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
         // Check if we're on a valid interval week and the day matches
         // All days in week 0, interval, 2*interval, etc. should match
         // Ensure weeksFromFirst is non-negative and divisible by interval
-        return weeksFromFirst >= 0 && weeksFromFirst % recurrence.interval === 0;
+        return weeksFromFirst >= 0 && weeksFromFirst % interval === 0;
       }
       // Fallback: simple weekly interval (same day of week every interval weeks)
       if (checkDateOnly.getDay() !== baseDateOnly.getDay()) return false;
-      return daysDiff >= 0 && Math.floor(daysDiff / TIMING_CONSTANTS.calendar.daysPerWeek) % recurrence.interval === 0;
+      return daysDiff >= 0 && Math.floor(daysDiff / TIMING_CONSTANTS.calendar.daysPerWeek) % interval === 0;
 
-    case 'monthly':
-      if (recurrence.dayOfMonth) {
-        // Check if the day of month matches
-        if (checkDateOnly.getDate() !== recurrence.dayOfMonth) return false;
-        
-        // Calculate month difference
-        const monthsDiff = 
+    case 'monthly': {
+      // Normalize to number (API/JSON may return string); 1–31
+      const dayOfMonth = recurrence.dayOfMonth != null ? Number(recurrence.dayOfMonth) : undefined;
+      if (dayOfMonth != null && !Number.isNaN(dayOfMonth) && dayOfMonth >= 1 && dayOfMonth <= 31) {
+        if (checkDateOnly.getDate() !== dayOfMonth) return false;
+
+        const monthsDiff =
           (checkDateOnly.getFullYear() - baseDateOnly.getFullYear()) * TIMING_CONSTANTS.calendar.monthsPerYear +
           (checkDateOnly.getMonth() - baseDateOnly.getMonth());
-        
-        return monthsDiff >= 0 && monthsDiff % recurrence.interval === 0;
+
+        return monthsDiff >= 0 && monthsDiff % interval === 0;
       }
       // Fallback: same day of month every interval months
       if (checkDateOnly.getDate() !== baseDateOnly.getDate()) return false;
       const monthsDiff = 
         (checkDateOnly.getFullYear() - baseDateOnly.getFullYear()) * TIMING_CONSTANTS.calendar.monthsPerYear +
         (checkDateOnly.getMonth() - baseDateOnly.getMonth());
-      return monthsDiff >= 0 && monthsDiff % recurrence.interval === 0;
+      return monthsDiff >= 0 && monthsDiff % interval === 0;
+    }
 
     default:
       return false;
