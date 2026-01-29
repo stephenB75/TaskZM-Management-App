@@ -1145,7 +1145,7 @@ export function SevenDayKanban({
                     <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
                       <span
                         className={cn(
-                          'text-[14px] sm:text-[15px] font-bold tracking-[0.5em] uppercase',
+                          'text-[17px] sm:text-[18px] font-bold tracking-[0.5em] uppercase',
                           groupIndex === 1 ? 'text-primary dark:text-primary/80' : 'text-muted-foreground'
                         )}
                       >
