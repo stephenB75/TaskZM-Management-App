@@ -56,6 +56,7 @@ export const TASK_DIALOG_UI_TEXT = {
   cancel: 'Cancel',
   updateTask: 'Update Task',
   createTask: 'Create Task',
+  saving: 'Saving...',
   duplicate: {
     desktop: 'Duplicate',
     mobile: 'Dup',

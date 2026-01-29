@@ -47,7 +47,7 @@ import {
   getIncompleteDependencies,
   getInitials,
 } from "../lib/utils";
-import { MINUTES_PER_HOUR, HOURS_PER_DAY } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START } from "../lib/business-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -663,6 +663,7 @@ export function TaskDialog({
   const [assignedTo, setAssignedTo] = useState<string[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] =
     useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // AI Task Breakdown - Real-time analysis
   const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
@@ -1086,9 +1087,17 @@ export function TaskDialog({
     if (!title.trim()) {
       return;
     }
+    if (isSubmitting) return;
 
+    setIsSubmitting(true);
+    try {
+      // Yield to browser so loading state can paint before heavy sync work
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Default scheduled time (from business constants) when user doesn't set a time
+    const [defaultScheduledHour, defaultScheduledMin] = DEFAULT_WEEKDAY_WORK_START.split(':').map(Number);
     // Duration for slot search (used when assigning default time so tasks don't all get same time)
-    const durationForSlot = ((parseInt(estimatedHours) || 0) * 60 + (parseInt(estimatedMinutes) || 0)) || 60;
+    const durationForSlot = ((parseInt(estimatedHours) || 0) * MINUTES_PER_HOUR + (parseInt(estimatedMinutes) || 0)) || MINUTES_PER_HOUR;
 
     // Combine scheduledDate and scheduledTime
     let finalScheduledDate = null;
@@ -1131,7 +1140,7 @@ export function TaskDialog({
           if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < HOURS_PER_DAY && minutes >= 0 && minutes < MINUTES_PER_HOUR) {
             dateWithTime.setHours(hours, minutes, 0, 0);
           } else if (recurrenceType !== "none") {
-            dateWithTime.setHours(9, 0, 0, 0);
+            dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
             const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
             dateWithTime.setTime(slot.getTime());
           }
@@ -1144,12 +1153,12 @@ export function TaskDialog({
           if (!isNaN(hours) && !isNaN(minutes)) {
             dateWithTime.setHours(hours, minutes, 0, 0);
           } else if (recurrenceType !== "none") {
-            dateWithTime.setHours(9, 0, 0, 0);
+            dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
             const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
             dateWithTime.setTime(slot.getTime());
           }
         } else if (recurrenceType !== "none") {
-          dateWithTime.setHours(9, 0, 0, 0);
+          dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
           const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
           dateWithTime.setTime(slot.getTime());
         }
@@ -1756,6 +1765,9 @@ export function TaskDialog({
     }
 
     onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleConflictConfirm = async () => {
@@ -3896,7 +3908,7 @@ export function TaskDialog({
               </Button>
               <Button 
                 type="submit"
-                disabled={task ? !permissions.canEditTask : !permissions.canCreateTask} 
+                disabled={isSubmitting || (task ? !permissions.canEditTask : !permissions.canCreateTask)} 
                 className={cn(
                   "bg-primary hover:bg-primary/90 font-medium flex-1 sm:flex-initial shadow-md h-8 sm:h-10",
                   isMobile ? "px-2" : "px-5",
@@ -3906,7 +3918,16 @@ export function TaskDialog({
                 style={{ color: COLOR_TEXT_WHITE }}
                 title={isMobile ? (task ? TASK_DIALOG_UI_TEXT.buttonTooltips.updateTask : TASK_DIALOG_UI_TEXT.buttonTooltips.createTask) : undefined}
               >
-                {isMobile ? (
+                {isSubmitting ? (
+                  isMobile ? (
+                    <Icon name="circle-notch" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} style={{ color: COLOR_TEXT_WHITE }} className="animate-spin" />
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Icon name="circle-notch" size={ICON_SIZE_XS} style={{ color: COLOR_TEXT_WHITE }} className="animate-spin" />
+                      {TASK_DIALOG_UI_TEXT.saving}
+                    </span>
+                  )
+                ) : isMobile ? (
                   <Icon name="check" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} style={{ color: COLOR_TEXT_WHITE }} />
                 ) : (
                   task ? TASK_DIALOG_UI_TEXT.updateTask : TASK_DIALOG_UI_TEXT.createTask

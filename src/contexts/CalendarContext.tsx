@@ -566,7 +566,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const syncTask = useCallback(async (taskId: string, provider: CalendarProvider) => {
     if (!user) return;
 
-    const task = tasks.find(t => t.id === taskId);
+    // Recurring tasks may pass occurrence ID (taskId__YYYY-MM-DD); resolve to base task ID
+    const baseTaskId = taskId.includes('__') ? taskId.split('__')[0] : taskId;
+    const task = tasks.find(t => t.id === baseTaskId);
     if (!task) {
       toast.error('Task not found');
       return;

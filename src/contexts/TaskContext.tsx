@@ -1893,10 +1893,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
-    
+
+    // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; resolve to base task ID for lookup
+    const baseTaskId = taskId.includes('__') ? taskId.split('__')[0] : taskId;
+
     // Permission check removed to break circular dependency with TeamContext
     // Permission checks should be handled at component level using useTeam() hook
-    
+
     // Validate workspace ID
     let currentWorkspaceId = workspaceId;
     if (!currentWorkspaceId) {
@@ -1908,9 +1911,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
       currentWorkspaceId = validWorkspaceId;
     }
-    
-    // Find the task to update
-    const currentTask = tasks.find(t => t.id === taskId);
+
+    // Find the task to update (by base task ID)
+    const currentTask = tasks.find(t => t.id === baseTaskId);
     if (!currentTask) {
       toast.error('Task not found');
       return;
@@ -1963,13 +1966,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     
     if (isRecurringTask && isBeingMarkedComplete && currentTask.scheduledDate) {
       // Check if this task is already being processed (prevent race conditions)
-      if (nextOccurrenceCreationLock.current.has(taskId)) {
+      if (nextOccurrenceCreationLock.current.has(baseTaskId)) {
         logger.debug('Recurring task completion already in progress, skipping duplicate creation');
         // Still need to update the task status to done
         // Continue with normal update flow below
       } else {
         // Acquire lock only if not already locked
-        nextOccurrenceCreationLock.current.add(taskId);
+        nextOccurrenceCreationLock.current.add(baseTaskId);
       
         try {
           const scheduledDate = new Date(currentTask.scheduledDate);
@@ -2002,18 +2005,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // UPDATED: Don't create next occurrence - just mark current occurrence as done
           // The base recurring task remains active and will appear on future dates via isDateInRecurrence()
           logger.debug('Recurring task marked complete - only closing current occurrence, not advancing to next', {
-            taskId,
+            taskId: baseTaskId,
             scheduledDate: scheduledDateKey,
           });
         } catch (error) {
           logger.error('Error creating completed occurrence for recurring task:', error);
           // Release lock on error
-          nextOccurrenceCreationLock.current.delete(taskId);
+          nextOccurrenceCreationLock.current.delete(baseTaskId);
           throw error;
         } finally {
           // Release lock after a short delay to ensure server save completes
           setTimeout(() => {
-            nextOccurrenceCreationLock.current.delete(taskId);
+            nextOccurrenceCreationLock.current.delete(baseTaskId);
           }, TIMING_CONSTANTS.taskSync.uiUpdateDelay);
         }
       }
@@ -2079,7 +2082,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // The base task stays active and will appear on future dates
           // Only the completed occurrence is saved (already saved above)
           logger.debug('Recurring task marked complete - base task unchanged, only completed occurrence saved', {
-            taskId,
+            taskId: baseTaskId,
             completedOccurrenceId: completedOccurrence?.id,
           });
         } else {
@@ -2124,7 +2127,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               // Release lock after save completes
               if (isRecurringTask && isBeingMarkedComplete) {
                 setTimeout(() => {
-                  nextOccurrenceCreationLock.current.delete(taskId);
+                  nextOccurrenceCreationLock.current.delete(baseTaskId);
                 }, TIMING_CONSTANTS.taskSync.uiUpdateDelay);
               }
               await loadTasksFromServer(validWorkspaceId);
@@ -2150,7 +2153,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Fallback: update locally
         setTasks(prev => {
           let updated = prev.map(task => {
-            if (task.id === taskId) {
+            if (task.id === baseTaskId) {
               return updatedTask;
             }
             return task;
@@ -2167,7 +2170,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         
         // Release lock on error
         if (isRecurringTask && isBeingMarkedComplete) {
-          nextOccurrenceCreationLock.current.delete(taskId);
+          nextOccurrenceCreationLock.current.delete(baseTaskId);
         }
         
         toast.error('Task updated offline, will sync when online');
@@ -2176,7 +2179,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       // No workspace/auth - update locally only
       setTasks(prev => {
         let updated = prev.map(task => {
-          if (task.id === taskId) {
+          if (task.id === baseTaskId) {
             return updatedTask;
           }
           return task;
@@ -2193,7 +2196,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       
       // Release lock
       if (isRecurringTask && isBeingMarkedComplete) {
-        nextOccurrenceCreationLock.current.delete(taskId);
+        nextOccurrenceCreationLock.current.delete(baseTaskId);
       }
     }
   }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrenceDate, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]); // Removed syncWithServer from dependencies

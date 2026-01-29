@@ -82,20 +82,12 @@ export function findNextAvailableSlot(
   const targetDate = new Date(requestedTime);
   targetDate.setHours(0, 0, 0, 0);
   
-  // CRITICAL DEBUG: Log what tasks are being checked
   if (import.meta.env.DEV && allTasks.length > 0) {
-    console.debug('findNextAvailableSlot - checking tasks', {
+    console.debug('findNextAvailableSlot', {
       taskId,
       requestedTime: requestedTime.toISOString(),
       taskDuration,
       allTasksCount: allTasks.length,
-      allTasks: allTasks.map(t => ({
-        id: t.id,
-        title: t.title,
-        scheduledDate: t.scheduledDate,
-        scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
-        scheduledDateType: typeof t.scheduledDate,
-      })),
     });
   }
 
@@ -163,21 +155,12 @@ export function findNextAvailableSlot(
     return false;
   });
   
-  // CRITICAL DEBUG: Log what tasks were found
   if (import.meta.env.DEV && allTasks.length > 0) {
-    console.debug('findNextAvailableSlot - dateTasks filtered', {
+    console.debug('findNextAvailableSlot - dateTasks', {
       taskId,
-      requestedTime: requestedTime.toISOString(),
       targetDate: targetDate.toISOString(),
       allTasksCount: allTasks.length,
       dateTasksCount: dateTasks.length,
-      dateTasks: dateTasks.map(t => ({
-        id: t.id,
-        title: t.title,
-        scheduledDate: t.scheduledDate,
-        scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
-        isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
-      })),
     });
   }
 
