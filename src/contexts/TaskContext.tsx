@@ -2119,9 +2119,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               if (completedOccurrence) {
                 await api.saveTask(validWorkspaceId, completedOccurrence);
               }
-              // Save next occurrence task if created, otherwise save the updated task
-              const taskToSave = nextOccurrenceTask || updatedTask;
-              await api.saveTask(validWorkspaceId, taskToSave);
+              // Save the updated task (we no longer create next occurrence; base task stays for recurrence)
+              await api.saveTask(validWorkspaceId, updatedTask);
               // Release lock after save completes
               if (isRecurringTask && isBeingMarkedComplete) {
                 setTimeout(() => {
@@ -2152,8 +2151,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         setTasks(prev => {
           let updated = prev.map(task => {
             if (task.id === taskId) {
-              // Use next occurrence task if created, otherwise use updated task
-              return nextOccurrenceTask || updatedTask;
+              return updatedTask;
             }
             return task;
           });
@@ -2179,8 +2177,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       setTasks(prev => {
         let updated = prev.map(task => {
           if (task.id === taskId) {
-            // Use next occurrence task if created, otherwise use updated task
-            return nextOccurrenceTask || updatedTask;
+            return updatedTask;
           }
           return task;
         });
