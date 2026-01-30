@@ -2074,5 +2074,6 @@ export function DashboardView({
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
