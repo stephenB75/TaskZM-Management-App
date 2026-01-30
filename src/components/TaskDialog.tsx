@@ -2370,6 +2370,103 @@ export function TaskDialog({
                         })}
                     </div>
                   </div>
+
+                  {/* AI Analysis - breakdown, domain, effort, description options, suggestions, suggested subtasks */}
+                  {(title.trim() || description.trim()) && (
+                    <div className={cn(
+                      cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
+                      TASK_DIALOG_MINIMAL_SPACING.cardPadding,
+                      "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                    )}>
+                      {isBreakdownLoading ? (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse" />
+                          <span>Analyzing task...</span>
+                        </div>
+                      ) : breakdownError ? (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <span>Error analyzing task: {breakdownError.message}</span>
+                        </div>
+                      ) : breakdown ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
+                            <span className="font-semibold text-foreground">AI Analysis</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-sm">
+                            <Badge variant="outline" className="text-xs border-primary/30">
+                              {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
+                            </Badge>
+                            {breakdown.estimatedMinutes > 0 && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                                <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary" />
+                                <span className="text-xs font-medium text-foreground">
+                                  {Math.floor(breakdown.estimatedMinutes / MINUTES_PER_HOUR)}h {breakdown.estimatedMinutes % MINUTES_PER_HOUR}m
+                                </span>
+                              </div>
+                            )}
+                            {breakdown.effortScore > 0 && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                                <span className="text-xs font-medium text-foreground">
+                                  Effort: {breakdown.effortScore.toFixed(EFFORT_SCORE_THRESHOLDS.DISPLAY_DECIMAL_PLACES)}/{EFFORT_SCORE_THRESHOLDS.DISPLAY_MAX}
+                                </span>
+                              </div>
+                            )}
+                            {breakdown.primaryVerb && breakdown.primaryVerb !== DESCRIPTION_UI_CONFIG.UNKNOWN_VERB && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                                <span className="text-xs font-medium text-foreground capitalize">{breakdown.primaryVerb}</span>
+                              </div>
+                            )}
+                          </div>
+                          {!description.trim() && (isLoadingDescriptionOptions || descriptionOptions.length > 0) && (
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {isLoadingDescriptionOptions ? 'Generating description options...' : 'Choose a description:'}
+                              </span>
+                              {!isLoadingDescriptionOptions && descriptionOptions.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {descriptionOptions.slice(0, DESCRIPTION_UI_CONFIG.MAX_DESCRIPTION_OPTIONS).map((option, idx) => (
+                                    <Badge
+                                      key={idx}
+                                      variant="secondary"
+                                      className="cursor-pointer hover:bg-primary/10 text-xs max-w-full"
+                                      onClick={async () => {
+                                        setDescription(option.description);
+                                        setDescriptionOptions([]);
+                                        toast.success('Description selected', { description: 'AI Action Plan will update automatically based on your description.' });
+                                      }}
+                                      title={`${option.domain} (${(option.confidence * 100).toFixed(0)}% confidence)`}
+                                    >
+                                      {option.description.length > DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH ? `${option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)}...` : option.description}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {description.trim() && breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {breakdown.descriptionAnalysis.suggestions.slice(0, DESCRIPTION_UI_CONFIG.MAX_SUGGESTIONS_DISPLAY).map((suggestion, idx) => (
+                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs" onClick={() => { const newDescription = description ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${suggestion}` : suggestion; setDescription(newDescription); }}>
+                                  {suggestion}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {breakdown.actionPlan && breakdown.actionPlan.suggestedSubtasks.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {breakdown.actionPlan.suggestedSubtasks.slice(0, 3).map((subtask, idx) => (
+                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs" onClick={() => { const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() }; setSubtasks([...subtasks, newSubtask]); toast.success('Added as subtask', { description: subtask }); }}>
+                                  + {subtask}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+
               </TabsContent>
 
                 {/* Scheduling Tab - reference: warm surface; prominent date, Scheduled/Due/Clear, calendar, 12HR/24HR; no inner card */}
@@ -2838,106 +2935,9 @@ export function TaskDialog({
                     )}
               </TabsContent>
 
-              {/* Organization & Advanced Tab - AI, Folder, Tags, Subtasks, etc. */}
+              {/* Organization & Advanced Tab - Folder, Tags, Subtasks, etc. */}
                 <TabsContent value="organization" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.cardSpaceY)}>
-                  {/* AI Task Breakdown - moved from Basic for minimal Task Info tab */}
-                  {(title.trim() || description.trim()) && (
-                    <div className={cn(
-                      cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
-                      TASK_DIALOG_MINIMAL_SPACING.cardPadding,
-                      "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow",
-                      "mb-3 sm:mb-4"
-                    )}>
-                      {isBreakdownLoading ? (
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse" />
-                          <span>Analyzing task...</span>
-                        </div>
-                      ) : breakdownError ? (
-                        <div className="flex items-center gap-2 text-destructive text-sm">
-                          <span>Error analyzing task: {breakdownError.message}</span>
-                        </div>
-                      ) : breakdown ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
-                            <span className="font-semibold text-foreground">AI Analysis</span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-sm">
-                            <Badge variant="outline" className="text-xs border-primary/30">
-                              {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
-                            </Badge>
-                            {breakdown.estimatedMinutes > 0 && (
-                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                                <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary" />
-                                <span className="text-xs font-medium text-foreground">
-                                  {Math.floor(breakdown.estimatedMinutes / MINUTES_PER_HOUR)}h {breakdown.estimatedMinutes % MINUTES_PER_HOUR}m
-                                </span>
-                              </div>
-                            )}
-                            {breakdown.effortScore > 0 && (
-                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                                <span className="text-xs font-medium text-foreground">
-                                  Effort: {breakdown.effortScore.toFixed(EFFORT_SCORE_THRESHOLDS.DISPLAY_DECIMAL_PLACES)}/{EFFORT_SCORE_THRESHOLDS.DISPLAY_MAX}
-                                </span>
-                              </div>
-                            )}
-                            {breakdown.primaryVerb && breakdown.primaryVerb !== DESCRIPTION_UI_CONFIG.UNKNOWN_VERB && (
-                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                                <span className="text-xs font-medium text-foreground capitalize">{breakdown.primaryVerb}</span>
-                              </div>
-                            )}
-                          </div>
-                          {!description.trim() && (isLoadingDescriptionOptions || descriptionOptions.length > 0) && (
-                            <div className="flex flex-col gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                {isLoadingDescriptionOptions ? 'Generating description options...' : 'Choose a description:'}
-                              </span>
-                              {!isLoadingDescriptionOptions && descriptionOptions.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {descriptionOptions.slice(0, DESCRIPTION_UI_CONFIG.MAX_DESCRIPTION_OPTIONS).map((option, idx) => (
-                                    <Badge
-                                      key={idx}
-                                      variant="secondary"
-                                      className="cursor-pointer hover:bg-primary/10 text-xs max-w-full"
-                                      onClick={async () => {
-                                        setDescription(option.description);
-                                        setDescriptionOptions([]);
-                                        toast.success('Description selected', { description: 'AI Action Plan will update automatically based on your description.' });
-                                      }}
-                                      title={`${option.domain} (${(option.confidence * 100).toFixed(0)}% confidence)`}
-                                    >
-                                      {option.description.length > DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH ? `${option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)}...` : option.description}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {description.trim() && breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {breakdown.descriptionAnalysis.suggestions.slice(0, DESCRIPTION_UI_CONFIG.MAX_SUGGESTIONS_DISPLAY).map((suggestion, idx) => (
-                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs" onClick={() => { const newDescription = description ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${suggestion}` : suggestion; setDescription(newDescription); }}>
-                                  {suggestion}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          {breakdown.actionPlan && breakdown.actionPlan.suggestedSubtasks.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {breakdown.actionPlan.suggestedSubtasks.slice(0, 3).map((subtask, idx) => (
-                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs" onClick={() => { const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() }; setSubtasks([...subtasks, newSubtask]); toast.success('Added as subtask', { description: subtask }); }}>
-                                  + {subtask}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-
-                  {/* Folder Selector - moved from Basic for minimal Task Info tab */}
+                  {/* Folder Selector */}
                   {folders.length > 0 && (
                     <div className={cn(
                       cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
