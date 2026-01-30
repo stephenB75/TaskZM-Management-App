@@ -223,9 +223,9 @@ export const KANBAN_COLUMN_DIMENSIONS = {
     tablet: 12, // p-3 = 12px
   },
   cardsContainerMaxWidth: {
-    // Max width for cards container so task cards don't touch the column border
-    mobile: '92%', // Leaves ~4% gap on each side when centered
-    desktop: '92%',
+    // Max width for cards container: wider cards, small gap from column border when centered
+    mobile: '96%', // ~2% gap each side
+    desktop: '96%',
   },
   // Horizontal margin so cards container is centered and doesn't touch column border
   cardsContainerMargin: '0 auto',
