@@ -59,7 +59,7 @@ import { useAuth } from "../contexts/AuthContext";
 import * as api from "../lib/api";
 import { toast } from "sonner";
 import { logger } from "../lib/logger";
-import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
+import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_MEDIUM_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
@@ -1737,7 +1737,7 @@ export function TaskDialog({
             
             toast.warning('Approaching daily limit', {
               description: message,
-              duration: 4000,
+              duration: TOAST_DURATION_MEDIUM_MS,
             });
           }
         }

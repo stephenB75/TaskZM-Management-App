@@ -985,6 +985,7 @@ export function SevenDayKanban({
                               maxWidth: shouldUseMobileLayout 
                                 ? KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.mobile
                                 : KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.desktop,
+                              margin: KANBAN_COLUMN_DIMENSIONS.cardsContainerMargin as React.CSSProperties['margin'],
                               // On mobile/tablet, make background transparent to show parent gradient
                               // On desktop, use the gradient background
                               backgroundImage: shouldUseMobileLayout
@@ -1429,6 +1430,7 @@ export function SevenDayKanban({
                                       maxWidth: shouldUseMobileLayout 
                                         ? KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.mobile
                                         : KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.desktop,
+                                      margin: KANBAN_COLUMN_DIMENSIONS.cardsContainerMargin as React.CSSProperties['margin'],
                                     }}
                                   >
                                     {combinedItems.map((item, idx) => {
