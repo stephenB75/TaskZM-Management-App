@@ -47,7 +47,7 @@ import {
   getIncompleteDependencies,
   getInitials,
 } from "../lib/utils";
-import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE } from "../lib/business-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -1260,7 +1260,7 @@ export function TaskDialog({
 
     // Convert hours and minutes to total minutes
     const totalMinutes =
-      (parseInt(estimatedHours) || 0) * 60 +
+      (parseInt(estimatedHours) || 0) * MINUTES_PER_HOUR +
       (parseInt(estimatedMinutes) || 0);
 
     // Validate recurrence configuration
@@ -1528,7 +1528,7 @@ export function TaskDialog({
       const originalTime = originalScheduledTime.getTime();
       const newTime = scheduledDateTime.getTime();
       // Consider times equal if within 1 minute (to account for rounding)
-      timeHasChanged = Math.abs(newTime - originalTime) > 60 * 1000;
+      timeHasChanged = Math.abs(newTime - originalTime) > MILLISECONDS_PER_MINUTE;
     }
     
     // Check for time conflicts if scheduled date is set
@@ -2427,7 +2427,7 @@ export function TaskDialog({
                             <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
                               <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary" />
                               <span className="text-xs font-medium text-foreground">
-                                {Math.floor(breakdown.estimatedMinutes / 60)}h {breakdown.estimatedMinutes % 60}m
+                                {Math.floor(breakdown.estimatedMinutes / MINUTES_PER_HOUR)}h {breakdown.estimatedMinutes % MINUTES_PER_HOUR}m
                               </span>
                             </div>
                           )}

@@ -13,7 +13,7 @@ import { TASK_CARD_LAYOUT_METRICS, TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIO
 import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
-import { MINUTES_PER_HOUR, HOURS_PER_DAY } from '../lib/business-constants';
+import { MINUTES_PER_HOUR, HOURS_PER_DAY, MILLISECONDS_PER_MINUTE } from '../lib/business-constants';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -231,7 +231,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               .map((t) => ({
                 task: t,
                 start: new Date(t.scheduledDate!).getTime(),
-                end: new Date(t.scheduledDate!).getTime() + (getTaskMinutes(t) * 60 * 1000), // Use AI estimator
+                end: new Date(t.scheduledDate!).getTime() + (getTaskMinutes(t) * MILLISECONDS_PER_MINUTE), // Use AI estimator
               }))
               .sort((a, b) => a.start - b.start);
             
@@ -339,7 +339,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             // For today, always start calculation from current time (not category start)
             // This ensures we respect the current time of day
             const currentTimeRounded = getCurrentTimeRounded();
-            const currentTotalMinutes = currentTimeRounded.getHours() * 60 + currentTimeRounded.getMinutes();
+            const currentTotalMinutes = currentTimeRounded.getHours() * MINUTES_PER_HOUR + currentTimeRounded.getMinutes();
             
             // Calculate time based on pixel position in timeline
             // Start from current time, not category start
@@ -358,7 +358,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             
             // Clamp to category hours if available
             if (categoryHours) {
-              const totalMinutesInDay = hours * 60 + minutes;
+              const totalMinutesInDay = hours * MINUTES_PER_HOUR + minutes;
               const categoryEndMinutes = categoryHours.end;
               
               // Ensure we're not before category start (but also not before current time)
@@ -384,8 +384,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                   minutes = Math.floor(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
                 } else {
                   // Task doesn't fit in category hours - use effective start
-                  hours = Math.floor(effectiveStart / 60);
-                  minutes = effectiveStart % 60;
+                  hours = Math.floor(effectiveStart / MINUTES_PER_HOUR);
+                  minutes = effectiveStart % MINUTES_PER_HOUR;
                   minutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
                   if (minutes >= MINUTES_PER_HOUR) {
                     hours += 1;
@@ -468,14 +468,14 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             // This ensures we respect the current time of day
             if (isToday) {
               const currentTimeRounded = getCurrentTimeRounded();
-              const currentTotalMinutes = currentTimeRounded.getHours() * 60 + currentTimeRounded.getMinutes();
+              const currentTotalMinutes = currentTimeRounded.getHours() * MINUTES_PER_HOUR + currentTimeRounded.getMinutes();
               
               // Convert pixels to minutes from current time
               const minutesFromCurrent = Math.max(0, contentY / pixelsPerMinute);
               
               const totalMinutes = currentTotalMinutes + minutesFromCurrent;
-              let hours = Math.floor(totalMinutes / 60);
-              let minutes = totalMinutes % 60;
+              let hours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
+              let minutes = totalMinutes % MINUTES_PER_HOUR;
               
               // Round to nearest 15-minute slot
               minutes = Math.round(minutes / 15) * 15;
@@ -486,12 +486,12 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               
               // Apply category hours constraints (but respect current time)
               if (categoryHours) {
-                const totalMinutesInDay = hours * 60 + minutes;
+                const totalMinutesInDay = hours * MINUTES_PER_HOUR + minutes;
                 const effectiveStart = Math.max(categoryHours.start, currentTotalMinutes);
                 
                 if (totalMinutesInDay < effectiveStart) {
-                  hours = Math.floor(effectiveStart / 60);
-                  minutes = effectiveStart % 60;
+                  hours = Math.floor(effectiveStart / MINUTES_PER_HOUR);
+                  minutes = effectiveStart % MINUTES_PER_HOUR;
                   minutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
                   if (minutes >= MINUTES_PER_HOUR) {
                     hours += 1;
@@ -500,12 +500,12 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                 } else if (totalMinutesInDay + taskDuration > categoryHours.end) {
                   const maxStartMinutes = categoryHours.end - taskDuration;
                   if (maxStartMinutes >= effectiveStart) {
-                    hours = Math.floor(maxStartMinutes / 60);
-                    minutes = maxStartMinutes % 60;
+                    hours = Math.floor(maxStartMinutes / MINUTES_PER_HOUR);
+                    minutes = maxStartMinutes % MINUTES_PER_HOUR;
                     minutes = Math.floor(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
                   } else {
-                    hours = Math.floor(effectiveStart / 60);
-                    minutes = effectiveStart % 60;
+                    hours = Math.floor(effectiveStart / MINUTES_PER_HOUR);
+                    minutes = effectiveStart % MINUTES_PER_HOUR;
                     minutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
                     if (minutes >= MINUTES_PER_HOUR) {
                       hours += 1;
@@ -515,7 +515,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                 }
               } else {
                 // Ensure not before current time
-                if (hours * 60 + minutes < currentTotalMinutes) {
+                if (hours * MINUTES_PER_HOUR + minutes < currentTotalMinutes) {
                   hours = Math.floor(currentTotalMinutes / MINUTES_PER_HOUR);
                   minutes = currentTotalMinutes % MINUTES_PER_HOUR;
                   minutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
@@ -546,9 +546,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               // Convert pixels to minutes
               const minutesFromStart = Math.max(0, contentY / pixelsPerMinute);
               
-              const totalMinutes = (startHour * 60) + startMinute + minutesFromStart;
-              let hours = Math.floor(totalMinutes / 60);
-              let minutes = totalMinutes % 60;
+              const totalMinutes = (startHour * MINUTES_PER_HOUR) + startMinute + minutesFromStart;
+              let hours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
+              let minutes = totalMinutes % MINUTES_PER_HOUR;
               
               // Round to nearest 15-minute slot
               minutes = Math.round(minutes / 15) * 15;
@@ -559,19 +559,19 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               
               // Apply category hours constraints
               if (categoryHours) {
-                const totalMinutesInDay = hours * 60 + minutes;
+                const totalMinutesInDay = hours * MINUTES_PER_HOUR + minutes;
                 if (totalMinutesInDay < categoryHours.start) {
-                  hours = Math.floor(categoryHours.start / 60);
-                  minutes = categoryHours.start % 60;
+                  hours = Math.floor(categoryHours.start / MINUTES_PER_HOUR);
+                  minutes = categoryHours.start % MINUTES_PER_HOUR;
                 } else if (totalMinutesInDay + taskDuration > categoryHours.end) {
                   const maxStartMinutes = categoryHours.end - taskDuration;
                   if (maxStartMinutes >= categoryHours.start) {
-                    hours = Math.floor(maxStartMinutes / 60);
-                    minutes = maxStartMinutes % 60;
+                    hours = Math.floor(maxStartMinutes / MINUTES_PER_HOUR);
+                    minutes = maxStartMinutes % MINUTES_PER_HOUR;
                     minutes = Math.floor(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
                   } else {
-                    hours = Math.floor(categoryHours.start / 60);
-                    minutes = categoryHours.start % 60;
+                    hours = Math.floor(categoryHours.start / MINUTES_PER_HOUR);
+                    minutes = categoryHours.start % MINUTES_PER_HOUR;
                   }
                 }
               }
@@ -915,15 +915,15 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           
           // Determine start hour based on category hours or default
           const startHour = categoryHours 
-            ? Math.floor(categoryHours.start / 60)
+            ? Math.floor(categoryHours.start / MINUTES_PER_HOUR)
             : TASK_CALCULATION_CONSTANTS.dragDrop.hourMin;
           const startMinute = categoryHours 
-            ? categoryHours.start % 60
+            ? categoryHours.start % MINUTES_PER_HOUR
             : 0;
           
-          const totalMinutes = (startHour * 60) + startMinute + minutesFromStart;
-          let hours = Math.floor(totalMinutes / 60);
-          let minutes = totalMinutes % 60;
+          const totalMinutes = (startHour * MINUTES_PER_HOUR) + startMinute + minutesFromStart;
+          let hours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
+          let minutes = totalMinutes % MINUTES_PER_HOUR;
           
           // Round to nearest 15-minute slot
           minutes = Math.round(minutes / 15) * 15;
@@ -934,19 +934,19 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           
           // Apply category hours constraints
           if (categoryHours) {
-            const totalMinutesInDay = hours * 60 + minutes;
+            const totalMinutesInDay = hours * MINUTES_PER_HOUR + minutes;
             if (totalMinutesInDay < categoryHours.start) {
-              hours = Math.floor(categoryHours.start / 60);
-              minutes = categoryHours.start % 60;
+              hours = Math.floor(categoryHours.start / MINUTES_PER_HOUR);
+              minutes = categoryHours.start % MINUTES_PER_HOUR;
             } else if (totalMinutesInDay + taskDuration > categoryHours.end) {
               const maxStartMinutes = categoryHours.end - taskDuration;
               if (maxStartMinutes >= categoryHours.start) {
-                hours = Math.floor(maxStartMinutes / 60);
-                minutes = maxStartMinutes % 60;
+                hours = Math.floor(maxStartMinutes / MINUTES_PER_HOUR);
+                minutes = maxStartMinutes % MINUTES_PER_HOUR;
                 minutes = Math.floor(minutes / 15) * 15;
               } else {
                 hours = Math.floor(categoryHours.start / 60);
-                minutes = categoryHours.start % 60;
+                minutes = categoryHours.start % MINUTES_PER_HOUR;
               }
             }
           }
@@ -986,7 +986,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         .map((t) => ({
           task: t,
           start: new Date(t.scheduledDate!).getTime(),
-          end: new Date(t.scheduledDate!).getTime() + (getTaskMinutes(t) * 60 * 1000), // Use AI estimator
+          end: new Date(t.scheduledDate!).getTime() + (getTaskMinutes(t) * MILLISECONDS_PER_MINUTE), // Use AI estimator
         }))
         .sort((a, b) => a.start - b.start);
       
@@ -998,7 +998,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       }
       
       const firstTask = sortedTasks[0];
-      if (firstTask.start > earliestAllowed.getTime() + (taskDuration * 60 * 1000)) {
+      if (firstTask.start > earliestAllowed.getTime() + (taskDuration * MILLISECONDS_PER_MINUTE)) {
         startTime = earliestAllowed;
       } else {
         const lastTask = sortedTasks[sortedTasks.length - 1];
@@ -1233,7 +1233,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                       )}
                       {activeTask.estimatedTime && (
                         <span className="text-gray-700 dark:text-gray-200">
-                          {activeTask.estimatedTime >= 60 ? `${Math.floor(activeTask.estimatedTime / 60)}h` : `${activeTask.estimatedTime}m`}
+                          {activeTask.estimatedTime >= MINUTES_PER_HOUR ? `${Math.floor(activeTask.estimatedTime / MINUTES_PER_HOUR)}h` : `${activeTask.estimatedTime}m`}
                         </span>
                       )}
                     </div>
@@ -1277,7 +1277,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                     )}
                     {activeTask.estimatedTime && (
                       <span className="text-gray-700 dark:text-gray-200">
-                        {activeTask.estimatedTime >= 60 ? `${Math.floor(activeTask.estimatedTime / 60)}h` : `${activeTask.estimatedTime}m`}
+                        {activeTask.estimatedTime >= MINUTES_PER_HOUR ? `${Math.floor(activeTask.estimatedTime / MINUTES_PER_HOUR)}h` : `${activeTask.estimatedTime}m`}
                       </span>
                     )}
                   </div>

@@ -596,6 +596,27 @@ export function DashboardView({
   // Calendar events state for showing dots on mobile week view
   const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, number>>({});
 
+  // Confetti when marking a task complete (week view / today agenda in dashboard)
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [confettiOrigin, setConfettiOrigin] = useState<{ x: number; y: number } | null>(null);
+  const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleTaskComplete = useCallback((originElement?: HTMLElement | null) => {
+    if (originElement) {
+      const rect = originElement.getBoundingClientRect();
+      setConfettiOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    } else {
+      setConfettiOrigin(null);
+    }
+    setShowConfetti(true);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
+    };
+  }, []);
+
   // Extract values with safe defaults
   const tasks = tasksContext?.tasks || [];
   const updateTask = tasksContext?.updateTask;
