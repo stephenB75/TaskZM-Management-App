@@ -278,8 +278,14 @@ export function TodayAgendaView({
     });
   };
 
-  // Handle task completion - trigger confetti animation
-  const handleTaskComplete = useCallback(() => {
+  // Handle task completion - trigger confetti at card position (or center if no element)
+  const handleTaskComplete = useCallback((originElement?: HTMLElement | null) => {
+    if (originElement) {
+      const rect = originElement.getBoundingClientRect();
+      setConfettiOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    } else {
+      setConfettiOrigin(null);
+    }
     setShowConfetti(true);
   }, []);
 

@@ -70,6 +70,8 @@ interface SevenDayKanbanProps {
   mobileDayIndex?: number;
   mobileWeekOffset?: number;
   onMobileWeekChange?: (offset: number) => void;
+  /** Called when a task is marked complete (for confetti). */
+  onTaskComplete?: (originElement?: HTMLElement | null) => void;
 }
 
 export function SevenDayKanban({ 
@@ -77,7 +79,8 @@ export function SevenDayKanban({
   viewMode = 'week', 
   mobileDayIndex = 0,
   mobileWeekOffset = 0,
-  onMobileWeekChange
+  onMobileWeekChange,
+  onTaskComplete,
 }: SevenDayKanbanProps) {
   const { tasks } = useTasks();
   const { activeId } = useDragDrop();
@@ -1035,6 +1038,7 @@ export function SevenDayKanban({
                                         onClick={() => handleTaskClick(item.task)}
                             droppableId={currentColumn.dateString}
                             occurrenceDate={currentColumn.dateString}
+                            onComplete={onTaskComplete}
                           />
                           </div>
                                   );
@@ -1467,6 +1471,7 @@ export function SevenDayKanban({
                                               onClick={() => handleTaskClick(item.task)}
                                     droppableId={column.dateString}
                                     occurrenceDate={column.dateString}
+                                    onComplete={onTaskComplete}
                                   />
                                   </div>
                                         );

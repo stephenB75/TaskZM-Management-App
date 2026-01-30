@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion } from "motion/react";
 import { TodayAgendaView } from "./TodayAgendaView";
 import { SevenDayKanban } from "./SevenDayKanban";
+import { Confetti } from "./Confetti";
 import { MonthCalendarView } from "./MonthCalendarView";
 import { Icon } from "./Icon";
 import {
@@ -1213,7 +1214,20 @@ export function DashboardView({
   };
 
   return (
-    <div className={cn("h-full flex flex-col", UI_GRADIENT_COLORS.dialog.className, "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950")}>
+    <>
+      <Confetti
+        trigger={showConfetti}
+        origin={confettiOrigin}
+        onComplete={() => {
+          if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
+          confettiTimeoutRef.current = setTimeout(() => {
+            setShowConfetti(false);
+            setConfettiOrigin(null);
+            confettiTimeoutRef.current = null;
+          }, 100);
+        }}
+      />
+      <div className={cn("h-full flex flex-col", UI_GRADIENT_COLORS.dialog.className, "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950")}>
       {/* Header - Using AppHeader for consistency */}
       <AppHeader
         title="Dashboard"
@@ -1633,7 +1647,7 @@ export function DashboardView({
               data-tour="kanban-board"
             >
               {viewMode === "week" ? (
-                <SevenDayKanban viewMode={viewMode} />
+                <SevenDayKanban viewMode={viewMode} onTaskComplete={handleTaskComplete} />
               ) : (
                 <MonthCalendarView />
               )}
@@ -1652,6 +1666,7 @@ export function DashboardView({
                   mobileDayIndex={mobileDayIndex}
                   mobileWeekOffset={mobileWeekOffset}
                   onMobileWeekChange={setMobileWeekOffset}
+                  onTaskComplete={handleTaskComplete}
                 />
               ) : (
                 <MonthCalendarView mobileMode />
