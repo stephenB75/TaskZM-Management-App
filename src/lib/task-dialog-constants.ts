@@ -21,6 +21,10 @@ export const TASK_DIALOG_UI_TEXT = {
   scheduledDate: 'Scheduled Date',
   dueDate: 'Due Date',
   
+  // Minimal view: section title and labels (inspiration: consolidated task dialog)
+  taskInfoTitle: 'Task Info',
+  priorityLevelLabel: 'Priority Level',
+
   // Tab Labels
   basicInfo: {
     desktop: 'Basic Info',
@@ -155,6 +159,8 @@ export const TASK_DIALOG_COLORS = {
   // Intentional design difference: TaskDialog uses primary color with opacity
   // instead of purple gradient like other task cards
   assigneeFallbackGradient: 'bg-gradient-to-br from-primary/20 to-primary/40',
+  // Minimal view: warm card background (light yellow-orange inspiration)
+  minimalCardBg: 'bg-amber-50/50 dark:bg-amber-950/20',
 } as const;
 
 // Menu Dimensions
@@ -172,6 +178,19 @@ export const TASK_DIALOG_MENU_ITEM_HEIGHT = {
 export const TASK_DIALOG_SECTION_SPACING = {
   mobile: '1.5rem', // space-y-6
   desktop: '2rem', // space-y-8
+} as const;
+
+// Minimal view: tighter spacing for consolidated layout (inspiration images)
+export const TASK_DIALOG_MINIMAL_SPACING = {
+  headerGap: 'gap-2',
+  headerPaddingBottom: 'pb-2 sm:pb-3',
+  cardPadding: 'p-4 sm:p-4',
+  cardSpaceY: 'space-y-3 sm:space-y-3',
+  fieldSpaceY: 'space-y-1.5',
+  statusPriorityRowGap: 'gap-2 sm:gap-3',
+  pillGap: 'gap-1.5',
+  contentPadding: 'px-4 sm:px-5 pb-4',
+  mobileTabSelectWrapper: 'px-4 pt-4 pb-2',
 } as const;
 
 // Calendar Constants
