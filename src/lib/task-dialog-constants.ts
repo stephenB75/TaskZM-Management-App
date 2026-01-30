@@ -176,6 +176,8 @@ export const TASK_DIALOG_COLORS = {
   // Reference: cancel = solid red, create = solid purple (primary)
   footerCancel: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
   footerCreate: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  // Text fields: distinct background so user input is easy to read on the gradient
+  inputFieldBg: '!bg-slate-50 dark:!bg-gray-800 border border-primary/25 shadow-sm placeholder:text-muted-foreground/70',
 } as const;
 
 // Menu Dimensions

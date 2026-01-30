@@ -2120,7 +2120,7 @@ export function TaskDialog({
                       placeholder={TASK_DIALOG_UI_TEXT.taskNamePlaceholder}
                       autoFocus
                       disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                      className="bg-white dark:bg-card rounded-lg border-0 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/30 h-9 sm:h-10 text-sm min-w-0"
+                      className={cn(TASK_DIALOG_COLORS.inputFieldBg, "rounded-lg focus-visible:ring-2 focus-visible:ring-primary/30 h-9 sm:h-10 text-sm min-w-0")}
                     />
                   </div>
 
@@ -2311,7 +2311,8 @@ export function TaskDialog({
                     placeholder={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.placeholder}
                     rows={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.rows}
                     className={cn(
-                      "bg-white dark:bg-card rounded-lg border-0 shadow-sm",
+                      TASK_DIALOG_COLORS.inputFieldBg,
+                      "rounded-lg",
                       COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.focusClassName
                     )}
                   />
@@ -2549,7 +2550,7 @@ export function TaskDialog({
                                   }
                                 }}
                               >
-                                <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 h-9 sm:h-10 text-sm cursor-pointer">
+                                <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-9 sm:h-10 text-sm cursor-pointer rounded-lg")}>
                                   <SelectValue placeholder="Hour" />
                                 </SelectTrigger>
                                 <SelectContent 
@@ -2602,7 +2603,7 @@ export function TaskDialog({
                                 disabled={false}
                               >
                                 <SelectTrigger 
-                                  className="bg-white dark:bg-card/80 border-primary/20 h-9 sm:h-10 text-sm cursor-pointer pointer-events-auto"
+                                  className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-9 sm:h-10 text-sm cursor-pointer pointer-events-auto rounded-lg")}
                                   aria-label="Select minutes"
                                 >
                                   <SelectValue placeholder="Min" />
@@ -2643,7 +2644,7 @@ export function TaskDialog({
                                     }
                                   }}
                                 >
-                                  <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 h-9 sm:h-10 text-sm cursor-pointer">
+                                  <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-9 sm:h-10 text-sm cursor-pointer rounded-lg")}>
                                     <SelectValue placeholder="AM/PM" />
                                   </SelectTrigger>
                                   <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2734,7 +2735,7 @@ export function TaskDialog({
                             }
                           }
                         }}
-                        className="bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10"
+                        className={cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10")}
                       />
                       </div>
                     </div>
@@ -2801,7 +2802,7 @@ export function TaskDialog({
                         value={timezone}
                         onValueChange={setTimezone}
                       >
-                        <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent 
@@ -2842,7 +2843,7 @@ export function TaskDialog({
                   {/* AI Task Breakdown - moved from Basic for minimal Task Info tab */}
                   {(title.trim() || description.trim()) && (
                     <div className={cn(
-                      "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                      cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                       TASK_DIALOG_MINIMAL_SPACING.cardPadding,
                       "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow",
                       "mb-3 sm:mb-4"
@@ -2939,7 +2940,7 @@ export function TaskDialog({
                   {/* Folder Selector - moved from Basic for minimal Task Info tab */}
                   {folders.length > 0 && (
                     <div className={cn(
-                      "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                      cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                       cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
                       "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow",
                       "mb-3 sm:mb-4"
@@ -2974,7 +2975,7 @@ export function TaskDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
                           <SelectValue placeholder="No folder" />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3019,7 +3020,7 @@ export function TaskDialog({
                         }
                       }}
                     >
-                      <SelectTrigger className="flex-1 h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "flex-1 h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
                         <SelectValue placeholder="Select or add tag..." />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3057,7 +3058,7 @@ export function TaskDialog({
                         }
                       }}
                       placeholder="Enter new tag name..."
-                      className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10"
+                      className={cn(TASK_DIALOG_COLORS.inputFieldBg, "rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 h-10")}
                     />
                     <Button
                       type="button"
@@ -3093,7 +3094,7 @@ export function TaskDialog({
 
                 {/* Step 4: Create Subtask */}
                 <div className={cn(
-                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                   cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-3"),
                   "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                 )}>
@@ -3115,7 +3116,7 @@ export function TaskDialog({
                         (e.preventDefault(), addSubtask())
                       }
                       placeholder="Enter subtask name..."
-                      className="bg-white dark:bg-card border focus:border-primary focus:ring-2 focus:ring-primary/20 h-10"
+                      className={cn(TASK_DIALOG_COLORS.inputFieldBg, "rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 h-10")}
                     />
                     <Button
                       type="button"
@@ -3176,7 +3177,7 @@ export function TaskDialog({
 
                 {/* Recurrence with Toggle - Moved from Advanced */}
                 <div className={cn(
-                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                   "p-4 sm:p-5 space-y-4 sm:space-y-5",
                   "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                 )}>
@@ -3249,7 +3250,7 @@ export function TaskDialog({
                               }
                             }}
                           >
-                            <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3324,7 +3325,7 @@ export function TaskDialog({
                               setRecurrenceDayOfMonth(parseInt(value))
                             }
                           >
-                            <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent 
@@ -3346,7 +3347,7 @@ export function TaskDialog({
                         <div className="space-y-2">
                           <Label className="text-xs text-muted-foreground">Ends</Label>
                           <div className={cn(
-                            "w-full flex justify-center bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                            cn("w-full flex justify-center", TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                             cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "py-2"),
                             "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                           )}>
@@ -3394,7 +3395,7 @@ export function TaskDialog({
 
                 {/* Task Dependencies - Pro Yearly Feature */}
                 <div className={cn(
-                  "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                  cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                   cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
                   "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                 )}>
@@ -3424,7 +3425,7 @@ export function TaskDialog({
                           }
                         }}
                       >
-                        <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground border-2 border-primary/30 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
                           <SelectValue placeholder="Add dependency..." />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3548,7 +3549,7 @@ export function TaskDialog({
                 {/* Team Assignment - Moved from Advanced */}
                 {teamMembers.length > 0 && (
                   <div className={cn(
-                    "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                    cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                     cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
                     "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                   )}>
@@ -3569,7 +3570,7 @@ export function TaskDialog({
                         }
                       }}
                     >
-                      <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                      <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
                         <SelectValue placeholder="Add assignee..." />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -3684,7 +3685,7 @@ export function TaskDialog({
                   
                   return (
                     <div className={cn(
-                    "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                    cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                     cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
                     "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                   )}>
