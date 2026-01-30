@@ -38,6 +38,7 @@ import { Separator } from "./ui/separator";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Slider } from "./ui/slider";
 import { Tabs, TabsContent } from "./ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { PomodoroTimer } from "./PomodoroTimer";
 import {
   cn,
@@ -2474,79 +2475,63 @@ export function TaskDialog({
                           </div>
                           {/* Inline layout: Format toggle, Hour, Minute, AM/PM */}
                           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full">
-                            {/* Time Format Toggle */}
-                            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                              <Button
-                                type="button"
-                                variant={timeFormat === "12hr" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  setTimeFormat("12hr");
-                                  // Convert current time to 12hr if needed
-                                  if (scheduledHours) {
-                                    const parsedHours = parseInt(scheduledHours, 10);
-                                    if (!Number.isNaN(parsedHours)) {
-                                      let newHours = parsedHours;
-                                      let newPeriod: "AM" | "PM" = "AM";
-
-                                      if (parsedHours === 0) {
-                                        newHours = 12;
-                                        newPeriod = "AM";
-                                      } else if (parsedHours === 12) {
-                                        newHours = 12;
-                                        newPeriod = "PM";
-                                      } else if (parsedHours > 12) {
-                                        newHours = parsedHours - 12;
-                                        newPeriod = "PM";
-                                      } else {
-                                        newPeriod = "AM";
-                                      }
-
-                                      const newHoursStr = newHours.toString();
-                                      setScheduledHours(newHoursStr);
-                                      setTimePeriod(newPeriod);
-
-                                      if (scheduledMinutes) {
-                                        updateScheduledTime(newHoursStr, scheduledMinutes, "12hr", newPeriod);
-                                      }
+                            {/* Time Format Toggle: switch between 12HR and 24HR */}
+                            <ToggleGroup
+                              type="single"
+                              value={timeFormat}
+                              onValueChange={(value) => {
+                                if (value !== "12hr" && value !== "24hr") return;
+                                setTimeFormat(value);
+                                if (scheduledHours) {
+                                  const parsedHours = parseInt(scheduledHours, 10);
+                                  if (Number.isNaN(parsedHours)) return;
+                                  if (value === "12hr") {
+                                    let newHours = parsedHours;
+                                    let newPeriod: "AM" | "PM" = "AM";
+                                    if (parsedHours === 0) {
+                                      newHours = 12;
+                                      newPeriod = "AM";
+                                    } else if (parsedHours === 12) {
+                                      newHours = 12;
+                                      newPeriod = "PM";
+                                    } else if (parsedHours > 12) {
+                                      newHours = parsedHours - 12;
+                                      newPeriod = "PM";
+                                    } else {
+                                      newPeriod = "AM";
+                                    }
+                                    const newHoursStr = newHours.toString();
+                                    setScheduledHours(newHoursStr);
+                                    setTimePeriod(newPeriod);
+                                    if (scheduledMinutes) {
+                                      updateScheduledTime(newHoursStr, scheduledMinutes, "12hr", newPeriod);
+                                    }
+                                  } else {
+                                    let convertedHours = parsedHours;
+                                    if (timePeriod === "PM" && parsedHours !== 12) {
+                                      convertedHours = parsedHours + 12;
+                                    } else if (timePeriod === "AM" && parsedHours === 12) {
+                                      convertedHours = 0;
+                                    }
+                                    const convertedStr = convertedHours.toString();
+                                    setScheduledHours(convertedStr);
+                                    if (scheduledMinutes) {
+                                      updateScheduledTime(convertedStr, scheduledMinutes, "24hr", timePeriod);
                                     }
                                   }
-                                }}
-                                className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
-                              >
+                                }
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="flex-shrink-0 h-9 sm:h-10 [&>button]:h-9 [&>button]:sm:h-10 [&>button]:px-3 [&>button]:sm:px-4 [&>button]:text-xs [&>button]:sm:text-sm"
+                            >
+                              <ToggleGroupItem value="12hr" aria-label="12-hour format">
                                 12HR
-                              </Button>
-                              <Button
-                                type="button"
-                                variant={timeFormat === "24hr" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  setTimeFormat("24hr");
-                                  // Convert current time to 24hr if needed
-                                  if (scheduledHours) {
-                                    const parsedHours = parseInt(scheduledHours, 10);
-                                    if (!Number.isNaN(parsedHours)) {
-                                      let convertedHours = parsedHours;
-                                      if (timePeriod === "PM" && parsedHours !== 12) {
-                                        convertedHours = parsedHours + 12;
-                                      } else if (timePeriod === "AM" && parsedHours === 12) {
-                                        convertedHours = 0;
-                                      }
-
-                                      const convertedStr = convertedHours.toString();
-                                      setScheduledHours(convertedStr);
-
-                                      if (scheduledMinutes) {
-                                        updateScheduledTime(convertedStr, scheduledMinutes, "24hr", timePeriod);
-                                      }
-                                    }
-                                  }
-                                }}
-                                className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
-                              >
+                              </ToggleGroupItem>
+                              <ToggleGroupItem value="24hr" aria-label="24-hour format">
                                 24HR
-                              </Button>
-                            </div>
+                              </ToggleGroupItem>
+                            </ToggleGroup>
 
                             {/* Hour Select */}
                             <div className="flex-1 min-w-[70px] sm:min-w-[90px] relative z-10">
