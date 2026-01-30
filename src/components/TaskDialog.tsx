@@ -69,7 +69,7 @@ import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription, generateDescriptionOptions } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS, EFFORT_SCORE_THRESHOLDS, DESCRIPTION_UI_CONFIG } from "../lib/ai-config";
-import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, INBOX_CHECKBOX_SIZE_MOBILE } from "../lib/layout-constants";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS } from "../lib/task-dialog-constants";
 import { useIsMobile } from "./ui/use-mobile";
@@ -598,6 +598,18 @@ export function TaskDialog({
 }: TaskDialogProps) {
   const { accessToken } = useAuth();
   const isMobile = useIsMobile();
+  const [subtaskCheckboxSize, setSubtaskCheckboxSize] = useState(TASK_DIALOG_SUBTASK_CHECKBOX_SIZE.laptop);
+  useEffect(() => {
+    const update = () => {
+      const w = typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.tablet;
+      if (w < VIEWPORT_BREAKPOINTS.mobile) setSubtaskCheckboxSize(TASK_DIALOG_SUBTASK_CHECKBOX_SIZE.mobile);
+      else if (w < VIEWPORT_BREAKPOINTS.tablet) setSubtaskCheckboxSize(TASK_DIALOG_SUBTASK_CHECKBOX_SIZE.tablet);
+      else setSubtaskCheckboxSize(TASK_DIALOG_SUBTASK_CHECKBOX_SIZE.laptop);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
   const {
     addTask,
     updateTask,
@@ -2064,7 +2076,8 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('basic')}
               className={cn(
-                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1 min-h-[2.25rem] sm:min-h-[2.5rem]",
+                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1",
+                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
                 activeTab === 'basic' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
@@ -2077,7 +2090,7 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('scheduling')}
               className={cn(
-                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1 min-h-[2.25rem] sm:min-h-[2.5rem]",
+                cn("flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1", TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight),
                 activeTab === 'scheduling' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
@@ -2090,7 +2103,8 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('organization')}
               className={cn(
-                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1 min-h-[2.25rem] sm:min-h-[2.5rem]",
+                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1",
+                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
                 activeTab === 'organization' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
@@ -2327,73 +2341,75 @@ export function TaskDialog({
                   />
                   </div>
 
-                  {/* AI Analysis - under task name and description; breakdown, domain, effort, description options, suggestions, suggested subtasks */}
+                  {/* AI Analysis - under task name and description; components constrained to block borders */}
                   {(title.trim() || description.trim()) && (
                     <div className={cn(
                       cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                       TASK_DIALOG_MINIMAL_SPACING.cardPadding,
-                      "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                      "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow overflow-hidden min-w-0"
                     )}>
                       {isBreakdownLoading ? (
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse" />
-                          <span>Analyzing task...</span>
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm min-w-0">
+                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse shrink-0" />
+                          <span className="truncate">Analyzing task...</span>
                         </div>
                       ) : breakdownError ? (
-                        <div className="flex items-center gap-2 text-destructive text-sm">
-                          <span>Error analyzing task: {breakdownError.message}</span>
+                        <div className="flex items-center gap-2 text-destructive text-sm min-w-0 overflow-hidden">
+                          <span className="truncate">Error analyzing task: {breakdownError.message}</span>
                         </div>
                       ) : breakdown ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
-                            <span className="font-semibold text-foreground">AI Analysis</span>
+                        <div className="space-y-2 min-w-0 overflow-hidden">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary shrink-0" />
+                            <span className="font-semibold text-foreground truncate">AI Analysis</span>
                           </div>
-                          <div className="flex flex-wrap items-center gap-3 text-sm">
-                            <Badge variant="outline" className="text-xs border-primary/30">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm min-w-0">
+                            <Badge variant="outline" className="text-xs border-primary/30 shrink-0 max-w-full truncate">
                               {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
                             </Badge>
                             {breakdown.estimatedMinutes > 0 && (
-                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                                <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary" />
-                                <span className="text-xs font-medium text-foreground">
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded shrink-0">
+                                <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary shrink-0" />
+                                <span className="text-xs font-medium text-foreground whitespace-nowrap">
                                   {Math.floor(breakdown.estimatedMinutes / MINUTES_PER_HOUR)}h {breakdown.estimatedMinutes % MINUTES_PER_HOUR}m
                                 </span>
                               </div>
                             )}
                             {breakdown.effortScore > 0 && (
-                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                                <span className="text-xs font-medium text-foreground">
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded shrink-0">
+                                <span className="text-xs font-medium text-foreground whitespace-nowrap">
                                   Effort: {breakdown.effortScore.toFixed(EFFORT_SCORE_THRESHOLDS.DISPLAY_DECIMAL_PLACES)}/{EFFORT_SCORE_THRESHOLDS.DISPLAY_MAX}
                                 </span>
                               </div>
                             )}
                             {breakdown.primaryVerb && breakdown.primaryVerb !== DESCRIPTION_UI_CONFIG.UNKNOWN_VERB && (
-                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                                <span className="text-xs font-medium text-foreground capitalize">{breakdown.primaryVerb}</span>
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded min-w-0 max-w-full overflow-hidden">
+                                <span className="text-xs font-medium text-foreground capitalize truncate">{breakdown.primaryVerb}</span>
                               </div>
                             )}
                           </div>
                           {!description.trim() && (isLoadingDescriptionOptions || descriptionOptions.length > 0) && (
-                            <div className="flex flex-col gap-2">
-                              <span className="text-xs text-muted-foreground">
+                            <div className="flex flex-col gap-2 min-w-0 overflow-hidden">
+                              <span className="text-xs text-muted-foreground truncate">
                                 {isLoadingDescriptionOptions ? 'Generating description options...' : 'Choose a description:'}
                               </span>
                               {!isLoadingDescriptionOptions && descriptionOptions.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
+                                <div className="flex flex-wrap gap-1.5 min-w-0">
                                   {descriptionOptions.slice(0, DESCRIPTION_UI_CONFIG.MAX_DESCRIPTION_OPTIONS).map((option, idx) => (
                                     <Badge
                                       key={idx}
                                       variant="secondary"
-                                      className="cursor-pointer hover:bg-primary/10 text-xs max-w-full"
+                                      className="cursor-pointer hover:bg-primary/10 text-xs max-w-full min-w-0 truncate"
                                       onClick={async () => {
                                         setDescription(option.description);
                                         setDescriptionOptions([]);
                                         toast.success('Description selected', { description: 'AI Action Plan will update automatically based on your description.' });
                                       }}
-                                      title={`${option.domain} (${(option.confidence * 100).toFixed(0)}% confidence)`}
+                                      title={option.description}
                                     >
-                                      {option.description.length > DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH ? `${option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)}...` : option.description}
+                                      <span className="truncate block">
+                                        {option.description.length > DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH ? `${option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)}...` : option.description}
+                                      </span>
                                     </Badge>
                                   ))}
                                 </div>
@@ -2401,19 +2417,19 @@ export function TaskDialog({
                             </div>
                           )}
                           {description.trim() && breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="flex flex-wrap gap-1.5 min-w-0">
                               {breakdown.descriptionAnalysis.suggestions.slice(0, DESCRIPTION_UI_CONFIG.MAX_SUGGESTIONS_DISPLAY).map((suggestion, idx) => (
-                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs" onClick={() => { const newDescription = description ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${suggestion}` : suggestion; setDescription(newDescription); }}>
-                                  {suggestion}
+                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs max-w-full min-w-0 truncate" onClick={() => { const newDescription = description ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${suggestion}` : suggestion; setDescription(newDescription); }} title={suggestion}>
+                                  <span className="truncate block">{suggestion}</span>
                                 </Badge>
                               ))}
                             </div>
                           )}
                           {breakdown.actionPlan && breakdown.actionPlan.suggestedSubtasks.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="flex flex-wrap gap-1.5 min-w-0">
                               {breakdown.actionPlan.suggestedSubtasks.slice(0, 3).map((subtask, idx) => (
-                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs" onClick={() => { const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() }; setSubtasks([...subtasks, newSubtask]); toast.success('Added as subtask', { description: subtask }); }}>
-                                  + {subtask}
+                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs max-w-full min-w-0 truncate" onClick={() => { const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() }; setSubtasks([...subtasks, newSubtask]); toast.success('Added as subtask', { description: subtask }); }} title={subtask}>
+                                  <span className="truncate block">+ {subtask}</span>
                                 </Badge>
                               ))}
                             </div>
@@ -2440,7 +2456,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
+                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-colors",
                               isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
                             )}
                           >
@@ -2465,7 +2481,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
+                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-colors",
                               isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
                             )}
                           >
@@ -2634,7 +2650,7 @@ export function TaskDialog({
                             </ToggleGroup>
 
                             {/* Hour Select */}
-                            <div className="flex-1 min-w-[70px] sm:min-w-[90px] relative z-10">
+                            <div className={cn("flex-1 relative z-10", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
                               <Select
                                 value={scheduledHours || undefined}
                                 onValueChange={(value) => {
@@ -2676,7 +2692,7 @@ export function TaskDialog({
                             </div>
 
                             {/* Minute Select */}
-                            <div className="flex-1 min-w-[70px] sm:min-w-[90px] relative z-20">
+                            <div className={cn("flex-1 relative z-20", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
                               <Select
                                 value={
                                   scheduledMinutes && scheduledMinutes.length > 0 
@@ -2729,7 +2745,7 @@ export function TaskDialog({
 
                             {/* AM/PM Select (only for 12HR format) */}
                             {timeFormat === "12hr" && (
-                              <div className="flex-1 min-w-[70px] sm:min-w-[90px] relative z-10">
+                              <div className={cn("flex-1 relative z-10", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
                                 <Select
                                   value={timePeriod || "AM"}
                                   onValueChange={(value) => {
@@ -3142,10 +3158,10 @@ export function TaskDialog({
                               onCheckedChange={() => toggleSubtask(subtask.id)}
                               className="mt-1 shrink-0"
                               style={{
-                                width: INBOX_CHECKBOX_SIZE_MOBILE,
-                                height: INBOX_CHECKBOX_SIZE_MOBILE,
-                                minWidth: INBOX_CHECKBOX_SIZE_MOBILE,
-                                minHeight: INBOX_CHECKBOX_SIZE_MOBILE,
+                                width: subtaskCheckboxSize,
+                                height: subtaskCheckboxSize,
+                                minWidth: subtaskCheckboxSize,
+                                minHeight: subtaskCheckboxSize,
                               }}
                             />
                             <div className="flex-1 min-w-0">

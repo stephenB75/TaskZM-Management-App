@@ -216,6 +216,8 @@ export const TASK_DIALOG_MINIMAL_SPACING = {
   basicContentSpaceY: 'space-y-4 sm:space-y-6 lg:space-y-6',
   // Inner wrapper: more padding on desktop for comfortable fit
   dialogInnerPadding: 'pt-4 px-4 pb-3 sm:pt-6 sm:px-6 sm:pb-5 md:pt-6 md:px-6 md:pb-5 lg:pt-8 lg:px-8 lg:pb-6',
+  // Tab header buttons: min height for touch targets (mobile 2.25rem, desktop 2.5rem)
+  tabButtonMinHeight: 'min-h-[2.25rem] sm:min-h-[2.5rem]',
 } as const;
 
 // Calendar Constants

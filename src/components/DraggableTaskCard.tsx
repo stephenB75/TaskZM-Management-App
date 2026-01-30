@@ -883,7 +883,7 @@ export const DraggableTaskCard = React.forwardRef<
             </button>
             <h3
               className={cn(
-                "text-foreground dark:text-gray-100 leading-tight flex-1 font-normal min-w-0",
+                "text-foreground dark:text-gray-100 leading-tight flex-1 font-semibold min-w-0",
                 TASK_CARD_LINE_CLAMP.title,
                 task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
                 isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop,

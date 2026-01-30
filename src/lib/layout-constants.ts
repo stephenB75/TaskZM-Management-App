@@ -472,6 +472,13 @@ export const INBOX_CHECKBOX_SIZE_SMALL_MONITOR = '16px'; // w-4 h-4 = 16px - sma
 export const INBOX_CHECKBOX_SIZE_LANDSCAPE = '20px'; // w-5 h-5 = 20px - increased for better touch target in landscape mode
 export const INBOX_CHECKBOX_SIZE_DESKTOP = '16px'; // w-4 h-4 = 16px - desktop checkbox
 
+// Task Dialog Create Subtask checkbox: smaller, responsive (mobile / tablet / laptop)
+export const TASK_DIALOG_SUBTASK_CHECKBOX_SIZE = {
+  mobile: '18px',   // < 768px - touch-friendly, not as large as 20px
+  tablet: '16px',   // 768–1023px
+  laptop: '14px',   // 1024px+ - compact for dialog
+} as const;
+
 // Checkbox check icon sizes (proportional to checkbox size)
 export const CHECKBOX_CHECK_ICON_SIZE = 12; // w-3 = 12px - standard check icon size for 16px checkbox
 export const CHECKBOX_CHECK_ICON_SIZE_MOBILE = 14; // w-3.5 = 14px - check icon size for 20px mobile checkbox

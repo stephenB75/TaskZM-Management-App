@@ -145,7 +145,7 @@ export function TaskCard({
             )}
             
             <h3 className={cn(
-              'text-sm mb-1.5 break-words px-1 mt-1',
+              'text-sm font-semibold mb-1.5 break-words px-1 mt-1',
               task.status === 'done' && 'line-through text-gray-500'
             )}>
               {task.title}
