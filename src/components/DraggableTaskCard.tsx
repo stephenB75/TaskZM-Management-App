@@ -695,7 +695,7 @@ export const DraggableTaskCard = React.forwardRef<
       >
         {/* Next Up Badge - Above the task card */}
         {isNextUp && (
-          <div className="w-full mb-1">
+          <div className={cn("w-full", TASK_CARD_TIMELINE.nextUp.badgeMarginBottom)}>
             <span 
               className={cn(
                 TASK_CARD_FONT_SIZES.duration.desktop,
