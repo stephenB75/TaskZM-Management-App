@@ -166,11 +166,10 @@ export const TASK_DIALOG_COLORS = {
   assigneeFallbackGradient: 'bg-gradient-to-br from-primary/20 to-primary/40',
   // Minimal view: warm card background (light yellow-orange inspiration)
   minimalCardBg: 'bg-amber-50/50 dark:bg-amber-950/20',
-  // Reference design: full dialog background (light peach/orange-yellow #ffeeb2-style)
-  // Override base dialog gradient so warm solid background shows
-  dialogBg: '!bg-[#FFEEB2] dark:!bg-amber-950/50 [background-image:none]',
-  // Reference: compact single-column modal width (not wide panel)
-  dialogMaxWidth: 'max-w-lg sm:max-w-lg',
+  // Gradient: yellow at top fading to white (overrides base dialog; responsive)
+  dialogBg: '!bg-gradient-to-b !from-[#FFEEB2] !via-amber-50/90 !to-white dark:!from-amber-950/60 dark:!via-amber-950/30 dark:!to-gray-900',
+  // Responsive width: fit small screens (95vw), compact modal on sm+
+  dialogMaxWidth: 'max-w-[95vw] sm:max-w-lg',
   // Reference: selected pill = purple; unselected = text on dialog bg (no white box)
   pillSelected: 'bg-primary text-primary-foreground',
   pillUnselected: 'bg-transparent text-foreground hover:bg-primary/10',
@@ -196,19 +195,19 @@ export const TASK_DIALOG_SECTION_SPACING = {
   desktop: '2rem', // space-y-8
 } as const;
 
-// Minimal view: reference design (docs/task-dialog-reference) - generous spacing, no inner cards
+// Minimal view: responsive spacing so components fit on all devices
 export const TASK_DIALOG_MINIMAL_SPACING = {
-  headerGap: 'gap-2',
+  headerGap: 'gap-1 sm:gap-2',
   headerPaddingBottom: 'pb-2 sm:pb-3',
-  cardPadding: 'p-4 sm:p-4',
-  cardSpaceY: 'space-y-3 sm:space-y-3',
-  fieldSpaceY: 'space-y-1.5',
+  cardPadding: 'p-3 sm:p-4',
+  cardSpaceY: 'space-y-2 sm:space-y-3',
+  fieldSpaceY: 'space-y-1 sm:space-y-1.5',
   statusPriorityRowGap: 'gap-2 sm:gap-3',
-  pillGap: 'gap-1.5',
-  contentPadding: 'px-4 sm:px-5 pb-4',
-  mobileTabSelectWrapper: 'px-4 pt-4 pb-2',
-  // Reference: generous vertical spacing between Task Name, Description, Status, Priority
-  basicContentSpaceY: 'space-y-6 sm:space-y-7',
+  pillGap: 'gap-1 sm:gap-1.5',
+  contentPadding: 'px-3 pb-3 sm:px-5 sm:pb-4',
+  mobileTabSelectWrapper: 'px-3 pt-3 pb-2 sm:px-4 sm:pt-4',
+  // Responsive: tighter on small screens so content fits, generous on desktop
+  basicContentSpaceY: 'space-y-4 sm:space-y-6',
 } as const;
 
 // Calendar Constants

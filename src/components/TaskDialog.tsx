@@ -2040,26 +2040,26 @@ export function TaskDialog({
       }}
     >
       <DialogContent className={cn(
-        "max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 border-0 shadow-xl",
+        "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 border-0 shadow-xl",
         TASK_DIALOG_COLORS.dialogBg,
         TASK_DIALOG_COLORS.dialogMaxWidth,
         "text-foreground dark:text-foreground"
       )}>
-        {/* Reference: single warm surface; Task Info / Schedule / Organize nav; borderless inputs; purple pills; red cancel, purple create */}
-        <div className={cn("flex flex-col flex-1 min-h-0 rounded-2xl overflow-hidden pt-5 pr-5 pl-5 pb-4 sm:pt-6 sm:px-6 sm:pb-5", TASK_DIALOG_COLORS.dialogBg)}>
-        {/* Reference: minimal header - Task Info, Schedule, Organize stacked; active = muted + chevron left */}
-        <DialogHeader className={cn("flex-shrink-0 border-b border-primary/15 pb-3 sm:pb-4")}>
-          <div className="flex flex-col gap-1">
+        {/* Gradient yellow-to-white surface; responsive padding */}
+        <div className={cn("flex flex-col flex-1 min-h-0 rounded-2xl overflow-hidden pt-4 px-4 pb-3 sm:pt-6 sm:px-6 sm:pb-5", TASK_DIALOG_COLORS.dialogBg)}>
+        {/* Minimal header - responsive tap targets and text */}
+        <DialogHeader className="flex-shrink-0 border-b border-primary/15 pb-2 sm:pb-4">
+          <div className="flex flex-col gap-0.5 sm:gap-1">
             <button
               type="button"
               onClick={() => setActiveTab('basic')}
               className={cn(
-                "flex items-center gap-2 text-left w-full rounded-md py-2 px-1 -mx-1",
+                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1 min-h-[2.25rem] sm:min-h-[2.5rem]",
                 activeTab === 'basic' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
               {activeTab === 'basic' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
-              <DialogTitle className="text-sm sm:text-base font-semibold truncate flex-1">
+              <DialogTitle className="text-xs sm:text-base font-semibold truncate flex-1">
                 {TASK_DIALOG_UI_TEXT.taskInfoTitle}
               </DialogTitle>
             </button>
@@ -2067,12 +2067,12 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('scheduling')}
               className={cn(
-                "flex items-center gap-2 text-left w-full rounded-md py-2 px-1 -mx-1",
+                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1 min-h-[2.25rem] sm:min-h-[2.5rem]",
                 activeTab === 'scheduling' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
               {activeTab === 'scheduling' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
-              <span className="text-sm sm:text-base font-medium truncate flex-1">
+              <span className="text-xs sm:text-base font-medium truncate flex-1">
                 {TASK_DIALOG_UI_TEXT.schedule.desktop}
               </span>
             </button>
@@ -2080,12 +2080,12 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('organization')}
               className={cn(
-                "flex items-center gap-2 text-left w-full rounded-md py-2 px-1 -mx-1",
+                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1 min-h-[2.25rem] sm:min-h-[2.5rem]",
                 activeTab === 'organization' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
               {activeTab === 'organization' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
-              <span className="text-sm sm:text-base font-medium truncate flex-1">
+              <span className="text-xs sm:text-base font-medium truncate flex-1">
                 {TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
               </span>
             </button>
@@ -2111,7 +2111,7 @@ export function TaskDialog({
                 <TabsContent value="basic" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
                   {/* Task Name - reference: bold label, white rounded borderless input */}
                   <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                    <Label htmlFor="title" className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
+                    <Label htmlFor="title" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
                     <Input
                       id="title"
                       value={title}
@@ -2119,14 +2119,14 @@ export function TaskDialog({
                       placeholder={TASK_DIALOG_UI_TEXT.taskNamePlaceholder}
                       autoFocus
                       disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                      className="bg-white dark:bg-card rounded-lg border-0 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/30 h-10 text-sm"
+                      className="bg-white dark:bg-card rounded-lg border-0 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/30 h-9 sm:h-10 text-sm min-w-0"
                     />
                   </div>
 
                   {/* Description - reference: bold label, white rounded area (order: Task Name, Description, Status, Priority) */}
                   <div className={cn(TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY, "pt-0.5")}>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="description" className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.descriptionMinimal}</Label>
+                    <Label htmlFor="description" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.descriptionMinimal}</Label>
                     {title.trim() && (
                       <div className="flex items-center gap-1">
                         {/* Redo/Regenerate Description Button - Only show if description exists */}
@@ -2316,9 +2316,9 @@ export function TaskDialog({
                   />
                   </div>
 
-                  {/* Status - reference: horizontal pills, selected = purple */}
+                  {/* Status - horizontal pills; responsive text and wrap */}
                   <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                    <Label className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.status}</Label>
+                    <Label className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.status}</Label>
                     <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
                       {(['todo', 'in-progress', 'done', 'on-hold'] as const).map((value) => {
                         const label = value === 'todo' ? TASK_DIALOG_UI_TEXT.statusOptions.todo
@@ -2333,7 +2333,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
                               isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
                             )}
                           >
@@ -2344,9 +2344,9 @@ export function TaskDialog({
                     </div>
                   </div>
 
-                  {/* Priority Level - reference: horizontal pills, selected = purple */}
+                  {/* Priority Level - horizontal pills; responsive */}
                   <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                    <Label className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.priorityLevelLabel}</Label>
+                    <Label className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.priorityLevelLabel}</Label>
                     <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
                       {(['low', 'medium', 'high', 'urgent'] as const).map((value) => {
                         const label = TASK_DIALOG_UI_TEXT.priorityOptions[value];
@@ -2358,7 +2358,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
                               isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
                             )}
                           >
@@ -3735,19 +3735,19 @@ export function TaskDialog({
               paddingBottom: COMPONENT_DIMENSIONS.taskDialog.footer.padding.bottom,
             }}
           >
-            {/* Secondary row: Duplicate / Delete (edit mode only) - compact so cancel/create dominate */}
+            {/* Secondary row: Duplicate / Delete - icon-only on mobile for spacing */}
             {task && (
-              <div className="flex gap-2 justify-end">
+              <div className="flex gap-1 sm:gap-2 justify-end">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={handleDuplicate}
-                  className="text-foreground hover:bg-primary/10 h-8 px-3 text-xs font-medium rounded-lg"
+                  className="text-foreground hover:bg-primary/10 h-8 w-8 sm:h-8 sm:w-auto sm:px-3 sm:min-w-0 rounded-lg flex items-center justify-center"
                   title={TASK_DIALOG_UI_TEXT.buttonTooltips.duplicate}
                 >
-                  <Icon name="copy" size={14} className="mr-1.5" />
-                  {TASK_DIALOG_UI_TEXT.duplicate.desktop}
+                  <Icon name="copy" size={isMobile ? 16 : 14} className={cn(isMobile ? "" : "mr-1.5")} />
+                  <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.duplicate.desktop}</span>
                 </Button>
                 {task.status !== "done" && (
                   <Button
@@ -3755,30 +3755,30 @@ export function TaskDialog({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="text-destructive hover:bg-destructive/10 h-8 px-3 text-xs font-medium rounded-lg"
+                    className="text-destructive hover:bg-destructive/10 h-8 w-8 sm:h-8 sm:w-auto sm:px-3 sm:min-w-0 rounded-lg flex items-center justify-center"
                     title={TASK_DIALOG_UI_TEXT.buttonTooltips.delete}
                   >
-                    <Icon name="trash-2" size={14} className="mr-1.5" />
-                    {TASK_DIALOG_UI_TEXT.delete.desktop}
+                    <Icon name="trash-2" size={isMobile ? 16 : 14} className={cn(isMobile ? "" : "mr-1.5")} />
+                    <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.delete.desktop}</span>
                   </Button>
                 )}
               </div>
             )}
-            {/* Primary row: cancel (red) and + CREATE / Update (purple) - reference: prominent, rounded */}
-            <div className="flex gap-3 sm:gap-4">
+            {/* Primary row: cancel (red) and + CREATE / Update (purple) - icon-only on mobile for spacing */}
+            <div className="flex gap-2 sm:gap-4">
               <Button
                 type="button"
                 variant="destructive"
                 onClick={onClose}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCancel,
-                  "flex-1 sm:flex-initial font-semibold h-11 sm:h-12 rounded-xl text-sm sm:text-base",
-                  "px-5 sm:px-6"
+                  "flex-1 sm:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base min-w-0",
+                  "px-3 sm:px-6 flex items-center justify-center"
                 )}
-                title={isMobile ? TASK_DIALOG_UI_TEXT.buttonTooltips.cancel : undefined}
+                title={TASK_DIALOG_UI_TEXT.buttonTooltips.cancel}
               >
                 {isMobile ? (
-                  <Icon name="x" size={20} style={{ color: 'inherit' }} />
+                  <Icon name="x" size={22} style={{ color: 'inherit' }} aria-hidden />
                 ) : (
                   TASK_DIALOG_UI_TEXT.cancel
                 )}
@@ -3788,17 +3788,23 @@ export function TaskDialog({
                 disabled={isSubmitting || (task ? !permissions.canEditTask : !permissions.canCreateTask)}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCreate,
-                  "flex-1 sm:flex-initial font-semibold h-11 sm:h-12 rounded-xl text-sm sm:text-base shadow-md",
-                  "px-5 sm:px-6"
+                  "flex-1 sm:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base shadow-md min-w-0",
+                  "px-3 sm:px-6 flex items-center justify-center"
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
-                title={isMobile ? (task ? TASK_DIALOG_UI_TEXT.buttonTooltips.updateTask : TASK_DIALOG_UI_TEXT.buttonTooltips.createTask) : undefined}
+                title={task ? TASK_DIALOG_UI_TEXT.buttonTooltips.updateTask : TASK_DIALOG_UI_TEXT.buttonTooltips.createTask}
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <Icon name="circle-notch" size={18} style={{ color: COLOR_TEXT_WHITE }} className="animate-spin" />
-                    {TASK_DIALOG_UI_TEXT.saving}
+                    <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.saving}</span>
                   </span>
+                ) : isMobile ? (
+                  task ? (
+                    <Icon name="check" size={22} style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
+                  ) : (
+                    <Icon name="plus" size={22} style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
+                  )
                 ) : task ? (
                   TASK_DIALOG_UI_TEXT.updateTask
                 ) : (
