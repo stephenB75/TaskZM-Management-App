@@ -72,7 +72,6 @@ import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTIN
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS } from "../lib/task-dialog-constants";
 import { useIsMobile } from "./ui/use-mobile";
-import { TaskDialogMenu } from "./TaskDialogMenu";
 import type {
   Task,
   TaskPriority,
@@ -2041,23 +2040,25 @@ export function TaskDialog({
       }}
     >
       <DialogContent className={cn(
-        "max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-xl",
-        isMobile ? "max-w-3xl" : "max-w-6xl lg:max-w-7xl",
+        "max-h-[90vh] overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 border-0 shadow-xl",
         TASK_DIALOG_COLORS.dialogBg,
-        "text-foreground dark:text-foreground border-primary/15"
+        TASK_DIALOG_COLORS.dialogMaxWidth,
+        "text-foreground dark:text-foreground"
       )}>
-        {/* Reference design: vertical nav - Task Info, Schedule, Organize; current tab muted + chevron */}
-        <DialogHeader className={cn("flex-shrink-0 border-b border-primary/15", TASK_DIALOG_MINIMAL_SPACING.headerPaddingBottom)}>
-          <div className="flex flex-col gap-0.5">
+        {/* Reference: single warm surface; Task Info / Schedule / Organize nav; borderless inputs; purple pills; red cancel, purple create */}
+        <div className={cn("flex flex-col flex-1 min-h-0 rounded-2xl overflow-hidden pt-5 pr-5 pl-5 pb-4 sm:pt-6 sm:px-6 sm:pb-5", TASK_DIALOG_COLORS.dialogBg)}>
+        {/* Reference: minimal header - Task Info, Schedule, Organize stacked; active = muted + chevron left */}
+        <DialogHeader className={cn("flex-shrink-0 border-b border-primary/15 pb-3 sm:pb-4")}>
+          <div className="flex flex-col gap-1">
             <button
               type="button"
               onClick={() => setActiveTab('basic')}
               className={cn(
-                "flex items-center gap-2 text-left w-full rounded-md py-1.5 px-1 -mx-1",
+                "flex items-center gap-2 text-left w-full rounded-md py-2 px-1 -mx-1",
                 activeTab === 'basic' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
-              {activeTab !== 'basic' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0 text-muted-foreground" />}
+              {activeTab === 'basic' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
               <DialogTitle className="text-sm sm:text-base font-semibold truncate flex-1">
                 {TASK_DIALOG_UI_TEXT.taskInfoTitle}
               </DialogTitle>
@@ -2066,11 +2067,11 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('scheduling')}
               className={cn(
-                "flex items-center gap-2 text-left w-full rounded-md py-1.5 px-1 -mx-1",
+                "flex items-center gap-2 text-left w-full rounded-md py-2 px-1 -mx-1",
                 activeTab === 'scheduling' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
-              {activeTab === 'scheduling' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0 text-muted-foreground" />}
+              {activeTab === 'scheduling' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
               <span className="text-sm sm:text-base font-medium truncate flex-1">
                 {TASK_DIALOG_UI_TEXT.schedule.desktop}
               </span>
@@ -2079,13 +2080,13 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('organization')}
               className={cn(
-                "flex items-center gap-2 text-left w-full rounded-md py-1.5 px-1 -mx-1",
+                "flex items-center gap-2 text-left w-full rounded-md py-2 px-1 -mx-1",
                 activeTab === 'organization' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
-              {activeTab === 'organization' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0 text-muted-foreground" />}
+              {activeTab === 'organization' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
               <span className="text-sm sm:text-base font-medium truncate flex-1">
-                {TASK_DIALOG_UI_TEXT.organize.desktop}
+                {TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
               </span>
             </button>
           </div>
@@ -2098,61 +2099,19 @@ export function TaskDialog({
           }}
           className="flex-1 overflow-hidden flex flex-col"
         >
-          {/* Mobile: Dropdown Select for Tab Navigation */}
-          {isMobile && (
-            <div className={TASK_DIALOG_MINIMAL_SPACING.mobileTabSelectWrapper}>
-              <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                  <SelectItem value="basic">
-                    <div className="flex items-center gap-2">
-                      <Icon name="file-text" size={ICON_SIZE_SM} />
-                      <span>{TASK_DIALOG_UI_TEXT.basicInfo.desktop}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="scheduling">
-                    <div className="flex items-center gap-2">
-                      <Icon name="calendar" size={ICON_SIZE_SM} weight="duotone" />
-                      <span>{TASK_DIALOG_UI_TEXT.schedule.desktop}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="organization">
-                    <div className="flex items-center gap-2">
-                      <Icon name="settings" size={ICON_SIZE_SM} />
-                      <span>{TASK_DIALOG_UI_TEXT.organize.desktop}</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Tabbed Interface */}
+          {/* Tabbed Interface - single column (reference: no right menu) */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            {/* Desktop: Two-Column Layout */}
-            <div className={cn(
-              "flex-1 flex overflow-hidden",
-              isMobile ? "flex-col" : "flex-row gap-4"
-            )}>
-              {/* Left Column - Content Area (minimal view: compact padding) */}
+            <div className="flex-1 flex overflow-hidden flex-col">
+              {/* Content Area - single column */}
               <div className={cn(
                 "flex-1 overflow-y-auto",
-                TASK_DIALOG_MINIMAL_SPACING.contentPadding,
-                !isMobile && "pr-2"
+                TASK_DIALOG_MINIMAL_SPACING.contentPadding
               )}>
-                {/* Basic Info Tab - Reference: Task Info card, borderless inputs, purple pills */}
-                <TabsContent value="basic" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.cardSpaceY)}>
-                <div className={cn(
-                  "rounded-xl",
-                  TASK_DIALOG_MINIMAL_SPACING.cardPadding,
-                  TASK_DIALOG_MINIMAL_SPACING.cardSpaceY,
-                  "text-foreground dark:text-foreground"
-                )}>
+                {/* Basic Info Tab - Reference: warm surface only; Task Name, Description, Status, Priority with generous spacing; no inner card */}
+                <TabsContent value="basic" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
                   {/* Task Name - reference: bold label, white rounded borderless input */}
                   <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                    <Label htmlFor="title" className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.taskName}</Label>
+                    <Label htmlFor="title" className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
                     <Input
                       id="title"
                       value={title}
@@ -2164,66 +2123,10 @@ export function TaskDialog({
                     />
                   </div>
 
-                  {/* Status + Priority - reference: horizontal pills, selected = purple */}
-                  <div className={cn("grid", TASK_DIALOG_MINIMAL_SPACING.statusPriorityRowGap, isMobile ? "grid-cols-1" : "grid-cols-2")}>
-                    {/* Status - horizontal pills */}
-                    <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                      <Label className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.status}</Label>
-                      <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
-                        {(['todo', 'in-progress', 'done', 'on-hold'] as const).map((value) => {
-                          const label = value === 'todo' ? TASK_DIALOG_UI_TEXT.statusOptions.todo
-                            : value === 'in-progress' ? TASK_DIALOG_UI_TEXT.statusOptions.inProgress
-                            : value === 'done' ? TASK_DIALOG_UI_TEXT.statusOptions.done
-                            : TASK_DIALOG_UI_TEXT.statusOptions.onHold;
-                          const isSelected = status === value;
-                          return (
-                            <button
-                              key={value}
-                              type="button"
-                              onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
-                              disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                              className={cn(
-                                "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
-                                isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
-                              )}
-                            >
-                              {label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Priority - horizontal pills */}
-                    <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                      <Label className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.priorityLevelLabel}</Label>
-                      <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
-                        {(['low', 'medium', 'high', 'urgent'] as const).map((value) => {
-                          const label = TASK_DIALOG_UI_TEXT.priorityOptions[value];
-                          const isSelected = priority === value;
-                          return (
-                            <button
-                              key={value}
-                              type="button"
-                              onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
-                              disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                              className={cn(
-                                "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
-                                isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
-                              )}
-                            >
-                              {label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Description - reference: bold label, white rounded borderless area */}
+                  {/* Description - reference: bold label, white rounded area (order: Task Name, Description, Status, Priority) */}
                   <div className={cn(TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY, "pt-0.5")}>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="description" className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.description}</Label>
+                    <Label htmlFor="description" className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.descriptionMinimal}</Label>
                     {title.trim() && (
                       <div className="flex items-center gap-1">
                         {/* Redo/Regenerate Description Button - Only show if description exists */}
@@ -2402,249 +2305,86 @@ export function TaskDialog({
                   <RichTextEditor
                     value={description}
                     onChange={(newDescription) => {
-                      // Update description - useTaskBreakdown hook automatically updates AI Action Plan when description changes
                       setDescription(newDescription);
                     }}
                     placeholder={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.placeholder}
                     rows={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.rows}
-                    className={COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.focusClassName}
+                    className={cn(
+                      "bg-white dark:bg-card rounded-lg border-0 shadow-sm",
+                      COMPONENT_DIMENSIONS.taskDialog.descriptionTextarea.focusClassName
+                    )}
                   />
                   </div>
-                </div>
 
-                {/* AI Task Breakdown Panel - Simplified (no action plan, inline components) */}
-                {(title.trim() || description.trim()) && (
-                  <div className={cn(
-                    "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                    isMobile ? "p-3" : "p-4",
-                    "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
-                  )}>
-                    {isBreakdownLoading ? (
-                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse" />
-                        <span>Analyzing task...</span>
-                      </div>
-                    ) : breakdownError ? (
-                      <div className="flex items-center gap-2 text-destructive text-sm">
-                        <span>Error analyzing task: {breakdownError.message}</span>
-                      </div>
-                    ) : breakdown ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
-                          <span className="font-semibold text-foreground">AI Analysis</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 text-sm">
-                          {/* Always show domain badge */}
-                          <Badge
-                            variant="outline"
-                            className="text-xs border-primary/30"
-                          >
-                            {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
-                          </Badge>
-                          {/* Show estimated time if available (derive from minutes for correct h/m display) */}
-                          {breakdown.estimatedMinutes > 0 && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                              <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary" />
-                              <span className="text-xs font-medium text-foreground">
-                                {Math.floor(breakdown.estimatedMinutes / MINUTES_PER_HOUR)}h {breakdown.estimatedMinutes % MINUTES_PER_HOUR}m
-                              </span>
-                            </div>
-                          )}
-                          {/* Show effort score if available */}
-                          {breakdown.effortScore > 0 && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                              <span className="text-xs font-medium text-foreground">
-                                Effort: {breakdown.effortScore.toFixed(EFFORT_SCORE_THRESHOLDS.DISPLAY_DECIMAL_PLACES)}/{EFFORT_SCORE_THRESHOLDS.DISPLAY_MAX}
-                              </span>
-                            </div>
-                          )}
-                          {/* Show primary verb if available */}
-                          {breakdown.primaryVerb && breakdown.primaryVerb !== DESCRIPTION_UI_CONFIG.UNKNOWN_VERB && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
-                              <span className="text-xs font-medium text-foreground capitalize">
-                                {breakdown.primaryVerb}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        {/* Show description options when description is empty, enhancement suggestions when description exists */}
-                        {!description.trim() && (isLoadingDescriptionOptions || descriptionOptions.length > 0) && (
-                          <div className="flex flex-col gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              {isLoadingDescriptionOptions ? 'Generating description options...' : 'Choose a description:'}
-                            </span>
-                            {!isLoadingDescriptionOptions && descriptionOptions.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {descriptionOptions.slice(0, DESCRIPTION_UI_CONFIG.MAX_DESCRIPTION_OPTIONS).map((option, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="secondary"
-                                    className="cursor-pointer hover:bg-primary/10 text-xs max-w-full"
-                                    onClick={async () => {
-                                      // Set the selected description
-                                      setDescription(option.description);
-                                      setDescriptionOptions([]); // Clear options after selection
-                                      
-                                      // The breakdown will automatically update via useTaskBreakdown hook
-                                      // which will regenerate the action plan with the new description
-                                      // This ensures action plan is created from the chosen description
-                                      logger.debug('Description selected, action plan will regenerate', {
-                                        selectedDescription: option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH),
-                                        domain: option.domain,
-                                        confidence: option.confidence,
-                                      });
-                                      
-                                      toast.success('Description selected', {
-                                        description: 'AI Action Plan will update automatically based on your description.',
-                                      });
-                                    }}
-                                    title={`${option.domain} (${(option.confidence * 100).toFixed(0)}% confidence)`}
-                                  >
-                                    {option.description.length > DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH
-                                      ? `${option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)}...` 
-                                      : option.description}
-                                  </Badge>
-                                ))}
-                              </div>
+                  {/* Status - reference: horizontal pills, selected = purple */}
+                  <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
+                    <Label className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.status}</Label>
+                    <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
+                      {(['todo', 'in-progress', 'done', 'on-hold'] as const).map((value) => {
+                        const label = value === 'todo' ? TASK_DIALOG_UI_TEXT.statusOptions.todo
+                          : value === 'in-progress' ? TASK_DIALOG_UI_TEXT.statusOptions.inProgress
+                          : value === 'done' ? TASK_DIALOG_UI_TEXT.statusOptions.done
+                          : TASK_DIALOG_UI_TEXT.statusOptions.onHold;
+                        const isSelected = status === value;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
+                            disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+                              isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
                             )}
-                          </div>
-                        )}
-                        {description.trim() && breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {breakdown.descriptionAnalysis.suggestions.slice(0, DESCRIPTION_UI_CONFIG.MAX_SUGGESTIONS_DISPLAY).map((suggestion, idx) => (
-                              <Badge
-                                key={idx}
-                                variant="secondary"
-                                className="cursor-pointer hover:bg-primary/10 text-xs"
-                                onClick={() => {
-                                  const newDescription = description 
-                                    ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${suggestion}`
-                                    : suggestion;
-                                  setDescription(newDescription);
-                                }}
-                              >
-                                {suggestion}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        {breakdown.actionPlan && breakdown.actionPlan.suggestedSubtasks.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {breakdown.actionPlan.suggestedSubtasks.slice(0, 3).map((subtask, idx) => (
-                              <Badge
-                                key={idx}
-                                variant="secondary"
-                                className="cursor-pointer hover:bg-primary/10 text-xs"
-                                onClick={() => {
-                                  const newSubtask: Subtask = {
-                                    id: `subtask-${Date.now()}-${idx}`,
-                                    title: subtask,
-                                    completed: false,
-                                    createdAt: new Date().toISOString(),
-                                  };
-                                  setSubtasks([...subtasks, newSubtask]);
-                                  toast.success('Added as subtask', {
-                                    description: subtask,
-                                  });
-                                }}
-                              >
-                                + {subtask}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-
-                {/* Folder Selector */}
-                {folders.length > 0 && (
-                  <div className={cn(
-                    "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                    isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
-                    "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
-                  )}>
-                    <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                      <Icon name="folder" size={ICON_SIZE_MD} className="text-primary" />
-                      Folder
-                    </Label>
-                    <Select
-                      value={folderId || "none"}
-                      onValueChange={(value) => {
-                        const newFolderId = value === "none" ? null : value;
-                        setFolderId(newFolderId);
-                        
-                        // Also add folder name as a tag when folder is selected
-                        if (newFolderId && folders && Array.isArray(folders)) {
-                          try {
-                            const selectedFolder = folders.find(f => f && f.id === newFolderId);
-                            if (selectedFolder && selectedFolder.name && !tags.includes(selectedFolder.name)) {
-                              setTags([...tags, selectedFolder.name]);
-                            }
-                          } catch (error) {
-                            logger.error('Error finding selected folder:', error);
-                          }
-                        } else {
-                          // Remove folder name from tags when folder is deselected
-                          // Find the folder that was previously selected
-                          if (folderId && folders && Array.isArray(folders)) {
-                            try {
-                              const previousFolder = folders.find(f => f && f.id === folderId);
-                              if (previousFolder && previousFolder.name && tags.includes(previousFolder.name)) {
-                                setTags(tags.filter(tag => tag !== previousFolder.name));
-                              }
-                            } catch (error) {
-                              logger.error('Error finding previous folder:', error);
-                            }
-                          }
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
-                        <SelectValue placeholder="No folder" />
-                      </SelectTrigger>
-                      <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                        <SelectItem value="none">No folder</SelectItem>
-                        {folders && Array.isArray(folders) ? folders
-                          .filter(folder => folder && folder.id && folder.name)
-                          .map((folder) => (
-                            <SelectItem key={folder.id} value={folder.id}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-3 h-3 rounded"
-                                  style={{ backgroundColor: folder.color || UI_FOLDER_COLORS.fallback }}
-                                />
-                                <span>{folder.name}</span>
-                              </div>
-                            </SelectItem>
-                          )) : null}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </TabsContent>
-
-                {/* Scheduling Tab - reference: prominent date, Scheduled/Due/Clear, calendar, 12HR/24HR */}
-                <TabsContent value="scheduling" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.cardSpaceY)}>
-                <div className={cn(
-                  "rounded-xl",
-                  TASK_DIALOG_MINIMAL_SPACING.cardPadding,
-                  TASK_DIALOG_MINIMAL_SPACING.cardSpaceY,
-                  "text-foreground dark:text-foreground"
-                )}>
-                  {/* Prominent date line - reference: "Wed, JAN 31, 2026" large bold */}
-                  {(scheduledDate || dueDate) && (
-                    <div className="text-lg sm:text-xl font-bold text-foreground mb-3">
-                      {(activeDateField === 'scheduled' ? scheduledDate : dueDate)?.toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
+                          >
+                            {label}
+                          </button>
+                        );
                       })}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Priority Level - reference: horizontal pills, selected = purple */}
+                  <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
+                    <Label className="text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.priorityLevelLabel}</Label>
+                    <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
+                      {(['low', 'medium', 'high', 'urgent'] as const).map((value) => {
+                        const label = TASK_DIALOG_UI_TEXT.priorityOptions[value];
+                        const isSelected = priority === value;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
+                            disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+                              isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
+                            )}
+                          >
+                            {label}
+                          </button>
+                        );
+                        })}
+                    </div>
+                  </div>
+              </TabsContent>
+
+                {/* Scheduling Tab - reference: warm surface; prominent date, Scheduled/Due/Clear, calendar, 12HR/24HR; no inner card */}
+                <TabsContent value="scheduling" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
+                  {/* Prominent date line - reference: "Wed, JAN 31, 2026" large bold, uppercase month */}
+                  {(scheduledDate || dueDate) && (() => {
+                    const activeDate = activeDateField === 'scheduled' ? scheduledDate : dueDate;
+                    if (!activeDate) return null;
+                    const parts = activeDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).split(' ');
+                    if (parts.length >= 2) parts[1] = parts[1].toUpperCase(); // JAN
+                    const formatted = parts.join(' ');
+                    return (
+                      <div className="text-lg sm:text-xl font-bold text-foreground mb-3">
+                        {formatted}
+                      </div>
+                    );
+                  })()}
                   {/* Fixed Mini Calendar */}
                   <div className="w-full flex justify-center py-2">
                     <FixedMiniCalendar
@@ -3110,11 +2850,163 @@ export function TaskDialog({
                         )}
                       </div>
                     )}
-                  </div>
               </TabsContent>
 
-              {/* Organization & Advanced Tab - Consolidated */}
+              {/* Organization & Advanced Tab - AI, Folder, Tags, Subtasks, etc. */}
                 <TabsContent value="organization" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.cardSpaceY)}>
+                  {/* AI Task Breakdown - moved from Basic for minimal Task Info tab */}
+                  {(title.trim() || description.trim()) && (
+                    <div className={cn(
+                      "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                      isMobile ? "p-3" : "p-4",
+                      "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow",
+                      "mb-3 sm:mb-4"
+                    )}>
+                      {isBreakdownLoading ? (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="animate-pulse" />
+                          <span>Analyzing task...</span>
+                        </div>
+                      ) : breakdownError ? (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <span>Error analyzing task: {breakdownError.message}</span>
+                        </div>
+                      ) : breakdown ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
+                            <span className="font-semibold text-foreground">AI Analysis</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-sm">
+                            <Badge variant="outline" className="text-xs border-primary/30">
+                              {breakdown.domain.charAt(0).toUpperCase() + breakdown.domain.slice(1)}
+                            </Badge>
+                            {breakdown.estimatedMinutes > 0 && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                                <Icon name="clock" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="text-primary" />
+                                <span className="text-xs font-medium text-foreground">
+                                  {Math.floor(breakdown.estimatedMinutes / MINUTES_PER_HOUR)}h {breakdown.estimatedMinutes % MINUTES_PER_HOUR}m
+                                </span>
+                              </div>
+                            )}
+                            {breakdown.effortScore > 0 && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                                <span className="text-xs font-medium text-foreground">
+                                  Effort: {breakdown.effortScore.toFixed(EFFORT_SCORE_THRESHOLDS.DISPLAY_DECIMAL_PLACES)}/{EFFORT_SCORE_THRESHOLDS.DISPLAY_MAX}
+                                </span>
+                              </div>
+                            )}
+                            {breakdown.primaryVerb && breakdown.primaryVerb !== DESCRIPTION_UI_CONFIG.UNKNOWN_VERB && (
+                              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded">
+                                <span className="text-xs font-medium text-foreground capitalize">{breakdown.primaryVerb}</span>
+                              </div>
+                            )}
+                          </div>
+                          {!description.trim() && (isLoadingDescriptionOptions || descriptionOptions.length > 0) && (
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {isLoadingDescriptionOptions ? 'Generating description options...' : 'Choose a description:'}
+                              </span>
+                              {!isLoadingDescriptionOptions && descriptionOptions.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {descriptionOptions.slice(0, DESCRIPTION_UI_CONFIG.MAX_DESCRIPTION_OPTIONS).map((option, idx) => (
+                                    <Badge
+                                      key={idx}
+                                      variant="secondary"
+                                      className="cursor-pointer hover:bg-primary/10 text-xs max-w-full"
+                                      onClick={async () => {
+                                        setDescription(option.description);
+                                        setDescriptionOptions([]);
+                                        toast.success('Description selected', { description: 'AI Action Plan will update automatically based on your description.' });
+                                      }}
+                                      title={`${option.domain} (${(option.confidence * 100).toFixed(0)}% confidence)`}
+                                    >
+                                      {option.description.length > DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH ? `${option.description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)}...` : option.description}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {description.trim() && breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {breakdown.descriptionAnalysis.suggestions.slice(0, DESCRIPTION_UI_CONFIG.MAX_SUGGESTIONS_DISPLAY).map((suggestion, idx) => (
+                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs" onClick={() => { const newDescription = description ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${suggestion}` : suggestion; setDescription(newDescription); }}>
+                                  {suggestion}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {breakdown.actionPlan && breakdown.actionPlan.suggestedSubtasks.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {breakdown.actionPlan.suggestedSubtasks.slice(0, 3).map((subtask, idx) => (
+                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs" onClick={() => { const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() }; setSubtasks([...subtasks, newSubtask]); toast.success('Added as subtask', { description: subtask }); }}>
+                                  + {subtask}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {/* Folder Selector - moved from Basic for minimal Task Info tab */}
+                  {folders.length > 0 && (
+                    <div className={cn(
+                      "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
+                      isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                      "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow",
+                      "mb-3 sm:mb-4"
+                    )}>
+                      <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                        <Icon name="folder" size={ICON_SIZE_MD} className="text-primary" />
+                        Folder
+                      </Label>
+                      <Select
+                        value={folderId || "none"}
+                        onValueChange={(value) => {
+                          const newFolderId = value === "none" ? null : value;
+                          setFolderId(newFolderId);
+                          if (newFolderId && folders && Array.isArray(folders)) {
+                            try {
+                              const selectedFolder = folders.find(f => f && f.id === newFolderId);
+                              if (selectedFolder && selectedFolder.name && !tags.includes(selectedFolder.name)) {
+                                setTags([...tags, selectedFolder.name]);
+                              }
+                            } catch (error) {
+                              logger.error('Error finding selected folder:', error);
+                            }
+                          } else if (folderId && folders && Array.isArray(folders)) {
+                            try {
+                              const previousFolder = folders.find(f => f && f.id === folderId);
+                              if (previousFolder && previousFolder.name && tags.includes(previousFolder.name)) {
+                                setTags(tags.filter(tag => tag !== previousFolder.name));
+                              }
+                            } catch (error) {
+                              logger.error('Error finding previous folder:', error);
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-10 bg-white dark:bg-card text-foreground dark:text-foreground border focus:border-primary focus:ring-2 focus:ring-primary/20">
+                          <SelectValue placeholder="No folder" />
+                        </SelectTrigger>
+                        <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
+                          <SelectItem value="none">No folder</SelectItem>
+                          {folders && Array.isArray(folders) ? folders.filter(folder => folder && folder.id && folder.name).map((folder) => (
+                            <SelectItem key={folder.id} value={folder.id}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded" style={{ backgroundColor: folder.color || UI_FOLDER_COLORS.fallback }} />
+                                <span>{folder.name}</span>
+                              </div>
+                            </SelectItem>
+                          )) : null}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className={cn(
                     "rounded-xl border border-primary/15 shadow-sm",
                     TASK_DIALOG_MINIMAL_SPACING.cardPadding,
@@ -3829,132 +3721,89 @@ export function TaskDialog({
 
                 {/* Advanced Tab - Removed (merged into Organization) */}
               </div>
-
-              {/* Right Column - Menu (Desktop Only) */}
-              {!isMobile && (
-                <div 
-                  className="flex-shrink-0 border-l border-primary/20 bg-white/50 dark:bg-card/50"
-                  style={{ width: TASK_DIALOG_MENU_WIDTH.desktop }}
-                >
-                  <TaskDialogMenu 
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                  />
-                </div>
-              )}
             </div>
           </Tabs>
 
-          {/* Footer Actions - Single Set for All Tabs */}
-          <div 
+          {/* Footer - Reference: two prominent buttons - red cancel, purple + CREATE */}
+          <div
             className={cn(
-              "flex flex-col sm:flex-row justify-between items-stretch sm:items-center border-t-2 border-primary/30 rounded-b-lg",
-              "bg-transparent",
-              "gap-3 sm:gap-4 pt-4 sm:pt-5 md:pt-6"
+              "flex flex-col gap-3 pt-5 sm:pt-6 border-t border-primary/20"
             )}
-            style={{ 
-              marginLeft: COMPONENT_DIMENSIONS.taskDialog.footer.margin.horizontal,
-              marginRight: COMPONENT_DIMENSIONS.taskDialog.footer.margin.horizontal,
-              marginBottom: COMPONENT_DIMENSIONS.taskDialog.footer.margin.bottom,
-              paddingLeft: COMPONENT_DIMENSIONS.taskDialog.footer.padding.horizontal,
-              paddingRight: COMPONENT_DIMENSIONS.taskDialog.footer.padding.horizontal,
+            style={{
+              paddingLeft: 0,
+              paddingRight: 0,
               paddingBottom: COMPONENT_DIMENSIONS.taskDialog.footer.padding.bottom,
-              lineHeight: COMPONENT_DIMENSIONS.taskDialog.footer.lineHeight,
             }}
           >
-            {/* Left side - Action buttons (only for edit mode) */}
+            {/* Secondary row: Duplicate / Delete (edit mode only) - compact so cancel/create dominate */}
             {task && (
-              <div className="flex gap-2 sm:gap-3 order-2 sm:order-1">
+              <div className="flex gap-2 justify-end">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
+                  size="sm"
                   onClick={handleDuplicate}
-                  className={cn(
-                    "gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 text-foreground font-medium h-8 sm:h-10",
-                    isMobile ? "px-2" : "px-4",
-                    "text-xs sm:text-sm"
-                  )}
-                  title={isMobile ? TASK_DIALOG_UI_TEXT.buttonTooltips.duplicate : undefined}
+                  className="text-foreground hover:bg-primary/10 h-8 px-3 text-xs font-medium rounded-lg"
+                  title={TASK_DIALOG_UI_TEXT.buttonTooltips.duplicate}
                 >
-                  <Icon 
-                    name="copy" 
-                    size={isMobile ? TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize : TASK_DIALOG_DIMENSIONS.footerButton.desktop.iconSize} 
-                  />
-                  {!isMobile && <span>{TASK_DIALOG_UI_TEXT.duplicate.desktop}</span>}
+                  <Icon name="copy" size={14} className="mr-1.5" />
+                  {TASK_DIALOG_UI_TEXT.duplicate.desktop}
                 </Button>
                 {task.status !== "done" && (
                   <Button
                     type="button"
-                    variant="destructive"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className={cn(
-                      "gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium h-8 sm:h-10",
-                      isMobile ? "px-2" : "px-4",
-                      "text-xs sm:text-sm"
-                    )}
-                    style={{ color: COLOR_TEXT_WHITE }}
-                    title={isMobile ? TASK_DIALOG_UI_TEXT.buttonTooltips.delete : undefined}
+                    className="text-destructive hover:bg-destructive/10 h-8 px-3 text-xs font-medium rounded-lg"
+                    title={TASK_DIALOG_UI_TEXT.buttonTooltips.delete}
                   >
-                    <Icon 
-                      name="trash-2" 
-                      size={isMobile ? TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize : TASK_DIALOG_DIMENSIONS.footerButton.desktop.iconSize}
-                      style={{ color: COLOR_TEXT_WHITE }}
-                    />
-                    {!isMobile && <span>{TASK_DIALOG_UI_TEXT.delete.desktop}</span>}
+                    <Icon name="trash-2" size={14} className="mr-1.5" />
+                    {TASK_DIALOG_UI_TEXT.delete.desktop}
                   </Button>
                 )}
               </div>
             )}
-
-            {/* Right side - reference: red Cancel, purple + CREATE */}
-            <div className="flex gap-2 sm:gap-3 order-1 sm:order-2">
+            {/* Primary row: cancel (red) and + CREATE / Update (purple) - reference: prominent, rounded */}
+            <div className="flex gap-3 sm:gap-4">
               <Button
                 type="button"
                 variant="destructive"
                 onClick={onClose}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCancel,
-                  "font-medium flex-1 sm:flex-initial h-9 sm:h-10 rounded-lg",
-                  isMobile ? "px-3" : "px-5",
-                  "text-xs sm:text-sm"
+                  "flex-1 sm:flex-initial font-semibold h-11 sm:h-12 rounded-xl text-sm sm:text-base",
+                  "px-5 sm:px-6"
                 )}
                 title={isMobile ? TASK_DIALOG_UI_TEXT.buttonTooltips.cancel : undefined}
               >
                 {isMobile ? (
-                  <Icon name="x" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} style={{ color: 'inherit' }} />
+                  <Icon name="x" size={20} style={{ color: 'inherit' }} />
                 ) : (
                   TASK_DIALOG_UI_TEXT.cancel
                 )}
               </Button>
-              <Button 
+              <Button
                 type="submit"
-                disabled={isSubmitting || (task ? !permissions.canEditTask : !permissions.canCreateTask)} 
+                disabled={isSubmitting || (task ? !permissions.canEditTask : !permissions.canCreateTask)}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCreate,
-                  "font-medium flex-1 sm:flex-initial shadow-md h-8 sm:h-10 rounded-lg",
-                  isMobile ? "px-2" : "px-5",
-                  "text-xs sm:text-sm",
-                  COMPONENT_DIMENSIONS.taskDialog.buttonMinWidth
+                  "flex-1 sm:flex-initial font-semibold h-11 sm:h-12 rounded-xl text-sm sm:text-base shadow-md",
+                  "px-5 sm:px-6"
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
                 title={isMobile ? (task ? TASK_DIALOG_UI_TEXT.buttonTooltips.updateTask : TASK_DIALOG_UI_TEXT.buttonTooltips.createTask) : undefined}
               >
                 {isSubmitting ? (
-                  isMobile ? (
-                    <Icon name="circle-notch" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} style={{ color: COLOR_TEXT_WHITE }} className="animate-spin" />
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Icon name="circle-notch" size={ICON_SIZE_XS} style={{ color: COLOR_TEXT_WHITE }} className="animate-spin" />
-                      {TASK_DIALOG_UI_TEXT.saving}
-                    </span>
-                  )
-                ) : isMobile ? (
-                  <Icon name="check" size={TASK_DIALOG_DIMENSIONS.footerButton.mobile.iconSize} style={{ color: COLOR_TEXT_WHITE }} />
+                  <span className="flex items-center gap-2">
+                    <Icon name="circle-notch" size={18} style={{ color: COLOR_TEXT_WHITE }} className="animate-spin" />
+                    {TASK_DIALOG_UI_TEXT.saving}
+                  </span>
                 ) : task ? (
                   TASK_DIALOG_UI_TEXT.updateTask
                 ) : (
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="plus" size={14} style={{ color: COLOR_TEXT_WHITE }} />
+                  <span className="flex items-center gap-2">
+                    <Icon name="plus" size={18} style={{ color: COLOR_TEXT_WHITE }} />
                     {TASK_DIALOG_UI_TEXT.createTask}
                   </span>
                 )}
@@ -3962,6 +3811,7 @@ export function TaskDialog({
             </div>
           </div>
         </form>
+        </div>
       </DialogContent>
 
       {/* Delete Confirmation Dialog */}

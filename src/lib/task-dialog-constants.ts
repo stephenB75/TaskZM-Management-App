@@ -18,6 +18,9 @@ export const TASK_DIALOG_UI_TEXT = {
   status: 'Status',
   priority: 'Priority',
   description: 'Description (Optional)',
+  // Minimal view (reference): labels without asterisk/optional
+  taskNameMinimal: 'Task Name',
+  descriptionMinimal: 'Description',
   scheduledDate: 'Scheduled Date',
   dueDate: 'Due Date',
   
@@ -37,6 +40,7 @@ export const TASK_DIALOG_UI_TEXT = {
   organize: {
     desktop: 'Organize & Advanced',
     mobile: 'More',
+    header: 'Organize', // Reference: short label in header nav
   },
   
   // Status Options
@@ -163,7 +167,10 @@ export const TASK_DIALOG_COLORS = {
   // Minimal view: warm card background (light yellow-orange inspiration)
   minimalCardBg: 'bg-amber-50/50 dark:bg-amber-950/20',
   // Reference design: full dialog background (light peach/orange-yellow #ffeeb2-style)
-  dialogBg: 'bg-[#FFEEB2] dark:bg-amber-950/40',
+  // Override base dialog gradient so warm solid background shows
+  dialogBg: '!bg-[#FFEEB2] dark:!bg-amber-950/50 [background-image:none]',
+  // Reference: compact single-column modal width (not wide panel)
+  dialogMaxWidth: 'max-w-lg sm:max-w-lg',
   // Reference: selected pill = purple; unselected = text on dialog bg (no white box)
   pillSelected: 'bg-primary text-primary-foreground',
   pillUnselected: 'bg-transparent text-foreground hover:bg-primary/10',
@@ -189,7 +196,7 @@ export const TASK_DIALOG_SECTION_SPACING = {
   desktop: '2rem', // space-y-8
 } as const;
 
-// Minimal view: tighter spacing for consolidated layout (inspiration images)
+// Minimal view: reference design (docs/task-dialog-reference) - generous spacing, no inner cards
 export const TASK_DIALOG_MINIMAL_SPACING = {
   headerGap: 'gap-2',
   headerPaddingBottom: 'pb-2 sm:pb-3',
@@ -200,6 +207,8 @@ export const TASK_DIALOG_MINIMAL_SPACING = {
   pillGap: 'gap-1.5',
   contentPadding: 'px-4 sm:px-5 pb-4',
   mobileTabSelectWrapper: 'px-4 pt-4 pb-2',
+  // Reference: generous vertical spacing between Task Name, Description, Status, Priority
+  basicContentSpaceY: 'space-y-6 sm:space-y-7',
 } as const;
 
 // Calendar Constants
