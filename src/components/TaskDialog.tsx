@@ -2058,7 +2058,7 @@ export function TaskDialog({
                 activeTab === 'basic' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
-              {activeTab === 'basic' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
+              {activeTab === 'basic' && <Icon name="chevron-right" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
               <DialogTitle className="text-xs sm:text-base font-semibold truncate flex-1">
                 {TASK_DIALOG_UI_TEXT.taskInfoTitle}
               </DialogTitle>
@@ -2071,7 +2071,7 @@ export function TaskDialog({
                 activeTab === 'scheduling' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
-              {activeTab === 'scheduling' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
+              {activeTab === 'scheduling' && <Icon name="chevron-right" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
               <span className="text-xs sm:text-base font-medium truncate flex-1">
                 {TASK_DIALOG_UI_TEXT.schedule.desktop}
               </span>
@@ -2084,7 +2084,7 @@ export function TaskDialog({
                 activeTab === 'organization' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >
-              {activeTab === 'organization' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
+              {activeTab === 'organization' && <Icon name="chevron-right" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
               <span className="text-xs sm:text-base font-medium truncate flex-1">
                 {TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
               </span>
