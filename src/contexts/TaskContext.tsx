@@ -162,6 +162,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const lastNetworkErrorLogRef = useRef<number>(0); // Track last network error log time to suppress repeated warnings
   // Lock to prevent concurrent next occurrence creation for the same recurring task
   const nextOccurrenceCreationLock = useRef<Set<string>>(new Set());
+  // Guard against double-invocation when marking complete (e.g. double-click)
+  const updateTaskInProgressRef = useRef<Set<string>>(new Set());
   
   // Activity tracking for adaptive polling
   const lastActivityRef = useRef<number>(Date.now());
@@ -1897,6 +1899,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; resolve to base task ID for lookup
     const baseTaskId = taskId.includes('__') ? taskId.split('__')[0] : taskId;
 
+    // Prevent duplicate updates when marking complete (e.g. double-click) - skip if same task already in progress
+    if (updateTaskInProgressRef.current.has(baseTaskId)) {
+      logger.debug('updateTask skipped: already in progress', { baseTaskId });
+      return;
+    }
+    updateTaskInProgressRef.current.add(baseTaskId);
+
+    try {
     // Permission check removed to break circular dependency with TeamContext
     // Permission checks should be handled at component level using useTeam() hook
 
@@ -2152,19 +2162,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         
         // Fallback: update locally
         setTasks(prev => {
+          // For recurring task marked complete: only add the completed occurrence; do not set base task to done (avoids duplicate "done" entries)
+          if (isRecurringTask && isBeingMarkedComplete && completedOccurrence) {
+            const updated = [...prev, completedOccurrence];
+            saveToLocalStorage('tasks', updated, user?.id);
+            return updated;
+          }
           let updated = prev.map(task => {
             if (task.id === baseTaskId) {
               return updatedTask;
             }
             return task;
           });
-          
-          // Add completed occurrence if created
           if (completedOccurrence) {
             updated = [...updated, completedOccurrence];
           }
-          
-          saveToLocalStorage('tasks', updated);
+          saveToLocalStorage('tasks', updated, user?.id);
           return updated;
         });
         
@@ -2178,19 +2191,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     } else {
       // No workspace/auth - update locally only
       setTasks(prev => {
+        // For recurring task marked complete: only add the completed occurrence; do not set base task to done (avoids duplicate "done" entries)
+        if (isRecurringTask && isBeingMarkedComplete && completedOccurrence) {
+          const updated = [...prev, completedOccurrence];
+          saveToLocalStorage('tasks', updated, user?.id);
+          return updated;
+        }
         let updated = prev.map(task => {
           if (task.id === baseTaskId) {
             return updatedTask;
           }
           return task;
         });
-        
-        // Add completed occurrence if created
         if (completedOccurrence) {
           updated = [...updated, completedOccurrence];
         }
-        
-        saveToLocalStorage('tasks', updated);
+        saveToLocalStorage('tasks', updated, user?.id);
         return updated;
       });
       
@@ -2198,6 +2214,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       if (isRecurringTask && isBeingMarkedComplete) {
         nextOccurrenceCreationLock.current.delete(baseTaskId);
       }
+    }
+    } finally {
+      updateTaskInProgressRef.current.delete(baseTaskId);
     }
   }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrenceDate, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]); // Removed syncWithServer from dependencies
 

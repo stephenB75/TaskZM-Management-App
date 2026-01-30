@@ -620,7 +620,13 @@ export function SevenDayKanban({
               }
             }
             
-            return matches;
+            if (!matches) return false;
+            // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence
+            if (task.recurrence && task.recurrence.type !== 'none') {
+              const completedOccurrenceId = `${task.id}_completed_${dateString}`;
+              if (tasks.some(t => t.id === completedOccurrenceId)) return false;
+            }
+            return true;
           } catch (error) {
             logger.error('Error checking date in recurrence:', error, task);
             return false;

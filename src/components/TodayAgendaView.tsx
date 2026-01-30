@@ -95,6 +95,7 @@ export function TodayAgendaView({
   today.setHours(0, 0, 0, 0);
   
   // Layer 1: Basic structure - no scroll tracking needed for now
+  const todayDateString = getDateString(today);
   const allTodayTasks = Array.isArray(tasks) ? tasks.filter((task) => {
     // Defensive check: ensure task is valid
     if (!task || typeof task !== 'object') {
@@ -102,7 +103,13 @@ export function TodayAgendaView({
     }
     try {
       // Check if task matches today (either exact match or recurrence pattern)
-      return isDateInRecurrence(task, today);
+      if (!isDateInRecurrence(task, today)) return false;
+      // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for today, show only the completed occurrence
+      if (task.recurrence && task.recurrence.type !== 'none') {
+        const completedOccurrenceId = `${task.id}_completed_${todayDateString}`;
+        if (tasks.some((t) => t.id === completedOccurrenceId)) return false;
+      }
+      return true;
     } catch (error) {
       console.error('Error checking date in recurrence:', error, task);
       return false;

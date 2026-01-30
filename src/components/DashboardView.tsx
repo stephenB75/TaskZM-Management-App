@@ -905,7 +905,13 @@ export function DashboardView({
           }
         }
         
-        return matches;
+        if (!matches) return false;
+        // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence
+        if (task.recurrence && task.recurrence.type !== 'none') {
+          const completedOccurrenceId = `${task.id}_completed_${dateString}`;
+          if (tasks.some((t) => t.id === completedOccurrenceId)) return false;
+        }
+        return true;
       } catch (error) {
         if (import.meta.env.DEV) {
           console.error(`Error checking task ${task.id} for date ${dateString}:`, error, task);
