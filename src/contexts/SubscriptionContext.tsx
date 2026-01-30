@@ -219,10 +219,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id]);
 
-  const loadSubscription = useCallback(async () => {
+  const loadSubscription = useCallback(async (silent?: boolean) => {
     if (!user || !accessToken) return;
     try {
-      setIsLoading(true);
+      // Only set global loading for initial load; background sync (silent) must not re-show splash
+      if (!silent) setIsLoading(true);
       
       // SPECIAL HANDLING FOR DEMO USERS:
       // Demo users always get Pro tier (yearly) - clear any cached free tier data
@@ -343,12 +344,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   }, [user, accessToken, mergeSubscriptionWithRevenueCat]);
 
-  const refreshSubscription = useCallback(async () => {
-    console.log('🔄 Refreshing subscription status from backend...');
+  const refreshSubscription = useCallback(async (silent?: boolean) => {
+    if (!silent) console.log('🔄 Refreshing subscription status from backend...');
     
-    // Load subscription from backend
-    await loadSubscription();
-    console.log('✅ Subscription refresh complete');
+    // Load subscription from backend (silent=true for background sync to avoid re-showing splash)
+    await loadSubscription(silent);
+    if (!silent) console.log('✅ Subscription refresh complete');
   }, [loadSubscription]);
 
   // Initial load when user logs in
@@ -377,10 +378,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user || !accessToken) return;
 
-    // Sync every 5 minutes to catch webhook updates
+    // Sync every 5 minutes to catch webhook updates (silent: do not set loading or re-show splash)
     const syncInterval = setInterval(() => {
-      console.log('Performing periodic subscription sync...');
-      refreshSubscription().catch((error) => {
+      refreshSubscription(true).catch((error) => {
         console.warn('Periodic subscription sync failed:', error);
         // Don't show error to user for background sync
       });
