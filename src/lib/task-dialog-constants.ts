@@ -23,6 +23,10 @@ export const TASK_DIALOG_UI_TEXT = {
   descriptionMinimal: 'Description',
   scheduledDate: 'Scheduled Date',
   dueDate: 'Due Date',
+  // Schedule block: short labels for compact layout
+  scheduledSectionTitle: 'Scheduled',
+  timeLabel: 'Time',
+  dueDatePlaceholder: 'MM/DD/YYYY',
   
   // Minimal view: section title and labels (inspiration: consolidated task dialog)
   taskInfoTitle: 'Task Info',

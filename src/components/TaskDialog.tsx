@@ -2535,53 +2535,46 @@ export function TaskDialog({
                     />
                   </div>
 
-                  {/* Time Selection - Two Column Layout */}
+                  {/* Schedule: Date, 12HR/24HR, time, Due date with clear */}
                   <div className="pt-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Scheduled Date & Time */}
+                      {/* Scheduled: date line + time (12HR/24HR, hour, min, AM/PM, clear) */}
                       <div className="space-y-3">
-                      <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                        <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" weight="duotone" />
-                        Scheduled Date & Time
-                      </Label>
-                      {scheduledDate && (
-                        <div className="text-xs text-muted-foreground bg-primary/10 rounded px-2 py-1">
-                          {scheduledDate.toLocaleDateString('en-US', { 
-                            weekday: 'short', 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                          {scheduledTime && ` at ${scheduledTime}`}
-                        </div>
-                      )}
-
-                      {/* Time Picker */}
-                      {scheduledDate && (
-                        <div className="mt-2">
-                          <div className="flex items-center justify-between mb-2">
-                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Icon name="clock" size={ICON_SIZE_XS} />
-                              Scheduled Time (Optional)
-                            </Label>
-                            {(scheduledHours || scheduledMinutes) && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setScheduledHours("");
-                                  setScheduledMinutes("");
-                                  setScheduledTime("");
-                                }}
-                                className="h-5 text-xs text-muted-foreground hover:text-foreground"
-                              >
-                                {TASK_DIALOG_UI_TEXT.clear}
-                              </Button>
-                            )}
+                        <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                          <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" weight="duotone" />
+                          {TASK_DIALOG_UI_TEXT.scheduledSectionTitle}
+                        </Label>
+                        {scheduledDate && (
+                          <div className="text-xs text-muted-foreground bg-primary/10 rounded px-2 py-1">
+                            {scheduledDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                            {scheduledTime && ` at ${scheduledTime}`}
                           </div>
-                          {/* Inline layout: Format toggle, Hour, Minute, AM/PM */}
-                          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full">
+                        )}
+
+                        {scheduledDate && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                                <Icon name="clock" size={ICON_SIZE_XS} />
+                                {TASK_DIALOG_UI_TEXT.timeLabel}
+                              </Label>
+                              {(scheduledHours || scheduledMinutes) && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setScheduledHours("");
+                                    setScheduledMinutes("");
+                                    setScheduledTime("");
+                                  }}
+                                  className="h-6 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                                >
+                                  {TASK_DIALOG_UI_TEXT.clear}
+                                </Button>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full">
                             {/* Time Format Toggle: switch between 12HR and 24HR */}
                             <ToggleGroup
                               type="single"
@@ -2760,45 +2753,44 @@ export function TaskDialog({
                                 </Select>
                               </div>
                             )}
+                            </div>
                           </div>
-                          {scheduledDate && !scheduledTime && (
-                            <p className="text-xs text-muted-foreground">
-                              💡 Leave time empty to let AI schedule based on your preferences
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Due Date */}
-                    <div className="space-y-2 sm:space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-semibold flex items-center gap-2">
-                          <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-primary" />
-                          {TASK_DIALOG_UI_TEXT.dueDate}
-                        </Label>
-                        {dueDate && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setDueDate(undefined);
-                              setDueMonth("");
-                              setDueDay("");
-                              setDueYear("");
-                            }}
-                            className="h-6 text-xs text-muted-foreground hover:text-foreground"
-                          >
-                            {TASK_DIALOG_UI_TEXT.clear}
-                          </Button>
                         )}
                       </div>
 
-                      {/* Date Input */}
-                      <Input
-                        type="text"
-                        placeholder="MM/DD/YYYY"
+                      {/* Due Date: label, clear when set, input shows selected date */}
+                      <div className="space-y-2 sm:space-y-3">
+                        <div className="flex items-center justify-between gap-2 min-w-0">
+                          <Label className="text-sm font-semibold flex items-center gap-2 shrink-0">
+                            <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-primary" />
+                            {TASK_DIALOG_UI_TEXT.dueDate}
+                          </Label>
+                          {dueDate && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setDueDate(undefined);
+                                setDueMonth("");
+                                setDueDay("");
+                                setDueYear("");
+                              }}
+                              className="h-6 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                              title={TASK_DIALOG_UI_TEXT.clear}
+                            >
+                              {TASK_DIALOG_UI_TEXT.clear}
+                            </Button>
+                          )}
+                        </div>
+                        {dueDate && (
+                          <div className="text-xs text-muted-foreground bg-primary/10 rounded px-2 py-1">
+                            {dueDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        )}
+                        <Input
+                          type="text"
+                          placeholder={TASK_DIALOG_UI_TEXT.dueDatePlaceholder}
                         value={dueDate ? 
                           `${(dueDate.getMonth() + 1).toString().padStart(2, '0')}/${dueDate.getDate().toString().padStart(2, '0')}/${dueDate.getFullYear()}` 
                           : ''}
@@ -3226,7 +3218,7 @@ export function TaskDialog({
                   </div>
 
                   {recurrenceType !== "none" && (
-                    <div className="space-y-4 sm:space-y-5 pl-6 border-l-2 border-primary/20">
+                    <div className="space-y-4 sm:space-y-5">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-xs sm:text-sm font-medium">Frequency</Label>
