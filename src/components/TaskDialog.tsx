@@ -3140,13 +3140,13 @@ export function TaskDialog({
                             <Checkbox
                               checked={subtask.completed}
                               onCheckedChange={() => toggleSubtask(subtask.id)}
-                              className="mt-1"
-                              style={isMobile ? {
+                              className="mt-1 shrink-0"
+                              style={{
                                 width: INBOX_CHECKBOX_SIZE_MOBILE,
                                 height: INBOX_CHECKBOX_SIZE_MOBILE,
                                 minWidth: INBOX_CHECKBOX_SIZE_MOBILE,
                                 minHeight: INBOX_CHECKBOX_SIZE_MOBILE,
-                              } : undefined}
+                              }}
                             />
                             <div className="flex-1 min-w-0">
                               <span
