@@ -168,8 +168,8 @@ export const TASK_DIALOG_COLORS = {
   minimalCardBg: 'bg-amber-50/50 dark:bg-amber-950/20',
   // Gradient: yellow at top fading to white (overrides base dialog; responsive)
   dialogBg: '!bg-gradient-to-b !from-[#FFEEB2] !via-amber-50/90 !to-white dark:!from-amber-950/60 dark:!via-amber-950/30 dark:!to-gray-900',
-  // Responsive width: fit small screens (95vw), compact modal on sm+
-  dialogMaxWidth: 'max-w-[95vw] sm:max-w-lg',
+  // Responsive width: mobile 95vw; tablet sm/md; desktop lg+ wider for comfortable fit
+  dialogMaxWidth: 'max-w-[95vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl',
   // Reference: selected pill = purple; unselected = text on dialog bg (no white box)
   pillSelected: 'bg-primary text-primary-foreground',
   pillUnselected: 'bg-transparent text-foreground hover:bg-primary/10',
@@ -198,16 +198,18 @@ export const TASK_DIALOG_SECTION_SPACING = {
 // Minimal view: responsive spacing so components fit on all devices
 export const TASK_DIALOG_MINIMAL_SPACING = {
   headerGap: 'gap-1 sm:gap-2',
-  headerPaddingBottom: 'pb-2 sm:pb-3',
-  cardPadding: 'p-3 sm:p-4',
-  cardSpaceY: 'space-y-2 sm:space-y-3',
+  headerPaddingBottom: 'pb-2 sm:pb-3 lg:pb-4',
+  cardPadding: 'p-3 sm:p-4 lg:p-5',
+  cardSpaceY: 'space-y-2 sm:space-y-3 lg:space-y-4',
   fieldSpaceY: 'space-y-1 sm:space-y-1.5',
   statusPriorityRowGap: 'gap-2 sm:gap-3',
   pillGap: 'gap-1 sm:gap-1.5',
-  contentPadding: 'px-3 pb-3 sm:px-5 sm:pb-4',
-  mobileTabSelectWrapper: 'px-3 pt-3 pb-2 sm:px-4 sm:pt-4',
-  // Responsive: tighter on small screens so content fits, generous on desktop
-  basicContentSpaceY: 'space-y-4 sm:space-y-6',
+  contentPadding: 'px-3 pb-3 sm:px-5 sm:pb-4 md:px-5 md:pb-4 lg:px-6 lg:pb-5',
+  mobileTabSelectWrapper: 'px-3 pt-3 pb-2 sm:px-4 sm:pt-4 lg:px-5 lg:pt-4 lg:pb-3',
+  // Responsive: tighter on small screens, generous on desktop
+  basicContentSpaceY: 'space-y-4 sm:space-y-6 lg:space-y-6',
+  // Inner wrapper: more padding on desktop for comfortable fit
+  dialogInnerPadding: 'pt-4 px-4 pb-3 sm:pt-6 sm:px-6 sm:pb-5 md:pt-6 md:px-6 md:pb-5 lg:pt-8 lg:px-8 lg:pb-6',
 } as const;
 
 // Calendar Constants

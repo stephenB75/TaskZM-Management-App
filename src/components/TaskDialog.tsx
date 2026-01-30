@@ -2046,7 +2046,7 @@ export function TaskDialog({
         "text-foreground dark:text-foreground"
       )}>
         {/* Gradient yellow-to-white surface; responsive padding */}
-        <div className={cn("flex flex-col flex-1 min-h-0 rounded-2xl overflow-hidden pt-4 px-4 pb-3 sm:pt-6 sm:px-6 sm:pb-5", TASK_DIALOG_COLORS.dialogBg)}>
+        <div className={cn("flex flex-col flex-1 min-h-0 rounded-2xl overflow-hidden", TASK_DIALOG_MINIMAL_SPACING.dialogInnerPadding, TASK_DIALOG_COLORS.dialogBg)}>
         {/* Minimal header - responsive tap targets and text */}
         <DialogHeader className="flex-shrink-0 pb-2 sm:pb-4">
           <div className="flex flex-col gap-0.5 sm:gap-1">
@@ -2211,7 +2211,7 @@ export function TaskDialog({
                                 isGeneratingDescription && "animate-spin"
                               )}
                             />
-                            <span className="hidden sm:inline">Redo</span>
+                            <span className="hidden lg:inline">Redo</span>
                           </Button>
                         )}
                         {/* Generate New Description Button - Appends to existing or creates new */}
@@ -2297,7 +2297,7 @@ export function TaskDialog({
                             size={COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize} 
                             weight="duotone"
                           />
-                          <span className="hidden sm:inline">AI Generate</span>
+                          <span className="hidden lg:inline">AI Generate</span>
                         </Button>
                       </div>
                     )}
@@ -2858,7 +2858,7 @@ export function TaskDialog({
                   {(title.trim() || description.trim()) && (
                     <div className={cn(
                       "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                      isMobile ? "p-3" : "p-4",
+                      TASK_DIALOG_MINIMAL_SPACING.cardPadding,
                       "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow",
                       "mb-3 sm:mb-4"
                     )}>
@@ -2955,7 +2955,7 @@ export function TaskDialog({
                   {folders.length > 0 && (
                     <div className={cn(
                       "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                      isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                      cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
                       "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow",
                       "mb-3 sm:mb-4"
                     )}>
@@ -3109,7 +3109,7 @@ export function TaskDialog({
                 {/* Step 4: Create Subtask */}
                 <div className={cn(
                   "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                  isMobile ? "p-3 space-y-3" : "p-4 space-y-3",
+                  cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-3"),
                   "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                 )}>
                   <div className="flex items-center gap-2 mb-2">
@@ -3192,7 +3192,7 @@ export function TaskDialog({
                 {/* Recurrence with Toggle - Moved from Advanced */}
                 <div className={cn(
                   "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                  isMobile ? "p-4 space-y-4" : "p-5 space-y-5",
+                  "p-4 sm:p-5 space-y-4 sm:space-y-5",
                   "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                 )}>
                   <div className="flex items-center justify-between">
@@ -3362,7 +3362,7 @@ export function TaskDialog({
                           <Label className="text-xs text-muted-foreground">Ends</Label>
                           <div className={cn(
                             "w-full flex justify-center bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                            isMobile ? "p-3 py-2" : "p-4 py-2",
+                            cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "py-2"),
                             "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                           )}>
                             <SingleDateMiniCalendar
@@ -3410,7 +3410,7 @@ export function TaskDialog({
                 {/* Task Dependencies - Pro Yearly Feature */}
                 <div className={cn(
                   "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                  isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                  cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
                   "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                 )}>
                   <div className="flex items-center gap-2">
@@ -3564,7 +3564,7 @@ export function TaskDialog({
                 {teamMembers.length > 0 && (
                   <div className={cn(
                     "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                    isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                    cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
                     "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                   )}>
                     <div className="flex items-center gap-2">
@@ -3700,7 +3700,7 @@ export function TaskDialog({
                   return (
                     <div className={cn(
                     "bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl",
-                    isMobile ? "p-3 space-y-2" : "p-4 space-y-2",
+                    cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
                     "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
                   )}>
                       <Label className="text-sm font-semibold flex items-center gap-2">
@@ -3735,7 +3735,7 @@ export function TaskDialog({
               paddingBottom: COMPONENT_DIMENSIONS.taskDialog.footer.padding.bottom,
             }}
           >
-            {/* Secondary row: Duplicate / Delete - icon-only on mobile for spacing */}
+            {/* Secondary row: Duplicate / Delete - icon-only below lg for spacing */}
             {task && (
               <div className="flex gap-1 sm:gap-2 justify-end">
                 <Button
@@ -3743,11 +3743,11 @@ export function TaskDialog({
                   variant="ghost"
                   size="sm"
                   onClick={handleDuplicate}
-                  className="text-foreground hover:bg-primary/10 h-8 w-8 sm:h-8 sm:w-auto sm:px-3 sm:min-w-0 rounded-lg flex items-center justify-center"
+                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
                   title={TASK_DIALOG_UI_TEXT.buttonTooltips.duplicate}
                 >
-                  <Icon name="copy" size={isMobile ? 16 : 14} className={cn(isMobile ? "" : "mr-1.5")} />
-                  <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.duplicate.desktop}</span>
+                  <Icon name="copy" size={16} className="shrink-0 lg:mr-1.5" />
+                  <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.duplicate.desktop}</span>
                 </Button>
                 {task.status !== "done" && (
                   <Button
@@ -3755,16 +3755,16 @@ export function TaskDialog({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="text-destructive hover:bg-destructive/10 h-8 w-8 sm:h-8 sm:w-auto sm:px-3 sm:min-w-0 rounded-lg flex items-center justify-center"
+                    className="text-destructive hover:bg-destructive/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
                     title={TASK_DIALOG_UI_TEXT.buttonTooltips.delete}
                   >
-                    <Icon name="trash-2" size={isMobile ? 16 : 14} className={cn(isMobile ? "" : "mr-1.5")} />
-                    <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.delete.desktop}</span>
+                    <Icon name="trash-2" size={16} className="shrink-0 lg:mr-1.5" />
+                    <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.delete.desktop}</span>
                   </Button>
                 )}
               </div>
             )}
-            {/* Primary row: cancel (red) and + CREATE / Update (purple) - icon-only on mobile for spacing */}
+            {/* Primary row: cancel and Create/Update - icon-only below lg, text on desktop */}
             <div className="flex gap-2 sm:gap-4">
               <Button
                 type="button"
@@ -3772,46 +3772,47 @@ export function TaskDialog({
                 onClick={onClose}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCancel,
-                  "flex-1 sm:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base min-w-0",
-                  "px-3 sm:px-6 flex items-center justify-center"
+                  "flex-1 lg:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base min-w-0",
+                  "px-3 lg:px-6 flex items-center justify-center"
                 )}
                 title={TASK_DIALOG_UI_TEXT.buttonTooltips.cancel}
               >
-                {isMobile ? (
-                  <Icon name="x" size={22} style={{ color: 'inherit' }} aria-hidden />
-                ) : (
-                  TASK_DIALOG_UI_TEXT.cancel
-                )}
+                <Icon name="x" size={22} className="shrink-0 lg:hidden" style={{ color: 'inherit' }} aria-hidden />
+                <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.cancel}</span>
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting || (task ? !permissions.canEditTask : !permissions.canCreateTask)}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCreate,
-                  "flex-1 sm:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base shadow-md min-w-0",
-                  "px-3 sm:px-6 flex items-center justify-center"
+                  "flex-1 lg:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base shadow-md min-w-0",
+                  "px-3 lg:px-6 flex items-center justify-center"
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
                 title={task ? TASK_DIALOG_UI_TEXT.buttonTooltips.updateTask : TASK_DIALOG_UI_TEXT.buttonTooltips.createTask}
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <Icon name="circle-notch" size={18} style={{ color: COLOR_TEXT_WHITE }} className="animate-spin" />
-                    <span className="hidden sm:inline">{TASK_DIALOG_UI_TEXT.saving}</span>
+                    <Icon name="circle-notch" size={18} style={{ color: COLOR_TEXT_WHITE }} className="animate-spin shrink-0" />
+                    <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.saving}</span>
                   </span>
-                ) : isMobile ? (
-                  task ? (
-                    <Icon name="check" size={22} style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
-                  ) : (
-                    <Icon name="plus" size={22} style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
-                  )
-                ) : task ? (
-                  TASK_DIALOG_UI_TEXT.updateTask
                 ) : (
-                  <span className="flex items-center gap-2">
-                    <Icon name="plus" size={18} style={{ color: COLOR_TEXT_WHITE }} />
-                    {TASK_DIALOG_UI_TEXT.createTask}
-                  </span>
+                  <>
+                    {task ? (
+                      <>
+                        <Icon name="check" size={22} className="shrink-0 lg:hidden" style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
+                        <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.updateTask}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="plus" size={22} className="shrink-0 lg:hidden" style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
+                        <span className="hidden lg:inline lg:flex lg:items-center lg:gap-2">
+                          <Icon name="plus" size={18} style={{ color: COLOR_TEXT_WHITE }} />
+                          {TASK_DIALOG_UI_TEXT.createTask}
+                        </span>
+                      </>
+                    )}
+                  </>
                 )}
               </Button>
             </div>
