@@ -155,12 +155,21 @@ export const TASK_DIALOG_DIMENSIONS = {
 } as const;
 
 // Color Classes (for intentional design differences)
+// Reference: docs/task-dialog-reference/ (light orange-yellow dialog, purple pills, red cancel, purple create)
 export const TASK_DIALOG_COLORS = {
   // Intentional design difference: TaskDialog uses primary color with opacity
   // instead of purple gradient like other task cards
   assigneeFallbackGradient: 'bg-gradient-to-br from-primary/20 to-primary/40',
   // Minimal view: warm card background (light yellow-orange inspiration)
   minimalCardBg: 'bg-amber-50/50 dark:bg-amber-950/20',
+  // Reference design: full dialog background (light peach/orange-yellow #ffeeb2-style)
+  dialogBg: 'bg-[#FFEEB2] dark:bg-amber-950/40',
+  // Reference: selected pill = purple; unselected = text on dialog bg (no white box)
+  pillSelected: 'bg-primary text-primary-foreground',
+  pillUnselected: 'bg-transparent text-foreground hover:bg-primary/10',
+  // Reference: cancel = solid red, create = solid purple (primary)
+  footerCancel: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+  footerCreate: 'bg-primary text-primary-foreground hover:bg-primary/90',
 } as const;
 
 // Menu Dimensions
