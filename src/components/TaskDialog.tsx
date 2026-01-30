@@ -2327,60 +2327,7 @@ export function TaskDialog({
                   />
                   </div>
 
-                  {/* Status - horizontal pills; responsive text and wrap */}
-                  <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                    <Label className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.status}</Label>
-                    <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
-                      {(['todo', 'in-progress', 'done', 'on-hold'] as const).map((value) => {
-                        const label = value === 'todo' ? TASK_DIALOG_UI_TEXT.statusOptions.todo
-                          : value === 'in-progress' ? TASK_DIALOG_UI_TEXT.statusOptions.inProgress
-                          : value === 'done' ? TASK_DIALOG_UI_TEXT.statusOptions.done
-                          : TASK_DIALOG_UI_TEXT.statusOptions.onHold;
-                        const isSelected = status === value;
-                        return (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
-                            disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                            className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
-                              isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
-                            )}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Priority Level - horizontal pills; responsive */}
-                  <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                    <Label className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.priorityLevelLabel}</Label>
-                    <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
-                      {(['low', 'medium', 'high', 'urgent'] as const).map((value) => {
-                        const label = TASK_DIALOG_UI_TEXT.priorityOptions[value];
-                        const isSelected = priority === value;
-                        return (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
-                            disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                            className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
-                              isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
-                            )}
-                          >
-                            {label}
-                          </button>
-                        );
-                        })}
-                    </div>
-                  </div>
-
-                  {/* AI Analysis - breakdown, domain, effort, description options, suggestions, suggested subtasks */}
+                  {/* AI Analysis - under task name and description; breakdown, domain, effort, description options, suggestions, suggested subtasks */}
                   {(title.trim() || description.trim()) && (
                     <div className={cn(
                       cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
@@ -2475,6 +2422,59 @@ export function TaskDialog({
                       ) : null}
                     </div>
                   )}
+
+                  {/* Status - horizontal pills; responsive text and wrap */}
+                  <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
+                    <Label className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.status}</Label>
+                    <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
+                      {(['todo', 'in-progress', 'done', 'on-hold'] as const).map((value) => {
+                        const label = value === 'todo' ? TASK_DIALOG_UI_TEXT.statusOptions.todo
+                          : value === 'in-progress' ? TASK_DIALOG_UI_TEXT.statusOptions.inProgress
+                          : value === 'done' ? TASK_DIALOG_UI_TEXT.statusOptions.done
+                          : TASK_DIALOG_UI_TEXT.statusOptions.onHold;
+                        const isSelected = status === value;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
+                            disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
+                            className={cn(
+                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
+                              isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
+                            )}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Priority Level - horizontal pills; responsive */}
+                  <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
+                    <Label className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.priorityLevelLabel}</Label>
+                    <div className={cn("flex flex-wrap", TASK_DIALOG_MINIMAL_SPACING.pillGap)}>
+                      {(['low', 'medium', 'high', 'urgent'] as const).map((value) => {
+                        const label = TASK_DIALOG_UI_TEXT.priorityOptions[value];
+                        const isSelected = priority === value;
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
+                            disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
+                            className={cn(
+                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
+                              isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
+                            )}
+                          >
+                            {label}
+                          </button>
+                        );
+                        })}
+                    </div>
+                  </div>
 
               </TabsContent>
 
