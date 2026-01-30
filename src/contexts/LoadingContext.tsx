@@ -68,9 +68,9 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
     }));
   }, [subscriptionLoading]);
 
-  // Calculate overall loading state
+  // Calculate overall loading state: auth + workspace only (subscription non-blocking for first paint)
   useEffect(() => {
-    const isReady = !loadingState.auth && !loadingState.workspace && !loadingState.subscription;
+    const isReady = !loadingState.auth && !loadingState.workspace;
     
     setLoadingState(prev => ({
       ...prev,
@@ -78,29 +78,26 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
     }));
 
     if (isReady) {
-      logger.debug('✅ All critical data loaded, app is ready');
-      // Signal to main.tsx that loading is complete
+      logger.debug('✅ Auth and workspace ready, app is ready (subscription may still load in background)');
       window.dispatchEvent(new CustomEvent('app-ready'));
     }
-  }, [loadingState.auth, loadingState.workspace, loadingState.subscription]);
+  }, [loadingState.auth, loadingState.workspace]);
 
-  // Calculate loading progress (0-100)
+  // Calculate loading progress (0-100) - auth and workspace only for "ready" bar
   const loadingProgress = React.useMemo(() => {
-    const total = 3; // auth, workspace, subscription
+    const total = 2; // auth, workspace (subscription loads in background)
     let loaded = 0;
     
     if (!loadingState.auth) loaded++;
     if (!loadingState.workspace) loaded++;
-    if (!loadingState.subscription) loaded++;
     
     return Math.round((loaded / total) * 100);
   }, [loadingState]);
 
-  // Generate loading message
+  // Generate loading message (subscription not shown as blocking)
   const loadingMessage = React.useMemo(() => {
     if (loadingState.auth) return 'Authenticating...';
     if (loadingState.workspace) return 'Loading workspace...';
-    if (loadingState.subscription) return 'Loading subscription...';
     return 'Loading TaskZM...';
   }, [loadingState]);
 

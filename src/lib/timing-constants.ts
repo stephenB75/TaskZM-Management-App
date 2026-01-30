@@ -25,12 +25,12 @@ export const TIMING_CONSTANTS = {
     splashScreenAggressive: 6000, // Aggressive fallback to force hide splash (increased to ensure app is fully loaded)
     splashScreenRemoval: 500, // Delay before removing splash element from DOM
     splashScreenImmediate: 100, // Immediate fallback delay for splash hiding
-    splashScreenMinDisplay: 2000, // Minimum time splash screen should be visible (increased to ensure app loads)
-    splashScreenPostReadyDelay: 800, // Delay after app-ready event before hiding (increased to ensure React has fully rendered and initialized)
-    splashScreenPollInterval: 150, // Interval for polling if app is fully loaded (ms) - increased for better reliability
-    splashScreenMinContentLength: 500, // Minimum innerHTML length (chars) to consider React content rendered (increased for more reliable detection)
-    splashScreenMaxChecks: 100, // Maximum number of readiness checks (100 * 150ms = 15 seconds)
-    splashScreenTimeout: 10000, // Timeout fallback for app readiness check (10 seconds)
+    splashScreenMinDisplay: 400, // Minimum time splash overlay visible (short; overlay approach allows fast hide)
+    splashScreenPostReadyDelay: 800, // Delay after app-ready event before hiding
+    splashScreenPollInterval: 150, // Interval for polling (fallback path only)
+    splashScreenMinContentLength: 500, // Minimum innerHTML length to consider React content rendered
+    splashScreenMaxChecks: 20, // Fallback: max readiness checks (20 * 150ms = 3s)
+    splashScreenTimeout: 3000, // Fallback timeout for app readiness check (3s)
     splashScreenMinInteractiveElements: 3, // Minimum number of interactive elements required for app to be considered ready
     splashScreenReactInitDelay: 300, // Extra delay for React initialization after readiness check passes (ms)
     splashScreenCheckDelay: 200, // Delay before starting readiness check to ensure React has rendered (ms)

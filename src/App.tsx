@@ -599,258 +599,40 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // CRITICAL: Ensure app is fully initialized and ready before hiding splash
-  // This includes: data loaded, React rendered, event handlers attached, and app is interactive
-  // ENHANCED: Also wait for all context providers to be fully initialized
+  // Simplified readiness: when data is ready and min display elapsed, use rAF + short delay (no DOM polling).
+  // App content is always rendered with overlay on top, so we don't need "no loading screen in DOM" check.
+  const initTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   React.useEffect(() => {
-    // Only check if data is loaded and minimum display time has elapsed
-    if (!isLoading && minDisplayTimeElapsed && isAppRendered) {
-      // Add additional delay to ensure all context providers are initialized
-      // and all event handlers are attached
-      // INCREASED delay to ensure app is truly ready and interactive
-      const initTimer = setTimeout(() => {
-        // Verify app is truly ready by checking for active event listeners
-        // and that React has fully hydrated
-        const rootEl = document.getElementById('root');
-        if (rootEl) {
-          // Check that app has meaningful interactive elements that are actually functional
-          // Also verify that contexts are ready by checking for context-dependent elements
-          const hasFunctionalElements = rootEl.querySelectorAll('button:not([disabled]), a:not([disabled]), [role="button"]:not([disabled])').length >= TIMING_CONSTANTS.delays.splashScreenMinInteractiveElements;
-          
-          // Verify contexts are initialized by checking for context-dependent UI elements
-          // Dashboard should have sidebar, kanban columns, or other app-specific elements
-          const hasContextElements = rootEl.querySelector('[class*="sidebar"], [class*="dashboard"], [class*="kanban"], [class*="view"], nav, header, main') !== null;
-          
-          // Verify app is interactive (not just rendered) by checking pointer events
-          const bodyStyle = window.getComputedStyle(document.body);
-          const isInteractive = bodyStyle.pointerEvents !== 'none' && 
-                               !document.body.classList.contains('loading') &&
-                               !document.body.hasAttribute('data-loading');
-          
-          // Only mark as initialized if all checks pass
-          if (hasFunctionalElements && hasContextElements && isInteractive) {
-            // Use requestAnimationFrame to ensure React event system is fully ready
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                // Final verification: check that event handlers are actually working
-                // by verifying elements respond to interaction
-                const testButton = rootEl.querySelector('button:not([disabled])');
-                if (testButton) {
-                  // If we can find interactive elements, React is ready
-                  setIsAppFullyInitialized(true);
-                } else {
-                  // Wait a bit more if elements aren't ready yet
-                  setTimeout(() => setIsAppFullyInitialized(true), TIMING_CONSTANTS.delays.splashScreenReactInitDelay);
-                }
-              });
-            });
-          } else {
-            // Not ready yet, wait a bit more
-            setTimeout(() => {
-              // Re-check after delay
-              const recheckRoot = document.getElementById('root');
-              if (recheckRoot && recheckRoot.querySelectorAll('button:not([disabled]), a:not([disabled])').length >= TIMING_CONSTANTS.delays.splashScreenMinInteractiveElements) {
-                setIsAppFullyInitialized(true);
-              } else {
-                // Force ready after max wait time to prevent infinite loading
-                setIsAppFullyInitialized(true);
-              }
-            }, TIMING_CONSTANTS.delays.splashScreenReactInitDelay);
-          }
-        } else {
-          setIsAppFullyInitialized(true); // Fallback if root not found
-        }
-      }, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay + TIMING_CONSTANTS.delays.splashScreenCheckDelay); // Additional buffer to ensure React has fully initialized
-      
-      return () => clearTimeout(initTimer);
-    } else {
-      setIsAppFullyInitialized(false);
-    }
-  }, [isLoading, minDisplayTimeElapsed, isAppRendered]);
-  
-  // Check if app is fully rendered and interactive
-  React.useEffect(() => {
-    if (isLoading) {
-      // Still loading data, don't check yet
+    if (isLoading || !minDisplayTimeElapsed) {
       setIsAppRendered(false);
+      setIsAppFullyInitialized(false);
       return;
     }
-    
-    // Wait for minimum display time before checking
-    if (!minDisplayTimeElapsed) {
-      return;
-    }
-    
-    // Data is loaded, now check if React has fully rendered and app is interactive
-    let checkCount = 0;
-    const maxChecks = TIMING_CONSTANTS.delays.splashScreenMaxChecks;
-    const timeoutId = setTimeout(() => {
-      // Fallback: if we've been checking for too long, assume app is ready
-      if (import.meta.env.DEV) {
-        console.warn('⚠️ App ready check timeout - forcing app to be considered ready');
-      }
-      setIsAppRendered(true);
-    }, TIMING_CONSTANTS.delays.splashScreenTimeout);
-    
-    const checkAppReady = () => {
-      checkCount++;
-      
-      // Safety: if we've checked too many times, assume app is ready
-      if (checkCount > maxChecks) {
-        if (import.meta.env.DEV) {
-          console.warn('⚠️ App ready check exceeded max attempts - forcing app to be considered ready');
-        }
-        clearTimeout(timeoutId);
-        setIsAppRendered(true);
-        return;
-      }
-      
-      const rootEl = document.getElementById('root');
-      if (!rootEl) {
-        setTimeout(checkAppReady, TIMING_CONSTANTS.delays.splashScreenPollInterval);
-        return;
-      }
-      
-      // Check for meaningful content (more strict - require substantial content)
-      const innerHTML = rootEl.innerHTML.trim();
-      const hasContent = rootEl.children.length > 0 && 
-                        innerHTML.length > TIMING_CONSTANTS.delays.splashScreenMinContentLength;
-      
-      // Check for interactive elements (buttons, links, inputs, etc.)
-      // Require multiple interactive elements to ensure app is fully loaded
-      const interactiveElements = rootEl.querySelectorAll('button:not([disabled]), a:not([disabled]), [role="button"]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [data-testid], [onclick]');
-      const visibleInteractiveElements = Array.from(interactiveElements).filter((el) => {
-        const htmlEl = el as HTMLElement;
-        const style = window.getComputedStyle(htmlEl);
-        return style.display !== 'none' && 
-               style.visibility !== 'hidden' && 
-               style.opacity !== '0' &&
-               !htmlEl.hasAttribute('disabled');
-      });
-      const hasInteractive = visibleInteractiveElements.length >= TIMING_CONSTANTS.delays.splashScreenMinInteractiveElements;
-      
-      // Check for app-specific elements (sidebar, dashboard, kanban, etc.)
-      const hasAppElements = rootEl.querySelector('[class*="sidebar"], [class*="dashboard"], [class*="kanban"], [class*="view"], [class*="panel"]') !== null ||
-                           rootEl.querySelector('nav, header, main, section, aside') !== null;
-      
-      // Check for kanban-specific elements to ensure kanban view is fully rendered
-      // Kanban columns should be present and visible
-      const hasKanbanColumns = rootEl.querySelector('[class*="kanban"] [data-rbd-droppable-id], [class*="kanban"] [data-testid*="column"], [class*="kanban"] [class*="column"]') !== null;
-      
-      // If kanban is present, ensure it has columns before considering app ready
-      const kanbanColumnCount = hasKanbanColumns ? rootEl.querySelectorAll('[class*="kanban"] [data-rbd-droppable-id], [class*="kanban"] [data-testid*="column"], [class*="kanban"] [class*="column"]').length : 0;
-      const isKanbanReady = !hasKanbanColumns || (hasKanbanColumns && kanbanColumnCount >= TIMING_CONSTANTS.delays.splashScreenMinKanbanColumns);
-      
-      // Check for auth screen elements (auth form, sign in button, etc.)
-      const hasAuthElements = rootEl.querySelector('[class*="auth"], [class*="signin"], [class*="signup"], [id*="auth"]') !== null;
-      
-      // Check if loading screen is still visible (if it is, app isn't ready yet)
-      const hasLoadingScreen = rootEl.querySelector('[class*="loading"], [class*="splash"], .animate-spin') !== null;
-      
-      // Check if body is in a loading state (pointer-events: none, etc.)
-      const bodyStyle = window.getComputedStyle(document.body);
-      const isBodyInteractive = bodyStyle.pointerEvents !== 'none' && 
-                               !document.body.classList.contains('loading') &&
-                               !document.body.hasAttribute('data-loading');
-      
-      // Check if React has finished rendering by looking for React root markers
-      // React 18+ uses data-reactroot or similar markers
-      const hasReactMarkers = rootEl.querySelector('[data-reactroot], [data-react-version]') !== null ||
-                             rootEl.children.length > 0; // If there are children, React has rendered
-      
-      // App is ready if:
-      // 1. Has substantial content
-      // 2. Has multiple visible, enabled interactive elements (at least 3)
-      // 3. Has app elements OR auth elements (one of them)
-      // 4. Loading screen is NOT visible (app content has replaced it)
-      // 5. Body is interactive (not disabled)
-      // 6. React has finished rendering
-      // 7. If kanban is present, ensure it has columns rendered
-      const isReady = hasContent && 
-                     hasInteractive && 
-                     (hasAppElements || hasAuthElements) &&
-                     !hasLoadingScreen &&
-                     isBodyInteractive &&
-                     hasReactMarkers &&
-                     isKanbanReady;
-      
-      if (isReady) {
-        clearTimeout(timeoutId);
-        if (import.meta.env.DEV) {
-          console.log('✅ App is ready:', { 
-            hasContent, 
-            hasInteractive, 
-            interactiveCount: visibleInteractiveElements.length,
-            hasAppElements, 
-            hasAuthElements,
-            hasLoadingScreen,
-            isBodyInteractive,
-            hasReactMarkers,
-            isKanbanReady,
-            kanbanColumns: kanbanColumnCount
-          });
-        }
-        // Add additional delay to ensure React has fully initialized event handlers
-        // and the app is truly responsive
-        // Also account for kanban view animations (duration + delay = 600ms)
-        const hasKanbanView = rootEl.querySelector('[class*="kanban"]') !== null;
-        const additionalDelay = hasKanbanView ? TIMING_CONSTANTS.delays.splashScreenKanbanAnimationDelay : 0;
-        
-        setTimeout(() => {
-          // Double-check that app is still ready before hiding
-          const finalCheck = rootEl && 
-                            rootEl.children.length > 0 && 
-                            rootEl.querySelector('button:not([disabled]), a:not([disabled])') !== null;
-          
-          // If kanban is present, ensure columns are still there
-          const finalKanbanColumnCount = hasKanbanView ? rootEl.querySelectorAll('[class*="kanban"] [data-rbd-droppable-id], [class*="kanban"] [data-testid*="column"], [class*="kanban"] [class*="column"]').length : 0;
-          const finalKanbanCheck = !hasKanbanView || 
-                                  (finalKanbanColumnCount >= TIMING_CONSTANTS.delays.splashScreenMinKanbanColumns);
-          
-          if (finalCheck && finalKanbanCheck) {
-            setIsAppRendered(true);
-          } else {
-            // If final check fails, continue checking
-            if (import.meta.env.DEV) {
-              console.warn('⚠️ Final check failed, continuing to wait...', { finalCheck, finalKanbanCheck });
-            }
-            setTimeout(checkAppReady, TIMING_CONSTANTS.delays.splashScreenCheckDelay);
-          }
-        }, TIMING_CONSTANTS.delays.splashScreenPostReadyDelay + TIMING_CONSTANTS.delays.splashScreenReactInitDelay + additionalDelay);
-      } else {
-        if (import.meta.env.DEV && checkCount % 10 === 0) {
-          // Log every 10th check to avoid spam
-          console.log(`⏳ App not ready yet (attempt ${checkCount}/${maxChecks}):`, { 
-            hasContent, 
-            hasInteractive, 
-            interactiveCount: visibleInteractiveElements.length,
-            hasAppElements, 
-            hasAuthElements,
-            hasLoadingScreen,
-            isBodyInteractive,
-            hasReactMarkers
-          });
-        }
-        // Check again after a short delay
-        setTimeout(checkAppReady, TIMING_CONSTANTS.delays.splashScreenPollInterval);
-      }
-    };
-    
-    // Use requestAnimationFrame to ensure React has rendered
-    requestAnimationFrame(() => {
+    let cancelled = false;
+    const rafId = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        // Additional delay to ensure React has fully rendered
-        setTimeout(() => {
-          checkAppReady();
-        }, TIMING_CONSTANTS.delays.splashScreenCheckDelay);
+        if (cancelled) return;
+        setIsAppRendered(true);
+        initTimerRef.current = setTimeout(() => {
+          initTimerRef.current = null;
+          if (!cancelled) setIsAppFullyInitialized(true);
+        }, TIMING_CONSTANTS.delays.splashScreenReactInitDelay);
       });
     });
-    
-    // Cleanup timeout on unmount
     return () => {
-      clearTimeout(timeoutId);
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      if (initTimerRef.current !== null) {
+        clearTimeout(initTimerRef.current);
+        initTimerRef.current = null;
+      }
     };
   }, [isLoading, minDisplayTimeElapsed]);
+
+  // Set isAppFullyInitialized false when loading starts again (e.g. re-auth)
+  React.useEffect(() => {
+    if (isLoading) setIsAppFullyInitialized(false);
+  }, [isLoading]);
   
   // Show loading screen if data is loading OR app is not yet rendered/interactive OR not fully initialized
   // Also ensure minimum display time has elapsed
@@ -864,82 +646,71 @@ function AppContent() {
   const isUserReady = !user || (user && workspaceId !== undefined);
   const finalShowLoadingScreen = showLoadingScreen || !isUserReady;
   
-  // If loading, show React loading screen (which properly loads images via imports)
-  // React loading screen stays visible until isLoading is false AND app is fully rendered and interactive
-  if (showLoadingScreen) {
-    const { actualTheme } = useTheme();
-    const isDark = actualTheme === 'dark';
-    
-    return (
-      <div className="fixed inset-0 h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950" style={{ zIndex: REACT_LOADING_SCREEN.zIndex }}>
-        <div className="flex flex-col items-center justify-center space-y-6">
-          {/* Logo - Responsive sizing using CSS class */}
-          <img
-            src={isDark ? logoImageGray : logoImageBlack}
-            alt={SPLASH_SCREEN_TEXT.logoAlt}
-            className="loading-screen-logo"
-            onError={(e) => {
-              // Fallback if image fails
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const fallback = document.createElement('div');
-              fallback.textContent = SPLASH_SCREEN_TEXT.fallbackText;
-              fallback.style.cssText = `font-size: min(8vw, 48px); font-weight: bold; color: var(--primary, ${APP_TEXT_FALLBACK_COLOR}); text-align: center;`;
-              target.parentNode?.appendChild(fallback);
+  // Loading overlay: shown on top of app content when loading (app content always rendered underneath).
+  const loadingOverlay = finalShowLoadingScreen ? (
+    <div className="fixed inset-0 h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950" style={{ zIndex: REACT_LOADING_SCREEN.zIndex }}>
+      <div className="flex flex-col items-center justify-center space-y-6">
+        <img
+          src={isDark ? logoImageGray : logoImageBlack}
+          alt={SPLASH_SCREEN_TEXT.logoAlt}
+          className="loading-screen-logo"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const fallback = document.createElement('div');
+            fallback.textContent = SPLASH_SCREEN_TEXT.fallbackText;
+            fallback.style.cssText = `font-size: min(8vw, 48px); font-weight: bold; color: var(--primary, ${APP_TEXT_FALLBACK_COLOR}); text-align: center;`;
+            target.parentNode?.appendChild(fallback);
+          }}
+        />
+        <div className="relative w-12 h-12 md:w-16 md:h-16">
+          <div
+            className="absolute inset-0 border-4 rounded-full animate-spin"
+            style={{
+              borderTopColor: 'var(--primary, #9B87E8)',
+              borderRightColor: 'var(--pastel-lavender, #E6D5F0)',
+              borderBottomColor: 'var(--pastel-lavender, #E6D5F0)',
+              borderLeftColor: 'var(--pastel-lavender, #E6D5F0)',
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              animationDuration: REACT_LOADING_SCREEN.spinner.outer.animationDuration,
             }}
           />
-          
-          {/* Dual Spinner */}
-          <div className="relative w-12 h-12 md:w-16 md:h-16">
-            {/* Outer spinner */}
-            <div
-              className="absolute inset-0 border-4 rounded-full animate-spin"
-              style={{
-                borderTopColor: 'var(--primary, #9B87E8)',
-                borderRightColor: 'var(--pastel-lavender, #E6D5F0)',
-                borderBottomColor: 'var(--pastel-lavender, #E6D5F0)',
-                borderLeftColor: 'var(--pastel-lavender, #E6D5F0)',
-                display: 'block',
-                visibility: 'visible',
-                opacity: 1,
-                animationDuration: REACT_LOADING_SCREEN.spinner.outer.animationDuration,
-              }}
-            />
-            {/* Inner spinner */}
-            <div
-              className="absolute inset-0 border-4 rounded-full animate-spin"
-              style={{
-                borderTopColor: 'transparent',
-                borderRightColor: 'var(--pastel-sky, #C9E4F7)',
-                borderBottomColor: 'var(--pastel-sky, #C9E4F7)',
-                borderLeftColor: 'var(--pastel-sky, #C9E4F7)',
-                animationDirection: REACT_LOADING_SCREEN.spinner.inner.animationDirection,
-                animationDuration: REACT_LOADING_SCREEN.spinner.inner.animationDuration,
-                display: 'block',
-                visibility: 'visible',
-                opacity: 1,
-              }}
-            />
-          </div>
-          
-          {/* Loading message */}
-          <p className="text-sm md:text-base font-medium text-foreground">
-            {loadingMessage || SPLASH_SCREEN_TEXT.loadingMessage}
-          </p>
-          
-          {/* Loading dots */}
-          <div className="flex gap-1">
-            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.first }} />
-            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.second }} />
-            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.third }} />
-          </div>
+          <div
+            className="absolute inset-0 border-4 rounded-full animate-spin"
+            style={{
+              borderTopColor: 'transparent',
+              borderRightColor: 'var(--pastel-sky, #C9E4F7)',
+              borderBottomColor: 'var(--pastel-sky, #C9E4F7)',
+              borderLeftColor: 'var(--pastel-sky, #C9E4F7)',
+              animationDirection: REACT_LOADING_SCREEN.spinner.inner.animationDirection,
+              animationDuration: REACT_LOADING_SCREEN.spinner.inner.animationDuration,
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+            }}
+          />
+        </div>
+        <p className="text-sm md:text-base font-medium text-foreground">
+          {loadingMessage || SPLASH_SCREEN_TEXT.loadingMessage}
+        </p>
+        <div className="flex gap-1">
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.first }} />
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.second }} />
+          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: REACT_LOADING_SCREEN.dots.animationDelays.third }} />
         </div>
       </div>
-    );
-  }
+    </div>
+  ) : null;
 
   if (!user) {
-    return <AuthScreen />;
+    return (
+      <>
+        <AuthScreen />
+        {loadingOverlay}
+      </>
+    );
   }
 
   const handleViewChange = (view: string) => {
@@ -1318,6 +1089,7 @@ function AppContent() {
         open={showDemoDisclaimer}
         onOpenChange={setShowDemoDisclaimer}
       />
+      {loadingOverlay}
     </>
   );
 }
