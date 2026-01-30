@@ -597,18 +597,20 @@ export function DashboardView({
   const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, number>>({});
 
   // Confetti when marking a task complete (week view / today agenda in dashboard)
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [confettiOrigin, setConfettiOrigin] = useState<{ x: number; y: number } | null>(null);
+  // Single state so origin and trigger update together — confetti appears on the task card
+  const [confetti, setConfetti] = useState<{ show: boolean; origin: { x: number; y: number } | null }>({
+    show: false,
+    origin: null,
+  });
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTaskComplete = useCallback((originElement?: HTMLElement | null) => {
+    let origin: { x: number; y: number } | null = null;
     if (originElement) {
       const rect = originElement.getBoundingClientRect();
-      setConfettiOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
-    } else {
-      setConfettiOrigin(null);
+      origin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     }
-    setShowConfetti(true);
+    setConfetti({ show: true, origin });
   }, []);
 
   useEffect(() => {
@@ -1237,15 +1239,14 @@ export function DashboardView({
   return (
     <>
       <Confetti
-        trigger={showConfetti}
-        origin={confettiOrigin}
+        trigger={confetti.show}
+        origin={confetti.origin}
         onComplete={() => {
           if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
           confettiTimeoutRef.current = setTimeout(() => {
-            setShowConfetti(false);
-            setConfettiOrigin(null);
+            setConfetti({ show: false, origin: null });
             confettiTimeoutRef.current = null;
-          }, 100);
+          }, CONFETTI_RESET_DELAY_MS);
         }}
       />
       <div className={cn("h-full flex flex-col", UI_GRADIENT_COLORS.dialog.className, "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950")}>

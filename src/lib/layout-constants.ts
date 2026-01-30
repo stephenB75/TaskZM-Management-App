@@ -594,6 +594,7 @@ export const SETTINGS_PANEL_START_TOUR_BUTTON_GAP = '0.4rem'; // 20% smaller tha
 export const SETTINGS_PANEL_START_TOUR_FONT_SIZE = '0.7rem'; // Slightly smaller text for compact button
 export const SETTINGS_PANEL_TOAST_DURATION_MS = 5000; // Toast duration in milliseconds (5 seconds)
 export const SETTINGS_PANEL_TIMEOUT_DELAY_MS = 100; // Timeout delay in milliseconds (100ms)
+export const CONFETTI_RESET_DELAY_MS = 100; // Delay before resetting confetti state after onComplete (100ms)
 export const SETTINGS_PANEL_PROFILE_BANNER_HEIGHT = '100px'; // Height of profile card banner
 export const SETTINGS_PANEL_PROFILE_AVATAR_SIZE = '96px'; // Size of profile avatar (overlapping banner)
 export const SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE = '32px'; // Font size for profile avatar initials
