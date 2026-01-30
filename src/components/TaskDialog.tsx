@@ -337,7 +337,7 @@ function FixedMiniCalendar({
 
       {/* Selected date info */}
       {activeDate && (
-        <div className="mt-3 pt-3 border-t border-primary/20 flex items-center justify-between">
+        <div className="mt-3 pt-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon name="calendar" size={14} className="text-primary" weight="duotone" />
             <span className="text-xs font-medium text-foreground">
@@ -545,7 +545,7 @@ function SingleDateMiniCalendar({
 
       {/* Selected date info */}
       {selectedDate && (
-        <div className="mt-3 pt-3 border-t border-primary/20 flex items-center justify-between">
+        <div className="mt-3 pt-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon name="calendar" size={14} className="text-primary" weight="duotone" />
             <span className="text-xs font-medium text-foreground">
@@ -2048,7 +2048,7 @@ export function TaskDialog({
         {/* Gradient yellow-to-white surface; responsive padding */}
         <div className={cn("flex flex-col flex-1 min-h-0 rounded-2xl overflow-hidden pt-4 px-4 pb-3 sm:pt-6 sm:px-6 sm:pb-5", TASK_DIALOG_COLORS.dialogBg)}>
         {/* Minimal header - responsive tap targets and text */}
-        <DialogHeader className="flex-shrink-0 border-b border-primary/15 pb-2 sm:pb-4">
+        <DialogHeader className="flex-shrink-0 pb-2 sm:pb-4">
           <div className="flex flex-col gap-0.5 sm:gap-1">
             <button
               type="button"
@@ -2428,7 +2428,7 @@ export function TaskDialog({
                   </div>
 
                   {/* Time Selection - Two Column Layout */}
-                  <div className="pt-4 border-t border-primary/20">
+                  <div className="pt-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Scheduled Date & Time */}
                       <div className="space-y-3">
@@ -2756,7 +2756,7 @@ export function TaskDialog({
                   </div>
 
                   {/* Estimated Time with Slider */}
-                  <div className="pt-4 border-t border-primary/20 space-y-3 sm:space-y-4">
+                  <div className="pt-4 space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-semibold flex items-center gap-2">
                         <Icon name="clock" size={ICON_SIZE_XS} className="text-primary" />
@@ -2807,7 +2807,7 @@ export function TaskDialog({
 
                   {/* Timezone Selector */}
                   {scheduledDate && (
-                    <div className="pt-4 border-t border-primary/20 space-y-2 sm:space-y-3">
+                    <div className="pt-4 space-y-2 sm:space-y-3">
                       <Label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
                         <Icon name="globe" size={ICON_SIZE_XS} />
                         Timezone
@@ -3727,7 +3727,7 @@ export function TaskDialog({
           {/* Footer - Reference: two prominent buttons - red cancel, purple + CREATE */}
           <div
             className={cn(
-              "flex flex-col gap-3 pt-5 sm:pt-6 border-t border-primary/20"
+              "flex flex-col gap-3 pt-5 sm:pt-6"
             )}
             style={{
               paddingLeft: 0,
