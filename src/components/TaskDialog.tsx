@@ -188,15 +188,15 @@ function FixedMiniCalendar({
 
   return (
     <div className={cn("w-full bg-white/70 dark:bg-card/60 text-foreground dark:text-foreground rounded-lg border-0", TASK_DIALOG_MINIMAL_SPACING.cardPadding)}>
-      {/* Toggle Buttons (Scheduled / Due Date / Clear) - reference: purple when active */}
-      <div className={cn("flex gap-2 mb-2", TASK_DIALOG_MINIMAL_SPACING.statusPriorityRowGap)}>
+      {/* Toggle Buttons (Scheduled / Due Date / Clear) - min-w-0 + truncate so content doesn't spill on mobile */}
+      <div className={cn("flex gap-1 sm:gap-2 mb-2 min-w-0", TASK_DIALOG_MINIMAL_SPACING.statusPriorityRowGap)}>
         <Button
           type="button"
           variant={activeField === "scheduled" ? "default" : "outline"}
           size="sm"
           onClick={() => onFieldChange("scheduled")}
           className={cn(
-            "flex-1 rounded-lg",
+            "flex-1 min-w-0 overflow-hidden rounded-lg px-2 sm:px-3",
             activeField === "scheduled"
               ? "bg-primary text-primary-foreground"
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
@@ -205,9 +205,12 @@ function FixedMiniCalendar({
             fontSize: TASK_DIALOG_FONT_SIZES.xs,
             height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
           }}
+          title={TASK_DIALOG_UI_TEXT.scheduledDate}
         >
-          <Icon name="calendar" size={TASK_DIALOG_CALENDAR.ICON_SIZE} className="mr-1.5" weight="duotone" />
-          {TASK_DIALOG_UI_TEXT.scheduledDate}
+          <span className="flex items-center justify-center gap-1 sm:gap-1.5 min-w-0 flex-1 overflow-hidden">
+            <Icon name="calendar" size={TASK_DIALOG_CALENDAR.ICON_SIZE} className="shrink-0" weight="duotone" />
+            <span className="truncate">{TASK_DIALOG_UI_TEXT.scheduledDate}</span>
+          </span>
         </Button>
         <Button
           type="button"
@@ -215,7 +218,7 @@ function FixedMiniCalendar({
           size="sm"
           onClick={() => onFieldChange("due")}
           className={cn(
-            "flex-1 rounded-lg",
+            "flex-1 min-w-0 overflow-hidden rounded-lg px-2 sm:px-3",
             activeField === "due"
               ? "bg-primary text-primary-foreground"
               : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
@@ -224,22 +227,28 @@ function FixedMiniCalendar({
             fontSize: TASK_DIALOG_FONT_SIZES.xs,
             height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
           }}
+          title={TASK_DIALOG_UI_TEXT.dueDate}
         >
-          <Icon name="alert-circle" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="mr-1.5" />
-          {TASK_DIALOG_UI_TEXT.dueDate}
+          <span className="flex items-center justify-center gap-1 sm:gap-1.5 min-w-0 flex-1 overflow-hidden">
+            <Icon name="alert-circle" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="shrink-0" />
+            <span className="truncate">{TASK_DIALOG_UI_TEXT.dueDate}</span>
+          </span>
         </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => onDateSelect(undefined, activeField)}
-          className="flex-1 rounded-lg border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+          className="flex-1 min-w-0 overflow-hidden rounded-lg px-2 sm:px-3 border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           style={{
             fontSize: TASK_DIALOG_FONT_SIZES.xs,
             height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
           }}
+          title={TASK_DIALOG_UI_TEXT.clear}
         >
-          {TASK_DIALOG_UI_TEXT.clear}
+          <span className="flex items-center justify-center min-w-0 overflow-hidden">
+            <span className="truncate">{TASK_DIALOG_UI_TEXT.clear}</span>
+          </span>
         </Button>
       </div>
 
