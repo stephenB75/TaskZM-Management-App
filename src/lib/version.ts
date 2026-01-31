@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.16';
-export const VERSION_NAME = 'Multi-Team Support & Task Card Enhancements';
-export const VERSION_DATE = 'January 27, 2026';
-export const BUILD_NUMBER = '20260127-1';
+export const APP_VERSION = '1.0.17';
+export const VERSION_NAME = 'Notifications, Badging & Settings Spacing';
+export const VERSION_DATE = 'January 23, 2026';
+export const BUILD_NUMBER = '20260123-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,18 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.17',
+    date: 'January 23, 2026',
+    name: 'Notifications, Badging & Settings Spacing',
+    changes: [
+      'Priority and Status badging use pill shape (rounded-full) in Task Dialog and on task cards instead of oval/rounded-xl/rounded-md',
+      'In-app toast notifications appear above dialogs (z-index 9990) so messages are visible when dialogs are open',
+      'Settings panel spacing increased: accordion sections, content padding, separators, form rows, profile section, panel gaps',
+      'Fixed SETTINGS_PANEL_ROW_PADDING_Y ReferenceError by adding missing import in SettingsPanel.tsx',
+      'Notifications section separator in Settings uses SETTINGS_PANEL_SEPARATOR_MARGIN_Y constant',
+    ],
+  },
   {
     version: '1.0.16',
     date: 'January 27, 2026',
