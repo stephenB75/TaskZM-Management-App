@@ -828,7 +828,6 @@ export function AIRecommendationPanel({
                             )}
                           </div>
                         </div>
-                        </div>
                       </div>
                     </Card>
                   </motion.div>
