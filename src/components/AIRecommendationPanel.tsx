@@ -18,6 +18,7 @@ import {
   DAYS_IN_MONTH_APPROX,
 } from "../lib/business-constants";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
@@ -98,6 +99,7 @@ export function AIRecommendationPanel({
   const [schedulePlan, setSchedulePlan] = useState<
     SchedulePlan[]
   >([]);
+  const [selectedPlanTaskIds, setSelectedPlanTaskIds] = useState<Set<string>>(new Set());
   const [showExceedsLimitDialog, setShowExceedsLimitDialog] = useState(false);
   const [exceedsLimitData, setExceedsLimitData] = useState<{
     days: Array<{ date: string; hours: number; tasks: Task[] }>;
@@ -235,6 +237,7 @@ export function AIRecommendationPanel({
     
     // If no days exceed limit, proceed normally
     setSchedulePlan(result.scheduled);
+    setSelectedPlanTaskIds(new Set(result.scheduled.map((p) => p.task.id)));
     setShowSchedulePreview(true);
     
     // Show warning if tasks exceed limit (no available slots)
@@ -293,6 +296,7 @@ export function AIRecommendationPanel({
       enforceMinimumHours: false // Don't enforce minimum for suggestions
     });
     setSchedulePlan(result.scheduled);
+    setSelectedPlanTaskIds(new Set(result.scheduled.map((p) => p.task.id)));
     setShowSchedulePreview(true);
     
     // Show warning about tasks that couldn't be scheduled
@@ -411,19 +415,44 @@ export function AIRecommendationPanel({
   };
 
   const confirmScheduling = async () => {
-    await applySchedulePlan(schedulePlan);
+    const toApply = schedulePlan.filter((p) => selectedPlanTaskIds.has(p.task.id));
+    if (toApply.length === 0) {
+      toast.info("No suggestions selected", {
+        description: "Select at least one suggestion to accept.",
+      });
+      return;
+    }
+    await applySchedulePlan(toApply);
 
     toast.success(
-      `Successfully scheduled ${schedulePlan.length} task${schedulePlan.length === 1 ? "" : "s"}!`,
+      `Successfully scheduled ${toApply.length} task${toApply.length === 1 ? "" : "s"}!`,
       {
         description:
-          "Your tasks are now distributed across upcoming days",
+          "Your selected tasks are now distributed across upcoming days",
         duration: 3000,
       },
     );
 
     setShowSchedulePreview(false);
     setSchedulePlan([]);
+    setSelectedPlanTaskIds(new Set());
+  };
+
+  const togglePlanSelection = (taskId: string) => {
+    setSelectedPlanTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
+
+  const selectAllPlanSuggestions = () => {
+    setSelectedPlanTaskIds(new Set(schedulePlan.map((p) => p.task.id)));
+  };
+
+  const deselectAllPlanSuggestions = () => {
+    setSelectedPlanTaskIds(new Set());
   };
 
   const formatScheduleDate = (date: Date) => {
@@ -664,11 +693,30 @@ export function AIRecommendationPanel({
               Review AI Scheduling Plan
             </DialogTitle>
             <DialogDescription>
-              Here's how I'll schedule your{" "}
+              Choose which suggestions to accept. Your{" "}
               {schedulePlan.length} unscheduled task
               {schedulePlan.length === 1 ? "" : "s"} across
               upcoming days
             </DialogDescription>
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={selectAllPlanSuggestions}
+                className="text-xs text-primary hover:underline"
+              >
+                Select all
+              </button>
+              <button
+                type="button"
+                onClick={deselectAllPlanSuggestions}
+                className="text-xs text-muted-foreground hover:underline"
+              >
+                Deselect all
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {selectedPlanTaskIds.size} of {schedulePlan.length} selected
+              </span>
+            </div>
           </DialogHeader>
 
           <ScrollArea className="max-h-[50vh] pr-4">
@@ -681,9 +729,15 @@ export function AIRecommendationPanel({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Card className={cn("p-4", UI_INBOX_GRADIENTS.card.className)}>
+                    <Card className={cn("p-4", UI_INBOX_GRADIENTS.card.className, !selectedPlanTaskIds.has(task.id) && "opacity-75")}>
                       <div className="flex items-start gap-3">
-                        <div className="flex-1">
+                        <Checkbox
+                          checked={selectedPlanTaskIds.has(task.id)}
+                          onCheckedChange={() => togglePlanSelection(task.id)}
+                          className="mt-1 shrink-0"
+                          aria-label={`Accept schedule for ${task.title}`}
+                        />
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h4 className="font-medium text-sm">
                               {task.title}
@@ -774,6 +828,7 @@ export function AIRecommendationPanel({
                             )}
                           </div>
                         </div>
+                        </div>
                       </div>
                     </Card>
                   </motion.div>
@@ -788,6 +843,7 @@ export function AIRecommendationPanel({
               onClick={() => {
                 setShowSchedulePreview(false);
                 setSchedulePlan([]);
+                setSelectedPlanTaskIds(new Set());
               }}
               className="rounded-full"
             >
@@ -796,11 +852,11 @@ export function AIRecommendationPanel({
             </Button>
             <Button
               onClick={confirmScheduling}
-              className={cn("rounded-full", UI_INBOX_GRADIENTS.button.className, UI_INBOX_GRADIENTS.button.hover.className)}
+              disabled={selectedPlanTaskIds.size === 0}
+              className={cn("rounded-full disabled:opacity-50", UI_INBOX_GRADIENTS.button.className, UI_INBOX_GRADIENTS.button.hover.className)}
             >
               <Icon name="check" size={ICON_SIZE_MD} className="mr-2" />
-              Schedule {schedulePlan.length} Task
-              {schedulePlan.length === 1 ? "" : "s"}
+              Accept {selectedPlanTaskIds.size > 0 ? `${selectedPlanTaskIds.size} selected` : "selected"}
             </Button>
           </DialogFooter>
         </DialogContent>

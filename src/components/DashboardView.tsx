@@ -15,6 +15,7 @@ import {
 } from "../lib/business-constants";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import {
   Sheet,
@@ -664,6 +665,8 @@ export function DashboardView({
   const [schedulePlan, setSchedulePlan] = useState<
     SchedulePlan[]
   >([]);
+  // Which AI schedule suggestions are selected to accept (task ids)
+  const [selectedPlanTaskIds, setSelectedPlanTaskIds] = useState<Set<string>>(new Set());
   // Calculate current day index in the week (Monday = 0, Sunday = 6)
   const getCurrentDayIndex = () => {
     const today = new Date();
@@ -1740,11 +1743,30 @@ export function DashboardView({
               Review AI Scheduling Plan
             </DialogTitle>
             <DialogDescription>
-              Here's how I'll schedule your{" "}
+              Choose which suggestions to accept. Your{" "}
               {schedulePlan.length} unscheduled task
               {schedulePlan.length === 1 ? "" : "s"} across
               upcoming days
             </DialogDescription>
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={selectAllPlanSuggestions}
+                className="text-xs text-primary hover:underline"
+              >
+                Select all
+              </button>
+              <button
+                type="button"
+                onClick={deselectAllPlanSuggestions}
+                className="text-xs text-muted-foreground hover:underline"
+              >
+                Deselect all
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {selectedPlanTaskIds.size} of {schedulePlan.length} selected
+              </span>
+            </div>
           </DialogHeader>
 
           <ScrollArea className="max-h-[50vh] pr-4">
@@ -1757,9 +1779,15 @@ export function DashboardView({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Card className={cn("p-4", UI_INBOX_GRADIENTS.card.className)}>
+                    <Card className={cn("p-4", UI_INBOX_GRADIENTS.card.className, !selectedPlanTaskIds.has(task.id) && "opacity-75")}>
                       <div className="flex items-start gap-3">
-                        <div className="flex-1">
+                        <Checkbox
+                          checked={selectedPlanTaskIds.has(task.id)}
+                          onCheckedChange={() => togglePlanSelection(task.id)}
+                          className="mt-1 shrink-0"
+                          aria-label={`Accept schedule for ${task.title}`}
+                        />
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h4 className="font-medium text-sm">
                               {task.title}
@@ -1884,10 +1912,11 @@ export function DashboardView({
             </Button>
             <Button
               onClick={confirmScheduling}
-              className="rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              disabled={selectedPlanTaskIds.size === 0}
+              className="rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 disabled:opacity-50"
             >
               <Icon name="sparkles" size={ICON_SIZE_MD} className="mr-2" />
-              Confirm Schedule
+              Accept {selectedPlanTaskIds.size > 0 ? `${selectedPlanTaskIds.size} selected` : "selected"}
             </Button>
           </DialogFooter>
         </DialogContent>
