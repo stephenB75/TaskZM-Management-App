@@ -334,7 +334,7 @@ export function TaskCard({
 
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <Badge className={cn(
-                'text-xs px-2 py-1 bg-gradient-to-r text-white border-0',
+                'text-xs px-2 py-1 rounded-full bg-gradient-to-r text-white border-0',
                 getPriorityGradient()
               )}>
                 {task.priority}

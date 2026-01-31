@@ -846,7 +846,7 @@ export const DraggableTaskCard = React.forwardRef<
                 <Badge
                   variant="secondary"
                   className={cn(
-                    "rounded-md border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
+                    "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
                     isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                   )}
                   style={{

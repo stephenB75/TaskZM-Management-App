@@ -63,7 +63,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          zIndex: Z_INDEX.TOAST, // Ensure toasts appear above dialogs (z-100 > z-50)
+          zIndex: Z_INDEX.TOAST, // Above dialogs and in-dialog dropdowns so in-app notifications are visible
         } as React.CSSProperties
       }
       {...props}

@@ -626,7 +626,7 @@ export function DraggableTodayAgendaTask({
                 <Badge
                   variant="outline"
                   className={cn(
-                    "rounded-md border capitalize flex-shrink-0",
+                    "rounded-full border capitalize flex-shrink-0",
                     getPriorityBadgeColor(task.priority),
                     isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                   )}

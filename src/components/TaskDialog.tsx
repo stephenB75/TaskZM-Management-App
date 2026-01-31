@@ -2456,7 +2456,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-colors",
+                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
                               isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
                             )}
                           >
@@ -2481,7 +2481,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-colors",
+                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
                               isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
                             )}
                           >
