@@ -1037,7 +1037,7 @@ export function DashboardView({
       {
         description:
           "Your selected tasks are now distributed across upcoming days",
-        duration: 3000,
+        duration: TOAST_DURATION_SHORT_MS,
       },
     );
 
