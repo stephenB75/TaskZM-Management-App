@@ -320,10 +320,10 @@ export const PANEL_PADDING_TOP_MOBILE = '1.5rem'; // pt-6 = 1.5rem
 export const PANEL_PADDING_TOP_DESKTOP = '1rem'; // lg:pt-4 = 1rem
 export const PANEL_CONTENT_SPACING = '0.75rem'; // space-y-3 = 0.75rem
 export const PANEL_SECTION_SPACING = '1rem'; // space-y-4 = 1rem
-export const PANEL_FIELD_SPACING = '0.5rem'; // space-y-2 = 0.5rem
-export const PANEL_GAP_SMALL = '0.375rem'; // gap-1.5 = 0.375rem
-export const PANEL_GAP_MEDIUM = '0.5rem'; // gap-2 = 0.5rem
-export const PANEL_GAP_LARGE = '0.75rem'; // gap-3 = 0.75rem
+export const PANEL_FIELD_SPACING = '0.75rem'; // space-y-3 = 0.75rem (between fields in panels)
+export const PANEL_GAP_SMALL = '0.5rem'; // gap-2 = 0.5rem
+export const PANEL_GAP_MEDIUM = '0.75rem'; // gap-3 = 0.75rem
+export const PANEL_GAP_LARGE = '1rem'; // gap-4 = 1rem
 
 // Team Panel specific constants
 export const TEAM_PANEL_AVATAR_SIZE = '3rem'; // w-12 h-12 = 3rem
@@ -520,15 +520,16 @@ export const SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM = '1.5rem'; // sm:p-6 = 1.5
 export const SETTINGS_PANEL_CONTAINER_PADDING_LARGE = '2rem'; // md:p-8 = 2rem
 export const SETTINGS_PANEL_MAX_WIDTH = '42rem'; // max-w-2xl = 42rem
 export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X = '1rem'; // px-4 = 1rem
-export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL = '0.75rem'; // py-3 = 0.75rem (increased from 0.5rem for better spacing)
-export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_DESKTOP = '0.75rem'; // md:py-3 = 0.75rem (increased from 0 for better spacing)
-export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y = '0.75rem'; // my-3 = 0.75rem (increased from 0.5rem for better spacing between items)
-export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_MEDIUM = '0.75rem'; // sm:my-3 = 0.75rem (increased from 0.375rem for better spacing)
-export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_DESKTOP = '1rem'; // md:my-4 = 1rem (maintained for desktop)
-export const SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y = '1rem'; // py-4 = 1rem
-export const SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM = '1rem'; // pb-4 = 1rem
-export const SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP = '0.75rem'; // pt-3 = 0.75rem (increased from 0.5rem for better spacing)
-export const SETTINGS_PANEL_ACCORDION_CONTENT_SPACING = '1rem'; // space-y-4 = 1rem
+export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL = '1rem'; // py-4 = 1rem (breathing room per section)
+export const SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_DESKTOP = '1rem'; // md:py-4
+export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y = '1.5rem'; // my-6 = 1.5rem (clear separation between accordion sections)
+export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_MEDIUM = '1.25rem'; // sm:my-5 = 1.25rem
+export const SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y_DESKTOP = '1.5rem'; // md:my-6 = 1.5rem
+export const SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y = '1.25rem'; // py-5 = 1.25rem (comfortable tap/click area)
+export const SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM = '1.5rem'; // pb-6 = 1.5rem
+export const SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem (clear gap below trigger)
+export const SETTINGS_PANEL_ACCORDION_CONTENT_SPACING = '1.5rem'; // gap between content blocks = 1.5rem
+export const SETTINGS_PANEL_SEPARATOR_MARGIN_Y = '1.25rem'; // my-5 = 1.25rem (space above/below separators within sections)
 export const SETTINGS_PANEL_ICON_SIZE_SMALL = '0.75rem'; // w-3 h-3 = 0.75rem
 export const SETTINGS_PANEL_ICON_SIZE_MEDIUM = '1rem'; // w-4 h-4 = 1rem
 export const SETTINGS_PANEL_ICON_SIZE_LARGE = '1.25rem'; // w-5 h-5 = 1.25rem
@@ -550,23 +551,23 @@ export const SETTINGS_PANEL_GAP_LARGE = '1rem'; // gap-4 = 1rem
 export const SETTINGS_PANEL_GAP_XSMALL = '0.375rem'; // gap-1.5 = 0.375rem
 export const SETTINGS_PANEL_SPACING_XSMALL = '0.25rem'; // space-y-1 = 0.25rem
 export const SETTINGS_PANEL_SPACING_EXTRA_SMALL = '0.375rem'; // space-y-1.5 = 0.375rem
-export const SETTINGS_PANEL_SPACING_SMALL = '0.5rem'; // space-y-2 = 0.5rem
-export const SETTINGS_PANEL_SPACING_EXTRA_LARGE = '0.625rem'; // space-y-2.5 = 0.625rem
-export const SETTINGS_PANEL_SPACING_MEDIUM = '0.75rem'; // space-y-3 = 0.75rem
-export const SETTINGS_PANEL_SPACING_LARGE = '1rem'; // space-y-4 = 1rem
-export const SETTINGS_PANEL_SPACING_XLARGE = '1.5rem'; // space-y-6 = 1.5rem (for larger spacing needs)
+export const SETTINGS_PANEL_SPACING_SMALL = '0.875rem'; // space-y-3.5 = 0.875rem (between related items)
+export const SETTINGS_PANEL_SPACING_EXTRA_LARGE = '0.875rem'; // space-y-3.5 = 0.875rem
+export const SETTINGS_PANEL_SPACING_MEDIUM = '1.25rem'; // space-y-5 = 1.25rem (between form rows)
+export const SETTINGS_PANEL_SPACING_LARGE = '1.5rem'; // space-y-6 = 1.5rem (between subsections)
+export const SETTINGS_PANEL_SPACING_XLARGE = '2rem'; // space-y-8 = 2rem (major section breaks)
 export const SETTINGS_PANEL_TEXT_SIZE_XSMALL = '0.625rem'; // text-[10px] = 0.625rem
 export const SETTINGS_PANEL_TEXT_SIZE_SMALL = '0.75rem'; // text-xs = 0.75rem
 export const SETTINGS_PANEL_TEXT_SIZE_MEDIUM = '0.875rem'; // text-sm = 0.875rem
 export const SETTINGS_PANEL_MARGIN_TOP_XSMALL = '0.125rem'; // mt-0.5 = 0.125rem
 export const SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL = '0.375rem'; // mt-1.5 = 0.375rem
-export const SETTINGS_PANEL_MARGIN_TOP_SMALL = '0.25rem'; // mt-1 = 0.25rem
-export const SETTINGS_PANEL_MARGIN_TOP_MEDIUM_SMALL = '0.5rem'; // mt-2 = 0.5rem
-export const SETTINGS_PANEL_MARGIN_BOTTOM_SMALL = '0.25rem'; // mb-1 = 0.25rem
-export const SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM = '0.75rem'; // mb-3 = 0.75rem
-export const SETTINGS_PANEL_MARGIN_BOTTOM_LARGE = '1rem'; // mb-4 = 1rem
-export const SETTINGS_PANEL_MARGIN_TOP_MEDIUM = '0.75rem'; // mt-3 = 0.75rem
-export const SETTINGS_PANEL_MARGIN_TOP_LARGE = '1rem'; // mt-4 = 1rem
+export const SETTINGS_PANEL_MARGIN_TOP_SMALL = '0.5rem'; // mt-2 = 0.5rem
+export const SETTINGS_PANEL_MARGIN_TOP_MEDIUM_SMALL = '0.75rem'; // mt-3 = 0.75rem
+export const SETTINGS_PANEL_MARGIN_BOTTOM_SMALL = '0.5rem'; // mb-2 = 0.5rem (after labels/blocks)
+export const SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM = '1rem'; // mb-4 = 1rem
+export const SETTINGS_PANEL_MARGIN_BOTTOM_LARGE = '1.25rem'; // mb-5 = 1.25rem
+export const SETTINGS_PANEL_MARGIN_TOP_MEDIUM = '1rem'; // mt-4 = 1rem
+export const SETTINGS_PANEL_MARGIN_TOP_LARGE = '1.25rem'; // mt-5 = 1.25rem
 export const SETTINGS_PANEL_MARGIN_RIGHT_SMALL = '0.5rem'; // mr-2 = 0.5rem
 export const SETTINGS_PANEL_MARGIN_RIGHT_XSMALL = '0.25rem'; // mr-1 = 0.25rem
 export const SETTINGS_PANEL_MARGIN_LEFT_XSMALL = '0.25rem'; // ml-1 = 0.25rem
@@ -582,6 +583,7 @@ export const SETTINGS_PANEL_PADDING_XSMALL = '0.375rem'; // p-1.5 = 0.375rem
 export const SETTINGS_PANEL_PADDING_LEFT_AI_SECTION = '1rem'; // padding-left: 16px (1rem) - reduced for wider column
 export const SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION = '1rem'; // padding-right: 16px (1rem) - reduced for wider column
 export const SETTINGS_PANEL_PADDING_Y_SMALL = '0.25rem'; // py-1 = 0.25rem
+export const SETTINGS_PANEL_ROW_PADDING_Y = '0.75rem'; // vertical padding per form row (e.g. switch rows) for clearer separation
 export const SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL = '0.125rem'; // py-0.5 = 0.125rem
 export const SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL = '0.375rem'; // pt-1.5 = 0.375rem
 export const SETTINGS_PANEL_PADDING_RIGHT_SMALL = '0.5rem'; // pr-2 = 0.5rem

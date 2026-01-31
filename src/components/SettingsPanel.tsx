@@ -74,6 +74,7 @@ import {
   SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
   SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
   SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+  SETTINGS_PANEL_SEPARATOR_MARGIN_Y,
   SETTINGS_PANEL_ICON_SIZE_SMALL,
   SETTINGS_PANEL_ICON_SIZE_MEDIUM,
   SETTINGS_PANEL_ACCORDION_ICON_SIZE,
@@ -922,7 +923,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
               )}
 
-              <Separator />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               {/* Features List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
@@ -1161,7 +1162,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               {subscription.tier === 'free' && (
                 <>
-                  <Separator />
+                  <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
                   <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
                     <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
                       <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_LARGE} weight="duotone" className={`${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass} flex-shrink-0`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
@@ -1186,7 +1187,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
               {subscription.tier === 'pro' && (
                 <>
-                  <Separator />
+                  <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
                   
                   {subscription.cancelAtPeriodEnd && (
                     <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg" style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
@@ -1409,7 +1410,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </>
             )}
 
-            <Separator />
+            <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
             <div className="space-y-2">
               <Button 
@@ -1596,11 +1597,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               )}
             </div>
 
-            <Separator />
+            <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
             {/* Notification Settings */}
-            <div className="space-y-2.5 md:space-y-3">
-              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
                 <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                   <Label htmlFor="notifications-enabled" className="text-xs md:text-sm cursor-pointer">Enable Notifications</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Turn on all notification features</p>
@@ -1623,7 +1624,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
                 <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                   <Label htmlFor="notifications-badge" className="text-xs md:text-sm cursor-pointer">{NOTIFICATION_PANEL_TEXT.badge.showAppIconBadge}</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>{NOTIFICATION_PANEL_TEXT.badge.displayTaskCount}</p>
@@ -1637,7 +1638,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
                 <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                   <Label htmlFor="notifications-overdue" className="text-xs md:text-sm cursor-pointer">Overdue Alerts</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify when tasks become overdue</p>
@@ -1651,7 +1652,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
                 <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                   <Label htmlFor="notifications-reminders" className="text-xs md:text-sm cursor-pointer">Due Date Reminders</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify 1 hour before tasks are due</p>
@@ -1665,11 +1666,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <Separator className="my-3 md:my-4" />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               {/* Additional Notification Options */}
-              <div className="space-y-2.5 md:space-y-3">
-                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
                   <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                     <Label htmlFor="push-notif" className="text-xs md:text-sm cursor-pointer">Push Notifications</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Desktop and mobile alerts</p>
@@ -1682,7 +1683,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   />
                 </div>
                 
-                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
                   <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                     <Label htmlFor="email-notif" className="text-xs md:text-sm cursor-pointer">Email Notifications</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Daily task summary emails</p>
@@ -1694,7 +1695,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   />
                 </div>
 
-                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
                   <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
                     <Label htmlFor="sound-notif" className="text-xs md:text-sm cursor-pointer">Sound</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Play sound for notifications</p>
@@ -1820,7 +1821,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             </div>
             
             {availableTags.filter((tag) => tag.toLowerCase() !== 'urgent').length === 0 && (
-              <p className="text-sm text-muted-foreground text-center" style={{ paddingTop: SETTINGS_PANEL_PADDING_Y_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_SMALL }}>
+              <p className="text-sm text-muted-foreground text-center" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
                 No tags yet. Add your first tag above!
               </p>
             )}
@@ -2370,7 +2371,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               </ToggleGroup>
             </div>
             
-            <Separator />
+            <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
             
             <div className="space-y-4">
               {/* Work Hours */}
@@ -2451,7 +2452,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
               </div>
 
-              <Separator />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               {/* Personal Hours */}
               <div className="space-y-2">
@@ -2531,7 +2532,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
               </div>
 
-              <Separator />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               {/* Projects Hours */}
               <div className="space-y-2">
@@ -2611,7 +2612,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
               </div>
 
-              <Separator />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-0.5 flex-1">
@@ -2697,7 +2698,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </div>
               </div>
 
-              <Separator />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               {/* Award Categories as Nested Accordion */}
               <Accordion type="multiple" className="space-y-3">
@@ -3163,7 +3164,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div className="text-xs text-muted-foreground/70 text-center">{VERSION_NAME}</div>
               </div>
 
-              <Separator />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               <p className="text-xs text-muted-foreground leading-relaxed">
                 TaskZM is a neurodivergent-friendly task management application built with React, TypeScript, and Supabase. 
@@ -3174,7 +3175,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 Released: {VERSION_DATE}
               </div>
 
-              <Separator />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               <div className="flex gap-2">
                 <Button 
@@ -3195,7 +3196,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </Button>
               </div>
 
-              <Separator />
+              <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
