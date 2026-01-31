@@ -162,8 +162,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const lastNetworkErrorLogRef = useRef<number>(0); // Track last network error log time to suppress repeated warnings
   // Lock to prevent concurrent next occurrence creation for the same recurring task
   const nextOccurrenceCreationLock = useRef<Set<string>>(new Set());
-  // Guard against double-invocation when marking complete (e.g. double-click)
-  const updateTaskInProgressRef = useRef<Set<string>>(new Set());
   
   // Activity tracking for adaptive polling
   const lastActivityRef = useRef<number>(Date.now());
@@ -1899,13 +1897,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; resolve to base task ID for lookup
     const baseTaskId = taskId.includes('__') ? taskId.split('__')[0] : taskId;
 
-    // Prevent duplicate updates when marking complete (e.g. double-click) - skip if same task already in progress
-    if (updateTaskInProgressRef.current.has(baseTaskId)) {
-      logger.debug('updateTask skipped: already in progress', { baseTaskId });
-      return;
-    }
-    updateTaskInProgressRef.current.add(baseTaskId);
-
     try {
     // Permission check removed to break circular dependency with TeamContext
     // Permission checks should be handled at component level using useTeam() hook
@@ -2099,7 +2090,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // Other recurring task updates (status change, etc.) - save normally
           await api.saveTask(validWorkspaceId, updatedTask);
         }
-        
+
+        // Optimistic update: apply to local state immediately so UI (e.g. Today Agenda) updates before loadTasksFromServer completes
+        setTasks((prev) => {
+          if (isRecurringTask && isBeingMarkedComplete && completedOccurrence) {
+            const hasOccurrence = prev.some((t) => t.id === completedOccurrence!.id);
+            if (!hasOccurrence) return [...prev, completedOccurrence];
+            return prev;
+          }
+          return prev.map((t) => (t.id === baseTaskId ? updatedTask : t));
+        });
+
         // Reload from server to get the authoritative version
         await loadTasksFromServer(validWorkspaceId);
         // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
@@ -2215,9 +2216,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         nextOccurrenceCreationLock.current.delete(baseTaskId);
       }
     }
-    } finally {
-      updateTaskInProgressRef.current.delete(baseTaskId);
-    }
+  } catch (_) {
+    throw _;
+  }
   }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrenceDate, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]); // Removed syncWithServer from dependencies
 
   const deleteTask = useCallback(async (taskId: string) => {
