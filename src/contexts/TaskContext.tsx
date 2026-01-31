@@ -1976,11 +1976,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         nextOccurrenceCreationLock.current.add(baseTaskId);
       
         try {
-          const scheduledDate = new Date(currentTask.scheduledDate);
-          scheduledDate.setHours(0, 0, 0, 0); // Normalize to start of day
-          const completedAt = new Date().toISOString();
-          const scheduledDateKey = getDateString(scheduledDate);
-          const completedOccurrenceId = `${currentTask.id}_completed_${scheduledDateKey}`;
+          // Use completion date (today) so the occurrence appears on Today Agenda and filter id matches
+          const completionDate = new Date();
+          completionDate.setHours(0, 0, 0, 0);
+          const completionDateKey = getDateString(completionDate);
+          const completedOccurrenceId = `${currentTask.id}_completed_${completionDateKey}`;
           
           // Check if completed occurrence already exists (prevent duplicates)
           const existingCompletedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
@@ -1988,26 +1988,28 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             logger.debug('Completed occurrence already exists, skipping creation', { completedOccurrenceId });
             // Don't create completed occurrence if it already exists
           } else {
-            // Create completed occurrence (stays visible, grayed out on original date)
-            // UPDATED: Don't preserve actualTime here - time is tracked on base task for series progress
+            // Occurrence scheduled for today at same time as base task so it appears on Today Agenda
+            const baseScheduled = new Date(currentTask.scheduledDate);
+            const occurrenceScheduled = new Date(completionDate);
+            occurrenceScheduled.setHours(baseScheduled.getHours(), baseScheduled.getMinutes(), baseScheduled.getSeconds(), baseScheduled.getMilliseconds());
+            const completedAt = new Date().toISOString();
+            // Create completed occurrence (stays visible, grayed out on today)
             completedOccurrence = {
               ...currentTask,
               id: completedOccurrenceId,
               recurrence: { type: 'none', interval: 1 }, // Mark as non-recurring
               status: 'done',
-              completedAt: completedAt,
+              completedAt,
               updatedAt: completedAt,
-              // Don't preserve actualTime - time tracking is on base task for series progress
               actualTime: null,
-              // Keep original scheduledDate so it appears on the correct date
+              scheduledDate: occurrenceScheduled.toISOString(), // Today at same time so Today Agenda shows it
             };
           }
           
           // UPDATED: Don't create next occurrence - just mark current occurrence as done
-          // The base recurring task remains active and will appear on future dates via isDateInRecurrence()
           logger.debug('Recurring task marked complete - only closing current occurrence, not advancing to next', {
             taskId: baseTaskId,
-            scheduledDate: scheduledDateKey,
+            completionDateKey,
           });
         } catch (error) {
           logger.error('Error creating completed occurrence for recurring task:', error);

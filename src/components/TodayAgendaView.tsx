@@ -120,31 +120,24 @@ export function TodayAgendaView({
   // Completed tasks remain visible but grayed out like recurring tasks
   const incompleteTasks = allTodayTasks;
 
-  // Sort tasks by time in chronological order - use useMemo to prevent recreation on every render
-  // This prevents infinite loops in useEffect dependencies
-  // Completed tasks stay in chronological order (not moved to bottom)
+  // Sort tasks by time; deduplicate by id so completed occurrences never duplicate base on Today Agenda
   const todayTasks = useMemo(() => {
-    return [...incompleteTasks].sort((a, b) => {
+    const byId = new Map<string, Task>();
+    for (const task of incompleteTasks) {
+      if (!task?.id) continue;
+      const existing = byId.get(task.id);
+      if (!existing || task.status === 'done') byId.set(task.id, task);
+    }
+    const unique = Array.from(byId.values());
+    return unique.sort((a, b) => {
       try {
-        // Sort by full timestamp to ensure proper chronological order
-        // This ensures tasks are sorted by actual scheduled time, not just time of day
-        // This is important for recurring tasks and tasks scheduled at different times
         const dateA = a.scheduledDate ? new Date(a.scheduledDate) : null;
         const dateB = b.scheduledDate ? new Date(b.scheduledDate) : null;
-        
-        // Tasks without scheduled dates go to the end
         if (!dateA || isNaN(dateA.getTime())) return 1;
         if (!dateB || isNaN(dateB.getTime())) return -1;
-        
-        // Sort by full timestamp (chronological order: earliest first)
         const timeA = dateA.getTime();
         const timeB = dateB.getTime();
-        
-        // If times are equal, maintain stable sort order by task ID
-        if (timeA === timeB) {
-          return a.id.localeCompare(b.id);
-        }
-        
+        if (timeA === timeB) return a.id.localeCompare(b.id);
         return timeA - timeB;
       } catch (error) {
         console.error('Error sorting tasks:', error, a, b);
