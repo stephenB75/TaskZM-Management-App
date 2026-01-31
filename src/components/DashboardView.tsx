@@ -1015,7 +1015,14 @@ export function DashboardView({
   };
 
   const confirmScheduling = () => {
-    schedulePlan.forEach(({ task, scheduledDate }) => {
+    const toApply = schedulePlan.filter((p) => selectedPlanTaskIds.has(p.task.id));
+    if (toApply.length === 0) {
+      toast.info("No suggestions selected", {
+        description: "Select at least one suggestion to accept.",
+      });
+      return;
+    }
+    toApply.forEach(({ task, scheduledDate }) => {
       if (!updateTask) {
         console.error('updateTask is not available');
         return;
@@ -1026,16 +1033,34 @@ export function DashboardView({
     });
 
     toast.success(
-      `Successfully scheduled ${schedulePlan.length} task${schedulePlan.length === 1 ? "" : "s"}!`,
+      `Successfully scheduled ${toApply.length} task${toApply.length === 1 ? "" : "s"}!`,
       {
         description:
-          "Your tasks are now distributed across upcoming days",
+          "Your selected tasks are now distributed across upcoming days",
         duration: 3000,
       },
     );
 
     setShowSchedulePreview(false);
     setSchedulePlan([]);
+    setSelectedPlanTaskIds(new Set());
+  };
+
+  const togglePlanSelection = (taskId: string) => {
+    setSelectedPlanTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
+
+  const selectAllPlanSuggestions = () => {
+    setSelectedPlanTaskIds(new Set(schedulePlan.map((p) => p.task.id)));
+  };
+
+  const deselectAllPlanSuggestions = () => {
+    setSelectedPlanTaskIds(new Set());
   };
 
   const formatScheduleDate = (date: Date) => {
