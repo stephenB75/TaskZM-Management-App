@@ -85,27 +85,17 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   // Minimum time between auto syncs - use constant from TIMING_CONSTANTS
   const MIN_AUTO_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.minAutoSyncInterval;
 
-  // Load calendar status from localStorage on mount
-  useEffect(() => {
-    if (user?.id) {
-      calendarStatusRetryRef.current = false;
-      const stored = localStorage.getItem(`calendar_status_${user.id}`);
-      if (stored) {
-        try {
-          const status = JSON.parse(stored);
-          setCalendarStatus(normalizeCalendarStatus(status));
-        } catch (e) {
-          console.error('Failed to parse calendar status:', e);
-        }
-      }
-      // Also check server status
-      checkCalendarStatus();
-    }
-  }, [user?.id]);
-
   // Check calendar connection status from server with caching
   const checkCalendarStatus = useCallback(async () => {
-    if (!user || !accessToken) return;
+    if (!user || !accessToken) {
+      if (import.meta.env.DEV) {
+        console.debug('[Calendar] checkCalendarStatus skipped: missing user or accessToken');
+      }
+      return;
+    }
+    if (import.meta.env.DEV) {
+      console.debug('[Calendar] checkCalendarStatus running');
+    }
 
     // Check cache first (5 minute cache)
     const cacheKey = `calendar_status_cache_${user.id}`;
@@ -179,6 +169,24 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [user, accessToken]);
+
+  // Load calendar status from localStorage on mount; re-run when accessToken becomes available so server status is fetched
+  useEffect(() => {
+    if (!user?.id) return;
+    calendarStatusRetryRef.current = false;
+    const stored = localStorage.getItem(`calendar_status_${user.id}`);
+    if (stored) {
+      try {
+        const status = JSON.parse(stored);
+        setCalendarStatus(normalizeCalendarStatus(status));
+      } catch (e) {
+        console.error('Failed to parse calendar status:', e);
+      }
+    }
+    if (accessToken) {
+      checkCalendarStatus();
+    }
+  }, [user?.id, accessToken, checkCalendarStatus]);
 
   // Test Apple Calendar connection
   const testAppleConnection = useCallback(async (): Promise<AppleCalendarTestResult> => {
