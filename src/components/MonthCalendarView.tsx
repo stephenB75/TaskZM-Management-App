@@ -176,7 +176,7 @@ interface CalendarEventData {
   end: string;
   location?: string;
   calendarColor?: string;
-  provider: 'google' | 'apple';
+  provider: 'google' | 'apple' | 'outlook';
   isRecurring?: boolean; // Flag indicating if this is a recurring event
 }
 

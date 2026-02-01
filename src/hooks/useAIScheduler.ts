@@ -83,9 +83,10 @@ export function useAIScheduler() {
     const events: Array<{ start: Date; end: Date; title: string }> = [];
     
     // Fetch events from all connected calendar providers
-    const providers: Array<'google' | 'apple'> = [];
+    const providers: Array<'google' | 'apple' | 'outlook'> = [];
     if (calendarStatus.google) providers.push('google');
     if (calendarStatus.apple) providers.push('apple');
+    if (calendarStatus.outlook) providers.push('outlook');
     
     for (const provider of providers) {
       try {

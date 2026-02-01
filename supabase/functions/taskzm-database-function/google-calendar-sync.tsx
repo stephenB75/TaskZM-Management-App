@@ -17,6 +17,27 @@ const GOOGLE_CALENDAR_MAX_RESULTS = 2500; // Google Calendar API max results lim
 const GOOGLE_CALENDAR_PRIMARY = 'primary'; // Google Calendar default calendar identifier
 const TOKEN_EXPIRY_ASSUMPTION_MS = 3600 * 1000; // 1 hour in milliseconds - assumed token expiry (will refresh if needed) - using calculation for clarity (3600 seconds * 1000 ms)
 
+// Google Calendar event colorId 1-11 to hex (predefined palette)
+const GOOGLE_EVENT_COLOR_ID_TO_HEX: Record<string, string> = {
+  '1': '#A4BDFC',   // Lavender
+  '2': '#7AE7BF',   // Sage
+  '3': '#DBADFF',   // Grape
+  '4': '#FF887C',   // Flamingo
+  '5': '#FBD75B',   // Banana
+  '6': '#FFB878',   // Tangerine
+  '7': '#46D6DB',   // Peacock
+  '8': '#E1E1E1',   // Graphite
+  '9': '#5484ED',   // Blueberry
+  '10': '#51B749',  // Basil
+  '11': '#DC2127',  // Tomato
+};
+
+function googleColorIdToHex(colorId: string | number | undefined): string | undefined {
+  if (colorId == null || colorId === '') return undefined;
+  const key = String(colorId);
+  return GOOGLE_EVENT_COLOR_ID_TO_HEX[key];
+}
+
 export interface SyncResult {
   success: boolean;
   created: number;
@@ -115,7 +136,7 @@ export async function syncGoogleCalendarsToDatabase(
           location: event.location,
           provider: 'google' as const,
           providerEventId: event.id,
-          calendarColor: event.colorId ? `#${event.colorId}` : undefined,
+          calendarColor: googleColorIdToHex(event.colorId),
           rrule,
           recurrenceBaseId: event.recurringEventId || (isRecurring ? event.id : undefined),
           isRecurring,

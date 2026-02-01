@@ -1525,6 +1525,26 @@ export function convertGoogleRecurrenceToRRULE(recurrence: string[]): string | u
   return undefined;
 }
 
+// Google Calendar event colorId 1-11 to hex (predefined palette)
+const GOOGLE_EVENT_COLOR_ID_TO_HEX: Record<string, string> = {
+  '1': '#A4BDFC',   // Lavender
+  '2': '#7AE7BF',   // Sage
+  '3': '#DBADFF',   // Grape
+  '4': '#FF887C',   // Flamingo
+  '5': '#FBD75B',   // Banana
+  '6': '#FFB878',   // Tangerine
+  '7': '#46D6DB',   // Peacock
+  '8': '#E1E1E1',   // Graphite
+  '9': '#5484ED',   // Blueberry
+  '10': '#51B749',  // Basil
+  '11': '#DC2127',  // Tomato
+};
+
+function googleColorIdToHex(colorId: string | number | undefined): string | undefined {
+  if (colorId == null || colorId === '') return undefined;
+  return GOOGLE_EVENT_COLOR_ID_TO_HEX[String(colorId)];
+}
+
 /**
  * Get Google Calendar events
  */
@@ -1566,6 +1586,7 @@ async function getGoogleCalendarEvents(
       location: event.location,
       provider: 'google',
       providerEventId: event.id,
+      calendarColor: googleColorIdToHex(event.colorId),
       rrule,
       recurrenceBaseId,
       isRecurring,
@@ -1693,6 +1714,9 @@ async function getOutlookCalendarEvents(
 
   const data = await response.json();
   
+  // Default Outlook/Microsoft 365 calendar color (no per-event color in Graph)
+  const OUTLOOK_DEFAULT_CALENDAR_COLOR = '#0078D4';
+
   return (data.value || []).map((event: any) => {
     // Only process series masters (base recurring events) or single events
     const isRecurring = event.type === 'seriesMaster' || !!event.recurrence;
@@ -1708,6 +1732,7 @@ async function getOutlookCalendarEvents(
       location: event.location?.displayName,
       provider: 'outlook',
       providerEventId: event.id,
+      calendarColor: OUTLOOK_DEFAULT_CALENDAR_COLOR,
       rrule,
       recurrenceBaseId,
       isRecurring,

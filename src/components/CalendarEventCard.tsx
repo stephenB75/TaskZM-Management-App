@@ -12,7 +12,7 @@ interface CalendarEventCardProps {
   start: string;
   end: string;
   location?: string;
-  provider: 'google' | 'apple';
+  provider: 'google' | 'apple' | 'outlook';
   calendarColor?: string;
   isRecurring?: boolean; // Flag indicating if this is a recurring event
 }
@@ -297,7 +297,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         <div className="flex items-center gap-1.5">
           <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
           <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
-            {provider === 'apple' ? 'iCloud' : 'Google'} Calendar
+            {provider === 'apple' ? 'iCloud' : provider === 'outlook' ? 'Outlook' : 'Google'} Calendar
           </span>
           {isRecurring && (
             <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />

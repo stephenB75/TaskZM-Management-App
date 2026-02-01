@@ -123,7 +123,7 @@ export function SevenDayKanban({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple'; calendarColor?: string }>>>({});
+  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' | 'outlook'; calendarColor?: string }>>>({});
   
   // Drag-to-scroll state
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);

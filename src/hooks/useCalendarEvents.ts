@@ -12,7 +12,7 @@ export interface CalendarEvent {
   start: string;
   end: string;
   location?: string;
-  provider: 'google' | 'apple';
+  provider: 'google' | 'apple' | 'outlook';
   calendarColor?: string;
   rrule?: string; // Original RRULE string for recurring events
   recurrenceBaseId?: string; // Links instances to base recurring event
@@ -57,7 +57,7 @@ function isCacheValid(entry: CacheEntry): boolean {
  * Fetch calendar events from a single provider
  */
 async function fetchProviderEvents(
-  provider: 'google' | 'apple',
+  provider: 'google' | 'apple' | 'outlook',
   startDate: string,
   endDate: string,
   accessToken: string
@@ -114,7 +114,7 @@ async function fetchProviderEvents(
  * Fetch calendar events for all providers in parallel
  */
 async function fetchAllEvents(
-  providers: Array<'google' | 'apple'>,
+  providers: Array<'google' | 'apple' | 'outlook'>,
   startDate: string,
   endDate: string,
   accessToken: string
@@ -173,11 +173,12 @@ export function useCalendarEvents(
 
   // Determine which providers to fetch (must be declared before any ref/effect that reads it)
   const providers = useMemo(() => {
-    const active: Array<'google' | 'apple'> = [];
+    const active: Array<'google' | 'apple' | 'outlook'> = [];
     if (calendarStatus.google) active.push('google');
     if (calendarStatus.apple) active.push('apple');
+    if (calendarStatus.outlook) active.push('outlook');
     return active;
-  }, [calendarStatus.google, calendarStatus.apple]);
+  }, [calendarStatus.google, calendarStatus.apple, calendarStatus.outlook]);
 
   // Fetch events with caching and deduplication
   const fetchEvents = useCallback(async () => {
