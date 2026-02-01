@@ -155,7 +155,7 @@ export function useCalendarEvents(
   const [error, setError] = useState<Error | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const prevProvidersLengthRef = useRef(providers.length);
+  const prevProvidersLengthRef = useRef(0);
   const enabled = options?.enabled !== false;
 
   // Normalize dates to ISO strings
@@ -171,7 +171,7 @@ export function useCalendarEvents(
 
   const cacheKey = useMemo(() => getCacheKey(startIso, endIso), [startIso, endIso]);
 
-  // Determine which providers to fetch
+  // Determine which providers to fetch (must be declared before any ref/effect that reads it)
   const providers = useMemo(() => {
     const active: Array<'google' | 'apple'> = [];
     if (calendarStatus.google) active.push('google');
