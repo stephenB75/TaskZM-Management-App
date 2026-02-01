@@ -299,6 +299,17 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Clear calendar status cache so next checkCalendarStatus() fetches fresh data (avoids stale "off" after connect)
+    if (user.id) {
+      localStorage.removeItem(`calendar_status_cache_${user.id}`);
+      localStorage.removeItem(`calendar_status_cache_time_${user.id}`);
+    }
+
+    // Optimistic update for Google/Outlook so the toggle turns on immediately; Apple opens dialog so no optimistic update
+    if (provider === 'google' || provider === 'outlook') {
+      setCalendarStatus(prev => ({ ...prev, [provider]: true }));
+    }
+
     // Apple Calendar uses CalDAV for one-way import
     if (provider === 'apple') {
       setShowAppleCalDAVDialog(true);
@@ -372,6 +383,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         toast.error(`Failed to connect ${provider} Calendar`, {
           description: errorMessage,
         });
+        await checkCalendarStatus(); // Revert optimistic update
         return;
       }
 
@@ -383,6 +395,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           description: 'Server did not return a valid OAuth URL. Please check your OAuth configuration.',
         });
         console.error('Invalid OAuth response:', data);
+        await checkCalendarStatus(); // Revert optimistic update
         return;
       }
       
@@ -402,6 +415,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         toast.error('Please allow popups to connect calendar', {
           description: 'Your browser blocked the popup window. Please allow popups for this site and try again.',
         });
+        await checkCalendarStatus(); // Revert optimistic update
         return;
       }
 
@@ -570,6 +584,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       toast.error(`Failed to connect ${provider} Calendar`, {
         description: String(error),
       });
+      await checkCalendarStatus(); // Revert optimistic update
     }
   }, [user, accessToken, checkCalendarStatus]);
 
