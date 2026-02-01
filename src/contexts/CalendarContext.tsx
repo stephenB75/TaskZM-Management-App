@@ -188,6 +188,20 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id, accessToken, checkCalendarStatus]);
 
+  // Re-check calendar status when tab becomes visible (e.g. user connected calendar in another tab, or stale cache)
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || !user?.id || !accessToken) return;
+      const cacheKey = `calendar_status_cache_${user.id}`;
+      const cacheTimeKey = `calendar_status_cache_time_${user.id}`;
+      localStorage.removeItem(cacheKey);
+      localStorage.removeItem(cacheTimeKey);
+      checkCalendarStatus();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [user?.id, accessToken, checkCalendarStatus]);
+
   // Test Apple Calendar connection
   const testAppleConnection = useCallback(async (): Promise<AppleCalendarTestResult> => {
     if (!user || !accessToken) {

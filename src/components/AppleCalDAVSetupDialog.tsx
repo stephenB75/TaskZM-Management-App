@@ -18,7 +18,7 @@ import { ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_3XL } from '../lib/
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
-import { API_BASE } from '../lib/api';
+import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 
 interface AppleCalDAVSetupDialogProps {
   open: boolean;
@@ -63,7 +63,7 @@ export function AppleCalDAVSetupDialog({
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE}/calendar/apple/caldav/test`, {
+      const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/test`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -94,7 +94,7 @@ export function AppleCalDAVSetupDialog({
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE}/calendar/apple/caldav/discover`, {
+      const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/discover`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -140,7 +140,7 @@ export function AppleCalDAVSetupDialog({
 
     try {
       // Save credentials and selected calendars
-      const saveResponse = await fetch(`${API_BASE}/calendar/apple/caldav/save`, {
+      const saveResponse = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/save`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -162,7 +162,7 @@ export function AppleCalDAVSetupDialog({
       // Trigger initial sync with user's timezone
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
       
-      const syncResponse = await fetch(`${API_BASE}/calendar/apple/caldav/sync`, {
+      const syncResponse = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

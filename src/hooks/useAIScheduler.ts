@@ -11,7 +11,7 @@ import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { isDateInRecurrence } from '../lib/recurrence';
-import { API_BASE } from '../lib/api';
+import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import {
   MIN_HOURS_PER_DAY,
   DEFAULT_SCHEDULING_PERIOD_DAYS,
@@ -90,7 +90,7 @@ export function useAIScheduler() {
     for (const provider of providers) {
       try {
         const response = await fetch(
-          `${API_BASE}/calendar/events/${provider}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
+          `${CALENDAR_API_BASE}/calendar/events/${provider}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
