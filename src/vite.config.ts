@@ -92,7 +92,8 @@ export default defineConfig(({ mode }) => {
     outDir: 'dist',
     sourcemap: false,
     assetsDir: 'assets',
-    chunkSizeWarningLimit: 500,
+    // 530 KB: RevenueCat SDK (~522 KB) is a single third-party chunk loaded on demand; cannot be split
+    chunkSizeWarningLimit: 530,
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
@@ -115,6 +116,20 @@ export default defineConfig(({ mode }) => {
           // UI libraries
           if (id.includes('@radix-ui')) {
             return 'ui';
+          }
+          // Analytics panel heavy deps (split so AnalyticsPanel chunk stays under 500 KB)
+          if (id.includes('node_modules/recharts')) {
+            return 'recharts';
+          }
+          if (id.includes('node_modules/jspdf')) {
+            return 'jspdf';
+          }
+          if (id.includes('node_modules/html2canvas')) {
+            return 'html2canvas';
+          }
+          // RevenueCat SDK (loaded on demand; single chunk, cannot split)
+          if (id.includes('@revenuecat/purchases-js') || id.includes('node_modules/@revenuecat')) {
+            return 'revenuecat';
           }
           // Default: let Vite handle other chunks
           return undefined;
