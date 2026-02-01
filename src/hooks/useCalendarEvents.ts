@@ -298,6 +298,17 @@ export function useCalendarEvents(
     };
   }, []);
 
+  // Refetch when tab becomes visible (e.g. user connected calendar in another tab or first fetch failed)
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && enabled && accessToken && providers.length > 0) {
+        fetchEvents();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [enabled, accessToken, providers.length, fetchEvents]);
+
   // Dev-only: log when enabled, providers, or events change to confirm flow
   const providersKey = providers.join(',');
   useEffect(() => {
@@ -336,11 +347,17 @@ export function useCalendarEventsByDate(
 
     for (const event of events) {
       if (!event?.start) continue;
-      const eventStart = new Date(event.start);
+      // Date-only strings (YYYY-MM-DD) are parsed as UTC by JS, shifting all-day events to wrong day in western TZ. Parse as local.
+      let eventStart: Date;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(event.start)) {
+        const [y, m, d] = event.start.split('-').map(Number);
+        eventStart = new Date(y, m - 1, d);
+      } else {
+        eventStart = new Date(event.start);
+      }
       if (isNaN(eventStart.getTime())) continue;
 
       // Normalize to local date string (YYYY-MM-DD) using getDateString for consistency
-      // This ensures the same date formatting is used across desktop and mobile views
       const normalizedDate = new Date(
         eventStart.getFullYear(),
         eventStart.getMonth(),
