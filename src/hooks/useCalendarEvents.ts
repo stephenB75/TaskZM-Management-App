@@ -256,15 +256,18 @@ export function useCalendarEvents(
     return fetchPromise;
   }, [enabled, accessToken, providers, startIso, endIso, cacheKey]);
 
-  // When providers goes from empty to non-empty, clear cache so the next fetch is not skipped by stale empty data
+  // When providers goes from empty to non-empty, clear cache and trigger an immediate fetch so events show without waiting for debounce
   useEffect(() => {
     const prevLen = prevProvidersLengthRef.current;
     const currLen = providers.length;
     prevProvidersLengthRef.current = currLen;
     if (prevLen === 0 && currLen > 0) {
       clearCalendarEventsCache();
+      if (enabled && accessToken) {
+        fetchEvents();
+      }
     }
-  }, [providers.length]);
+  }, [providers.length, enabled, accessToken, fetchEvents]);
 
   // Debounced fetch effect
   useEffect(() => {
