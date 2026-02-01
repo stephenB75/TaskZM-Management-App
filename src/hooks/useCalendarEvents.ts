@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCalendar } from '../contexts/CalendarContext';
 import { API_BASE } from '../lib/api';
 import { logger } from '../lib/logger';
-import { getCalendarEventsCache, getInFlightRequests } from '../lib/calendar-events-cache';
+import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { getDateString } from '../lib/utils';
 
 export interface CalendarEvent {
@@ -155,6 +155,7 @@ export function useCalendarEvents(
   const [error, setError] = useState<Error | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const prevProvidersLengthRef = useRef(providers.length);
   const enabled = options?.enabled !== false;
 
   // Normalize dates to ISO strings
@@ -255,6 +256,16 @@ export function useCalendarEvents(
     return fetchPromise;
   }, [enabled, accessToken, providers, startIso, endIso, cacheKey]);
 
+  // When providers goes from empty to non-empty, clear cache so the next fetch is not skipped by stale empty data
+  useEffect(() => {
+    const prevLen = prevProvidersLengthRef.current;
+    const currLen = providers.length;
+    prevProvidersLengthRef.current = currLen;
+    if (prevLen === 0 && currLen > 0) {
+      clearCalendarEventsCache();
+    }
+  }, [providers.length]);
+
   // Debounced fetch effect
   useEffect(() => {
     // Clear any existing timer
@@ -283,6 +294,18 @@ export function useCalendarEvents(
       }
     };
   }, []);
+
+  // Dev-only: log when enabled, providers, or events change to confirm flow
+  const providersKey = providers.join(',');
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      logger.debug('Calendar events state', {
+        enabled,
+        providers: providersKey || '(none)',
+        eventsLength: events.length,
+      });
+    }
+  }, [enabled, providersKey, events.length]);
 
   return {
     events,

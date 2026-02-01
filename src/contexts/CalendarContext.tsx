@@ -19,6 +19,19 @@ interface CalendarStatus {
   apple: boolean;
 }
 
+/** Normalize backend response to CalendarStatus so setCalendarStatus always receives the expected shape. */
+function normalizeCalendarStatus(data: unknown): CalendarStatus {
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const o = data as Record<string, unknown>;
+    return {
+      google: Boolean(o.google === true || o.google_connected === true),
+      outlook: Boolean(o.outlook === true || o.outlook_connected === true),
+      apple: Boolean(o.apple === true || o.apple_connected === true),
+    };
+  }
+  return { google: false, outlook: false, apple: false };
+}
+
 interface AppleCalendarTestResult {
   success: boolean;
   hasTokens?: boolean;
@@ -64,6 +77,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const lastAutoSyncRef = useRef<number>(0);
   const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const syncAppleCalendarInternalRef = useRef<((silent?: boolean) => Promise<boolean>) | null>(null);
+  const calendarStatusRetryRef = useRef(false);
   
   // Calendar sync interval - use constant from TIMING_CONSTANTS
   const CALENDAR_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.syncInterval;
@@ -74,11 +88,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   // Load calendar status from localStorage on mount
   useEffect(() => {
     if (user?.id) {
+      calendarStatusRetryRef.current = false;
       const stored = localStorage.getItem(`calendar_status_${user.id}`);
       if (stored) {
         try {
           const status = JSON.parse(stored);
-          setCalendarStatus(status);
+          setCalendarStatus(normalizeCalendarStatus(status));
         } catch (e) {
           console.error('Failed to parse calendar status:', e);
         }
@@ -105,7 +120,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         if (cached) {
           try {
             const data = JSON.parse(cached);
-            setCalendarStatus(data);
+            setCalendarStatus(normalizeCalendarStatus(data));
             return; // Use cached data, skip Edge Function call
           } catch (e) {
             // Cache parse error, continue to fetch
@@ -123,13 +138,25 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        setCalendarStatus(data);
-        
+        const status = normalizeCalendarStatus(data);
+        setCalendarStatus(status);
+
         // Update localStorage and cache
         if (user.id) {
-          localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(data));
-          localStorage.setItem(cacheKey, JSON.stringify(data));
+          localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(status));
+          localStorage.setItem(cacheKey, JSON.stringify(status));
           localStorage.setItem(cacheTimeKey, Date.now().toString());
+        }
+      } else {
+        // Non-ok response: use cached status if available so we don't leave default forever
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          try {
+            const data = JSON.parse(cached);
+            setCalendarStatus(normalizeCalendarStatus(data));
+          } catch (e) {
+            // Ignore cache parse errors
+          }
         }
       }
     } catch (error) {
@@ -139,10 +166,16 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (cached) {
         try {
           const data = JSON.parse(cached);
-          setCalendarStatus(data);
+          setCalendarStatus(normalizeCalendarStatus(data));
         } catch (e) {
           // Ignore cache parse errors
         }
+      } else if (!calendarStatusRetryRef.current) {
+        // No cache: retry once after a short delay so we don't leave status at default forever
+        calendarStatusRetryRef.current = true;
+        setTimeout(() => {
+          checkCalendarStatus();
+        }, TIMING_CONSTANTS.delays.calendarCheck);
       }
     }
   }, [user, accessToken]);
