@@ -92,6 +92,7 @@ export default defineConfig(({ mode }) => {
     outDir: 'dist',
     sourcemap: false,
     assetsDir: 'assets',
+    chunkSizeWarningLimit: 500,
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
@@ -99,13 +100,13 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Ensure React and React-DOM are in the same chunk
+          // React + React-DOM only (keeps vendor under 500 KB)
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
             return 'vendor';
           }
-          // Phosphor icons should be in vendor chunk to share React
+          // Phosphor (tree-shaken via phosphor-icons.ts) in its own chunk
           if (id.includes('phosphor-react')) {
-            return 'vendor';
+            return 'phosphor';
           }
           // Motion library
           if (id.includes('node_modules/motion')) {
@@ -120,9 +121,8 @@ export default defineConfig(({ mode }) => {
         },
         // Ensure proper chunk loading order
         chunkFileNames: (chunkInfo) => {
-          if (chunkInfo.name === 'vendor') {
-            return 'assets/vendor-[hash].js';
-          }
+          if (chunkInfo.name === 'vendor') return 'assets/vendor-[hash].js';
+          if (chunkInfo.name === 'phosphor') return 'assets/phosphor-[hash].js';
           return 'assets/[name]-[hash].js';
         },
       },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from './lib/toast-wrapper';
 import {
@@ -20,15 +20,21 @@ import { AwardCelebration } from './components/AwardCelebration';
 import { AppSidebar } from './components/AppSidebar';
 import { AppTour } from './components/AppTour';
 import { BottomNav } from './components/BottomNav';
-import { DashboardView } from './components/DashboardView';
-import { InboxView } from './components/InboxView';
-import { ArchiveView } from './components/ArchiveView';
-import { SettingsPanel } from './components/SettingsPanel';
-import { TodayAgendaView } from './components/TodayAgendaView';
-import { AnalyticsPanel } from './components/AnalyticsPanel';
-import { TeamPanel } from './components/TeamPanel';
-import { FoldersPanel } from './components/FoldersPanel';
-import { NotificationsPanel } from './components/NotificationsPanel';
+import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
+import { PricingDialog } from './components/PricingDialog';
+import { UpgradePrompt } from './components/UpgradePrompt';
+import { DemoAccountDisclaimer } from './components/DemoAccountDisclaimer';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+const DashboardView = lazy(() => import('./components/DashboardView').then(m => ({ default: m.DashboardView })));
+const InboxView = lazy(() => import('./components/InboxView').then(m => ({ default: m.InboxView })));
+const ArchiveView = lazy(() => import('./components/ArchiveView').then(m => ({ default: m.ArchiveView })));
+const SettingsPanel = lazy(() => import('./components/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
+const TodayAgendaView = lazy(() => import('./components/TodayAgendaView').then(m => ({ default: m.TodayAgendaView })));
+const AnalyticsPanel = lazy(() => import('./components/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })));
+const TeamPanel = lazy(() => import('./components/TeamPanel').then(m => ({ default: m.TeamPanel })));
+const FoldersPanel = lazy(() => import('./components/FoldersPanel').then(m => ({ default: m.FoldersPanel })));
+const NotificationsPanel = lazy(() => import('./components/NotificationsPanel').then(m => ({ default: m.NotificationsPanel })));
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
 import { PricingDialog } from './components/PricingDialog';
 import { UpgradePrompt } from './components/UpgradePrompt';
@@ -40,9 +46,16 @@ import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
-import { ErrorBoundary } from './components/ErrorBoundary';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 import logoImageGray from './assets/taskzm-logo-gray.png';
+
+function ViewFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center min-h-[120px]" aria-hidden>
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 /**
  * Main app content (sidebar, views, panels). Rendered only when user is authenticated.
@@ -790,30 +803,32 @@ export default function AppContent() {
                 backgroundAttachment: 'scroll',
               } as React.CSSProperties}
             >
-              {currentView === 'dashboard' && (
-                <DashboardView 
-                  mobileView={mobileView}
-                  onMobileViewChange={setMobileView}
-                  aiPanelOpen={aiPanelOpen}
-                  onAiPanelChange={setAiPanelOpen}
-                />
-              )}
-              {currentView === 'notifications' && <NotificationsPanel />}
-              {currentView === 'today' && <TodayAgendaView />}
-              {currentView === 'inbox' && <InboxView />}
-              {currentView === 'team' && <TeamPanel />}
-              {currentView === 'folders' && <FoldersPanel />}
-              {currentView === 'analytics' && (
-                <ErrorBoundary>
-                  <AnalyticsPanel onClose={handleClosePanel} />
-                </ErrorBoundary>
-              )}
-              {currentView === 'archive' && <ArchiveView />}
-              {currentView === 'settings' && (
-                <SettingsPanel 
-                  onStartTour={handleTourStart}
-                />
-              )}
+              <Suspense fallback={<ViewFallback />}>
+                {currentView === 'dashboard' && (
+                  <DashboardView 
+                    mobileView={mobileView}
+                    onMobileViewChange={setMobileView}
+                    aiPanelOpen={aiPanelOpen}
+                    onAiPanelChange={setAiPanelOpen}
+                  />
+                )}
+                {currentView === 'notifications' && <NotificationsPanel />}
+                {currentView === 'today' && <TodayAgendaView />}
+                {currentView === 'inbox' && <InboxView />}
+                {currentView === 'team' && <TeamPanel />}
+                {currentView === 'folders' && <FoldersPanel />}
+                {currentView === 'analytics' && (
+                  <ErrorBoundary>
+                    <AnalyticsPanel onClose={handleClosePanel} />
+                  </ErrorBoundary>
+                )}
+                {currentView === 'archive' && <ArchiveView />}
+                {currentView === 'settings' && (
+                  <SettingsPanel 
+                    onStartTour={handleTourStart}
+                  />
+                )}
+              </Suspense>
             </div>
           </div>
           )}
@@ -871,15 +886,17 @@ export default function AppContent() {
             className="h-full flex-1 overflow-hidden"
             style={{ paddingTop: `${HEADER_HEIGHT}px` }}
           >
-            <DashboardView 
-              mobileView={mobileView}
-              onMobileViewChange={setMobileView}
-              aiPanelOpen={aiPanelOpen}
-              onAiPanelChange={setAiPanelOpen}
-              hideAgenda={true}
-              panelOpen={currentView !== 'dashboard'}
-              panelKey={currentView}
-            />
+            <Suspense fallback={<ViewFallback />}>
+              <DashboardView 
+                mobileView={mobileView}
+                onMobileViewChange={setMobileView}
+                aiPanelOpen={aiPanelOpen}
+                onAiPanelChange={setAiPanelOpen}
+                hideAgenda={true}
+                panelOpen={currentView !== 'dashboard'}
+                panelKey={currentView}
+              />
+            </Suspense>
           </div>
           )}
         </main>

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import * as PhosphorIcons from 'phosphor-react';
+import { PhosphorIcons } from './phosphor-icons';
 import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY } from '../lib/color-theme';
 import { ICON_SIZE_XL } from '../lib/layout-constants';
 
@@ -149,7 +149,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'align-justify': 'TextAlignJustify',
   'indent': 'TextIndent',
   'outdent': 'TextOutdent',
-  'pilcrow': 'Paragraph',
+  'pilcrow': 'TextAlignLeft',
   'highlighter': 'HighlighterCircle',
   'external-link': 'ArrowSquareOut',
   'check-circle-2': 'CheckCircle',
