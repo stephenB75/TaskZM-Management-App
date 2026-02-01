@@ -748,9 +748,13 @@ export function DashboardView({
     });
   };
 
-  const weekColumns = getWeekColumns(mobileWeekOffset);
+  // Memoize week columns first so visibleRange and calendar hooks never read an uninitialized value (TDZ-safe)
+  const weekColumns = useMemo(
+    () => getWeekColumns(mobileWeekOffset),
+    [mobileWeekOffset]
+  );
 
-  // Compute visible date range for calendar events
+  // Compute visible date range (weekColumns is already initialized above)
   const visibleRange = React.useMemo(() => {
     if (!weekColumns.length) return null;
     const start = new Date(weekColumns[0].date);
