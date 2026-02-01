@@ -117,20 +117,6 @@ export default defineConfig(({ mode }) => {
           if (id.includes('@radix-ui')) {
             return 'ui';
           }
-          // Analytics panel heavy deps (split so AnalyticsPanel chunk stays under 500 KB)
-          if (id.includes('node_modules/recharts')) {
-            return 'recharts';
-          }
-          if (id.includes('node_modules/jspdf')) {
-            return 'jspdf';
-          }
-          if (id.includes('node_modules/html2canvas')) {
-            return 'html2canvas';
-          }
-          // RevenueCat SDK (loaded on demand; single chunk, cannot split)
-          if (id.includes('@revenuecat/purchases-js') || id.includes('node_modules/@revenuecat')) {
-            return 'revenuecat';
-          }
           // Default: let Vite handle other chunks
           return undefined;
         },
