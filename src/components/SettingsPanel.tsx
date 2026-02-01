@@ -1370,23 +1370,26 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     />
                   </div>
                   
-                  {/* Outlook Calendar - Coming Soon */}
+                  {/* Outlook Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
                     <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                      <Label htmlFor="outlook-cal" className="text-sm cursor-pointer">Outlook Calendar</Label>
-                      <Badge variant="outline" className={`${SETTINGS_PANEL_TEXT_SIZES.badge} px-1.5 py-0 h-4 bg-muted text-muted-foreground border-muted-foreground/20`}>
-                        Coming Soon
-                      </Badge>
+                      <Label htmlFor="outlook-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Outlook Calendar</Label>
                     </div>
                     <Switch 
                       id="outlook-cal" 
                       className="flex-shrink-0"
-                      checked={false}
-                      disabled={true}
-                      onCheckedChange={() => {
-                        toast.info('Outlook Calendar integration is coming soon!', {
-                          description: 'We\'re working on adding Outlook Calendar support. Stay tuned!',
-                        });
+                      checked={calendarStatus.outlook}
+                      disabled={isCalendarSyncing}
+                      onCheckedChange={async (checked) => {
+                        try {
+                          if (checked) {
+                            await connectCalendar('outlook');
+                          } else {
+                            await disconnectCalendar('outlook');
+                          }
+                        } catch (error) {
+                          logger.error('Calendar toggle error:', error);
+                        }
                       }}
                     />
                   </div>
@@ -1394,15 +1397,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Apple Calendar - Shortcuts */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
                     <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                      <Label htmlFor="apple-cal" className="text-sm cursor-pointer">Apple Calendar</Label>
+                      <Label htmlFor="apple-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Apple Calendar</Label>
                     </div>
                     <Switch 
                       id="apple-cal" 
                       className="flex-shrink-0"
                       checked={calendarStatus.apple}
-                      onCheckedChange={(checked) => {
-                        if (checked) connectCalendar('apple');
-                        else disconnectCalendar('apple');
+                      disabled={isCalendarSyncing}
+                      onCheckedChange={async (checked) => {
+                        try {
+                          if (checked) await connectCalendar('apple');
+                          else await disconnectCalendar('apple');
+                        } catch (error) {
+                          logger.error('Calendar toggle error:', error);
+                        }
                       }}
                     />
                   </div>
@@ -1418,9 +1426,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 className="w-full"
                 onClick={() => {
                   if (calendarStatus.google) syncAllTasksToCalendar('google');
+                  else if (calendarStatus.outlook) syncAllTasksToCalendar('outlook');
                   else if (calendarStatus.apple) syncAllTasksToCalendar('apple');
                 }}
-                disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.apple)}
+                disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.outlook && !calendarStatus.apple)}
               >
                 <Icon name="calendar" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} weight="duotone" className="mr-2" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                 {isCalendarSyncing ? 'Syncing...' : 'Sync All Tasks'}
