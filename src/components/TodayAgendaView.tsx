@@ -29,7 +29,6 @@ import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { buildTaskLayouts } from "../lib/task-layout";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
-import { projectId } from "../utils/supabase/info";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
 

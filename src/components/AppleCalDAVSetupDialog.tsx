@@ -18,7 +18,7 @@ import { ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_3XL } from '../lib/
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
-import { projectId } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
 
 interface AppleCalDAVSetupDialogProps {
   open: boolean;
@@ -32,8 +32,6 @@ interface DiscoveredCalendar {
   color?: string;
   ctag?: string;
 }
-
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
 
 export function AppleCalDAVSetupDialog({
   open,
@@ -65,7 +63,7 @@ export function AppleCalDAVSetupDialog({
     setError(null);
 
     try {
-      const response = await fetch(`${BASE_URL}/calendar/apple/caldav/test`, {
+      const response = await fetch(`${API_BASE}/calendar/apple/caldav/test`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -96,7 +94,7 @@ export function AppleCalDAVSetupDialog({
     setError(null);
 
     try {
-      const response = await fetch(`${BASE_URL}/calendar/apple/caldav/discover`, {
+      const response = await fetch(`${API_BASE}/calendar/apple/caldav/discover`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -142,7 +140,7 @@ export function AppleCalDAVSetupDialog({
 
     try {
       // Save credentials and selected calendars
-      const saveResponse = await fetch(`${BASE_URL}/calendar/apple/caldav/save`, {
+      const saveResponse = await fetch(`${API_BASE}/calendar/apple/caldav/save`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -164,7 +162,7 @@ export function AppleCalDAVSetupDialog({
       // Trigger initial sync with user's timezone
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
       
-      const syncResponse = await fetch(`${BASE_URL}/calendar/apple/caldav/sync`, {
+      const syncResponse = await fetch(`${API_BASE}/calendar/apple/caldav/sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

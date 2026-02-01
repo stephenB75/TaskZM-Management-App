@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { projectId } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
 import { logger } from '../lib/logger';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 
@@ -20,7 +20,7 @@ export function useDemoActivity() {
     lastActivityRef.current = Date.now();
 
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/taskzm-database-function/demo/update-activity`, {
+      const response = await fetch(`${API_BASE}/demo/update-activity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ export function useDemoActivity() {
       try {
         // Trigger cleanup on server
         const cleanupResponse = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/taskzm-database-function/cleanup-demo-user`,
+          `${API_BASE}/cleanup-demo-user`,
           {
             method: 'DELETE',
             headers: {

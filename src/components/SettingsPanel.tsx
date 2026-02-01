@@ -186,7 +186,7 @@ import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 import { COLOR_PRIMARY, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
-import { projectId } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -366,8 +366,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
     setIsDeletingAccount(true);
     try {
-      const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
-      const response = await fetch(`${BASE_URL}/delete-account`, {
+      const response = await fetch(`${API_BASE}/delete-account`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

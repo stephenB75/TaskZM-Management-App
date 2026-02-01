@@ -18,7 +18,6 @@ import { useTasks } from "../contexts/TaskContext";
 import { useDragDrop } from "../contexts/DragDropContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useCalendar } from "../contexts/CalendarContext";
-import { projectId } from "../utils/supabase/info";
 import { useCalendarEventsByDate, type CalendarEvent } from "../hooks/useCalendarEvents";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
@@ -435,8 +434,6 @@ function DroppableDay({
     </div>
   );
 }
-
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
 
 export function MonthCalendarView({
   mobileMode = false,

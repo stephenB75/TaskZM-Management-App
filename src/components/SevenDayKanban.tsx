@@ -19,7 +19,6 @@ import { cn, prepareTaskForDialog, getWeekStart, getDateString } from '../lib/ut
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
-import { projectId } from '../utils/supabase/info';
 import { useCalendarEventsByDate } from '../hooks/useCalendarEvents';
 import {
   KANBAN_DAY_COLORS,

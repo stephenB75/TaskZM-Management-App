@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
 import { supabase } from '../lib/supabase-client';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
@@ -44,8 +45,6 @@ interface CalendarContextType {
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
-
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
 
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
@@ -116,7 +115,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/calendar/status`, {
+      const response = await fetch(`${API_BASE}/calendar/status`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
@@ -155,7 +154,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/calendar/apple/test`, {
+      const response = await fetch(`${API_BASE}/calendar/apple/test`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
@@ -264,7 +263,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           
           if (providerToken) {
             // Try to use Supabase Google tokens for calendar
-            const response = await fetch(`${BASE_URL}/calendar/google/use-supabase-tokens`, {
+            const response = await fetch(`${API_BASE}/calendar/google/use-supabase-tokens`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -300,7 +299,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
     try {
       // Get OAuth URL from server (fallback or if Supabase tokens not available)
-      const response = await fetch(`${BASE_URL}/calendar/${provider}/auth`, {
+      const response = await fetch(`${API_BASE}/calendar/${provider}/auth`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
@@ -526,8 +525,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     try {
       // Apple Calendar uses CalDAV endpoint, other providers use OAuth endpoint
       const endpoint = provider === 'apple' 
-        ? `${BASE_URL}/calendar/apple/caldav`
-        : `${BASE_URL}/calendar/${provider}`;
+        ? `${API_BASE}/calendar/apple/caldav`
+        : `${API_BASE}/calendar/${provider}`;
       
       const response = await fetch(endpoint, {
         method: 'DELETE',
@@ -593,7 +592,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     try {
       setIsSyncing(true);
 
-      const response = await fetch(`${BASE_URL}/calendar/sync-task`, {
+      const response = await fetch(`${API_BASE}/calendar/sync-task`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -653,7 +652,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       // Auto-detect user's timezone from browser
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
       
-      const response = await fetch(`${BASE_URL}/calendar/apple/caldav/sync`, {
+      const response = await fetch(`${API_BASE}/calendar/apple/caldav/sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -744,7 +743,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       // Auto-detect user's timezone from browser
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
       
-      const response = await fetch(`${BASE_URL}/calendar/google/sync`, {
+      const response = await fetch(`${API_BASE}/calendar/google/sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -835,7 +834,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         description: 'This may take a moment',
       });
 
-      const response = await fetch(`${BASE_URL}/calendar/sync-all`, {
+      const response = await fetch(`${API_BASE}/calendar/sync-all`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

@@ -1,7 +1,9 @@
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { publicAnonKey } from '../utils/supabase/info';
 import type { Task, TimeTrackingSession, Activity, Folder, UserAward } from '../types';
 import { logger } from './logger';
 import type { Domain } from './domain-terminology';
+
+import { API_BASE } from './api-base';
 
 /**
  * Terminology validation constants
@@ -13,7 +15,7 @@ const TERMINOLOGY_VALIDATION = {
   minNounLength: 2,
 } as const;
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
+export { API_BASE };
 
 let accessToken: string | null = null;
 

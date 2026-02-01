@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase-client';
 import { setAccessToken } from '../lib/api';
 import { logger } from '../lib/logger';
 import { clearUserLocalStorage } from '../lib/utils';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
+import { publicAnonKey } from '../utils/supabase/info';
 import type { User } from '../types';
 
 interface AuthContextType {
@@ -26,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Update demo user login timestamp
   const updateDemoLoginTime = useCallback(async (userId: string, token: string) => {
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/taskzm-database-function/demo/update-login-time`, {
+      const response = await fetch(`${API_BASE}/demo/update-login-time`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -187,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(email: string, password: string, name: string, isDemo: boolean = false, avatar?: string) {
     try {
       // Call our backend signup endpoint which handles user creation
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/taskzm-database-function/signup`, {
+      const response = await fetch(`${API_BASE}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         try {
           const cleanupResponse = await fetch(
-            `https://${projectId}.supabase.co/functions/v1/taskzm-database-function/cleanup-demo-user`,
+            `${API_BASE}/cleanup-demo-user`,
             {
               method: 'DELETE',
               headers: {

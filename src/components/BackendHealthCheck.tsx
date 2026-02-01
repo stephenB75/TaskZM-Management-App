@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import {
-  projectId,
-  publicAnonKey,
-} from "../utils/supabase/info";
+import { projectId, publicAnonKey } from "../utils/supabase/info";
+import { API_BASE } from "../lib/api";
 import {
   Card,
   CardContent,
@@ -68,7 +66,7 @@ export function BackendHealthCheck() {
       // Check database by attempting to read user workspaces (will fail if not logged in, but proves connection)
       try {
         const workspaceResponse = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/taskzm-database-function/user/workspaces`,
+          `${API_BASE}/user/workspaces`,
           {
             headers: {
               "Content-Type": "application/json",

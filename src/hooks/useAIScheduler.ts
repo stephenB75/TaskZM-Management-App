@@ -11,7 +11,7 @@ import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { isDateInRecurrence } from '../lib/recurrence';
-import { projectId } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
 import {
   MIN_HOURS_PER_DAY,
   DEFAULT_SCHEDULING_PERIOD_DAYS,
@@ -81,7 +81,6 @@ export function useAIScheduler() {
     if (!accessToken) return [];
     
     const events: Array<{ start: Date; end: Date; title: string }> = [];
-    const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
     
     // Fetch events from all connected calendar providers
     const providers: Array<'google' | 'apple'> = [];
@@ -91,7 +90,7 @@ export function useAIScheduler() {
     for (const provider of providers) {
       try {
         const response = await fetch(
-          `${BASE_URL}/calendar/events/${provider}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
+          `${API_BASE}/calendar/events/${provider}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,

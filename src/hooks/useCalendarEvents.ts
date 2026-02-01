@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCalendar } from '../contexts/CalendarContext';
-import { projectId } from '../utils/supabase/info';
+import { API_BASE } from '../lib/api';
 import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests } from '../lib/calendar-events-cache';
 import { getDateString } from '../lib/utils';
@@ -62,11 +62,9 @@ async function fetchProviderEvents(
   endDate: string,
   accessToken: string
 ): Promise<CalendarEvent[]> {
-  const BASE_URL = `https://${projectId}.supabase.co/functions/v1/taskzm-database-function`;
-  
   try {
     const resp = await fetch(
-      `${BASE_URL}/calendar/events/${provider}?startDate=${startDate}&endDate=${endDate}`,
+      `${API_BASE}/calendar/events/${provider}?startDate=${startDate}&endDate=${endDate}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
