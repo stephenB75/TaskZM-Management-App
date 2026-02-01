@@ -14,8 +14,11 @@ import {
 import { logger } from './logger';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
+import type { Domain } from './domain-types';
 
-/** Lazy api import to avoid circular dependency (domain-terminology -> api -> domain-terminology type). */
+export type { Domain } from './domain-types';
+
+/** Lazy api import to avoid circular dependency (domain-terminology -> api). */
 async function getSharedTerminologyFromApi(domain: Domain) {
   const api = await import('./api');
   return api.getSharedTerminology(domain);
@@ -30,8 +33,6 @@ async function saveSharedTerminologyToApi(
   const api = await import('./api');
   return api.saveSharedTerminology(domain, keywords, phrases, verbs, nouns);
 }
-
-export type Domain = 'business' | 'home' | 'personal' | 'world' | 'mixed';
 
 /**
  * Terminology configuration constants

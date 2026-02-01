@@ -1,7 +1,7 @@
 import { publicAnonKey } from '../utils/supabase/info';
 import type { Task, TimeTrackingSession, Activity, Folder, UserAward } from '../types';
 import { logger } from './logger';
-import type { Domain } from './domain-terminology';
+import type { Domain } from './domain-types';
 
 import { API_BASE } from './api-base';
 
