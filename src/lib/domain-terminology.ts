@@ -13,8 +13,23 @@ import {
 } from './ai-config';
 import { logger } from './logger';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
-import { getSharedTerminology, saveSharedTerminology } from './api';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
+
+/** Lazy api import to avoid circular dependency (domain-terminology -> api -> domain-terminology type). */
+async function getSharedTerminologyFromApi(domain: Domain) {
+  const api = await import('./api');
+  return api.getSharedTerminology(domain);
+}
+async function saveSharedTerminologyToApi(
+  domain: Domain,
+  keywords: string[],
+  phrases: string[],
+  verbs: string[],
+  nouns: string[]
+) {
+  const api = await import('./api');
+  return api.saveSharedTerminology(domain, keywords, phrases, verbs, nouns);
+}
 
 export type Domain = 'business' | 'home' | 'personal' | 'world' | 'mixed';
 
@@ -1939,7 +1954,7 @@ export function saveNewTerminologyToLibrary(
     
     // Save to shared database (for all users)
     // This happens asynchronously and doesn't block
-    saveSharedTerminology(domain, newKeywords, newPhrases, newVerbs, newNouns)
+    saveSharedTerminologyToApi(domain, newKeywords, newPhrases, newVerbs, newNouns)
       .then(result => {
         if (result.success) {
           logger.info(`✅ Saved ${result.saved} new terms to shared ${domain} terminology (${result.skipped} skipped)`, {
@@ -2033,7 +2048,7 @@ export async function getDomainTerminologyAsync(domain: Domain): Promise<DomainT
     keywords: [], phrases: [], verbs: [], nouns: []
   };
   try {
-    const response = await getSharedTerminology(domain);
+    const response = await getSharedTerminologyFromApi(domain);
     if (response && (response.keywords.length > 0 || response.phrases.length > 0 || response.verbs.length > 0 || response.nouns.length > 0)) {
       sharedTerms = {
         keywords: response.keywords || [],
