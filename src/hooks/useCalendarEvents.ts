@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCalendar } from '../contexts/CalendarContext';
-import { API_BASE } from '../lib/api';
+import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { getDateString } from '../lib/utils';
@@ -64,7 +64,7 @@ async function fetchProviderEvents(
 ): Promise<CalendarEvent[]> {
   try {
     const resp = await fetch(
-      `${API_BASE}/calendar/events/${provider}?startDate=${startDate}&endDate=${endDate}`,
+      `${CALENDAR_API_BASE}/calendar/events/${provider}?startDate=${startDate}&endDate=${endDate}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
