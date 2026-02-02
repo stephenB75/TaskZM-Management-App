@@ -304,7 +304,9 @@ export function createAIContextSync(
     domain = DEFAULT_TASK_DOMAIN;
   }
 
-  const domainTerms = getDomainTerminology(domain);
+  // Capture for use in return and nested scope (avoids ReferenceError: domain is not defined when minified)
+  const domainVal: Domain = domain;
+  const domainTerms = getDomainTerminology(domainVal);
 
   // Extract terms
   // NOTE: extractTermsFromTaskNameWithBrowserAI is now async (uses Browser AI API if available)
@@ -373,11 +375,11 @@ export function createAIContextSync(
     .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns);
 
   // CRITICAL: Final validation - ensure domain is always a valid Domain type
-  const finalDomain: Domain = (domain && 
-    (domain === 'business' || domain === 'home' || 
-     domain === 'personal' || domain === 'world' || 
-     domain === 'mixed'))
-    ? domain
+  const finalDomain: Domain = (domainVal && 
+    (domainVal === 'business' || domainVal === 'home' || 
+     domainVal === 'personal' || domainVal === 'world' || 
+     domainVal === 'mixed'))
+    ? domainVal
     : DEFAULT_TASK_DOMAIN;
 
   return {

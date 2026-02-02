@@ -171,6 +171,9 @@ export function analyzeDescription(
       .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns);
   }
 
+  // Capture for use in enhanceDescription and return (avoids ReferenceError: domain is not defined when minified)
+  const domainVal: Domain = domain ?? DEFAULT_TASK_DOMAIN;
+
   // Add primary verb if not already in verbs list
   const allVerbs = primaryVerb !== 'unknown' && !uniqueVerbs.some(v => v.toLowerCase() === primaryVerb.toLowerCase())
     ? [primaryVerb, ...uniqueVerbs]
@@ -204,7 +207,7 @@ export function analyzeDescription(
   // Generate enhanced description (pass all extracted terms and effort score for better suggestions)
   const { enhanced, suggestions, addedContext } = enhanceDescription(
     original,
-    domain,
+    domainVal,
     uniqueKeywords,
     primaryVerb,
     uniquePhrases,
@@ -218,7 +221,7 @@ export function analyzeDescription(
     phrases: uniquePhrases.length,
     verbs: allVerbs.length,
     nouns: uniqueNouns.length,
-    domain,
+    domain: domainVal,
   });
 
   return {
@@ -226,7 +229,7 @@ export function analyzeDescription(
     enhanced,
     suggestions,
     addedContext,
-    detectedDomain: domain,
+    detectedDomain: domainVal,
     confidence: domainConfidence,
     keywords: uniqueKeywords,
     phrases: uniquePhrases,
@@ -247,16 +250,19 @@ function enhanceDescription(
   primaryVerb: string,
   phrases?: string[],
   verbs?: string[],
-  nouns?: string[]
+  nouns?: string[],
+  effortScore: number = 2.5
 ): {
   enhanced: string;
   suggestions: string[];
   addedContext: string[];
 } {
+  // Capture for use in all branches (avoids ReferenceError: domain is not defined when minified)
+  const domainVal: Domain = domain ?? DEFAULT_TASK_DOMAIN;
   if (!original || original.trim().length === 0) {
     // For empty descriptions, suggest based on domain and available terms
-    const terminology = getDomainTerminology(domain);
-    const suggestions = generateDomainSuggestions(domain, terminology, keywords, phrases, verbs, nouns);
+    const terminology = getDomainTerminology(domainVal);
+    const suggestions = generateDomainSuggestions(domainVal, terminology, keywords, phrases, verbs, nouns, effortScore);
     return {
       enhanced: original,
       suggestions,
@@ -275,7 +281,7 @@ function enhanceDescription(
   const hasTimeKeywords = allKeywords.some(k => ['time', 'hours', 'duration', 'schedule', 'track'].includes(k.toLowerCase()));
 
   // Domain-specific enhancements
-  switch (domain) {
+  switch (domainVal) {
     case 'business':
       if (hasJobKeywords && hasLoginKeywords && !originalLower.includes('platform')) {
         suggestions.push('Specify which platform or system you need to log into');

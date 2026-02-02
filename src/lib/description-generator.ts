@@ -3200,7 +3200,9 @@ export async function generateDescription(
     
     const domainResult = detectDomain(taskName, isTechnicalTask && hasWrongPersonalTerms ? '' : descriptionForDetection);
     const domain = domainResult.domain;
-    
+    // Capture for use in nested blocks/after await (avoids ReferenceError: domain is not defined when minified)
+    const domainRef = domain;
+
     // Defer async terminology fetch to avoid blocking UI
     // Use setTimeout(0) to yield to event loop before heavy async operation
     const domainTerms = await new Promise<ReturnType<typeof getDomainTerminology>>((resolve) => {
@@ -3220,7 +3222,7 @@ export async function generateDescription(
     taskName,
     hasDescription: !!descriptionForDetection,
     descriptionLength: descriptionForDetection.length,
-    detectedDomain: domain,
+    detectedDomain: domainRef,
     confidence: domainResult.confidence,
   });
 
@@ -3249,7 +3251,7 @@ export async function generateDescription(
   // Browser AI analyzes user input and extracts keywords, phrases, verbs, nouns
   // Local Terminology acts as a cache/dictionary to enhance extracted terms
   // ENHANCED: Extract from both task name and description to get complete context
-  logger.debug(`Using Browser AI to extract terms from task name: "${taskName}", domain: ${domain}`, {
+  logger.debug(`Using Browser AI to extract terms from task name: "${taskName}", domain: ${domainRef}`, {
     hasExistingDescription: !!existingDescription,
     existingDescriptionLength: existingDescription?.length || 0
   });
@@ -3356,7 +3358,7 @@ export async function generateDescription(
       
       const browserAIDescription = await generateDescriptionWithBrowserAI(
         taskName,
-        domain,
+        domainRef,
         // Only pass terms if we have meaningful ones
         (finalKeywords.length > 0 || finalPhrases.length > 0 || finalVerbs.length > 0 || finalNouns.length > 0)
           ? {
@@ -3420,7 +3422,7 @@ export async function generateDescription(
       finalNouns,
       finalPronouns,
       searchContext, // Use task name as context
-      domain,
+      domainRef,
       domainTerms,
       normalizedEffortScore
     );
@@ -3470,7 +3472,7 @@ export async function generateDescription(
     
     // Use the already declared taskNameLower from domain detection above
     const taskNameLowerForRebuild = taskName.toLowerCase();
-    const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+    const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainRef];
     
     // Get domain phrases, verbs, and nouns for building contextual description
     const domainPhrases = domainTerms.phrases.filter(phrase => {
@@ -3593,7 +3595,7 @@ export async function generateDescription(
     const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
     const fallbackTemplate = templateKeys[Math.floor(Math.random() * templateKeys.length)];
     const fallbackOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[fallbackTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
-    description = `${fallbackOpener} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain]}`;
+    description = `${fallbackOpener} ${taskName.toLowerCase()}. ${DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainRef]}`;
     confidence = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   }
 
@@ -3641,7 +3643,7 @@ export async function generateDescription(
     logger.warn(`Generated description is empty for "${taskName}", using fallback`);
     return {
       description: fallbackDescription,
-      domain,
+      domain: domainRef,
       confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
     };
   }
@@ -3657,16 +3659,16 @@ export async function generateDescription(
     finalDescription = finalDescription + '.';
   }
 
-    logger.debug(`Generated description for "${taskName}": domain=${domain}, confidence=${confidence.toFixed(2)}, usedBrowserAI=true, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
+    logger.debug(`Generated description for "${taskName}": domain=${domainRef}, confidence=${confidence.toFixed(2)}, usedBrowserAI=true, descriptionLength=${finalDescription.length}, preview="${finalDescription.substring(0, 50)}..."`);
     
     // FINAL CHECK: If Browser AI extraction failed and got a fallback description, log warning
     if (finalDescription.includes(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves)) {
       logger.warn(`WARNING: Browser AI extraction produced fallback description for "${taskName}". This indicates extraction from task name wasn't sufficient.`);
-  }
+    }
 
   return {
     description: finalDescription,
-    domain,
+    domain: domainRef,
     confidence,
   };
   } catch (error) {
