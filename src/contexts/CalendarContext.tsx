@@ -344,8 +344,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             if (response.ok) {
               const data = await response.json();
               if (data.success) {
-                // Successfully connected using Supabase tokens
+                // Successfully connected - force UI to show connected (server may not have updated status yet)
+                setCalendarStatus(prev => ({ ...prev, google: true }));
                 await checkCalendarStatus();
+                setCalendarStatus(prev => ({ ...prev, google: true })); // Keep true after refresh
                 toast.success('Google Calendar connected!', {
                   description: 'Using your Google account from sign-in',
                 });
@@ -512,20 +514,22 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           // Defer all heavy operations to next tick to keep handler fast
           if (event.data.type === 'calendar-oauth-success') {
             console.log('[Calendar OAuth] Success message received for', provider, 'from origin:', event.origin);
+            const connectedProvider = provider;
             // Use setTimeout(0) to defer to next event loop tick
             setTimeout(() => {
+              setCalendarStatus(prev => ({ ...prev, [connectedProvider]: true }));
               checkCalendarStatus().then(() => {
-                // Verify connection was successful
+                setCalendarStatus(prev => ({ ...prev, [connectedProvider]: true }));
                 console.log('[Calendar OAuth] Calendar status checked after success message');
               }).catch((err) => {
                 console.error('[Calendar OAuth] Error checking calendar status:', err);
               });
-              toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar connected successfully!`);
+              toast.success(`${connectedProvider.charAt(0).toUpperCase() + connectedProvider.slice(1)} Calendar connected successfully!`);
             }, 0);
           } else if (event.data.type === 'calendar-oauth-error') {
             console.error('[Calendar OAuth] Error message received for', provider, 'from origin:', event.origin, 'error:', event.data.error);
-            // Defer toast to next tick
             setTimeout(() => {
+              checkCalendarStatus(); // Revert optimistic update
               toast.error(`Failed to connect ${provider} Calendar`, {
                 description: event.data.error || 'An error occurred during authorization',
               });

@@ -1343,27 +1343,22 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </p>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
-                  {/* Google Calendar - Fully Implemented */}
+                  {/* Google Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
                     <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       <Label htmlFor="google-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Google Calendar</Label>
                     </div>
                     <Switch 
+                      key={`google-cal-${!!calendarStatus.google}`}
                       id="google-cal" 
                       className="flex-shrink-0"
-                      checked={calendarStatus.google}
-                      disabled={isCalendarSyncing}
+                      checked={!!calendarStatus.google}
+                      disabled={!!isCalendarSyncing}
                       onCheckedChange={async (checked) => {
                         try {
-                          if (checked) {
-                            await connectCalendar('google');
-                          } else {
-                            await disconnectCalendar('google');
-                          }
-                          // Status will be updated by checkCalendarStatus in the connect/disconnect functions
-                          // No need to show toast here - connect/disconnect functions handle it
+                          if (checked) await connectCalendar('google');
+                          else await disconnectCalendar('google');
                         } catch (error) {
-                          // Error handling is done in connect/disconnect functions
                           logger.error('Calendar toggle error:', error);
                         }
                       }}
@@ -1376,17 +1371,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <Label htmlFor="outlook-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Outlook Calendar</Label>
                     </div>
                     <Switch 
+                      key={`outlook-cal-${!!calendarStatus.outlook}`}
                       id="outlook-cal" 
                       className="flex-shrink-0"
-                      checked={calendarStatus.outlook}
-                      disabled={isCalendarSyncing}
+                      checked={!!calendarStatus.outlook}
+                      disabled={!!isCalendarSyncing}
                       onCheckedChange={async (checked) => {
                         try {
-                          if (checked) {
-                            await connectCalendar('outlook');
-                          } else {
-                            await disconnectCalendar('outlook');
-                          }
+                          if (checked) await connectCalendar('outlook');
+                          else await disconnectCalendar('outlook');
                         } catch (error) {
                           logger.error('Calendar toggle error:', error);
                         }
@@ -1394,16 +1387,17 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     />
                   </div>
                   
-                  {/* Apple Calendar - Shortcuts */}
+                  {/* Apple Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
                     <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
                       <Label htmlFor="apple-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Apple Calendar</Label>
                     </div>
                     <Switch 
+                      key={`apple-cal-${!!calendarStatus.apple}`}
                       id="apple-cal" 
                       className="flex-shrink-0"
-                      checked={calendarStatus.apple}
-                      disabled={isCalendarSyncing}
+                      checked={!!calendarStatus.apple}
+                      disabled={!!isCalendarSyncing}
                       onCheckedChange={async (checked) => {
                         try {
                           if (checked) await connectCalendar('apple');
