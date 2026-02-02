@@ -511,8 +511,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           
           // Close popup with a small delay to ensure message is fully processed
           setTimeout(() => {
-            if (popup && !popup.closed) {
-              popup.close();
+            try {
+              if (popup && !popup.closed) {
+                popup.close();
+              }
+            } catch {
+              // COOP can block cross-origin window.closed; ignore
             }
           }, TIMING_CONSTANTS.delays.calendarPopup);
           
@@ -560,8 +564,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
               clearInterval(checkPopupInterval);
             }
             setTimeout(() => {
-              if (popup && !popup.closed) {
-                popup.close();
+              try {
+                if (popup && !popup.closed) {
+                  popup.close();
+                }
+              } catch {
+                // COOP can block cross-origin window.closed; ignore
               }
               // Check status anyway in case connection succeeded
               checkCalendarStatus();
@@ -574,8 +582,15 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
       // Fallback: Check if popup is closed (user might have closed it manually)
       // ENHANCED: Also check for successful completion even if message wasn't received
+      // Use try/catch: COOP can block popup.closed for cross-origin OAuth windows
       checkPopupInterval = setInterval(() => {
-        if (popup.closed) {
+        let closed = false;
+        try {
+          closed = popup.closed;
+        } catch {
+          closed = true;
+        }
+        if (closed) {
           if (checkPopupInterval) {
             clearInterval(checkPopupInterval);
           }

@@ -1624,6 +1624,7 @@ function buildElaborateContextualDescription(
 ): string {
   // Ensure domain is always in scope for nested blocks (avoids ReferenceError: domain is not defined)
   const domainForGuidance: Domain = domain ?? (domainTerms?.context ?? DEFAULT_TASK_DOMAIN);
+  const domainSafe: Domain = domainForGuidance;
   // Determine detail level based on effort score
   // Low effort (1-2): Concise, simple descriptions (1-2 sentences)
   // Medium effort (2-3): Moderate detail (2-3 sentences)
@@ -1688,7 +1689,7 @@ function buildElaborateContextualDescription(
     
     // CRITICAL: Explicit exclusion of irrelevant terms based on detected domain
     // If domain is business/technical, exclude personal/health terms
-    if (domain === 'business') {
+    if (domainSafe === 'business') {
       if (DOMAIN_EXCLUSION_TERMS.BUSINESS_EXCLUDE_PERSONAL.some(irrelevant => 
         termLower.includes(irrelevant) || irrelevant.includes(termLower)
       )) {
@@ -1703,7 +1704,7 @@ function buildElaborateContextualDescription(
     }
     
     // If domain is personal, exclude technical terms unless task relates to them
-    if (domain === 'personal') {
+    if (domainSafe === 'personal') {
       if (DOMAIN_EXCLUSION_TERMS.PERSONAL_EXCLUDE_TECHNICAL.some(tech => 
         termLower.includes(tech) || tech.includes(termLower)
       )) {
