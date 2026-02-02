@@ -110,6 +110,9 @@ export function generateActionPlan(
     };
   }
 
+  // Capture for use in downstream calls and return (avoids ReferenceError: domain is not defined when minified)
+  const domainVal: Domain = domain ?? DEFAULT_TASK_DOMAIN;
+
   // Estimate total time
   const taskForEstimation: Task = {
     id: task.id || 'temp', // Temporary ID for estimation (not a constant as it's a placeholder)
@@ -144,7 +147,7 @@ export function generateActionPlan(
   const steps = generateSteps(
     title,
     description,
-    domain,
+    domainVal,
     terminology,
     totalMinutes,
     extractedTerms,
@@ -156,7 +159,7 @@ export function generateActionPlan(
   const suggestedSubtasks = generateSubtasks(
     title,
     description,
-    domain,
+    domainVal,
     terminology,
     extractedTerms
   );
@@ -173,7 +176,7 @@ export function generateActionPlan(
     steps: finalSteps,
     totalEstimatedMinutes: totalMinutes > 0 ? totalMinutes : finalSteps.reduce((sum, step) => sum + step.estimatedMinutes, 0),
     suggestedSubtasks,
-    context: domain,
+    context: domainVal,
     confidence: domainConfidence,
   };
 }
@@ -196,6 +199,8 @@ function generateSteps(
   enhancedTerms?: AIContext['enhancedTerms'],
   effortScore?: number
 ): ActionPlanStep[] {
+  // Capture for use in nested calls (avoids ReferenceError: domain is not defined when minified)
+  const domainVal: Domain = domain ?? DEFAULT_TASK_DOMAIN;
   const steps: ActionPlanStep[] = [];
   const fullText = `${title} ${description}`.trim();
   const text = fullText.toLowerCase();
@@ -241,7 +246,7 @@ function generateSteps(
 
   // ENHANCED: Domain-specific step generation using Browser AI extracted terms + enhanced terms
   // Pass effort score to adjust step complexity and detail level
-  switch (domain) {
+  switch (domainVal) {
     case 'business':
       steps.push(...generateBusinessSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence, effortScore));
       break;
@@ -251,7 +256,7 @@ function generateSteps(
       break;
 
     case 'personal':
-      steps.push(...generatePersonalSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence, effortScore));
+      steps.push(...generatePersonalSteps(text, keywords, phrases, verbs, nouns, totalMinutes, hasSequence, effortScore, domainVal));
       break;
 
     case 'world':
@@ -499,7 +504,8 @@ function generatePersonalSteps(
   nouns: string[],
   totalMinutes: number,
   hasSequence: boolean,
-  effortScore?: number
+  effortScore: number | undefined,
+  domainVal: Domain
 ): ActionPlanStep[] {
   const steps: ActionPlanStep[] = [];
   let order = 1;
@@ -507,7 +513,7 @@ function generatePersonalSteps(
   // Helper function to check if terms match personal concepts
   const hasExerciseTerms = (terms: string[]) => {
     // CRITICAL: Only detect exercise terms if domain is personal, not business/technical
-    if (domain !== 'personal') return false;
+    if (domainVal !== 'personal') return false;
     return terms.some(term => 
       ['exercise', 'workout', 'fitness', 'train', 'run', 'gym'].some(match => 
         term.toLowerCase().includes(match)
@@ -522,7 +528,7 @@ function generatePersonalSteps(
 
   // Check using Browser AI extracted terms
   // CRITICAL: Only detect exercise if domain is personal, not business/technical
-  const hasExercise = domain === 'personal' && (
+  const hasExercise = domainVal === 'personal' && (
     text.includes('exercise') || text.includes('workout') || text.includes('fitness') ||
     hasExerciseTerms(keywords) || hasExerciseTerms(phrases) || hasExerciseTerms(verbs)
   );
@@ -751,6 +757,8 @@ function generateSubtasks(
   extractedTerms?: ReturnType<typeof extractTermsFromTaskNameWithBrowserAI>,
   enhancedTerms?: AIContext['enhancedTerms']
 ): string[] {
+  // Capture for use in switch and nested code (avoids ReferenceError: domain is not defined when minified)
+  const domainVal: Domain = domain ?? DEFAULT_TASK_DOMAIN;
   const subtasks: string[] = [];
   const fullText = `${title} ${description}`.trim();
   const text = fullText.toLowerCase();
@@ -790,7 +798,7 @@ function generateSubtasks(
 
   // Domain-specific subtask suggestions using Browser AI extracted terms
   // ENHANCED: More contextual and specific subtasks based on actual task content
-  switch (domain) {
+  switch (domainVal) {
     case 'business':
       // Technical/development tasks
       if (text.includes('fix') || text.includes('bug') || text.includes('issue') || 
@@ -878,7 +886,7 @@ function generateSubtasks(
 
     case 'personal':
       // CRITICAL: Only add exercise subtasks if domain is personal, not business/technical
-      if (domain === 'personal' && (text.includes('exercise') || text.includes('workout') || 
+      if (domainVal === 'personal' && (text.includes('exercise') || text.includes('workout') || 
           hasTerm(keywords, ['exercise', 'workout']) || hasTerm(verbs, ['exercise', 'workout']))) {
         subtasks.push('Warm up');
         subtasks.push('Main workout');
