@@ -398,6 +398,36 @@ async function getWorkspaceMembers(workspaceId: string): Promise<string[]> {
   return members;
 }
 
+/**
+ * Ensure user has a workspace; create one if missing (used by calendar sync and others).
+ */
+async function ensureUserWorkspace(userId: string): Promise<string> {
+  let primaryWorkspace = await kv.get(`user_${userId}_workspace`);
+  if (primaryWorkspace) return primaryWorkspace;
+
+  console.log(`⚠️ User ${userId} has no workspace, creating one automatically`);
+  const supabase = getSupabaseClient();
+  let userName = 'User';
+  try {
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+    if (!userError && userData?.user?.user_metadata?.name) {
+      userName = userData.user.user_metadata.name;
+    }
+  } catch (_) {
+    // use default
+  }
+  primaryWorkspace = `workspace_${userId}_${Date.now()}`;
+  const membersArray = [userId];
+  await Promise.all([
+    kv.set(`user_${userId}_workspace`, primaryWorkspace),
+    kv.set(`workspace_${primaryWorkspace}_owner`, userId),
+    kv.set(`workspace_${primaryWorkspace}_members`, JSON.stringify(membersArray)),
+    kv.set(`workspace_${primaryWorkspace}_name`, `${userName}'s Workspace`),
+  ]);
+  console.log(`✅ Auto-created workspace ${primaryWorkspace} for user ${userId}`);
+  return primaryWorkspace;
+}
+
 // Health check endpoint
 app.get("/taskzm-database-function/health", (c) => {
   return c.json({ status: "ok" });
@@ -3745,37 +3775,67 @@ app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
       console.log('Error parsing request body, using default timezone:', error);
     }
 
-    // Get stored credentials
-    const credentialsJson = await kv.get(`caldav_credentials_${userId}`);
-    if (!credentialsJson) {
-      return c.json({ error: 'CalDAV not configured. Please connect your Apple Calendar first.' }, 400);
+    // Ensure user has a workspace (create if missing)
+    const workspaceId = await ensureUserWorkspace(userId);
+
+    // Resolve credentials and selected calendar hrefs
+    let credentials: { email: string; appPassword: string };
+    let selectedCalendarHrefs: string[];
+
+    const credentialsRaw = await kv.get(`caldav_credentials_${userId}`);
+    if (credentialsRaw) {
+      const storedCredentials = typeof credentialsRaw === 'string' ? JSON.parse(credentialsRaw) : credentialsRaw;
+      if (!storedCredentials.email || !storedCredentials.appPassword) {
+        return c.json({ error: 'CalDAV credentials incomplete. Please reconnect your Apple Calendar.' }, 400);
+      }
+      credentials = { email: storedCredentials.email, appPassword: storedCredentials.appPassword };
+      if (storedCredentials.selectedCalendars && storedCredentials.selectedCalendars.length > 0) {
+        selectedCalendarHrefs = storedCredentials.selectedCalendars.map((cal: any) => cal.href);
+      } else {
+        // Saved credentials but no calendars selected – discover and use all
+        console.log('CalDAV credentials found but no calendars selected; discovering calendars');
+        const discovered = await appleCaldavSync.discoverCalendars(credentials);
+        selectedCalendarHrefs = discovered.map((cal) => cal.href);
+        if (selectedCalendarHrefs.length === 0) {
+          return c.json({ error: 'No calendars found. Please check your iCloud account.' }, 400);
+        }
+        // Persist selection for next time
+        await kv.set(`caldav_credentials_${userId}`, JSON.stringify({
+          ...storedCredentials,
+          selectedCalendars: discovered,
+        }));
+      }
+    } else {
+      // Fall back to legacy Apple tokens (shortcut /calendar/apple/setup flow)
+      const appleTokens = await calendarSync.getCalendarTokens(userId, 'apple');
+      if (!appleTokens?.caldavUsername || !appleTokens?.caldavPassword) {
+        return c.json({ error: 'CalDAV not configured. Please connect your Apple Calendar first.' }, 400);
+      }
+      credentials = { email: appleTokens.caldavUsername, appPassword: appleTokens.caldavPassword };
+      const discovered = await appleCaldavSync.discoverCalendars(credentials);
+      selectedCalendarHrefs = discovered.map((cal) => cal.href);
+      if (selectedCalendarHrefs.length === 0) {
+        return c.json({ error: 'No calendars found. Please check your iCloud account.' }, 400);
+      }
+      // Migrate to CalDAV credentials so future syncs use selectedCalendars
+      await kv.set(`caldav_credentials_${userId}`, JSON.stringify({
+        email: credentials.email,
+        appPassword: credentials.appPassword,
+        selectedCalendars: discovered,
+      }));
+      console.log('Migrated legacy Apple tokens to CalDAV credentials; syncing all discovered calendars');
     }
 
-    const storedCredentials = JSON.parse(credentialsJson);
-    
-    if (!storedCredentials.selectedCalendars || storedCredentials.selectedCalendars.length === 0) {
-      return c.json({ error: 'No calendars selected. Please select at least one calendar to sync.' }, 400);
-    }
-
-    // Get user's workspace from KV store
-    const workspaceId = await kv.get(`user_${userId}_workspace`);
-
-    if (!workspaceId) {
-      return c.json({ error: 'No workspace found. Please try logging out and back in.' }, 400);
-    }
-
-    // Perform sync with user's timezone
     const supabase = getSupabaseClient();
     const result = await appleCaldavSync.syncCalendarsToDatabase(
       supabase,
       userId,
       workspaceId,
-      { email: storedCredentials.email, appPassword: storedCredentials.appPassword },
-      storedCredentials.selectedCalendars.map((cal: any) => cal.href),
+      credentials,
+      selectedCalendarHrefs,
       userTimezone
     );
 
-    // Store sync result
     await kv.set(`caldav_last_sync_${userId}`, JSON.stringify({
       syncedAt: new Date().toISOString(),
       ...result,
@@ -3784,9 +3844,9 @@ app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
     return c.json(result);
   } catch (error) {
     console.error('CalDAV sync error:', error);
-    return c.json({ 
+    return c.json({
       success: false,
-      error: getErrorMessage(error) 
+      error: getErrorMessage(error),
     }, 500);
   }
 });
