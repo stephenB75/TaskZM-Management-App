@@ -467,8 +467,9 @@ const isNative = Capacitor.isNativePlatform();
 // Shows notification when updates are available, letting users refresh when ready
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
+    let registration: ServiceWorkerRegistration | null = null;
     try {
-      const registration = await navigator.serviceWorker.register('/service-worker.js', { 
+      registration = await navigator.serviceWorker.register('/service-worker.js', { 
         scope: '/',
         // CRITICAL: Use 'all' instead of 'none' to prevent immediate update checks
         // 'none' can cause the service worker to check for updates immediately on registration
@@ -482,8 +483,10 @@ if ('serviceWorker' in navigator) {
       // Wait a bit to ensure the page is fully loaded and user is not disrupted
       // Initialize background update checking (non-disruptive) after a delay
       setTimeout(async () => {
-        const { initServiceWorkerUpdates } = await import('./lib/service-worker-update');
-        initServiceWorkerUpdates(registration);
+        if (registration) {
+          const { initServiceWorkerUpdates } = await import('./lib/service-worker-update');
+          initServiceWorkerUpdates(registration);
+        }
       }, TIMING_CONSTANTS.serviceWorker.postRegisterInitDelay);
       
     } catch (error) {
@@ -572,7 +575,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', controllerChangeHandler, { capture: false, passive: false });
     
     // Additional safeguard: Listen for service worker state changes
-    if (registration.installing) {
+    if (registration?.installing) {
       registration.installing.addEventListener('statechange', (event) => {
         const worker = event.target as ServiceWorker;
         if (worker && worker.state === 'activated' && navigator.serviceWorker.controller !== worker) {

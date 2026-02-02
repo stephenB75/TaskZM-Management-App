@@ -1622,6 +1622,8 @@ function buildElaborateContextualDescription(
   domainTerms: ReturnType<typeof getDomainTerminology>,
   effortScore: number = 2.5
 ): string {
+  // Ensure domain is always in scope for nested blocks (avoids ReferenceError: domain is not defined)
+  const domainForGuidance: Domain = domain ?? (domainTerms?.context ?? DEFAULT_TASK_DOMAIN);
   // Determine detail level based on effort score
   // Low effort (1-2): Concise, simple descriptions (1-2 sentences)
   // Medium effort (2-3): Moderate detail (2-3 sentences)
@@ -2636,7 +2638,7 @@ function buildElaborateContextualDescription(
           description = `${templateOpener} ${elaboratingNouns[0]}.`;
         } else {
           // Fallback: use domain guidance
-          const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+          const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainForGuidance];
           description = `${templateOpener} ${domainGuidance.toLowerCase()}.`;
         }
       }
@@ -2757,15 +2759,15 @@ function buildElaborateContextualDescription(
     } else if (elaboratingVerbs.length > 0) {
       const actionVerb = elaboratingVerbs[0];
       const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
-      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainForGuidance];
       description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${domainGuidance.toLowerCase()}.`;
     } else if (elaboratingNouns.length > 0) {
       const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
-      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainForGuidance];
       description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${contextNouns[0]} ${domainGuidance.toLowerCase()}.`;
     } else {
       // Last resort: use domain guidance as description
-      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+      const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainForGuidance];
       description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${domainGuidance.toLowerCase()}.`;
     }
   }
@@ -2889,7 +2891,7 @@ function buildElaborateContextualDescription(
         description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${keywordsList}.`;
       } else {
         // Last resort: use domain guidance
-        const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
+        const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainForGuidance];
         if (domainGuidance) {
           description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${domainGuidance.toLowerCase()}.`;
         }
