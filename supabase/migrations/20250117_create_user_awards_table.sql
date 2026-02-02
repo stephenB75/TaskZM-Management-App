@@ -25,26 +25,27 @@ CREATE INDEX IF NOT EXISTS idx_user_awards_earned_at ON public.user_awards(earne
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.user_awards ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policy: Users can only see their own awards
+-- Create RLS policies (drop first so migration is idempotent)
+DROP POLICY IF EXISTS "Users can view their own awards" ON public.user_awards;
 CREATE POLICY "Users can view their own awards"
   ON public.user_awards
   FOR SELECT
   USING (auth.uid() = user_id);
 
--- Create RLS policy: Users can insert their own awards
+DROP POLICY IF EXISTS "Users can insert their own awards" ON public.user_awards;
 CREATE POLICY "Users can insert their own awards"
   ON public.user_awards
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- Create RLS policy: Users can update their own awards
+DROP POLICY IF EXISTS "Users can update their own awards" ON public.user_awards;
 CREATE POLICY "Users can update their own awards"
   ON public.user_awards
   FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
--- Create RLS policy: Users can delete their own awards
+DROP POLICY IF EXISTS "Users can delete their own awards" ON public.user_awards;
 CREATE POLICY "Users can delete their own awards"
   ON public.user_awards
   FOR DELETE
@@ -59,7 +60,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to automatically update updated_at
+-- Create trigger to automatically update updated_at (drop first so idempotent)
+DROP TRIGGER IF EXISTS update_user_awards_updated_at ON public.user_awards;
 CREATE TRIGGER update_user_awards_updated_at
   BEFORE UPDATE ON public.user_awards
   FOR EACH ROW

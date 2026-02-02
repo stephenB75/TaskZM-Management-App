@@ -27,6 +27,12 @@ CREATE INDEX IF NOT EXISTS idx_calendar_events_user_source ON calendar_events(us
 CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON calendar_events(start_time);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_user_start ON calendar_events(user_id, source, start_time);
 CREATE INDEX IF NOT EXISTS idx_calendar_events_color ON calendar_events(calendar_color);
+
+-- Add recurrence columns if table already existed without them (idempotent)
+ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS rrule TEXT;
+ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS recurrence_base_id TEXT;
+ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT false;
+
 CREATE INDEX IF NOT EXISTS idx_calendar_events_recurrence_base_id ON calendar_events(recurrence_base_id) WHERE recurrence_base_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_calendar_events_is_recurring ON calendar_events(is_recurring) WHERE is_recurring = true;
 
