@@ -1239,7 +1239,7 @@ async function getAppleEventsFromDatabase(
       .order('start_time', { ascending: true });
 
     if (error) {
-      console.log('Error fetching Apple events from database:', error);
+      console.warn('Apple events fetch failed (table may not exist or RLS):', error.message);
       return [];
     }
 
@@ -1247,6 +1247,10 @@ async function getAppleEventsFromDatabase(
     const processedBaseEvents = new Set<string>();
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      console.warn('Apple events: invalid startDate or endDate', { startDate, endDate });
+      return [];
+    }
 
     for (const event of events || []) {
       // If this is a base recurring event (has RRULE)

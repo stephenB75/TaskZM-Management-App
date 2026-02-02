@@ -3333,7 +3333,7 @@ app.post("/taskzm-database-function/calendar/sync-all", async (c) => {
   }
 });
 
-// Get calendar events
+// Get calendar events (returns 200 with events: [] on backend error so client can show other providers)
 app.get("/taskzm-database-function/calendar/events/:provider", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
@@ -3345,11 +3345,17 @@ app.get("/taskzm-database-function/calendar/events/:provider", async (c) => {
     const startDate = c.req.query('startDate') || new Date().toISOString();
     const endDate = c.req.query('endDate') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const events = await calendarSync.getCalendarEvents(userId, provider, startDate, endDate);
+    let events: any[] = [];
+    try {
+      events = await calendarSync.getCalendarEvents(userId, provider, startDate, endDate);
+    } catch (fetchError) {
+      console.error(`Error fetching ${provider} calendar events (returning empty):`, fetchError);
+      // Return 200 with empty events so client doesn't treat as fatal; other providers can still show
+    }
 
     return c.json({ events });
   } catch (error) {
-    console.log('Error fetching calendar events:', error);
+    console.log('Error in calendar events endpoint:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
