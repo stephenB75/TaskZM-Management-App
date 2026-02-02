@@ -173,12 +173,7 @@ export function useCalendarEvents(
     return endDate.toISOString();
   }, [endDate]);
 
-  const cacheKey = useMemo(
-    () => getCacheKey(startIso, endIso, providers),
-    [startIso, endIso, providers]
-  );
-
-  // Determine which providers to fetch (must be declared before any ref/effect that reads it)
+  // Determine which providers to fetch (must be declared before cacheKey which depends on it)
   const providers = useMemo(() => {
     const active: Array<'google' | 'apple' | 'outlook'> = [];
     if (calendarStatus.google) active.push('google');
@@ -186,6 +181,11 @@ export function useCalendarEvents(
     if (calendarStatus.outlook) active.push('outlook');
     return active;
   }, [calendarStatus.google, calendarStatus.apple, calendarStatus.outlook]);
+
+  const cacheKey = useMemo(
+    () => getCacheKey(startIso, endIso, providers),
+    [startIso, endIso, providers]
+  );
 
   // Fetch events with caching and deduplication
   const fetchEvents = useCallback(async () => {
