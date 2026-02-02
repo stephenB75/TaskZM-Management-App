@@ -75,20 +75,35 @@ export class ErrorBoundary extends Component<Props, State> {
     });
   };
 
+  isChunkLoadError(): boolean {
+    const err = this.state.error;
+    if (!err?.message) return false;
+    const msg = err.message;
+    return (
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Loading chunk') ||
+      msg.includes('Loading CSS chunk') ||
+      msg.includes('import()')
+    );
+  }
+
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
+      const isChunkError = this.isChunkLoadError();
       return (
         <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-background p-4">
           <div className="max-w-md w-full bg-white dark:bg-card rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">
-              Something went wrong
+              {isChunkError ? 'New version available' : 'Something went wrong'}
             </h2>
             <p className="text-gray-600 dark:text-foreground mb-4">
-              The application encountered an unexpected error. Please try refreshing the page.
+              {isChunkError
+                ? 'A new version of the app is available. Please refresh to load the latest version.'
+                : 'The application encountered an unexpected error. Please try refreshing the page.'}
             </p>
             {this.state.error && (
               <details className="mb-4">

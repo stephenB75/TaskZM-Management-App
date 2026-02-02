@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { lazyWithRetry } from './lib/lazy-with-retry';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from './lib/toast-wrapper';
 import {
@@ -26,15 +27,15 @@ import { UpgradePrompt } from './components/UpgradePrompt';
 import { DemoAccountDisclaimer } from './components/DemoAccountDisclaimer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-const DashboardView = lazy(() => import('./components/DashboardView').then(m => ({ default: m.DashboardView })));
-const InboxView = lazy(() => import('./components/InboxView').then(m => ({ default: m.InboxView })));
-const ArchiveView = lazy(() => import('./components/ArchiveView').then(m => ({ default: m.ArchiveView })));
-const SettingsPanel = lazy(() => import('./components/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
-const TodayAgendaView = lazy(() => import('./components/TodayAgendaView').then(m => ({ default: m.TodayAgendaView })));
-const AnalyticsPanel = lazy(() => import('./components/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })));
-const TeamPanel = lazy(() => import('./components/TeamPanel').then(m => ({ default: m.TeamPanel })));
-const FoldersPanel = lazy(() => import('./components/FoldersPanel').then(m => ({ default: m.FoldersPanel })));
-const NotificationsPanel = lazy(() => import('./components/NotificationsPanel').then(m => ({ default: m.NotificationsPanel })));
+const DashboardView = lazyWithRetry(() => import('./components/DashboardView').then(m => ({ default: m.DashboardView })));
+const InboxView = lazyWithRetry(() => import('./components/InboxView').then(m => ({ default: m.InboxView })));
+const ArchiveView = lazyWithRetry(() => import('./components/ArchiveView').then(m => ({ default: m.ArchiveView })));
+const SettingsPanel = lazyWithRetry(() => import('./components/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
+const TodayAgendaView = lazyWithRetry(() => import('./components/TodayAgendaView').then(m => ({ default: m.TodayAgendaView })));
+const AnalyticsPanel = lazyWithRetry(() => import('./components/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })));
+const TeamPanel = lazyWithRetry(() => import('./components/TeamPanel').then(m => ({ default: m.TeamPanel })));
+const FoldersPanel = lazyWithRetry(() => import('./components/FoldersPanel').then(m => ({ default: m.FoldersPanel })));
+const NotificationsPanel = lazyWithRetry(() => import('./components/NotificationsPanel').then(m => ({ default: m.NotificationsPanel })));
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
 import { PricingDialog } from './components/PricingDialog';
 import { UpgradePrompt } from './components/UpgradePrompt';
