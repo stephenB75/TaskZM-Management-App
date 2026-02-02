@@ -123,7 +123,7 @@ export function SevenDayKanban({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' | 'outlook'; calendarColor?: string }>>>({});
+  // Calendar events by date: use hook data directly so week view always shows latest (no stale local state)
   
   // Drag-to-scroll state
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -279,30 +279,45 @@ export function SevenDayKanban({
     };
   }, [weekColumns]);
 
-  // Fetch external calendar events (Google/Apple) for the visible week using optimized hook
+  // Fallback range when visibleRange not yet set (e.g. first paint): next 14 days so hook can fetch
+  const fallbackEnd = React.useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }, []);
+
   const startDate = React.useMemo(() => {
-    if (!visibleRange) return new Date();
+    if (!visibleRange) {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      return start;
+    }
     return new Date(visibleRange.startIso);
   }, [visibleRange?.startIso]);
 
   const endDate = React.useMemo(() => {
-    if (!visibleRange) return new Date();
+    if (!visibleRange) return fallbackEnd;
     return new Date(visibleRange.endIso);
-  }, [visibleRange?.endIso]);
+  }, [visibleRange?.endIso, fallbackEnd]);
 
-  const { eventsByDate: calendarEventsByDateData } = useCalendarEventsByDate(
+  const { eventsByDate: calendarEventsByDate, refetch: refetchCalendarEvents } = useCalendarEventsByDate(
     startDate,
     endDate,
     {
-      enabled: !!accessToken && !!visibleRange,
+      enabled: !!accessToken,
       debounceMs: 300,
     }
   );
 
-  // Update state when events change
+  // Force refetch when week view's visible range becomes available so calendar events show without waiting for cache
+  const prevVisibleRangeRef = React.useRef<typeof visibleRange>(null);
   React.useEffect(() => {
-    setCalendarEventsByDate(calendarEventsByDateData);
-  }, [calendarEventsByDateData]);
+    if (visibleRange && visibleRange !== prevVisibleRangeRef.current && accessToken) {
+      prevVisibleRangeRef.current = visibleRange;
+      refetchCalendarEvents();
+    }
+  }, [visibleRange, accessToken, refetchCalendarEvents]);
 
   // Stop scroll dragging when task drag starts
   React.useEffect(() => {
