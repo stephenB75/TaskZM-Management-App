@@ -1108,6 +1108,32 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     };
   }, [user, accessToken, calendarStatus.apple]); // Removed syncAppleCalendarInternal from dependencies
 
+  // Automatic Google Calendar sync on mount (if connected) - populates DB so events show in views
+  useEffect(() => {
+    if (!user || !accessToken || !calendarStatus.google) return;
+
+    const scheduleSync = () => {
+      console.debug('Auto-syncing Google Calendar on app load...');
+      syncGoogleCalendarInternal(true);
+    };
+
+    const IDLE_CALLBACK_TIMEOUT = 5 * TIMING_CONSTANTS.timeConversions.secondsToMs;
+    const FALLBACK_SYNC_DELAY = 5 * TIMING_CONSTANTS.timeConversions.secondsToMs;
+    let timer: NodeJS.Timeout | number | null = null;
+
+    if ('requestIdleCallback' in window) {
+      timer = (window as any).requestIdleCallback(scheduleSync, { timeout: IDLE_CALLBACK_TIMEOUT });
+    } else {
+      timer = setTimeout(scheduleSync, FALLBACK_SYNC_DELAY);
+    }
+
+    return () => {
+      if (typeof timer === 'number') {
+        if ('cancelIdleCallback' in window) (window as any).cancelIdleCallback(timer);
+      } else if (timer) clearTimeout(timer);
+    };
+  }, [user, accessToken, calendarStatus.google]); // syncGoogleCalendarInternal omitted to avoid re-running on callback identity change
+
   // Periodic automatic sync for Apple Calendar
   useEffect(() => {
     if (!user || !accessToken || !calendarStatus.apple) {

@@ -2510,6 +2510,57 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
   }
 });
 
+// Sync Google Calendar events from Google to database (import calendar events)
+app.post("/taskzm-database-function/calendar/google/sync", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    let userTimezone = 'America/New_York';
+    try {
+      const body = await c.req.json().catch(() => ({}));
+      if (body?.userTimezone) userTimezone = body.userTimezone;
+    } catch {
+      // optional body
+    }
+
+    const tokens = await calendarSync.getCalendarTokens(userId, 'google');
+    if (!tokens) {
+      return c.json({ success: false, error: 'Google Calendar not connected. Please connect your Google Calendar first.' }, 400);
+    }
+
+    const workspaceId = await kv.get(`user_${userId}_workspace`);
+    if (!workspaceId) {
+      return c.json({ success: false, error: 'No workspace found. Please try logging out and back in.' }, 400);
+    }
+
+    const supabase = getSupabaseClient();
+    const result = await googleCalendarSync.syncGoogleCalendarsToDatabase(
+      supabase,
+      userId,
+      workspaceId,
+      userTimezone
+    );
+
+    const errorMessage = result.errors?.length ? result.errors.join(' ') : undefined;
+    return c.json({
+      success: result.success,
+      created: result.created,
+      updated: result.updated,
+      deleted: result.deleted,
+      ...(errorMessage && { error: errorMessage }),
+    });
+  } catch (error) {
+    console.error('Google Calendar sync error:', error);
+    return c.json({
+      success: false,
+      error: getErrorMessage(error),
+    }, 500);
+  }
+});
+
 // Initiate Outlook Calendar OAuth flow
 app.get("/taskzm-database-function/calendar/outlook/auth", async (c) => {
   try {
