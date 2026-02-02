@@ -345,7 +345,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
               const data = await response.json();
               if (data.success) {
                 // Successfully connected - force UI to show connected (server may not have updated status yet)
-                setCalendarStatus(prev => ({ ...prev, google: true }));
+                setCalendarStatus(prev => {
+                  const next = { ...prev, google: true };
+                  if (user.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
+                  return next;
+                });
+                clearCalendarEventsCache();
                 await checkCalendarStatus();
                 setCalendarStatus(prev => ({ ...prev, google: true })); // Keep true after refresh
                 toast.success('Google Calendar connected!', {
@@ -517,9 +522,18 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             const connectedProvider = provider;
             // Use setTimeout(0) to defer to next event loop tick
             setTimeout(() => {
-              setCalendarStatus(prev => ({ ...prev, [connectedProvider]: true }));
+              setCalendarStatus(prev => {
+                const next = { ...prev, [connectedProvider]: true };
+                if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
+                return next;
+              });
+              clearCalendarEventsCache();
               checkCalendarStatus().then(() => {
-                setCalendarStatus(prev => ({ ...prev, [connectedProvider]: true }));
+                setCalendarStatus(prev => {
+                  const next = { ...prev, [connectedProvider]: true };
+                  if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
+                  return next;
+                });
                 console.log('[Calendar OAuth] Calendar status checked after success message');
               }).catch((err) => {
                 console.error('[Calendar OAuth] Error checking calendar status:', err);
@@ -1028,6 +1042,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       const newStatus = { ...calendarStatus, apple: true };
       localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(newStatus));
     }
+    clearCalendarEventsCache();
     setShowAppleCalDAVDialog(false);
     
     // Trigger initial sync after setup

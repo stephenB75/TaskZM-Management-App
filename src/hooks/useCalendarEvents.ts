@@ -148,8 +148,8 @@ export function useCalendarEvents(
     debounceMs?: number;
   }
 ) {
-  const { accessToken } = useAuth();
-  const { calendarStatus } = useCalendar();
+  const { user, accessToken } = useAuth();
+  const { calendarStatus, checkCalendarStatus } = useCalendar();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -269,6 +269,24 @@ export function useCalendarEvents(
       }
     }
   }, [providers.length, enabled, accessToken, fetchEvents]);
+
+  // When a view that needs calendar events mounts with no providers, force a fresh status check once so we pick up connections from another tab or recent connect
+  const didRefreshStatusRef = useRef(false);
+  useEffect(() => {
+    if (providers.length > 0) {
+      didRefreshStatusRef.current = false;
+      return;
+    }
+    if (!enabled || !accessToken || !user?.id || didRefreshStatusRef.current) return;
+    didRefreshStatusRef.current = true;
+    try {
+      localStorage.removeItem(`calendar_status_cache_${user.id}`);
+      localStorage.removeItem(`calendar_status_cache_time_${user.id}`);
+    } catch {
+      // ignore
+    }
+    checkCalendarStatus();
+  }, [enabled, accessToken, user?.id, providers.length, checkCalendarStatus]);
 
   // Debounced fetch effect
   useEffect(() => {
