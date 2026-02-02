@@ -40,10 +40,14 @@ const globalCache = getCalendarEventsCache();
 const inFlightRequests = getInFlightRequests();
 
 /**
- * Generate cache key from date range
+ * Generate cache key from date range and providers so different provider sets don't share stale cache
  */
-function getCacheKey(startDate: string, endDate: string): string {
-  return `${startDate}_${endDate}`;
+function getCacheKey(
+  startDate: string,
+  endDate: string,
+  providers: Array<'google' | 'apple' | 'outlook'>
+): string {
+  return `${startDate}_${endDate}_${providers.join(',')}`;
 }
 
 /**
@@ -169,7 +173,10 @@ export function useCalendarEvents(
     return endDate.toISOString();
   }, [endDate]);
 
-  const cacheKey = useMemo(() => getCacheKey(startIso, endIso), [startIso, endIso]);
+  const cacheKey = useMemo(
+    () => getCacheKey(startIso, endIso, providers),
+    [startIso, endIso, providers]
+  );
 
   // Determine which providers to fetch (must be declared before any ref/effect that reads it)
   const providers = useMemo(() => {
@@ -200,8 +207,8 @@ export function useCalendarEvents(
       }
     }
 
-    // Check if request is already in flight
-    const inFlightKey = `${cacheKey}_${providers.join(',')}`;
+    // Check if request is already in flight (cacheKey already includes providers)
+    const inFlightKey = cacheKey;
     if (inFlightRequests.has(inFlightKey)) {
       logger.debug(`Calendar events: Waiting for in-flight request for ${cacheKey}`);
       try {
