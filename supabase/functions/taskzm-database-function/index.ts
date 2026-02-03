@@ -357,6 +357,13 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// GET /taskzm-database-function/ai/status — check if OpenAI is configured (no auth; returns configured only)
+app.get("/taskzm-database-function/ai/status", (c) => {
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  const configured = !!(apiKey && apiKey.trim().length > 0);
+  return c.json({ configured });
+});
+
 // POST /taskzm-database-function/ai/description — generate a single task description
 app.post("/taskzm-database-function/ai/description", async (c) => {
   try {
