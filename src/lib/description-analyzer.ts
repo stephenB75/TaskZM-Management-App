@@ -204,9 +204,10 @@ export function analyzeDescription(
     ? effortScore
     : (aiContext?.extractedTerms ? 2.5 : 2.5); // Default to medium effort
 
-  // Generate enhanced description (pass all extracted terms and effort score for better suggestions)
+  // Generate enhanced description (pass title so suggestions are only for topics actually in the task)
   const { enhanced, suggestions, addedContext } = enhanceDescription(
     original,
+    title,
     domainVal,
     uniqueKeywords,
     primaryVerb,
@@ -319,13 +320,17 @@ function enhanceDescription(
       if (hasTimeKeywords && hasJobKeywords) {
         suggestions.push('Clarify the time period or hours to be tracked');
       }
-      if (keywords.some(k => ['exercise', 'workout', 'fitness'].includes(k.toLowerCase()))) {
+      // Only suggest workout details when the task title/description actually mentions exercise or fitness
+      const taskMentionsWorkout = /\b(workout|exercise|fitness|gym|train|run|cardio|strength)\b/.test(taskText);
+      if (taskMentionsWorkout && keywords.some(k => ['exercise', 'workout', 'fitness'].includes(k.toLowerCase()))) {
         suggestions.push('Specify duration or type of workout');
       }
       if (keywords.some(k => ['travel', 'trip'].includes(k.toLowerCase()))) {
         suggestions.push('Include destination or travel details');
       }
-      if (keywords.some(k => ['learning', 'course', 'study'].includes(k.toLowerCase()))) {
+      // Only suggest learning details when the task title/description actually mentions learning or study
+      const taskMentionsLearning = /\b(learning|learn|course|study|studying|topic|resource)\b/.test(taskText);
+      if (taskMentionsLearning && keywords.some(k => ['learning', 'course', 'study'].includes(k.toLowerCase()))) {
         suggestions.push('Mention specific topics or resources');
       }
       break;

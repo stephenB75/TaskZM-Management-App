@@ -11,12 +11,7 @@ import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAs
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_DEDUPLICATION_CONFIG, DESCRIPTION_OPTIONS_CONFIG, DOMAIN_EXCLUSION_TERMS } from './ai-config';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
-import { 
-  isBrowserAIAvailable, 
-  extractTermsWithBrowserAI, 
-  generateDescriptionWithBrowserAI,
-  checkBrowserAIStatus 
-} from './browser-ai-api';
+import { API_BASE } from './api-base';
 
 /**
  * Clean HTML/CSS fragments and invalid characters from text
@@ -880,7 +875,7 @@ export async function extractTermsFromTaskNameWithBrowserAI(
 }> {
   const domain = domainTerms.context || DEFAULT_TASK_DOMAIN;
   
-  // STEP 1: Try Browser AI API for enhanced term extraction (if available)
+  // Use local terminology only (no Browser AI)
   let browserAITerms: {
     keywords: string[];
     phrases: string[];
@@ -888,25 +883,6 @@ export async function extractTermsFromTaskNameWithBrowserAI(
     nouns: string[];
     summary: string;
   } | null = null;
-  
-  if (isBrowserAIAvailable()) {
-    try {
-      logger.debug(`🤖 Browser AI API: Attempting to extract terms from task name: "${taskName}"`);
-      browserAITerms = await extractTermsWithBrowserAI(taskName, domain);
-      
-      if (browserAITerms) {
-        logger.debug(`✅ Browser AI API: Successfully extracted terms`, {
-          keywords: browserAITerms.keywords.length,
-          phrases: browserAITerms.phrases.length,
-          verbs: browserAITerms.verbs.length,
-          nouns: browserAITerms.nouns.length,
-          hasSummary: !!browserAITerms.summary,
-        });
-      }
-    } catch (error) {
-      logger.warn('Browser AI API extraction failed, falling back to local processing:', error);
-    }
-  }
   
   // STEP 2: LOCAL TERMINOLOGY extracts keywords and phrases from task name
   // Local Terminology uses domain dictionary to extract relevant terms
@@ -3192,12 +3168,14 @@ function buildContextualDescription(
  * @param accessToken - Optional access token for API calls
  * @param existingDescription - Optional existing description to use for domain detection
  * @param effortScore - Optional effort score (1-5) to adjust description detail level
+ * @param actionPlanSteps - Optional action plan step titles to weave into descriptions
  */
 export async function generateDescription(
   taskName: string, 
   accessToken?: string | null,
   existingDescription?: string | null,
-  effortScore?: number
+  effortScore?: number,
+  actionPlanSteps?: string[]
 ): Promise<GeneratedDescription> {
   try {
   if (!taskName || taskName.trim().length === 0) {
@@ -3263,14 +3241,50 @@ export async function generateDescription(
     confidence: domainResult.confidence,
   });
 
-  // BROWSER AI APPROACH: Browser AI + Local Terminology Dictionary
-  // 1. Browser AI: Extracts keywords, phrases, verbs, and nouns directly from task name
-  // 2. Local Terminology: Acts as a cache/dictionary to:
-  //    - Enhance extracted terms with domain-specific context
-  //    - Provide contextual phrases that explain tasks
-  //    - Add domain-appropriate verbs and nouns
-  //    - Build complete contextual sentences
-  
+  // SERVER AI FIRST: try Edge Function for description; fallback to local processing
+  const serverAITimeoutMs = 10000;
+  if (accessToken) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), serverAITimeoutMs);
+      const res = await fetch(`${API_BASE}/ai/description`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          taskName,
+          domain: domainRef,
+          effortScore: effortScore !== undefined && effortScore >= 1 && effortScore <= 5 ? effortScore : 2.5,
+          actionPlanSteps: actionPlanSteps && actionPlanSteps.length > 0 ? actionPlanSteps : undefined,
+          existingDescription: existingDescription?.trim() || undefined,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.description && typeof data.description === 'string' && data.description.trim().length > 0) {
+          const desc = cleanText(data.description);
+          const taskNameLowerCheck = taskName.toLowerCase().trim();
+          const descLower = desc.toLowerCase().trim();
+          if (descLower !== taskNameLowerCheck && !descLower.startsWith(taskNameLowerCheck) && descLower.length > taskNameLowerCheck.length) {
+            logger.debug('Server AI description used');
+            return {
+              description: desc,
+              domain: typeof data.domain === 'string' ? data.domain : domainRef,
+              confidence: typeof data.confidence === 'number' ? data.confidence : 0.85,
+            };
+          }
+        }
+      }
+      if (res.status === 503 || res.status === 502) {
+        logger.debug('Server AI not configured or error, using local processing');
+      }
+    } catch (err) {
+      logger.debug('Server AI request failed (timeout or network), using local processing:', err);
+    }
+  }
+
+  // LOCAL PROCESSING: extract terms and build description (no Browser AI)
   let description = '';
   let confidence: number = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   let usedSearchResults = false;
@@ -3284,20 +3298,8 @@ export async function generateDescription(
     context: ''
   };
 
-  // STEP 1: Use Browser AI to extract terms from BOTH task name AND existing description
-  // Browser AI analyzes user input and extracts keywords, phrases, verbs, nouns
-  // Local Terminology acts as a cache/dictionary to enhance extracted terms
-  // ENHANCED: Extract from both task name and description to get complete context
-  logger.debug(`Using Browser AI to extract terms from task name: "${taskName}", domain: ${domainRef}`, {
-    hasExistingDescription: !!existingDescription,
-    existingDescriptionLength: existingDescription?.length || 0
-  });
-  
-  // Extract terms from task name (now async - uses Browser AI API if available)
-  const taskNameExtracted = await extractTermsFromTaskNameWithBrowserAI(taskName, domainTerms);
-  
-  // ENHANCED: Also extract terms from existing description if available
-  // This allows us to parse poorly written descriptions and extract meaningful terms
+  logger.debug(`Extracting terms from task name: "${taskName}", domain: ${domainRef}`);
+  const taskNameExtracted = extractTermsFromTaskName(taskName, domainTerms);
   let descriptionExtracted = {
     keywords: [] as string[],
     phrases: [] as string[],
@@ -3306,12 +3308,9 @@ export async function generateDescription(
     pronouns: [] as string[],
     context: ''
   };
-  
   if (existingDescription && existingDescription.trim().length > 0) {
-    // Extract terms from existing description to get additional context
-    // This helps parse poorly written descriptions and extract meaningful information
-    descriptionExtracted = await extractTermsFromTaskNameWithBrowserAI(existingDescription.trim(), domainTerms);
-    logger.debug(`Extracted terms from existing description: ${descriptionExtracted.keywords.length} keywords, ${descriptionExtracted.phrases.length} phrases, ${descriptionExtracted.verbs.length} verbs, ${descriptionExtracted.nouns.length} nouns`);
+    descriptionExtracted = extractTermsFromTaskName(existingDescription.trim(), domainTerms);
+    logger.debug(`Extracted terms from existing description: ${descriptionExtracted.keywords.length} keywords, ${descriptionExtracted.phrases.length} phrases`);
   }
   
   // Combine terms from both task name and description
@@ -3351,101 +3350,24 @@ export async function generateDescription(
     logger.warn(`⚠️ WARNING: Local Terminology extraction returned NO results for task: "${taskName}"`);
   }
 
-  // STEP 2: Browser AI receives extracted terms from Local Terminology
-  // Browser AI will use these terms to build contextual sentences
-  let finalKeywords: string[];
-  let finalPhrases: string[];
-  let finalVerbs: string[];
-  let finalNouns: string[];
-  let finalPronouns: string[];
+  // STEP 2: Prefer terms that appear in the task name so description stays on-topic (avoids irrelevant topics from bad prior descriptions)
+  const taskNameLower = taskName.toLowerCase();
+  const inTaskName = (term: string) => taskNameLower.includes((term || '').toLowerCase());
+  let finalKeywords: string[] = searchExtracted.keywords.filter(inTaskName);
+  let finalPhrases: string[] = searchExtracted.phrases.filter(inTaskName);
+  let finalVerbs: string[] = searchExtracted.verbs.filter(inTaskName);
+  let finalNouns: string[] = searchExtracted.nouns.filter(inTaskName);
+  if (finalKeywords.length === 0) finalKeywords = searchExtracted.keywords;
+  if (finalPhrases.length === 0) finalPhrases = searchExtracted.phrases;
+  if (finalVerbs.length === 0) finalVerbs = searchExtracted.verbs;
+  if (finalNouns.length === 0) finalNouns = searchExtracted.nouns;
+  const finalPronouns = searchExtracted.pronouns;
   
-  // Browser AI uses terms provided by Local Terminology
-  finalKeywords = searchExtracted.keywords;
-  finalPhrases = searchExtracted.phrases;
-  finalVerbs = searchExtracted.verbs;
-  finalNouns = searchExtracted.nouns;
-  finalPronouns = searchExtracted.pronouns;
-  
-  logger.debug(`✅ Browser AI: Received terms from Local Terminology: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`, {
-    keywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
-    phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
-    verbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
-    nouns: finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging),
-    hasResults: finalKeywords.length > 0 || finalPhrases.length > 0 || finalVerbs.length > 0 || finalNouns.length > 0,
-    domainTermsLoaded: !!domainTerms && (domainTerms.phrases.length > 0 || domainTerms.verbs.length > 0 || domainTerms.nouns.length > 0)
-  });
+  logger.debug(`✅ Local terminology: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`);
 
-  // STEP 3: Try Browser AI API for description generation first, then fallback to local sentence building
-  logger.debug(`🤖 Browser AI: Building contextual sentences with terms:`, {
-    keywords: finalKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsLogging),
-    phrases: finalPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.phrasesLogging),
-    verbs: finalVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.verbsLogging),
-    nouns: finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsLogging),
-    hasContext: searchContext.length > 0,
-    contextLength: searchContext.length,
-    contextPreview: searchContext.substring(0, 100),
-    browserAIAvailable: isBrowserAIAvailable(),
-  });
-  
-  // Try Browser AI API for description generation (if available)
-  // ENHANCED: Try even if no keywords - Browser AI can work with just the task name
-  if (isBrowserAIAvailable()) {
-    try {
-      logger.debug(`🤖 Browser AI API: Attempting to generate description for task: "${taskName}"`);
-      
-      const browserAIDescription = await generateDescriptionWithBrowserAI(
-        taskName,
-        domainRef,
-        // Only pass terms if we have meaningful ones
-        (finalKeywords.length > 0 || finalPhrases.length > 0 || finalVerbs.length > 0 || finalNouns.length > 0)
-          ? {
-              keywords: finalKeywords,
-              phrases: finalPhrases,
-              verbs: finalVerbs,
-              nouns: finalNouns,
-            }
-          : undefined,
-        actionPlanSteps
-      );
-      
-      if (browserAIDescription && browserAIDescription.trim().length > 0) {
-        const cleanedDescription = cleanText(browserAIDescription);
-        
-        // Validate the description is meaningful (not just task name repeated)
-        const taskNameLower = taskName.toLowerCase().trim();
-        const descLower = cleanedDescription.toLowerCase().trim();
-        
-        // Check if description is different from task name
-        if (descLower !== taskNameLower && !descLower.startsWith(taskNameLower) && descLower.length > taskNameLower.length) {
-          logger.debug(`✅ Browser AI API: Generated description successfully`, {
-            description: cleanedDescription.substring(0, 100),
-            length: cleanedDescription.length,
-          });
-          description = cleanedDescription;
-          usedSearchResults = true; // Mark as using Browser AI API
-          confidence = Math.min(
-            DESCRIPTION_GENERATION_CONFIG.baseConfidence + 
-            (finalKeywords.length * DESCRIPTION_GENERATION_CONFIG.keywordWeight) +
-            (finalPhrases.length * DESCRIPTION_GENERATION_CONFIG.phraseWeight) +
-            0.2, // Boost confidence when Browser AI is used
-            DESCRIPTION_GENERATION_CONFIG.maxConfidence
-          );
-        } else {
-          logger.debug(`⚠️ Browser AI API: Generated description too similar to task name, using local processing`);
-        }
-      } else {
-        logger.debug(`⚠️ Browser AI API: No description generated or empty response`);
-      }
-    } catch (error) {
-      logger.warn('Browser AI API description generation failed, using local processing:', error);
-    }
-  } else {
-    logger.debug(`ℹ️ Browser AI API: Not available, using local processing`);
-  }
-  
-  // If Browser AI API didn't generate a description, use local sentence building
+  // Use local sentence building when server AI was not used or didn't return a valid description
   if (!description || description.trim().length === 0) {
-    logger.debug(`🔧 Using local sentence building (Browser AI API unavailable or failed)`);
+    logger.debug(`🔧 Using local sentence building`);
     
     // Use effort score to adjust description detail (default to medium effort if not provided)
     const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
@@ -3753,10 +3675,43 @@ export async function generateDescriptionOptions(
       ? effortScore 
       : 2.5;
 
-    // Generate 3-5 options with varying detail levels
-    // For low effort: 3 options (all concise)
-    // For medium effort: 4 options (mix of concise and moderate)
-    // For high effort: 5 options (mix of moderate and detailed)
+    // Try server AI first for 3-5 options
+    if (accessToken) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(`${API_BASE}/ai/description-options`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            taskName,
+            effortScore: normalizedEffortScore,
+            actionPlanSteps: actionPlanSteps && actionPlanSteps.length > 0 ? actionPlanSteps : undefined,
+            existingDescription: existingDescription?.trim() || undefined,
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data = await res.json();
+          const opts = data?.options;
+          if (Array.isArray(opts) && opts.length > 0) {
+            const mapped: GeneratedDescription[] = opts
+              .filter((o: { description?: string }) => o && typeof o.description === 'string' && o.description.trim().length > 0)
+              .map((o: { description: string; domain?: string; confidence?: number }) => ({
+                description: (o.description as string).trim(),
+                domain: typeof o.domain === 'string' ? o.domain : DEFAULT_TASK_DOMAIN,
+                confidence: typeof o.confidence === 'number' ? o.confidence : 0.75,
+              }));
+            if (mapped.length > 0) return mapped.sort((a, b) => b.confidence - a.confidence);
+          }
+        }
+      } catch (err) {
+        logger.debug('Server AI description-options failed, using local fallback:', err);
+      }
+    }
+
+    // Generate 3-5 options with varying detail levels (local fallback)
     const numOptions = normalizedEffortScore <= DESCRIPTION_OPTIONS_CONFIG.LOW_EFFORT_THRESHOLD 
       ? DESCRIPTION_OPTIONS_CONFIG.MIN_OPTIONS
       : normalizedEffortScore <= DESCRIPTION_OPTIONS_CONFIG.MEDIUM_EFFORT_THRESHOLD 

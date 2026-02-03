@@ -33,6 +33,8 @@ A neurodivergent-friendly task management application with AI-assisted planning,
    npm run build
    ```
 
+**Server-side AI (optional):** AI task description generation uses the Supabase Edge Function. To enable it, set `OPENAI_API_KEY` in your project’s Edge Function secrets (Supabase Dashboard → Project Settings → Edge Functions → Secrets). If unset, the app uses local-only description building.
+
 ## Project & docs
 
 - **Design**: [Figma](https://www.figma.com/design/2LaboW1D8tdWzo4S28kP/TaskZM-Management-App)

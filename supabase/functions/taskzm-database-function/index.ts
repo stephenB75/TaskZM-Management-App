@@ -345,6 +345,220 @@ app.post("/taskzm-database-function/shared-terminology", async (c) => {
   }
 });
 
+// ============================================================================
+// SERVER-SIDE AI (DESCRIPTION GENERATION)
+// ============================================================================
+
+const AI_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// POST /taskzm-database-function/ai/description — generate a single task description
+app.post("/taskzm-database-function/ai/description", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!apiKey || apiKey.trim().length === 0) {
+      return c.json({ error: 'Server AI not configured' }, 503);
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const taskName = typeof body.taskName === 'string' ? body.taskName.trim() : '';
+    const domain = typeof body.domain === 'string' ? body.domain : 'business';
+    const effortScore = typeof body.effortScore === 'number' ? body.effortScore : 2.5;
+    const actionPlanSteps = Array.isArray(body.actionPlanSteps) ? body.actionPlanSteps.filter((s: unknown) => typeof s === 'string') : [];
+    const existingDescription = typeof body.existingDescription === 'string' ? body.existingDescription.trim() : '';
+
+    if (!taskName) {
+      return c.json({ error: 'taskName is required' }, 400);
+    }
+
+    const cacheKeyRaw = `ai:desc:${taskName}:${domain}:${effortScore}`;
+    const cacheKey = `ai:desc:${await sha256Hex(cacheKeyRaw)}`;
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached && typeof cached === 'object' && (cached as { exp?: number }).exp && (cached as { exp: number }).exp > Date.now()) {
+        const v = (cached as { v: { description: string; domain: string; confidence: number } }).v;
+        if (v) return c.json(v);
+      }
+    } catch (_) { /* ignore cache errors */ }
+
+    const actionPlanContext = actionPlanSteps.length > 0
+      ? `\n\nAction plan steps (weave these into the description): ${actionPlanSteps.join('; ')}. Include research, strategy, timeline/schedule as appropriate.`
+      : '';
+
+    const prompt = `Generate a clear, accurate description for this ${domain} task.
+
+Task Name: "${taskName}"${actionPlanContext || ''}
+
+Requirements:
+- Describe ONLY what the task name and action plan refer to. Do not introduce topics (e.g. workout, learning, fitness) that are not clearly stated in the task name or action plan.
+- Be SPECIFIC and CONTEXTUAL. Use correct English: complete sentences, proper grammar, no redundant phrases, no sentence fragments.
+- Use professional, clear language appropriate for ${domain} tasks.
+- Keep the description to 1-3 sentences (about 15-50 words). Avoid run-on sentences.
+- Do not repeat the task name verbatim.
+
+Generate the description now:`;
+
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 250,
+        temperature: 0.5,
+      }),
+    });
+
+    if (!openaiRes.ok) {
+      const errText = await openaiRes.text();
+      console.error('OpenAI API error:', openaiRes.status, errText);
+      return c.json({ error: 'AI service error' }, 502);
+    }
+
+    const openaiData = await openaiRes.json();
+    const content = openaiData?.choices?.[0]?.message?.content;
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      return c.json({ error: 'Empty AI response' }, 502);
+    }
+
+    const description = content.trim().replace(/^["']|["']$/g, '');
+    const result = { description, domain, confidence: 0.85 };
+
+    try {
+      await kv.set(cacheKey, { v: result, exp: Date.now() + AI_CACHE_TTL_MS });
+    } catch (_) { /* ignore */ }
+
+    return c.json(result);
+  } catch (error) {
+    console.error('Error in ai/description:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// POST /taskzm-database-function/ai/description-options — generate 3-5 description options
+app.post("/taskzm-database-function/ai/description-options", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!apiKey || apiKey.trim().length === 0) {
+      return c.json({ error: 'Server AI not configured' }, 503);
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const taskName = typeof body.taskName === 'string' ? body.taskName.trim() : '';
+    const effortScore = typeof body.effortScore === 'number' ? body.effortScore : 2.5;
+    const actionPlanSteps = Array.isArray(body.actionPlanSteps) ? body.actionPlanSteps.filter((s: unknown) => typeof s === 'string') : [];
+    const existingDescription = typeof body.existingDescription === 'string' ? body.existingDescription.trim() : '';
+
+    if (!taskName) {
+      return c.json({ error: 'taskName is required' }, 400);
+    }
+
+    const cacheKeyRaw = `ai:opts:${taskName}:${effortScore}`;
+    const cacheKey = `ai:opts:${await sha256Hex(cacheKeyRaw)}`;
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached && typeof cached === 'object' && (cached as { exp?: number }).exp && (cached as { exp: number }).exp > Date.now()) {
+        const v = (cached as { v: { options: Array<{ description: string; domain?: string; confidence?: number }> } }).v;
+        if (v?.options?.length) return c.json(v);
+      }
+    } catch (_) { /* ignore */ }
+
+    const actionPlanContext = actionPlanSteps.length > 0
+      ? `\nAction plan steps (weave into descriptions): ${actionPlanSteps.join('; ')}.`
+      : '';
+
+    const prompt = `Generate exactly 3-5 short description options for this task. Each description should be 1-3 sentences (about 15-50 words).
+
+Task Name: "${taskName}"${actionPlanContext || ''}
+
+Requirements:
+- Describe ONLY what the task refers to. Do not introduce unrelated topics.
+- Use correct English, complete sentences, no run-on sentences.
+- Vary the options (different wording, detail level, or angle).
+
+Return ONLY a valid JSON array of objects, each with keys: "description" (string), "domain" (string, e.g. "business"), "confidence" (number 0-1). No other text.
+
+Example format:
+[{"description":"First option...","domain":"business","confidence":0.8},{"description":"Second option...","domain":"business","confidence":0.75}]
+
+JSON array:`;
+
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 600,
+        temperature: 0.6,
+      }),
+    });
+
+    if (!openaiRes.ok) {
+      const errText = await openaiRes.text();
+      console.error('OpenAI API error:', openaiRes.status, errText);
+      return c.json({ error: 'AI service error' }, 502);
+    }
+
+    const openaiData = await openaiRes.json();
+    const content = openaiData?.choices?.[0]?.message?.content;
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      return c.json({ error: 'Empty AI response' }, 502);
+    }
+
+    let jsonText = content.trim();
+    const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
+    if (jsonMatch) jsonText = jsonMatch[0];
+    let options: Array<{ description: string; domain?: string; confidence?: number }>;
+    try {
+      options = JSON.parse(jsonText);
+      if (!Array.isArray(options)) options = [];
+    } catch {
+      return c.json({ error: 'Invalid AI response format' }, 502);
+    }
+
+    const normalized = options
+      .filter((o) => o && typeof o.description === 'string' && o.description.trim().length > 0)
+      .slice(0, 5)
+      .map((o) => ({
+        description: (o.description as string).trim().replace(/^["']|["']$/g, ''),
+        domain: typeof o.domain === 'string' ? o.domain : 'business',
+        confidence: typeof o.confidence === 'number' ? o.confidence : 0.75,
+      }));
+
+    const result = { options: normalized };
+    try {
+      await kv.set(cacheKey, { v: result, exp: Date.now() + AI_CACHE_TTL_MS });
+    } catch (_) { /* ignore */ }
+
+    return c.json(result);
+  } catch (error) {
+    console.error('Error in ai/description-options:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
 // Verify admin user from access token
 const verifyAdmin = async (request: Request) => {
   const { userId, error } = await verifyUser(request);

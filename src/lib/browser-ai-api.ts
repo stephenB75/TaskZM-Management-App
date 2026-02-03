@@ -124,28 +124,40 @@ export async function generateTextWithBrowserAI(
         }
       }
       
-      // Format 2: window.ai.languageModel.generateText()
+      // Format 2: window.ai.languageModel() returns a session/model; then call generateText on it
+      // (languageModel is async in some specs—get the object first, then generateText)
       if (windowAI && typeof windowAI.languageModel === 'function') {
         try {
-          const promptConfig: BrowserAIPrompt = {
-            text: prompt,
-            temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
-            maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
-          };
-
-          const response = await windowAI.languageModel.generateText(promptConfig);
-          
-          if (response && typeof response === 'string') {
-            logger.debug('✅ Browser AI API: Generated text using window.ai.languageModel.generateText()');
-            return response;
+          const modelOrSession = await windowAI.languageModel();
+          if (modelOrSession && typeof (modelOrSession as any).generateText === 'function') {
+            const promptConfig: BrowserAIPrompt = {
+              text: prompt,
+              temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
+              maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
+            };
+            const response = await (modelOrSession as any).generateText(promptConfig);
+            if (response && typeof response === 'string') {
+              logger.debug('✅ Browser AI API: Generated text using window.ai.languageModel().generateText()');
+              return response;
+            }
+            if (response && typeof response === 'object' && 'text' in response) {
+              logger.debug('✅ Browser AI API: Generated text using window.ai.languageModel().generateText()');
+              return (response as BrowserAIResponse).text;
+            }
           }
-          
-          if (response && typeof response === 'object' && 'text' in response) {
-            logger.debug('✅ Browser AI API: Generated text using window.ai.languageModel.generateText()');
-            return (response as BrowserAIResponse).text;
+          // Fallback: some implementations attach generateText on the function itself
+          if (typeof (windowAI.languageModel as any).generateText === 'function') {
+            const promptConfig: BrowserAIPrompt = {
+              text: prompt,
+              temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
+              maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
+            };
+            const response = await (windowAI.languageModel as any).generateText(promptConfig);
+            if (response && typeof response === 'string') return response;
+            if (response && typeof response === 'object' && 'text' in response) return (response as BrowserAIResponse).text;
           }
         } catch (error) {
-          logger.debug('window.ai.languageModel.generateText() format failed, trying alternatives:', error);
+          logger.debug('window.ai.languageModel format failed, trying alternatives:', error);
         }
       }
 
@@ -170,25 +182,59 @@ export async function generateTextWithBrowserAI(
     // Try navigator.ai (Chrome built-in AI)
     const navigatorAI = typeof navigator !== 'undefined' ? (navigator as any).ai : null;
     if (navigatorAI) {
-      // Format 4: navigator.ai.languageModel.generateText()
-      if (navigatorAI.languageModel && typeof navigatorAI.languageModel.generateText === 'function') {
+      // Format 4: navigator.ai.languageModel.generateText() or await languageModel() then generateText
+      const navLM = navigatorAI.languageModel;
+      if (navLM) {
         try {
-          const response = await navigatorAI.languageModel.generateText({
-            prompt,
-            temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
-            maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
-          });
-          if (response && typeof response === 'string') {
-            logger.debug('✅ Browser AI API: Generated text using navigator.ai.languageModel.generateText()');
-            return response;
+          const lmObj = typeof navLM === 'function' ? await navLM() : navLM;
+          if (lmObj && typeof (lmObj as any).generateText === 'function') {
+            const response = await (lmObj as any).generateText({
+              prompt,
+              temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
+              maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
+            });
+            if (response && typeof response === 'string') {
+              logger.debug('✅ Browser AI API: Generated text using navigator.ai.languageModel');
+              return response;
+            }
+            if (response && typeof response === 'object' && 'text' in response) {
+              return (response as BrowserAIResponse).text;
+            }
           }
-          if (response && typeof response === 'object' && 'text' in response) {
-            logger.debug('✅ Browser AI API: Generated text using navigator.ai.languageModel.generateText()');
-            return (response as BrowserAIResponse).text;
+          if (typeof (navLM as any).generateText === 'function') {
+            const response = await (navLM as any).generateText({
+              prompt,
+              temperature: options.temperature ?? BROWSER_AI_CONFIG.TEMPERATURE.DEFAULT,
+              maxTokens: options.maxTokens ?? BROWSER_AI_CONFIG.MAX_TOKENS.DEFAULT,
+            });
+            if (response && typeof response === 'string') return response;
+            if (response && typeof response === 'object' && 'text' in response) return (response as BrowserAIResponse).text;
           }
         } catch (error) {
-          logger.debug('navigator.ai.languageModel.generateText() format failed:', error);
+          logger.debug('navigator.ai.languageModel format failed:', error);
         }
+      }
+    }
+
+    // Format 5: Chrome built-in Prompt API (Chrome 138+) — LanguageModel.create() then session.prompt()
+    const LanguageModel = typeof window !== 'undefined' ? (window as any).LanguageModel : undefined;
+    if (LanguageModel && typeof LanguageModel.create === 'function') {
+      try {
+        const availability = typeof LanguageModel.availability === 'function'
+          ? await LanguageModel.availability({ expectedInputs: [{ type: 'text', languages: ['en'] }], expectedOutputs: [{ type: 'text', languages: ['en'] }] })
+          : 'readily';
+        if (availability !== 'unavailable') {
+          const session = await LanguageModel.create();
+          if (session && typeof session.prompt === 'function') {
+            const result = await session.prompt(prompt);
+            if (typeof result === 'string' && result.trim().length > 0) {
+              logger.debug('✅ Browser AI API: Generated text using Chrome Prompt API (LanguageModel.session.prompt)');
+              return result.trim();
+            }
+          }
+        }
+      } catch (error) {
+        logger.debug('Chrome LanguageModel / session.prompt format failed:', error);
       }
     }
   } catch (error) {
@@ -347,12 +393,13 @@ export async function generateDescriptionWithBrowserAI(
 Task Name: "${taskName}"${termsContext}${actionPlanContext || ''}
 
 Requirements:
-- Be SPECIFIC and CONTEXTUAL - use the extracted keywords and phrases to accurately describe what the task involves
-- DO NOT repeat the task name verbatim
+- Describe ONLY what the task name and action plan refer to. Do not introduce topics (e.g. workout, learning, fitness) that are not clearly stated in the task name or action plan.
+- Be SPECIFIC and CONTEXTUAL - use the extracted keywords and phrases that match the task name to describe what the task involves
+- DO NOT repeat the task name verbatim. Use correct English: complete sentences, proper grammar, no redundant phrases (e.g. "X enables X"), no sentence fragments.
 - Use professional, clear language appropriate for ${domain} tasks
 - ${BROWSER_AI_CONFIG.PROMPT.ACCURATE_LENGTH}
 - Avoid run-on sentences: do not chain many clauses with "and", "but", or commas; use separate sentences when you have multiple points
-- Use the extracted keywords, phrases, verbs, and nouns to build an accurate description (sentence or paragraph as needed)
+- Use only extracted keywords/phrases/verbs/nouns that are relevant to the task name to build an accurate description (sentence or paragraph as needed)
 
 Example (marketing plan):
 Task: "Create a marketing plan that explain the new product launch."
@@ -362,6 +409,10 @@ Good description: "Research and build marketing ideas for the new product launch
 Example (fix bug):
 Task: "Fix login bug"
 Good: "This task involves debugging authentication issues in the login system to restore user access."
+
+Example (home task):
+Task: "Dispose or sell for parts the old refrigerator in the garage."
+Good: "This task involves removing, disposing, or selling for parts an old refrigerator located in the garage."
 
 Generate the description now:`;
 
