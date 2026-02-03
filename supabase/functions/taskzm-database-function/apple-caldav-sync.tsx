@@ -655,8 +655,8 @@ export async function fetchCalendarEvents(
   // Parse events from response
   const events: CalendarEvent[] = [];
   
-  // Match calendar-data elements containing VEVENT
-  const calDataPattern = /<calendar-data[^>]*>([\s\S]*?)<\/calendar-data>/gi;
+  // Match calendar-data elements (with or without XML namespace prefix, e.g. cal:calendar-data or calendar-data)
+  const calDataPattern = /<(?:[a-zA-Z0-9]+:)?calendar-data[^>]*>([\s\S]*?)<\/(?:[a-zA-Z0-9]+:)?calendar-data>/gi;
   let match;
 
   while ((match = calDataPattern.exec(response.body)) !== null) {
@@ -666,15 +666,19 @@ export async function fetchCalendarEvents(
       .replace(/&amp;/g, '&')
       .replace(/&quot;/g, '"');
 
-    // parseVEvent now returns an array (handles recurring event expansion)
+    // parseVEvent returns base events only (recurring not expanded during sync)
     const parsedEvents = parseVEvent(icalData, calendarHref, start, end);
     events.push(...parsedEvents);
+  }
+
+  if (events.length === 0 && response.body.length > 0) {
+    console.warn('[Calendar Sync] No calendar-data blocks parsed from CalDAV response. Response may use a different XML namespace (e.g. cal:calendar-data). Body length:', response.body.length, 'Sample:', response.body.substring(0, 300));
   }
 
   // Deduplicate events to prevent duplicates from recurring event expansion
   const deduplicatedEvents = deduplicateEvents(events);
   
-  console.log(`Fetched ${deduplicatedEvents.length} events (${events.length} before deduplication, including expanded recurring events)`);
+  console.log(`Fetched ${deduplicatedEvents.length} events (${events.length} before deduplication)`);
   return deduplicatedEvents;
 }
 
@@ -1380,6 +1384,9 @@ export async function syncCalendarsToDatabase(
             location: event.location,
             calendar_color: event.calendarColor,
             external_updated_at: event.lastModified,
+            rrule: event.rrule ?? null,
+            recurrence_base_id: event.recurrenceBaseId ?? null,
+            is_recurring: event.isRecurring ?? false,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
@@ -1412,6 +1419,9 @@ export async function syncCalendarsToDatabase(
             calendar_href: event.calendarHref,
             calendar_color: event.calendarColor,
             external_updated_at: event.lastModified,
+            rrule: event.rrule ?? null,
+            recurrence_base_id: event.recurrenceBaseId ?? null,
+            is_recurring: event.isRecurring ?? false,
             is_readonly: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
