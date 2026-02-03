@@ -348,8 +348,15 @@ app.post("/taskzm-database-function/shared-terminology", async (c) => {
 // ============================================================================
 // SERVER-SIDE AI (DESCRIPTION GENERATION)
 // ============================================================================
+// All OpenAI config from env (no hardcoded secrets or URLs). See .env.example and Supabase Edge Function secrets.
 
 const AI_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const OPENAI_CHAT_URL = Deno.env.get('OPENAI_CHAT_URL') || 'https://api.openai.com/v1/chat/completions';
+const OPENAI_MODEL = Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini';
+const OPENAI_DESC_MAX_TOKENS = 250;
+const OPENAI_DESC_TEMPERATURE = 0.5;
+const OPENAI_OPTS_MAX_TOKENS = 600;
+const OPENAI_OPTS_TEMPERATURE = 0.6;
 
 async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
@@ -415,17 +422,17 @@ Requirements:
 
 Generate the description now:`;
 
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openaiRes = await fetch(OPENAI_CHAT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: OPENAI_MODEL,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 250,
-        temperature: 0.5,
+        max_tokens: OPENAI_DESC_MAX_TOKENS,
+        temperature: OPENAI_DESC_TEMPERATURE,
       }),
     });
 
@@ -508,17 +515,17 @@ Example format:
 
 JSON array:`;
 
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openaiRes = await fetch(OPENAI_CHAT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: OPENAI_MODEL,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 600,
-        temperature: 0.6,
+        max_tokens: OPENAI_OPTS_MAX_TOKENS,
+        temperature: OPENAI_OPTS_TEMPERATURE,
       }),
     });
 
