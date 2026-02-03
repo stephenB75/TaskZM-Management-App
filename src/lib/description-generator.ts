@@ -3351,7 +3351,6 @@ export async function generateDescription(
   }
 
   // STEP 2: Prefer terms that appear in the task name so description stays on-topic (avoids irrelevant topics from bad prior descriptions)
-  const taskNameLower = taskName.toLowerCase();
   const inTaskName = (term: string) => taskNameLower.includes((term || '').toLowerCase());
   let finalKeywords: string[] = searchExtracted.keywords.filter(inTaskName);
   let finalPhrases: string[] = searchExtracted.phrases.filter(inTaskName);
