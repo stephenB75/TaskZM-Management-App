@@ -1798,69 +1798,43 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       notes: taskData.notes || '',
     };
 
-    // Save to Supabase FIRST (source of truth)
+    // Save to Supabase (source of truth); optimistic add first for instant UI
     if (currentWorkspaceId && accessToken) {
+      const validWorkspaceId = currentWorkspaceId;
       try {
-        // Ensure workspace exists before saving task
-        let validWorkspaceId = currentWorkspaceId;
-        try {
-          const ensuredWorkspaceId = await ensureWorkspace();
-          if (ensuredWorkspaceId) {
-            validWorkspaceId = ensuredWorkspaceId;
-            if (validWorkspaceId !== currentWorkspaceId) {
-              // Workspace ID was corrected, update state
-              setWorkspaceId(validWorkspaceId);
-            }
-          } else {
-            // Workspace couldn't be created, save locally
-            throw new Error('Workspace not available');
-          }
-        } catch (ensureError) {
-          const ensureErrorMessage = ensureError instanceof Error ? ensureError.message : String(ensureError);
-          // If it's just a "not found" error, try to create workspace
-          if (ensureErrorMessage.includes('not found') || ensureErrorMessage.includes('404')) {
-            logger.debug('Workspace not found, attempting to create...');
-            // Try creating workspace
-            await createWorkspaceIfNeeded();
-            const { workspaces } = await api.getUserWorkspaces();
-            if (workspaces && workspaces.length > 0 && workspaces[0].id) {
-              validWorkspaceId = workspaces[0].id;
-              setWorkspaceId(validWorkspaceId);
-            } else {
-              throw new Error('Could not create workspace');
-            }
-          } else {
-            throw ensureError;
-          }
-        }
-        
-        // Save the task as a single instance (recurring tasks will create next occurrences when marked complete)
+        // Optimistic add so the new task appears immediately
+        setTasks(prev => {
+          const updated = [...prev, newTask];
+          saveToLocalStorage('tasks', updated);
+          return updated;
+        });
+
         await api.saveTask(validWorkspaceId, newTask);
-        
-        // Reload from server to get the authoritative version
-        await loadTasksFromServer(validWorkspaceId);
-        // Trigger immediate sync to notify other devices (debounced)
+
         debouncedSync(false);
         toast.success('Task created');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to save task to server:', error);
-        
+
+        // Revert optimistic add by resyncing from server
+        await loadTasksFromServer(validWorkspaceId).catch(() => {});
+
         // If workspace not found, try to ensure it exists and retry
         if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
           try {
             logger.debug('Workspace not found when saving task, ensuring workspace exists...');
-            // Explicitly create workspace
             await createWorkspaceIfNeeded();
-            // Wait a bit for workspace to be fully created
             await new Promise(resolve => setTimeout(resolve, TIMING_CONSTANTS.delays.taskContext));
-            const validWorkspaceId = await ensureWorkspace();
-            if (validWorkspaceId) {
-              logger.info('Workspace created, retrying task save with workspace ID:', validWorkspaceId);
-              // Retry saving with valid workspace ID
-              await api.saveTask(validWorkspaceId, newTask);
-              await loadTasksFromServer(validWorkspaceId);
-              // Trigger immediate sync to notify other devices (debounced)
+            const retryWorkspaceId = await ensureWorkspace();
+            if (retryWorkspaceId) {
+              logger.info('Workspace created, retrying task save with workspace ID:', retryWorkspaceId);
+              setTasks(prev => {
+                const updated = [...prev, newTask];
+                saveToLocalStorage('tasks', updated);
+                return updated;
+              });
+              await api.saveTask(retryWorkspaceId, newTask);
               debouncedSync(false);
               toast.success('Task created');
               return;
@@ -1871,8 +1845,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             logger.error('Failed to ensure workspace on retry:', retryError);
           }
         }
-        
-        // Fallback: save locally and cache
+
+        // Fallback: keep task in local state and cache (already reverted above; re-add for offline)
         setTasks(prev => {
           const updated = [...prev, newTask];
           saveToLocalStorage('tasks', updated);
@@ -2025,42 +1999,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     }
     
-    // Save to Supabase FIRST (source of truth)
-    if (workspaceId && accessToken) {
+    // Save to Supabase (source of truth); use currentWorkspaceId to avoid redundant ensureWorkspace
+    if (currentWorkspaceId && accessToken) {
+      const validWorkspaceId = currentWorkspaceId;
       try {
-        // Ensure workspace exists before saving task
-        let validWorkspaceId = workspaceId;
-        try {
-          const ensuredWorkspaceId = await ensureWorkspace();
-          if (ensuredWorkspaceId) {
-            validWorkspaceId = ensuredWorkspaceId;
-            if (validWorkspaceId !== workspaceId) {
-              // Workspace ID was corrected, update state
-              setWorkspaceId(validWorkspaceId);
-            }
-          } else {
-            // Workspace couldn't be created, save locally
-            throw new Error('Workspace not available');
+        // Optimistic update first so UI updates immediately (mark complete / edit feels instant)
+        setTasks((prev) => {
+          if (isRecurringTask && isBeingMarkedComplete && completedOccurrence) {
+            const hasOccurrence = prev.some((t) => t.id === completedOccurrence!.id);
+            if (!hasOccurrence) return [...prev, completedOccurrence];
+            return prev;
           }
-        } catch (ensureError) {
-          const ensureErrorMessage = ensureError instanceof Error ? ensureError.message : String(ensureError);
-          // If it's just a "not found" error, try to create workspace
-          if (ensureErrorMessage.includes('not found') || ensureErrorMessage.includes('404')) {
-            logger.debug('Workspace not found, attempting to create...');
-            // Try creating workspace
-            await createWorkspaceIfNeeded();
-            const { workspaces } = await api.getUserWorkspaces();
-            if (workspaces && workspaces.length > 0 && workspaces[0].id) {
-              validWorkspaceId = workspaces[0].id;
-              setWorkspaceId(validWorkspaceId);
-            } else {
-              throw new Error('Could not create workspace');
-            }
-          } else {
-            throw ensureError;
-          }
-        }
-        
+          return prev.map((t) => (t.id === baseTaskId ? updatedTask : t));
+        });
+
         // Save completed occurrence if created (only if it doesn't already exist)
         if (completedOccurrence) {
           // Double-check it doesn't exist before saving
@@ -2093,19 +2045,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           await api.saveTask(validWorkspaceId, updatedTask);
         }
 
-        // Optimistic update: apply to local state immediately so UI (e.g. Today Agenda) updates before loadTasksFromServer completes
-        setTasks((prev) => {
-          if (isRecurringTask && isBeingMarkedComplete && completedOccurrence) {
-            const hasOccurrence = prev.some((t) => t.id === completedOccurrence!.id);
-            if (!hasOccurrence) return [...prev, completedOccurrence];
-            return prev;
-          }
-          return prev.map((t) => (t.id === baseTaskId ? updatedTask : t));
-        });
-
-        // Reload from server to get the authoritative version
-        await loadTasksFromServer(validWorkspaceId);
-        // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
+        // Skip full reload after save for faster UX; background sync notifies other devices
         debouncedSync(false);
         // Also trigger a direct sync after a short delay to ensure other devices get updates quickly
         setTimeout(() => {
@@ -2189,6 +2129,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           nextOccurrenceCreationLock.current.delete(baseTaskId);
         }
         
+        // Revert optimistic update by resyncing from server
+        await loadTasksFromServer(validWorkspaceId).catch(() => {});
         toast.error('Task updated offline, will sync when online');
       }
     } else {
