@@ -11,6 +11,8 @@ interface AuthContextType {
   user: User | null;
   accessToken: string | null;
   isLoading: boolean;
+  /** Get current session token (use when accessToken state may be stale, e.g. for AI description calls) */
+  getSessionToken: () => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, name: string, isDemo?: boolean, avatar?: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -354,6 +356,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Track demo user activity (update timestamp on interactions)
   // Activity is now tracked via useDemoActivity hook which is called on user interactions
 
+  const getSessionToken = useCallback(async (): Promise<string | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  }, []);
+
   async function updateProfile(updates: { name?: string; avatar?: string }) {
     try {
       if (!user) {
@@ -387,7 +394,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, isLoading, signIn, signUp, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ user, accessToken, isLoading, getSessionToken, signIn, signUp, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -405,6 +412,7 @@ export function useAuth() {
     return {
       user: null,
       accessToken: null,
+      getSessionToken: async () => null,
       signIn: async () => {},
       signUp: async () => {},
       signOut: async () => {},

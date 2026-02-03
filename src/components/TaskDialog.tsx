@@ -597,7 +597,7 @@ export function TaskDialog({
   initialFolderId,
   onShowUpgradePrompt,
 }: TaskDialogProps) {
-  const { accessToken } = useAuth();
+  const { accessToken, getSessionToken } = useAuth();
   const isMobile = useIsMobile();
   const [subtaskCheckboxSize, setSubtaskCheckboxSize] = useState(TASK_DIALOG_SUBTASK_CHECKBOX_SIZE.laptop);
   useEffect(() => {
@@ -1093,6 +1093,9 @@ export function TaskDialog({
           keywordsExtracted: 'Yes (via useTaskBreakdown)',
         });
 
+        // Use session token when available so OpenAI (server) is tried first
+        const token = accessToken ?? await getSessionToken();
+
         // Generate description options using effort score from breakdown
         // generateDescriptionOptions internally uses extractKeywordsFromTaskName and 
         // extractTermsFromTaskNameWithBrowserAI to extract keywords/phrases from title
@@ -1100,7 +1103,7 @@ export function TaskDialog({
         const options = await generateDescriptionOptions(
           title, // Keywords/phrases are extracted from this title
           breakdown.effortScore, // Determined from title analysis
-          accessToken,
+          token,
           description,
           breakdown.actionPlan?.steps?.map((s) => s.action)
         );
@@ -1133,7 +1136,7 @@ export function TaskDialog({
       clearTimeout(timeoutId);
       setIsLoadingDescriptionOptions(false);
     };
-  }, [open, title, description, breakdown?.effortScore, isBreakdownLoading, isGeneratingDescription, accessToken]);
+  }, [open, title, description, breakdown?.effortScore, isBreakdownLoading, isGeneratingDescription, accessToken, getSessionToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2231,11 +2234,13 @@ export function TaskDialog({
                               // Defer async operation to avoid blocking click handler
                               setTimeout(async () => {
                                 try {
+                                  // Use session token when available so OpenAI (server) is tried first
+                                  const token = accessToken ?? await getSessionToken();
                                   // Force regeneration by passing empty description to get fresh result
                                   // This ensures we get a new/modified description rather than reusing the existing one
                                   const generated = await generateDescription(
                                     title, 
-                                    accessToken, 
+                                    token, 
                                     '', 
                                     breakdown?.effortScore,
                                     breakdown?.actionPlan?.steps?.map((s) => s.action)
@@ -2313,8 +2318,10 @@ export function TaskDialog({
                             // Defer async operation to avoid blocking click handler
                             setTimeout(async () => {
                               try {
-                                logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken, effortScore: breakdown?.effortScore });
-                                const generated = await generateDescription(title, accessToken, description, breakdown?.effortScore, breakdown?.actionPlan?.steps?.map((s) => s.action));
+                                // Use session token when available so OpenAI (server) is tried first
+                                const token = accessToken ?? await getSessionToken();
+                                logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!(accessToken ?? token), effortScore: breakdown?.effortScore });
+                                const generated = await generateDescription(title, token, description, breakdown?.effortScore, breakdown?.actionPlan?.steps?.map((s) => s.action));
                                 logger.debug('AI Generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,
