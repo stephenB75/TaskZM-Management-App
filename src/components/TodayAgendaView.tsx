@@ -15,7 +15,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
-import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString } from "../lib/utils";
+import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "sonner";
 import type { Task } from "../types";
@@ -671,7 +671,7 @@ export function TodayAgendaView({
                         }}
                       >
                         <DraggableTaskCard
-                          task={item.task}
+                          task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                           onClick={() => item.task && handleTaskClick(item.task)}
                           droppableId="today-agenda"
                           occurrenceDate={todayString}
@@ -928,7 +928,7 @@ export function TodayAgendaView({
                         }}
                       >
                         <DraggableTaskCard
-                          task={item.task}
+                          task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                           onClick={() => item.task && handleTaskClick(item.task)}
                           droppableId="today-agenda"
                           occurrenceDate={todayString}
@@ -1158,7 +1158,7 @@ export function TodayAgendaView({
                       }}
                     >
                       <DraggableTaskCard
-                        task={item.task}
+                        task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                         onClick={() => item.task && handleTaskClick(item.task)}
                         droppableId="today-agenda"
                         occurrenceDate={todayString}
@@ -1411,7 +1411,7 @@ export function TodayAgendaView({
                             }}
                           >
                             <DraggableTaskCard
-                              task={item.task}
+                              task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                               onClick={() => item.task && handleTaskClick(item.task)}
                               droppableId="today-agenda"
                               occurrenceDate={todayString}

@@ -924,7 +924,22 @@ export function TaskDialog({
           setFolderId(null);
         }
         setTags(taskTags);
-        setSubtasks(Array.isArray(task.subtasks) ? task.subtasks : []);
+        // For recurring tasks, load subtasks per occurrence so toggling only affects this occurrence, not the series
+        const occurrenceDateStr = initialDate ? getDateString(new Date(initialDate)) : (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+        const isRecurring = task.recurrence && task.recurrence.type !== 'none';
+        if (isRecurring && occurrenceDateStr) {
+          const occurrenceSubtaskId = `${task.id}_subtasks_${occurrenceDateStr}`;
+          const occurrenceSubtaskTask = tasks.find((t) => t.id === occurrenceSubtaskId);
+          if (occurrenceSubtaskTask && Array.isArray(occurrenceSubtaskTask.subtasks)) {
+            setSubtasks(occurrenceSubtaskTask.subtasks);
+          } else {
+            // No saved state for this occurrence: show same subtask list but all unchecked
+            const baseSubtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
+            setSubtasks(baseSubtasks.map((st) => ({ ...st, completed: false })));
+          }
+        } else {
+          setSubtasks(Array.isArray(task.subtasks) ? task.subtasks : []);
+        }
         setEstimatedTime(
           task.estimatedTime ? String(task.estimatedTime) : "",
         );
@@ -1768,8 +1783,25 @@ export function TaskDialog({
     // No conflict, proceed with submission
     let savedTask: Task;
     if (task) {
-      await updateTask(task.id, taskData);
-      savedTask = { ...task, ...taskData } as Task;
+      // For recurring tasks opened from a specific day, save subtasks only to that occurrence so the series is unaffected
+      const occurrenceDateStr = initialDate ? getDateString(new Date(initialDate)) : (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+      const isRecurringWithOccurrence = task.recurrence?.type !== 'none' && occurrenceDateStr;
+      if (isRecurringWithOccurrence) {
+        const occurrenceSubtaskId = `${task.id}_subtasks_${occurrenceDateStr}`;
+        const occurrenceScheduled = finalScheduledDate ? new Date(finalScheduledDate) : (task.scheduledDate ? new Date(task.scheduledDate) : new Date(occurrenceDateStr + 'T12:00:00'));
+        const occurrenceDateOnly = new Date(occurrenceDateStr + 'T12:00:00');
+        occurrenceDateOnly.setHours(occurrenceScheduled.getHours(), occurrenceScheduled.getMinutes(), occurrenceScheduled.getSeconds(), occurrenceScheduled.getMilliseconds());
+        await updateTask(occurrenceSubtaskId, {
+          ...taskData,
+          subtasks,
+          recurrence: { type: 'none', interval: 1 },
+          scheduledDate: occurrenceDateOnly.toISOString(),
+        });
+        savedTask = { ...task, ...taskData, id: occurrenceSubtaskId, subtasks } as Task;
+      } else {
+        await updateTask(task.id, taskData);
+        savedTask = { ...task, ...taskData } as Task;
+      }
     } else {
       await addTask(taskData);
       // After adding, the task will be in the tasks list - find it by matching properties

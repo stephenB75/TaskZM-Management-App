@@ -15,7 +15,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog, getWeekStart, getDateString } from '../lib/utils';
+import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
@@ -675,7 +675,7 @@ export function SevenDayKanban({
 
 
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = (task: Task, dateString?: string) => {
     if (!task?.id) {
         toast.error('Invalid task data');
         return;
@@ -689,6 +689,7 @@ export function SevenDayKanban({
       
     // Defer state updates to next frame to avoid blocking click handler
     requestAnimationFrame(() => {
+      if (dateString) setSelectedDate(dateString);
       setSelectedTask(safeTask);
       setDialogOpen(true);
     });
@@ -1055,8 +1056,8 @@ export function SevenDayKanban({
                             }}
                           >
                             <DraggableTaskCard
-                                        task={item.task}
-                                        onClick={() => handleTaskClick(item.task)}
+                                        task={getTaskWithOccurrenceSubtasks(item.task, currentColumn.dateString, tasks)}
+                                        onClick={() => handleTaskClick(item.task, currentColumn.dateString)}
                             droppableId={currentColumn.dateString}
                             occurrenceDate={currentColumn.dateString}
                             onComplete={onTaskComplete}
@@ -1489,8 +1490,8 @@ export function SevenDayKanban({
                                     }}
                                   >
                                   <DraggableTaskCard
-                                              task={item.task}
-                                              onClick={() => handleTaskClick(item.task)}
+                                              task={getTaskWithOccurrenceSubtasks(item.task, column.dateString, tasks)}
+                                              onClick={() => handleTaskClick(item.task, column.dateString)}
                                     droppableId={column.dateString}
                                     occurrenceDate={column.dateString}
                                     onComplete={onTaskComplete}

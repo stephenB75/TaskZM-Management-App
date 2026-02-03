@@ -569,6 +569,26 @@ export function getFirstName(name: string | undefined | null): string {
 }
 
 /**
+ * For recurring tasks, return the task with subtasks merged from the occurrence-specific record if it exists.
+ * This ensures "2/5 subtasks" on cards reflects only that day's progress, not the whole series.
+ */
+export function getTaskWithOccurrenceSubtasks(
+  task: Task,
+  occurrenceDateStr: string | undefined,
+  allTasks: Task[]
+): Task {
+  if (!task?.id || !occurrenceDateStr || !(task.recurrence?.type && task.recurrence.type !== 'none')) {
+    return task;
+  }
+  const occurrenceSubtaskId = `${task.id}_subtasks_${occurrenceDateStr}`;
+  const occurrenceTask = allTasks.find((t) => t.id === occurrenceSubtaskId);
+  if (!occurrenceTask || !Array.isArray(occurrenceTask.subtasks)) {
+    return task;
+  }
+  return { ...task, subtasks: occurrenceTask.subtasks };
+}
+
+/**
  * Safely prepare a task for editing in TaskDialog
  * Ensures all required fields are present and valid
  */

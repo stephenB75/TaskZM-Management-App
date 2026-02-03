@@ -1868,8 +1868,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
 
-    // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; resolve to base task ID for lookup
-    const baseTaskId = taskId.includes('__') ? taskId.split('__')[0] : taskId;
+    // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; occurrence subtask IDs are baseId_subtasks_YYYY-MM-DD
+    const isOccurrenceSubtaskId = taskId.includes('_subtasks_');
+    const baseTaskId = isOccurrenceSubtaskId
+      ? taskId.split('_subtasks_')[0]
+      : taskId.includes('__')
+        ? taskId.split('__')[0]
+        : taskId;
 
     try {
     // Permission check removed to break circular dependency with TeamContext
@@ -1887,8 +1892,43 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       currentWorkspaceId = validWorkspaceId;
     }
 
-    // Find the task to update (by base task ID)
-    const currentTask = tasks.find(t => t.id === baseTaskId);
+    // Find the task to update: for occurrence subtask ID use taskId itself; otherwise use base task ID
+    const lookupId = isOccurrenceSubtaskId ? taskId : baseTaskId;
+    let currentTask = tasks.find(t => t.id === lookupId);
+
+    // Occurrence subtask task may not exist yet (first time saving subtasks for this occurrence) – upsert
+    if (isOccurrenceSubtaskId && !currentTask) {
+      const baseTask = tasks.find(t => t.id === baseTaskId);
+      if (!baseTask) {
+        toast.error('Task not found');
+        return;
+      }
+      const occurrenceDateStr = taskId.split('_subtasks_')[1];
+      const occurrenceDate = occurrenceDateStr ? new Date(occurrenceDateStr + 'T12:00:00') : new Date();
+      const baseScheduled = baseTask.scheduledDate ? new Date(baseTask.scheduledDate) : occurrenceDate;
+      occurrenceDate.setHours(baseScheduled.getHours(), baseScheduled.getMinutes(), baseScheduled.getSeconds(), baseScheduled.getMilliseconds());
+      const occurrenceSubtaskTask: Task = {
+        ...baseTask,
+        id: taskId,
+        subtasks: updates.subtasks ?? baseTask.subtasks,
+        recurrence: { type: 'none', interval: 1 },
+        updatedAt: new Date().toISOString(),
+        scheduledDate: occurrenceDate.toISOString(),
+      };
+      if (currentWorkspaceId && accessToken) {
+        setTasks((prev) => (prev.some((t) => t.id === taskId) ? prev : [...prev, occurrenceSubtaskTask]));
+        await api.saveTask(currentWorkspaceId, occurrenceSubtaskTask);
+        debouncedSync(false);
+      } else {
+        setTasks((prev) => {
+          const next = prev.some((t) => t.id === taskId) ? prev : [...prev, occurrenceSubtaskTask];
+          saveToLocalStorage('tasks', next, user?.id);
+          return next;
+        });
+      }
+      return;
+    }
+
     if (!currentTask) {
       toast.error('Task not found');
       return;
@@ -2010,7 +2050,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             if (!hasOccurrence) return [...prev, completedOccurrence];
             return prev;
           }
-          return prev.map((t) => (t.id === baseTaskId ? updatedTask : t));
+          return prev.map((t) => (t.id === lookupId ? updatedTask : t));
         });
 
         // Save completed occurrence if created (only if it doesn't already exist)
@@ -2112,7 +2152,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             return updated;
           }
           let updated = prev.map(task => {
-            if (task.id === baseTaskId) {
+            if (task.id === lookupId) {
               return updatedTask;
             }
             return task;
@@ -2143,7 +2183,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           return updated;
         }
         let updated = prev.map(task => {
-          if (task.id === baseTaskId) {
+          if (task.id === lookupId) {
             return updatedTask;
           }
           return task;
