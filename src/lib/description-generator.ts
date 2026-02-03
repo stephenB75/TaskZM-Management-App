@@ -3243,6 +3243,9 @@ export async function generateDescription(
 
   // SERVER AI FIRST: try Edge Function for description; fallback to local processing
   const serverAITimeoutMs = 10000;
+  if (!accessToken) {
+    logger.debug('Server AI skipped: no access token (using local processing)');
+  }
   if (accessToken) {
     try {
       const controller = new AbortController();
@@ -3260,13 +3263,29 @@ export async function generateDescription(
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      if (!res.ok) {
+        const body = await res.text();
+        logger.debug('Server AI request failed, using local processing', {
+          status: res.status,
+          statusText: res.statusText,
+          body: body.slice(0, 200),
+        });
+        if (res.status === 401) {
+          logger.warn('Server AI: Unauthorized (401). Check that you are signed in and the session token is valid.');
+        } else if (res.status === 503 || res.status === 502) {
+          logger.debug('Server AI not configured or upstream error (503/502)');
+        }
+      }
       if (res.ok) {
         const data = await res.json();
         if (data?.description && typeof data.description === 'string' && data.description.trim().length > 0) {
           const desc = cleanText(data.description);
           const taskNameLowerCheck = taskName.toLowerCase().trim();
           const descLower = desc.toLowerCase().trim();
-          if (descLower !== taskNameLowerCheck && !descLower.startsWith(taskNameLowerCheck) && descLower.length > taskNameLowerCheck.length) {
+          // Accept if not identical and (doesn't start with task name OR is substantially longer, e.g. "Fix bug: resolve login")
+          const notIdentical = descLower !== taskNameLowerCheck;
+          const notJustTaskName = !descLower.startsWith(taskNameLowerCheck) || descLower.length > taskNameLowerCheck.length + 10;
+          if (notIdentical && notJustTaskName) {
             logger.debug('Server AI description used');
             return {
               description: desc,
@@ -3274,10 +3293,12 @@ export async function generateDescription(
               confidence: typeof data.confidence === 'number' ? data.confidence : 0.85,
             };
           }
+          logger.debug('Server AI description rejected (same as task name or too short), using local processing', {
+            descPreview: desc.slice(0, 60),
+            taskNameLength: taskNameLowerCheck.length,
+            descLength: descLower.length,
+          });
         }
-      }
-      if (res.status === 503 || res.status === 502) {
-        logger.debug('Server AI not configured or error, using local processing');
       }
     } catch (err) {
       logger.debug('Server AI request failed (timeout or network), using local processing:', err);
