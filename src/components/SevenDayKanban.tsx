@@ -1222,9 +1222,10 @@ export function SevenDayKanban({
                       data-column-date={column.dateString}
                       className={cn(
                         'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
-                        !column.isWeekend && (isDark ? 'bg-card/80' : 'bg-transparent'),
-                              column.isWeekend && isDark && 'bg-card/60',
-                              isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
+                        // Only use Tailwind bg when we are not applying column-wrapper tint (weekend or no header colors)
+                        !column.isWeekend && !hasHeader(getDayColors(column.dayName)) && (isDark ? 'bg-card/80' : 'bg-transparent'),
+                        column.isWeekend && isDark && 'bg-card/60',
+                        isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
                       )}
                       style={{
                         minWidth: `${columnWidth}px`,
@@ -1232,6 +1233,15 @@ export function SevenDayKanban({
                         ...(column.isWeekend && !isDark && {
                           backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
                         }),
+                        // Full-column tint so today stands out when scrolling vertically (brighter today, muted others)
+                        ...(!column.isWeekend && hasHeader(getDayColors(column.dayName)) && (() => {
+                          const dayColors = getDayColors(column.dayName);
+                          const w = KANBAN_DAY_COLORS.columnWrapper;
+                          const pct = column.isToday
+                            ? (isDark ? w.todayDarkOpacity : w.todayOpacity)
+                            : (isDark ? w.nonTodayDarkOpacity : w.nonTodayOpacity);
+                          return { backgroundColor: toAlphaHex(dayColors.header.from, pct) };
+                        })()),
                       }}
                       initial={{ opacity: 0, y: KANBAN_ANIMATION.initialY }}
                       animate={{ opacity: 1, y: 0 }}

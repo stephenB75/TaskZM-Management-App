@@ -180,6 +180,13 @@ export const KANBAN_DAY_COLORS = {
     nonTodayStartOpacity: 26, // Non-today column gradient start (light mode)
     nonTodayDarkModeStartOpacity: 11, // Non-today column gradient start (dark mode)
   },
+  // Full column wrapper tint (entire column height) so today is visibly brighter when scrolling vertically
+  columnWrapper: {
+    todayOpacity: 32, // Today column full-height tint (light mode) – clearly brighter
+    todayDarkOpacity: 22, // Today column full-height tint (dark mode)
+    nonTodayOpacity: 8, // Non-today column tint (light mode) – muted so today pops
+    nonTodayDarkOpacity: 5, // Non-today column tint (dark mode)
+  },
 } as const;
 
 // Background Gradients
