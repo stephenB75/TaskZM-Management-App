@@ -40,6 +40,7 @@ import { Slider } from "./ui/slider";
 import { Tabs, TabsContent } from "./ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { PomodoroTimer } from "./PomodoroTimer";
+import { EmojiPickerPopover } from "./EmojiPickerPopover";
 import {
   cn,
   formatDate,
@@ -698,6 +699,8 @@ export function TaskDialog({
   const [showDeleteConfirm, setShowDeleteConfirm] =
     useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   // AI Task Breakdown - Real-time analysis
   const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
@@ -2165,24 +2168,52 @@ export function TaskDialog({
               )}>
                 {/* Basic Info Tab - Reference: warm surface only; Task Name, Description, Status, Priority with generous spacing; no inner card */}
                 <TabsContent value="basic" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
-                  {/* Task Name - reference: bold label, white rounded borderless input */}
+                  {/* Task Name - reference: bold label, white rounded borderless input; emoji picker for title */}
                   <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
-                    <Label htmlFor="title" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
-                    <Input
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder={TASK_DIALOG_UI_TEXT.taskNamePlaceholder}
-                      autoFocus
-                      disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
-                      className={cn(TASK_DIALOG_COLORS.inputFieldBg, "rounded-lg focus-visible:ring-2 focus-visible:ring-primary/30 h-9 sm:h-10 text-sm min-w-0")}
-                    />
+                    <div className="flex items-center justify-between gap-2">
+                      <Label htmlFor="title" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
+                      <EmojiPickerPopover
+                        triggerTitle="Insert emoji"
+                        onSelect={(emoji) => {
+                          const input = titleInputRef.current;
+                          if (input) {
+                            const start = input.selectionStart ?? title.length;
+                            const end = input.selectionEnd ?? title.length;
+                            setTitle(title.slice(0, start) + emoji + title.slice(end));
+                            setTimeout(() => {
+                              input.focus();
+                              input.setSelectionRange(start + emoji.length, start + emoji.length);
+                            }, 0);
+                          } else {
+                            setTitle(title + emoji);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex gap-1 mt-1">
+                      <Input
+                        ref={titleInputRef}
+                        id="title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder={TASK_DIALOG_UI_TEXT.taskNamePlaceholder}
+                        autoFocus
+                        disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
+                        className={cn(TASK_DIALOG_COLORS.inputFieldBg, "rounded-lg focus-visible:ring-2 focus-visible:ring-primary/30 h-9 sm:h-10 text-sm min-w-0 flex-1")}
+                      />
+                    </div>
                   </div>
 
-                  {/* Description - reference: bold label, white rounded area (order: Task Name, Description, Status, Priority) */}
+                  {/* Description - reference: bold label, white rounded area; emoji picker for description */}
                   <div className={cn(TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY, "pt-0.5")}>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="description" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.descriptionMinimal}</Label>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <Label htmlFor="description" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.descriptionMinimal}</Label>
+                      <EmojiPickerPopover
+                        triggerTitle="Insert emoji"
+                        onSelect={(emoji) => setDescription(description + emoji)}
+                      />
+                    </div>
                     {title.trim() && (
                       <div className="flex items-center gap-1">
                         {/* Redo/Regenerate Description Button - Only show if description exists */}
