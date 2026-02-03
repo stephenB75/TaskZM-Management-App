@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.17';
-export const VERSION_NAME = 'Notifications, Badging & Settings Spacing';
-export const VERSION_DATE = 'January 23, 2026';
-export const BUILD_NUMBER = '20260123-1';
+export const APP_VERSION = '1.0.18';
+export const VERSION_NAME = 'Calendar Events & Apple Sync';
+export const VERSION_DATE = 'February 1, 2026';
+export const BUILD_NUMBER = '20260201-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,18 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.18',
+    date: 'February 1, 2026',
+    name: 'Calendar Events & Apple Sync',
+    changes: [
+      'Imported calendar events (Apple/Google/Outlook) display correctly on Kanban week view; regular and recurring events confirmed in range',
+      'Apple Calendar sync fixed: CalDAV response parsing now matches namespaced calendar-data (e.g. cal:calendar-data) so events are extracted',
+      'Apple sync now persists rrule, recurrence_base_id, and is_recurring so recurring events expand correctly when reading',
+      'Desktop Kanban: CalendarEventCard receives isRecurring so recurring indicator (repeat icon) shows on desktop as on mobile',
+      'CALENDAR_EVENTS_KANBAN_REVIEW.md added with data flow and confirmation that all event types show on week view',
+    ],
+  },
   {
     version: '1.0.17',
     date: 'January 23, 2026',
