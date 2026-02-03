@@ -770,8 +770,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         setLastSync(new Date());
         lastAutoSyncRef.current = Date.now();
         
-        // Clear calendar events cache to force refresh
-        clearCalendarEventsCache();
+        // Clear calendar events cache only when sync reports changes (avoids extra Edge calls when nothing changed)
+        if ((data.created || 0) + (data.updated || 0) + (data.deleted || 0) > 0) {
+          clearCalendarEventsCache();
+        }
         
         console.log(`[Apple Calendar Sync] Success: ${data.created} created, ${data.updated} updated, ${data.deleted} deleted`);
         
@@ -860,8 +862,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (data.success) {
         setLastSync(new Date());
         
-        // Clear calendar events cache to force refresh
-        clearCalendarEventsCache();
+        // Clear calendar events cache only when sync reports changes (avoids extra Edge calls when nothing changed)
+        if ((data.created || 0) + (data.updated || 0) + (data.deleted || 0) > 0) {
+          clearCalendarEventsCache();
+        }
         
         console.log(`[Google Calendar Sync] Success: ${data.created} created, ${data.updated} updated, ${data.deleted} deleted`);
         
@@ -1148,6 +1152,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     // Set up periodic sync
     // Use ref to avoid recreating interval when callback changes
     autoSyncIntervalRef.current = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
       console.debug('Periodic Apple Calendar sync triggered...');
       if (syncAppleCalendarInternalRef.current) {
         syncAppleCalendarInternalRef.current(true);

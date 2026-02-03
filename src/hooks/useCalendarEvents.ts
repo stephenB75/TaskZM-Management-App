@@ -4,6 +4,7 @@ import { useCalendar } from '../contexts/CalendarContext';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { getDateString } from '../lib/utils';
 
 export interface CalendarEvent {
@@ -29,8 +30,8 @@ interface CalendarEventsCache {
   [key: string]: CacheEntry;
 }
 
-// Cache duration: 2 minutes (events don't change frequently)
-const CACHE_DURATION = 2 * 60 * 1000;
+// Cache duration from shared constant (aligns with calendar status cache; single source of truth)
+const CACHE_DURATION = TIMING_CONSTANTS.calendar.cacheDuration;
 
 // Debounce delay: 300ms (prevents rapid re-fetches during view changes)
 const DEBOUNCE_DELAY = 300;
