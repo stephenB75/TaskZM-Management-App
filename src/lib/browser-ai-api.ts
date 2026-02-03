@@ -317,13 +317,18 @@ export async function generateDescriptionWithBrowserAI(
     phrases: string[];
     verbs: string[];
     nouns: string[];
-  }
+  },
+  actionPlanSteps?: string[]
 ): Promise<string | null> {
   if (!isBrowserAIAvailable()) {
     return null;
   }
 
   try {
+    const actionPlanContext = actionPlanSteps && actionPlanSteps.length > 0
+      ? `\n\nAction plan steps (weave these into the description): ${actionPlanSteps.join('; ')}. Include research, strategy, timeline/schedule as appropriate.`
+      : '';
+
     const termsContext = extractedTerms && (
       extractedTerms.keywords.length > 0 || 
       extractedTerms.phrases.length > 0 || 
@@ -337,23 +342,26 @@ export async function generateDescriptionWithBrowserAI(
 - Important Nouns: ${extractedTerms.nouns.slice(0, 5).join(', ')}${extractedTerms.nouns.length > 5 ? '...' : ''}`
       : '';
 
-    const prompt = `Generate a clear, contextual description for this ${domain} task.
+    const prompt = `Generate a clear, accurate description for this ${domain} task.
 
-Task Name: "${taskName}"${termsContext}
+Task Name: "${taskName}"${termsContext}${actionPlanContext || ''}
 
 Requirements:
-- Be SPECIFIC and CONTEXTUAL - explain what the task involves, not just restate the name
+- Be SPECIFIC and CONTEXTUAL - use the extracted keywords and phrases to accurately describe what the task involves
 - DO NOT repeat the task name verbatim
 - Use professional, clear language appropriate for ${domain} tasks
-- Keep it concise: ${BROWSER_AI_CONFIG.PROMPT.SUMMARY_LENGTH}
-- Focus on WHAT the task involves, WHY it's needed, or HOW it should be accomplished
-- Use the extracted keywords, phrases, verbs, and nouns to build a meaningful description
-- Start with "This task involves", "This task requires", "This task focuses on", or similar contextual opener
+- ${BROWSER_AI_CONFIG.PROMPT.ACCURATE_LENGTH}
+- Avoid run-on sentences: do not chain many clauses with "and", "but", or commas; use separate sentences when you have multiple points
+- Use the extracted keywords, phrases, verbs, and nouns to build an accurate description (sentence or paragraph as needed)
 
-Example:
+Example (marketing plan):
+Task: "Create a marketing plan that explain the new product launch."
+Action plan: Create PPT Deck; Develop Marketing Strategy; Create Schedule for Product Launch.
+Good description: "Research and build marketing ideas for the new product launch and build a timeline for the schedule launch."
+
+Example (fix bug):
 Task: "Fix login bug"
-Good Description: "This task involves debugging and resolving authentication issues in the login system to restore user access functionality."
-Bad Description: "Fix login bug" (just repeats the task name)
+Good: "This task involves debugging authentication issues in the login system to restore user access."
 
 Generate the description now:`;
 

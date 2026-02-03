@@ -68,7 +68,7 @@ import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../l
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
-import { generateDescription, generateDescriptionOptions } from "../lib/description-generator";
+import { generateDescription, generateDescriptionOptions, getSuggestivePhrases, buildCompleteDescriptionFromPhrases } from "../lib/description-generator";
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS, EFFORT_SCORE_THRESHOLDS, DESCRIPTION_UI_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
@@ -1100,7 +1100,8 @@ export function TaskDialog({
           title, // Keywords/phrases are extracted from this title
           breakdown.effortScore, // Determined from title analysis
           accessToken,
-          description
+          description,
+          breakdown.actionPlan?.steps?.map((s) => s.action)
         );
 
         // Triple-check conditions after async operation (description might have been set during async call)
@@ -2235,7 +2236,8 @@ export function TaskDialog({
                                     title, 
                                     accessToken, 
                                     '', 
-                                    breakdown?.effortScore
+                                    breakdown?.effortScore,
+                                    breakdown?.actionPlan?.steps?.map((s) => s.action)
                                   );
                                 logger.debug('AI Refresh description result:', { 
                                   hasDescription: !!generated.description, 
@@ -2314,7 +2316,7 @@ export function TaskDialog({
                             setTimeout(async () => {
                               try {
                                 logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!accessToken, effortScore: breakdown?.effortScore });
-                                const generated = await generateDescription(title, accessToken, description, breakdown?.effortScore);
+                                const generated = await generateDescription(title, accessToken, description, breakdown?.effortScore, breakdown?.actionPlan?.steps?.map((s) => s.action));
                                 logger.debug('AI Generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,
@@ -2478,6 +2480,27 @@ export function TaskDialog({
                                 </div>
                               )}
                             </div>
+                          )}
+                          {!description.trim() && breakdown && title.trim() && !isLoadingDescriptionOptions && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-muted-foreground hover:text-foreground w-fit"
+                              onClick={() => {
+                                const { phrases, keywords, verbs, nouns } = getSuggestivePhrases(title, description);
+                                const desc = buildCompleteDescriptionFromPhrases(title, phrases, keywords, verbs, nouns);
+                                if (desc) {
+                                  setDescription(desc);
+                                  setDescriptionOptions([]);
+                                  toast.success('Description built', { description: 'Accurate sentence or paragraph from suggested phrases. Action Plan will update.' });
+                                } else {
+                                  toast.info('Not enough terms', { description: 'Add more detail to the task title for better phrases.' });
+                                }
+                              }}
+                            >
+                              Build description from phrases
+                            </Button>
                           )}
                           {description.trim() && breakdown.descriptionAnalysis && breakdown.descriptionAnalysis.suggestions.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 min-w-0">

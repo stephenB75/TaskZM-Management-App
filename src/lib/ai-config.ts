@@ -191,6 +191,13 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   },
   // Truncation threshold for sentence truncation
   truncationThreshold: 0.8, // Use word boundary if truncation point is within 80% of max length
+  // Description rules: accurate length (sentence or paragraph as needed), avoid run-ons only
+  descriptionRules: {
+    maxWordsPerSentence: 25, // Max words per sentence to avoid run-on clauses
+    maxSentences: 5, // Allow short paragraph when needed for accuracy
+    maxCharsTotal: 400, // Reasonable cap for full description
+    noRunOnHint: 'Write clear, well-structured sentences. Use one or more sentences (or a short paragraph) as needed to accurately describe the task. Avoid run-on sentences (do not chain many clauses with "and" or commas).',
+  },
   // String separators for description building
   descriptionSeparators: {
     comma: ', ',
@@ -897,12 +904,14 @@ export const BROWSER_AI_CONFIG = {
   MAX_TOKENS: {
     DEFAULT: 200, // Default max tokens for general text generation
     EXTRACTION: 300, // Max tokens for term extraction (needs more for JSON)
-    DESCRIPTION: 150, // Max tokens for description generation (concise)
+    DESCRIPTION: 300, // Max tokens for description (sentence or short paragraph as needed)
   } as const,
   // Prompt template constants
   PROMPT: {
     PHRASE_LENGTH_RANGE: '2-4 words', // Range for phrase extraction in prompts
     SUMMARY_LENGTH: '1-2 sentences', // Summary length specification in prompts
+    MAX_WORDS_PER_SENTENCE: '25', // Max words per sentence to avoid run-ons
+    ACCURATE_LENGTH: 'Use one sentence, or multiple sentences, or a short paragraph—whatever is needed to accurately describe the task. Be concise but complete. Output only the description, no preamble.',
   } as const,
   // Status check delay (ms)
   STATUS_CHECK_DELAY_MS: 1000, // Delay before checking Browser AI API status on startup

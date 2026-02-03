@@ -109,6 +109,43 @@ function cleanText(text: string): string {
 }
 
 /**
+ * Fix run-ons only: leave well-structured descriptions (sentence or paragraph) as-is.
+ * Only trim when a single "sentence" is clearly a run-on (e.g. 40+ words or 2+ " and " in one clause).
+ */
+function trimRunOnOnly(description: string): string {
+  if (!description || typeof description !== 'string') return description;
+  const trimmed = description.trim();
+  if (!trimmed) return trimmed;
+  const rules = DESCRIPTION_GENERATION_CONFIG.descriptionRules;
+  const maxWordsPerSentence = rules?.maxWordsPerSentence ?? 25;
+
+  const sentences = trimmed.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+  if (sentences.length === 0) return trimmed;
+  const result: string[] = [];
+  for (const sent of sentences) {
+    const words = sent.split(/\s+/).filter(w => w.length > 0);
+    if (words.length <= maxWordsPerSentence) {
+      result.push(sent.endsWith('.') ? sent : sent + '.');
+      continue;
+    }
+    const andMatches = sent.match(/\s+,?\s+and\s+/gi);
+    const isRunOn = words.length > 40 || (andMatches && andMatches.length >= 2);
+    if (!isRunOn) {
+      result.push(sent.endsWith('.') ? sent : sent + '.');
+      continue;
+    }
+    const firstAnd = sent.search(/\s+,?\s+and\s+/i);
+    const firstClause = firstAnd > 0 ? sent.slice(0, firstAnd).trim() : sent;
+    const clauseWords = firstClause.split(/\s+/).filter(w => w.length > 0);
+    const capped = clauseWords.length > maxWordsPerSentence
+      ? clauseWords.slice(0, maxWordsPerSentence).join(' ').trim()
+      : firstClause;
+    result.push(capped.endsWith('.') ? capped : capped + '.');
+  }
+  return result.join(' ').trim();
+}
+
+/**
  * Analyze task name structure to extract main action and object
  * This helps build more contextual sentences that relate directly to the task
  */
@@ -3367,7 +3404,8 @@ export async function generateDescription(
               verbs: finalVerbs,
               nouns: finalNouns,
             }
-          : undefined
+          : undefined,
+        actionPlanSteps
       );
       
       if (browserAIDescription && browserAIDescription.trim().length > 0) {
@@ -3633,9 +3671,10 @@ export async function generateDescription(
     }
   }
   
-  // Rejoin sentences with proper punctuation
+  // Rejoin with proper punctuation, then fix run-ons only (leave good paragraphs as-is)
   finalDescription = cleanedSentences.join('. ').trim();
-  
+  finalDescription = trimRunOnOnly(finalDescription);
+
   // Final validation: ensure description is meaningful
   if (!finalDescription || finalDescription.length === 0) {
     // Ultimate fallback: create a basic description from task name
@@ -3695,12 +3734,14 @@ export async function generateDescription(
  * @param effortScore - Effort score (1-5) to adjust description detail level
  * @param accessToken - Optional access token for API calls
  * @param existingDescription - Optional existing description to use for domain detection
+ * @param actionPlanSteps - Optional action plan step titles to weave into descriptions
  */
 export async function generateDescriptionOptions(
   taskName: string,
   effortScore: number,
   accessToken?: string | null,
-  existingDescription?: string | null
+  existingDescription?: string | null,
+  actionPlanSteps?: string[]
 ): Promise<GeneratedDescription[]> {
   try {
     if (!taskName || taskName.trim().length === 0) {
@@ -3735,7 +3776,8 @@ export async function generateDescriptionOptions(
               taskName,
               accessToken,
               existingDescription,
-              variantEffortScore
+              variantEffortScore,
+              actionPlanSteps
             );
 
             // Only add if description is not empty and not duplicate
@@ -3815,7 +3857,8 @@ export async function generateDescriptionOptions(
             taskName,
             accessToken,
             existingDescription,
-            effortScore
+            effortScore,
+            actionPlanSteps
           );
           resolve(fallback.description ? [fallback] : []);
         } catch (fallbackError) {
@@ -3843,6 +3886,88 @@ function calculateDescriptionSimilarity(desc1: string, desc2: string): number {
   const union = new Set([...words1, ...words2]);
   
   return intersection.size / union.size;
+}
+
+/**
+ * Build an accurate description (sentence or short paragraph) from suggested phrases/keywords.
+ * Used when the user has seen the action plan and optional phrases and asks to "develop a complete description".
+ * Uses whatever length is needed to accurately describe the task (one sentence or multiple).
+ *
+ * @param taskName - The task title (for context)
+ * @param phrases - Suggested phrases from getSuggestivePhrases
+ * @param keywords - Suggested keywords
+ * @param verbs - Suggested verbs
+ * @param nouns - Suggested nouns
+ * @returns A contextual sentence or short paragraph, or empty string if no usable terms
+ */
+export function buildCompleteDescriptionFromPhrases(
+  taskName: string,
+  phrases: string[],
+  keywords: string[],
+  verbs: string[],
+  nouns: string[]
+): string {
+  const rules = DESCRIPTION_GENERATION_CONFIG.descriptionRules;
+  const maxSentences = rules?.maxSentences ?? 5;
+  const maxCharsTotal = rules?.maxCharsTotal ?? 400;
+  const maxWordsPerSentence = rules?.maxWordsPerSentence ?? 25;
+  const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+  const taskNameLower = (taskName || '').toLowerCase().trim();
+  const phrase1 = (phrases[0] || '').trim();
+  const phrase2 = (phrases[1] || '').trim();
+  const keyword1 = (keywords[0] || '').trim();
+  const verb = (verbs[0] || '').trim();
+  const noun = (nouns[0] || '').trim();
+
+  if (!phrase1 && !keyword1 && !verb) return '';
+
+  const verbForm = verb ? (verb.endsWith('e') ? verb + 'ing' : verb + 'ing') : '';
+  const sentences: string[] = [];
+
+  if (phrase1 && !taskNameLower.includes(phrase1.toLowerCase())) {
+    if (verbForm) {
+      sentences.push(`${templateOpener} ${verbForm} ${phrase1.toLowerCase()}.`);
+    } else {
+      sentences.push(`${templateOpener} ${phrase1.toLowerCase()}.`);
+    }
+  } else if (keyword1 && !taskNameLower.includes(keyword1.toLowerCase())) {
+    if (verbForm) {
+      sentences.push(`${templateOpener} ${verbForm} ${keyword1.toLowerCase()}.`);
+    } else {
+      sentences.push(`${templateOpener} ${keyword1.toLowerCase()}.`);
+    }
+  } else if (verbForm) {
+    sentences.push(noun
+      ? `${templateOpener} ${verbForm} ${noun.toLowerCase()}.`
+      : `${templateOpener} ${verbForm} the task.`);
+  } else {
+    return '';
+  }
+
+  if (phrase2 && phrase2 !== phrase1 && !taskNameLower.includes(phrase2.toLowerCase()) && sentences.length < maxSentences) {
+    const second = `It also covers ${phrase2.toLowerCase()}.`;
+    if ((sentences.join(' ').length + second.length) <= maxCharsTotal) sentences.push(second);
+  } else if (keyword1 && phrase1 && sentences.length === 1 && (keywords[1] || '').trim() && sentences[0].length < 120) {
+    const kw2 = (keywords[1] || '').trim();
+    if (kw2 && !taskNameLower.includes(kw2.toLowerCase()) && !phrase1.toLowerCase().includes(kw2.toLowerCase())) {
+      const second = `This includes ${kw2}.`;
+      if ((sentences.join(' ').length + second.length) <= maxCharsTotal) sentences.push(second);
+    }
+  }
+
+  let out = sentences.join(' ');
+  const words = out.split(/\s+/).filter(w => w.length > 0);
+  if (words.length > maxWordsPerSentence * maxSentences) {
+    out = words.slice(0, maxWordsPerSentence * maxSentences).join(' ').trim();
+    if (!out.endsWith('.')) out += '.';
+  }
+  if (out.length > maxCharsTotal) {
+    out = out.slice(0, maxCharsTotal).trim();
+    const lastPeriod = out.lastIndexOf('.');
+    if (lastPeriod > maxCharsTotal * 0.7) out = out.slice(0, lastPeriod + 1);
+    else if (!out.endsWith('.')) out += '.';
+  }
+  return out;
 }
 
 /**

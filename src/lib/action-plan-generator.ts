@@ -328,12 +328,45 @@ function generateBusinessSteps(
       term.toLowerCase().includes(match)
     )
   );
+  const hasMarketingPlanTerms = (terms: string[]) => terms.some(term => 
+    ['marketing', 'launch', 'product launch', 'campaign', 'strategy', 'plan'].some(match => 
+      term.toLowerCase().includes(match)
+    )
+  );
 
   // Check using Browser AI extracted terms (keywords, phrases, verbs, nouns)
   const hasMeeting = text.includes('meeting') || text.includes('presentation') || text.includes('call') ||
                      hasMeetingTerms(keywords) || hasMeetingTerms(phrases) || hasMeetingTerms(verbs);
   const hasReport = text.includes('report') || text.includes('analysis') || text.includes('review') ||
                     hasReportTerms(keywords) || hasReportTerms(phrases) || hasReportTerms(verbs);
+  const hasMarketingPlan = text.includes('marketing plan') || text.includes('product launch') || text.includes('product launch') ||
+    (text.includes('marketing') && (text.includes('plan') || text.includes('launch'))) ||
+    hasMarketingPlanTerms(keywords) || hasMarketingPlanTerms(phrases) || hasMarketingPlanTerms(nouns);
+
+  // Marketing plan / product launch: dedicated steps (Create PPT Deck, Develop Marketing Strategy, Create Schedule for Product Launch)
+  if (hasMarketingPlan) {
+    const third = Math.round(totalMinutes / 3);
+    steps.push({
+      action: 'Create PPT Deck',
+      estimatedMinutes: third,
+      category: 'preparation',
+      order: order++,
+    });
+    steps.push({
+      action: 'Develop Marketing Strategy',
+      estimatedMinutes: third,
+      category: 'execution',
+      order: order++,
+    });
+    steps.push({
+      action: 'Create Schedule for Product Launch',
+      estimatedMinutes: totalMinutes - 2 * third,
+      category: 'follow-up',
+      order: order++,
+      dependencies: [`step-${order - 2}`],
+    });
+    return steps;
+  }
 
   // Preparation steps
   if (hasMeeting) {
@@ -861,6 +894,14 @@ function generateSubtasks(
           subtasks.push('Practice delivery');
           subtasks.push('Prepare Q&A');
         }
+      }
+
+      // Marketing plan / product launch - align with action plan steps
+      if (text.includes('marketing plan') || text.includes('product launch') || (text.includes('marketing') && text.includes('launch')) ||
+          hasTerm(keywords, ['marketing', 'launch', 'campaign', 'strategy']) || hasTerm(phrases, ['marketing plan', 'product launch'])) {
+        subtasks.push('Create PPT Deck');
+        subtasks.push('Develop Marketing Strategy');
+        subtasks.push('Create Schedule for Product Launch');
       }
       break;
 
