@@ -1482,6 +1482,7 @@ export function SevenDayKanban({
                                               location={item.event.location}
                                               provider={item.event.provider}
                                               calendarColor={item.event.calendarColor}
+                                              isRecurring={item.event.isRecurring}
                                             />
                                           </motion.div>
                                         );
