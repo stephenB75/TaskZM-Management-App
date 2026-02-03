@@ -355,6 +355,8 @@ export interface GeneratedDescription {
   description: string;
   domain: Domain;
   confidence: number;
+  /** 'openai' when description came from server (Edge Function); 'local' when built from local terminology */
+  source?: 'openai' | 'local';
 }
 
 /**
@@ -3183,6 +3185,7 @@ export async function generateDescription(
       description: '',
       domain: DEFAULT_TASK_DOMAIN,
       confidence: 0,
+      source: 'local',
     };
   }
 
@@ -3241,10 +3244,10 @@ export async function generateDescription(
     confidence: domainResult.confidence,
   });
 
-  // SERVER AI FIRST: try Edge Function for description; fallback to local processing
+  // PRIMARY: OpenAI (server) — try Edge Function first. FALLBACK: local processing when no token, 4xx/5xx, or timeout.
   const serverAITimeoutMs = 10000;
   if (!accessToken) {
-    logger.debug('Server AI skipped: no access token (using local processing)');
+    logger.debug('OpenAI (primary) skipped: no access token; using local (fallback)');
   }
   if (accessToken) {
     try {
@@ -3265,15 +3268,15 @@ export async function generateDescription(
       clearTimeout(timeoutId);
       if (!res.ok) {
         const body = await res.text();
-        logger.debug('Server AI request failed, using local processing', {
+        logger.debug('OpenAI (primary) request failed; using local (fallback)', {
           status: res.status,
           statusText: res.statusText,
           body: body.slice(0, 200),
         });
         if (res.status === 401) {
-          logger.warn('Server AI: Unauthorized (401). Check that you are signed in and the session token is valid.');
+          logger.warn('OpenAI (primary): Unauthorized (401). Check that you are signed in and the session token is valid.');
         } else if (res.status === 503 || res.status === 502) {
-          logger.debug('Server AI not configured or upstream error (503/502)');
+          logger.debug('OpenAI not configured or upstream error (503/502); using local (fallback)');
         }
       }
       if (res.ok) {
@@ -3286,14 +3289,15 @@ export async function generateDescription(
           const notIdentical = descLower !== taskNameLowerCheck;
           const notJustTaskName = !descLower.startsWith(taskNameLowerCheck) || descLower.length > taskNameLowerCheck.length + 10;
           if (notIdentical && notJustTaskName) {
-            logger.debug('Server AI description used');
+            logger.debug('OpenAI (primary) description used');
             return {
               description: desc,
               domain: typeof data.domain === 'string' ? data.domain : domainRef,
               confidence: typeof data.confidence === 'number' ? data.confidence : 0.85,
+              source: 'openai',
             };
           }
-          logger.debug('Server AI description rejected (same as task name or too short), using local processing', {
+          logger.debug('OpenAI description rejected (same as task name or too short); using local (fallback)', {
             descPreview: desc.slice(0, 60),
             taskNameLength: taskNameLowerCheck.length,
             descLength: descLower.length,
@@ -3301,11 +3305,11 @@ export async function generateDescription(
         }
       }
     } catch (err) {
-      logger.debug('Server AI request failed (timeout or network), using local processing:', err);
+      logger.debug('OpenAI (primary) request failed (timeout or network); using local (fallback):', err);
     }
   }
 
-  // LOCAL PROCESSING: extract terms and build description (no Browser AI)
+  // FALLBACK: Local processing — extract terms and build description (no server call)
   let description = '';
   let confidence: number = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   let usedSearchResults = false;
@@ -3651,6 +3655,7 @@ export async function generateDescription(
     description: finalDescription,
     domain: domainRef,
     confidence,
+    source: 'local',
   };
   } catch (error) {
     // Error handling: ensure we always return a valid result
@@ -3664,6 +3669,7 @@ export async function generateDescription(
       description: fallbackDescription,
       domain,
       confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
+      source: 'local',
     };
   }
 }
@@ -3695,7 +3701,7 @@ export async function generateDescriptionOptions(
       ? effortScore 
       : 2.5;
 
-    // Try server AI first for 3-5 options
+    // PRIMARY: OpenAI (server) for 3-5 options. FALLBACK: local generation below.
     if (accessToken) {
       try {
         const controller = new AbortController();
@@ -3722,16 +3728,17 @@ export async function generateDescriptionOptions(
                 description: (o.description as string).trim(),
                 domain: typeof o.domain === 'string' ? o.domain : DEFAULT_TASK_DOMAIN,
                 confidence: typeof o.confidence === 'number' ? o.confidence : 0.75,
+                source: 'openai' as const,
               }));
             if (mapped.length > 0) return mapped.sort((a, b) => b.confidence - a.confidence);
           }
         }
       } catch (err) {
-        logger.debug('Server AI description-options failed, using local fallback:', err);
+        logger.debug('OpenAI (primary) description-options failed; using local (fallback):', err);
       }
     }
 
-    // Generate 3-5 options with varying detail levels (local fallback)
+    // FALLBACK: Generate 3-5 options with varying detail levels (local)
     const numOptions = normalizedEffortScore <= DESCRIPTION_OPTIONS_CONFIG.LOW_EFFORT_THRESHOLD 
       ? DESCRIPTION_OPTIONS_CONFIG.MIN_OPTIONS
       : normalizedEffortScore <= DESCRIPTION_OPTIONS_CONFIG.MEDIUM_EFFORT_THRESHOLD 

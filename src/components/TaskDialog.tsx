@@ -1008,6 +1008,7 @@ export function TaskDialog({
       // Reset for new task
       setTitle("");
       setDescription("");
+      setDescriptionSource(null);
       setStatus("todo");
       setPriority("medium");
       setDueDate(undefined);
@@ -2253,11 +2254,8 @@ export function TaskDialog({
                                   // Ensure description starts at first line (remove leading whitespace)
                                   const cleanedDescription = generated.description.trim().replace(/^\s+/, '');
                                   setDescription(cleanedDescription);
-                                  const source = generated.confidence >= DESCRIPTION_GENERATION_CONFIG.highConfidenceThreshold 
-                                    ? DESCRIPTION_GENERATION_CONFIG.sourceLabels.browserAI 
-                                    : DESCRIPTION_GENERATION_CONFIG.sourceLabels.localTerminology;
                                   toast.success('Description regenerated', {
-                                    description: `Regenerated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,
+                                    description: `Regenerated based on ${generated.domain} context. AI Action Plan will update automatically.`,
                                   });
                                 } else {
                                   logger.warn('Regenerated description is empty:', generated);
@@ -2350,11 +2348,8 @@ export function TaskDialog({
                                   }, TIMING_CONSTANTS.STATE_UPDATE_LOG_DELAY);
                                 }
                                 
-                                const source = generated.confidence >= DESCRIPTION_GENERATION_CONFIG.highConfidenceThreshold 
-                                  ? DESCRIPTION_GENERATION_CONFIG.sourceLabels.browserAI 
-                                  : DESCRIPTION_GENERATION_CONFIG.sourceLabels.localTerminology;
                                 toast.success('AI description generated', {
-                                  description: `Generated based on ${generated.domain} context using ${source}. AI Action Plan will update automatically.`,
+                                  description: `Generated based on ${generated.domain} context. AI Action Plan will update automatically.`,
                                 });
                               } else {
                                 logger.warn('AI Generate returned empty description:', generated);
