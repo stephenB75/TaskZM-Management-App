@@ -148,32 +148,27 @@ export function SevenDayKanban({
     return `#${clean}${val}`;
   };
 
-  const getColumnBgGradient = (dayName: string, isDarkMode: boolean = false) => {
+  const getColumnBgGradient = (dayName: string, isDarkMode: boolean = false, isToday: boolean = false) => {
     const dayColors = getDayColors(dayName);
+    const grad = KANBAN_DAY_COLORS.columnGradient;
+    const startPct = isToday ? grad.startOpacity : grad.nonTodayStartOpacity;
+    const darkStartPct = isToday ? grad.darkModeStartOpacity : grad.nonTodayDarkModeStartOpacity;
     // Use header color (tab color) fading to transparent/background
     if (hasHeader(dayColors)) {
-      // Use the header 'from' color (main tab color) as the starting point
       const headerColor = dayColors.header.from;
       if (isDarkMode) {
-        // Dark mode: use tab color with dark mode opacity settings, fading to transparent
-        const start = toAlphaHex(headerColor, KANBAN_DAY_COLORS.columnGradient.darkModeStartOpacity);
-        const end = toAlphaHex(headerColor, KANBAN_DAY_COLORS.columnGradient.darkModeEndOpacity);
+        const start = toAlphaHex(headerColor, darkStartPct);
+        const end = toAlphaHex(headerColor, grad.darkModeEndOpacity);
         return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
       } else {
-        // Light mode: use tab color fading to white
-        const start = toAlphaHex(headerColor, KANBAN_DAY_COLORS.columnGradient.startOpacity);
+        const start = toAlphaHex(headerColor, startPct);
         const end = COLOR_BACKGROUND_WHITE;
         return `linear-gradient(180deg, ${start} 0%, ${end} 100%)`;
       }
     }
-    // Fallback for weekend colors - fade to transparent/white
-    // Use white color constant with opacity helper for consistency
-    const whiteWithOpacity = (opacity: number) => {
-      // Convert COLOR_BACKGROUND_WHITE (#FFFFFF) to rgba format with opacity
-      return `rgba(255, 255, 255, ${opacity / 100})`;
-    };
+    const whiteWithOpacity = (opacity: number) => `rgba(255, 255, 255, ${opacity / 100})`;
     if (isDarkMode) {
-      return `linear-gradient(180deg, ${whiteWithOpacity(KANBAN_DAY_COLORS.columnGradient.darkModeStartOpacity)} 0%, ${whiteWithOpacity(KANBAN_DAY_COLORS.columnGradient.darkModeEndOpacity)} 100%)`;
+      return `linear-gradient(180deg, ${whiteWithOpacity(darkStartPct)} 0%, ${whiteWithOpacity(grad.darkModeEndOpacity)} 100%)`;
     }
     return `linear-gradient(180deg, ${whiteWithOpacity(0)} 0%, ${COLOR_BACKGROUND_WHITE} 100%)`;
   };
@@ -1266,10 +1261,10 @@ export function SevenDayKanban({
                               return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
                             };
                             
-                            // Solid pastel color at 70% opacity (no gradient)
+                            // Today: full opacity so current day stands out when scrolling; non-today: reduced opacity
                             const headerOpacity = column.isToday 
                               ? KANBAN_DAY_COLORS.today.headerOpacity // Full opacity for today
-                              : dayColors.header.opacity; // 70% opacity for non-today days
+                              : KANBAN_DAY_COLORS.standard.nonTodayHeaderOpacity; // Reduced for non-today so today column is brighter
                             
                             // Use solid pastel color (from color only, no gradient)
                             const solidColor = column.isToday 
@@ -1311,11 +1306,12 @@ export function SevenDayKanban({
                             // No ring or shadow - clean solid color only
                             baseStyle.boxShadow = KANBAN_DAY_COLORS.today.boxShadowNone;
                           } else {
-                            // Non-today days in dark mode: solid pastel color at 70% opacity
+                            // Non-today days in dark mode: reduced opacity so today column stands out when scrolling
                             const dayColors = getDayColors(column.dayName);
                             if (hasHeader(dayColors)) {
                               const solidColor = dayColors.header.from;
-                              baseStyle.backgroundColor = `${solidColor}${Math.round(dayColors.header.opacity * 2.55).toString(16).padStart(2, '0')}`;
+                              const opacity = KANBAN_DAY_COLORS.standard.nonTodayHeaderOpacity;
+                              baseStyle.backgroundColor = `${solidColor}${Math.round(opacity * 2.55).toString(16).padStart(2, '0')}`;
                               baseStyle.backgroundImage = 'none'; // Remove gradient
                             }
                           }
@@ -1425,8 +1421,8 @@ export function SevenDayKanban({
                           )}
                           style={{
                             backgroundImage: isDark
-                              ? getColumnBgGradient(column.dayName, isDark)
-                              : getColumnBgGradient(column.dayName),
+                              ? getColumnBgGradient(column.dayName, isDark, column.isToday)
+                              : getColumnBgGradient(column.dayName, false, column.isToday),
                                   minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
                           }}
                         >

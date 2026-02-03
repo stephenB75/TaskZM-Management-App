@@ -165,16 +165,20 @@ export const KANBAN_DAY_COLORS = {
       color: '#7B68EE', // Solid lavender color for the indicator line (matches ring and text colors)
     },
   },
-  // Standard opacity values for non-highlighted columns
+  // Standard opacity values for non-highlighted columns (reduced so current day stands out when scrolling)
   standard: {
     viaOpacity: 70, // Standard via opacity for non-today days
+    nonTodayHeaderOpacity: 48, // Header/tab opacity for non-today columns (reduced so today column appears brighter)
   },
   // Column background gradient settings - gradient of column tab color
   columnGradient: {
-    startOpacity: 45, // Starting opacity percentage for column gradient (increased from 25% to 45% for better color visibility)
+    startOpacity: 45, // Starting opacity for today column (full visibility when scrolling)
     endOpacity: 0, // Ending opacity (fades to white/transparent)
-    darkModeStartOpacity: 20, // Starting opacity for dark mode gradient (increased from 12% to 20% for better visibility)
+    darkModeStartOpacity: 20, // Starting opacity for today column in dark mode
     darkModeEndOpacity: 2, // Ending opacity for dark mode gradient
+    // Reduced opacity for non-today columns so current day stands out when scrolling vertically
+    nonTodayStartOpacity: 26, // Non-today column gradient start (light mode)
+    nonTodayDarkModeStartOpacity: 11, // Non-today column gradient start (dark mode)
   },
 } as const;
 
