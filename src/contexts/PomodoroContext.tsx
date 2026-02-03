@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { logger } from '../lib/logger';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import {
@@ -422,7 +423,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       const baseTime = baseTimeTrackedRef.current[taskId] || 0;
       const newTotal = baseTime + sessionMinutes;
 
-      // Update tracked time via callback
+      // Update tracked time via callback (persists to task.actualTime → Analytics time-tracking & Pomodoro/Award reports)
       const callback = onTimeUpdateCallbacksRef.current[taskId];
       if (callback) {
         try {
@@ -454,6 +455,20 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           icon: '/favicon.ico',
         });
       }
+
+      // Prompt user to close/mark task complete
+      toast.success(NOTIFICATION_TITLES.pomodoroComplete, {
+        description: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
+        action: {
+          label: 'Mark task complete',
+          onClick: () => {
+            updateTask(taskId, { status: 'done', completedAt: new Date().toISOString() }).catch(err => {
+              logger.error('Failed to mark task complete after Pomodoro:', err);
+              toast.error('Could not mark task complete');
+            });
+          },
+        },
+      });
 
       // Auto-switch to break
       // After every 4 completed work sessions, take a long break
@@ -520,41 +535,50 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           return prev;
         }
 
+        let sessionStart = sessionStartTimeRef.current[taskId];
+        const workDuration = getWorkDuration(taskId);
+
         if (current.mode === 'work') {
-          elapsedSecondsRef.current[taskId] = (elapsedSecondsRef.current[taskId] || 0) + 1;
-        }
-
-        if (current.timeLeft <= 1) {
-          // Timer complete
-          handleTimerComplete(taskId);
-          return prev;
-        }
-
-        const updated = {
-          ...prev,
-          [taskId]: {
-            ...current,
-            timeLeft: current.timeLeft - 1,
+          if (!sessionStart) {
+            sessionStart = Date.now() - (elapsedSecondsRef.current[taskId] || 0) * 1000;
+            sessionStartTimeRef.current[taskId] = sessionStart;
           }
-        };
+        }
 
-        if (current.mode === 'work') {
-          const elapsed = elapsedSecondsRef.current[taskId] || 0;
-          const elapsedMinutes = Math.floor(elapsed / 60);
+        if (current.mode === 'work' && sessionStart > 0) {
+          // Use wall-clock elapsed time so tracking stays accurate (no drift when tab backgrounded or event loop busy)
+          const elapsedSeconds = Math.floor((Date.now() - sessionStart) / 1000);
+          elapsedSecondsRef.current[taskId] = elapsedSeconds;
+          const timeLeft = Math.max(0, workDuration - elapsedSeconds);
+
+          if (timeLeft <= 0) {
+            handleTimerComplete(taskId);
+            return prev;
+          }
+
+          const updated = {
+            ...prev,
+            [taskId]: {
+              ...current,
+              timeLeft,
+            }
+          };
+
+          // Periodic save: every full minute, persist to task.actualTime (flows to Analytics and Pomodoro reports)
+          const elapsedMinutes = Math.floor(elapsedSeconds / 60);
           const lastUpdate = lastUpdateTimeRef.current[taskId] || 0;
-
           if (elapsedMinutes > lastUpdate && elapsedMinutes > 0) {
             lastUpdateTimeRef.current[taskId] = elapsedMinutes;
             const callback = onTimeUpdateCallbacksRef.current[taskId];
             if (callback) {
               const baseTime = baseTimeTrackedRef.current[taskId] || 0;
               const totalMinutes = baseTime + elapsedMinutes;
-
               callback(totalMinutes)
                 .then(() => {
                   baseTimeTrackedRef.current[taskId] = totalMinutes;
-                  const remainingSeconds = elapsed % 60;
+                  const remainingSeconds = elapsedSeconds % 60;
                   elapsedSecondsRef.current[taskId] = remainingSeconds;
+                  sessionStartTimeRef.current[taskId] = Date.now() - remainingSeconds * 1000;
                   lastUpdateTimeRef.current[taskId] = 0;
                   setTimers(prevTimers => ({
                     ...prevTimers,
@@ -569,9 +593,21 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
                 });
             }
           }
+          return updated;
         }
 
-        return updated;
+        // Break mode: count down timeLeft by 1 second (breaks don't need wall-clock accuracy for reporting)
+        if (current.timeLeft <= 1) {
+          handleTimerComplete(taskId);
+          return prev;
+        }
+        return {
+          ...prev,
+          [taskId]: {
+            ...current,
+            timeLeft: current.timeLeft - 1,
+          }
+        };
       });
     }, 1000);
   };
@@ -595,7 +631,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     saveToLocalStorage(STORAGE_KEY, persisted);
   }, [timers]);
 
-  // Public method to register callbacks
+  // Public method to register callbacks. Callbacks persist total minutes to task.actualTime via updateTask.
+  // That data flows to: Analytics (total/weekly time tracked, time-tracking trend); AwardContext (Pomodoro session count = actualTime/25).
   const registerCallback = (taskId: string, callback: (minutes: number) => void | Promise<void>, taskTitle: string) => {
     onTimeUpdateCallbacksRef.current[taskId] = callback;
     taskTitlesRef.current[taskId] = taskTitle;
