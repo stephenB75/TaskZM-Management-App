@@ -633,6 +633,7 @@ export function TodayAgendaView({
                     <div
                             key={`task-${item.task.id}`}
                             data-task-id={item.task.id}
+                            className="w-full"
                       style={{
                               marginTop: `${marginTopPx}px`,
                               display: 'flex',
@@ -643,6 +644,9 @@ export function TodayAgendaView({
                       <div
                         className="w-full min-w-full"
                         style={{
+                          display: 'block',
+                          width: '100%',
+                          minWidth: '100%',
                           transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                           transformOrigin: 'top center',
                         }}
@@ -674,6 +678,9 @@ export function TodayAgendaView({
                             <div
                               className="w-full min-w-full"
                               style={{
+                                display: 'block',
+                                width: '100%',
+                                minWidth: '100%',
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                                 transformOrigin: 'top center',
                               }}
@@ -910,6 +917,7 @@ export function TodayAgendaView({
                     <div
                             key={`task-${item.task.id}`}
                             data-task-id={item.task.id}
+                            className="w-full"
                       style={{
                               marginTop: `${marginTopPx}px`,
                               display: 'flex',
@@ -920,6 +928,9 @@ export function TodayAgendaView({
                       <div
                         className="w-full min-w-full"
                         style={{
+                          display: 'block',
+                          width: '100%',
+                          minWidth: '100%',
                           transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                           transformOrigin: 'top center',
                         }}
@@ -951,6 +962,9 @@ export function TodayAgendaView({
                             <div
                               className="w-full min-w-full"
                               style={{
+                                display: 'block',
+                                width: '100%',
+                                minWidth: '100%',
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                                 transformOrigin: 'top center',
                               }}
@@ -1171,6 +1185,9 @@ export function TodayAgendaView({
                           <div
                             className="w-full min-w-full"
                             style={{
+                              display: 'block',
+                              width: '100%',
+                              minWidth: '100%',
                               transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                               transformOrigin: 'top center',
                             }}
@@ -1202,6 +1219,9 @@ export function TodayAgendaView({
                           <div
                             className="w-full min-w-full"
                             style={{
+                              display: 'block',
+                              width: '100%',
+                              minWidth: '100%',
                               transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                               transformOrigin: 'top center',
                             }}
@@ -1440,6 +1460,9 @@ export function TodayAgendaView({
                             <div
                               className="w-full min-w-full"
                               style={{
+                                display: 'block',
+                                width: '100%',
+                                minWidth: '100%',
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                                 transformOrigin: 'top center',
                               }}
@@ -1471,6 +1494,9 @@ export function TodayAgendaView({
                             <div
                               className="w-full min-w-full"
                               style={{
+                                display: 'block',
+                                width: '100%',
+                                minWidth: '100%',
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                                 transformOrigin: 'top center',
                               }}
