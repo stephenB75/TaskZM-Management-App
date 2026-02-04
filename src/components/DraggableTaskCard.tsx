@@ -97,6 +97,7 @@ export const DraggableTaskCard = React.forwardRef<
     { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete },
     forwardedRef,
   ) => {
+    const isTodayAgenda = droppableId === 'today-agenda';
     const { updateTask, tasks, workspaceId, syncWithServer } = useTasks();
     const { accessToken } = useAuth();
     const { getTeamMember, teams } = useTeam();
@@ -790,9 +791,9 @@ export const DraggableTaskCard = React.forwardRef<
                 backgroundColor: getPriorityTabBackgroundColor(task.priority),
                 minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                 gridTemplateColumns: '1fr auto auto 1fr',
-                gridTemplateRows: 'auto auto',
+                gridTemplateRows: isTodayAgenda ? 'auto' : 'auto auto',
                 gap: `0 ${isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop}`,
-                rowGap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
+                rowGap: isTodayAgenda ? 0 : (isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop),
                 width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop,
                 paddingLeft: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
                 paddingRight: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
@@ -800,8 +801,8 @@ export const DraggableTaskCard = React.forwardRef<
                 paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
               }}
             >
-              {/* Row 1: Col 1 = time, Col 2 = tag, Col 3 = duration, Col 4 = spacer (mark complete moved to headline row) */}
-              {scheduledTimeLabel && (
+              {/* Row 1: Col 1 = time (hidden in Today Agenda), Col 2 = tag, Col 3 = duration, Col 4 = spacer; when Today Agenda: tag+priority inline in col 1 */}
+              {scheduledTimeLabel && !isTodayAgenda && (
                 <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1, gridRow: 1 }}>
                   <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
                   <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
@@ -810,9 +811,16 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
 
-              {/* Tag in row 1 (priority badge place) */}
-              {task.tags && task.tags.length > 0 && (
-                <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 1 }}>
+              {/* Tag (and priority inline when Today Agenda) in row 1 */}
+              <div
+                className={cn("flex justify-center", isTodayAgenda && "flex-wrap items-center gap-1")}
+                style={{
+                  gridColumn: isTodayAgenda ? 1 : (scheduledTimeLabel ? 2 : 1),
+                  gridRow: 1,
+                  ...(isTodayAgenda ? { flexDirection: 'row' as const } : {}),
+                }}
+              >
+                {task.tags && task.tags.length > 0 && (
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -823,11 +831,27 @@ export const DraggableTaskCard = React.forwardRef<
                   >
                     {task.tags[0]}
                   </Badge>
-                </div>
-              )}
+                )}
+                {isTodayAgenda && (
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
+                      isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
+                    )}
+                    style={{
+                      color: !task.priority || task.priority === 'default'
+                        ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
+                        : getPriorityLineColor(task.priority),
+                    }}
+                  >
+                    {task.priority}
+                  </Badge>
+                )}
+              </div>
 
               {task.estimatedTime && (
-                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: scheduledTimeLabel ? 3 : 2, gridRow: 1 }}>
+                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: isTodayAgenda ? 2 : (scheduledTimeLabel ? 3 : 2), gridRow: 1 }}>
                   {formatDuration(task.estimatedTime)}
                 </span>
               )}
@@ -841,23 +865,25 @@ export const DraggableTaskCard = React.forwardRef<
                 <div style={{ gridColumn: 4, gridRow: 1 }} aria-hidden="true" />
               )}
 
-              {/* Row 2: Priority badge (tag place) */}
-              <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
-                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
-                  )}
-                  style={{
-                    color: !task.priority || task.priority === 'default'
-                      ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
-                      : getPriorityLineColor(task.priority),
-                  }}
-                >
-                  {task.priority}
-                </Badge>
-              </div>
+              {/* Row 2: Priority badge (tag place) - only when not Today Agenda (priority is inline with tag in Today Agenda) */}
+              {!isTodayAgenda && (
+                <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
+                      isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
+                    )}
+                    style={{
+                      color: !task.priority || task.priority === 'default'
+                        ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
+                        : getPriorityLineColor(task.priority),
+                    }}
+                  >
+                    {task.priority}
+                  </Badge>
+                </div>
+              )}
             </div>
           </div>
 
