@@ -15,6 +15,8 @@ interface CalendarEventCardProps {
   provider: 'google' | 'apple' | 'outlook';
   calendarColor?: string;
   isRecurring?: boolean; // Flag indicating if this is a recurring event
+  /** When 'kanban', uses light gray background, square left corners, rounded right; background starts at vertical line. */
+  variant?: 'default' | 'kanban';
 }
 
 // Calculate duration in minutes between two ISO date strings
@@ -235,7 +237,7 @@ const eventColorPalette = [
   },
 ];
 
-export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring }: CalendarEventCardProps) {
+export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring, variant = 'default' }: CalendarEventCardProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const mode = isDark ? 'dark' : 'light';
@@ -268,32 +270,81 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     stripe: palette.stripe[mode],
   };
 
+  const contentPaddingLeft = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.left.desktop;
+
+  // Kanban week view: light gray background, square left, rounded right, background starts at vertical line; same width as task cards
+  if (variant === 'kanban') {
+    return (
+      <div
+        className="flex w-full transition-all duration-200 cursor-default select-none box-border min-w-0"
+        style={{ minHeight: `${calculatedHeight}px` }}
+      >
+        {/* Vertical line at left edge (square corners) - background starts from here */}
+        <div
+          className={cn('flex-shrink-0 rounded-none', colors.accent)}
+          style={{
+            width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width,
+            minHeight: `${calculatedHeight}px`,
+          }}
+        />
+        <div
+          className={cn(
+            'flex-1 min-h-full flex flex-col gap-1 py-1 rounded-r-lg min-w-0',
+            'bg-gray-100/90 dark:bg-gray-800/60 border-0 border-l-0',
+          )}
+          style={{
+            paddingLeft: 12,
+            minHeight: `${calculatedHeight}px`,
+          }}
+        >
+          {/* Header with calendar icon */}
+          <div className="flex items-center gap-1.5">
+            <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
+            <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
+              {provider === 'apple' ? 'iCloud' : provider === 'outlook' ? 'Outlook' : 'Google'} Calendar
+            </span>
+            {isRecurring && (
+              <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />
+            )}
+          </div>
+          <h4 className={cn('text-sm font-semibold leading-tight line-clamp-2', colors.text)}>{title}</h4>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1">
+              <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
+              <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{startTime} – {endTime}</span>
+            </div>
+            <span className={cn('font-medium px-1.5 py-0.5 rounded-full', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
+              {formatDuration(durationMinutes)}
+            </span>
+          </div>
+          {location && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
+              <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Default (Today Agenda, etc.): rounded card with colored vertical line inset
   return (
-    // Card container with vertical line - aligned with task cards
     <div
       className={cn(
         "flex w-full transition-all duration-200 cursor-default select-none rounded-lg relative box-border flex-col",
-        // Match task card container padding for container-level alignment
-        // Task card uses: px-2 py-1 pb-1 on mobile, px-3 py-1.5 pb-1.5 on desktop
-        // Vertical line will be positioned at 8px from container edge to align with task card headline text (which always uses px-2)
         isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
       )}
-      style={{
-        minHeight: `${calculatedHeight}px`,
-      }}
+      style={{ minHeight: `${calculatedHeight}px` }}
     >
-      {/* Vertical colored line on left - aligned with task card text start (px-2 = 8px from card edge) */}
       <div 
         className={cn('absolute top-0 bottom-0 rounded-full', colors.accent)}
         style={{ 
-          left: `${isMobile ? CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.mobile : CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.desktop}px`, // Align with task card text start (px-2 = 0.5rem = 8px)
+          left: `${isMobile ? CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.mobile : CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.desktop}px`,
           width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
         }}
       />
-      
-      {/* Content area - with left padding to account for vertical line position and gap */}
-      <div className="flex-1 py-1 flex flex-col gap-1" style={{ paddingLeft: `${isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.left.desktop}px` }}>
-        {/* Header with calendar icon */}
+      <div className="flex-1 py-1 flex flex-col gap-1" style={{ paddingLeft: `${contentPaddingLeft}px` }}>
         <div className="flex items-center gap-1.5">
           <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
           <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
@@ -303,39 +354,20 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />
           )}
         </div>
-        
-        {/* Title */}
-        <h4 className={cn(
-          'text-sm font-semibold leading-tight line-clamp-2',
-          colors.text
-        )}>
-          {title}
-        </h4>
-        
-        {/* Time and duration */}
+        <h4 className={cn('text-sm font-semibold leading-tight line-clamp-2', colors.text)}>{title}</h4>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1">
             <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
-            <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>
-              {startTime} – {endTime}
-            </span>
+            <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{startTime} – {endTime}</span>
           </div>
-          <span className={cn(
-            'font-medium px-1.5 py-0.5 rounded-full',
-            colors.iconBg,
-            colors.mutedText
-          )} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
+          <span className={cn('font-medium px-1.5 py-0.5 rounded-full', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
             {formatDuration(durationMinutes)}
           </span>
         </div>
-        
-        {/* Location if present */}
         {location && (
           <div className="flex items-center gap-1 mt-0.5">
             <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
-            <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>
-              {location}
-            </span>
+            <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
           </div>
         )}
       </div>

@@ -1037,6 +1037,7 @@ export function SevenDayKanban({
                                         provider={item.event.provider}
                                         calendarColor={item.event.calendarColor}
                                         isRecurring={item.event.isRecurring}
+                                        variant="kanban"
                                       />
                                     </motion.div>
                                   );
@@ -1483,6 +1484,7 @@ export function SevenDayKanban({
                                               provider={item.event.provider}
                                               calendarColor={item.event.calendarColor}
                                               isRecurring={item.event.isRecurring}
+                                              variant="kanban"
                                             />
                                           </motion.div>
                                         );

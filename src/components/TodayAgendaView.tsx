@@ -223,6 +223,66 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents]);
 
+  // Calculate height based on task duration (must be defined before agendaTimePositions which uses it)
+  const getTaskHeight = useCallback((task: Task) => {
+    const minutes = getTaskMinutes(task);
+    const isMobile = shouldUseMobileLayout;
+    const isShortTask = minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
+    const isMediumTask = minutes >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
+    const isLongTask = minutes >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
+    const hasTime = !!(task.scheduledDate || task.dueDate);
+    const hasPriority = true;
+    const hasTag = task.tags && task.tags.length > 0;
+    const hasDuration = !!task.estimatedTime;
+    const badgeCount = [hasTime, hasPriority, hasTag, hasDuration].filter(Boolean).length;
+    const estimatedBadgeWidth = badgeCount * TASK_CARD_CALCULATIONS.badgeWidths.average;
+    const availableWidth = isMobile ? TASK_CARD_CALCULATIONS.availableWidth.mobile : TASK_CARD_CALCULATIONS.availableWidth.desktop;
+    const badgesWillWrap = estimatedBadgeWidth > availableWidth;
+    const badgeWrapHeight = badgesWillWrap ? TASK_CARD_HEIGHT_CONFIG.componentHeights.badgeWrap : 0;
+    const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
+    const hasDescription = !!task.description;
+    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    let baseHeight: number;
+    if (isShortTask) {
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base;
+    } else if (isMediumTask) {
+      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
+    } else {
+      const durationThresholds = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.durationThresholds;
+      if (minutes >= durationThresholds.at180mins) baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins;
+      else if (minutes >= durationThresholds.at150mins) baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins;
+      else if (minutes >= durationThresholds.at120mins) baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins;
+      else if (minutes >= durationThresholds.at90mins) baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins;
+      else baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins;
+    }
+    baseHeight += badgeWrapHeight;
+    if (hasDescription) {
+      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
+      const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
+      let actualLines: number;
+      if (isShortTask) actualLines = Math.min(Math.max(estimatedLines, 1), 1);
+      else if (isMediumTask) actualLines = Math.min(Math.max(estimatedLines, 1), 2);
+      else actualLines = Math.max(estimatedLines, 1);
+      const descriptionContentHeight = actualLines * lineHeight;
+      const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
+      baseHeight += descriptionContentHeight + descriptionBottomPadding;
+    }
+    if (hasAssignedUsers) {
+      baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base + ((hasDescription && !hasSubtasks) ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard);
+    }
+    if (hasSubtasks) {
+      const subtaskCount = Math.min(task.subtasks.length, 3);
+      const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight;
+      const subtaskSpacing = isMobile ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.mobile : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.desktop;
+      baseHeight += subtaskCount * subtaskItemHeight + (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0) + (hasDescription ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing : 0);
+    }
+    let minHeight: number;
+    if (isShortTask) minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base;
+    else if (isMediumTask) minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
+    else minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight;
+    return Math.max(Math.min(baseHeight, TASK_CARD_HEIGHT_CONFIG.maxHeight), minHeight);
+  }, [shouldUseMobileLayout]);
+
   // Cumulative positions: each item stacked with (previous height + gap) so spacing between tasks is consistent
   const agendaTimePositions = useMemo(() => {
     const scale = TASK_CARD_TIMELINE.scale.todayAgenda;
@@ -349,134 +409,6 @@ export function TodayAgendaView({
         return "bg-gray-300";
     }
   };
-
-  // Calculate height based on task duration
-  // Auto-adjusts for: badge wrapping, assigned users, tracking, descriptions
-  // IMPORTANT: Use AI Duration Estimator instead of hardcoded fallback
-  const getTaskHeight = useCallback((task: Task) => {
-    // Use AI estimator to get accurate duration (handles null/0/undefined cases)
-    const minutes = getTaskMinutes(task);
-    const isMobile = shouldUseMobileLayout;
-    
-    // Determine task category using constants
-    const isShortTask = minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
-    const isMediumTask = minutes >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
-    const isLongTask = minutes >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
-    
-    // Count badges that will be displayed in the top row
-    const hasTime = !!(task.scheduledDate || task.dueDate);
-    const hasPriority = true; // Always shown
-    const hasTag = task.tags && task.tags.length > 0;
-    const hasDuration = !!task.estimatedTime;
-    
-    // Estimate if badges will wrap to second line
-    const badgeCount = [hasTime, hasPriority, hasTag, hasDuration].filter(Boolean).length;
-    const estimatedBadgeWidth = badgeCount * TASK_CARD_CALCULATIONS.badgeWidths.average;
-    const availableWidth = isMobile ? TASK_CARD_CALCULATIONS.availableWidth.mobile : TASK_CARD_CALCULATIONS.availableWidth.desktop;
-    const badgesWillWrap = estimatedBadgeWidth > availableWidth;
-    const badgeWrapHeight = badgesWillWrap ? TASK_CARD_HEIGHT_CONFIG.componentHeights.badgeWrap : 0;
-    
-    const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
-    const hasDescription = !!task.description; // Always show description if present, regardless of duration
-    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-    
-    // STANDARD HEIGHT CALCULATION: Use standard heights first, then auto-adjust for components
-    // Step 1: Get standard height for this duration category (this is the BASE)
-    let baseHeight: number;
-    if (isShortTask) {
-      // Short tasks (< 45 mins): Use standard base height
-      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px standard
-    } else if (isMediumTask) {
-      // Medium tasks (45-60 mins): Use standard minimum height
-      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px standard
-    } else {
-      // Long tasks (>= 60 mins): Use standard heights at defined points
-      // Use duration threshold constants instead of hardcoded values
-      const durationThresholds = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.durationThresholds;
-      if (minutes >= durationThresholds.at180mins) {
-        // >= 180 mins: Use beyond180mins height
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins;
-      } else if (minutes >= durationThresholds.at150mins) {
-        // >= 150 mins: Use at150mins height
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins;
-      } else if (minutes >= durationThresholds.at120mins) {
-        // >= 120 mins: Use at120mins height
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins;
-      } else if (minutes >= durationThresholds.at90mins) {
-        // >= 90 mins: Use at90mins height
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins;
-      } else {
-        // 60-89 mins: Use standard base height (at60mins)
-        baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins;
-      }
-    }
-    
-    // Step 2: Now add component heights on top of the standard base height
-    
-    // Auto-adjust: Add height for badge wrapping
-      baseHeight += badgeWrapHeight;
-      
-    // Auto-adjust: Add height for description (if description exists)
-    // Calculate actual description height based on content, with minimal padding
-      if (hasDescription) {
-      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
-      const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
-      // Use actual line count, but ensure minimum of 1 line (16px) for very short descriptions
-      // For tasks under 45 minutes, cap at 1 line
-      // For tasks 45-60 minutes, cap at 2 lines
-      let actualLines: number;
-      if (isShortTask) {
-        actualLines = Math.min(Math.max(estimatedLines, 1), 1); // Cap at 1 line for tasks < 45 mins
-      } else if (isMediumTask) {
-        actualLines = Math.min(Math.max(estimatedLines, 1), 2); // Cap at 2 lines for tasks 45-60 mins
-      } else {
-        actualLines = Math.max(estimatedLines, 1); // Full calculation for tasks >= 60 mins
-      }
-      const descriptionContentHeight = actualLines * lineHeight;
-      // Add minimal bottom padding only when needed (0px if assigned users follow, 6px otherwise)
-      const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) 
-        ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap
-        : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
-      const descriptionHeight = descriptionContentHeight + descriptionBottomPadding;
-        baseHeight += descriptionHeight;
-      }
-      
-    // Auto-adjust: Add height for assigned users (if present)
-      if (hasAssignedUsers) {
-      const assignedUsersBaseHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base;
-      const assignedUsersSpacing = (hasDescription && !hasSubtasks) 
-        ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced
-        : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard;
-      baseHeight += assignedUsersBaseHeight + assignedUsersSpacing;
-      }
-      
-    // Auto-adjust: Add height for subtasks (if present)
-      if (hasSubtasks) {
-      const subtaskCount = Math.min(task.subtasks.length, 3);
-      const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight;
-      const subtaskSpacing = isMobile 
-        ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.mobile 
-        : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.desktop;
-      const subtaskHeight = subtaskCount * subtaskItemHeight + 
-        (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0);
-      const subtaskTopSpacing = hasDescription ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing : 0;
-      baseHeight += subtaskHeight + subtaskTopSpacing;
-      }
-      
-    // Step 3: Enforce bounds - minimum based on task category, maximum 550px
-    let minHeight: number;
-    if (isShortTask) {
-      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base; // 80px minimum for short tasks
-    } else if (isMediumTask) {
-      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min; // 120px minimum for medium tasks
-    } else {
-      minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight; // 200px minimum for long tasks
-    }
-    const effectiveMaxHeight = TASK_CARD_HEIGHT_CONFIG.maxHeight; // 550px maximum
-    
-    return Math.max(Math.min(baseHeight, effectiveMaxHeight), minHeight);
-  }, []); // Empty deps - function is pure, only depends on task parameter
-
 
   return (
     <>
