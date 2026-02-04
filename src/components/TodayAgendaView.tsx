@@ -224,10 +224,42 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents]);
 
-  // Use fixed spacing between items (no time-based spacing)
-  const minGap = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing; // Fixed spacing from constants
-  // Build layouts only for tasks (events will be inserted at their positions)
-  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, minGap, false), [todayTasks, minGap]); // Disable time-based spacing
+  // Get minutes from midnight (0–1439) for time-based timeline alignment
+  const getMinutesFromMidnight = useCallback((isoOrDate: string | Date): number | null => {
+    try {
+      const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate;
+      if (Number.isNaN(d.getTime())) return null;
+      return d.getHours() * 60 + d.getMinutes();
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Time-based positions: align each item with its time on the timeline (1:00 AM = 60 * pixelsPerMinute from top)
+  const agendaTimePositions = useMemo(() => {
+    const pixelsPerMinute = TASK_CARD_LAYOUT_METRICS.pixelsPerMinute;
+    const minGapPx = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+    let runningMarginPx = 0;
+    return combinedItems.map((item, index) => {
+      const startMinutes =
+        item.type === 'task' && item.task?.scheduledDate
+          ? getMinutesFromMidnight(item.task.scheduledDate)
+          : item.type === 'event' && item.event?.start
+            ? getMinutesFromMidnight(item.event.start)
+            : null;
+      if (startMinutes !== null) {
+        const marginTopPx = startMinutes * pixelsPerMinute;
+        runningMarginPx = marginTopPx;
+        return { marginTopPx };
+      }
+      const marginTopPx = runningMarginPx;
+      runningMarginPx += minGapPx;
+      return { marginTopPx };
+    });
+  }, [combinedItems, getMinutesFromMidnight]);
+
+  const minGap = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, minGap, false), [todayTasks, minGap]);
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
@@ -667,11 +699,10 @@ export function TodayAgendaView({
                   <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                     {combinedItems.map((item, index) => {
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-                      const taskLayout = item.type === 'task' && item.task ? timelineTaskLayouts.find(l => l.task.id === item.task!.id) : null;
-                      const marginTop = index === 0 ? 0 : (item.type === 'task' && item.task ? Math.max(taskLayout?.marginTop ?? TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing) : TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
                           <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                           <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
@@ -681,17 +712,14 @@ export function TodayAgendaView({
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     {combinedItems.map((item, index) => {
+                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       if (item.type === 'task' && item.task) {
-                        // Find the layout for this task
-                        const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
-                        const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
-                        
                         return (
                     <div
                             key={`task-${item.task.id}`}
                             data-task-id={item.task.id}
                       style={{
-                              marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
+                              marginTop: `${marginTopPx}px`,
                       }}
                     >
                       <div
@@ -712,23 +740,12 @@ export function TodayAgendaView({
                     </div>
                         );
                       } else if (item.type === 'event' && item.event) {
-                        // Calculate margin for events based on previous item
-                        const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                        let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                        
-                        if (index === 0) {
-                          marginTop = 0;
-                        } else if (prevItem) {
-                          // Use fixed spacing between items
-                          marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                        }
-                        
                         return (
                           <div
                             key={`event-${item.event.id}`}
                             data-event-id={item.event.id}
                             style={{
-                              marginTop: `${marginTop}px`,
+                              marginTop: `${marginTopPx}px`,
                             }}
                           >
                             <CalendarEventCard
@@ -941,11 +958,10 @@ export function TodayAgendaView({
                   <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                     {combinedItems.map((item, index) => {
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-                      const taskLayout = item.type === 'task' && item.task ? timelineTaskLayouts.find(l => l.task.id === item.task!.id) : null;
-                      const marginTop = index === 0 ? 0 : (item.type === 'task' && item.task ? Math.max(taskLayout?.marginTop ?? TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing) : TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
                           <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                           <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
@@ -955,17 +971,14 @@ export function TodayAgendaView({
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     {combinedItems.map((item, index) => {
+                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       if (item.type === 'task' && item.task) {
-                        // Find the layout for this task
-                        const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
-                        const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
-                        
                         return (
                     <div
                             key={`task-${item.task.id}`}
                             data-task-id={item.task.id}
                       style={{
-                              marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
+                              marginTop: `${marginTopPx}px`,
                       }}
                     >
                       <div
@@ -986,23 +999,12 @@ export function TodayAgendaView({
                     </div>
                         );
                       } else if (item.type === 'event' && item.event) {
-                        // Calculate margin for events based on previous item
-                        const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                        let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                        
-                        if (index === 0) {
-                          marginTop = 0;
-                        } else if (prevItem) {
-                          // Use fixed spacing between items
-                          marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                        }
-                        
                         return (
                           <div
                             key={`event-${item.event.id}`}
                             data-event-id={item.event.id}
                             style={{
-                              marginTop: `${marginTop}px`,
+                              marginTop: `${marginTopPx}px`,
                             }}
                           >
                             <CalendarEventCard
@@ -1189,11 +1191,10 @@ export function TodayAgendaView({
                 <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                   {combinedItems.map((item, index) => {
                     const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-                    const taskLayout = item.type === 'task' && item.task ? timelineTaskLayouts.find(l => l.task.id === item.task!.id) : null;
-                    const marginTop = index === 0 ? 0 : (item.type === 'task' && item.task ? Math.max(taskLayout?.marginTop ?? TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing) : TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                    const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                     const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                     return (
-                      <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                      <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
                         <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                         <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
@@ -1203,17 +1204,14 @@ export function TodayAgendaView({
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
                   {combinedItems.map((item, index) => {
+                    const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                     if (item.type === 'task' && item.task) {
-                      // Find the layout for this task
-                      const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
-                      const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
-                      
                       return (
                   <div
                         key={`task-${item.task.id}`}
                         data-task-id={item.task.id}
                     style={{
-                      marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
+                      marginTop: `${marginTopPx}px`,
                     }}
                   >
                     <div
@@ -1234,23 +1232,12 @@ export function TodayAgendaView({
                   </div>
                     );
                   } else if (item.type === 'event' && item.event) {
-                    // Calculate margin for events based on previous item (same as tasks)
-                    const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                    let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                    
-                    if (index === 0) {
-                      marginTop = 0;
-                    } else if (prevItem) {
-                      // Use fixed spacing between items (same as tasks)
-                      marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                    }
-                    
                     return (
                       <div
                         key={`event-${item.event.id}`}
                         data-event-id={item.event.id}
                         style={{
-                          marginTop: `${marginTop}px`,
+                          marginTop: `${marginTopPx}px`,
                         }}
                       >
                         {/* Apply same scale transform as tasks for vertical alignment */}
@@ -1462,11 +1449,10 @@ export function TodayAgendaView({
                   <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                     {combinedItems.map((item, index) => {
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-                      const taskLayout = item.type === 'task' && item.task ? timelineTaskLayouts.find(l => l.task.id === item.task!.id) : null;
-                      const marginTop = index === 0 ? 0 : (item.type === 'task' && item.task ? Math.max(taskLayout?.marginTop ?? TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing) : TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
                           <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                           <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
@@ -1476,15 +1462,14 @@ export function TodayAgendaView({
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     {combinedItems.map((item, index) => {
+                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       if (item.type === 'task' && item.task) {
-                        const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
-                        const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
                         return (
                           <div
                             key={`task-${item.task.id}`}
                             data-task-id={item.task.id}
                             style={{
-                              marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
+                              marginTop: `${marginTopPx}px`,
                             }}
                           >
                             <div
@@ -1505,19 +1490,12 @@ export function TodayAgendaView({
                           </div>
                         );
                       } else if (item.type === 'event' && item.event) {
-                        const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                        let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                        if (index === 0) {
-                          marginTop = 0;
-                        } else if (prevItem) {
-                          marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                        }
                         return (
                           <div
                             key={`event-${item.event.id}`}
                             data-event-id={item.event.id}
                             style={{
-                              marginTop: `${marginTop}px`,
+                              marginTop: `${marginTopPx}px`,
                             }}
                           >
                             <CalendarEventCard
