@@ -328,14 +328,14 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     );
   }
 
-  // Default (Today Agenda, etc.): rounded card with colored vertical line inset
+  // Default (Today Agenda, etc.): rounded card with colored vertical line inset; full width to match task cards
   return (
     <div
       className={cn(
         "flex w-full transition-all duration-200 cursor-default select-none rounded-lg relative box-border flex-col",
         isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
       )}
-      style={{ minHeight: `${calculatedHeight}px` }}
+      style={{ minHeight: `${calculatedHeight}px`, width: '100%', minWidth: '100%' }}
     >
       <div 
         className={cn('absolute top-0 bottom-0 rounded-full', colors.accent)}

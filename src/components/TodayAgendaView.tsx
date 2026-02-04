@@ -663,6 +663,7 @@ export function TodayAgendaView({
                           <div
                             key={`event-${item.event.id}`}
                             data-event-id={item.event.id}
+                            className="w-full"
                             style={{
                               marginTop: `${marginTopPx}px`,
                               display: 'flex',
@@ -939,6 +940,7 @@ export function TodayAgendaView({
                           <div
                             key={`event-${item.event.id}`}
                             data-event-id={item.event.id}
+                            className="w-full"
                             style={{
                               marginTop: `${marginTopPx}px`,
                               display: 'flex',
@@ -1189,6 +1191,7 @@ export function TodayAgendaView({
                         <div
                           key={`event-${item.event.id}`}
                           data-event-id={item.event.id}
+                          className="w-full"
                           style={{
                             marginTop: `${marginTopPx}px`,
                             display: 'flex',
@@ -1457,6 +1460,7 @@ export function TodayAgendaView({
                           <div
                             key={`event-${item.event.id}`}
                             data-event-id={item.event.id}
+                            className="w-full"
                             style={{
                               marginTop: `${marginTopPx}px`,
                               display: 'flex',
