@@ -289,8 +289,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         />
         <div
           className={cn(
-            'flex-1 min-h-full flex flex-col gap-1 py-1 rounded-r-lg min-w-0 overflow-hidden',
-            'bg-gray-100/90 dark:bg-gray-800/60 border-0 border-l-0',
+            'flex-1 min-h-full flex flex-col gap-1 py-1 rounded-r-lg min-w-0 overflow-hidden border-0 border-l-0',
+            colors.bg,
           )}
           style={{
             paddingLeft: CALENDAR_EVENT_DIMENSIONS.contentPadding.kanbanLeft,
@@ -333,10 +333,10 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   return (
     <div
       className={cn(
-        "flex w-full transition-all duration-200 cursor-default select-none rounded-lg relative box-border flex-col",
+        "flex w-full max-w-full flex-shrink-0 overflow-hidden transition-all duration-200 cursor-default select-none rounded-lg relative box-border flex-col",
         isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
       )}
-      style={{ minHeight: `${calculatedHeight}px`, width: '100%', minWidth: '100%' }}
+      style={{ minHeight: `${calculatedHeight}px`, width: '100%', minWidth: '100%', maxWidth: '100%' }}
     >
       <div 
         className={cn('absolute top-0 bottom-0 rounded-full', colors.accent)}
