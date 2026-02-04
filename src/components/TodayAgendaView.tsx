@@ -223,39 +223,24 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents]);
 
-  // Get minutes from midnight (0–1439) for time-based timeline alignment
-  const getMinutesFromMidnight = useCallback((isoOrDate: string | Date): number | null => {
-    try {
-      const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate;
-      if (Number.isNaN(d.getTime())) return null;
-      return d.getHours() * 60 + d.getMinutes();
-    } catch {
-      return null;
-    }
-  }, []);
-
-  // Time-based positions: align each item with its time on the timeline (1:00 AM = 60 * pixelsPerMinute from top)
+  // Cumulative positions: each item stacked with (previous height + gap) so spacing between tasks is consistent
   const agendaTimePositions = useMemo(() => {
-    const pixelsPerMinute = TASK_CARD_LAYOUT_METRICS.pixelsPerMinute;
-    const minGapPx = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-    let runningMarginPx = 0;
+    const scale = TASK_CARD_TIMELINE.scale.todayAgenda;
+    const gapPx = TODAY_AGENDA_TIMELINE.itemGapPx;
+    const eventHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx * scale;
+    let marginTopPx = 0;
     return combinedItems.map((item, index) => {
-      const startMinutes =
-        item.type === 'task' && item.task?.scheduledDate
-          ? getMinutesFromMidnight(item.task.scheduledDate)
-          : item.type === 'event' && item.event?.start
-            ? getMinutesFromMidnight(item.event.start)
-            : null;
-      if (startMinutes !== null) {
-        const marginTopPx = startMinutes * pixelsPerMinute;
-        runningMarginPx = marginTopPx;
-        return { marginTopPx };
-      }
-      const marginTopPx = runningMarginPx;
-      runningMarginPx += minGapPx;
-      return { marginTopPx };
+      const result = { marginTopPx };
+      const cardHeightPx =
+        item.type === 'task' && item.task
+          ? getTaskHeight(item.task) * scale
+          : item.type === 'event'
+            ? eventHeightPx
+            : eventHeightPx;
+      marginTopPx += cardHeightPx + gapPx;
+      return result;
     });
-  }, [combinedItems, getMinutesFromMidnight]);
+  }, [combinedItems, getTaskHeight]);
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
@@ -723,7 +708,6 @@ export function TodayAgendaView({
                               gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                       }}
                     >
-                      <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                       <div
                         style={{
                           transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
@@ -753,7 +737,6 @@ export function TodayAgendaView({
                               gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
-                            <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                             <CalendarEventCard
                               title={item.event.title}
                               start={item.event.start}
@@ -992,7 +975,6 @@ export function TodayAgendaView({
                               gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                       }}
                     >
-                      <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                       <div
                         style={{
                           transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
@@ -1022,7 +1004,6 @@ export function TodayAgendaView({
                               gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
-                            <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                             <CalendarEventCard
                               title={item.event.title}
                               start={item.event.start}
@@ -1235,7 +1216,6 @@ export function TodayAgendaView({
                             gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                           }}
                         >
-                          <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                           <div
                             style={{
                               transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
@@ -1265,7 +1245,6 @@ export function TodayAgendaView({
                             gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                           }}
                         >
-                          <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                           <div
                             style={{
                               transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
@@ -1503,7 +1482,6 @@ export function TodayAgendaView({
                               gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
-                            <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                             <div
                               style={{
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
@@ -1533,7 +1511,6 @@ export function TodayAgendaView({
                               gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
-                            <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                             <div
                               style={{
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,

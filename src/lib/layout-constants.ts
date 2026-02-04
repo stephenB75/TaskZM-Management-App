@@ -203,7 +203,7 @@ export const TIMELINE_PADDING = {
 // Today Agenda minimum height for drop zone accessibility
 export const TODAY_AGENDA_MIN_HEIGHT = 400; // Minimum height in pixels to ensure drop zone is always accessible
 export const TODAY_AGENDA_CONTENT_MIN_HEIGHT = 'calc(100% + 1px)'; // Minimum height to ensure content extends beyond viewport for scrolling
-/** Today Agenda timeline: time above line, line above task; line extends left to dot (dot on right). */
+/** Today Agenda timeline: time and line aligned with top of task card; line extends left to dot (dot on right). */
 export const TODAY_AGENDA_TIMELINE = {
   columnWidth: '1in',
   dotSizePx: 10,
@@ -211,8 +211,10 @@ export const TODAY_AGENDA_TIMELINE = {
   rowPaddingTopPx: 2,
   columnGapPx: 8,
   rowGapPx: 4,
-  /** Height (px) of the time label row so task column spacer matches. */
-  timeRowHeightPx: 18,
+  /** Gap (px) between consecutive agenda items (timeline row + card). */
+  itemGapPx: 12,
+  /** Estimated height (px) for calendar event cards when computing cumulative spacing. */
+  eventCardHeightPx: 72,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 
