@@ -992,16 +992,18 @@ export function SevenDayKanban({
                         </motion.div>
                       ) : (
                           <div
-                            className="flex flex-col gap-3"
+                            className="flex flex-col gap-3 w-full"
                             style={{
                               padding: 0,
                               // No paddingBottom - nav bar clearance handled by spacer in App.tsx
                               minHeight: 0,
                               height: 'auto',
+                              width: '100%',
                               maxWidth: shouldUseMobileLayout 
                                 ? KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.mobile
                                 : KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.desktop,
                               margin: KANBAN_COLUMN_DIMENSIONS.cardsContainerMargin as React.CSSProperties['margin'],
+                              boxSizing: 'border-box',
                               // On mobile/tablet, make background transparent to show parent gradient
                               // On desktop, use the gradient background
                               backgroundImage: shouldUseMobileLayout
@@ -1459,12 +1461,14 @@ export function SevenDayKanban({
                               </motion.div>
                             ) : (
                                   <div 
-                                    className="flex flex-col gap-3"
+                                    className="flex flex-col gap-3 w-full"
                                     style={{
+                                      width: '100%',
                                       maxWidth: shouldUseMobileLayout 
                                         ? KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.mobile
                                         : KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.desktop,
                                       margin: KANBAN_COLUMN_DIMENSIONS.cardsContainerMargin as React.CSSProperties['margin'],
+                                      boxSizing: 'border-box',
                                     }}
                                   >
                                     {combinedItems.map((item, idx) => {
