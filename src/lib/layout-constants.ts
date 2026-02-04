@@ -203,6 +203,16 @@ export const TIMELINE_PADDING = {
 // Today Agenda minimum height for drop zone accessibility
 export const TODAY_AGENDA_MIN_HEIGHT = 400; // Minimum height in pixels to ensure drop zone is always accessible
 export const TODAY_AGENDA_CONTENT_MIN_HEIGHT = 'calc(100% + 1px)'; // Minimum height to ensure content extends beyond viewport for scrolling
+/** Today Agenda right-side timeline column (time + horizontal line + dot per task). No hardcoded values. */
+export const TODAY_AGENDA_TIMELINE = {
+  columnWidth: '1in',
+  dotSizePx: 8,
+  lineMinWidthPx: 4,
+  rowPaddingTopPx: 2,
+  columnGapPx: 8,
+  rowGapPx: 4,
+} as const;
+export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 
 // Mobile Text Sizes (increased by 1 point for better readability)
 export const MOBILE_TEXT_SIZES = {

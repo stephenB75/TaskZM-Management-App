@@ -23,7 +23,7 @@ import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-col
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
@@ -305,6 +305,20 @@ export function TodayAgendaView({
       });
     } catch (error) {
       // Silently handle invalid scheduledDate
+      return "";
+    }
+  };
+
+  const getEventTime = (isoStart: string) => {
+    try {
+      const date = new Date(isoStart);
+      if (isNaN(date.getTime())) return "";
+      return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch {
       return "";
     }
   };
@@ -648,15 +662,17 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                {/* LAYER 1: Content container - extends naturally based on content */}
-                <div className="flex flex-col w-full relative z-10">
-                  {combinedItems.map((item, index) => {
-                    if (item.type === 'task' && item.task) {
-                      // Find the layout for this task
-                      const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
-                      const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
-                      
-                      return (
+                {/* LAYER 1: Content + right timeline. Task and timeline row share same marginTop so each task sits on its assigned time. No hardcoded values. */}
+                <div className="flex w-full relative z-10 items-stretch"
+            style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    {combinedItems.map((item, index) => {
+                      if (item.type === 'task' && item.task) {
+                        // Find the layout for this task
+                        const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
+                        const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                        
+                        return (
                     <div
                             key={`task-${item.task.id}`}
                             data-task-id={item.task.id}
@@ -715,6 +731,22 @@ export function TodayAgendaView({
                       }
                       return null;
                     })}
+                  </div>
+                  <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
+                    {combinedItems.map((item, index) => {
+                      const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
+                      const taskLayout = item.type === 'task' && item.task ? timelineTaskLayouts.find(l => l.task.id === item.task!.id) : null;
+                      const marginTop = index === 0 ? 0 : (item.type === 'task' && item.task ? Math.max(taskLayout?.marginTop ?? TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing) : TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
+                      return (
+                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
+                          <span className="flex-1 border-t border-muted-foreground/40" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                          <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Next Up Task Details - Shows notes for the next uncompleted task */}
@@ -905,8 +937,10 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                {/* LAYER 1: Content container - extends naturally based on content */}
-                <div className="flex flex-col w-full relative z-10">
+                {/* LAYER 1: Content + right timeline. Task and timeline row share same marginTop so each task sits on its assigned time. No hardcoded values. */}
+                <div className="flex w-full relative z-10 items-stretch"
+            style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
+                  <div className="flex flex-col flex-1 min-w-0">
                     {combinedItems.map((item, index) => {
                       if (item.type === 'task' && item.task) {
                         // Find the layout for this task
@@ -972,6 +1006,22 @@ export function TodayAgendaView({
                       }
                       return null;
                     })}
+                  </div>
+                  <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
+                    {combinedItems.map((item, index) => {
+                      const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
+                      const taskLayout = item.type === 'task' && item.task ? timelineTaskLayouts.find(l => l.task.id === item.task!.id) : null;
+                      const marginTop = index === 0 ? 0 : (item.type === 'task' && item.task ? Math.max(taskLayout?.marginTop ?? TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing) : TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
+                      return (
+                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
+                          <span className="flex-1 border-t border-muted-foreground/40" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                          <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Next Up Task Details - Shows notes for the next uncompleted task */}
@@ -1135,15 +1185,17 @@ export function TodayAgendaView({
             </div>
           ) : (
             <>
-              {/* LAYER 1: Content container - extends naturally based on content */}
-              <div className="flex flex-col w-full relative z-10">
-                {combinedItems.map((item, index) => {
-                  if (item.type === 'task' && item.task) {
-                    // Find the layout for this task
-                    const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
-                    const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
-                    
-                    return (
+              {/* LAYER 1: Content + right timeline. Task and timeline row share same marginTop so each task sits on its assigned time. No hardcoded values. */}
+              <div className="flex w-full relative z-10 items-stretch"
+            style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
+                <div className="flex flex-col flex-1 min-w-0">
+                  {combinedItems.map((item, index) => {
+                    if (item.type === 'task' && item.task) {
+                      // Find the layout for this task
+                      const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
+                      const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      
+                      return (
                   <div
                         key={`task-${item.task.id}`}
                         data-task-id={item.task.id}
@@ -1209,6 +1261,22 @@ export function TodayAgendaView({
                   }
                   return null;
                 })}
+                </div>
+                <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
+                  {combinedItems.map((item, index) => {
+                    const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
+                    const taskLayout = item.type === 'task' && item.task ? timelineTaskLayouts.find(l => l.task.id === item.task!.id) : null;
+                    const marginTop = index === 0 ? 0 : (item.type === 'task' && item.task ? Math.max(taskLayout?.marginTop ?? TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing) : TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                    const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
+                    return (
+                      <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
+                        <span className="flex-1 border-t border-muted-foreground/40" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                        <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Next Up Task Details */}
@@ -1391,65 +1459,83 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                <div className="flex flex-col w-full relative z-10">
-                  {combinedItems.map((item, index) => {
-                    if (item.type === 'task' && item.task) {
-                      const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
-                      const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
-                      return (
-                        <div
-                          key={`task-${item.task.id}`}
-                          data-task-id={item.task.id}
-                          style={{
-                            marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
-                          }}
-                        >
+                <div className="flex w-full relative z-10 items-stretch"
+            style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    {combinedItems.map((item, index) => {
+                      if (item.type === 'task' && item.task) {
+                        const taskLayout = timelineTaskLayouts.find(l => l.task.id === item.task!.id);
+                        const marginTop = index === 0 ? 0 : (taskLayout?.marginTop || TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                        return (
                           <div
+                            key={`task-${item.task.id}`}
+                            data-task-id={item.task.id}
                             style={{
-                              transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                              transformOrigin: 'top center',
+                              marginTop: index === 0 ? 0 : `${Math.max(marginTop, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing)}px`,
                             }}
                           >
-                            <DraggableTaskCard
-                              task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                              onClick={() => item.task && handleTaskClick(item.task)}
-                              droppableId="today-agenda"
-                              occurrenceDate={todayString}
-                              isNextUp={item.task.id === nextUpTaskId}
-                              onComplete={handleTaskComplete}
+                            <div
+                              style={{
+                                transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                                transformOrigin: 'top center',
+                              }}
+                            >
+                              <DraggableTaskCard
+                                task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
+                                onClick={() => item.task && handleTaskClick(item.task)}
+                                droppableId="today-agenda"
+                                occurrenceDate={todayString}
+                                isNextUp={item.task.id === nextUpTaskId}
+                                onComplete={handleTaskComplete}
+                              />
+                            </div>
+                          </div>
+                        );
+                      } else if (item.type === 'event' && item.event) {
+                        const prevItem = index > 0 ? combinedItems[index - 1] : null;
+                        let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                        if (index === 0) {
+                          marginTop = 0;
+                        } else if (prevItem) {
+                          marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                        }
+                        return (
+                          <div
+                            key={`event-${item.event.id}`}
+                            data-event-id={item.event.id}
+                            style={{
+                              marginTop: `${marginTop}px`,
+                            }}
+                          >
+                            <CalendarEventCard
+                              title={item.event.title}
+                              start={item.event.start}
+                              end={item.event.end}
+                              location={item.event.location}
+                              provider={item.event.provider}
+                              calendarColor={item.event.calendarColor}
                             />
                           </div>
-                        </div>
-                      );
-                    } else if (item.type === 'event' && item.event) {
-                      const prevItem = index > 0 ? combinedItems[index - 1] : null;
-                      let marginTop: number = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-                      if (index === 0) {
-                        marginTop = 0;
-                      } else if (prevItem) {
-                        marginTop = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
+                        );
                       }
+                      return null;
+                    })}
+                  </div>
+                  <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
+                    {combinedItems.map((item, index) => {
+                      const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
+                      const taskLayout = item.type === 'task' && item.task ? timelineTaskLayouts.find(l => l.task.id === item.task!.id) : null;
+                      const marginTop = index === 0 ? 0 : (item.type === 'task' && item.task ? Math.max(taskLayout?.marginTop ?? TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing, TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing) : TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing);
+                      const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div
-                          key={`event-${item.event.id}`}
-                          data-event-id={item.event.id}
-                          style={{
-                            marginTop: `${marginTop}px`,
-                          }}
-                        >
-                          <CalendarEventCard
-                            title={item.event.title}
-                            start={item.event.start}
-                            end={item.event.end}
-                            location={item.event.location}
-                            provider={item.event.provider}
-                            calendarColor={item.event.calendarColor}
-                          />
+                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
+                          <span className="flex-1 border-t border-muted-foreground/40" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                          <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
                         </div>
                       );
-                    }
-                    return null;
-                  })}
+                    })}
+                  </div>
                 </div>
                 {(() => {
                   const nextUpTask = todayTasks.find((task) => task.id === nextUpTaskId);
