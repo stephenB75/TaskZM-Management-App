@@ -11,7 +11,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { CalendarEventCard } from "./CalendarEventCard";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
-import { ScrollArea } from "./ui/scroll-area";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
@@ -741,7 +740,7 @@ export function TodayAgendaView({
                       return (
                         <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                          <span className="flex-1 border-t border-muted-foreground/40" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                          <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                           <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
                         </div>
                       );
@@ -859,12 +858,11 @@ export function TodayAgendaView({
           // Wrapper: flex-1 to take remaining space after header (matches InboxView pattern exactly)
           // When hideHeader is true, this is the only child, so flex-1 should take all space
           <div className={cn("flex-1 min-h-0", !hideHeader && "w-full relative")}>
-            {/* ScrollArea: handles vertical scrolling when content exceeds viewport */}
-            {/* CRITICAL: h-full ensures ScrollArea viewport gets proper height from parent */}
-            <ScrollArea className="h-full w-full">
+            {/* overflow-auto allows both columns (tasks + timeline) to be visible; ScrollArea's overflow-x:hidden was clipping the timeline */}
+            <div className="h-full w-full overflow-auto min-w-0">
               <div 
                 ref={timelineContainerRef}
-                className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative")}
+                className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative min-w-0")}
                 style={{
                   paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop 
                     ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` 
@@ -1016,7 +1014,7 @@ export function TodayAgendaView({
                       return (
                         <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                          <span className="flex-1 border-t border-muted-foreground/40" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                          <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                           <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
                         </div>
                       );
@@ -1127,18 +1125,18 @@ export function TodayAgendaView({
               </>
             )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
         )
       ) : (
         // LAYER 1: When hideHeader=false (header IS visible)
         typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.desktop ? (
-          // Desktop: Use ScrollArea when header is visible (matches the pattern from line 767)
+          // Desktop: overflow-auto so tasks + timeline column are both visible (no overflow-x clip)
           <div className="flex-1 min-h-0">
-            <ScrollArea className="h-full w-full">
+            <div className="h-full w-full overflow-auto min-w-0">
               <div 
                 ref={timelineContainerRef}
-                className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative")}
+                className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative min-w-0")}
                 style={{
                   paddingTop: DESKTOP_PADDING_TOP,
                   paddingBottom: `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
@@ -1271,7 +1269,7 @@ export function TodayAgendaView({
                     return (
                       <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                        <span className="flex-1 border-t border-muted-foreground/40" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                        <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                         <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
                       </div>
                     );
@@ -1382,10 +1380,10 @@ export function TodayAgendaView({
             </>
           )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         ) : (
-          // Mobile: No ScrollArea, rely on parent scroll
+          // Mobile: rely on parent scroll
           <div 
             ref={timelineContainerRef}
             className="px-5 w-full relative"
@@ -1530,7 +1528,7 @@ export function TodayAgendaView({
                       return (
                         <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: index === 0 ? 0 : marginTop, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                          <span className="flex-1 border-t border-muted-foreground/40" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                          <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                           <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
                         </div>
                       );
