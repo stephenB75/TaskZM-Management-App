@@ -276,8 +276,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   if (variant === 'kanban') {
     return (
       <div
-        className="flex w-full transition-all duration-200 cursor-default select-none box-border min-w-0"
-        style={{ minHeight: `${calculatedHeight}px` }}
+        className="flex w-full transition-all duration-200 cursor-default select-none box-border"
+        style={{ minHeight: `${calculatedHeight}px`, width: '100%', minWidth: '100%' }}
       >
         {/* Vertical line at left edge (square corners) - background starts from here */}
         <div
