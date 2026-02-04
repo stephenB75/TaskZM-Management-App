@@ -98,6 +98,9 @@ export const DraggableTaskCard = React.forwardRef<
     forwardedRef,
   ) => {
     const isTodayAgenda = droppableId === 'today-agenda';
+    // Kanban week view: droppableId is column date string (YYYY-MM-DD)
+    const isKanban = typeof droppableId === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(droppableId);
+    const isColumnLayout = isTodayAgenda || isKanban;
     const { updateTask, tasks, workspaceId, syncWithServer } = useTasks();
     const { accessToken } = useAuth();
     const { getTeamMember, teams } = useTeam();
@@ -693,7 +696,7 @@ export const DraggableTaskCard = React.forwardRef<
           "relative flex flex-col",
           isDragging ? TASK_CARD_WIDTHS.dragging : TASK_CARD_WIDTHS.normal
         )}
-        style={isTodayAgenda ? { width: '100%', minWidth: '100%', maxWidth: '100%', marginLeft: 0, marginRight: 0, boxSizing: 'border-box' } : undefined}
+        style={isColumnLayout ? { width: '100%', minWidth: '100%', maxWidth: '100%', marginLeft: 0, marginRight: 0, boxSizing: 'border-box' } : undefined}
       >
         {/* Next Up Badge - Above the task card */}
         {isNextUp && (
@@ -717,13 +720,13 @@ export const DraggableTaskCard = React.forwardRef<
             zIndex: 2,
             position: 'relative',
             ...(!isMobile && (isDragging || isSortableDragging) ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 } : {}),
-            ...(isTodayAgenda ? { width: '100%', minWidth: '100%', maxWidth: '100%' } : {}),
+            ...(isColumnLayout ? { width: '100%', minWidth: '100%', maxWidth: '100%' } : {}),
           }}
           {...attributes}
           {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
           className={cn(
             "w-full flex gap-2 transition-all duration-200",
-            isTodayAgenda && "min-w-full max-w-full",
+            isColumnLayout && "min-w-full max-w-full",
             !isMobile && (isDragging || isSortableDragging)
               ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.draggingKanban} ring-2 ring-primary/50 ring-offset-2`
               : "",

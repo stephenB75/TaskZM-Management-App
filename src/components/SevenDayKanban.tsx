@@ -1025,8 +1025,11 @@ export function SevenDayKanban({
                                       transition={{ duration: 0.2, delay: idx * 0.02 }}
                                       className="w-full max-w-full overflow-hidden"
                                       style={{ 
+                                        display: 'block',
+                                        width: '100%',
+                                        minWidth: '100%',
                                         transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                        transformOrigin: 'top left',
+                                        transformOrigin: 'top center',
                                       }}
                                     >
                                       <CalendarEventCard
@@ -1047,6 +1050,9 @@ export function SevenDayKanban({
                                       key={item.task.id}
                             className="w-full max-w-full overflow-hidden"
                             style={{ 
+                              display: 'block',
+                              width: '100%',
+                              minWidth: '100%',
                               transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                               transformOrigin: 'top center',
                             }}
@@ -1472,6 +1478,9 @@ export function SevenDayKanban({
                                             transition={{ duration: 0.2, delay: idx * 0.02 }}
                                             className="w-full max-w-full overflow-hidden"
                                             style={{
+                                              display: 'block',
+                                              width: '100%',
+                                              minWidth: '100%',
                                               transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                                               transformOrigin: 'top center',
                                             }}
@@ -1494,6 +1503,9 @@ export function SevenDayKanban({
                                             key={item.task.id} 
                                     className="w-full max-w-full overflow-hidden"
                                     style={{ 
+                                      display: 'block',
+                                      width: '100%',
+                                      minWidth: '100%',
                                       transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                                       transformOrigin: 'top center',
                                     }}
