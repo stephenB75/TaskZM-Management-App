@@ -625,7 +625,7 @@ export function TodayAgendaView({
                       );
                     })}
                   </div>
-                  <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex flex-col flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                     {combinedItems.map((item, index) => {
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       if (item.type === 'task' && item.task) {
@@ -641,6 +641,7 @@ export function TodayAgendaView({
                       }}
                     >
                       <div
+                        className="w-full"
                         style={{
                           transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                           transformOrigin: 'top center',
@@ -669,15 +670,23 @@ export function TodayAgendaView({
                               gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
-                            <CalendarEventCard
-                              title={item.event.title}
-                              start={item.event.start}
-                              end={item.event.end}
-                              location={item.event.location}
-                              provider={item.event.provider}
-                              calendarColor={item.event.calendarColor}
-                              isRecurring={item.event.isRecurring}
-                            />
+                            <div
+                              className="w-full"
+                              style={{
+                                transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                                transformOrigin: 'top center',
+                              }}
+                            >
+                              <CalendarEventCard
+                                title={item.event.title}
+                                start={item.event.start}
+                                end={item.event.end}
+                                location={item.event.location}
+                                provider={item.event.provider}
+                                calendarColor={item.event.calendarColor}
+                                isRecurring={item.event.isRecurring}
+                              />
+                            </div>
                           </div>
                         );
                       }
@@ -892,7 +901,7 @@ export function TodayAgendaView({
                       );
                     })}
                   </div>
-                  <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex flex-col flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                     {combinedItems.map((item, index) => {
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       if (item.type === 'task' && item.task) {
@@ -908,6 +917,7 @@ export function TodayAgendaView({
                       }}
                     >
                       <div
+                        className="w-full"
                         style={{
                           transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                           transformOrigin: 'top center',
@@ -936,15 +946,23 @@ export function TodayAgendaView({
                               gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
-                            <CalendarEventCard
-                              title={item.event.title}
-                              start={item.event.start}
-                              end={item.event.end}
-                              location={item.event.location}
-                              provider={item.event.provider}
-                              calendarColor={item.event.calendarColor}
-                              isRecurring={item.event.isRecurring}
-                            />
+                            <div
+                              className="w-full"
+                              style={{
+                                transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                                transformOrigin: 'top center',
+                              }}
+                            >
+                              <CalendarEventCard
+                                title={item.event.title}
+                                start={item.event.start}
+                                end={item.event.end}
+                                location={item.event.location}
+                                provider={item.event.provider}
+                                calendarColor={item.event.calendarColor}
+                                isRecurring={item.event.isRecurring}
+                              />
+                            </div>
                           </div>
                         );
                       }
@@ -1133,7 +1151,7 @@ export function TodayAgendaView({
                     );
                   })}
                 </div>
-                <div className="flex flex-col flex-1 min-w-0">
+                <div className="flex flex-col flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                   {combinedItems.map((item, index) => {
                     const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                     if (item.type === 'task' && item.task) {
@@ -1149,6 +1167,7 @@ export function TodayAgendaView({
                           }}
                         >
                           <div
+                            className="w-full"
                             style={{
                               transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                               transformOrigin: 'top center',
@@ -1178,6 +1197,7 @@ export function TodayAgendaView({
                           }}
                         >
                           <div
+                            className="w-full"
                             style={{
                               transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                               transformOrigin: 'top center',
@@ -1399,7 +1419,7 @@ export function TodayAgendaView({
                       );
                     })}
                   </div>
-                  <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex flex-col flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                     {combinedItems.map((item, index) => {
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       if (item.type === 'task' && item.task) {
@@ -1415,6 +1435,7 @@ export function TodayAgendaView({
                             }}
                           >
                             <div
+                              className="w-full"
                               style={{
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                                 transformOrigin: 'top center',
@@ -1444,6 +1465,7 @@ export function TodayAgendaView({
                             }}
                           >
                             <div
+                              className="w-full"
                               style={{
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
                                 transformOrigin: 'top center',
