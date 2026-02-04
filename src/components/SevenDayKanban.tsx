@@ -1023,7 +1023,7 @@ export function SevenDayKanban({
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, scale: 0.95 }}
                                       transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                      className="w-full"
+                                      className="w-full max-w-full overflow-hidden"
                                       style={{ 
                                         transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                                         transformOrigin: 'top left',
@@ -1045,7 +1045,7 @@ export function SevenDayKanban({
                                   return (
                           <div
                                       key={item.task.id}
-                            className="w-full"
+                            className="w-full max-w-full overflow-hidden"
                             style={{ 
                               transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                               transformOrigin: 'top center',
@@ -1470,7 +1470,7 @@ export function SevenDayKanban({
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                            className="w-full"
+                                            className="w-full max-w-full overflow-hidden"
                                             style={{
                                               transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                                               transformOrigin: 'top center',
@@ -1492,7 +1492,7 @@ export function SevenDayKanban({
                                         return (
                                   <div 
                                             key={item.task.id} 
-                                    className="w-full"
+                                    className="w-full max-w-full overflow-hidden"
                                     style={{ 
                                       transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
                                       transformOrigin: 'top center',

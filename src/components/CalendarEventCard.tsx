@@ -276,8 +276,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   if (variant === 'kanban') {
     return (
       <div
-        className="flex w-full transition-all duration-200 cursor-default select-none box-border"
-        style={{ minHeight: `${calculatedHeight}px`, width: '100%', minWidth: '100%' }}
+        className="flex w-full max-w-full overflow-hidden transition-all duration-200 cursor-default select-none box-border"
+        style={{ minHeight: `${calculatedHeight}px`, width: '100%', maxWidth: '100%' }}
       >
         {/* Vertical line at left edge (square corners) - background starts from here */}
         <div
@@ -289,12 +289,13 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         />
         <div
           className={cn(
-            'flex-1 min-h-full flex flex-col gap-1 py-1 rounded-r-lg min-w-0',
+            'flex-1 min-h-full flex flex-col gap-1 py-1 rounded-r-lg min-w-0 overflow-hidden',
             'bg-gray-100/90 dark:bg-gray-800/60 border-0 border-l-0',
           )}
           style={{
             paddingLeft: 12,
             minHeight: `${calculatedHeight}px`,
+            minWidth: 0,
           }}
         >
           {/* Header with calendar icon */}
