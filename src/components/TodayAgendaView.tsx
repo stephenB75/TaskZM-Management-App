@@ -26,7 +26,6 @@ import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, 
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
-import { buildTaskLayouts } from "../lib/task-layout";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
@@ -257,9 +256,6 @@ export function TodayAgendaView({
       return { marginTopPx };
     });
   }, [combinedItems, getMinutesFromMidnight]);
-
-  const minGap = TASK_CARD_LAYOUT_METRICS.timelineTaskSpacing;
-  const timelineTaskLayouts = useMemo(() => buildTaskLayouts(todayTasks, minGap, false), [todayTasks, minGap]);
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
@@ -702,10 +698,12 @@ export function TodayAgendaView({
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                          <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                          <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>{timeLabel}</span>
+                          <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                            <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                            <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                          </div>
                         </div>
                       );
                     })}
@@ -720,8 +718,12 @@ export function TodayAgendaView({
                             data-task-id={item.task.id}
                       style={{
                               marginTop: `${marginTopPx}px`,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                       }}
                     >
+                      <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                       <div
                         style={{
                           transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
@@ -746,8 +748,12 @@ export function TodayAgendaView({
                             data-event-id={item.event.id}
                             style={{
                               marginTop: `${marginTopPx}px`,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
+                            <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                             <CalendarEventCard
                               title={item.event.title}
                               start={item.event.start}
@@ -961,10 +967,12 @@ export function TodayAgendaView({
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                          <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                          <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>{timeLabel}</span>
+                          <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                            <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                            <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                          </div>
                         </div>
                       );
                     })}
@@ -979,8 +987,12 @@ export function TodayAgendaView({
                             data-task-id={item.task.id}
                       style={{
                               marginTop: `${marginTopPx}px`,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                       }}
                     >
+                      <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                       <div
                         style={{
                           transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
@@ -1005,8 +1017,12 @@ export function TodayAgendaView({
                             data-event-id={item.event.id}
                             style={{
                               marginTop: `${marginTopPx}px`,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
+                            <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                             <CalendarEventCard
                               title={item.event.title}
                               start={item.event.start}
@@ -1194,10 +1210,12 @@ export function TodayAgendaView({
                     const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                     const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                     return (
-                      <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                        <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                        <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                      <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>{timeLabel}</span>
+                        <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                          <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                        </div>
                       </div>
                     );
                   })}
@@ -1207,60 +1225,68 @@ export function TodayAgendaView({
                     const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                     if (item.type === 'task' && item.task) {
                       return (
-                  <div
-                        key={`task-${item.task.id}`}
-                        data-task-id={item.task.id}
-                    style={{
-                      marginTop: `${marginTopPx}px`,
-                    }}
-                  >
-                    <div
-                      style={{
-                        transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                        transformOrigin: 'top center',
-                      }}
-                    >
-                      <DraggableTaskCard
-                        task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                        onClick={() => item.task && handleTaskClick(item.task)}
-                        droppableId="today-agenda"
-                        occurrenceDate={todayString}
-                        isNextUp={item.task.id === nextUpTaskId}
-                        onComplete={handleTaskComplete}
-                      />
-                    </div>
-                  </div>
-                    );
-                  } else if (item.type === 'event' && item.event) {
-                    return (
-                      <div
-                        key={`event-${item.event.id}`}
-                        data-event-id={item.event.id}
-                        style={{
-                          marginTop: `${marginTopPx}px`,
-                        }}
-                      >
-                        {/* Apply same scale transform as tasks for vertical alignment */}
                         <div
+                          key={`task-${item.task.id}`}
+                          data-task-id={item.task.id}
                           style={{
-                            transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                            transformOrigin: 'top center',
+                            marginTop: `${marginTopPx}px`,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                           }}
                         >
-                          <CalendarEventCard
-                            title={item.event.title}
-                            start={item.event.start}
-                            end={item.event.end}
-                            location={item.event.location}
-                            provider={item.event.provider}
-                            calendarColor={item.event.calendarColor}
-                          />
+                          <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
+                          <div
+                            style={{
+                              transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                              transformOrigin: 'top center',
+                            }}
+                          >
+                            <DraggableTaskCard
+                              task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
+                              onClick={() => item.task && handleTaskClick(item.task)}
+                              droppableId="today-agenda"
+                              occurrenceDate={todayString}
+                              isNextUp={item.task.id === nextUpTaskId}
+                              onComplete={handleTaskComplete}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                      );
+                    } else if (item.type === 'event' && item.event) {
+                      return (
+                        <div
+                          key={`event-${item.event.id}`}
+                          data-event-id={item.event.id}
+                          style={{
+                            marginTop: `${marginTopPx}px`,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: TODAY_AGENDA_TIMELINE.rowGapPx,
+                          }}
+                        >
+                          <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
+                          <div
+                            style={{
+                              transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                              transformOrigin: 'top center',
+                            }}
+                          >
+                            <CalendarEventCard
+                              title={item.event.title}
+                              start={item.event.start}
+                              end={item.event.end}
+                              location={item.event.location}
+                              provider={item.event.provider}
+                              calendarColor={item.event.calendarColor}
+                              isRecurring={item.event.isRecurring}
+                            />
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
               </div>
 
@@ -1452,10 +1478,12 @@ export function TodayAgendaView({
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex items-center flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                          <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                          <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>{timeLabel}</span>
+                          <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                            <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                            <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                          </div>
                         </div>
                       );
                     })}
@@ -1470,8 +1498,12 @@ export function TodayAgendaView({
                             data-task-id={item.task.id}
                             style={{
                               marginTop: `${marginTopPx}px`,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
+                            <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
                             <div
                               style={{
                                 transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
@@ -1496,16 +1528,28 @@ export function TodayAgendaView({
                             data-event-id={item.event.id}
                             style={{
                               marginTop: `${marginTopPx}px`,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
                             }}
                           >
-                            <CalendarEventCard
-                              title={item.event.title}
-                              start={item.event.start}
-                              end={item.event.end}
-                              location={item.event.location}
-                              provider={item.event.provider}
-                              calendarColor={item.event.calendarColor}
-                            />
+                            <div style={{ minHeight: TODAY_AGENDA_TIMELINE.timeRowHeightPx }} aria-hidden />
+                            <div
+                              style={{
+                                transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
+                                transformOrigin: 'top center',
+                              }}
+                            >
+                              <CalendarEventCard
+                                title={item.event.title}
+                                start={item.event.start}
+                                end={item.event.end}
+                                location={item.event.location}
+                                provider={item.event.provider}
+                                calendarColor={item.event.calendarColor}
+                                isRecurring={item.event.isRecurring}
+                              />
+                            </div>
                           </div>
                         );
                       }
