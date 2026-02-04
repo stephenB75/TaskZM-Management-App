@@ -81,6 +81,7 @@ export class ErrorBoundary extends Component<Props, State> {
     const msg = err.message;
     return (
       msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Importing a module script failed') ||
       msg.includes('Loading chunk') ||
       msg.includes('Loading CSS chunk') ||
       msg.includes('import()')

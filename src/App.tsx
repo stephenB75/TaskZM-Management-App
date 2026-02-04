@@ -1,10 +1,11 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { lazyWithRetry } from './lib/lazy-with-retry';
 import { SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR } from './lib/layout-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 
-const AuthenticatedApp = lazy(() => import('./AuthenticatedApp'));
+const AuthenticatedApp = lazyWithRetry(() => import('./AuthenticatedApp').then(m => ({ default: m.default })));
 
 /**
  * Full-screen loading fallback (logo + spinner) for Suspense while AuthenticatedApp chunk loads.
