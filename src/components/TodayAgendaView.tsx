@@ -613,10 +613,12 @@ export function TodayAgendaView({
                     {combinedItems.map((item, index) => {
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
+                      const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>{timeLabel}</span>
+                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
                           <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                             <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                             <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
@@ -897,10 +899,12 @@ export function TodayAgendaView({
                     {combinedItems.map((item, index) => {
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
+                      const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>{timeLabel}</span>
+                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
                           <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                             <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                             <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
@@ -1155,10 +1159,12 @@ export function TodayAgendaView({
                   {combinedItems.map((item, index) => {
                     const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
                     const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
+                    const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+                    const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
                     const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                     return (
-                      <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>{timeLabel}</span>
+                      <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
                         <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                           <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                           <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
@@ -1430,10 +1436,12 @@ export function TodayAgendaView({
                     {combinedItems.map((item, index) => {
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
+                      const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
-                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: marginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>{timeLabel}</span>
+                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx, gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
                           <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
                             <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
                             <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />

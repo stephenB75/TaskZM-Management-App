@@ -215,6 +215,8 @@ export const TODAY_AGENDA_TIMELINE = {
   itemGapPx: 12,
   /** Estimated height (px) for calendar event cards when computing cumulative spacing. */
   eventCardHeightPx: 72,
+  /** Offset (px) from row top to card top when item shows Next Up badge (badge height + mb-5). Used so timeline time aligns with card top. */
+  nextUpBadgeOffsetPx: 42,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 
