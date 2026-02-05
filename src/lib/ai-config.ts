@@ -88,6 +88,8 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   maxExtractedVerbs: 10, // Maximum extracted verbs to return (increased for better context and more comprehensive matching)
   maxExtractedNouns: 10, // Maximum extracted nouns to return (increased for better context and more comprehensive matching)
   maxExtractedPronouns: 5, // Maximum extracted pronouns to return (increased for better context)
+  /** Max terms per category sent to server AI for contextual prompts (local + shared terminology). */
+  maxTerminologyTermsForServer: 25,
   maxSnippetLength: 200, // Maximum snippet length for context extraction
   // Confidence calculation weights
   baseConfidence: 0.3, // Base confidence for fallback descriptions

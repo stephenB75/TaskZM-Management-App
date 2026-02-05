@@ -3253,6 +3253,13 @@ export async function generateDescription(
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), serverAITimeoutMs);
+      const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
+      const terminology = {
+        keywords: (domainTerms.keywords || []).slice(0, maxTerms),
+        phrases: (domainTerms.phrases || []).slice(0, maxTerms),
+        verbs: (domainTerms.verbs || []).slice(0, maxTerms),
+        nouns: (domainTerms.nouns || []).slice(0, maxTerms),
+      };
       const res = await fetch(`${API_BASE}/ai/description`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
@@ -3262,6 +3269,7 @@ export async function generateDescription(
           effortScore: effortScore !== undefined && effortScore >= 1 && effortScore <= 5 ? effortScore : 2.5,
           actionPlanSteps: actionPlanSteps && actionPlanSteps.length > 0 ? actionPlanSteps : undefined,
           existingDescription: existingDescription?.trim() || undefined,
+          terminology,
         }),
         signal: controller.signal,
       });
@@ -3704,6 +3712,16 @@ export async function generateDescriptionOptions(
     // PRIMARY: OpenAI (server) for 3-5 options. FALLBACK: local generation below.
     if (accessToken) {
       try {
+        const domainResult = detectDomain(taskName, existingDescription?.trim() || '');
+        const domain = domainResult.domain;
+        const domainTerms = await getDomainTerminologyAsync(domain);
+        const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
+        const terminology = {
+          keywords: (domainTerms.keywords || []).slice(0, maxTerms),
+          phrases: (domainTerms.phrases || []).slice(0, maxTerms),
+          verbs: (domainTerms.verbs || []).slice(0, maxTerms),
+          nouns: (domainTerms.nouns || []).slice(0, maxTerms),
+        };
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
         const res = await fetch(`${API_BASE}/ai/description-options`, {
@@ -3711,9 +3729,11 @@ export async function generateDescriptionOptions(
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
           body: JSON.stringify({
             taskName,
+            domain,
             effortScore: normalizedEffortScore,
             actionPlanSteps: actionPlanSteps && actionPlanSteps.length > 0 ? actionPlanSteps : undefined,
             existingDescription: existingDescription?.trim() || undefined,
+            terminology,
           }),
           signal: controller.signal,
         });

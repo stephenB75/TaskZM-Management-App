@@ -390,6 +390,14 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
     const effortScore = typeof body.effortScore === 'number' ? body.effortScore : 2.5;
     const actionPlanSteps = Array.isArray(body.actionPlanSteps) ? body.actionPlanSteps.filter((s: unknown) => typeof s === 'string') : [];
     const existingDescription = typeof body.existingDescription === 'string' ? body.existingDescription.trim() : '';
+    const terminology = body.terminology && typeof body.terminology === 'object'
+      ? {
+          keywords: Array.isArray(body.terminology.keywords) ? body.terminology.keywords.filter((x: unknown) => typeof x === 'string') : [],
+          phrases: Array.isArray(body.terminology.phrases) ? body.terminology.phrases.filter((x: unknown) => typeof x === 'string') : [],
+          verbs: Array.isArray(body.terminology.verbs) ? body.terminology.verbs.filter((x: unknown) => typeof x === 'string') : [],
+          nouns: Array.isArray(body.terminology.nouns) ? body.terminology.nouns.filter((x: unknown) => typeof x === 'string') : [],
+        }
+      : { keywords: [] as string[], phrases: [] as string[], verbs: [] as string[], nouns: [] as string[] };
 
     if (!taskName) {
       return c.json({ error: 'taskName is required' }, 400);
@@ -409,14 +417,19 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
       ? `\n\nAction plan steps (weave these into the description): ${actionPlanSteps.join('; ')}. Include research, strategy, timeline/schedule as appropriate.`
       : '';
 
+    const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
+    const terminologyContext = hasTerms
+      ? `\n\nDomain vocabulary (use where relevant for contextual, natural sentences; do not list them): keywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}; phrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}; verbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}; nouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}.`
+      : '';
+
     const prompt = `Generate a clear, accurate description for this ${domain} task.
 
-Task Name: "${taskName}"${actionPlanContext || ''}
+Task Name: "${taskName}"${actionPlanContext || ''}${terminologyContext}
 
 Requirements:
 - Describe ONLY what the task name and action plan refer to. Do not introduce topics (e.g. workout, learning, fitness) that are not clearly stated in the task name or action plan.
 - Be SPECIFIC and CONTEXTUAL. Use correct English: complete sentences, proper grammar, no redundant phrases, no sentence fragments.
-- Use professional, clear language appropriate for ${domain} tasks.
+- Use professional, clear language appropriate for ${domain} tasks. Where the domain vocabulary applies, use it naturally in your sentences.
 - Keep the description to 1-3 sentences (about 15-50 words). Avoid run-on sentences.
 - Do not repeat the task name verbatim.
 
@@ -477,15 +490,24 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
 
     const body = await c.req.json().catch(() => ({}));
     const taskName = typeof body.taskName === 'string' ? body.taskName.trim() : '';
+    const domain = typeof body.domain === 'string' ? body.domain : 'business';
     const effortScore = typeof body.effortScore === 'number' ? body.effortScore : 2.5;
     const actionPlanSteps = Array.isArray(body.actionPlanSteps) ? body.actionPlanSteps.filter((s: unknown) => typeof s === 'string') : [];
     const existingDescription = typeof body.existingDescription === 'string' ? body.existingDescription.trim() : '';
+    const terminology = body.terminology && typeof body.terminology === 'object'
+      ? {
+          keywords: Array.isArray(body.terminology.keywords) ? body.terminology.keywords.filter((x: unknown) => typeof x === 'string') : [],
+          phrases: Array.isArray(body.terminology.phrases) ? body.terminology.phrases.filter((x: unknown) => typeof x === 'string') : [],
+          verbs: Array.isArray(body.terminology.verbs) ? body.terminology.verbs.filter((x: unknown) => typeof x === 'string') : [],
+          nouns: Array.isArray(body.terminology.nouns) ? body.terminology.nouns.filter((x: unknown) => typeof x === 'string') : [],
+        }
+      : { keywords: [] as string[], phrases: [] as string[], verbs: [] as string[], nouns: [] as string[] };
 
     if (!taskName) {
       return c.json({ error: 'taskName is required' }, 400);
     }
 
-    const cacheKeyRaw = `ai:opts:${taskName}:${effortScore}`;
+    const cacheKeyRaw = `ai:opts:${taskName}:${domain}:${effortScore}`;
     const cacheKey = `ai:opts:${await sha256Hex(cacheKeyRaw)}`;
     try {
       const cached = await kv.get(cacheKey);
@@ -499,12 +521,17 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
       ? `\nAction plan steps (weave into descriptions): ${actionPlanSteps.join('; ')}.`
       : '';
 
-    const prompt = `Generate exactly 3-5 short description options for this task. Each description should be 1-3 sentences (about 15-50 words).
+    const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
+    const terminologyContext = hasTerms
+      ? `\nDomain vocabulary (use where relevant for contextual sentences): keywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}; phrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}; verbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}; nouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}.`
+      : '';
 
-Task Name: "${taskName}"${actionPlanContext || ''}
+    const prompt = `Generate exactly 3-5 short description options for this ${domain} task. Each description should be 1-3 sentences (about 15-50 words).
+
+Task Name: "${taskName}"${actionPlanContext || ''}${terminologyContext}
 
 Requirements:
-- Describe ONLY what the task refers to. Do not introduce unrelated topics.
+- Describe ONLY what the task refers to. Do not introduce unrelated topics. Use the domain vocabulary naturally where it fits.
 - Use correct English, complete sentences, no run-on sentences.
 - Vary the options (different wording, detail level, or angle).
 

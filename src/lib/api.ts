@@ -1247,6 +1247,21 @@ export async function getSharedTerminology(domain: Domain): Promise<SharedTermin
 }
 
 /**
+ * Check if server-side OpenAI is configured (for task description generation).
+ * No auth required. Used to show "Server AI: Configured" in Settings and to explain portal usage.
+ */
+export async function getAIConfigStatus(): Promise<{ configured: boolean }> {
+  try {
+    const response = await fetch(`${API_BASE}/ai/status`);
+    if (!response.ok) return { configured: false };
+    const data = await response.json();
+    return { configured: !!data?.configured };
+  } catch {
+    return { configured: false };
+  }
+}
+
+/**
  * Save new terminology to the shared database
  * This allows all users to benefit from learned terms
  */

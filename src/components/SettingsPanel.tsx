@@ -186,7 +186,7 @@ import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 import { COLOR_PRIMARY, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
-import { API_BASE } from '../lib/api';
+import { API_BASE, getAIConfigStatus } from '../lib/api';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -216,7 +216,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [profileGender, setProfileGender] = useState<"male" | "female">(AVATAR_UI_TEXT.defaultGender);
   const [profileAvatar, setProfileAvatar] = useState<string | undefined>(user?.avatar);
   const [showAvatarSelection, setShowAvatarSelection] = useState(false);
+  const [serverAIConfigured, setServerAIConfigured] = useState<boolean | null>(null);
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
+
+  useEffect(() => {
+    let cancelled = false;
+    getAIConfigStatus().then(({ configured }) => { if (!cancelled) setServerAIConfigured(configured); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Update profile avatar state when user changes
   React.useEffect(() => {
@@ -1862,6 +1869,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
             }}
           >
+            {serverAIConfigured !== null && (
+              <p className="text-xs text-muted-foreground mb-1">
+                Server AI (task descriptions): {serverAIConfigured ? 'Configured' : 'Not configured — usage will not appear on OpenAI portal'}
+              </p>
+            )}
             {!features.aiScheduler ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
