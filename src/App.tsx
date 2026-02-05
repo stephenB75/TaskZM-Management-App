@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { lazyWithRetry } from './lib/lazy-with-retry';
-import { SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR } from './lib/layout-constants';
+import { SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, LOADING_SCREEN_GRADIENT_CLASS } from './lib/layout-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 
 const AuthenticatedApp = lazyWithRetry(() => import('./AuthenticatedApp').then(m => ({ default: m.default })));
@@ -13,7 +13,7 @@ const AuthenticatedApp = lazyWithRetry(() => import('./AuthenticatedApp').then(m
 function AppLoadingFallback() {
   return (
     <div
-      className="fixed inset-0 h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950"
+      className={`fixed inset-0 h-screen w-screen flex items-center justify-center ${LOADING_SCREEN_GRADIENT_CLASS}`}
       style={{ zIndex: REACT_LOADING_SCREEN.zIndex }}
     >
       <div className="flex flex-col items-center justify-center space-y-6">

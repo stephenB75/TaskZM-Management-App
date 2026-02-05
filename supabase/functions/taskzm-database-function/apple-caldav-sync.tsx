@@ -18,6 +18,8 @@ const MAX_RECURRENCE_ITERATIONS = 365; // Maximum iterations for recurring event
 const CALENDAR_SYNC_PAST_DAYS = 365; // Days to look back when syncing calendar (to capture recurring events)
 const CALENDAR_SYNC_FUTURE_DAYS = 90; // Days to look ahead when syncing calendar
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000; // 86400000 ms
+/** Last-resort UTC offset in hours when both timezone and UTC fail (EST = -5, so we add 5 to local components to get UTC) */
+const FALLBACK_UTC_OFFSET_HOURS = 5;
 
 // Module-level variable to store user's timezone (set during sync)
 let currentUserTimezone = DEFAULT_TIMEZONE;
@@ -1068,10 +1070,9 @@ function parseVEvent(
           try {
             new Intl.DateTimeFormat('en-US', { timeZone: validTzid });
           } catch (fallbackError) {
-            // Even fallback is invalid - use hardcoded default and calculate offset directly
+            // Even fallback is invalid - use named constant and calculate offset directly
             // Don't log warning - this is expected for edge cases
-            // Calculate UTC directly using offset (assume EST/EDT offset of -5 hours)
-            const fallbackUTC = new Date(Date.UTC(yr, mo, dy, hr + 5, mn, sc));
+            const fallbackUTC = new Date(Date.UTC(yr, mo, dy, hr + FALLBACK_UTC_OFFSET_HOURS, mn, sc));
             return fallbackUTC.toISOString();
           }
         }

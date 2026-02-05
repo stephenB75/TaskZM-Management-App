@@ -26,13 +26,9 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ['react', 'react-dom', 'phosphor-react'],
       esbuildOptions: {
-        // Ensure React is available to all dependencies
-        define: {
-          global: 'globalThis',
-        },
+        define: { global: 'globalThis' },
       },
-      // Force pre-bundling of phosphor-react with React
-      force: true,
+      // Don't force: re-running pre-bundle every time slows builds; use cache unless deps change
     },
   base: '/',
   resolve: {
@@ -92,7 +88,8 @@ export default defineConfig(({ mode }) => {
     outDir: 'dist',
     sourcemap: false,
     assetsDir: 'assets',
-    // 530 KB: RevenueCat SDK (~522 KB) is a single third-party chunk loaded on demand; cannot be split
+    target: 'es2020',
+    reportCompressedSize: false,
     chunkSizeWarningLimit: 530,
     commonjsOptions: {
       include: [/node_modules/],

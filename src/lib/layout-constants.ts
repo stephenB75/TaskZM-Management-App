@@ -651,6 +651,14 @@ export const SPLASH_SCREEN_TEXT = {
   fallbackText: 'TaskZM',
 } as const;
 
+// Loading screen gradient (lavender → light; same on mobile/desktop, dark uses gray)
+export const LOADING_SCREEN_GRADIENT_CLASS =
+  'bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950';
+
+// Main app background gradient (light gray; used by main layout, month calendar, invite page)
+export const MAIN_BG_GRADIENT_CLASS =
+  'bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950';
+
 // React Loading Screen Constants
 export const REACT_LOADING_SCREEN = {
   zIndex: 999999, // z-index for React loading screen overlay

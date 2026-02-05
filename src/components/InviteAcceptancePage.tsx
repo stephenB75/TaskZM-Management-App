@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_2XL, ICON_SIZE_3XL } from '../lib/layout-constants';
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_2XL, ICON_SIZE_3XL, MAIN_BG_GRADIENT_CLASS } from '../lib/layout-constants';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -125,7 +125,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
 
   if (isLoading || isValidating) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      <div className={`min-h-screen flex items-center justify-center ${MAIN_BG_GRADIENT_CLASS}`}>
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center space-y-4">
@@ -140,7 +140,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
 
   if (error && !invitation) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+      <div className={`min-h-screen flex items-center justify-center ${MAIN_BG_GRADIENT_CLASS} p-4`}>
         <Card className="w-full max-w-md">
           <CardHeader>
             <div className="flex items-center justify-center mb-4">
@@ -166,7 +166,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+    <div className={`min-h-screen flex items-center justify-center ${MAIN_BG_GRADIENT_CLASS} p-4`}>
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center justify-center mb-4">

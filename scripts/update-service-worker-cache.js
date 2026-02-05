@@ -23,11 +23,11 @@ const cacheName = `taskzm-v${version}`;
 let sw = fs.readFileSync(swPath, 'utf8');
 
 // Match CACHE_NAME = 'taskzm-vX.Y.Z' (any version) and replace with current package version
-const before = sw;
-sw = sw.replace(/(const CACHE_NAME = ')taskzm-v[^']+(';)/, `$1${cacheName}$2`);
-if (sw === before) {
+const regex = /(const CACHE_NAME = ')taskzm-v[^']+(';)/;
+if (!regex.test(sw)) {
   console.error('update-service-worker-cache: could not find CACHE_NAME in service-worker.js');
   process.exit(1);
 }
+sw = sw.replace(regex, `$1${cacheName}$2`);
 fs.writeFileSync(swPath, sw);
 console.log(`update-service-worker-cache: CACHE_NAME set to ${cacheName}`);

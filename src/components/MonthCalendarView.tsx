@@ -30,7 +30,7 @@ import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
-import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM } from "../lib/layout-constants";
+import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS } from "../lib/layout-constants";
 import { TASK_CARD_ICON_COLORS } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
 import type { Task } from "../types";
@@ -733,7 +733,7 @@ export function MonthCalendarView({
   ];
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950" data-month-calendar="true">
+    <div className={`h-full flex flex-col ${MAIN_BG_GRADIENT_CLASS}`} data-month-calendar="true">
       {/* Calendar Header */}
       <motion.div
         className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-background/70 backdrop-blur-md"
