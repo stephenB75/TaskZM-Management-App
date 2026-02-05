@@ -9,5 +9,7 @@ export const TODAY_AGENDA_TEXT = {
     addTask: "Add task",
   },
   nextUp: "Next Up",
+  /** Shown on the vertical timeline when a task has no scheduled time (its own slot, no time set). */
+  noTimeSlot: "—",
 } as const;
 

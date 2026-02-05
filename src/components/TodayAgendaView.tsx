@@ -366,18 +366,17 @@ export function TodayAgendaView({
   };
 
   const getTaskTime = (task: Task) => {
-    if (!task.scheduledDate) return "";
+    if (!task.scheduledDate) return TODAY_AGENDA_TEXT.noTimeSlot;
     try {
       const date = new Date(task.scheduledDate);
-      if (isNaN(date.getTime())) return "";
+      if (isNaN(date.getTime())) return TODAY_AGENDA_TEXT.noTimeSlot;
       return date.toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
       });
     } catch (error) {
-      // Silently handle invalid scheduledDate
-      return "";
+      return TODAY_AGENDA_TEXT.noTimeSlot;
     }
   };
 
