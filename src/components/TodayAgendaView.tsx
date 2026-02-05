@@ -283,25 +283,6 @@ export function TodayAgendaView({
     return Math.max(Math.min(baseHeight, TASK_CARD_HEIGHT_CONFIG.maxHeight), minHeight);
   }, [shouldUseMobileLayout]);
 
-  // Cumulative positions: each item stacked with (previous height + gap) so spacing between tasks is consistent
-  const agendaTimePositions = useMemo(() => {
-    const scale = TASK_CARD_TIMELINE.scale.todayAgenda;
-    const gapPx = TODAY_AGENDA_TIMELINE.itemGapPx;
-    const eventHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx * scale;
-    let marginTopPx = 0;
-    return combinedItems.map((item, index) => {
-      const result = { marginTopPx };
-      const cardHeightPx =
-        item.type === 'task' && item.task
-          ? getTaskHeight(item.task) * scale
-          : item.type === 'event'
-            ? eventHeightPx
-            : eventHeightPx;
-      marginTopPx += cardHeightPx + gapPx;
-      return result;
-    });
-  }, [combinedItems, getTaskHeight]);
-
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
     if (todayTasks.length === 0) return null;
@@ -325,6 +306,28 @@ export function TodayAgendaView({
     // If no uncompleted task is after current time, return the first uncompleted task
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks]);
+
+  // Cumulative positions: each item stacked with (previous height + gap). Include Next Up badge height so timeline rows align with cards.
+  const agendaTimePositions = useMemo(() => {
+    const scale = TASK_CARD_TIMELINE.scale.todayAgenda;
+    const gapPx = TODAY_AGENDA_TIMELINE.itemGapPx;
+    const eventHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx * scale;
+    let marginTopPx = 0;
+    return combinedItems.map((item) => {
+      const result = { marginTopPx };
+      let itemHeightPx =
+        item.type === 'task' && item.task
+          ? getTaskHeight(item.task) * scale
+          : item.type === 'event'
+            ? eventHeightPx
+            : eventHeightPx;
+      if (item.type === 'task' && item.task && item.task.id === nextUpTaskId) {
+        itemHeightPx += TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx;
+      }
+      marginTopPx += itemHeightPx + gapPx;
+      return result;
+    });
+  }, [combinedItems, getTaskHeight, nextUpTaskId]);
 
   // LAYER 1: Basic vertical scroll - ScrollArea handles scrolling automatically
   // LAYER 2: Next up badge is implemented via nextUpTaskId and isNextUp prop (see below)
