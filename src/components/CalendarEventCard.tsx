@@ -274,10 +274,18 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
 
   // Kanban week view: light gray background, square left, rounded right, background starts at vertical line; same width as task cards
   if (variant === 'kanban') {
+    const kanbanPadLeft = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.left.desktop;
+    const kanbanPadRight = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.right.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.right.desktop;
     return (
       <div
-        className="flex w-full max-w-full overflow-hidden transition-all duration-200 cursor-default select-none box-border"
-        style={{ minHeight: `${calculatedHeight}px`, width: '100%', maxWidth: '100%' }}
+        className="flex w-full max-w-full overflow-hidden transition-all duration-200 cursor-default select-none box-border flex-shrink-0"
+        style={{
+          minHeight: `${calculatedHeight}px`,
+          width: '100%',
+          minWidth: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+        }}
       >
         {/* Vertical line at left edge (square corners) - background starts from here */}
         <div
@@ -293,10 +301,12 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             colors.bg,
           )}
           style={{
-            paddingLeft: isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.left.desktop,
-            paddingRight: isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.right.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.right.desktop,
+            flex: '1 1 0%',
+            paddingLeft: kanbanPadLeft,
+            paddingRight: kanbanPadRight,
             minHeight: `${calculatedHeight}px`,
             minWidth: 0,
+            boxSizing: 'border-box',
           }}
         >
           {/* Header with calendar icon */}
