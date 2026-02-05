@@ -28,8 +28,11 @@ export const CALENDAR_EVENT_DIMENSIONS = {
       mobile: 20, // 8px (vertical line position from container edge) + 4px (vertical line width) + 8px (gap) = 20px left padding for content alignment
       desktop: 20, // Same calculation - vertical line is always 8px from container edge, regardless of container padding (px-2 or px-3)
     },
-    /** Kanban variant: gap between vertical line and content (px) */
-    kanbanLeft: 12,
+    /** Kanban variant: match task card horizontal padding (px-2 / px-3). Left = gap after vertical line so total from card edge matches task card. */
+    kanban: {
+      left: { mobile: 4, desktop: 8 },   // 4px (line) + left = 8px mobile / 12px desktop
+      right: { mobile: 8, desktop: 12 },  // same as task card px-2 / px-3
+    },
   },
   icon: {
     calendar: 12, // Calendar icon size

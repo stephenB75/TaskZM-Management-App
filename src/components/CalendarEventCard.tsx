@@ -293,7 +293,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             colors.bg,
           )}
           style={{
-            paddingLeft: CALENDAR_EVENT_DIMENSIONS.contentPadding.kanbanLeft,
+            paddingLeft: isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.left.desktop,
+            paddingRight: isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.right.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.right.desktop,
             minHeight: `${calculatedHeight}px`,
             minWidth: 0,
           }}
