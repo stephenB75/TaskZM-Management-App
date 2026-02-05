@@ -171,7 +171,7 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     home: 'Follow established home maintenance methods and organize your living space effectively.',
     personal: 'Take a thoughtful and personal approach, prioritizing your well-being and preferences.',
     world: 'Consider global perspectives, cultural contexts, and broader implications.',
-    mixed: 'Balance multiple aspects and consider different perspectives.',
+    mixed: 'Balancing multiple aspects and considering different perspectives.',
   },
   // Description separator for appending
   descriptionSeparator: '\n\n', // Separator when appending descriptions
