@@ -281,6 +281,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         className="flex w-full max-w-full overflow-hidden transition-all duration-200 cursor-default select-none box-border flex-shrink-0"
         style={{
           minHeight: `${calculatedHeight}px`,
+          flex: '0 0 100%',
           width: '100%',
           minWidth: '100%',
           maxWidth: '100%',

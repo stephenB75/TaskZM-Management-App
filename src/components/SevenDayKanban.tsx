@@ -1019,12 +1019,8 @@ export function SevenDayKanban({
                               {combinedItems.map((item, idx) => {
                                 if (item.type === 'event') {
                                   return (
-                                    <motion.div
+                                    <div
                                       key={`mobile-event-${item.event.id}`}
-                                      initial={{ opacity: 0, y: 10 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      exit={{ opacity: 0, scale: 0.95 }}
-                                      transition={{ duration: 0.2, delay: idx * 0.02 }}
                                       className="w-full max-w-full overflow-hidden"
                                       style={{ 
                                         display: 'block',
@@ -1034,17 +1030,25 @@ export function SevenDayKanban({
                                         transformOrigin: 'top center',
                                       }}
                                     >
-                                      <CalendarEventCard
-                                        title={item.event.title}
-                                        start={item.event.start}
-                                        end={item.event.end}
-                                        location={item.event.location}
-                                        provider={item.event.provider}
-                                        calendarColor={item.event.calendarColor}
-                                        isRecurring={item.event.isRecurring}
-                                        variant="kanban"
-                                      />
-                                    </motion.div>
+                                      <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                        style={{ width: '100%' }}
+                                      >
+                                        <CalendarEventCard
+                                          title={item.event.title}
+                                          start={item.event.start}
+                                          end={item.event.end}
+                                          location={item.event.location}
+                                          provider={item.event.provider}
+                                          calendarColor={item.event.calendarColor}
+                                          isRecurring={item.event.isRecurring}
+                                          variant="kanban"
+                                        />
+                                      </motion.div>
+                                    </div>
                                   );
                                 } else {
                                   return (
@@ -1435,7 +1439,7 @@ export function SevenDayKanban({
                           return (
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 flex flex-col items-center h-full min-h-full',
+                            'p-2 sm:p-3 flex flex-col items-stretch h-full min-h-full',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
@@ -1474,12 +1478,8 @@ export function SevenDayKanban({
                                     {combinedItems.map((item, idx) => {
                                       if (item.type === 'event') {
                                         return (
-                                          <motion.div
+                                          <div
                                             key={`event-${item.event.id}`}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            transition={{ duration: 0.2, delay: idx * 0.02 }}
                                             className="w-full max-w-full overflow-hidden"
                                             style={{
                                               display: 'block',
@@ -1489,17 +1489,25 @@ export function SevenDayKanban({
                                               transformOrigin: 'top center',
                                             }}
                                           >
-                                            <CalendarEventCard
-                                              title={item.event.title}
-                                              start={item.event.start}
-                                              end={item.event.end}
-                                              location={item.event.location}
-                                              provider={item.event.provider}
-                                              calendarColor={item.event.calendarColor}
-                                              isRecurring={item.event.isRecurring}
-                                              variant="kanban"
-                                            />
-                                          </motion.div>
+                                            <motion.div
+                                              initial={{ opacity: 0, y: 10 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              exit={{ opacity: 0, scale: 0.95 }}
+                                              transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                              style={{ width: '100%' }}
+                                            >
+                                              <CalendarEventCard
+                                                title={item.event.title}
+                                                start={item.event.start}
+                                                end={item.event.end}
+                                                location={item.event.location}
+                                                provider={item.event.provider}
+                                                calendarColor={item.event.calendarColor}
+                                                isRecurring={item.event.isRecurring}
+                                                variant="kanban"
+                                              />
+                                            </motion.div>
+                                          </div>
                                         );
                                       } else {
                                         return (
