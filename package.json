@@ -74,6 +74,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/update-service-worker-cache.js",
     "build": "vite build",
     "screenshots": "playwright test --config=playwright.config.ts",
     "deploy-functions": "./scripts/deploy-functions.sh",
