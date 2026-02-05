@@ -3162,6 +3162,36 @@ function buildContextualDescription(
 }
 
 /**
+ * Filter domain terminology to only terms relevant to the task name.
+ * Prevents the model from using unrelated terms (e.g. "anniversary", "banquet" for a medical appointment).
+ */
+function filterTerminologyRelevantToTask(
+  taskName: string,
+  domainTerms: ReturnType<typeof getDomainTerminology>,
+  maxPerCategory: number
+): { keywords: string[]; phrases: string[]; verbs: string[]; nouns: string[] } {
+  const taskLower = taskName.toLowerCase().replace(/\bappt\.?\b/gi, 'appointment').replace(/\bdr\.?\b/gi, 'doctor');
+  const taskWords = taskLower.split(/\W+/).filter(w => w.length >= 2);
+
+  const isRelevant = (term: string): boolean => {
+    if (!term || typeof term !== 'string') return false;
+    const t = term.toLowerCase().trim();
+    if (taskLower.includes(t)) return true;
+    const termWords = t.split(/\s+/).filter(w => w.length >= 2);
+    return termWords.some(tw => taskLower.includes(tw) || taskWords.some(tw2 => tw2.includes(tw) || tw.includes(tw2)));
+  };
+
+  const filterAndCap = (arr: string[]) => (arr || []).filter(isRelevant).slice(0, maxPerCategory);
+
+  return {
+    keywords: filterAndCap(domainTerms.keywords || []),
+    phrases: filterAndCap(domainTerms.phrases || []),
+    verbs: filterAndCap(domainTerms.verbs || []),
+    nouns: filterAndCap(domainTerms.nouns || []),
+  };
+}
+
+/**
  * Generates a task description based on task name using Browser AI
  * Browser AI extracts keywords, phrases, verbs, and nouns directly from the task name
  * Local Terminology acts as a cache/dictionary to enhance extracted terms
@@ -3254,12 +3284,7 @@ export async function generateDescription(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), serverAITimeoutMs);
       const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
-      const terminology = {
-        keywords: (domainTerms.keywords || []).slice(0, maxTerms),
-        phrases: (domainTerms.phrases || []).slice(0, maxTerms),
-        verbs: (domainTerms.verbs || []).slice(0, maxTerms),
-        nouns: (domainTerms.nouns || []).slice(0, maxTerms),
-      };
+      const terminology = filterTerminologyRelevantToTask(taskName, domainTerms, maxTerms);
       const res = await fetch(`${API_BASE}/ai/description`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
@@ -3716,12 +3741,7 @@ export async function generateDescriptionOptions(
         const domain = domainResult.domain;
         const domainTerms = await getDomainTerminologyAsync(domain);
         const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
-        const terminology = {
-          keywords: (domainTerms.keywords || []).slice(0, maxTerms),
-          phrases: (domainTerms.phrases || []).slice(0, maxTerms),
-          verbs: (domainTerms.verbs || []).slice(0, maxTerms),
-          nouns: (domainTerms.nouns || []).slice(0, maxTerms),
-        };
+        const terminology = filterTerminologyRelevantToTask(taskName, domainTerms, maxTerms);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
         const res = await fetch(`${API_BASE}/ai/description-options`, {

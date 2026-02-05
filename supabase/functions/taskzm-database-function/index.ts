@@ -419,7 +419,7 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
 
     const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
     const terminologyContext = hasTerms
-      ? `\n\nDomain vocabulary (use where relevant for contextual, natural sentences; do not list them): keywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}; phrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}; verbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}; nouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}.`
+      ? `\n\nUse ONLY these task-relevant terms where they fit naturally (do not list them; do not use any term that is unrelated to the task): keywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}; phrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}; verbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}; nouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}.`
       : '';
 
     const prompt = `Generate a clear, accurate description for this ${domain} task.
@@ -427,9 +427,9 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
 Task Name: "${taskName}"${actionPlanContext || ''}${terminologyContext}
 
 Requirements:
-- Describe ONLY what the task name and action plan refer to. Do not introduce topics (e.g. workout, learning, fitness) that are not clearly stated in the task name or action plan.
+- Describe ONLY what the task name and action plan refer to. Do not introduce any topic, concept, or vocabulary that is not directly related to the task (e.g. for a medical appointment do not mention events, parties, celebrations, or unrelated activities).
 - Be SPECIFIC and CONTEXTUAL. Use correct English: complete sentences, proper grammar, no redundant phrases, no sentence fragments.
-- Use professional, clear language appropriate for ${domain} tasks. Where the domain vocabulary applies, use it naturally in your sentences.
+- Use only the vocabulary provided above where it fits; do not use other domain terms that are not in the task or the provided list.
 - Keep the description to 1-3 sentences (about 15-50 words). Avoid run-on sentences.
 - Do not repeat the task name verbatim.
 
@@ -523,7 +523,7 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
 
     const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
     const terminologyContext = hasTerms
-      ? `\nDomain vocabulary (use where relevant for contextual sentences): keywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}; phrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}; verbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}; nouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}.`
+      ? `\nUse ONLY these task-relevant terms where they fit (do not use vocabulary unrelated to the task): keywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}; phrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}; verbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}; nouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}.`
       : '';
 
     const prompt = `Generate exactly 3-5 short description options for this ${domain} task. Each description should be 1-3 sentences (about 15-50 words).
@@ -531,7 +531,7 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
 Task Name: "${taskName}"${actionPlanContext || ''}${terminologyContext}
 
 Requirements:
-- Describe ONLY what the task refers to. Do not introduce unrelated topics. Use the domain vocabulary naturally where it fits.
+- Describe ONLY what the task refers to. Do not introduce any topic or term that is unrelated to the task (e.g. for a medical task do not mention events, parties, or celebrations). Use only the vocabulary above where it fits.
 - Use correct English, complete sentences, no run-on sentences.
 - Vary the options (different wording, detail level, or angle).
 
