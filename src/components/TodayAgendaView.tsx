@@ -614,7 +614,7 @@ export function TodayAgendaView({
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
+                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0) + TODAY_AGENDA_TIMELINE.cardContentTopOffsetPx;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
                         <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx }}>
@@ -900,7 +900,7 @@ export function TodayAgendaView({
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
+                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0) + TODAY_AGENDA_TIMELINE.cardContentTopOffsetPx;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
                         <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx }}>
@@ -1160,7 +1160,7 @@ export function TodayAgendaView({
                     const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
                     const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                     const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                    const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
+                    const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0) + TODAY_AGENDA_TIMELINE.cardContentTopOffsetPx;
                     const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                     return (
                       <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx }}>
@@ -1437,7 +1437,7 @@ export function TodayAgendaView({
                       const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
                       const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
                       const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
+                      const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0) + TODAY_AGENDA_TIMELINE.cardContentTopOffsetPx;
                       const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
                       return (
                         <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx }}>

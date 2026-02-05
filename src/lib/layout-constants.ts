@@ -217,6 +217,8 @@ export const TODAY_AGENDA_TIMELINE = {
   eventCardHeightPx: 72,
   /** Offset (px) from row top to card top when item shows Next Up badge (badge height + mb-5). Used so timeline time aligns with card top. */
   nextUpBadgeOffsetPx: 42,
+  /** Offset (px) from card top to first content line (priority/tab row). Card padding-top + tab margin-top ≈ 14px. Applied so timeline dot aligns with card content, not card edge. */
+  cardContentTopOffsetPx: 14,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 
