@@ -1008,7 +1008,6 @@ export function TaskDialog({
       // Reset for new task
       setTitle("");
       setDescription("");
-      setDescriptionSource(null);
       setStatus("todo");
       setPriority("medium");
       setDueDate(undefined);
