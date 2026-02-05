@@ -87,11 +87,10 @@ export function TodayAgendaView({
     disabled: shouldUseMobileLayout, // Disable drop on mobile/tablet - only allow vertical scroll
   });
 
-  // Get today's tasks
+  // Get today's tasks (local date; timezone: today and filtering use local timezone via getDateString / isDateInRecurrence)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // Layer 1: Basic structure - no scroll tracking needed for now
   const todayDateString = getDateString(today);
   const allTodayTasks = Array.isArray(tasks) ? tasks.filter((task) => {
     // Defensive check: ensure task is valid
@@ -117,7 +116,7 @@ export function TodayAgendaView({
   // Completed tasks remain visible but grayed out like recurring tasks
   const incompleteTasks = allTodayTasks;
 
-  // Sort tasks by time; deduplicate by id so completed occurrences never duplicate base on Today Agenda
+  // Sort tasks chronologically by scheduled time (earliest first; tasks without time go to end)
   const todayTasks = useMemo(() => {
     const byId = new Map<string, Task>();
     for (const task of incompleteTasks) {
@@ -214,8 +213,7 @@ export function TodayAgendaView({
       });
     }
     
-    // Sort by time (earliest first, items without time go to end)
-    // Completed tasks stay in chronological order (not moved to bottom)
+    // Chronological order: earliest first; items without time go to end
     items.sort((a, b) => {
       return a.sortTime - b.sortTime;
     });

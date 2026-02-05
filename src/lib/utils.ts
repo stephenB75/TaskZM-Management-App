@@ -75,6 +75,22 @@ export function getDateString(date: Date): string {
 }
 
 /**
+ * Parse YYYY-MM-DD string as local midnight (not UTC).
+ * Use this when comparing to "today" or column dates so tasks appear on the correct day in all timezones.
+ */
+export function dateStringToLocalDate(dateString: string): Date {
+  const s = (dateString || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number);
+    if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) {
+      return new Date(y, m - 1, d);
+    }
+  }
+  const fallback = new Date(dateString);
+  return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate());
+}
+
+/**
  * Calculate total tracked time across all occurrences in a recurring task series
  * Includes both completed occurrences and active occurrences
  * @param baseTaskId - The base recurring task ID (without date suffix)

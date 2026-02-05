@@ -15,7 +15,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks } from '../lib/utils';
+import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
@@ -574,7 +574,7 @@ export function SevenDayKanban({
     };
   }, [weekColumns, mobileMode, viewMode, zoomScale]); // Include zoomScale to recalculate when zoom changes
 
-  // Get tasks for a specific day
+  // Get tasks for a specific day (dateString = YYYY-MM-DD parsed as local; tasks sorted by time-of-day chronologically)
   const getTasksForDay = (dateString: string) => {
     // Defensive check: ensure tasks is an array
     if (!Array.isArray(tasks)) {
@@ -583,7 +583,7 @@ export function SevenDayKanban({
     }
 
     try {
-      const checkDate = new Date(dateString + 'T00:00:00');
+      const checkDate = dateStringToLocalDate(dateString);
       if (isNaN(checkDate.getTime())) {
         logger.warn('getTasksForDay: Invalid date string', dateString);
         return [];
@@ -1372,7 +1372,7 @@ export function SevenDayKanban({
                           // Get calendar events for this day
                           const calEvents = calendarEventsByDate[column.dateString] || [];
                           
-                          // Create combined items (tasks + calendar events) sorted by time
+                          // Create combined items (tasks + calendar events) sorted chronologically by time-of-day
                           type CombinedItem = 
                             | { type: 'task'; task: Task; marginTop: number; sortTime: number }
                             | { type: 'event'; event: typeof calEvents[0]; sortTime: number };
