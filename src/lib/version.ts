@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.18';
-export const VERSION_NAME = 'Calendar Events & Apple Sync';
-export const VERSION_DATE = 'February 1, 2026';
-export const BUILD_NUMBER = '20260201-1';
+export const APP_VERSION = '1.0.19';
+export const VERSION_NAME = 'Today Agenda Timeline & Timezone';
+export const VERSION_DATE = 'February 2, 2026';
+export const BUILD_NUMBER = '20260202-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,22 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.19',
+    date: 'February 2, 2026',
+    name: 'Today Agenda Timeline & Timezone',
+    changes: [
+      'Today Agenda: One row per item [time | card] so timeline always aligns with correct task; removed estimated-height positioning',
+      'Today Agenda: Tasks without scheduled time show time slot "—" (TODAY_AGENDA_TEXT.noTimeSlot) on vertical timeline',
+      'Today Agenda: Chronological order and local timezone documented; agendaTimePositions removed in favor of row-per-item layout',
+      'Kanban week: dateStringToLocalDate() used in getTasksForDay so column date is parsed as local (timezone-safe across browsers)',
+      'TaskDialog: Removed invalid setDescriptionSource(null) call (fixes ReferenceError when opening new task)',
+      'Build: Removed optimizeDeps.force, added reportCompressedSize: false and target es2020; prebuild script fixed when cache version unchanged',
+      'Layout: LOADING_SCREEN_GRADIENT_CLASS and MAIN_BG_GRADIENT_CLASS in layout-constants; used in App, AppContent, AuthenticatedApp, MonthCalendarView, InviteAcceptancePage',
+      'Apple CalDAV: FALLBACK_UTC_OFFSET_HOURS constant (replaced literal 5); utils.dateStringToLocalDate for YYYY-MM-DD as local',
+      'Confirmed no hardcode in recent changes; all layout/copy from constants',
+    ],
+  },
   {
     version: '1.0.18',
     date: 'February 1, 2026',
