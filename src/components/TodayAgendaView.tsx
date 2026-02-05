@@ -307,28 +307,6 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks]);
 
-  // Cumulative positions: each item stacked with (previous height + gap). Include Next Up badge height so timeline rows align with cards.
-  const agendaTimePositions = useMemo(() => {
-    const scale = TASK_CARD_TIMELINE.scale.todayAgenda;
-    const gapPx = TODAY_AGENDA_TIMELINE.itemGapPx;
-    const eventHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx * scale;
-    let marginTopPx = 0;
-    return combinedItems.map((item) => {
-      const result = { marginTopPx };
-      let itemHeightPx =
-        item.type === 'task' && item.task
-          ? getTaskHeight(item.task) * scale
-          : item.type === 'event'
-            ? eventHeightPx
-            : eventHeightPx;
-      if (item.type === 'task' && item.task && item.task.id === nextUpTaskId) {
-        itemHeightPx += TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx;
-      }
-      marginTopPx += itemHeightPx + gapPx;
-      return result;
-    });
-  }, [combinedItems, getTaskHeight, nextUpTaskId]);
-
   // LAYER 1: Basic vertical scroll - ScrollArea handles scrolling automatically
   // LAYER 2: Next up badge is implemented via nextUpTaskId and isNextUp prop (see below)
   // LAYER 3: Optional auto-scroll can be added later if needed
@@ -411,6 +389,54 @@ export function TodayAgendaView({
         return "bg-gray-300";
     }
   };
+
+  /** One row per item [time | card] so timeline always aligns with the correct task (no estimated heights). */
+  const agendaListRows = useMemo(
+    () => (
+      <div className="flex flex-col w-full relative z-10" style={{ gap: TODAY_AGENDA_TIMELINE.itemGapPx }}>
+        {combinedItems.map((item, index) => {
+          const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
+          const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+          const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
+          const timelinePaddingTop = TODAY_AGENDA_TIMELINE.rowPaddingTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
+          return (
+            <div key={key} className="flex w-full items-start" style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
+              <div className="flex flex-shrink-0 flex-col" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: timelinePaddingTop }}>
+                <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
+                  <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                  <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
+                {item.type === 'task' && item.task ? (
+                  <div data-task-id={item.task.id} className="w-full">
+                    <div className="w-full min-w-full" style={{ display: 'block', width: '100%', minWidth: '100%', transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }}>
+                      <DraggableTaskCard
+                        task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
+                        onClick={() => item.task && handleTaskClick(item.task)}
+                        droppableId="today-agenda"
+                        occurrenceDate={todayString}
+                        isNextUp={item.task.id === nextUpTaskId}
+                        onComplete={handleTaskComplete}
+                      />
+                    </div>
+                  </div>
+                ) : item.type === 'event' && item.event ? (
+                  <div data-event-id={item.event.id} className="w-full">
+                    <div className="w-full min-w-full" style={{ display: 'block', width: '100%', minWidth: '100%', transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }}>
+                      <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    ),
+    [combinedItems, nextUpTaskId, todayString, tasks]
+  );
 
   return (
     <>
@@ -608,105 +634,7 @@ export function TodayAgendaView({
               </div>
             ) : (
               <>
-                {/* LAYER 1: Left timeline + task. Timeline (time + line + dot) on left, task on right, row alignment by marginTop. */}
-                <div className="flex w-full relative z-10 items-stretch"
-            style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
-                  <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                    {combinedItems.map((item, index) => {
-                      const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
-                      const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                      // Match card row vertical position so time label stays with correct task (only offset for Next Up badge height)
-const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
-                      const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
-                      return (
-                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx }}>
-                          <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                            <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                            <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-col flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                    {combinedItems.map((item, index) => {
-                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
-                      if (item.type === 'task' && item.task) {
-                        return (
-                    <div
-                            key={`task-${item.task.id}`}
-                            data-task-id={item.task.id}
-                            className="w-full"
-                      style={{
-                              marginTop: `${marginTopPx}px`,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-full"
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          minWidth: '100%',
-                          transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                          transformOrigin: 'top center',
-                        }}
-                      >
-                        <DraggableTaskCard
-                          task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                          onClick={() => item.task && handleTaskClick(item.task)}
-                          droppableId="today-agenda"
-                          occurrenceDate={todayString}
-                          isNextUp={item.task.id === nextUpTaskId}
-                          onComplete={handleTaskComplete}
-                        />
-                      </div>
-                    </div>
-                        );
-                      } else if (item.type === 'event' && item.event) {
-                        return (
-                          <div
-                            key={`event-${item.event.id}`}
-                            data-event-id={item.event.id}
-                            className="w-full"
-                            style={{
-                              marginTop: `${marginTopPx}px`,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
-                            }}
-                          >
-                            <div
-                              className="w-full min-w-full"
-                              style={{
-                                display: 'block',
-                                width: '100%',
-                                minWidth: '100%',
-                                transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                                transformOrigin: 'top center',
-                              }}
-                            >
-                              <CalendarEventCard
-                                title={item.event.title}
-                                start={item.event.start}
-                                end={item.event.end}
-                                location={item.event.location}
-                                provider={item.event.provider}
-                                calendarColor={item.event.calendarColor}
-                                isRecurring={item.event.isRecurring}
-                              />
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                </div>
+                {agendaListRows}
 
                 {/* Next Up Task Details - Shows notes for the next uncompleted task */}
                 {(() => {
@@ -895,105 +823,7 @@ const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.next
               </div>
             ) : (
               <>
-                {/* LAYER 1: Left timeline + task. Timeline (time + line + dot) on left, task on right, row alignment by marginTop. */}
-                <div className="flex w-full relative z-10 items-stretch"
-            style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
-                  <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                    {combinedItems.map((item, index) => {
-                      const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
-                      const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                      // Match card row vertical position so time label stays with correct task (only offset for Next Up badge height)
-const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
-                      const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
-                      return (
-                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx }}>
-                          <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                            <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                            <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-col flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                    {combinedItems.map((item, index) => {
-                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
-                      if (item.type === 'task' && item.task) {
-                        return (
-                    <div
-                            key={`task-${item.task.id}`}
-                            data-task-id={item.task.id}
-                            className="w-full"
-                      style={{
-                              marginTop: `${marginTopPx}px`,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
-                      }}
-                    >
-                      <div
-                        className="w-full min-w-full"
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          minWidth: '100%',
-                          transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                          transformOrigin: 'top center',
-                        }}
-                      >
-                        <DraggableTaskCard
-                          task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                          onClick={() => item.task && handleTaskClick(item.task)}
-                          droppableId="today-agenda"
-                          occurrenceDate={todayString}
-                          isNextUp={item.task.id === nextUpTaskId}
-                          onComplete={handleTaskComplete}
-                        />
-                      </div>
-                    </div>
-                        );
-                      } else if (item.type === 'event' && item.event) {
-                        return (
-                          <div
-                            key={`event-${item.event.id}`}
-                            data-event-id={item.event.id}
-                            className="w-full"
-                            style={{
-                              marginTop: `${marginTopPx}px`,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
-                            }}
-                          >
-                            <div
-                              className="w-full min-w-full"
-                              style={{
-                                display: 'block',
-                                width: '100%',
-                                minWidth: '100%',
-                                transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                                transformOrigin: 'top center',
-                              }}
-                            >
-                              <CalendarEventCard
-                                title={item.event.title}
-                                start={item.event.start}
-                                end={item.event.end}
-                                location={item.event.location}
-                                provider={item.event.provider}
-                                calendarColor={item.event.calendarColor}
-                                isRecurring={item.event.isRecurring}
-                              />
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                </div>
+                {agendaListRows}
 
                 {/* Next Up Task Details - Shows notes for the next uncompleted task */}
                 {(() => {
@@ -1156,104 +986,7 @@ const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.next
             </div>
           ) : (
             <>
-              {/* LAYER 1: Left timeline + task. Timeline (time + line + dot) on left, task on right, row alignment by marginTop. */}
-              <div className="flex w-full relative z-10 items-stretch"
-            style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
-                <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                  {combinedItems.map((item, index) => {
-                    const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-                    const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
-                    const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                    // Match card row vertical position so time label stays with correct task (only offset for Next Up badge height)
-const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
-                    const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
-                    return (
-                      <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx }}>
-                        <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                          <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                          <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex flex-col flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                  {combinedItems.map((item, index) => {
-                    const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
-                    if (item.type === 'task' && item.task) {
-                      return (
-                        <div
-                          key={`task-${item.task.id}`}
-                          data-task-id={item.task.id}
-                          style={{
-                            marginTop: `${marginTopPx}px`,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: TODAY_AGENDA_TIMELINE.rowGapPx,
-                          }}
-                        >
-                          <div
-                            className="w-full min-w-full"
-                            style={{
-                              display: 'block',
-                              width: '100%',
-                              minWidth: '100%',
-                              transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                              transformOrigin: 'top center',
-                            }}
-                          >
-                            <DraggableTaskCard
-                              task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                              onClick={() => item.task && handleTaskClick(item.task)}
-                              droppableId="today-agenda"
-                              occurrenceDate={todayString}
-                              isNextUp={item.task.id === nextUpTaskId}
-                              onComplete={handleTaskComplete}
-                            />
-                          </div>
-                        </div>
-                      );
-                    } else if (item.type === 'event' && item.event) {
-                      return (
-                        <div
-                          key={`event-${item.event.id}`}
-                          data-event-id={item.event.id}
-                          className="w-full"
-                          style={{
-                            marginTop: `${marginTopPx}px`,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: TODAY_AGENDA_TIMELINE.rowGapPx,
-                          }}
-                        >
-                          <div
-                            className="w-full min-w-full"
-                            style={{
-                              display: 'block',
-                              width: '100%',
-                              minWidth: '100%',
-                              transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                              transformOrigin: 'top center',
-                            }}
-                          >
-                            <CalendarEventCard
-                              title={item.event.title}
-                              start={item.event.start}
-                              end={item.event.end}
-                              location={item.event.location}
-                              provider={item.event.provider}
-                              calendarColor={item.event.calendarColor}
-                              isRecurring={item.event.isRecurring}
-                            />
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
-                </div>
-              </div>
+              {agendaListRows}
 
               {/* Next Up Task Details */}
               {(() => {
@@ -1435,103 +1168,7 @@ const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.next
               </div>
             ) : (
               <>
-                <div className="flex w-full relative z-10 items-stretch"
-            style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
-                  <div className="flex flex-col flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                    {combinedItems.map((item, index) => {
-                      const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
-                      const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                      // Match card row vertical position so time label stays with correct task (only offset for Next Up badge height)
-const timelineMarginTopPx = marginTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
-                      const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
-                      return (
-                        <div key={key} className="flex flex-col flex-shrink-0" style={{ marginTop: timelineMarginTopPx }}>
-                          <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                            <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                            <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex flex-col flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                    {combinedItems.map((item, index) => {
-                      const marginTopPx = agendaTimePositions[index]?.marginTopPx ?? 0;
-                      if (item.type === 'task' && item.task) {
-                        return (
-                          <div
-                            key={`task-${item.task.id}`}
-                            data-task-id={item.task.id}
-                            style={{
-                              marginTop: `${marginTopPx}px`,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
-                            }}
-                          >
-                            <div
-                              className="w-full min-w-full"
-                              style={{
-                                display: 'block',
-                                width: '100%',
-                                minWidth: '100%',
-                                transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                                transformOrigin: 'top center',
-                              }}
-                            >
-                              <DraggableTaskCard
-                                task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                                onClick={() => item.task && handleTaskClick(item.task)}
-                                droppableId="today-agenda"
-                                occurrenceDate={todayString}
-                                isNextUp={item.task.id === nextUpTaskId}
-                                onComplete={handleTaskComplete}
-                              />
-                            </div>
-                          </div>
-                        );
-                      } else if (item.type === 'event' && item.event) {
-                        return (
-                          <div
-                            key={`event-${item.event.id}`}
-                            data-event-id={item.event.id}
-                            className="w-full"
-                            style={{
-                              marginTop: `${marginTopPx}px`,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: TODAY_AGENDA_TIMELINE.rowGapPx,
-                            }}
-                          >
-                            <div
-                              className="w-full min-w-full"
-                              style={{
-                                display: 'block',
-                                width: '100%',
-                                minWidth: '100%',
-                                transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`,
-                                transformOrigin: 'top center',
-                              }}
-                            >
-                              <CalendarEventCard
-                                title={item.event.title}
-                                start={item.event.start}
-                                end={item.event.end}
-                                location={item.event.location}
-                                provider={item.event.provider}
-                                calendarColor={item.event.calendarColor}
-                                isRecurring={item.event.isRecurring}
-                              />
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-                </div>
+                {agendaListRows}
                 {(() => {
                   const nextUpTask = todayTasks.find((task) => task.id === nextUpTaskId);
                   if (!nextUpTask || !nextUpTask.notes) return null;
