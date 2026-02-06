@@ -26,11 +26,23 @@ function getDurationMinutes(start: string, end: string): number {
   return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
 }
 
-// Format time to AM/PM
+// Format time to AM/PM (uses local timezone; date-only strings are interpreted as UTC midnight and can show wrong time)
 function formatTimeAMPM(isoString: string): string {
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return '';
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+// True if event is date-only (YYYY-MM-DD) or spans full day (24h and starts at midnight local)
+function isAllDayEvent(start: string, end: string): boolean {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(start)) return true;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return false;
+  const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+  const startHour = startDate.getHours();
+  const startMin = startDate.getMinutes();
+  return durationMinutes >= 24 * 60 - 1 && startHour === 0 && startMin === 0;
 }
 
 // Format duration display
@@ -244,6 +256,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   const isMobile = useIsMobile();
   
   const durationMinutes = getDurationMinutes(start, end);
+  const allDay = isAllDayEvent(start, end);
   const startTime = formatTimeAMPM(start);
   const endTime = formatTimeAMPM(end);
   
@@ -324,7 +337,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1">
               <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
-              <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{startTime} – {endTime}</span>
+              <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{allDay ? 'All day' : `${startTime} – ${endTime}`}</span>
             </div>
             <span className={cn('font-medium px-1.5 py-0.5 rounded-full', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
               {formatDuration(durationMinutes)}
@@ -371,7 +384,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5">
             <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
-            <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{startTime} – {endTime}</span>
+            <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{allDay ? 'All day' : `${startTime} – ${endTime}`}</span>
           </div>
           <span className={cn('font-medium px-1.5 py-0.5 rounded-full', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
             {formatDuration(durationMinutes)}

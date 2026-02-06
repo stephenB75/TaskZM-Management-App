@@ -1188,12 +1188,43 @@ function parseVEvent(
     }
     
     // Handle DATE format (e.g., 20231225) - all-day events
+    // Convert midnight on this date in user's timezone to UTC so the correct day shows in all timezones
     if (cleanDateStr.length === 8) {
-      const year = cleanDateStr.substring(0, 4);
-      const month = cleanDateStr.substring(4, 6);
-      const day = cleanDateStr.substring(6, 8);
-      // All-day events should be at start of day in local time
-      return `${year}-${month}-${day}T00:00:00`;
+      const yr = parseInt(cleanDateStr.substring(0, 4), 10);
+      const mo = parseInt(cleanDateStr.substring(4, 6), 10) - 1; // 0-indexed
+      const dy = parseInt(cleanDateStr.substring(6, 8), 10);
+      const tzid = currentUserTimezone || DEFAULT_TIMEZONE;
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: tzid,
+          year: 'numeric',
+          month: 'numeric',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+          second: 'numeric',
+          hour12: false,
+        });
+        for (let offsetHours = -12; offsetHours <= 14; offsetHours++) {
+          const testUTC = new Date(Date.UTC(yr, mo, dy, -offsetHours, 0, 0));
+          const parts = formatter.formatToParts(testUTC);
+          const getPart = (type: string): number => {
+            const part = parts.find((p: { type: string }) => p.type === type);
+            return part ? parseInt(part.value, 10) : 0;
+          };
+          const tzYear = getPart('year');
+          const tzMonth = getPart('month');
+          const tzDay = getPart('day');
+          const tzHour = getPart('hour');
+          const tzMin = getPart('minute');
+          if (tzYear === yr && tzMonth === mo + 1 && tzDay === dy && tzHour === 0 && tzMin === 0) {
+            return testUTC.toISOString();
+          }
+        }
+      } catch (e) {
+        console.warn(`All-day date conversion failed for ${cleanDateStr}, using UTC midnight:`, e);
+      }
+      return `${cleanDateStr.substring(0, 4)}-${cleanDateStr.substring(4, 6)}-${cleanDateStr.substring(6, 8)}T00:00:00.000Z`;
     }
     
     return dateStr;
