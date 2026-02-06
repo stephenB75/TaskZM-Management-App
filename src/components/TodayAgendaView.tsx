@@ -222,64 +222,10 @@ export function TodayAgendaView({
   }, [todayTasks, todayCalendarEvents]);
 
   // Calculate height based on task duration (must be defined before agendaTimePositions which uses it)
-  const getTaskHeight = useCallback((task: Task) => {
-    const minutes = getTaskMinutes(task);
-    const isMobile = shouldUseMobileLayout;
-    const isShortTask = minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.short;
-    const isMediumTask = minutes >= TASK_CARD_HEIGHT_CONFIG.thresholds.short && minutes < TASK_CARD_HEIGHT_CONFIG.thresholds.long;
-    const isLongTask = minutes >= TASK_CARD_HEIGHT_CONFIG.thresholds.long;
-    const hasTime = !!(task.scheduledDate || task.dueDate);
-    const hasPriority = true;
-    const hasTag = task.tags && task.tags.length > 0;
-    const hasDuration = !!task.estimatedTime;
-    const badgeCount = [hasTime, hasPriority, hasTag, hasDuration].filter(Boolean).length;
-    const estimatedBadgeWidth = badgeCount * TASK_CARD_CALCULATIONS.badgeWidths.average;
-    const availableWidth = isMobile ? TASK_CARD_CALCULATIONS.availableWidth.mobile : TASK_CARD_CALCULATIONS.availableWidth.desktop;
-    const badgesWillWrap = estimatedBadgeWidth > availableWidth;
-    const badgeWrapHeight = badgesWillWrap ? TASK_CARD_HEIGHT_CONFIG.componentHeights.badgeWrap : 0;
-    const hasAssignedUsers = task.assignedTo && task.assignedTo.length > 0;
-    const hasDescription = !!task.description;
-    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-    let baseHeight: number;
-    if (isShortTask) {
-      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base;
-    } else if (isMediumTask) {
-      baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
-    } else {
-      const durationThresholds = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.durationThresholds;
-      if (minutes >= durationThresholds.at180mins) baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.beyond180mins;
-      else if (minutes >= durationThresholds.at150mins) baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at150mins;
-      else if (minutes >= durationThresholds.at120mins) baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at120mins;
-      else if (minutes >= durationThresholds.at90mins) baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at90mins;
-      else baseHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.at60mins;
-    }
-    baseHeight += badgeWrapHeight;
-    if (hasDescription) {
-      const estimatedLines = task.description ? Math.ceil(task.description.length / TASK_CARD_CALCULATIONS.description.charsPerLine) : 1;
-      const lineHeight = TASK_CARD_CALCULATIONS.description.lineHeight;
-      let actualLines: number;
-      if (isShortTask) actualLines = Math.min(Math.max(estimatedLines, 1), 1);
-      else if (isMediumTask) actualLines = Math.min(Math.max(estimatedLines, 1), 2);
-      else actualLines = Math.max(estimatedLines, 1);
-      const descriptionContentHeight = actualLines * lineHeight;
-      const descriptionBottomPadding = (hasAssignedUsers && !hasSubtasks) ? TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.noGap : TASK_CARD_HEIGHT_CONFIG.componentHeights.description.bottomPadding.standard;
-      baseHeight += descriptionContentHeight + descriptionBottomPadding;
-    }
-    if (hasAssignedUsers) {
-      baseHeight += TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.base + ((hasDescription && !hasSubtasks) ? TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.reduced : TASK_CARD_HEIGHT_CONFIG.componentHeights.assignedUsers.spacing.standard);
-    }
-    if (hasSubtasks) {
-      const subtaskCount = Math.min(task.subtasks.length, 3);
-      const subtaskItemHeight = TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.itemHeight;
-      const subtaskSpacing = isMobile ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.mobile : TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.spacing.desktop;
-      baseHeight += subtaskCount * subtaskItemHeight + (subtaskCount > 1 ? (subtaskCount - 1) * subtaskSpacing : 0) + (hasDescription ? TASK_CARD_HEIGHT_CONFIG.componentHeights.subtask.topSpacing : 0);
-    }
-    let minHeight: number;
-    if (isShortTask) minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.short.base;
-    else if (isMediumTask) minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.medium.min;
-    else minHeight = TASK_CARD_HEIGHT_CONFIG.baseHeights.long.minHeight;
-    return Math.max(Math.min(baseHeight, TASK_CARD_HEIGHT_CONFIG.maxHeight), minHeight);
-  }, [shouldUseMobileLayout]);
+  const getTaskHeight = useCallback((_task: Task) => {
+    // Today Agenda uses compact layout: tab + headline only (see TODAY_AGENDA_TIMELINE.taskRowHeightPx)
+    return TODAY_AGENDA_TIMELINE.taskRowHeightPx;
+  }, []);
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {

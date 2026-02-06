@@ -219,6 +219,10 @@ export const TODAY_AGENDA_TIMELINE = {
   nextUpBadgeOffsetPx: 42,
   /** Offset (px) from card top to first content line (priority/tab row). Card padding-top + tab margin-top ≈ 14px. Applied so timeline dot aligns with card content, not card edge. */
   cardContentTopOffsetPx: 14,
+  /** Compact row height (px) when agenda shows only tab + headline (matches image layout). */
+  taskRowHeightPx: 80,
+  /** Tab bar height (px) for compact agenda row. */
+  tabHeightPx: 40,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 

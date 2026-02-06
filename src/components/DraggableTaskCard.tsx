@@ -75,7 +75,7 @@ import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { ACTION_PLAN_CONFIG } from "../lib/ai-config";
-import { INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CHECKBOX_SIZE_DESKTOP } from "../lib/layout-constants";
+import { INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CHECKBOX_SIZE_DESKTOP, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -762,14 +762,18 @@ export const DraggableTaskCard = React.forwardRef<
               isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
             )}
           style={{
-            // Strictly enforce size guide: exact height when collapsed, auto when expanded
-            height: isExpanded ? 'auto' : `${cardHeight}px`,
-            minHeight: isExpanded ? 'auto' : `${cardHeight}px`,
-            maxHeight: isExpanded ? 'none' : `${cardHeight}px`,
-            boxSizing: 'border-box', // Include padding in height calculation
-            flexShrink: 0, // Prevent flex from shrinking the card
-            // Priority-based gradient: lighter version of tab color at top fading to white at bottom
-            background: getPriorityBackgroundGradient(task.priority),
+            // Today Agenda: compact row (tab + headline only). Else: size guide and gradient.
+            ...(isTodayAgenda
+              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent' }
+              : {
+                  height: isExpanded ? 'auto' : `${cardHeight}px`,
+                  minHeight: isExpanded ? 'auto' : `${cardHeight}px`,
+                  maxHeight: isExpanded ? 'none' : `${cardHeight}px`,
+                  boxSizing: 'border-box',
+                  flexShrink: 0,
+                  background: getPriorityBackgroundGradient(task.priority),
+                }
+            ),
           }}
           onMouseDown={(e) => {
             // Prevent click if user is starting a drag
@@ -789,26 +793,118 @@ export const DraggableTaskCard = React.forwardRef<
             }
           }}
         >
-          {/* Top Tab Section - Pill-shaped tab, auto height; tag centered under priority badge (grid col 2) */}
-          <div className="flex justify-center" style={{ marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop }}>
-            <div 
-              className="rounded-lg grid items-center"
-              style={{ 
-                backgroundColor: getPriorityTabBackgroundColor(task.priority),
-                minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-                gridTemplateColumns: '1fr auto auto 1fr',
-                gridTemplateRows: isTodayAgenda ? 'auto' : 'auto auto',
-                gap: `0 ${isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop}`,
-                rowGap: isTodayAgenda ? 0 : (isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop),
-                width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop,
-                paddingLeft: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
-                paddingRight: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
-                paddingTop: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
-                paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
-              }}
-            >
-              {/* Row 1: Col 1 = time (hidden in Today Agenda), Col 2 = tag, Col 3 = duration, Col 4 = spacer; when Today Agenda: tag+priority inline in col 1 */}
-              {scheduledTimeLabel && !isTodayAgenda && (
+          {isTodayAgenda ? (
+            <>
+              {/* Today Agenda: single inline tab + headline only (per reference layout) */}
+              <div
+                className="flex items-center gap-2 rounded-lg flex-shrink-0 w-full"
+                style={{
+                  backgroundColor: getPriorityTabBackgroundColor(task.priority),
+                  minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
+                  paddingTop: 6,
+                  paddingBottom: 6,
+                  paddingLeft: 8,
+                  paddingRight: 8,
+                }}
+              >
+                <Icon
+                  name="clock"
+                  size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop}
+                  className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
+                  weight="fill"
+                />
+                {scheduledTimeLabel && (
+                  <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                    {scheduledTimeLabel}
+                  </span>
+                )}
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
+                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
+                  )}
+                  style={{
+                    color: !task.priority || task.priority === "default"
+                      ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
+                      : getPriorityLineColor(task.priority),
+                  }}
+                >
+                  {task.priority}
+                </Badge>
+                {task.tags && task.tags.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white",
+                      isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
+                    )}
+                  >
+                    {task.tags[0]}
+                  </Badge>
+                )}
+                {task.estimatedTime && (
+                  <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                    {formatDuration(task.estimatedTime)}
+                  </span>
+                )}
+                {task.recurrence && task.recurrence.type !== "none" ? (
+                  <Icon
+                    name="repeat"
+                    size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop}
+                    className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
+                    weight="duotone"
+                  />
+                ) : (
+                  <span className="rounded-full bg-white/80 flex-shrink-0" style={{ width: 8, height: 8 }} aria-hidden />
+                )}
+              </div>
+              <div className={cn("flex items-start gap-1.5 px-2 pt-1.5", isMobile ? "pb-1" : "pb-1.5")}>
+                <button
+                  type="button"
+                  onClick={handleToggleComplete}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5"
+                  aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
+                >
+                  <Icon
+                    name="circle"
+                    size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
+                    className={cn(
+                      "transition-colors flex-shrink-0",
+                      isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
+                      task.status === "done" && (isDark ? TASK_CARD_ICON_COLORS.tabCheckboxFill.dark : TASK_CARD_ICON_COLORS.tabCheckboxFill.light),
+                    )}
+                    weight={task.status === "done" ? "fill" : "bold"}
+                  />
+                </button>
+                <h3 className={cn("font-bold text-base leading-tight truncate flex-1 min-w-0", TASK_CARD_TEXT_COLORS.title)}>
+                  {task.title}
+                </h3>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Top Tab Section - Pill-shaped tab, auto height; tag centered under priority badge (grid col 2) */}
+              <div className="flex justify-center" style={{ marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop }}>
+                <div 
+                  className="rounded-lg grid items-center"
+                  style={{ 
+                    backgroundColor: getPriorityTabBackgroundColor(task.priority),
+                    minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
+                    gridTemplateColumns: '1fr auto auto 1fr',
+                    gridTemplateRows: 'auto auto',
+                    gap: `0 ${isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop}`,
+                    rowGap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
+                    width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop,
+                    paddingLeft: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
+                    paddingRight: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
+                    paddingTop: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
+                    paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
+                  }}
+                >
+              {/* Row 1: Col 1 = time, Col 2 = tag, Col 3 = duration, Col 4 = spacer */}
+              {scheduledTimeLabel && (
                 <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1, gridRow: 1 }}>
                   <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
                   <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
@@ -817,52 +913,28 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
 
-              {/* Tag (and priority inline when Today Agenda) in row 1 */}
-              <div
-                className={cn("flex justify-center", isTodayAgenda && "flex-wrap items-center gap-1")}
-                style={{
-                  gridColumn: isTodayAgenda ? 1 : (scheduledTimeLabel ? 2 : 1),
-                  gridRow: 1,
-                  ...(isTodayAgenda ? { flexDirection: 'row' as const } : {}),
-                }}
-              >
+              {/* Tag in row 1 */}
+              <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 1 }}>
                 {task.tags && task.tags.length > 0 && (
                   <Badge
                     variant="secondary"
                     className={cn(
-                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap",
-                      "text-white",
+                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white",
                       isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
                     )}
                   >
                     {task.tags[0]}
                   </Badge>
                 )}
-                {isTodayAgenda && (
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
-                      isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
-                    )}
-                    style={{
-                      color: !task.priority || task.priority === 'default'
-                        ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
-                        : getPriorityLineColor(task.priority),
-                    }}
-                  >
-                    {task.priority}
-                  </Badge>
-                )}
               </div>
 
               {task.estimatedTime && (
-                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: isTodayAgenda ? 2 : (scheduledTimeLabel ? 3 : 2), gridRow: 1 }}>
+                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: scheduledTimeLabel ? 3 : 2, gridRow: 1 }}>
                   {formatDuration(task.estimatedTime)}
                 </span>
               )}
 
-              {/* Row 1 Col 4: Recurring icon in task card tab (when task repeats) */}
+              {/* Row 1 Col 4: Recurring icon */}
               {task.recurrence && task.recurrence.type !== "none" ? (
                 <div className="flex items-center justify-center justify-self-end" style={{ gridColumn: 4, gridRow: 1 }}>
                   <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="duotone" />
@@ -871,25 +943,23 @@ export const DraggableTaskCard = React.forwardRef<
                 <div style={{ gridColumn: 4, gridRow: 1 }} aria-hidden="true" />
               )}
 
-              {/* Row 2: Priority badge (tag place) - only when not Today Agenda (priority is inline with tag in Today Agenda) */}
-              {!isTodayAgenda && (
-                <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
-                      isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
-                    )}
-                    style={{
-                      color: !task.priority || task.priority === 'default'
-                        ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
-                        : getPriorityLineColor(task.priority),
-                    }}
-                  >
-                    {task.priority}
-                  </Badge>
-                </div>
-              )}
+              {/* Row 2: Priority badge */}
+              <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
+                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
+                  )}
+                  style={{
+                    color: !task.priority || task.priority === 'default'
+                      ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
+                      : getPriorityLineColor(task.priority),
+                  }}
+                >
+                  {task.priority}
+                </Badge>
+              </div>
             </div>
           </div>
 
@@ -1225,6 +1295,8 @@ export const DraggableTaskCard = React.forwardRef<
               )}
             </div>
           </div>
+          )}
+            </>
           )}
 
           </div>
