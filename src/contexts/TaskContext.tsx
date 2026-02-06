@@ -59,6 +59,7 @@ import {
   HOURS_PER_DAY,
   WORKSPACE_SYNC_ACTIVE_MULTIPLIER,
   WORKSPACE_SYNC_IDLE_MULTIPLIER,
+  DATE_ONLY_PARSE_SUFFIX,
 } from '../lib/business-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
@@ -1904,7 +1905,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         return;
       }
       const occurrenceDateStr = taskId.split('_subtasks_')[1];
-      const occurrenceDate = occurrenceDateStr ? new Date(occurrenceDateStr + 'T12:00:00') : new Date();
+      const occurrenceDate = occurrenceDateStr ? new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX) : new Date();
       const baseScheduled = baseTask.scheduledDate ? new Date(baseTask.scheduledDate) : occurrenceDate;
       occurrenceDate.setHours(baseScheduled.getHours(), baseScheduled.getMinutes(), baseScheduled.getSeconds(), baseScheduled.getMilliseconds());
       const occurrenceSubtaskTask: Task = {
@@ -2045,10 +2046,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       try {
         // Optimistic update first so UI updates immediately (mark complete / edit feels instant)
         setTasks((prev) => {
-          if (isRecurringTask && isBeingMarkedComplete && completedOccurrence) {
-            const hasOccurrence = prev.some((t) => t.id === completedOccurrence!.id);
-            if (!hasOccurrence) return [...prev, completedOccurrence];
-            return prev;
+          // Recurring: close only this occurrence; never set base task to done (keeps series active)
+          if (isRecurringTask && isBeingMarkedComplete) {
+            if (completedOccurrence && !prev.some((t) => t.id === completedOccurrence.id)) {
+              return [...prev, completedOccurrence];
+            }
+            return prev; // Base task stays todo; only the occurrence is done
           }
           return prev.map((t) => (t.id === lookupId ? updatedTask : t));
         });
@@ -2115,8 +2118,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               if (completedOccurrence) {
                 await api.saveTask(validWorkspaceId, completedOccurrence);
               }
-              // Save the updated task (we no longer create next occurrence; base task stays for recurrence)
-              await api.saveTask(validWorkspaceId, updatedTask);
+              // For recurring task marked complete, do NOT save base task (only close this occurrence)
+              if (!isRecurringTask || !isBeingMarkedComplete) {
+                await api.saveTask(validWorkspaceId, updatedTask);
+              }
               // Release lock after save completes
               if (isRecurringTask && isBeingMarkedComplete) {
                 setTimeout(() => {

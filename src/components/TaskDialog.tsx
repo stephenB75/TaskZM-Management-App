@@ -49,7 +49,7 @@ import {
   getIncompleteDependencies,
   getInitials,
 } from "../lib/utils";
-import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, DATE_ONLY_PARSE_SUFFIX } from "../lib/business-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -1456,6 +1456,7 @@ export function TaskDialog({
       
       if (firstOccurrenceDate) {
         const taskDuration = durationForSlot;
+        // Use explicit time from form when valid; otherwise select appropriate time from next available timeslot (no hardcoding)
         if (scheduledHours && scheduledMinutes) {
           let hours = parseInt(scheduledHours, 10);
           const minutes = parseInt(scheduledMinutes, 10);
@@ -1795,8 +1796,8 @@ export function TaskDialog({
       const isRecurringWithOccurrence = task.recurrence?.type !== 'none' && occurrenceDateStr;
       if (isRecurringWithOccurrence) {
         const occurrenceSubtaskId = `${task.id}_subtasks_${occurrenceDateStr}`;
-        const occurrenceScheduled = finalScheduledDate ? new Date(finalScheduledDate) : (task.scheduledDate ? new Date(task.scheduledDate) : new Date(occurrenceDateStr + 'T12:00:00'));
-        const occurrenceDateOnly = new Date(occurrenceDateStr + 'T12:00:00');
+        const occurrenceScheduled = finalScheduledDate ? new Date(finalScheduledDate) : (task.scheduledDate ? new Date(task.scheduledDate) : new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX));
+        const occurrenceDateOnly = new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX);
         occurrenceDateOnly.setHours(occurrenceScheduled.getHours(), occurrenceScheduled.getMinutes(), occurrenceScheduled.getSeconds(), occurrenceScheduled.getMilliseconds());
         await updateTask(occurrenceSubtaskId, {
           ...taskData,

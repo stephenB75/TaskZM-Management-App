@@ -70,6 +70,8 @@ export const AI_SCHEDULER_MIN_START_HOUR = 6; // Earliest hour to schedule tasks
 export const AI_SCHEDULER_MAX_END_HOUR = 23; // Latest hour to schedule tasks (11 PM)
 
 // Date/Time Constants
+/** Suffix for parsing date-only strings (YYYY-MM-DD) to a Date at noon, avoiding UTC-midnight timezone shifts. */
+export const DATE_ONLY_PARSE_SUFFIX = 'T12:00:00';
 export const END_OF_DAY_HOUR = 23;
 export const END_OF_DAY_MINUTE = 59;
 export const END_OF_DAY_SECOND = 59;
