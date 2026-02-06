@@ -926,7 +926,7 @@ export const TASK_CARD_TIMELINE = {
     draggingKanban: 'scale-95', // scale-95 for Kanban dragging state
     hover: 'hover:scale-[1.005]', // Reduced magnification for Today Agenda (was 1.01)
     hoverKanban: 'hover:scale-[1.02]', // Hover scale for Kanban cards
-    todayAgenda: 0.88, // Scale for today agenda task cards (reduced so cards are less magnified and don’t appear narrow)
+    todayAgenda: 1, // Scale for today agenda task cards (reduced so cards are less magnified and don’t appear narrow)
     kanban: 0.85, // Scale transform for kanban week view task cards
   },
 } as const;

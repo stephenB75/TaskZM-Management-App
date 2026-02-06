@@ -771,7 +771,7 @@ export const DraggableTaskCard = React.forwardRef<
                   maxHeight: isExpanded ? 'none' : `${cardHeight}px`,
                   boxSizing: 'border-box',
                   flexShrink: 0,
-                  background: isDark ? 'hsl(var(--background))' : '#ffffff',
+                  background: 'transparent',
                 }
             ),
           }}
