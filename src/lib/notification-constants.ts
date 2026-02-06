@@ -63,7 +63,7 @@ export const NOTIFICATION_MESSAGES = {
   taskUpcoming: (taskTitle: string, timeText: string) => `${taskTitle} is upcoming in ${timeText}`,
   timeMinutes: (minutes: number) => `${minutes} minutes`,
   timeHours: (hours: number) => `${hours} hours`,
-  pomodoroComplete: (taskTitle: string) => `Great work on "${taskTitle}"! Time for a break.`,
+  pomodoroComplete: (taskTitle: string) => `Tracking time reached for "${taskTitle}". Mark complete when done.`,
   pomodoroBreakOver: (taskTitle: string) => `Ready to focus on "${taskTitle}" again?`,
   pomodoroSessionsCompleted: (count: number, taskTitle: string) => 
     `Completed ${count} session${count > 1 ? 's' : ''} for "${taskTitle}"`,

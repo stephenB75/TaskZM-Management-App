@@ -22,9 +22,14 @@ interface TimerState {
   totalTimeTracked: number;
 }
 
+export interface StartTimerOptions {
+  /** When starting from a card that doesn't mount PomodoroTimer, pass the task's duration so the timer runs for the exact task time. */
+  durationMinutes?: number;
+}
+
 interface PomodoroContextType {
   getTimerState: (taskId: string) => TimerState;
-  startTimer: (taskId: string) => void;
+  startTimer: (taskId: string, options?: StartTimerOptions) => void;
   pauseTimer: (taskId: string) => Promise<void>;
   stopTimer: (taskId: string) => Promise<void>;
   initializeTimer: (taskId: string, initialTime: number, estimatedTime?: number) => void;
@@ -167,13 +172,20 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setWorkDuration]); // setWorkDuration is stable (uses refs), so this should be stable
 
-  const startTimer = (taskId: string) => {
+  const startTimer = (taskId: string, options?: StartTimerOptions) => {
+    // If duration provided (e.g. from card that doesn't mount PomodoroTimer), set work duration to task's exact time
+    if (options?.durationMinutes != null && options.durationMinutes > 0) {
+      setWorkDuration(taskId, options.durationMinutes);
+    }
+
     setTimers(prev => {
       const current = prev[taskId] || DEFAULT_TIMER_STATE;
+      const workDuration = getWorkDuration(taskId);
       return {
         ...prev,
         [taskId]: {
           ...current,
+          timeLeft: current.mode === 'work' ? workDuration : current.timeLeft,
           isRunning: true,
         }
       };
@@ -456,9 +468,10 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      // Prompt user to close/mark task complete
+      // Prompt user when tracking time is met
       toast.success(NOTIFICATION_TITLES.pomodoroComplete, {
         description: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
+        duration: 10_000,
         action: {
           label: 'Mark task complete',
           onClick: () => {

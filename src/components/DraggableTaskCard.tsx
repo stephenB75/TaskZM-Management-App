@@ -960,7 +960,8 @@ export const DraggableTaskCard = React.forwardRef<
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        startTimer(pomodoroTimerId);
+                        const durationMinutes = getTaskMinutes(task);
+                        startTimer(pomodoroTimerId, durationMinutes > 0 ? { durationMinutes } : undefined);
                       }}
                       className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     >
