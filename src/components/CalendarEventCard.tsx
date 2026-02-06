@@ -3,7 +3,7 @@ import React from 'react';
 import { Icon } from './Icon';
 import { cn, parseCalendarEventTime } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
-import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS } from '../lib/calendar-event-constants';
+import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS, CALENDAR_EVENT_UI_TEXT } from '../lib/calendar-event-constants';
 import { TASK_CARD_SPACING } from '../lib/task-card-constants';
 import { useIsMobile } from './ui/use-mobile';
 
@@ -337,7 +337,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1">
               <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
-              <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{allDay ? 'All day' : `${startTime} – ${endTime}`}</span>
+              <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`}</span>
             </div>
             <span className={cn('font-medium px-1.5 py-0.5 rounded-full', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
               {formatDuration(durationMinutes)}
@@ -384,7 +384,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5">
             <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
-            <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{allDay ? 'All day' : `${startTime} – ${endTime}`}</span>
+            <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`}</span>
           </div>
           <span className={cn('font-medium px-1.5 py-0.5 rounded-full', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
             {formatDuration(durationMinutes)}

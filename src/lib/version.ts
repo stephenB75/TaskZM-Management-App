@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.19';
-export const VERSION_NAME = 'Today Agenda Timeline & Timezone';
+export const APP_VERSION = '1.0.20';
+export const VERSION_NAME = 'Calendar Event Time & Kanban Timezone';
 export const VERSION_DATE = 'February 2, 2026';
-export const BUILD_NUMBER = '20260202-1';
+export const BUILD_NUMBER = '20260202-2';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,20 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.20',
+    date: 'February 2, 2026',
+    name: 'Calendar Event Time & Kanban Timezone',
+    changes: [
+      'Calendar event time conversion: parseCalendarEventTime() in utils.ts for correct local-time display and sorting (date-only local, ISO with Z/offset as-is, ISO without TZ treated as UTC)',
+      'Kanban week view: calendar events use parseCalendarEventTime(event.start) for sort order and display so times show in user local time',
+      'useCalendarEventsByDate: event grouping by day uses parseCalendarEventTime for correct local date when API returns UTC',
+      'CalendarEventCard: getDurationMinutes, formatTimeAMPM, isAllDayEvent use parseCalendarEventTime; all-day label from CALENDAR_EVENT_UI_TEXT.allDay',
+      'Apple CalDAV: all-day events (DATE format) converted from midnight in user timezone to UTC for correct day in all timezones',
+      'Today Agenda scale: TASK_CARD_TIMELINE.scale.todayAgenda set to 0.82 (reasonable size, still visible)',
+      'Confirmed no hardcode: scale in task-card-constants; calendar copy in CALENDAR_EVENT_UI_TEXT; time parsing via shared util',
+    ],
+  },
   {
     version: '1.0.19',
     date: 'February 2, 2026',

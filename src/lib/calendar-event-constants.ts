@@ -4,6 +4,11 @@
  * Centralized constants for CalendarEventCard component styling and dimensions
  */
 
+// UI copy for calendar events
+export const CALENDAR_EVENT_UI_TEXT = {
+  allDay: 'All day',
+} as const;
+
 // Font Sizes (+20% for larger container contents)
 export const CALENDAR_EVENT_FONT_SIZES = {
   providerLabel: '0.9rem',    // ~14.4px (was 12px)

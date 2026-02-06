@@ -31,7 +31,7 @@ import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
 import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS } from "../lib/layout-constants";
-import { TASK_CARD_ICON_COLORS } from "../lib/task-card-constants";
+import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
 import type { Task } from "../types";
 
@@ -80,13 +80,6 @@ function DraggableMonthTask({
     touchAction: isMobile ? "auto" : "none", // Allow normal touch on mobile
   };
 
-  const priorityColors = {
-    urgent: "border-l-red-400 bg-red-50 dark:bg-red-950/20",
-    high: "border-l-orange-400 bg-orange-50 dark:bg-orange-950/20",
-    medium: "border-l-blue-400 bg-blue-50 dark:bg-blue-950/20",
-    low: "border-l-gray-400 bg-gray-50 dark:bg-muted/20",
-  };
-
   const handleToggleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onToggleComplete) {
@@ -103,7 +96,7 @@ function DraggableMonthTask({
       className={cn(
         "text-xs p-1 rounded border-l-2 transition-all relative select-none smooth-drag-transform",
         !isMobile && "cursor-grab hover:shadow-sm active:cursor-grabbing", // Only show drag cursor on desktop
-        priorityColors[task.priority],
+        MONTH_VIEW_TASK_PRIORITY_STYLES[task.priority],
         task.status === "done" && "opacity-60",
       )}
       data-dnd-kit-dragging={isDragging}

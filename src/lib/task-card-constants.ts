@@ -76,6 +76,14 @@ export const TASK_CARD_PRIORITY_COLORS = {
 /** Dark gray for priority badge text on white when priority is default (light gray would be hard to see) */
 export const TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR = '#374151'; // gray-700
 
+/** Month calendar view: task card border + background per priority (adjusted for visibility) */
+export const MONTH_VIEW_TASK_PRIORITY_STYLES = {
+  urgent: 'border-l-red-400 bg-red-50 dark:bg-red-950/35',
+  high: 'border-l-orange-400 bg-orange-50 dark:bg-orange-950/35',
+  medium: 'border-l-blue-400 bg-blue-50 dark:bg-blue-950/35',
+  low: 'border-l-gray-400 bg-gray-50 dark:bg-muted/30',
+} as const;
+
 // Tag Colors
 export const TASK_CARD_TAG_COLORS = {
   background: {
