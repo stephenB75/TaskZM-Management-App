@@ -298,7 +298,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         />
         <div
           className={cn(
-            'flex-1 min-h-full flex flex-col gap-1 py-1 rounded-r-lg min-w-0 overflow-hidden border-0 border-l-0',
+            'flex-1 min-h-full flex flex-col gap-1.5 py-1.5 rounded-r-lg min-w-0 overflow-hidden border-0 border-l-0',
             colors.bg,
           )}
           style={{
@@ -311,7 +311,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           }}
         >
           {/* Header with calendar icon */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
             <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
               {provider === 'apple' ? 'iCloud' : provider === 'outlook' ? 'Outlook' : 'Google'} Calendar
@@ -320,7 +320,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
               <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />
             )}
           </div>
-          <h4 className={cn('text-sm font-semibold leading-tight line-clamp-2', colors.text)}>{title}</h4>
+          <h4 className={cn('font-semibold leading-tight line-clamp-2', colors.text)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.title }}>{title}</h4>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1">
               <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
@@ -331,7 +331,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             </span>
           </div>
           {location && (
-            <div className="flex items-center gap-1 mt-0.5">
+            <div className="flex items-center gap-1.5 mt-0.5">
               <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
               <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
             </div>
@@ -357,8 +357,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
         }}
       />
-      <div className="flex-1 py-1 flex flex-col gap-1" style={{ paddingLeft: `${contentPaddingLeft}px` }}>
-        <div className="flex items-center gap-1.5">
+      <div className="flex-1 py-1.5 flex flex-col gap-1.5" style={{ paddingLeft: `${contentPaddingLeft}px` }}>
+        <div className="flex items-center gap-2">
           <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
           <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
             {provider === 'apple' ? 'iCloud' : provider === 'outlook' ? 'Outlook' : 'Google'} Calendar
@@ -367,9 +367,9 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />
           )}
         </div>
-        <h4 className={cn('text-sm font-semibold leading-tight line-clamp-2', colors.text)}>{title}</h4>
+        <h4 className={cn('font-semibold leading-tight line-clamp-2', colors.text)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.title }}>{title}</h4>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
             <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{startTime} – {endTime}</span>
           </div>
@@ -378,7 +378,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           </span>
         </div>
         {location && (
-          <div className="flex items-center gap-1 mt-0.5">
+          <div className="flex items-center gap-1.5 mt-0.5">
             <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
             <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
           </div>
