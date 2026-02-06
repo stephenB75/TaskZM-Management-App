@@ -602,13 +602,13 @@ export const TASK_CARD_BACKGROUNDS = {
     desktop: 'bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm',
     hover: 'hover:bg-white/80 dark:hover:bg-[#4A4A5E]',
   },
-  // Gradient opacity values for lavender gradient background
+  // Gradient opacity values for more vibrant card backgrounds
   gradient: {
-    lavenderOpacity: 0.40, // 40% tint of lavender at top - increased from 25% for better visibility
-    darkModeWhiteOpacity: 0.05, // 5% white opacity for dark mode bottom
-    /** Priority tab gradient: light mode (40%), dark mode (30%) */
-    priorityGradientOpacityLight: 0.40,
-    priorityGradientOpacityDark: 0.30,
+    lavenderOpacity: 0.52, // Lavender tint at top (slightly more visible)
+    darkModeWhiteOpacity: 0.06, // Slight white at bottom for dark mode
+    /** Priority gradient: stronger tint so card background is more vibrant (was 40% / 30%) */
+    priorityGradientOpacityLight: 0.55,
+    priorityGradientOpacityDark: 0.42,
   },
   // Expandable section background colors
   expandable: {

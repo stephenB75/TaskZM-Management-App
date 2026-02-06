@@ -67,7 +67,7 @@ import {
   TASK_CARD_ARIA_AND_LABELS,
   TASK_CARD_EXPANDABLE_LABELS,
 } from "../lib/task-card-constants";
-import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, getColorWithOpacity } from "../lib/color-theme";
+import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, COLOR_BACKGROUND_LIGHT, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
 import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT, COLOR_TEXT_WHITE } from "../lib/color-theme";
@@ -334,10 +334,10 @@ export const DraggableTaskCard = React.forwardRef<
       const gradientOpacity = (isDark ? TASK_CARD_BACKGROUNDS.gradient.priorityGradientOpacityDark : TASK_CARD_BACKGROUNDS.gradient.priorityGradientOpacityLight) * existingOpacity;
       const gradientColor = getColorWithOpacity(baseColor, gradientOpacity);
       
-      // Gradient from priority color (light) at top to white/background at bottom
+      // Gradient from priority color at top to light tint at bottom (more vibrant than pure white)
       const endColor = isDark 
         ? getColorWithOpacity(COLOR_BACKGROUND_WHITE, TASK_CARD_BACKGROUNDS.gradient.darkModeWhiteOpacity)
-        : COLOR_BACKGROUND_WHITE;
+        : COLOR_BACKGROUND_LIGHT;
       
       return `linear-gradient(to bottom, ${gradientColor}, ${endColor})`;
     };
