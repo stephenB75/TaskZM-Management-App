@@ -771,7 +771,7 @@ export const DraggableTaskCard = React.forwardRef<
                   maxHeight: isExpanded ? 'none' : `${cardHeight}px`,
                   boxSizing: 'border-box',
                   flexShrink: 0,
-                  background: getPriorityBackgroundGradient(task.priority),
+                  background: isDark ? 'hsl(var(--background))' : '#ffffff',
                 }
             ),
           }}
@@ -889,66 +889,24 @@ export const DraggableTaskCard = React.forwardRef<
             </>
           ) : (
             <>
-              {/* Top Tab Section - Pill-shaped tab, auto height; tag centered under priority badge (grid col 2) */}
-              <div className="flex justify-center" style={{ marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop }}>
-                <div 
-                  className="rounded-lg grid items-center"
-                  style={{ 
-                    backgroundColor: getPriorityTabBackgroundColor(task.priority),
-                    minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-                    gridTemplateColumns: '1fr auto auto 1fr',
-                    gridTemplateRows: 'auto auto',
-                    gap: `0 ${isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop}`,
-                    rowGap: isMobile ? TASK_CARD_TAB_SPACING.gap.mobile : TASK_CARD_TAB_SPACING.gap.desktop,
-                    width: isMobile ? TASK_CARD_TAB_SPACING.width.mobile : TASK_CARD_TAB_SPACING.width.desktop,
-                    paddingLeft: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
-                    paddingRight: isMobile ? TASK_CARD_TAB_SPACING.padding.mobile : TASK_CARD_TAB_SPACING.padding.desktop,
-                    paddingTop: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
-                    paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
-                  }}
-                >
-              {/* Row 1: Col 1 = time, Col 2 = tag, Col 3 = duration, Col 4 = spacer */}
-              {scheduledTimeLabel && (
-                <div className="flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap justify-end" style={{ gridColumn: 1, gridRow: 1 }}>
-                  <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
+              {/* Full card tab: single inline row (clock, time, priority, tag, duration, dot) - wide to fit all elements */}
+              <div
+                className="flex items-center gap-2 rounded-lg flex-shrink-0 w-full min-w-max px-3"
+                style={{
+                  marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop,
+                  backgroundColor: getPriorityTabBackgroundColor(task.priority),
+                  minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
+                  paddingTop: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
+                  paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
+                  minWidth: 'max-content',
+                }}
+              >
+                <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
+                {scheduledTimeLabel && (
                   <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                     {scheduledTimeLabel}
                   </span>
-                </div>
-              )}
-
-              {/* Tag in row 1 */}
-              <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 1 }}>
-                {task.tags && task.tags.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white",
-                      isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
-                    )}
-                  >
-                    {task.tags[0]}
-                  </Badge>
                 )}
-              </div>
-
-              {task.estimatedTime && (
-                <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap justify-self-start", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)} style={{ gridColumn: scheduledTimeLabel ? 3 : 2, gridRow: 1 }}>
-                  {formatDuration(task.estimatedTime)}
-                </span>
-              )}
-
-              {/* Row 1 Col 4: Recurring icon */}
-              {task.recurrence && task.recurrence.type !== "none" ? (
-                <div className="flex items-center justify-center justify-self-end" style={{ gridColumn: 4, gridRow: 1 }}>
-                  <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="duotone" />
-                </div>
-              ) : (
-                <div style={{ gridColumn: 4, gridRow: 1 }} aria-hidden="true" />
-              )}
-
-              {/* Row 2: Priority badge */}
-              <div className="flex justify-center" style={{ gridColumn: scheduledTimeLabel ? 2 : 1, gridRow: 2 }}>
                 <Badge
                   variant="secondary"
                   className={cn(
@@ -963,9 +921,28 @@ export const DraggableTaskCard = React.forwardRef<
                 >
                   {task.priority}
                 </Badge>
+                {task.tags && task.tags.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white",
+                      isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
+                    )}
+                  >
+                    {task.tags[0]}
+                  </Badge>
+                )}
+                {task.estimatedTime && (
+                  <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                    {formatDuration(task.estimatedTime)}
+                  </span>
+                )}
+                {task.recurrence && task.recurrence.type !== "none" ? (
+                  <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0 ml-auto", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="duotone" />
+                ) : (
+                  <span className="rounded-full bg-white/80 flex-shrink-0 ml-auto" style={{ width: 8, height: 8 }} aria-hidden />
+                )}
               </div>
-            </div>
-          </div>
 
           {/* Headline (Title) - Mark complete at start, then title */}
           <div className={cn("flex items-start px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
@@ -1213,9 +1190,9 @@ export const DraggableTaskCard = React.forwardRef<
                 </div>
               )}
 
-              {/* Assignee Info with Tracked Time */}
+              {/* Assignee Info - right side of card, text right-aligned, avatar on far right (per reference layout) */}
               {task.assignedTo && task.assignedTo.length > 0 && (
-                <div className="flex items-center flex-1 min-w-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapAssignee}px` }}>
+                <div className="flex items-center justify-end flex-1 min-w-0" style={{ gap: `${TASK_CARD_EXPANDABLE.spacing.gapAssignee}px` }}>
                   {task.assignedTo.slice(0, 1).map((userId) => {
                     const member = getTeamMember(userId);
                     if (!member) return null;
@@ -1225,7 +1202,17 @@ export const DraggableTaskCard = React.forwardRef<
                       <TooltipProvider key={userId}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="flex flex-col items-end text-right min-w-0">
+                                <span className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate max-w-full">{member.name}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-full">{member.role || 'Team Member'}</span>
+                                {member.teamId && (() => {
+                                  const team = teams.find(t => t.id === member.teamId);
+                                  return team ? (
+                                    <span className={cn("text-xs truncate max-w-full", TASK_CARD_TEXT_COLORS.assigneeTeam)}>{team.name}</span>
+                                  ) : null;
+                                })()}
+                              </div>
                               {member.avatar ? (
                                 <div 
                                   className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
@@ -1268,16 +1255,6 @@ export const DraggableTaskCard = React.forwardRef<
                                   {initials}
                                 </div>
                               )}
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate">{member.name}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{member.role || 'Team Member'}</span>
-                                {member.teamId && (() => {
-                                  const team = teams.find(t => t.id === member.teamId);
-                                  return team ? (
-                                    <span className={cn("text-xs truncate", TASK_CARD_TEXT_COLORS.assigneeTeam)}>{team.name}</span>
-                                  ) : null;
-                                })()}
-                              </div>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -1294,7 +1271,6 @@ export const DraggableTaskCard = React.forwardRef<
                       </TooltipProvider>
                     );
                   })}
-                  {/* Tracked Time removed from expanded section - already shown at top */}
                 </div>
               )}
             </div>
