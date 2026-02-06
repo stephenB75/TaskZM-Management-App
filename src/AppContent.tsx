@@ -780,7 +780,7 @@ export default function AppContent() {
           {shouldUseMobileLayout && (
           <div className="flex-1 flex flex-col min-h-0">
             <div 
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 relative"
+              className="flex-1 overflow-y-auto overflow-x-auto min-h-0 relative min-w-0"
               style={{
                 scrollBehavior: 'smooth',
                 WebkitOverflowScrolling: 'touch',
@@ -854,7 +854,7 @@ export default function AppContent() {
                 }}
               >
                 <div 
-                  className="h-full w-full overflow-y-auto overflow-x-hidden"
+                  className="h-full w-full overflow-y-auto overflow-x-auto min-w-0"
                   style={{
                     WebkitOverflowScrolling: 'touch',
                     touchAction: 'pan-y',

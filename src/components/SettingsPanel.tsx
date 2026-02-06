@@ -528,14 +528,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         }
       />
       <div
-        className="flex-1 overflow-y-auto overscroll-y-contain"
+        className="flex-1 overflow-y-auto overflow-x-auto overscroll-y-contain min-w-0"
         style={{ 
           WebkitOverflowScrolling: 'touch',
           paddingBottom: shouldUseMobileLayout ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` : undefined, // Add padding to scroll container on mobile/tablet to ensure content can scroll past nav bar
         } as React.CSSProperties}
       >
         <div 
-          className="mx-auto" 
+          className="mx-auto w-full box-border min-w-0" 
           style={{ 
             padding: SETTINGS_PANEL_CONTAINER_PADDING_SMALL,
             paddingLeft: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
@@ -551,7 +551,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <div 
-            className="mx-auto" 
+            className="mx-auto w-full max-w-full box-border min-w-0" 
             style={{ 
               maxWidth: SETTINGS_PANEL_MAX_WIDTH,
               paddingBottom: 0, // Bottom padding handled by parent container
