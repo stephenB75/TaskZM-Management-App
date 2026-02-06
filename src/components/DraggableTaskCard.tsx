@@ -759,7 +759,7 @@ export const DraggableTaskCard = React.forwardRef<
           style={{
             // Today Agenda: compact row, no gray background; add horizontal padding so tab/headline aren't flush to panel.
             ...(isTodayAgenda
-              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent', border: 'none', boxShadow: 'none', paddingLeft: 16, paddingRight: 16 }
+              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent', border: 'none', boxShadow: 'none', paddingLeft: 8, paddingRight: 16 }
               : {
                   height: isExpanded ? 'auto' : `${cardHeight}px`,
                   minHeight: isExpanded ? 'auto' : `${cardHeight}px`,
