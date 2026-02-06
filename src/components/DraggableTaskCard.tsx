@@ -747,24 +747,24 @@ export const DraggableTaskCard = React.forwardRef<
             className={cn(
               "rounded-lg relative box-border flex flex-col",
               isExpanded ? "overflow-visible" : "overflow-hidden", // Strictly hide overflow when collapsed to enforce size guide
+              isTodayAgenda && "overflow-visible", // Allow tab/headline to not be clipped
               isExpanded && "rounded-b-none", // Remove bottom radius when expanded
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Responsive borders: thinner on mobile, standard on desktop
-              `border-l border-b border-r ${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
-              // Shadows: better blending on mobile
-              isMobile ? TASK_CARD_SHADOWS.mobile : TASK_CARD_SHADOWS.desktop,
-              `${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
+              // Borders and shadows: omit for Today Agenda (no gray card box)
+              !isTodayAgenda && `border-l border-b border-r ${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
+              !isTodayAgenda && (isMobile ? TASK_CARD_SHADOWS.mobile : TASK_CARD_SHADOWS.desktop),
+              !isTodayAgenda && `${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: minimal padding for collapsed cards
               isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
             )}
           style={{
-            // Today Agenda: compact row (tab + headline only). Else: size guide and gradient.
+            // Today Agenda: compact row, no gray background/border/shadow.
             ...(isTodayAgenda
-              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent' }
+              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent', border: 'none', boxShadow: 'none' }
               : {
                   height: isExpanded ? 'auto' : `${cardHeight}px`,
                   minHeight: isExpanded ? 'auto' : `${cardHeight}px`,
@@ -795,9 +795,9 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {isTodayAgenda ? (
             <>
-              {/* Today Agenda: single inline tab + headline only (per reference layout) */}
+              {/* Today Agenda: single inline tab + headline only; tab wide enough to fit all elements */}
               <div
-                className="flex items-center gap-2 rounded-lg flex-shrink-0 w-full"
+                className="flex items-center gap-2 rounded-lg flex-shrink-0 min-w-max w-full max-w-full"
                 style={{
                   backgroundColor: getPriorityTabBackgroundColor(task.priority),
                   minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
@@ -805,6 +805,7 @@ export const DraggableTaskCard = React.forwardRef<
                   paddingBottom: 6,
                   paddingLeft: 8,
                   paddingRight: 8,
+                  minWidth: 'max-content', // Ensure tab is wide enough so duration/tag are not cut off
                 }}
               >
                 <Icon
@@ -878,7 +879,10 @@ export const DraggableTaskCard = React.forwardRef<
                     weight={task.status === "done" ? "fill" : "bold"}
                   />
                 </button>
-                <h3 className={cn("font-bold text-base leading-tight truncate flex-1 min-w-0", TASK_CARD_TEXT_COLORS.title)}>
+                <h3
+                  className={cn("font-bold leading-tight flex-1 min-w-0 line-clamp-2", TASK_CARD_TEXT_COLORS.title)}
+                  style={{ fontSize: `${isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}px` }}
+                >
                   {task.title}
                 </h3>
               </div>
