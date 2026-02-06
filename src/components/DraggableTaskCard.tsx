@@ -745,15 +745,15 @@ export const DraggableTaskCard = React.forwardRef<
             ref={cardContentRef}
             className={cn(
               "rounded-lg relative box-border flex flex-col",
-              isExpanded ? "overflow-visible" : "overflow-hidden", // Strictly hide overflow when collapsed to enforce size guide
-              isTodayAgenda && "overflow-visible", // Allow tab/headline to not be clipped
+              "overflow-visible", // Never clip tab; allow full tab content to show
               isExpanded && "rounded-b-none", // Remove bottom radius when expanded
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Borders: omit for Today Agenda (no gray card box). Shadows removed from all task cards.
-              !isTodayAgenda && `border-l border-b border-r ${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
-              !isTodayAgenda && `${TASK_CARD_BORDERS.hover} transition-all duration-200`,
+              // Frame: hide by default; show only on hover or when expanded (selected)
+              !isTodayAgenda && "border-l border-b border-r transition-all duration-200 border-transparent",
+              !isTodayAgenda && "hover:border-gray-400/90 dark:hover:border-gray-500/70",
+              !isTodayAgenda && isExpanded && `${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: minimal padding for collapsed cards
@@ -847,15 +847,13 @@ export const DraggableTaskCard = React.forwardRef<
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
-                {task.recurrence && task.recurrence.type !== "none" ? (
+                {task.recurrence && task.recurrence.type !== "none" && (
                   <Icon
                     name="repeat"
                     size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop}
                     className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
                     weight="duotone"
                   />
-                ) : (
-                  <span className="rounded-full bg-white/80 flex-shrink-0" style={{ width: 8, height: 8 }} aria-hidden />
                 )}
               </div>
               <div className={cn("flex items-start gap-1.5 pt-1.5", isMobile ? "pb-1" : "pb-1.5")}>
@@ -935,10 +933,8 @@ export const DraggableTaskCard = React.forwardRef<
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
-                {task.recurrence && task.recurrence.type !== "none" ? (
+                {task.recurrence && task.recurrence.type !== "none" && (
                   <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0 ml-auto", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="duotone" />
-                ) : (
-                  <span className="rounded-full bg-white/80 flex-shrink-0 ml-auto" style={{ width: 8, height: 8 }} aria-hidden />
                 )}
               </div>
 

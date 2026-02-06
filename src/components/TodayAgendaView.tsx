@@ -355,7 +355,17 @@ export function TodayAgendaView({
               <div className="flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                 {item.type === 'task' && item.task ? (
                   <div data-task-id={item.task.id} className="w-full">
-                    <div className="w-full min-w-full" style={{ display: 'block', width: '100%', minWidth: '100%', transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }}>
+                    <div
+                      className="w-full min-w-full"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        minWidth: '100%',
+                        ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
+                          ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
+                          : {}),
+                      }}
+                    >
                       <DraggableTaskCard
                         task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                         onClick={() => item.task && handleTaskClick(item.task)}
@@ -368,7 +378,17 @@ export function TodayAgendaView({
                   </div>
                 ) : item.type === 'event' && item.event ? (
                   <div data-event-id={item.event.id} className="w-full">
-                    <div className="w-full min-w-full" style={{ display: 'block', width: '100%', minWidth: '100%', transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }}>
+                    <div
+                      className="w-full min-w-full"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        minWidth: '100%',
+                        ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
+                          ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
+                          : {}),
+                      }}
+                    >
                       <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
                     </div>
                   </div>
