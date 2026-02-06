@@ -35,7 +35,6 @@ import {
   TASK_CARD_HEIGHT_CONFIG,
   TASK_CARD_SPACING,
   TASK_CARD_TEXT,
-  TASK_CARD_SHADOWS,
   TASK_CARD_BORDERS,
   TASK_CARD_BACKGROUNDS,
   TASK_CARD_WIDTHS,
@@ -752,10 +751,9 @@ export const DraggableTaskCard = React.forwardRef<
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Borders and shadows: omit for Today Agenda (no gray card box)
+              // Borders: omit for Today Agenda (no gray card box). Shadows removed from all task cards.
               !isTodayAgenda && `border-l border-b border-r ${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
-              !isTodayAgenda && (isMobile ? TASK_CARD_SHADOWS.mobile : TASK_CARD_SHADOWS.desktop),
-              !isTodayAgenda && `${TASK_CARD_SHADOWS.hover} ${TASK_CARD_BORDERS.hover} transition-all duration-200`,
+              !isTodayAgenda && `${TASK_CARD_BORDERS.hover} transition-all duration-200`,
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: minimal padding for collapsed cards
