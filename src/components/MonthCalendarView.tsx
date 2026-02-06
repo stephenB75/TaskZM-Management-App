@@ -30,7 +30,7 @@ import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
-import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS } from "../lib/layout-constants";
+import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
 import type { Task } from "../types";
@@ -790,9 +790,9 @@ export function MonthCalendarView({
           <div 
             className={cn(
               "flex flex-col h-full transition-transform duration-500 ease-in-out",
-              // On desktop, zoom out when any day is expanded to show full month
-              !mobileMode && expandedDays.size > 0 && "scale-[0.82] origin-top"
+              !mobileMode && expandedDays.size > 0 && "origin-top"
             )}
+            style={!mobileMode && expandedDays.size > 0 ? { transform: `scale(${COMPONENT_DIMENSIONS.monthCalendarExpandedScale})` } : undefined}
           >
             {/* Week day headers - now included in zoom */}
             <div className="grid grid-cols-7 gap-0 md:gap-2 mb-1 md:mb-2 flex-shrink-0 w-full">

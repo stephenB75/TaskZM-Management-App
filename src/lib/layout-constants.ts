@@ -991,6 +991,8 @@ export const COMPONENT_DIMENSIONS = {
     dropZoneMinHeight: 'min-h-[400px]',
     emptyStateMinHeight: 'min-h-[300px]',
   },
+  /** Month calendar: scale when a day is expanded (desktop) so full month remains visible */
+  monthCalendarExpandedScale: 0.82,
   inboxHeader: {
     button: {
       borderRadius: '9999px', // Pill shape (rounded-full equivalent)
