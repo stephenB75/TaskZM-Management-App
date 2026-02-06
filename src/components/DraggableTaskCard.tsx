@@ -701,10 +701,7 @@ export const DraggableTaskCard = React.forwardRef<
         {isNextUp && (
           <div className={cn("w-full", TASK_CARD_TIMELINE.nextUp.badgeMarginBottom)}>
             <span 
-              className={cn(
-                TASK_CARD_FONT_SIZES.duration.desktop,
-                "font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block"
-              )}
+              className="text-xs font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground inline-block"
             >
               {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
             </span>

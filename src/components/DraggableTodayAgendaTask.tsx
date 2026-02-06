@@ -272,10 +272,7 @@ export function DraggableTodayAgendaTask({
         <div className={cn("flex gap-3 w-full min-w-0 relative", TASK_CARD_TIMELINE.nextUp.badgeMarginBottom)}>
           <div className="w-16 flex-shrink-0" />
           <span 
-            className={cn(
-              TASK_CARD_FONT_SIZES.duration.desktop,
-              "font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground self-start relative"
-            )}
+            className="text-xs font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground self-start relative"
             style={{ zIndex: Z_INDEX.BADGE }}
           >
             {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}

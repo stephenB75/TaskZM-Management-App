@@ -919,7 +919,7 @@ export const TASK_CARD_TIMELINE = {
   nextUp: {
     ring: 'ring-2 ring-primary/20',
     // Space between Next Up badge and task card (Today Agenda panel)
-    badgeMarginBottom: 'mb-5', // 20px - enough space between badge and card
+    badgeMarginBottom: 'mb-2', // 8px - compact spacing
   },
   scale: {
     dragging: 'scale-95', // scale-95 for dragging state
