@@ -762,9 +762,9 @@ export const DraggableTaskCard = React.forwardRef<
               isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
             )}
           style={{
-            // Today Agenda: compact row, no gray background/border/shadow.
+            // Today Agenda: compact row, no gray background; add horizontal padding so tab/headline aren't flush to panel.
             ...(isTodayAgenda
-              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent', border: 'none', boxShadow: 'none' }
+              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent', border: 'none', boxShadow: 'none', paddingLeft: 16, paddingRight: 16 }
               : {
                   height: isExpanded ? 'auto' : `${cardHeight}px`,
                   minHeight: isExpanded ? 'auto' : `${cardHeight}px`,
@@ -860,7 +860,7 @@ export const DraggableTaskCard = React.forwardRef<
                   <span className="rounded-full bg-white/80 flex-shrink-0" style={{ width: 8, height: 8 }} aria-hidden />
                 )}
               </div>
-              <div className={cn("flex items-start gap-1.5 px-2 pt-1.5", isMobile ? "pb-1" : "pb-1.5")}>
+              <div className={cn("flex items-start gap-1.5 pt-1.5", isMobile ? "pb-1" : "pb-1.5")}>
                 <button
                   type="button"
                   onClick={handleToggleComplete}
@@ -870,7 +870,7 @@ export const DraggableTaskCard = React.forwardRef<
                 >
                   <Icon
                     name="circle"
-                    size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
+                    size={18}
                     className={cn(
                       "transition-colors flex-shrink-0",
                       isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
@@ -881,7 +881,7 @@ export const DraggableTaskCard = React.forwardRef<
                 </button>
                 <h3
                   className={cn("font-bold leading-tight flex-1 min-w-0 line-clamp-2", TASK_CARD_TEXT_COLORS.title)}
-                  style={{ fontSize: `${isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}px` }}
+                  style={{ fontSize: '15px' }}
                 >
                   {task.title}
                 </h3>
