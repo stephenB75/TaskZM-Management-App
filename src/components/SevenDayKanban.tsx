@@ -15,7 +15,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate } from '../lib/utils';
+import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
@@ -907,37 +907,37 @@ export function SevenDayKanban({
                         });
                       }
                       
-                      // Add calendar events (normalize to column date for time-of-day sorting)
-                      for (const event of calEvents) {
-                        const eventStart = new Date(event.start);
-                        // Normalize to column's date but preserve the time of day
-                        const normalizedDate = new Date(columnDate);
-                        normalizedDate.setHours(eventStart.getHours(), eventStart.getMinutes(), eventStart.getSeconds(), eventStart.getMilliseconds());
-                        const sortTime = normalizedDate.getTime();
-                        
-                        combinedItems.push({
-                          type: 'event',
-                          event,
-                          sortTime,
-                        });
-                      }
-                      
-                      // Sort by time (earliest first, tasks without time go to end)
-                      // Secondary sort by type (events before tasks at same time) for consistent ordering
-                      combinedItems.sort((a, b) => {
-                        if (a.sortTime !== b.sortTime) {
-                          return a.sortTime - b.sortTime;
-                        }
-                        // If same time, events come before tasks
-                        if (a.type === 'event' && b.type === 'task') return -1;
-                        if (a.type === 'task' && b.type === 'event') return 1;
-                        return 0;
-                      });
-                      
-                      const hasContent = combinedItems.length > 0;
-                      
-                      return (
-                    <div 
+// Add calendar events (normalize to column date for time-of-day sorting; use parseCalendarEventTime for correct local time)
+                          for (const event of calEvents) {
+                            const eventStart = parseCalendarEventTime(event.start);
+                            // Normalize to column's date but preserve the time of day (in local timezone)
+                            const normalizedDate = new Date(columnDate);
+                            normalizedDate.setHours(eventStart.getHours(), eventStart.getMinutes(), eventStart.getSeconds(), eventStart.getMilliseconds());
+                            const sortTime = normalizedDate.getTime();
+                            
+                            combinedItems.push({
+                              type: 'event',
+                              event,
+                              sortTime,
+                            });
+                          }
+                          
+                          // Sort by time (earliest first, tasks without time go to end)
+                          // Secondary sort by type (events before tasks at same time) for consistent ordering
+                          combinedItems.sort((a, b) => {
+                            if (a.sortTime !== b.sortTime) {
+                              return a.sortTime - b.sortTime;
+                            }
+                            // If same time, events come before tasks
+                            if (a.type === 'event' && b.type === 'task') return -1;
+                            if (a.type === 'task' && b.type === 'event') return 1;
+                            return 0;
+                          });
+                          
+                          const hasContent = combinedItems.length > 0;
+                          
+                          return (
+                    <div
                       className="w-full flex flex-col items-center" 
                       style={{ 
                         minHeight: 0, 
@@ -1407,10 +1407,10 @@ export function SevenDayKanban({
                             });
                           }
                           
-                          // Add calendar events (normalize to column date for time-of-day sorting)
+                          // Add calendar events (normalize to column date for time-of-day sorting; use parseCalendarEventTime for correct local time)
                           for (const event of calEvents) {
-                            const eventStart = new Date(event.start);
-                            // Normalize to column's date but preserve the time of day
+                            const eventStart = parseCalendarEventTime(event.start);
+                            // Normalize to column's date but preserve the time of day (in local timezone)
                             const normalizedDate = new Date(columnDate);
                             normalizedDate.setHours(eventStart.getHours(), eventStart.getMinutes(), eventStart.getSeconds(), eventStart.getMilliseconds());
                             const sortTime = normalizedDate.getTime();

@@ -75,6 +75,27 @@ export function getDateString(date: Date): string {
 }
 
 /**
+ * Parse calendar event start/end string to a Date for correct local-time display and sorting.
+ * - Date-only (YYYY-MM-DD): local midnight.
+ * - ISO with Z or offset: parsed as-is (correct UTC/local).
+ * - ISO datetime without Z or offset: treated as UTC so kanban/week view shows correct local time.
+ */
+export function parseCalendarEventTime(isoString: string): Date {
+  const s = (isoString || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number);
+    if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) {
+      return new Date(y, m - 1, d);
+    }
+  }
+  // Full ISO without timezone is often UTC from APIs; appending Z ensures correct local conversion
+  if (/^\d{4}-\d{2}-\d{2}T\d/.test(s) && !/Z|[-+]\d{2}:?\d{2}$/.test(s)) {
+    return new Date(s.endsWith('Z') ? s : s + 'Z');
+  }
+  return new Date(s);
+}
+
+/**
  * Parse YYYY-MM-DD string as local midnight (not UTC).
  * Use this when comparing to "today" or column dates so tasks appear on the correct day in all timezones.
  */

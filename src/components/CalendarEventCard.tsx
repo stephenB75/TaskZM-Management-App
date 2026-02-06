@@ -1,7 +1,7 @@
 import React from 'react';
 // Icons migrated to Icon component - already using Icon
 import { Icon } from './Icon';
-import { cn } from '../lib/utils';
+import { cn, parseCalendarEventTime } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS } from '../lib/calendar-event-constants';
 import { TASK_CARD_SPACING } from '../lib/task-card-constants';
@@ -19,16 +19,16 @@ interface CalendarEventCardProps {
   variant?: 'default' | 'kanban';
 }
 
-// Calculate duration in minutes between two ISO date strings
+// Calculate duration in minutes between two ISO date strings (uses parseCalendarEventTime for correct timezone)
 function getDurationMinutes(start: string, end: string): number {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+  const startDate = parseCalendarEventTime(start);
+  const endDate = parseCalendarEventTime(end);
   return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
 }
 
-// Format time to AM/PM (uses local timezone; date-only strings are interpreted as UTC midnight and can show wrong time)
+// Format time to AM/PM in user's local timezone (uses parseCalendarEventTime so UTC-from-API displays correctly)
 function formatTimeAMPM(isoString: string): string {
-  const date = new Date(isoString);
+  const date = parseCalendarEventTime(isoString);
   if (isNaN(date.getTime())) return '';
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
@@ -36,8 +36,8 @@ function formatTimeAMPM(isoString: string): string {
 // True if event is date-only (YYYY-MM-DD) or spans full day (24h and starts at midnight local)
 function isAllDayEvent(start: string, end: string): boolean {
   if (/^\d{4}-\d{2}-\d{2}$/.test(start)) return true;
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+  const startDate = parseCalendarEventTime(start);
+  const endDate = parseCalendarEventTime(end);
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return false;
   const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
   const startHour = startDate.getHours();

@@ -5,7 +5,7 @@ import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
-import { getDateString } from '../lib/utils';
+import { getDateString, parseCalendarEventTime } from '../lib/utils';
 
 export interface CalendarEvent {
   id: string;
@@ -374,14 +374,8 @@ export function useCalendarEventsByDate(
 
     for (const event of events) {
       if (!event?.start) continue;
-      // Date-only strings (YYYY-MM-DD) are parsed as UTC by JS, shifting all-day events to wrong day in western TZ. Parse as local.
-      let eventStart: Date;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(event.start)) {
-        const [y, m, d] = event.start.split('-').map(Number);
-        eventStart = new Date(y, m - 1, d);
-      } else {
-        eventStart = new Date(event.start);
-      }
+      // Use parseCalendarEventTime so UTC (with or without Z) converts to correct local date for grouping.
+      const eventStart = parseCalendarEventTime(event.start);
       if (isNaN(eventStart.getTime())) continue;
 
       // Normalize to local date string (YYYY-MM-DD) using getDateString for consistency
