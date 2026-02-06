@@ -992,7 +992,7 @@ export function SevenDayKanban({
                         </motion.div>
                       ) : (
                           <div
-                            className="flex flex-col gap-3 w-full"
+                            className="flex flex-col gap-1.5 w-full"
                             style={{
                               padding: 0,
                               // No paddingBottom - nav bar clearance handled by spacer in App.tsx
@@ -1465,7 +1465,7 @@ export function SevenDayKanban({
                               </motion.div>
                             ) : (
                                   <div 
-                                    className="flex flex-col gap-3 w-full"
+                                    className="flex flex-col gap-1.5 w-full"
                                     style={{
                                       width: '100%',
                                       maxWidth: shouldUseMobileLayout 
