@@ -213,8 +213,8 @@ export const TODAY_AGENDA_TIMELINE = {
   rowGapPx: 4,
   /** Gap (px) between consecutive agenda items (timeline row + card). */
   itemGapPx: 12,
-  /** Estimated height (px) for calendar event cards when computing cumulative spacing. */
-  eventCardHeightPx: 88,
+  /** Estimated height (px) for calendar event cards when computing cumulative spacing (+20% for larger container). */
+  eventCardHeightPx: 106,
   /** Offset (px) from row top to card top when item shows Next Up badge (badge height + mb-5). Used so timeline time aligns with card top. */
   nextUpBadgeOffsetPx: 42,
   /** Offset (px) from card top to first content line (priority/tab row). Card padding-top + tab margin-top ≈ 14px. Applied so timeline dot aligns with card content, not card edge. */

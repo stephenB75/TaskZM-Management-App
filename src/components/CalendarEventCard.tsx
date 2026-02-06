@@ -298,7 +298,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         />
         <div
           className={cn(
-            'flex-1 min-h-full flex flex-col gap-1.5 py-1.5 rounded-r-lg min-w-0 overflow-hidden border-0 border-l-0',
+            'flex-1 min-h-full flex flex-col gap-2 py-2 rounded-r-lg min-w-0 overflow-hidden border-0 border-l-0',
             colors.bg,
           )}
           style={{
@@ -357,7 +357,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
         }}
       />
-      <div className="flex-1 py-1.5 flex flex-col gap-1.5" style={{ paddingLeft: `${contentPaddingLeft}px` }}>
+      <div className="flex-1 py-2 flex flex-col gap-2" style={{ paddingLeft: `${contentPaddingLeft}px` }}>
         <div className="flex items-center gap-2">
           <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
           <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
