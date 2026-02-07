@@ -747,9 +747,8 @@ export const DraggableTaskCard = React.forwardRef<
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Frame: hide by default; show only on hover or when expanded (selected)
+              // Frame: hide by default; show only when expanded (not on hover)
               !isTodayAgenda && "border-l border-b border-r transition-all duration-200 border-transparent",
-              !isTodayAgenda && "hover:border-gray-400/90 dark:hover:border-gray-500/70",
               !isTodayAgenda && isExpanded && `${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
