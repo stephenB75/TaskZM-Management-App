@@ -407,23 +407,14 @@ export function TodayAgendaView({
     }
   };
 
-  /** Vertical timeline 7 AM–12 AM: show 15-min interval labels only where a task/event has that time. */
+  /** Vertical timeline 7 AM–12 AM: show standard hourly labels (7:00 AM, 8:00 AM, …, 12:00 AM). */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, labelIntervalMinutes, startOffsetMinutes } = TODAY_AGENDA_TIMELINE;
-      const slotMinutesSet = new Set<number>();
-      slotMinutesSet.add(startOffsetMinutes);
-      slotMinutesSet.add(totalMinutes);
-      for (const { topPx, heightPx } of timelineBlocks) {
-        const startMins = Math.round(topPx / pxPerMinute);
-        const endMins = Math.round((topPx + heightPx) / pxPerMinute);
-        const startSlot = Math.round(startMins / labelIntervalMinutes) * labelIntervalMinutes;
-        const endSlot = Math.round(endMins / labelIntervalMinutes) * labelIntervalMinutes;
-        for (let s = startSlot; s <= endSlot; s += labelIntervalMinutes) {
-          if (s >= 0 && s <= totalMinutes) slotMinutesSet.add(s);
-        }
+      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+      const sortedSlots: number[] = [];
+      for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
+        sortedSlots.push(m);
       }
-      const sortedSlots = Array.from(slotMinutesSet).sort((a, b) => a - b);
       const timelineLabels: { minutesFromStart: number; label: string }[] = sortedSlots.map((m) => {
         const h = startHour + Math.floor(m / 60);
         const min = m % 60;
@@ -441,7 +432,7 @@ export function TodayAgendaView({
         <div className="flex flex-col w-full relative z-10">
           {/* Timeline: fixed height 7 AM – 12 AM */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineHeightPx, height: timelineHeightPx }}>
-            {/* Left: time labels only at 15-min slots where a task/event has that time */}
+            {/* Left: hourly time labels (7:00 AM – 12:00 AM) */}
             <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineHeightPx }}>
               {timelineLabels.map(({ minutesFromStart, label }) => {
                 const topPx = minutesFromStart * pxPerMinute;
