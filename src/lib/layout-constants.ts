@@ -220,6 +220,8 @@ export const TODAY_AGENDA_TIMELINE = {
   rowPaddingTopPx: 2,
   columnGapPx: 8,
   rowGapPx: 4,
+  /** Minimum gap (px) between consecutive timeline blocks so they don’t touch. */
+  blockGapPx: 8,
   /** Gap (px) between consecutive agenda items when using list fallback (e.g. no time). */
   itemGapPx: 12,
   /** Estimated height (px) for calendar event cards when computing cumulative spacing (+20% for larger container). */

@@ -384,7 +384,7 @@ export function TodayAgendaView({
   /** Vertical timeline 7 AM–12 AM: time labels left, task/event blocks by duration on the right. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, nextUpBadgeOffsetPx, minBlockHeightPx } = TODAY_AGENDA_TIMELINE;
+      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, nextUpBadgeOffsetPx, minBlockHeightPx, blockGapPx } = TODAY_AGENDA_TIMELINE;
       const hourLabels: number[] = [];
       for (let h = startHour; h <= endHour; h++) hourLabels.push(h);
       return (
@@ -422,7 +422,10 @@ export function TodayAgendaView({
               {timelineBlocks.map(({ item, topPx, heightPx }) => {
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
                 const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
-                const paddingTop = rowPaddingTopPx + (isNextUp ? nextUpBadgeOffsetPx : 0);
+                // Align block top with timeline time (rowPaddingTopPx only); reserve badge space inside height when next up
+                const topOffsetPx = rowPaddingTopPx;
+                const heightReservedForBadge = isNextUp ? nextUpBadgeOffsetPx : 0;
+                const effectiveHeight = heightPx - topOffsetPx - heightReservedForBadge - blockGapPx;
                 const isTask = item.type === 'task' && item.task;
                 const blockStyle = isTask
                   ? getTodayAgendaBlockColors(item.task!.priority, TODAY_AGENDA_TIMELINE.blockTintOpacity)
@@ -432,8 +435,8 @@ export function TodayAgendaView({
                     key={key}
                     className="absolute left-0 right-0 overflow-visible rounded-r"
                     style={{
-                      top: topPx + paddingTop,
-                      height: Math.max(minBlockHeightPx, heightPx - paddingTop),
+                      top: topPx + topOffsetPx,
+                      height: Math.max(minBlockHeightPx, effectiveHeight),
                       minHeight: minBlockHeightPx,
                       ...(blockStyle
                         ? {
