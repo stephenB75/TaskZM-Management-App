@@ -433,7 +433,7 @@ export function TodayAgendaView({
                     className="absolute left-0 right-0 overflow-visible rounded-r"
                     style={{
                       top: topPx + rowPaddingTopPx,
-                      height: Math.max(minBlockHeightPx, heightPx - rowPaddingTopPx),
+                      height: Math.max(minBlockHeightPx, heightPx),
                       minHeight: minBlockHeightPx,
                       ...(blockStyle
                         ? {
