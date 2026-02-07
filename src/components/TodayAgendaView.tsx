@@ -486,7 +486,11 @@ export function TodayAgendaView({
                             occurrenceDate={todayString}
                             isNextUp={item.task.id === nextUpTaskId}
                             onComplete={handleTaskComplete}
-                            timelineBlockHeightPx={Math.max(minBlockHeightPx, heightPx)}
+                            timelineBlockHeightPx={
+                              TASK_CARD_TIMELINE.scale.todayAgenda !== 1
+                                ? Math.round((Math.max(minBlockHeightPx, heightPx)) / TASK_CARD_TIMELINE.scale.todayAgenda)
+                                : Math.max(minBlockHeightPx, heightPx)
+                            }
                           />
                         </div>
                       </div>
