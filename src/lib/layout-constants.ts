@@ -254,6 +254,10 @@ export const TODAY_AGENDA_TIMELINE = {
   blockTintOpacity: 0.1,
   /** Width (px) of left-edge accent bar on task blocks. */
   blockAccentWidthPx: 4,
+  /** Height (px) of the current-time indicator line. */
+  currentTimeLineHeightPx: 2,
+  /** Padding left (px) for the timeline blocks column (matches pl-2). */
+  blocksColumnPaddingLeftPx: 8,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 
@@ -793,6 +797,10 @@ export const Z_INDEX = {
   TOUR_HIGHLIGHT: 9998, // z-index for tour highlighted elements (below tour overlay)
   DROP_ZONE: 100, // z-100 - Used in TodayAgendaView for drop zone overlay
   TIME_INDICATOR: 50, // z-50 - Used in TodayAgendaView for current time indicator
+  /** Today Agenda: timestamp connector line (from dot to task tab) drawn in front of blocks. */
+  TIMELINE_STAMP_LINE: 20,
+  /** Today Agenda: timeline column container. */
+  TIMELINE_CONTAINER: 10,
   DIALOG: 50, // z-50 - Used in Dialog overlay and content
   TOAST: 9990, // z-9990 - In-app toasts above dialogs and in-dialog dropdowns (SELECT_CONTENT 200) so messages are always visible
   DRAG_DROP: 99999, // z-99999 - Used in DragDropContext for drag overlay

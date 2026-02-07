@@ -407,16 +407,23 @@ export function TodayAgendaView({
     }
   };
 
-  /** Vertical timeline: labels only at task/event start times; label + dot then line from dot to right side of task tab. */
+  /** Vertical timeline: show all hourly stamps; hide only those strictly inside a task/event block. Label + dot then line from dot to right side of task tab. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, tabAreaWidthPx } = TODAY_AGENDA_TIMELINE;
-      const slotMinutesSet = new Set<number>();
-      for (const { topPx } of timelineBlocks) {
-        const startMins = Math.round(topPx / pxPerMinute);
-        if (startMins >= 0 && startMins <= totalMinutes) slotMinutesSet.add(startMins);
+      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, tabAreaWidthPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+      const allSlotMinutes: number[] = [];
+      for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
+        allSlotMinutes.push(m);
       }
-      const sortedSlots = Array.from(slotMinutesSet).sort((a, b) => a - b);
+      const hiddenSlotMinutes = new Set<number>();
+      for (const { topPx, heightPx } of timelineBlocks) {
+        const startMins = Math.round(topPx / pxPerMinute);
+        const endMins = Math.round((topPx + heightPx) / pxPerMinute);
+        for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
+          if (m > startMins && m < endMins) hiddenSlotMinutes.add(m);
+        }
+      }
+      const sortedSlots = allSlotMinutes.filter((m) => !hiddenSlotMinutes.has(m));
       const timelineLabels: { minutesFromStart: number; label: string }[] = sortedSlots.map((m) => {
         const h = startHour + Math.floor(m / 60);
         const min = m % 60;
@@ -432,7 +439,7 @@ export function TodayAgendaView({
       });
       const lineWidthPx = columnGapPx + tabAreaWidthPx;
       return (
-        <div className="flex flex-col w-full relative z-10">
+        <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
           {/* Timeline: fixed height 7 AM – 12 AM */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineHeightPx, height: timelineHeightPx }}>
             {/* Left: time label + dot (flipped: label then dot); line from dot to right side of task tab */}
@@ -452,18 +459,19 @@ export function TodayAgendaView({
               })}
             </div>
             {/* Right: horizontal line from dot to tab, then task/event blocks aren’t cut off */}
-            <div className="flex-1 min-w-0 relative pl-2 pr-6" style={{ marginLeft: columnGapPx }}>
+            <div className="flex-1 min-w-0 relative" style={{ marginLeft: columnGapPx, paddingLeft: blocksColumnPaddingLeftPx, paddingRight: cardPaddingRightPx }}>
               {timelineLabels.map(({ minutesFromStart }) => {
                 const topPx = minutesFromStart * pxPerMinute;
                 return (
                   <div
                     key={`line-${minutesFromStart}`}
-                    className="absolute left-0 top-0 h-0 border-t border-primary/40 z-20"
+                    className="absolute left-0 top-0 h-0 border-t border-primary/40"
                     style={{
                       left: -columnGapPx,
                       width: lineWidthPx,
                       top: topPx,
                       transform: 'translateY(-50%)',
+                      zIndex: Z_INDEX.TIMELINE_STAMP_LINE,
                     }}
                     aria-hidden
                   />
@@ -471,8 +479,8 @@ export function TodayAgendaView({
               })}
               {currentTimeTopPx != null && (
                 <div
-                  className="absolute left-0 right-0 h-0.5 bg-primary z-10"
-                  style={{ top: currentTimeTopPx }}
+                  className="absolute left-0 right-0 bg-primary"
+                  style={{ top: currentTimeTopPx, height: currentTimeLineHeightPx, zIndex: Z_INDEX.TIME_INDICATOR }}
                   aria-hidden
                 />
               )}
@@ -562,7 +570,7 @@ export function TodayAgendaView({
                         <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0 w-full pr-6" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
+                    <div className="flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx, paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx }}>
                       {item.type === 'task' && item.task ? (
                         <div data-task-id={item.task.id} className="w-full">
                           <div className="w-full min-w-full" style={{ ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1 ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' } : {}) }}>
