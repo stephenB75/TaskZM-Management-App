@@ -407,25 +407,35 @@ export function TodayAgendaView({
     }
   };
 
-  /** Vertical timeline 7 AM–12 AM: time labels left, task/event blocks by duration on the right. */
+  /** Vertical timeline 7 AM–12 AM: time labels at 15-min intervals, task/event blocks by duration on the right. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx } = TODAY_AGENDA_TIMELINE;
-      const hourLabels: number[] = [];
-      for (let h = startHour; h <= endHour; h++) hourLabels.push(h);
+      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+      const timelineLabels: { minutesFromStart: number; label: string }[] = [];
+      for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
+        const h = startHour + Math.floor(m / 60);
+        const min = m % 60;
+        const isMidnight = h === 24 && min === 0;
+        const label = isMidnight
+          ? '12:00 AM'
+          : (() => {
+              const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+              const ampm = h < 12 ? 'AM' : 'PM';
+              return `${hour12}:${min.toString().padStart(2, '0')} ${ampm}`;
+            })();
+        timelineLabels.push({ minutesFromStart: m, label });
+      }
       return (
         <div className="flex flex-col w-full relative z-10">
           {/* Timeline: fixed height 7 AM – 12 AM */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineHeightPx, height: timelineHeightPx }}>
-            {/* Left: time labels (7 AM, 8 AM, … 12 AM) */}
+            {/* Left: time labels at 15-min intervals (7:00 AM, 7:15 AM, 7:30 AM, 7:45 AM, 8:00 AM, …) */}
             <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineHeightPx }}>
-              {hourLabels.map((hour) => {
-                const isMidnight = hour === 24;
-                const topPx = (hour - startHour) * 60 * pxPerMinute;
-                const label = isMidnight ? '12 AM' : hour === 12 ? '12 PM' : hour < 12 ? `${hour} AM` : `${hour - 12} PM`;
+              {timelineLabels.map(({ minutesFromStart, label }) => {
+                const topPx = minutesFromStart * pxPerMinute;
                 return (
                   <div
-                    key={hour}
+                    key={minutesFromStart}
                     className="absolute left-0 flex items-center gap-1"
                     style={{ top: topPx, transform: 'translateY(-50%)' }}
                   >
