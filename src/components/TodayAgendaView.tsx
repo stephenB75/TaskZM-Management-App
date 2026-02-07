@@ -407,7 +407,7 @@ export function TodayAgendaView({
     }
   };
 
-  /** Vertical timeline: show all hourly stamps; hide only those strictly inside a task/event block. Label + dot then line from dot to right side of task tab. */
+  /** Vertical timeline: show hourly stamps (hide only those strictly inside a block) plus every task/event start time so each block has its timestamp. */
   const agendaListRows = useMemo(
     () => {
       const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
@@ -416,14 +416,17 @@ export function TodayAgendaView({
         allSlotMinutes.push(m);
       }
       const hiddenSlotMinutes = new Set<number>();
+      const blockStartMinutes = new Set<number>();
       for (const { topPx, heightPx } of timelineBlocks) {
         const startMins = Math.round(topPx / pxPerMinute);
         const endMins = Math.round((topPx + heightPx) / pxPerMinute);
+        if (startMins >= 0 && startMins <= totalMinutes) blockStartMinutes.add(startMins);
         for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
           if (m > startMins && m < endMins) hiddenSlotMinutes.add(m);
         }
       }
-      const sortedSlots = allSlotMinutes.filter((m) => !hiddenSlotMinutes.has(m));
+      const visibleHourly = allSlotMinutes.filter((m) => !hiddenSlotMinutes.has(m));
+      const sortedSlots = Array.from(new Set([...visibleHourly, ...blockStartMinutes])).sort((a, b) => a - b);
       const timelineLabels: { minutesFromStart: number; label: string }[] = sortedSlots.map((m) => {
         const h = startHour + Math.floor(m / 60);
         const min = m % 60;
