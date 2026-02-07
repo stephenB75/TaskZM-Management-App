@@ -469,7 +469,7 @@ export function TodayAgendaView({
                     key={`line-${minutesFromStart}`}
                     className="absolute top-0 h-0 border-t-2 border-primary/70"
                     style={{
-                      left: -columnGapPx,
+                      left: -(columnGapPx + dotSizePx),
                       right: 0,
                       top: topPx,
                       transform: 'translateY(-50%)',

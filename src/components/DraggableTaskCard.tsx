@@ -25,6 +25,7 @@ import { usePomodoro } from "../contexts/PomodoroContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { useIsMobile } from "./ui/use-mobile";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 import type { Task } from "../types";
 import {
   TASK_CARD_PRIORITY_COLORS,
@@ -120,6 +121,9 @@ export const DraggableTaskCard = React.forwardRef<
     const { actualTheme } = useTheme();
     const isDark = actualTheme === 'dark';
     const isMobile = useIsMobile();
+    const shouldUseMobileLayout = useMobileLayout();
+    // On Today Agenda: disable drag on iPad, tablets, and small screens (< 1024px). On Kanban: only disable on mobile (< 768px).
+    const dragDisabled = isTodayAgenda ? (isMobile || shouldUseMobileLayout) : isMobile;
     // Cards always start in closed (collapsed) state
     // Chevron-right (>) = closed state (default)
     // Chevron-down (v) = open state
@@ -214,7 +218,7 @@ export const DraggableTaskCard = React.forwardRef<
       isDragging: isSortableDragging,
     } = useSortable({
       id: sortableId,
-      disabled: isMobile, // Disable drag on mobile
+      disabled: dragDisabled, // Today Agenda: disable on tablet/small screens; Kanban: disable on mobile only
     });
 
     // Debug logging removed for production
@@ -714,21 +718,21 @@ export const DraggableTaskCard = React.forwardRef<
           ref={setNodeRef}
           style={{
             ...style,
-            touchAction: isMobile ? "auto" : "none", // Allow normal touch on mobile
+            touchAction: dragDisabled ? "auto" : "none", // Allow normal touch when drag disabled (mobile/tablet Today Agenda)
             zIndex: 2,
             position: 'relative',
-            ...(!isMobile && (isDragging || isSortableDragging) ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 } : {}),
+            ...(!dragDisabled && (isDragging || isSortableDragging) ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 } : {}),
             ...(isColumnLayout ? { width: '100%', minWidth: '100%', maxWidth: '100%' } : {}),
           }}
           {...attributes}
-          {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
+          {...(dragDisabled ? {} : listeners)} // Only apply drag listeners when drag enabled (desktop; Today Agenda: desktop only)
           className={cn(
             "w-full flex gap-2 transition-all duration-200",
             isColumnLayout && "min-w-full max-w-full",
-            !isMobile && (isDragging || isSortableDragging)
+            !dragDisabled && (isDragging || isSortableDragging)
               ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.draggingKanban} ring-2 ring-primary/50 ring-offset-2`
               : "",
-            !isMobile && !(isDragging || isSortableDragging)
+            !dragDisabled && !(isDragging || isSortableDragging)
               ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hoverKanban}`
               : "",
           )}
