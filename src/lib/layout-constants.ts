@@ -203,15 +203,24 @@ export const TIMELINE_PADDING = {
 // Today Agenda minimum height for drop zone accessibility
 export const TODAY_AGENDA_MIN_HEIGHT = 400; // Minimum height in pixels to ensure drop zone is always accessible
 export const TODAY_AGENDA_CONTENT_MIN_HEIGHT = 'calc(100% + 1px)'; // Minimum height to ensure content extends beyond viewport for scrolling
-/** Today Agenda timeline: time and line aligned with top of task card; line extends left to dot (dot on right). */
+/** Today Agenda timeline: vertical time scale 7:00 AM–12:00 AM; task cards represent time blocks by duration. */
 export const TODAY_AGENDA_TIMELINE = {
+  /** Time range: start hour (7 = 7:00 AM), end hour (24 = 12:00 AM midnight). */
+  startHour: 7,
+  endHour: 24,
+  /** Total minutes in range: (24 - 7) * 60 = 1020. */
+  totalMinutes: (24 - 7) * 60,
+  /** Pixels per minute so task height = duration (e.g. 2h → 120 * pxPerMinute). */
+  pxPerMinute: 3,
+  /** Minimum task block height (px) when duration is very short. */
+  minBlockHeightPx: 48,
   columnWidth: '1in',
   dotSizePx: 10,
   lineMinWidthPx: 28,
   rowPaddingTopPx: 2,
   columnGapPx: 8,
   rowGapPx: 4,
-  /** Gap (px) between consecutive agenda items (timeline row + card). */
+  /** Gap (px) between consecutive agenda items when using list fallback (e.g. no time). */
   itemGapPx: 12,
   /** Estimated height (px) for calendar event cards when computing cumulative spacing (+20% for larger container). */
   eventCardHeightPx: 106,
@@ -219,7 +228,7 @@ export const TODAY_AGENDA_TIMELINE = {
   nextUpBadgeOffsetPx: 26,
   /** Offset (px) from card top to first content line (priority/tab row). Card padding-top + tab margin-top ≈ 14px. Applied so timeline dot aligns with card content, not card edge. */
   cardContentTopOffsetPx: 14,
-  /** Compact row height (px) when agenda shows only tab + headline (matches image layout). */
+  /** Compact row height (px) when agenda shows only tab + headline (list layout or min block). */
   taskRowHeightPx: 80,
   /** Tab bar height (px) for compact agenda row. */
   tabHeightPx: 40,

@@ -221,11 +221,58 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents]);
 
-  // Calculate height based on task duration (must be defined before agendaTimePositions which uses it)
-  const getTaskHeight = useCallback((_task: Task) => {
-    // Today Agenda uses compact layout: tab + headline only (see TODAY_AGENDA_TIMELINE.taskRowHeightPx)
-    return TODAY_AGENDA_TIMELINE.taskRowHeightPx;
-  }, []);
+  /** Split items into timeline blocks (have time in 7AM–12AM) and unscheduled (no time or outside range). */
+  const { timelineBlocks, unscheduledItems } = useMemo(() => {
+    const startHour = TODAY_AGENDA_TIMELINE.startHour;
+    const endHour = TODAY_AGENDA_TIMELINE.endHour;
+    const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
+    const pxPerMinute = TODAY_AGENDA_TIMELINE.pxPerMinute;
+    const minH = TODAY_AGENDA_TIMELINE.minBlockHeightPx;
+    const blocks: { item: CombinedItem; topPx: number; heightPx: number }[] = [];
+    const unscheduled: CombinedItem[] = [];
+    for (const item of combinedItems) {
+      if (item.type === 'task' && item.task) {
+        if (!item.task.scheduledDate) {
+          unscheduled.push(item);
+          continue;
+        }
+        const start = new Date(item.task.scheduledDate);
+        const startMins = start.getHours() * 60 + start.getMinutes() - startHour * 60;
+        if (startMins < 0 || startMins >= totalMinutes) {
+          unscheduled.push(item);
+          continue;
+        }
+        const durationMins = getTaskMinutes(item.task);
+        const heightPx = Math.max(minH, Math.round(durationMins * pxPerMinute));
+        const topPx = Math.round(startMins * pxPerMinute);
+        blocks.push({ item, topPx, heightPx });
+      } else if (item.type === 'event' && item.event) {
+        const start = new Date(item.event.start);
+        const end = new Date(item.event.end);
+        const startMins = start.getHours() * 60 + start.getMinutes() - startHour * 60;
+        const durationMins = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
+        if (startMins < 0 || startMins >= totalMinutes) {
+          unscheduled.push(item);
+          continue;
+        }
+        const heightPx = Math.max(minH, Math.round(durationMins * pxPerMinute));
+        const topPx = Math.round(startMins * pxPerMinute);
+        blocks.push({ item, topPx, heightPx });
+      }
+    }
+    return { timelineBlocks: blocks, unscheduledItems: unscheduled };
+  }, [combinedItems, getTaskMinutes]);
+
+  /** Timeline total height (px) for 7 AM–12 AM. */
+  const timelineHeightPx = TODAY_AGENDA_TIMELINE.totalMinutes * TODAY_AGENDA_TIMELINE.pxPerMinute;
+
+  /** Current time position (px from top) for indicator; null if outside 7AM–12AM. */
+  const currentTimeTopPx = useMemo(() => {
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes() - TODAY_AGENDA_TIMELINE.startHour * 60;
+    if (mins < 0 || mins >= TODAY_AGENDA_TIMELINE.totalMinutes) return null;
+    return Math.round(mins * TODAY_AGENDA_TIMELINE.pxPerMinute);
+  }, [currentTime]);
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
@@ -334,72 +381,139 @@ export function TodayAgendaView({
     }
   };
 
-  /** One row per item [time | card] so timeline always aligns with the correct task (no estimated heights). */
+  /** Vertical timeline 7 AM–12 AM: time labels left, task/event blocks by duration on the right. */
   const agendaListRows = useMemo(
-    () => (
-      <div className="flex flex-col w-full relative z-10" style={{ gap: TODAY_AGENDA_TIMELINE.itemGapPx }}>
-        {combinedItems.map((item, index) => {
-          const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
-          const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-          const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `i-${index}`;
-          const timelinePaddingTop = TODAY_AGENDA_TIMELINE.rowPaddingTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
-          return (
-            <div key={key} className="flex w-full items-start" style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
-              <div className="flex flex-shrink-0 flex-col" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: timelinePaddingTop }}>
-                <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel}</span>
-                  <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                  <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
-                {item.type === 'task' && item.task ? (
-                  <div data-task-id={item.task.id} className="w-full">
-                    <div
-                      className="w-full min-w-full"
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        minWidth: '100%',
-                        ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                          ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
-                          : {}),
-                      }}
-                    >
-                      <DraggableTaskCard
-                        task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                        onClick={() => item.task && handleTaskClick(item.task)}
-                        droppableId="today-agenda"
-                        occurrenceDate={todayString}
-                        isNextUp={item.task.id === nextUpTaskId}
-                        onComplete={handleTaskComplete}
-                      />
-                    </div>
+    () => {
+      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, nextUpBadgeOffsetPx, minBlockHeightPx } = TODAY_AGENDA_TIMELINE;
+      const hourLabels: number[] = [];
+      for (let h = startHour; h <= endHour; h++) hourLabels.push(h);
+      return (
+        <div className="flex flex-col w-full relative z-10">
+          {/* Timeline: fixed height 7 AM – 12 AM */}
+          <div className="flex w-full items-stretch" style={{ minHeight: timelineHeightPx, height: timelineHeightPx }}>
+            {/* Left: time labels (7 AM, 8 AM, … 12 AM) */}
+            <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineHeightPx }}>
+              {hourLabels.map((hour) => {
+                const isMidnight = hour === 24;
+                const topPx = (hour - startHour) * 60 * pxPerMinute;
+                const label = isMidnight ? '12 AM' : hour === 12 ? '12 PM' : hour < 12 ? `${hour} AM` : `${hour - 12} PM`;
+                return (
+                  <div
+                    key={hour}
+                    className="absolute left-0 flex items-center gap-1"
+                    style={{ top: topPx, transform: 'translateY(-50%)' }}
+                  >
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{label}</span>
+                    <span className="flex-1 border-t border-primary/40 min-h-px" style={{ minWidth: lineMinWidthPx }} aria-hidden />
+                    <span className="rounded-full bg-primary flex-shrink-0" style={{ width: dotSizePx, height: dotSizePx }} aria-hidden />
                   </div>
-                ) : item.type === 'event' && item.event ? (
-                  <div data-event-id={item.event.id} className="w-full">
-                    <div
-                      className="w-full min-w-full"
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        minWidth: '100%',
-                        ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                          ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
-                          : {}),
-                      }}
-                    >
-                      <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
-    ),
-    [combinedItems, nextUpTaskId, todayString, tasks]
+            {/* Right: task/event blocks positioned by time and duration */}
+            <div className="flex-1 min-w-0 relative pl-2" style={{ marginLeft: columnGapPx }}>
+              {currentTimeTopPx != null && (
+                <div
+                  className="absolute left-0 right-0 h-0.5 bg-primary z-10"
+                  style={{ top: currentTimeTopPx }}
+                  aria-hidden
+                />
+              )}
+              {timelineBlocks.map(({ item, topPx, heightPx }) => {
+                const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+                const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
+                const paddingTop = rowPaddingTopPx + (isNextUp ? nextUpBadgeOffsetPx : 0);
+                return (
+                  <div
+                    key={key}
+                    className="absolute left-0 right-0 overflow-hidden"
+                    style={{
+                      top: topPx + paddingTop,
+                      height: Math.max(minBlockHeightPx, heightPx - paddingTop),
+                      minHeight: minBlockHeightPx,
+                    }}
+                  >
+                    {item.type === 'task' && item.task ? (
+                      <div data-task-id={item.task.id} className="w-full h-full">
+                        <div
+                          className="w-full min-w-full h-full flex flex-col"
+                          style={{
+                            ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
+                              ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
+                              : {}),
+                          }}
+                        >
+                          <DraggableTaskCard
+                            task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
+                            onClick={() => item.task && handleTaskClick(item.task)}
+                            droppableId="today-agenda"
+                            occurrenceDate={todayString}
+                            isNextUp={item.task.id === nextUpTaskId}
+                            onComplete={handleTaskComplete}
+                          />
+                        </div>
+                      </div>
+                    ) : item.type === 'event' && item.event ? (
+                      <div data-event-id={item.event.id} className="w-full h-full">
+                        <div
+                          className="w-full min-w-full h-full"
+                          style={{
+                            ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
+                              ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
+                              : {}),
+                          }}
+                        >
+                          <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {/* Unscheduled: no time or outside 7AM–12AM */}
+          {unscheduledItems.length > 0 && (
+            <div className="flex flex-col w-full mt-4 pt-4 border-t border-border" style={{ gap: TODAY_AGENDA_TIMELINE.itemGapPx }}>
+              <span className="text-xs font-medium text-muted-foreground mb-1">No time slot</span>
+              {unscheduledItems.map((item, index) => {
+                const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
+                const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+                const key = item.type === 'task' && item.task ? `u-t-${item.task.id}` : item.type === 'event' && item.event ? `u-e-${item.event.id}` : `u-${index}`;
+                const timelinePaddingTop = TODAY_AGENDA_TIMELINE.rowPaddingTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
+                return (
+                  <div key={key} className="flex w-full items-start" style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
+                    <div className="flex flex-shrink-0 flex-col" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: timelinePaddingTop }}>
+                      <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel || '—'}</span>
+                        <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
+                        <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
+                      {item.type === 'task' && item.task ? (
+                        <div data-task-id={item.task.id} className="w-full">
+                          <div className="w-full min-w-full" style={{ ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1 ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' } : {}) }}>
+                            <DraggableTaskCard task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)} onClick={() => item.task && handleTaskClick(item.task)} droppableId="today-agenda" occurrenceDate={todayString} isNextUp={item.task.id === nextUpTaskId} onComplete={handleTaskComplete} />
+                          </div>
+                        </div>
+                      ) : item.type === 'event' && item.event ? (
+                        <div data-event-id={item.event.id} className="w-full">
+                          <div className="w-full min-w-full" style={{ ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1 ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' } : {}) }}>
+                            <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    },
+    [timelineBlocks, unscheduledItems, timelineHeightPx, currentTimeTopPx, nextUpTaskId, todayString, tasks]
   );
 
   return (
