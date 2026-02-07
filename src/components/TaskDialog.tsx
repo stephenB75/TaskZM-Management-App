@@ -2109,28 +2109,28 @@ export function TaskDialog({
       )}>
         {/* Gradient yellow-to-white surface; responsive padding */}
         <div className={cn("flex flex-col flex-1 min-h-0 rounded-2xl overflow-hidden", TASK_DIALOG_MINIMAL_SPACING.dialogInnerPadding, TASK_DIALOG_COLORS.dialogBg)}>
-        {/* Minimal header - responsive tap targets and text */}
+        {/* Header: Task Info title + back arrow; below it only menu selections Schedule and Organize */}
         <DialogHeader className="flex-shrink-0 pb-2 sm:pb-4">
-          <div className="flex flex-col gap-0.5 sm:gap-1">
+          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
+            <DialogTitle className="text-xs sm:text-base font-semibold text-muted-foreground truncate">
+              {TASK_DIALOG_UI_TEXT.taskInfoTitle}
+            </DialogTitle>
             <button
               type="button"
-              onClick={() => setActiveTab('basic')}
-              className={cn(
-                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1",
-                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                activeTab === 'basic' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
-              )}
+              onClick={() => (activeTab === 'basic' ? onClose() : setActiveTab('basic'))}
+              className="flex items-center justify-center rounded-md p-1 -mr-1 text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
+              aria-label={activeTab === 'basic' ? 'Close' : 'Back to task info'}
             >
-              {activeTab === 'basic' && <Icon name="chevron-right" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
-              <DialogTitle className="text-xs sm:text-base font-semibold truncate flex-1">
-                {TASK_DIALOG_UI_TEXT.taskInfoTitle}
-              </DialogTitle>
+              <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />
             </button>
+          </div>
+          <div className="flex flex-col gap-0.5 sm:gap-1">
             <button
               type="button"
               onClick={() => setActiveTab('scheduling')}
               className={cn(
-                cn("flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1", TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight),
+                "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-1.5 sm:py-2 px-1 -mx-1",
+                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
                 activeTab === 'scheduling' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
               )}
             >

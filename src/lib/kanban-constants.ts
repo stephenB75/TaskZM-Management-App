@@ -207,13 +207,13 @@ export const KANBAN_BACKGROUND_GRADIENTS = {
   },
 } as const;
 
-// Column Dimensions
+// Column Dimensions - wider columns so task titles and content are less truncated
 export const KANBAN_COLUMN_DIMENSIONS = {
   width: {
-    mobile: 322, // px - increased by 15% from 280px for mobile single column
-    tablet: 276, // px - increased by 15% from 240px for tablets
-    desktop: 386, // px - increased by 15% from 336px for standard desktop width
-    smallMonitor: 359, // px - increased by 15% from 312px for small monitors (1024px-1280px)
+    mobile: 360, // px - wider for mobile single column
+    tablet: 320, // px - wider for tablets
+    desktop: 440, // px - wider for standard desktop (was 386)
+    smallMonitor: 400, // px - wider for small monitors (1024px-1280px)
   },
   gap: {
     mobile: 4, // gap-1 = 4px
