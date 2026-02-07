@@ -248,6 +248,8 @@ export const TODAY_AGENDA_TIMELINE = {
   tabPaddingVerticalPx: 6,
   /** Horizontal inset (px) from block edges so tab doesn’t touch sides. */
   tabBlockInsetPx: 8,
+  /** Width (px) of the task tab area; timeline line extends from dot to this point (right side of tab). */
+  tabAreaWidthPx: 44,
   /** Opacity for task block background tint (0–1). Full block height shows reserved time. */
   blockTintOpacity: 0.1,
   /** Width (px) of left-edge accent bar on task blocks. */
