@@ -736,18 +736,19 @@ export const DraggableTaskCard = React.forwardRef<
           id={`task-${sortableId}`}
           data-tour="task-card"
         >
-        {/* Compact Card - Partial borders, lavender gradient background, height represents duration */}
+        {/* Compact Card - Left/bottom/right borders only; tab in front covers top */}
           <div
             ref={cardContentRef}
             className={cn(
-              "rounded-lg relative box-border flex flex-col",
+              "relative box-border flex flex-col",
               "overflow-visible", // Never clip tab; allow full tab content to show
+              "rounded-t-none rounded-b-lg",
               isExpanded && "rounded-b-none", // Remove bottom radius when expanded
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Frame: never show (no border when collapsed or expanded)
-              !isTodayAgenda && "border-l border-b border-r border-transparent transition-all duration-200",
+              // Left, bottom, right border only (no top - tab layers in front)
+              !isTodayAgenda && "border-l border-b border-r border-border dark:border-border transition-all duration-200",
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: minimal padding for collapsed cards
@@ -879,11 +880,12 @@ export const DraggableTaskCard = React.forwardRef<
             </>
           ) : (
             <>
-              {/* Full card tab: single inline row (clock, time, priority, tag, duration, dot) - wide to fit all elements */}
+              {/* Full card tab: in front of body, overlaps top so top border doesn't show */}
               <div
-                className="flex items-center gap-2 rounded-lg flex-shrink-0 w-full min-w-max px-3"
+                className="relative z-10 flex items-center gap-2 rounded-t-lg rounded-b flex-shrink-0 w-full min-w-max px-3 shadow-sm"
                 style={{
                   marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop,
+                  marginBottom: -1,
                   backgroundColor: getPriorityTabBackgroundColor(task.priority),
                   minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
                   paddingTop: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
