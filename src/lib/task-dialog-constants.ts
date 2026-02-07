@@ -228,6 +228,9 @@ export const TASK_DIALOG_MINIMAL_SPACING = {
   scheduleColumnSpaceY: 'space-y-4',
   scheduleTimeRowGap: 'gap-3 sm:gap-4',
   scheduleTimeRowMarginLeft: 'ml-0 sm:ml-4',
+  // Close button on gradient panel (position + nav right padding so tabs don't overlap)
+  closeButtonPosition: 'absolute top-3 right-3 z-20 rounded-md p-1.5',
+  navPaddingRightForClose: 'pr-10',
 } as const;
 
 // Calendar Constants

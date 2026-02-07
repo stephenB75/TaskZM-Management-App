@@ -2119,13 +2119,13 @@ export function TaskDialog({
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3 right-3 z-20 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
+            className={cn(TASK_DIALOG_MINIMAL_SPACING.closeButtonPosition, "text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors")}
             aria-label="Close"
           >
             <Icon name="x" size={ICON_SIZE_MD} aria-hidden />
           </button>
           {/* Tabs at top */}
-          <nav className="flex flex-row items-center gap-1 pb-3 border-b border-border/50 mb-3 pr-10" aria-label="Task sections">
+          <nav className={cn("flex flex-row items-center gap-1 pb-3 border-b border-border/50 mb-3", TASK_DIALOG_MINIMAL_SPACING.navPaddingRightForClose)} aria-label="Task sections">
             <button
               type="button"
               onClick={() => setActiveTab('basic')}
@@ -2670,7 +2670,7 @@ export function TaskDialog({
                               {TASK_DIALOG_UI_TEXT.timeLabel}
                             </Label>
                             {/* Time section full width, inline: 12HR/24HR, Hour, Min, AM/PM, Clear */}
-                            <div className="flex flex-nowrap items-center gap-2 sm:gap-3 w-full min-w-0 overflow-x-auto">
+                            <div className={cn("flex flex-nowrap items-center w-full min-w-0 overflow-x-auto", TASK_DIALOG_MINIMAL_SPACING.scheduleTimeRowGap)}>
                             <ToggleGroup
                               type="single"
                               value={timeFormat}
