@@ -11,5 +11,7 @@ export const TODAY_AGENDA_TEXT = {
   nextUp: "Next Up",
   /** Shown on the vertical timeline when a task has no scheduled time (its own slot, no time set). */
   noTimeSlot: "—",
+  /** Timeline label for midnight (end of day). */
+  timelineMidnightLabel: "12:00 AM",
 } as const;
 

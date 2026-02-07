@@ -410,9 +410,9 @@ export function TodayAgendaView({
   /** Vertical timeline 7 AM–12 AM: show 15-min interval labels only where a task/event has that time. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, lineMinWidthPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, labelIntervalMinutes, startOffsetMinutes } = TODAY_AGENDA_TIMELINE;
       const slotMinutesSet = new Set<number>();
-      slotMinutesSet.add(0);
+      slotMinutesSet.add(startOffsetMinutes);
       slotMinutesSet.add(totalMinutes);
       for (const { topPx, heightPx } of timelineBlocks) {
         const startMins = Math.round(topPx / pxPerMinute);
@@ -429,7 +429,7 @@ export function TodayAgendaView({
         const min = m % 60;
         const isMidnight = h === 24 && min === 0;
         const label = isMidnight
-          ? '12:00 AM'
+          ? TODAY_AGENDA_TEXT.timelineMidnightLabel
           : (() => {
               const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
               const ampm = h < 12 ? 'AM' : 'PM';

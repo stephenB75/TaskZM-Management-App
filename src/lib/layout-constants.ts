@@ -210,6 +210,8 @@ export const TODAY_AGENDA_TIMELINE = {
   endHour: 24,
   /** Interval (minutes) between timeline labels (e.g. 15 → 7:00, 7:15, 7:30, 7:45, 8:00). */
   labelIntervalMinutes: 15,
+  /** Start of timeline in minutes from range start (always 0 = 7:00 AM). */
+  startOffsetMinutes: 0,
   /** Total minutes in range: (24 - 7) * 60 = 1020. */
   totalMinutes: (24 - 7) * 60,
   /** Pixels per minute so task height = duration (e.g. 2h → 120 * pxPerMinute). */
