@@ -587,6 +587,8 @@ export const TASK_CARD_BORDERS = {
   mobile: 'border-gray-300/80',
   desktop: 'md:border-gray-300/90',
   hover: 'hover:border-gray-400/90',
+  /** Card body: thin solid black border on left, bottom, right only (tab covers top). No background. */
+  cardBody: 'border-l border-b border-r border-black dark:border-white',
   // Timeline view borders
   timeline: {
     mobile: 'border-b border-r border-gray-300/80 dark:border-gray-600/50',

@@ -737,7 +737,7 @@ export const DraggableTaskCard = React.forwardRef<
           id={`task-${sortableId}`}
           data-tour="task-card"
         >
-        {/* Compact Card - Left/bottom/right borders only; tab in front covers top */}
+        {/* Compact Card - Left/bottom/right borders only; tab in front covers top; light panel background */}
           <div
             ref={cardContentRef}
             className={cn(
@@ -748,8 +748,8 @@ export const DraggableTaskCard = React.forwardRef<
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Left, bottom, right border only (no top - tab layers in front); thin dark grey per layout
-              !isTodayAgenda && cn("border-l border-b border-r transition-all duration-200", TASK_CARD_BORDERS.mobile, TASK_CARD_BORDERS.desktop, "dark:border-gray-600/60"),
+              // Card body: thin solid black border L/B/R only; no background; border meets tab
+              !isTodayAgenda && TASK_CARD_BORDERS.cardBody,
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: minimal padding for collapsed cards
