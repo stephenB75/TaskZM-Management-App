@@ -782,6 +782,8 @@ export const TASK_CARD_TEXT_COLORS = {
   assigneeRole: 'text-gray-500 dark:text-gray-400',
   assigneeTeam: 'text-gray-400 dark:text-gray-500',
   assigneeEmail: 'text-gray-400 dark:text-gray-300',
+  /** Email in assignee tooltip (on primary background) - use foreground for visibility */
+  assigneeEmailInTooltip: 'text-primary-foreground/90',
   icon: 'text-gray-400 dark:text-gray-300',
   checkbox: {
     default: 'text-gray-300 dark:text-gray-400',

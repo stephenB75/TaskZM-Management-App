@@ -220,6 +220,8 @@ export const KANBAN_COLUMN_DIMENSIONS = {
     tablet: 6, // gap-1.5 = 6px
     desktop: 8, // gap-2 = 8px
   },
+  /** Vertical gap (px) between task/event cards in a column. */
+  cardsGapPx: 2,
   padding: {
     mobile: 8, // p-2 = 8px
     tablet: 10, // p-2.5 = 10px

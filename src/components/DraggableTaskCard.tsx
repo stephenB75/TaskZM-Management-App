@@ -35,7 +35,6 @@ import {
   TASK_CARD_HEIGHT_CONFIG,
   TASK_CARD_SPACING,
   TASK_CARD_TEXT,
-  TASK_CARD_BORDERS,
   TASK_CARD_BACKGROUNDS,
   TASK_CARD_WIDTHS,
   TASK_CARD_LINE_CLAMP,
@@ -747,9 +746,8 @@ export const DraggableTaskCard = React.forwardRef<
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Frame: hide by default; show only when expanded (not on hover)
-              !isTodayAgenda && "border-l border-b border-r transition-all duration-200 border-transparent",
-              !isTodayAgenda && isExpanded && `${TASK_CARD_BORDERS.mobile} ${TASK_CARD_BORDERS.desktop}`,
+              // Frame: never show (no border when collapsed or expanded)
+              !isTodayAgenda && "border-l border-b border-r border-transparent transition-all duration-200",
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: minimal padding for collapsed cards
@@ -1249,7 +1247,7 @@ export const DraggableTaskCard = React.forwardRef<
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>{member.name}</p>
-                            <p className={cn("text-xs", TASK_CARD_TEXT_COLORS.assigneeEmail)}>{member.email}</p>
+                            <p className={cn("text-xs", TASK_CARD_TEXT_COLORS.assigneeEmailInTooltip)}>{member.email}</p>
                             {member.teamId && (() => {
                               const team = teams.find(t => t.id === member.teamId);
                               return team ? (

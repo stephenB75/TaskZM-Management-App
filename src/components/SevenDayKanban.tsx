@@ -994,7 +994,7 @@ export function SevenDayKanban({
                           <div
                             className="flex flex-col w-full"
                             style={{
-                              gap: KANBAN_COLUMN_DIMENSIONS.gap.mobile,
+                              gap: KANBAN_COLUMN_DIMENSIONS.cardsGapPx,
                               padding: 0,
                               // No paddingBottom - nav bar clearance handled by spacer in App.tsx
                               minHeight: 0,
@@ -1468,7 +1468,7 @@ export function SevenDayKanban({
                                   <div 
                                     className="flex flex-col w-full"
                                     style={{
-                                      gap: KANBAN_COLUMN_DIMENSIONS.gap.mobile,
+                                      gap: KANBAN_COLUMN_DIMENSIONS.cardsGapPx,
                                       width: '100%',
                                       maxWidth: shouldUseMobileLayout 
                                         ? KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.mobile
