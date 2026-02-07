@@ -410,7 +410,7 @@ export function TodayAgendaView({
   /** Vertical timeline: show all hourly stamps; hide only those strictly inside a task/event block. Label + dot then line from dot to right side of task tab. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, tabAreaWidthPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
       const allSlotMinutes: number[] = [];
       for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
         allSlotMinutes.push(m);
@@ -437,7 +437,6 @@ export function TodayAgendaView({
             })();
         return { minutesFromStart: m, label };
       });
-      const lineWidthPx = columnGapPx + tabAreaWidthPx;
       return (
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
           {/* Timeline: fixed height 7 AM – 12 AM */}
@@ -465,10 +464,10 @@ export function TodayAgendaView({
                 return (
                   <div
                     key={`line-${minutesFromStart}`}
-                    className="absolute left-0 top-0 h-0 border-t border-primary/40"
+                    className="absolute top-0 h-0 border-t border-primary/40"
                     style={{
                       left: -columnGapPx,
-                      width: lineWidthPx,
+                      right: 0,
                       top: topPx,
                       transform: 'translateY(-50%)',
                       zIndex: Z_INDEX.TIMELINE_STAMP_LINE,
