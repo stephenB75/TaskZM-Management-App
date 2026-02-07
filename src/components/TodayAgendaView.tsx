@@ -458,7 +458,7 @@ export function TodayAgendaView({
                 return (
                   <div
                     key={`line-${minutesFromStart}`}
-                    className="absolute left-0 top-0 h-0 border-t border-primary/40 z-0"
+                    className="absolute left-0 top-0 h-0 border-t border-primary/40 z-20"
                     style={{
                       left: -columnGapPx,
                       width: lineWidthPx,
