@@ -2792,7 +2792,7 @@ export function TaskDialog({
                               }}
                               variant="outline"
                               size="sm"
-                              className={cn("shrink min-w-0", TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, TASK_DIALOG_MINIMAL_SPACING.timeRowTogglePadding, "[&>button]:h-8")}
+                              className={cn("shrink min-w-0", TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, TASK_DIALOG_MINIMAL_SPACING.timeRowTogglePadding, TASK_DIALOG_MINIMAL_SPACING.timeRowToggleButtonHeight)}
                             >
                               <ToggleGroupItem value="12hr" aria-label="12-hour format">
                                 12HR
@@ -2932,7 +2932,7 @@ export function TaskDialog({
                                   setScheduledMinutes("");
                                   setScheduledTime("");
                                 }}
-                                className={cn(TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, "px-2 text-xs text-muted-foreground hover:text-foreground shrink-0")}
+                                className={cn(TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, TASK_DIALOG_MINIMAL_SPACING.timeRowClearButtonClass)}
                               >
                                 {TASK_DIALOG_UI_TEXT.clear}
                               </Button>

@@ -231,8 +231,10 @@ export const TASK_DIALOG_MINIMAL_SPACING = {
   scheduleTimeRowMarginLeft: 'ml-0 sm:ml-4',
   // Time row control sizes (compact so row fits without overflow)
   timeRowHeight: 'h-8',
+  timeRowToggleButtonHeight: '[&>button]:h-8', // match timeRowHeight for ToggleGroup inner buttons
   timeRowTogglePadding: '[&>button]:px-2 [&>button]:text-xs',
   timeRowSelectMinWidth: 'min-w-0', // allow selects to shrink; flex-1 shares space
+  timeRowClearButtonClass: 'px-2 text-xs text-muted-foreground hover:text-foreground shrink-0',
   // Close button on gradient panel (position + nav right padding so tabs don't overlap)
   closeButtonPosition: 'absolute top-3 right-3 z-20 rounded-md p-1.5',
   navPaddingRightForClose: 'pr-10',
