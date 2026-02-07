@@ -2669,9 +2669,9 @@ export function TaskDialog({
 
                   {/* Schedule: Date, 12HR/24HR, time, Due date with clear */}
                   <div className="pt-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                       {/* Scheduled: date line + time (12HR/24HR, hour, min, AM/PM, clear) */}
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
                           <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" weight="duotone" />
                           {TASK_DIALOG_UI_TEXT.scheduledSectionTitle}
@@ -2684,30 +2684,13 @@ export function TaskDialog({
                         )}
 
                         {scheduledDate && (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <Label className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
-                                <Icon name="clock" size={ICON_SIZE_XS} />
-                                {TASK_DIALOG_UI_TEXT.timeLabel}
-                              </Label>
-                              {(scheduledHours || scheduledMinutes) && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setScheduledHours("");
-                                    setScheduledMinutes("");
-                                    setScheduledTime("");
-                                  }}
-                                  className="h-6 text-xs text-muted-foreground hover:text-foreground shrink-0"
-                                >
-                                  {TASK_DIALOG_UI_TEXT.clear}
-                                </Button>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full">
-                            {/* Time Format Toggle: switch between 12HR and 24HR */}
+                          <div className="space-y-3">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Icon name="clock" size={ICON_SIZE_XS} />
+                              {TASK_DIALOG_UI_TEXT.timeLabel}
+                            </Label>
+                            {/* Time controls grouped to the right: 12HR/24HR, Hour, Min, AM/PM, Clear */}
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 ml-0 sm:ml-4">
                             <ToggleGroup
                               type="single"
                               value={timeFormat}
@@ -2766,7 +2749,7 @@ export function TaskDialog({
                             </ToggleGroup>
 
                             {/* Hour Select */}
-                            <div className={cn("flex-1 relative z-10", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
+                            <div className={cn("flex-1 min-w-0 relative z-10", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
                               <Select
                                 value={scheduledHours || undefined}
                                 onValueChange={(value) => {
@@ -2808,7 +2791,7 @@ export function TaskDialog({
                             </div>
 
                             {/* Minute Select */}
-                            <div className={cn("flex-1 relative z-20", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
+                            <div className={cn("flex-1 min-w-0 relative z-20", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
                               <Select
                                 value={
                                   scheduledMinutes && scheduledMinutes.length > 0 
@@ -2861,7 +2844,7 @@ export function TaskDialog({
 
                             {/* AM/PM Select (only for 12HR format) */}
                             {timeFormat === "12hr" && (
-                              <div className={cn("flex-1 relative z-10", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
+                              <div className={cn("flex-1 relative z-10 min-w-0", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
                                 <Select
                                   value={timePeriod || "AM"}
                                   onValueChange={(value) => {
@@ -2870,7 +2853,6 @@ export function TaskDialog({
                                     if (scheduledHours && scheduledMinutes) {
                                       updateScheduledTime(scheduledHours, scheduledMinutes, timeFormat, newPeriod);
                                     } else if (scheduledHours) {
-                                      // If only hours are set, update with default minutes
                                       updateScheduledTime(scheduledHours, "00", timeFormat, newPeriod);
                                     }
                                   }}
@@ -2885,13 +2867,29 @@ export function TaskDialog({
                                 </Select>
                               </div>
                             )}
+                            {/* Clear time: grouped with time controls on the right */}
+                            {(scheduledHours || scheduledMinutes) && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setScheduledHours("");
+                                  setScheduledMinutes("");
+                                  setScheduledTime("");
+                                }}
+                                className="h-9 sm:h-10 px-3 text-xs sm:text-sm text-muted-foreground hover:text-foreground shrink-0"
+                              >
+                                {TASK_DIALOG_UI_TEXT.clear}
+                              </Button>
+                            )}
                             </div>
                           </div>
                         )}
                       </div>
 
                       {/* Due Date: label, clear when set, input shows selected date */}
-                      <div className="space-y-2 sm:space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center justify-between gap-2 min-w-0">
                           <Label className="text-sm font-semibold flex items-center gap-2 shrink-0">
                             <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-primary" />
