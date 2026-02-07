@@ -787,9 +787,9 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {isTodayAgenda ? (
             <>
-              {/* Today Agenda: single inline tab + headline only; tab wide enough to fit all elements */}
+              {/* Today Agenda: single inline tab + headline only; tab not constrained so time/priority/tag/duration aren’t cut off */}
               <div
-                className="flex items-center gap-2 rounded-lg flex-shrink-0 min-w-max w-full max-w-full"
+                className="flex items-center gap-2 rounded-lg flex-shrink-0 min-w-max"
                 style={{
                   backgroundColor: getPriorityTabBackgroundColor(task.priority),
                   minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
@@ -797,7 +797,7 @@ export const DraggableTaskCard = React.forwardRef<
                   paddingBottom: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
                   paddingLeft: TODAY_AGENDA_TIMELINE.tabPaddingPx,
                   paddingRight: TODAY_AGENDA_TIMELINE.tabPaddingPx,
-                  minWidth: 'max-content', // Ensure tab is wide enough so duration/tag are not cut off
+                  minWidth: 'max-content',
                 }}
               >
                 <Icon

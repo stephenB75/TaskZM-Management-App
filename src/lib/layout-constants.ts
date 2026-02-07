@@ -234,8 +234,8 @@ export const TODAY_AGENDA_TIMELINE = {
   tabHeightPx: 40,
   /** Horizontal padding (px) for Today Agenda card content (left). */
   cardPaddingLeftPx: 8,
-  /** Horizontal padding (px) for Today Agenda card content (right). */
-  cardPaddingRightPx: 16,
+  /** Horizontal padding (px) for Today Agenda card content (right) – enough so tab/headline aren’t cut off. */
+  cardPaddingRightPx: 24,
   /** Horizontal padding (px) for Today Agenda tab bar. */
   tabPaddingPx: 8,
   /** Vertical padding (px) for Today Agenda tab bar. */

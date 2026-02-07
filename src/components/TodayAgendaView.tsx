@@ -410,8 +410,8 @@ export function TodayAgendaView({
                 );
               })}
             </div>
-            {/* Right: task/event blocks positioned by time and duration */}
-            <div className="flex-1 min-w-0 relative pl-2" style={{ marginLeft: columnGapPx }}>
+            {/* Right: task/event blocks positioned by time and duration; right padding so tab/headline aren’t cut off */}
+            <div className="flex-1 min-w-0 relative pl-2 pr-6" style={{ marginLeft: columnGapPx }}>
               {currentTimeTopPx != null && (
                 <div
                   className="absolute left-0 right-0 h-0.5 bg-primary z-10"
@@ -426,7 +426,7 @@ export function TodayAgendaView({
                 return (
                   <div
                     key={key}
-                    className="absolute left-0 right-0 overflow-hidden"
+                    className="absolute left-0 right-0 overflow-visible"
                     style={{
                       top: topPx + paddingTop,
                       height: Math.max(minBlockHeightPx, heightPx - paddingTop),
@@ -490,7 +490,7 @@ export function TodayAgendaView({
                         <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
+                    <div className="flex-1 min-w-0 w-full pr-6" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx }}>
                       {item.type === 'task' && item.task ? (
                         <div data-task-id={item.task.id} className="w-full">
                           <div className="w-full min-w-full" style={{ ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1 ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' } : {}) }}>
