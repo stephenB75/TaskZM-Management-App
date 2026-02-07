@@ -2104,7 +2104,7 @@ export function TaskDialog({
       <DialogContent
         hideCloseButton
         className={cn(
-          "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 !border-0 !bg-transparent !shadow-none sm:!shadow-xl",
+          "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 !border-0 !bg-transparent ![background-image:none] !shadow-none sm:!shadow-xl",
           TASK_DIALOG_COLORS.dialogMaxWidth,
           "text-foreground dark:text-foreground"
         )}
