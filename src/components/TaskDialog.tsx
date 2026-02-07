@@ -2744,7 +2744,7 @@ export function TaskDialog({
                             <Icon name="clock" size={ICON_SIZE_XS} />
                             {TASK_DIALOG_UI_TEXT.timeLabel}
                           </Label>
-                          <div className={cn("flex flex-nowrap items-center w-full min-w-0 overflow-x-auto", TASK_DIALOG_MINIMAL_SPACING.scheduleTimeRowGap)}>
+                          <div className={cn("flex flex-nowrap items-center w-full min-w-0", TASK_DIALOG_MINIMAL_SPACING.scheduleTimeRowGapCompact)}>
                             <ToggleGroup
                               type="single"
                               value={timeFormat}
@@ -2792,7 +2792,7 @@ export function TaskDialog({
                               }}
                               variant="outline"
                               size="sm"
-                              className="flex-shrink-0 h-9 sm:h-10 [&>button]:h-9 [&>button]:sm:h-10 [&>button]:px-3 [&>button]:sm:px-4 [&>button]:text-xs [&>button]:sm:text-sm"
+                              className={cn("shrink min-w-0", TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, TASK_DIALOG_MINIMAL_SPACING.timeRowTogglePadding, "[&>button]:h-8")}
                             >
                               <ToggleGroupItem value="12hr" aria-label="12-hour format">
                                 12HR
@@ -2803,7 +2803,7 @@ export function TaskDialog({
                             </ToggleGroup>
 
                             {/* Hour Select */}
-                            <div className={cn("flex-1 min-w-0 relative z-10", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
+                            <div className={cn("flex-1 min-w-0 relative z-10", TASK_DIALOG_MINIMAL_SPACING.timeRowSelectMinWidth)}>
                               <Select
                                 value={scheduledHours || undefined}
                                 onValueChange={(value) => {
@@ -2818,7 +2818,7 @@ export function TaskDialog({
                                   }
                                 }}
                               >
-                                <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-9 sm:h-10 text-sm cursor-pointer rounded-lg")}>
+                                <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, "text-xs cursor-pointer rounded-lg min-w-0")}>
                                   <SelectValue placeholder="Hour" />
                                 </SelectTrigger>
                                 <SelectContent 
@@ -2845,7 +2845,7 @@ export function TaskDialog({
                             </div>
 
                             {/* Minute Select */}
-                            <div className={cn("flex-1 min-w-0 relative z-20", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
+                            <div className={cn("flex-1 min-w-0 relative z-20", TASK_DIALOG_MINIMAL_SPACING.timeRowSelectMinWidth)}>
                               <Select
                                 value={
                                   scheduledMinutes && scheduledMinutes.length > 0 
@@ -2871,7 +2871,7 @@ export function TaskDialog({
                                 disabled={false}
                               >
                                 <SelectTrigger 
-                                  className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-9 sm:h-10 text-sm cursor-pointer pointer-events-auto rounded-lg")}
+                                  className={cn(TASK_DIALOG_COLORS.inputFieldBg, TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, "text-xs cursor-pointer pointer-events-auto rounded-lg min-w-0")}
                                   aria-label="Select minutes"
                                 >
                                   <SelectValue placeholder="Min" />
@@ -2898,7 +2898,7 @@ export function TaskDialog({
 
                             {/* AM/PM Select (only for 12HR format) */}
                             {timeFormat === "12hr" && (
-                              <div className={cn("flex-1 relative z-10 min-w-0", COMPONENT_DIMENSIONS.taskDialog.minWidth.combined)}>
+                              <div className={cn("flex-1 relative z-10 min-w-0", TASK_DIALOG_MINIMAL_SPACING.timeRowSelectMinWidth)}>
                                 <Select
                                   value={timePeriod || "AM"}
                                   onValueChange={(value) => {
@@ -2911,7 +2911,7 @@ export function TaskDialog({
                                     }
                                   }}
                                 >
-                                  <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-9 sm:h-10 text-sm cursor-pointer rounded-lg")}>
+                                  <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, "text-xs cursor-pointer rounded-lg min-w-0")}>
                                     <SelectValue placeholder="AM/PM" />
                                   </SelectTrigger>
                                   <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
@@ -2932,7 +2932,7 @@ export function TaskDialog({
                                   setScheduledMinutes("");
                                   setScheduledTime("");
                                 }}
-                                className="h-9 sm:h-10 px-3 text-xs sm:text-sm text-muted-foreground hover:text-foreground shrink-0"
+                                className={cn(TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, "px-2 text-xs text-muted-foreground hover:text-foreground shrink-0")}
                               >
                                 {TASK_DIALOG_UI_TEXT.clear}
                               </Button>
