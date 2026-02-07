@@ -182,6 +182,10 @@ export const TASK_DIALOG_COLORS = {
   footerCreate: 'bg-primary text-primary-foreground hover:bg-primary/90',
   // Text fields: distinct background so user input is easy to read on the gradient
   inputFieldBg: '!bg-slate-50 dark:!bg-gray-800 border border-primary/25 shadow-sm placeholder:text-muted-foreground/70',
+  /** First layer (behind): menu strip with Task Info, Schedule, Organize */
+  menuLayerBg: 'bg-background dark:bg-gray-900',
+  /** Second layer (in front): content card with form; warm surface */
+  contentCardBg: '!bg-gradient-to-b !from-[#FFEEB2] !via-amber-50/90 !to-white dark:!from-amber-950/60 dark:!via-amber-950/30 dark:!to-gray-900',
 } as const;
 
 // Menu Dimensions
