@@ -1365,13 +1365,14 @@ export function TaskDialog({
       
       // Check recurring tasks limit for Pro Monthly (5 active recurring tasks)
       if (features.recurringTasksLimit !== undefined) {
-        // Count active recurring tasks (excluding the current task if editing)
+        // Count active recurring tasks (excluding the current series if editing)
+        const currentBaseId = task?.id ? getBaseTaskId(task.id) : null;
         const activeRecurringTasks = Array.isArray(tasks) ? tasks.filter(t => 
           t && 
           t.recurrence && 
           t.recurrence.type !== 'none' && 
           t.status !== 'done' &&
-          t.id !== task?.id // Exclude current task if editing
+          getBaseTaskId(t.id) !== currentBaseId // Exclude current task's series if editing
         ) : [];
         
         if (activeRecurringTasks.length >= features.recurringTasksLimit) {
@@ -1834,17 +1835,21 @@ export function TaskDialog({
       occurrenceDateStr = occurrenceDateStr ?? getOccurrenceDateFromTaskId(task.id);
       const isRecurringWithOccurrence = baseTask.recurrence?.type !== 'none' && occurrenceDateStr;
       if (isRecurringWithOccurrence) {
+        // 1. Update the series (base task) with full form data so user edits (title, recurrence pattern, etc.) are saved.
+        // Keep the base task's scheduledDate (series reference) so we don't overwrite it with this occurrence's date.
+        const baseTaskData = { ...taskData, scheduledDate: baseTask.scheduledDate ?? taskData.scheduledDate };
+        await updateTask(baseTaskId, baseTaskData);
+        // 2. Update this occurrence's subtasks and scheduled time for that day only
         const occurrenceSubtaskId = `${baseTaskId}_subtasks_${occurrenceDateStr}`;
         const occurrenceScheduled = finalScheduledDate ? new Date(finalScheduledDate) : (task.scheduledDate ? new Date(task.scheduledDate) : new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX));
         const occurrenceDateOnly = new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX);
         occurrenceDateOnly.setHours(occurrenceScheduled.getHours(), occurrenceScheduled.getMinutes(), occurrenceScheduled.getSeconds(), occurrenceScheduled.getMilliseconds());
         await updateTask(occurrenceSubtaskId, {
-          ...taskData,
           subtasks,
           recurrence: { type: 'none', interval: 1 },
           scheduledDate: occurrenceDateOnly.toISOString(),
         });
-        savedTask = { ...task, ...taskData, id: occurrenceSubtaskId, subtasks } as Task;
+        savedTask = { ...baseTask, ...taskData, id: baseTaskId, subtasks } as Task;
       } else {
         await updateTask(task.id, taskData);
         savedTask = { ...task, ...taskData } as Task;
