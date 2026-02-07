@@ -92,6 +92,26 @@ interface TaskDialogProps {
   onShowUpgradePrompt?: (feature: 'recurringTasks' | 'taskDependencies' | 'taskTemplates') => void;
 }
 
+/** Recurring tasks can be opened as base task (id) or occurrence (baseId_subtasks_YYYY-MM-DD / baseId_completed_YYYY-MM-DD). Always use base id for occurrence logic. */
+function getBaseTaskId(taskId: string): string {
+  if (taskId.includes('_subtasks_')) return taskId.split('_subtasks_')[0];
+  if (taskId.includes('_completed_')) return taskId.split('_completed_')[0];
+  return taskId;
+}
+
+/** Extract occurrence date from occurrence-style task id when present. */
+function getOccurrenceDateFromTaskId(taskId: string): string | undefined {
+  if (taskId.includes('_subtasks_')) {
+    const part = taskId.split('_subtasks_')[1];
+    return part && /^\d{4}-\d{2}-\d{2}$/.test(part) ? part : undefined;
+  }
+  if (taskId.includes('_completed_')) {
+    const part = taskId.split('_completed_')[1];
+    return part && /^\d{4}-\d{2}-\d{2}$/.test(part) ? part : undefined;
+  }
+  return undefined;
+}
+
 // Fixed Mini Calendar Component - Always visible
 function FixedMiniCalendar({
   scheduledDate,
@@ -927,17 +947,26 @@ export function TaskDialog({
           setFolderId(null);
         }
         setTags(taskTags);
-        // For recurring tasks, load subtasks per occurrence so toggling only affects this occurrence, not the series
-        const occurrenceDateStr = initialDate ? getDateString(new Date(initialDate)) : (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
-        const isRecurring = task.recurrence && task.recurrence.type !== 'none';
+        // For recurring tasks, load subtasks per occurrence so toggling only affects this occurrence, not the series.
+        // Use base task id so we don't double-append _subtasks_ when the opened task is already an occurrence (e.g. baseId_subtasks_YYYY-MM-DD).
+        const baseTaskId = getBaseTaskId(task.id);
+        const baseTask = tasks.find((t) => t.id === baseTaskId) || task;
+        let occurrenceDateStr: string | undefined;
+        try {
+          occurrenceDateStr = initialDate ? getDateString(new Date(initialDate)) : (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+        } catch {
+          occurrenceDateStr = undefined;
+        }
+        occurrenceDateStr = occurrenceDateStr ?? getOccurrenceDateFromTaskId(task.id);
+        const isRecurring = baseTask.recurrence && baseTask.recurrence.type !== 'none';
         if (isRecurring && occurrenceDateStr) {
-          const occurrenceSubtaskId = `${task.id}_subtasks_${occurrenceDateStr}`;
+          const occurrenceSubtaskId = `${baseTaskId}_subtasks_${occurrenceDateStr}`;
           const occurrenceSubtaskTask = tasks.find((t) => t.id === occurrenceSubtaskId);
           if (occurrenceSubtaskTask && Array.isArray(occurrenceSubtaskTask.subtasks)) {
             setSubtasks(occurrenceSubtaskTask.subtasks);
           } else {
             // No saved state for this occurrence: show same subtask list but all unchecked
-            const baseSubtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
+            const baseSubtasks = Array.isArray(baseTask.subtasks) ? baseTask.subtasks : [];
             setSubtasks(baseSubtasks.map((st) => ({ ...st, completed: false })));
           }
         } else {
@@ -958,15 +987,16 @@ export function TaskDialog({
         }
         setDependencies(Array.isArray(task.dependencies) ? task.dependencies : []);
 
-        // Set recurrence values with safe defaults
+        // Set recurrence values with safe defaults (use base task so occurrence tasks show series recurrence)
         let recurrence: RecurrenceConfig;
-        if (task.recurrence && typeof task.recurrence === 'object') {
+        const recurrenceSource = baseTask.recurrence && typeof baseTask.recurrence === 'object' ? baseTask.recurrence : null;
+        if (recurrenceSource) {
           recurrence = {
-            type: (task.recurrence.type && typeof task.recurrence.type === 'string') ? task.recurrence.type : 'none',
-            interval: (typeof task.recurrence.interval === 'number' && task.recurrence.interval > 0) ? task.recurrence.interval : 1,
-            daysOfWeek: Array.isArray(task.recurrence.daysOfWeek) ? task.recurrence.daysOfWeek : undefined,
-            dayOfMonth: (typeof task.recurrence.dayOfMonth === 'number') ? task.recurrence.dayOfMonth : undefined,
-            endDate: task.recurrence.endDate || null,
+            type: (recurrenceSource.type && typeof recurrenceSource.type === 'string') ? recurrenceSource.type : 'none',
+            interval: (typeof recurrenceSource.interval === 'number' && recurrenceSource.interval > 0) ? recurrenceSource.interval : 1,
+            daysOfWeek: Array.isArray(recurrenceSource.daysOfWeek) ? recurrenceSource.daysOfWeek : undefined,
+            dayOfMonth: (typeof recurrenceSource.dayOfMonth === 'number') ? recurrenceSource.dayOfMonth : undefined,
+            endDate: recurrenceSource.endDate || null,
           };
         } else {
           recurrence = { type: 'none', interval: 1 };
@@ -1791,11 +1821,20 @@ export function TaskDialog({
     // No conflict, proceed with submission
     let savedTask: Task;
     if (task) {
-      // For recurring tasks opened from a specific day, save subtasks only to that occurrence so the series is unaffected
-      const occurrenceDateStr = initialDate ? getDateString(new Date(initialDate)) : (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
-      const isRecurringWithOccurrence = task.recurrence?.type !== 'none' && occurrenceDateStr;
+      // For recurring tasks opened from a specific day, save subtasks only to that occurrence so the series is unaffected.
+      // Use base task id so we don't build wrong ids when the opened task is an occurrence (e.g. baseId_subtasks_YYYY-MM-DD).
+      const baseTaskId = getBaseTaskId(task.id);
+      const baseTask = tasks.find((t) => t.id === baseTaskId) || task;
+      let occurrenceDateStr: string | undefined;
+      try {
+        occurrenceDateStr = initialDate ? getDateString(new Date(initialDate)) : (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+      } catch {
+        occurrenceDateStr = undefined;
+      }
+      occurrenceDateStr = occurrenceDateStr ?? getOccurrenceDateFromTaskId(task.id);
+      const isRecurringWithOccurrence = baseTask.recurrence?.type !== 'none' && occurrenceDateStr;
       if (isRecurringWithOccurrence) {
-        const occurrenceSubtaskId = `${task.id}_subtasks_${occurrenceDateStr}`;
+        const occurrenceSubtaskId = `${baseTaskId}_subtasks_${occurrenceDateStr}`;
         const occurrenceScheduled = finalScheduledDate ? new Date(finalScheduledDate) : (task.scheduledDate ? new Date(task.scheduledDate) : new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX));
         const occurrenceDateOnly = new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX);
         occurrenceDateOnly.setHours(occurrenceScheduled.getHours(), occurrenceScheduled.getMinutes(), occurrenceScheduled.getSeconds(), occurrenceScheduled.getMilliseconds());

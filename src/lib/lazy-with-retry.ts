@@ -5,8 +5,8 @@
  */
 import { lazy, type LazyExoticComponent, type ComponentType } from 'react';
 
-const RETRY_COUNT = 2;
-const RETRY_DELAY_MS = 1500;
+const RETRY_COUNT = 3;
+const RETRY_DELAY_MS = 2000;
 
 function isChunkLoadError(error: unknown): boolean {
   if (error instanceof TypeError) {

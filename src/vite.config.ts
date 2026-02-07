@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     optimizeDeps: {
-      include: ['react', 'react-dom', 'phosphor-react'],
+      include: ['react', 'react-dom', 'phosphor-react', 'motion'],
       esbuildOptions: {
         define: { global: 'globalThis' },
       },
@@ -106,10 +106,9 @@ export default defineConfig(({ mode }) => {
           if (id.includes('phosphor-react')) {
             return 'phosphor';
           }
-          // Motion library
-          if (id.includes('node_modules/motion')) {
-            return 'motion';
-          }
+          // Do NOT split motion into its own chunk: lazy-loaded chunks (e.g. AuthenticatedAppProviders)
+          // depend on it; a separate motion-[hash].js can 404 after deploy (stale cache) and cause
+          // "Importing a module script failed". Let Vite bundle motion with the chunks that use it.
           // UI libraries
           if (id.includes('@radix-ui')) {
             return 'ui';
@@ -121,6 +120,7 @@ export default defineConfig(({ mode }) => {
         chunkFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'vendor') return 'assets/vendor-[hash].js';
           if (chunkInfo.name === 'phosphor') return 'assets/phosphor-[hash].js';
+          // motion no longer has its own chunk
           return 'assets/[name]-[hash].js';
         },
       },
