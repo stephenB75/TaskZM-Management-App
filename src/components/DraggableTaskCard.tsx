@@ -743,13 +743,11 @@ export const DraggableTaskCard = React.forwardRef<
             className={cn(
               "relative box-border flex flex-col",
               "overflow-visible", // Never clip tab; allow full tab content to show
-              "rounded-t-none rounded-b-lg",
-              isExpanded && "rounded-b-none", // Remove bottom radius when expanded
+              // Rounded only on Today Agenda; full card uses bordered wrapper below tab
+              isTodayAgenda && "rounded-lg",
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Card body: thin solid black border L/B/R only; no background; border meets tab
-              !isTodayAgenda && TASK_CARD_BORDERS.cardBody,
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: minimal padding for collapsed cards
@@ -935,6 +933,8 @@ export const DraggableTaskCard = React.forwardRef<
                 )}
               </div>
 
+          {/* Bordered content area: border lays behind tab, starts where tab ends (L/B/R only) */}
+          <div className={cn("flex flex-col flex-1 min-w-0", "rounded-b-lg", isExpanded && "rounded-b-none", TASK_CARD_BORDERS.cardBody)}>
           {/* Headline (Title) - Mark complete at start, then title */}
           <div className={cn("flex items-start px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
             <button
@@ -1267,6 +1267,7 @@ export const DraggableTaskCard = React.forwardRef<
             </div>
           </div>
           )}
+          </div>
             </>
           )}
 
