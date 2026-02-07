@@ -921,6 +921,9 @@ export const TASK_CARD_TIMELINE = {
     // Space between Next Up badge and task card (Today Agenda panel)
     badgeMarginBottom: 'mb-2', // 8px - compact spacing
   },
+  /** Today Agenda compact row: checkbox and headline size (px). */
+  todayAgendaCheckboxSize: 18,
+  todayAgendaHeadlineFontSizePx: 15,
   scale: {
     dragging: 'scale-95', // scale-95 for dragging state
     draggingKanban: 'scale-95', // scale-95 for Kanban dragging state

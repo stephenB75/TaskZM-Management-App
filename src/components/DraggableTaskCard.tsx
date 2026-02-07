@@ -758,7 +758,7 @@ export const DraggableTaskCard = React.forwardRef<
           style={{
             // Today Agenda: compact row, no gray background; add horizontal padding so tab/headline aren't flush to panel.
             ...(isTodayAgenda
-              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent', border: 'none', boxShadow: 'none', paddingLeft: 8, paddingRight: 16 }
+              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent', border: 'none', boxShadow: 'none', paddingLeft: TODAY_AGENDA_TIMELINE.cardPaddingLeftPx, paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx }
               : {
                   height: isExpanded ? 'auto' : `${cardHeight}px`,
                   minHeight: isExpanded ? 'auto' : `${cardHeight}px`,
@@ -795,10 +795,10 @@ export const DraggableTaskCard = React.forwardRef<
                 style={{
                   backgroundColor: getPriorityTabBackgroundColor(task.priority),
                   minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
-                  paddingTop: 6,
-                  paddingBottom: 6,
-                  paddingLeft: 8,
-                  paddingRight: 8,
+                  paddingTop: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
+                  paddingBottom: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
+                  paddingLeft: TODAY_AGENDA_TIMELINE.tabPaddingPx,
+                  paddingRight: TODAY_AGENDA_TIMELINE.tabPaddingPx,
                   minWidth: 'max-content', // Ensure tab is wide enough so duration/tag are not cut off
                 }}
               >
@@ -862,7 +862,7 @@ export const DraggableTaskCard = React.forwardRef<
                 >
                   <Icon
                     name="circle"
-                    size={18}
+                    size={TASK_CARD_TIMELINE.todayAgendaCheckboxSize}
                     className={cn(
                       "transition-colors flex-shrink-0",
                       isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
@@ -873,7 +873,7 @@ export const DraggableTaskCard = React.forwardRef<
                 </button>
                 <h3
                   className={cn("font-bold leading-tight flex-1 min-w-0 line-clamp-2", TASK_CARD_TEXT_COLORS.title)}
-                  style={{ fontSize: '15px' }}
+                  style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgendaHeadlineFontSizePx}px` }}
                 >
                   {task.title}
                 </h3>

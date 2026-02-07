@@ -223,6 +223,14 @@ export const TODAY_AGENDA_TIMELINE = {
   taskRowHeightPx: 80,
   /** Tab bar height (px) for compact agenda row. */
   tabHeightPx: 40,
+  /** Horizontal padding (px) for Today Agenda card content (left). */
+  cardPaddingLeftPx: 8,
+  /** Horizontal padding (px) for Today Agenda card content (right). */
+  cardPaddingRightPx: 16,
+  /** Horizontal padding (px) for Today Agenda tab bar. */
+  tabPaddingPx: 8,
+  /** Vertical padding (px) for Today Agenda tab bar. */
+  tabPaddingVerticalPx: 6,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 
