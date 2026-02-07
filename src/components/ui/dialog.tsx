@@ -49,10 +49,14 @@ const DialogOverlay = React.forwardRef<
 
 DialogOverlay.displayName = "DialogOverlay";
 
+type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+  hideCloseButton?: boolean;
+};
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  DialogContentProps
+>(({ className, children, hideCloseButton, ...props }, ref) => (
   <DialogPortal data-slot="dialog-portal">
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -76,6 +80,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
+      {!hideCloseButton && (
       <DialogPrimitive.Close 
         className={cn(
           "ring-offset-background focus:ring-ring absolute rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none text-foreground/70 hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 flex items-center justify-center p-0",
@@ -110,6 +115,7 @@ const DialogContent = React.forwardRef<
         />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
+      )}
     </DialogPrimitive.Content>
   </DialogPortal>
 ));

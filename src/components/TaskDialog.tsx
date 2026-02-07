@@ -2101,19 +2101,31 @@ export function TaskDialog({
         }
       }}
     >
-      <DialogContent className={cn(
-        "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 !border-0 !bg-transparent shadow-xl",
-        TASK_DIALOG_COLORS.dialogMaxWidth,
-        "text-foreground dark:text-foreground"
-      )}>
-        {/* Single panel: menu row at top, content below (no white box, no chevrons) */}
+      <DialogContent
+        hideCloseButton
+        className={cn(
+          "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 !border-0 !bg-transparent !shadow-none sm:!shadow-xl",
+          TASK_DIALOG_COLORS.dialogMaxWidth,
+          "text-foreground dark:text-foreground"
+        )}
+      >
+        {/* Single panel: yellow gradient only (no outer white box); close on panel */}
         <div className={cn(
-          "flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl",
+          "relative flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl shadow-xl",
           TASK_DIALOG_COLORS.contentCardBg,
           TASK_DIALOG_MINIMAL_SPACING.dialogInnerPadding
         )}>
-          {/* Tabs at top - no chevrons, no duplicate Task Info */}
-          <nav className="flex flex-row items-center gap-1 pb-3 border-b border-border/50 mb-3" aria-label="Task sections">
+          {/* Close button on yellow gradient panel */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-3 right-3 z-20 rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
+            aria-label="Close"
+          >
+            <Icon name="x" size={ICON_SIZE_MD} aria-hidden />
+          </button>
+          {/* Tabs at top */}
+          <nav className="flex flex-row items-center gap-1 pb-3 border-b border-border/50 mb-3 pr-10" aria-label="Task sections">
             <button
               type="button"
               onClick={() => setActiveTab('basic')}
@@ -2657,8 +2669,8 @@ export function TaskDialog({
                               <Icon name="clock" size={ICON_SIZE_XS} />
                               {TASK_DIALOG_UI_TEXT.timeLabel}
                             </Label>
-                            {/* Time section inline: 12HR/24HR, Hour, Min, AM/PM, Clear on one row */}
-                            <div className="flex flex-nowrap items-center gap-2 sm:gap-3 min-w-0 overflow-x-auto">
+                            {/* Time section full width, inline: 12HR/24HR, Hour, Min, AM/PM, Clear */}
+                            <div className="flex flex-nowrap items-center gap-2 sm:gap-3 w-full min-w-0 overflow-x-auto">
                             <ToggleGroup
                               type="single"
                               value={timeFormat}
