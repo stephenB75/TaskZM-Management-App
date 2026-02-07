@@ -76,6 +76,25 @@ export const TASK_CARD_PRIORITY_COLORS = {
 /** Dark gray for priority badge text on white when priority is default (light gray would be hard to see) */
 export const TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR = '#374151'; // gray-700
 
+/** Priority key for lookup in TASK_CARD_PRIORITY_COLORS */
+type PriorityKey = keyof typeof TASK_CARD_PRIORITY_COLORS;
+
+/**
+ * Today Agenda time block styling: background tint and left accent color from priority.
+ * Used by the block wrapper so the full duration is visible without changing the card.
+ */
+export function getTodayAgendaBlockColors(
+  priority: string | undefined,
+  tintOpacity: number
+): { backgroundColor: string; accentColor: string } {
+  const key: PriorityKey = (priority && priority in TASK_CARD_PRIORITY_COLORS ? priority : 'default') as PriorityKey;
+  const lineColor = TASK_CARD_PRIORITY_COLORS[key].line;
+  return {
+    backgroundColor: getColorWithOpacity(lineColor, tintOpacity),
+    accentColor: lineColor,
+  };
+}
+
 /** Month calendar view: task card border + background per priority (adjusted for visibility) */
 export const MONTH_VIEW_TASK_PRIORITY_STYLES = {
   urgent: 'border-l-red-400 bg-red-50 dark:bg-red-950/35',

@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
-import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE } from "../lib/task-card-constants";
+import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE, getTodayAgendaBlockColors } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
@@ -423,14 +423,24 @@ export function TodayAgendaView({
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
                 const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
                 const paddingTop = rowPaddingTopPx + (isNextUp ? nextUpBadgeOffsetPx : 0);
+                const isTask = item.type === 'task' && item.task;
+                const blockStyle = isTask
+                  ? getTodayAgendaBlockColors(item.task!.priority, TODAY_AGENDA_TIMELINE.blockTintOpacity)
+                  : null;
                 return (
                   <div
                     key={key}
-                    className="absolute left-0 right-0 overflow-visible"
+                    className="absolute left-0 right-0 overflow-visible rounded-r"
                     style={{
                       top: topPx + paddingTop,
                       height: Math.max(minBlockHeightPx, heightPx - paddingTop),
                       minHeight: minBlockHeightPx,
+                      ...(blockStyle
+                        ? {
+                            backgroundColor: blockStyle.backgroundColor,
+                            borderLeft: `${TODAY_AGENDA_TIMELINE.blockAccentWidthPx}px solid ${blockStyle.accentColor}`,
+                          }
+                        : {}),
                     }}
                   >
                     {item.type === 'task' && item.task ? (
