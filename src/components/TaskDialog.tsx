@@ -2106,12 +2106,12 @@ export function TaskDialog({
         TASK_DIALOG_COLORS.dialogMaxWidth,
         "text-foreground dark:text-foreground"
       )}>
-        {/* Two-layer layout: layer 1 = menu (behind), layer 2 = content card (in front) */}
-        <div className="flex-1 flex flex-col sm:flex-row min-h-0 overflow-hidden rounded-2xl">
-          {/* Layer 1: Menu selections - Task Info, Schedule, Organize (behind) */}
+        {/* Two-layer layout: layer 1 = menu options (behind), layer 2 = content selections (in front, overlapping) */}
+        <div className="flex-1 flex flex-col sm:flex-row min-h-0 overflow-visible rounded-2xl relative">
+          {/* Layer 1: Menu options - Task Info, Schedule, Organize (first layer, behind) */}
           <div
             className={cn(
-              "flex flex-col shrink-0 w-full sm:w-48 lg:w-56 border-b sm:border-b-0 sm:border-r border-border",
+              "flex flex-col shrink-0 w-full sm:w-48 lg:w-56 border-b sm:border-b-0 sm:border-r border-border relative z-0",
               TASK_DIALOG_COLORS.menuLayerBg,
               "pt-4 px-3 pb-3 sm:pt-5 sm:px-4 sm:pb-4"
             )}
@@ -2161,8 +2161,13 @@ export function TaskDialog({
             </nav>
           </div>
 
-          {/* Layer 2: Content options - form card (in front, warm surface) */}
-          <div className={cn("flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden rounded-b-2xl sm:rounded-b-none sm:rounded-r-2xl", TASK_DIALOG_COLORS.contentCardBg, TASK_DIALOG_MINIMAL_SPACING.dialogInnerPadding)}>
+          {/* Layer 2: Content selections - form card (second layer, in front; overlaps menu) */}
+          <div className={cn(
+            "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden relative z-10 shadow-lg",
+            "rounded-b-2xl sm:rounded-b-none sm:rounded-r-2xl sm:rounded-l-xl sm:-ml-6",
+            TASK_DIALOG_COLORS.contentCardBg,
+            TASK_DIALOG_MINIMAL_SPACING.dialogInnerPadding
+          )}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
