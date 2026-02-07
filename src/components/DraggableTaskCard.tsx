@@ -787,7 +787,8 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {isTodayAgenda ? (
             <>
-              {/* Today Agenda: single inline tab + headline only; tab not constrained so time/priority/tag/duration aren’t cut off */}
+              {/* Today Agenda: tab top-centered in block, then headline */}
+              <div className="w-full flex justify-center flex-shrink-0">
               <div
                 className="flex items-center gap-2 rounded-lg flex-shrink-0 min-w-max"
                 style={{
@@ -849,6 +850,7 @@ export const DraggableTaskCard = React.forwardRef<
                     weight="duotone"
                   />
                 )}
+              </div>
               </div>
               <div className={cn("flex items-start gap-1.5 pt-1.5", isMobile ? "pb-1" : "pb-1.5")}>
                 <button
