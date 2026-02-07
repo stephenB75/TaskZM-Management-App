@@ -602,8 +602,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         }
       }
       
-      // Always use findNextAvailableSlot to find the best available slot
-      // This ensures we find slots between existing tasks and respect current time
+      // Always use findNextAvailableSlot so Today Agenda task blocks never overlap
+      // (assigns a conflict-free timeslot; TodayAgendaView also runs reorganizeAllTasksForDate to fix any existing overlaps)
       const finalTime = findNextAvailableSlot(
         taskId,
         requestedTime,

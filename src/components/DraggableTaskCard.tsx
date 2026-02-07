@@ -86,6 +86,8 @@ interface DraggableTaskCardProps {
   isNextUp?: boolean;
   /** Called when task is marked complete; pass card element for confetti origin. */
   onComplete?: (originElement?: HTMLElement | null) => void;
+  /** When set, card height is forced to this (px) so it aligns with Today Agenda vertical timeline duration. */
+  timelineBlockHeightPx?: number;
 }
 
 export const DraggableTaskCard = React.forwardRef<
@@ -93,7 +95,7 @@ export const DraggableTaskCard = React.forwardRef<
   DraggableTaskCardProps
 >(
   (
-    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete },
+    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx },
     forwardedRef,
   ) => {
     const isTodayAgenda = droppableId === 'today-agenda';
@@ -754,9 +756,19 @@ export const DraggableTaskCard = React.forwardRef<
               isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
             )}
           style={{
-            // Today Agenda: compact row, no gray background; add horizontal padding so tab/headline aren't flush to panel.
+            // Today Agenda: compact row, or fill timeline block height when timelineBlockHeightPx is set (aligns card to vertical timeline).
             ...(isTodayAgenda
-              ? { minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx, boxSizing: 'border-box', flexShrink: 0, background: 'transparent', border: 'none', boxShadow: 'none', paddingLeft: TODAY_AGENDA_TIMELINE.cardPaddingLeftPx, paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx }
+              ? {
+                  minHeight: timelineBlockHeightPx != null ? timelineBlockHeightPx : TODAY_AGENDA_TIMELINE.taskRowHeightPx,
+                  ...(timelineBlockHeightPx != null ? { height: timelineBlockHeightPx, maxHeight: timelineBlockHeightPx } : {}),
+                  boxSizing: 'border-box',
+                  flexShrink: 0,
+                  background: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  paddingLeft: TODAY_AGENDA_TIMELINE.cardPaddingLeftPx,
+                  paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx,
+                }
               : {
                   height: isExpanded ? 'auto' : `${cardHeight}px`,
                   minHeight: isExpanded ? 'auto' : `${cardHeight}px`,

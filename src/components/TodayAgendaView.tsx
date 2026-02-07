@@ -27,6 +27,7 @@ import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
+import { reorganizeAllTasksForDate } from "../lib/time-conflict";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
 
@@ -298,6 +299,31 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks]);
 
+  // Ensure today's task blocks don't overlap and have proper timeslots:
+  // - DragDropContext uses findNextAvailableSlot when dropping on Today Agenda (task-to-task + optional calendar).
+  // - TaskDialog uses checkTimeConflict + findNextAvailableSlot on save.
+  // - This effect fixes any existing overlaps (e.g. from sync or legacy data) by moving tasks to the next free slot,
+  //   and avoids placing tasks on top of calendar events when moving.
+  const todayDateForReorganize = useMemo(() => new Date(today.getFullYear(), today.getMonth(), today.getDate()), [todayString]);
+  const calendarEventsForReorganize = useMemo(() => {
+    return todayCalendarEvents.map((event) => ({
+      start: new Date(event.start),
+      end: new Date(event.end),
+      title: event.title ?? "",
+    }));
+  }, [todayCalendarEvents]);
+  useEffect(() => {
+    if (timelineBlocks.length === 0) return;
+    const reorganizations = reorganizeAllTasksForDate(todayDateForReorganize, tasks, {
+      ensureAfterCurrentTime: true,
+      calendarEvents: calendarEventsForReorganize,
+    });
+    if (reorganizations.length === 0) return;
+    reorganizations.forEach(({ taskId, newTime }) => {
+      updateTask(taskId, { scheduledDate: newTime.toISOString() });
+    });
+  }, [tasks, timelineBlocks.length, todayDateForReorganize, calendarEventsForReorganize, updateTask]);
+
   // LAYER 1: Basic vertical scroll - ScrollArea handles scrolling automatically
   // LAYER 2: Next up badge is implemented via nextUpTaskId and isNextUp prop (see below)
   // LAYER 3: Optional auto-scroll can be added later if needed
@@ -432,7 +458,7 @@ export function TodayAgendaView({
                     key={key}
                     className="absolute left-0 right-0 overflow-visible rounded-r"
                     style={{
-                      top: topPx + rowPaddingTopPx,
+                      top: topPx,
                       height: Math.max(minBlockHeightPx, heightPx),
                       minHeight: minBlockHeightPx,
                       ...(blockStyle
@@ -460,6 +486,7 @@ export function TodayAgendaView({
                             occurrenceDate={todayString}
                             isNextUp={item.task.id === nextUpTaskId}
                             onComplete={handleTaskComplete}
+                            timelineBlockHeightPx={Math.max(minBlockHeightPx, heightPx)}
                           />
                         </div>
                       </div>
