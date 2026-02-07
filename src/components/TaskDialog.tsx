@@ -2681,9 +2681,9 @@ export function TaskDialog({
 
                   {/* Schedule: Date, 12HR/24HR, time, Due date with clear */}
                   <div className="pt-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+                    <div className={cn("grid grid-cols-1 sm:grid-cols-2", TASK_DIALOG_MINIMAL_SPACING.scheduleGridGap)}>
                       {/* Scheduled: date line + time (12HR/24HR, hour, min, AM/PM, clear) */}
-                      <div className="space-y-4">
+                      <div className={TASK_DIALOG_MINIMAL_SPACING.scheduleColumnSpaceY}>
                         <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
                           <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" weight="duotone" />
                           {TASK_DIALOG_UI_TEXT.scheduledSectionTitle}
@@ -2702,7 +2702,7 @@ export function TaskDialog({
                               {TASK_DIALOG_UI_TEXT.timeLabel}
                             </Label>
                             {/* Time controls grouped to the right: 12HR/24HR, Hour, Min, AM/PM, Clear */}
-                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 ml-0 sm:ml-4">
+                            <div className={cn("flex flex-wrap items-center", TASK_DIALOG_MINIMAL_SPACING.scheduleTimeRowGap, TASK_DIALOG_MINIMAL_SPACING.scheduleTimeRowMarginLeft)}>
                             <ToggleGroup
                               type="single"
                               value={timeFormat}
@@ -2901,7 +2901,7 @@ export function TaskDialog({
                       </div>
 
                       {/* Due Date: label, clear when set, input shows selected date */}
-                      <div className="space-y-4">
+                      <div className={TASK_DIALOG_MINIMAL_SPACING.scheduleColumnSpaceY}>
                         <div className="flex items-center justify-between gap-2 min-w-0">
                           <Label className="text-sm font-semibold flex items-center gap-2 shrink-0">
                             <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-primary" />
