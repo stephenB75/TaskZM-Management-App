@@ -799,8 +799,8 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {isTodayAgenda ? (
             <>
-              {/* Today Agenda: tab top-centered in block, then headline */}
-              <div className="w-full flex justify-center flex-shrink-0">
+              {/* Today Agenda: tab at top of block, left-aligned so task aligns with timeline */}
+              <div className="w-full flex justify-start flex-shrink-0">
               <div
                 className="flex items-center gap-2 rounded-lg flex-shrink-0 min-w-max"
                 style={{
