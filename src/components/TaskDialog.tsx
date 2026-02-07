@@ -2104,21 +2104,28 @@ export function TaskDialog({
       <DialogContent className={cn(
         "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 border-0 shadow-xl",
         TASK_DIALOG_COLORS.dialogMaxWidth,
+        TASK_DIALOG_COLORS.dialogBg,
         "text-foreground dark:text-foreground"
       )}>
-        {/* Two-layer layout: layer 1 = menu options (behind), layer 2 = content selections (in front, overlapping) */}
-        <div className="flex-1 flex flex-col sm:flex-row min-h-0 overflow-visible rounded-2xl relative">
-          {/* Layer 1: Menu options - Task Info, Schedule, Organize (first layer, behind) */}
+        {/* Single-panel layout (reference: one light orange-yellow container; nav top-left, content right/below) */}
+        <div className={cn(
+          "flex-1 flex flex-col sm:flex-row min-h-0 overflow-visible rounded-2xl",
+          "bg-transparent"
+        )}>
+          {/* Nav: current section (muted + chevron), other sections listed below */}
           <div
             className={cn(
-              "flex flex-col shrink-0 w-full sm:w-48 lg:w-56 border-b sm:border-b-0 sm:border-r border-border relative z-0",
-              TASK_DIALOG_COLORS.menuLayerBg,
+              "flex flex-col shrink-0 w-full sm:w-48 lg:w-56 border-b sm:border-b-0 sm:border-r border-border/50",
               "pt-4 px-3 pb-3 sm:pt-5 sm:px-4 sm:pb-4"
             )}
           >
             <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
               <DialogTitle className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">
-                {TASK_DIALOG_UI_TEXT.taskInfoTitle}
+                {activeTab === 'basic'
+                  ? TASK_DIALOG_UI_TEXT.taskInfoTitle
+                  : activeTab === 'scheduling'
+                    ? TASK_DIALOG_UI_TEXT.schedule.desktop
+                    : TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
               </DialogTitle>
               <button
                 type="button"
@@ -2130,42 +2137,57 @@ export function TaskDialog({
               </button>
             </div>
             <nav className="flex flex-col gap-0.5 sm:gap-1" aria-label="Task sections">
-              <button
-                type="button"
-                onClick={() => setActiveTab('scheduling')}
-                className={cn(
-                  "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-2 sm:py-2.5 px-2 -mx-1",
-                  TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                  activeTab === 'scheduling' ? "text-muted-foreground bg-muted/50" : "text-foreground hover:bg-primary/10"
-                )}
-              >
-                {activeTab === 'scheduling' && <Icon name="chevron-right" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
-                <span className="text-xs sm:text-sm font-medium truncate flex-1">
-                  {TASK_DIALOG_UI_TEXT.schedule.desktop}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('organization')}
-                className={cn(
-                  "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-2 sm:py-2.5 px-2 -mx-1",
-                  TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                  activeTab === 'organization' ? "text-muted-foreground bg-muted/50" : "text-foreground hover:bg-primary/10"
-                )}
-              >
-                {activeTab === 'organization' && <Icon name="chevron-right" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />}
-                <span className="text-xs sm:text-sm font-medium truncate flex-1">
-                  {TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
-                </span>
-              </button>
+              {activeTab !== 'basic' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('basic')}
+                  className={cn(
+                    "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-2 sm:py-2.5 px-2 -mx-1",
+                    TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                    "text-foreground hover:bg-primary/10"
+                  )}
+                >
+                  <span className="text-xs sm:text-sm font-medium truncate flex-1">
+                    {TASK_DIALOG_UI_TEXT.taskInfoTitle}
+                  </span>
+                </button>
+              )}
+              {activeTab !== 'scheduling' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('scheduling')}
+                  className={cn(
+                    "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-2 sm:py-2.5 px-2 -mx-1",
+                    TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                    "text-foreground hover:bg-primary/10"
+                  )}
+                >
+                  <span className="text-xs sm:text-sm font-medium truncate flex-1">
+                    {TASK_DIALOG_UI_TEXT.schedule.desktop}
+                  </span>
+                </button>
+              )}
+              {activeTab !== 'organization' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('organization')}
+                  className={cn(
+                    "flex items-center gap-1.5 sm:gap-2 text-left w-full rounded-md py-2 sm:py-2.5 px-2 -mx-1",
+                    TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                    "text-foreground hover:bg-primary/10"
+                  )}
+                >
+                  <span className="text-xs sm:text-sm font-medium truncate flex-1">
+                    {TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
+                  </span>
+                </button>
+              )}
             </nav>
           </div>
 
-          {/* Layer 2: Content selections - form card (second layer, in front; overlaps menu) */}
+          {/* Content: form (same panel, no overlap) */}
           <div className={cn(
-            "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden relative z-10 shadow-lg",
-            "rounded-b-2xl sm:rounded-b-none sm:rounded-r-2xl sm:rounded-l-xl sm:-ml-6",
-            TASK_DIALOG_COLORS.contentCardBg,
+            "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
             TASK_DIALOG_MINIMAL_SPACING.dialogInnerPadding
           )}>
         <form
