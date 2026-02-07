@@ -2647,10 +2647,10 @@ export function TaskDialog({
                     />
                   </div>
 
-                  {/* Schedule: Date, 12HR/24HR, time, Due date with clear */}
+                  {/* Schedule: Date, time (full width), Due date */}
                   <div className="pt-4">
                     <div className={cn("grid grid-cols-1 sm:grid-cols-2", TASK_DIALOG_MINIMAL_SPACING.scheduleGridGap)}>
-                      {/* Scheduled: date line + time (12HR/24HR, hour, min, AM/PM, clear) */}
+                      {/* Scheduled: date line only */}
                       <div className={TASK_DIALOG_MINIMAL_SPACING.scheduleColumnSpaceY}>
                         <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
                           <Icon name="calendar" size={ICON_SIZE_XS} className="text-primary" weight="duotone" />
@@ -2662,15 +2662,89 @@ export function TaskDialog({
                             {scheduledTime && ` at ${scheduledTime}`}
                           </div>
                         )}
+                      </div>
 
-                        {scheduledDate && (
-                          <div className="space-y-3">
-                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Icon name="clock" size={ICON_SIZE_XS} />
-                              {TASK_DIALOG_UI_TEXT.timeLabel}
-                            </Label>
-                            {/* Time section full width, inline: 12HR/24HR, Hour, Min, AM/PM, Clear */}
-                            <div className={cn("flex flex-nowrap items-center w-full min-w-0 overflow-x-auto", TASK_DIALOG_MINIMAL_SPACING.scheduleTimeRowGap)}>
+                      {/* Due Date column */}
+                      <div className={TASK_DIALOG_MINIMAL_SPACING.scheduleColumnSpaceY}>
+                        <div className="flex items-center justify-between gap-2 min-w-0">
+                          <Label className="text-sm font-semibold flex items-center gap-2 shrink-0">
+                            <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-primary" />
+                            {TASK_DIALOG_UI_TEXT.dueDate}
+                          </Label>
+                          {dueDate && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setDueDate(undefined);
+                                setDueMonth("");
+                                setDueDay("");
+                                setDueYear("");
+                              }}
+                              className="h-6 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                              title={TASK_DIALOG_UI_TEXT.clear}
+                            >
+                              {TASK_DIALOG_UI_TEXT.clear}
+                            </Button>
+                          )}
+                        </div>
+                        {dueDate && (
+                          <div className="text-xs text-muted-foreground bg-primary/10 rounded px-2 py-1">
+                            {dueDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        )}
+                        <Input
+                          type="text"
+                          placeholder={TASK_DIALOG_UI_TEXT.dueDatePlaceholder}
+                          value={dueDate ? 
+                            `${(dueDate.getMonth() + 1).toString().padStart(2, '0')}/${dueDate.getDate().toString().padStart(2, '0')}/${dueDate.getFullYear()}` 
+                            : ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+                              const [month, day, year] = value.split('/').map(Number);
+                              if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900) {
+                                const date = new Date(year, month - 1, day);
+                                if (!isNaN(date.getTime())) {
+                                  setDueDate(date);
+                                  setDueMonth(month.toString());
+                                  setDueDay(day.toString());
+                                  setDueYear(year.toString());
+                                  setActiveDateField("due");
+                                }
+                              }
+                            } else if (value === '') {
+                              setDueDate(undefined);
+                              setDueMonth("");
+                              setDueDay("");
+                              setDueYear("");
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const value = e.target.value;
+                            if (value && !value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                              const date = new Date(value);
+                              if (!isNaN(date.getTime())) {
+                                setDueDate(date);
+                                setDueMonth((date.getMonth() + 1).toString());
+                                setDueDay(date.getDate().toString());
+                                setDueYear(date.getFullYear().toString());
+                              }
+                            }
+                          }}
+                          className={cn(TASK_DIALOG_COLORS.inputFieldBg, "rounded-lg")}
+                        />
+                      </div>
+
+                      {/* Time section: full-width row spanning both columns */}
+                      {scheduledDate && (
+                        <div className={cn("space-y-3 sm:col-span-2", TASK_DIALOG_MINIMAL_SPACING.scheduleColumnSpaceY)}>
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Icon name="clock" size={ICON_SIZE_XS} />
+                            {TASK_DIALOG_UI_TEXT.timeLabel}
+                          </Label>
+                          <div className={cn("flex flex-nowrap items-center w-full min-w-0 overflow-x-auto", TASK_DIALOG_MINIMAL_SPACING.scheduleTimeRowGap)}>
                             <ToggleGroup
                               type="single"
                               value={timeFormat}
@@ -2866,85 +2940,6 @@ export function TaskDialog({
                             </div>
                           </div>
                         )}
-                      </div>
-
-                      {/* Due Date: label, clear when set, input shows selected date */}
-                      <div className={TASK_DIALOG_MINIMAL_SPACING.scheduleColumnSpaceY}>
-                        <div className="flex items-center justify-between gap-2 min-w-0">
-                          <Label className="text-sm font-semibold flex items-center gap-2 shrink-0">
-                            <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-primary" />
-                            {TASK_DIALOG_UI_TEXT.dueDate}
-                          </Label>
-                          {dueDate && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setDueDate(undefined);
-                                setDueMonth("");
-                                setDueDay("");
-                                setDueYear("");
-                              }}
-                              className="h-6 text-xs text-muted-foreground hover:text-foreground shrink-0"
-                              title={TASK_DIALOG_UI_TEXT.clear}
-                            >
-                              {TASK_DIALOG_UI_TEXT.clear}
-                            </Button>
-                          )}
-                        </div>
-                        {dueDate && (
-                          <div className="text-xs text-muted-foreground bg-primary/10 rounded px-2 py-1">
-                            {dueDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                          </div>
-                        )}
-                        <Input
-                          type="text"
-                          placeholder={TASK_DIALOG_UI_TEXT.dueDatePlaceholder}
-                        value={dueDate ? 
-                          `${(dueDate.getMonth() + 1).toString().padStart(2, '0')}/${dueDate.getDate().toString().padStart(2, '0')}/${dueDate.getFullYear()}` 
-                          : ''}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          // Allow typing date in MM/DD/YYYY format
-                          if (value.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
-                            const [month, day, year] = value.split('/').map(Number);
-                            if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900) {
-                              const date = new Date(year, month - 1, day);
-                              if (!isNaN(date.getTime())) {
-                                setDueDate(date);
-                                setDueMonth(month.toString());
-                                setDueDay(day.toString());
-                                setDueYear(year.toString());
-                                setActiveDateField("due");
-                              }
-                            }
-                          } else if (value === '') {
-                            setDueDate(undefined);
-                            setDueMonth("");
-                            setDueDay("");
-                            setDueYear("");
-                          }
-                        }}
-                        onBlur={(e) => {
-                          // Validate on blur
-                          const value = e.target.value;
-                          if (value && !value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                            // If invalid format, try to parse or clear
-                            const date = new Date(value);
-                            if (!isNaN(date.getTime())) {
-                              setDueDate(date);
-                              setDueMonth((date.getMonth() + 1).toString());
-                              setDueDay(date.getDate().toString());
-                              setDueYear(date.getFullYear().toString());
-                              setActiveDateField("due");
-                              // Update input to correct format
-                              e.target.value = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
-                            }
-                          }
-                        }}
-                        className={cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm h-10")}
-                      />
                       </div>
                     </div>
                   </div>
