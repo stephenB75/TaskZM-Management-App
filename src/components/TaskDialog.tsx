@@ -2942,7 +2942,6 @@ export function TaskDialog({
                         )}
                       </div>
                     </div>
-                  </div>
 
                   {/* Estimated Time with Slider */}
                   <div className="pt-4 space-y-3 sm:space-y-4">
