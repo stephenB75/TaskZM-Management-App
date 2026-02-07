@@ -2106,71 +2106,83 @@ export function TaskDialog({
         TASK_DIALOG_COLORS.dialogMaxWidth,
         "bg-transparent text-foreground dark:text-foreground"
       )}>
-        {/* Two-layer layout: Layer 1 = menu bar on top; Layer 2 = options/content below */}
+        {/* Two-layer layout: Layer 1 = menu (white, black border, vertical options + chevron); Layer 2 = options (yellow gradient) */}
         <div className="flex-1 flex flex-col min-h-0 overflow-visible rounded-2xl">
-          {/* Layer 1: Menu strip on top - Task Info, Schedule, Organize in a row */}
+          {/* Layer 1: Menu - white background, black border, vertical menu options with chevron selector */}
           <div
             className={cn(
-              "flex flex-row shrink-0 w-full border-b border-border",
+              "flex flex-col shrink-0 w-full",
               TASK_DIALOG_COLORS.menuLayerBg,
+              TASK_DIALOG_COLORS.menuLayerBorder,
               "px-3 py-3 sm:px-4 sm:py-4 rounded-t-2xl"
             )}
           >
-            <nav className="flex flex-row items-center gap-0.5 sm:gap-1 flex-1 min-w-0" aria-label="Task sections">
+            {/* Title row: current section + chevron (clickable icon for back/close) */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className={cn(
+                "text-xs sm:text-sm font-semibold truncate",
+                "text-muted-foreground"
+              )}>
+                {activeTab === 'basic'
+                  ? TASK_DIALOG_UI_TEXT.taskInfoTitle
+                  : activeTab === 'scheduling'
+                    ? TASK_DIALOG_UI_TEXT.schedule.desktop
+                    : TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
+              </span>
               <button
                 type="button"
-                onClick={() => setActiveTab('basic')}
-                className={cn(
-                  "flex items-center gap-1.5 sm:gap-2 rounded-md py-2 sm:py-2.5 px-3 sm:px-4",
-                  TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                  activeTab === 'basic' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
-                )}
+                onClick={() => (activeTab === 'basic' ? onClose() : setActiveTab('basic'))}
+                className="flex items-center justify-center rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors"
+                aria-label={activeTab === 'basic' ? 'Close' : 'Back to task info'}
               >
-                <span className="text-xs sm:text-sm font-medium truncate">
-                  {TASK_DIALOG_UI_TEXT.taskInfoTitle}
-                </span>
-                {activeTab === 'basic' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0 opacity-70" aria-hidden />}
+                <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('scheduling')}
-                className={cn(
-                  "flex items-center gap-1.5 sm:gap-2 rounded-md py-2 sm:py-2.5 px-3 sm:px-4",
-                  TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                  activeTab === 'scheduling' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
-                )}
-              >
-                <span className="text-xs sm:text-sm font-medium truncate">
-                  {TASK_DIALOG_UI_TEXT.schedule.desktop}
-                </span>
-                {activeTab === 'scheduling' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0 opacity-70" aria-hidden />}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('organization')}
-                className={cn(
-                  "flex items-center gap-1.5 sm:gap-2 rounded-md py-2 sm:py-2.5 px-3 sm:px-4",
-                  TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                  activeTab === 'organization' ? "text-muted-foreground" : "text-foreground hover:bg-primary/10"
-                )}
-              >
-                <span className="text-xs sm:text-sm font-medium truncate">
-                  {TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
-                </span>
-                {activeTab === 'organization' && <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0 opacity-70" aria-hidden />}
-              </button>
+            </div>
+            {/* Vertical menu options - clickable text (other two sections only) */}
+            <nav className="flex flex-col gap-0.5" aria-label="Task sections">
+              {activeTab !== 'basic' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('basic')}
+                  className={cn(
+                    "flex items-center justify-between gap-2 text-left w-full rounded py-2 px-2 -mx-1",
+                    TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                    "text-foreground hover:bg-primary/10"
+                  )}
+                >
+                  <span className="text-xs sm:text-sm font-medium truncate">{TASK_DIALOG_UI_TEXT.taskInfoTitle}</span>
+                </button>
+              )}
+              {activeTab !== 'scheduling' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('scheduling')}
+                  className={cn(
+                    "flex items-center justify-between gap-2 text-left w-full rounded py-2 px-2 -mx-1",
+                    TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                    "text-foreground hover:bg-primary/10"
+                  )}
+                >
+                  <span className="text-xs sm:text-sm font-medium truncate">{TASK_DIALOG_UI_TEXT.schedule.desktop}</span>
+                </button>
+              )}
+              {activeTab !== 'organization' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('organization')}
+                  className={cn(
+                    "flex items-center justify-between gap-2 text-left w-full rounded py-2 px-2 -mx-1",
+                    TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                    "text-foreground hover:bg-primary/10"
+                  )}
+                >
+                  <span className="text-xs sm:text-sm font-medium truncate">{TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}</span>
+                </button>
+              )}
             </nav>
-            <button
-              type="button"
-              onClick={() => (activeTab === 'basic' ? onClose() : setActiveTab('basic'))}
-              className="flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors shrink-0"
-              aria-label={activeTab === 'basic' ? 'Close' : 'Back to task info'}
-            >
-              <Icon name="chevron-left" size={ICON_SIZE_MD} className="shrink-0" aria-hidden />
-            </button>
           </div>
 
-          {/* Layer 2: Content/options below - light orange card, form */}
+          {/* Layer 2: Options/content - yellow gradient background */}
           <div className={cn(
             "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden shadow-inner",
             "rounded-b-2xl",
