@@ -64,6 +64,7 @@ import {
   TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS_LIGHT,
   TASK_CARD_ARIA_AND_LABELS,
   TASK_CARD_EXPANDABLE_LABELS,
+  TASK_CARD_BORDERS,
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, COLOR_BACKGROUND_LIGHT, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -747,8 +748,8 @@ export const DraggableTaskCard = React.forwardRef<
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
-              // Left, bottom, right border only (no top - tab layers in front)
-              !isTodayAgenda && "border-l border-b border-r border-border dark:border-border transition-all duration-200",
+              // Left, bottom, right border only (no top - tab layers in front); thin dark grey per layout
+              !isTodayAgenda && cn("border-l border-b border-r transition-all duration-200", TASK_CARD_BORDERS.mobile, TASK_CARD_BORDERS.desktop, "dark:border-gray-600/60"),
               task.status === "done" && "opacity-60",
               "flex-shrink-0 w-full",
               // Padding: minimal padding for collapsed cards
