@@ -242,6 +242,8 @@ export const TODAY_AGENDA_TIMELINE = {
   tabPaddingPx: 8,
   /** Vertical padding (px) for Today Agenda tab bar. */
   tabPaddingVerticalPx: 6,
+  /** Horizontal inset (px) from block edges so tab doesn’t touch sides. */
+  tabBlockInsetPx: 8,
   /** Opacity for task block background tint (0–1). Full block height shows reserved time. */
   blockTintOpacity: 0.1,
   /** Width (px) of left-edge accent bar on task blocks. */

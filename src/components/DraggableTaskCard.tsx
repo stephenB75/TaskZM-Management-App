@@ -818,6 +818,8 @@ export const DraggableTaskCard = React.forwardRef<
                   paddingLeft: TODAY_AGENDA_TIMELINE.tabPaddingPx,
                   paddingRight: TODAY_AGENDA_TIMELINE.tabPaddingPx,
                   minWidth: 'max-content',
+                  marginLeft: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
+                  marginRight: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
                 }}
               >
                 <Icon
