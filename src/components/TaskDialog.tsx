@@ -1952,10 +1952,14 @@ export function TaskDialog({
         const baseId = generateId();
         const startDate = finalScheduledDate ? new Date(finalScheduledDate) : new Date(taskData.scheduledDate);
         const maxCount = Math.min(TIMING_CONSTANTS.calendar.maxOccurrences ?? 52, 90);
-        const occurrenceDates = getOccurrenceDates(recurrence, startDate, {
+        let occurrenceDates = getOccurrenceDates(recurrence, startDate, {
           maxCount,
           endDate: recurrence.endDate ?? undefined,
         });
+        // Ensure at least one occurrence so the series is never empty
+        if (occurrenceDates.length === 0) {
+          occurrenceDates = [new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())];
+        }
         const nowIso = new Date().toISOString();
         const seriesTasks: Task[] = occurrenceDates.map((date) => {
           const dateStr = getDateString(date);

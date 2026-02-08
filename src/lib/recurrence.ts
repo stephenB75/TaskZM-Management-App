@@ -172,7 +172,9 @@ export function getOccurrenceDates(
   if (type === 'none') {
     const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
     return [d];
-  }  const maxCount = options?.maxCount ?? 52;
+  }
+
+  const maxCount = options?.maxCount ?? 52;
   const endDateOnly = options?.endDate
     ? (() => {
         const s = options.endDate!.trim();
@@ -203,5 +205,9 @@ export function getOccurrenceDates(
     }
   }
 
+  // Ensure we never return empty for a recurring pattern: at least the start date
+  if (results.length === 0) {
+    results.push(new Date(startOnly.getFullYear(), startOnly.getMonth(), startOnly.getDate()));
+  }
   return results;
 }
