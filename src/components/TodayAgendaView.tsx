@@ -460,12 +460,29 @@ export function TodayAgendaView({
             })();
         return { minutesFromStart: m, label };
       });
+      const nextUpBlock = timelineBlocks.find((b) => b.item.type === 'task' && b.item.task && b.item.task.id === nextUpTaskId);
+      const nextUpTopPx = nextUpBlock != null ? nextUpBlock.topPx : null;
+      const nextUpBadgeTopPx = nextUpTopPx != null ? nextUpTopPx - TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx - TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx : 0;
+
       return (
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
           {/* Timeline: height fits stacked blocks so they never overlap */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}>
-            {/* Left: time label + dot (flipped: label then dot); line from dot to right side of task tab */}
+            {/* Left: time label + dot (flipped: label then dot); NEXT UP badge above next time due */}
             <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx }}>
+              {nextUpTopPx != null && (
+                <div
+                  className="absolute left-0 flex items-center z-10"
+                  style={{
+                    top: nextUpBadgeTopPx,
+                    height: TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx,
+                  }}
+                >
+                  <span className="text-xs font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground inline-block">
+                    {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
+                  </span>
+                </div>
+              )}
               {timelineLabels.map(({ minutesFromStart, label }) => {
                 const topPx = minutesFromStart * pxPerMinute;
                 return (
@@ -513,24 +530,8 @@ export function TodayAgendaView({
                 const blockStyle = isTask
                   ? getTodayAgendaBlockColors(item.task!.priority, TODAY_AGENDA_TIMELINE.blockTintOpacity)
                   : null;
-                const badgeTopPx = topPx - TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx - TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx;
                 return (
                   <React.Fragment key={key}>
-                    {isNextUp && (
-                      <div
-                        className="absolute left-0 right-0 flex items-center z-10"
-                        style={{
-                          top: badgeTopPx,
-                          height: TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx,
-                          paddingLeft: TODAY_AGENDA_TIMELINE.blocksColumnPaddingLeftPx,
-                          paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx,
-                        }}
-                      >
-                        <span className="text-xs font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground inline-block">
-                          {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
-                        </span>
-                      </div>
-                    )}
                     <div
                       className="absolute left-0 right-0 overflow-hidden rounded-r"
                       style={{

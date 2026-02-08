@@ -2139,10 +2139,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
         // Skip full reload after save for faster UX; background sync notifies other devices
         debouncedSync(false);
-        // Also trigger a direct sync after a short delay to ensure other devices get updates quickly
+        // Also trigger a direct sync after a short delay to ensure other devices get updates quickly (silent so failures don't toast)
         setTimeout(() => {
           if (workspaceId && accessToken && syncWithServerRef.current) {
-            syncWithServerRef.current(workspaceId, false).catch((err: any) => {
+            syncWithServerRef.current(workspaceId, true).catch((err: any) => {
               logger.debug('Background sync after task update:', err);
             });
           }
@@ -2180,10 +2180,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               await loadTasksFromServer(validWorkspaceId);
               // Trigger immediate sync to notify other devices (with minimal debounce for cross-device sync)
               debouncedSync(false);
-              // Also trigger a direct sync after a short delay to ensure other devices get updates quickly
+              // Also trigger a direct sync after a short delay (silent so failures don't toast)
               setTimeout(() => {
                 if (workspaceId && accessToken && syncWithServerRef.current) {
-                  syncWithServerRef.current(workspaceId, false).catch((err: any) => {
+                  syncWithServerRef.current(workspaceId, true).catch((err: any) => {
                     logger.debug('Background sync after task update retry:', err);
                   });
                 }

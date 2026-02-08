@@ -1089,11 +1089,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     clearCalendarEventsCache();
     setShowAppleCalDAVDialog(false);
     
-    // Trigger initial sync after setup
-    // Use a small delay to ensure setup is complete
+    // Trigger initial sync after setup (silent so failures don't toast; user already got dialog feedback)
     setTimeout(() => {
       if (syncAppleCalendarInternalRef.current) {
-        syncAppleCalendarInternalRef.current(false);
+        syncAppleCalendarInternalRef.current(true);
       }
     }, TIMING_CONSTANTS.intervals.taskContext); // Use task context delay constant (1 second)
   }, [user, calendarStatus]); // Removed syncAppleCalendarInternal from dependencies
