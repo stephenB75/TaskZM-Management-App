@@ -324,38 +324,12 @@ export function findNextAvailableSlot(
     let hasConflict = false;
     let maxConflictEnd = candidateStart; // Track the latest end time of all conflicts
     
-    // Check conflicts with tasks
+    // Check conflicts with tasks: only true overlap (shared time). Back-to-back is not a conflict.
     for (const existing of sortedTasks) {
-      // CRITICAL: Check for conflicts with multiple conditions to catch all edge cases
-      // 1. Overlap: candidate starts before existing ends AND ends after existing starts
       const overlaps = candidateStart < existing.end && candidateEnd > existing.start;
-      
-      // 2. Exact same start time (most common case for duplicate scheduling)
-      // CRITICAL: Use a tolerance of 1 minute to catch tasks scheduled at the same time
-      // This prevents multiple tasks from being scheduled at exactly the same time (e.g., 9:00 AM)
-      const timeDifference = Math.abs(candidateStart - existing.start);
-      const sameStartTime = timeDifference < MILLISECONDS_PER_MINUTE; // Within 1 minute = same time slot
-      
-      // 3. Candidate starts slightly before existing but still overlaps
-      const startsBeforeAndOverlaps = candidateStart < existing.start && candidateEnd > existing.start;
-      
-      // 4. Candidate starts at or very close to existing start (within 1 minute tolerance)
-      // This catches rounding issues or time precision problems
-      const withinOneMinute = timeDifference < MILLISECONDS_PER_MINUTE;
-      
-      // 5. Candidate ends at or very close to existing start (within 1 minute)
-      const endsAtExistingStart = Math.abs(candidateEnd - existing.start) < MILLISECONDS_PER_MINUTE;
-      
-      // CRITICAL: Also check if candidate starts within the duration of existing task
-      // This catches cases where tasks are scheduled very close together
-      const startsWithinExisting = candidateStart >= existing.start && candidateStart < existing.end;
-      
-      if (overlaps || sameStartTime || startsBeforeAndOverlaps || withinOneMinute || endsAtExistingStart || startsWithinExisting) {
+      if (overlaps) {
         hasConflict = true;
-        // Track the latest end time of all conflicts to move past all overlapping tasks
         maxConflictEnd = Math.max(maxConflictEnd, existing.end);
-        
-        // Debug logging in development - ALWAYS log conflicts
         if (import.meta.env.DEV) {
           console.debug('🔴 Conflict detected in findNextAvailableSlot', {
             candidateTime: new Date(candidateStart).toISOString(),
@@ -364,28 +338,18 @@ export function findNextAvailableSlot(
             existingTaskTitle: existing.task.title,
             existingStart: new Date(existing.start).toISOString(),
             existingEnd: new Date(existing.end).toISOString(),
-            overlaps,
-            sameStartTime,
-            startsBeforeAndOverlaps,
-            withinOneMinute,
-            endsAtExistingStart,
-            timeDifferenceMs: timeDifference,
             maxConflictEnd: new Date(maxConflictEnd).toISOString(),
           });
         }
       }
     }
     
-    // Check conflicts with calendar events
+    // Check conflicts with calendar events: only true overlap. Back-to-back is not a conflict.
     for (const event of calendarConflicts) {
       const overlaps = candidateStart < event.end && candidateEnd > event.start;
-      const sameStartTime = Math.abs(candidateStart - event.start) < 1;
-      const withinOneMinute = Math.abs(candidateStart - event.start) < MILLISECONDS_PER_MINUTE;
-      
-      if (overlaps || sameStartTime || withinOneMinute) {
+      if (overlaps) {
         hasConflict = true;
         maxConflictEnd = Math.max(maxConflictEnd, event.end);
-        
         if (import.meta.env.DEV) {
           console.debug('🔴 Calendar event conflict detected in findNextAvailableSlot', {
             candidateTime: new Date(candidateStart).toISOString(),
@@ -393,9 +357,6 @@ export function findNextAvailableSlot(
             eventTitle: event.title,
             eventStart: new Date(event.start).toISOString(),
             eventEnd: new Date(event.end).toISOString(),
-            overlaps,
-            sameStartTime,
-            withinOneMinute,
           });
         }
       }
@@ -549,13 +510,11 @@ export function reorganizeAllTasksForDate(
     lastScheduledEnd = defaultStart.getTime();
   }
 
-  // Reorganize: move a task only if it overlaps the previous one (or is before earliest allowed when not onlyFixOverlaps)
+  // Reorganize: move a task only if it truly overlaps the previous one (start < previous end). Back-to-back (start === previous end) is not overlap.
   for (const taskInfo of sortedTasks) {
     const task = taskInfo.task;
     const taskDuration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
-    
-    // Check if task overlaps with previous task or is before the earliest allowed time
-    // (lastScheduledEnd is set to current time for today, so tasks before current time will be moved)
+
     if (taskInfo.start < lastScheduledEnd) {
       // Task needs to be moved
       const candidateTime = new Date(lastScheduledEnd);
