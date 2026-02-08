@@ -239,15 +239,17 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Tab bar height (px) for compact agenda row. */
   tabHeightPx: 40,
   /** Horizontal padding (px) for Today Agenda card content (left). */
-  cardPaddingLeftPx: 8,
+  cardPaddingLeftPx: 12,
   /** Horizontal padding (px) for Today Agenda card content (right) – enough so tab/headline aren’t cut off. */
-  cardPaddingRightPx: 24,
+  cardPaddingRightPx: 32,
+  /** Vertical padding (px) at bottom of Today Agenda card so title doesn't touch block edge. */
+  cardPaddingBottomPx: 10,
   /** Horizontal padding (px) for Today Agenda tab bar. */
-  tabPaddingPx: 8,
+  tabPaddingPx: 12,
   /** Vertical padding (px) for Today Agenda tab bar. */
   tabPaddingVerticalPx: 6,
   /** Horizontal inset (px) from block edges so tab doesn’t touch sides. */
-  tabBlockInsetPx: 8,
+  tabBlockInsetPx: 10,
   /** Width (px) of the task tab area; timeline line extends from dot to this point (right side of tab). */
   tabAreaWidthPx: 44,
   /** Opacity for task block background tint (0–1). Full block height shows reserved time. */

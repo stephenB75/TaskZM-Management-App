@@ -771,6 +771,7 @@ export const DraggableTaskCard = React.forwardRef<
                   boxShadow: 'none',
                   paddingLeft: TODAY_AGENDA_TIMELINE.cardPaddingLeftPx,
                   paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx,
+                  paddingBottom: TODAY_AGENDA_TIMELINE.cardPaddingBottomPx,
                 }
               : {
                   height: isExpanded ? 'auto' : `${cardHeight}px`,
@@ -812,7 +813,7 @@ export const DraggableTaskCard = React.forwardRef<
                 }}
               >
               <div
-                className="flex items-center gap-2 rounded-lg flex-shrink-0 min-w-max"
+                className="flex items-center gap-3 rounded-lg flex-shrink-0 min-w-max"
                 style={{
                   backgroundColor: getPriorityTabBackgroundColor(task.priority),
                   minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
@@ -876,7 +877,7 @@ export const DraggableTaskCard = React.forwardRef<
                 )}
               </div>
               </div>
-              <div className={cn("flex items-start gap-1.5 pt-1.5", isMobile ? "pb-1" : "pb-1.5")}>
+              <div className={cn("flex items-start gap-2 pt-2", isMobile ? "pb-2" : "pb-2.5")}>
                 <button
                   type="button"
                   onClick={handleToggleComplete}
@@ -896,7 +897,7 @@ export const DraggableTaskCard = React.forwardRef<
                   />
                 </button>
                 <h3
-                  className={cn("font-bold leading-tight flex-1 min-w-0 line-clamp-2", TASK_CARD_TEXT_COLORS.title)}
+                  className={cn("font-bold leading-snug flex-1 min-w-0 line-clamp-2 break-words", TASK_CARD_TEXT_COLORS.title)}
                   style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgendaHeadlineFontSizePx}px` }}
                 >
                   {task.title}
