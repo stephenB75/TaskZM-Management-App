@@ -232,6 +232,10 @@ export const TODAY_AGENDA_TIMELINE = {
   eventCardHeightPx: 106,
   /** Offset (px) from row top to card top when item shows Next Up badge (badge height + mb-2). Used so timeline time aligns with card top. */
   nextUpBadgeOffsetPx: 26,
+  /** Height (px) of the Next Up badge when rendered above the block (Today Agenda). */
+  nextUpBadgeHeightPx: 22,
+  /** Gap (px) between the bottom of the Next Up badge and the top of the task block. */
+  nextUpBadgeGapAboveBlockPx: 4,
   /** Offset (px) from card top to first content line (priority/tab row). Card padding-top + tab margin-top ≈ 14px. Applied so timeline dot aligns with card content, not card edge. */
   cardContentTopOffsetPx: 14,
   /** Compact row height (px) when agenda shows only tab + headline (list layout or min block). */

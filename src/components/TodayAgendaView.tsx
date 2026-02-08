@@ -509,67 +509,83 @@ export function TodayAgendaView({
               {timelineBlocks.map(({ item, topPx, heightPx }) => {
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
                 const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
-                // Align block exactly with timeline: top = start time in px, height = duration in px (so 2h task = 2h on timeline)
                 const isTask = item.type === 'task' && item.task;
                 const blockStyle = isTask
                   ? getTodayAgendaBlockColors(item.task!.priority, TODAY_AGENDA_TIMELINE.blockTintOpacity)
                   : null;
+                const badgeTopPx = topPx - TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx - TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx;
                 return (
-                  <div
-                    key={key}
-                    className="absolute left-0 right-0 overflow-hidden rounded-r"
-                    style={{
-                      top: topPx,
-                      height: Math.max(minBlockHeightPx, heightPx),
-                      minHeight: minBlockHeightPx,
-                      ...(blockStyle
-                        ? {
-                            backgroundColor: blockStyle.backgroundColor,
-                            borderLeft: `${TODAY_AGENDA_TIMELINE.blockAccentWidthPx}px solid ${blockStyle.accentColor}`,
-                          }
-                        : {}),
-                    }}
-                  >
-                    {item.type === 'task' && item.task ? (
-                      <div data-task-id={item.task.id} className="w-full h-full">
-                        <div
-                          className="w-full min-w-full h-full flex flex-col"
-                          style={{
-                            ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                              ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
-                              : {}),
-                          }}
-                        >
-                          <DraggableTaskCard
-                            task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                            onClick={() => item.task && handleTaskClick(item.task)}
-                            droppableId="today-agenda"
-                            occurrenceDate={todayString}
-                            isNextUp={item.task.id === nextUpTaskId}
-                            onComplete={handleTaskComplete}
-                            timelineBlockHeightPx={
-                              TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                                ? Math.round((Math.max(minBlockHeightPx, heightPx)) / TASK_CARD_TIMELINE.scale.todayAgenda)
-                                : Math.max(minBlockHeightPx, heightPx)
+                  <React.Fragment key={key}>
+                    {isNextUp && (
+                      <div
+                        className="absolute left-0 right-0 flex items-center z-10"
+                        style={{
+                          top: badgeTopPx,
+                          height: TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx,
+                          paddingLeft: TODAY_AGENDA_TIMELINE.blocksColumnPaddingLeftPx,
+                          paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx,
+                        }}
+                      >
+                        <span className="text-xs font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground inline-block">
+                          {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className="absolute left-0 right-0 overflow-hidden rounded-r"
+                      style={{
+                        top: topPx,
+                        height: Math.max(minBlockHeightPx, heightPx),
+                        minHeight: minBlockHeightPx,
+                        ...(blockStyle
+                          ? {
+                              backgroundColor: blockStyle.backgroundColor,
+                              borderLeft: `${TODAY_AGENDA_TIMELINE.blockAccentWidthPx}px solid ${blockStyle.accentColor}`,
                             }
-                          />
+                          : {}),
+                      }}
+                    >
+                      {item.type === 'task' && item.task ? (
+                        <div data-task-id={item.task.id} className="w-full h-full">
+                          <div
+                            className="w-full min-w-full h-full flex flex-col"
+                            style={{
+                              ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
+                                ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
+                                : {}),
+                            }}
+                          >
+                            <DraggableTaskCard
+                              task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
+                              onClick={() => item.task && handleTaskClick(item.task)}
+                              droppableId="today-agenda"
+                              occurrenceDate={todayString}
+                              isNextUp={item.task.id === nextUpTaskId}
+                              onComplete={handleTaskComplete}
+                              timelineBlockHeightPx={
+                                TASK_CARD_TIMELINE.scale.todayAgenda !== 1
+                                  ? Math.round((Math.max(minBlockHeightPx, heightPx)) / TASK_CARD_TIMELINE.scale.todayAgenda)
+                                  : Math.max(minBlockHeightPx, heightPx)
+                              }
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ) : item.type === 'event' && item.event ? (
-                      <div data-event-id={item.event.id} className="w-full h-full">
-                        <div
-                          className="w-full min-w-full h-full"
-                          style={{
-                            ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                              ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
-                              : {}),
-                          }}
-                        >
-                          <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
+                      ) : item.type === 'event' && item.event ? (
+                        <div data-event-id={item.event.id} className="w-full h-full">
+                          <div
+                            className="w-full min-w-full h-full"
+                            style={{
+                              ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
+                                ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
+                                : {}),
+                            }}
+                          >
+                            <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
+                          </div>
                         </div>
-                      </div>
-                    ) : null}
-                  </div>
+                      ) : null}
+                    </div>
+                  </React.Fragment>
                 );
               })}
             </div>

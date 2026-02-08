@@ -702,8 +702,8 @@ export const DraggableTaskCard = React.forwardRef<
         )}
         style={isColumnLayout ? { width: '100%', minWidth: '100%', maxWidth: '100%', marginLeft: 0, marginRight: 0, boxSizing: 'border-box' } : undefined}
       >
-        {/* Next Up Badge - Above the task card */}
-        {isNextUp && (
+        {/* Next Up Badge - Above the task card (Today Agenda renders it above the block instead) */}
+        {isNextUp && !isTodayAgenda && (
           <div className={cn("w-full", TASK_CARD_TIMELINE.nextUp.badgeMarginBottom)}>
             <span 
               className="text-xs font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground inline-block"
