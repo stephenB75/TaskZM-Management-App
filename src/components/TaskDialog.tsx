@@ -746,7 +746,11 @@ export function TaskDialog({
   const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
     title,
     description,
-    { debounceMs: TASK_BREAKDOWN_DEBOUNCE_MS, enabled: true }
+    {
+      debounceMs: TASK_BREAKDOWN_DEBOUNCE_MS,
+      enabled: true,
+      getAccessToken: () => Promise.resolve(accessToken ?? null).then((t) => t ?? getSessionToken()),
+    }
   );
 
   // Description options state - generated from title keywords/phrases and effort score
@@ -1198,7 +1202,8 @@ export function TaskDialog({
           breakdown.effortScore, // Determined from title analysis
           token,
           description,
-          breakdown.actionPlan?.steps?.map((s) => s.action)
+          breakdown.actionPlan?.steps?.map((s) => s.action),
+          breakdown.filteredTerminology && breakdown.domain ? { domain: breakdown.domain, filteredTerminology: breakdown.filteredTerminology } : undefined
         );
 
         // Triple-check conditions after async operation (description might have been set during async call)
@@ -2430,11 +2435,12 @@ export function TaskDialog({
                                   // Force regeneration by passing empty description to get fresh result
                                   // This ensures we get a new/modified description rather than reusing the existing one
                                   const generated = await generateDescription(
-                                    title, 
-                                    token, 
-                                    '', 
+                                    title,
+                                    token,
+                                    '',
                                     breakdown?.effortScore,
-                                    breakdown?.actionPlan?.steps?.map((s) => s.action)
+                                    breakdown?.actionPlan?.steps?.map((s) => s.action),
+                                    breakdown?.filteredTerminology && breakdown?.domain ? { domain: breakdown.domain, filteredTerminology: breakdown.filteredTerminology } : undefined
                                   );
                                 logger.debug('AI Refresh description result:', { 
                                   hasDescription: !!generated.description, 
@@ -2512,7 +2518,14 @@ export function TaskDialog({
                                 // Use session token when available so OpenAI (server) is tried first
                                 const token = accessToken ?? await getSessionToken();
                                 logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!(accessToken ?? token), effortScore: breakdown?.effortScore });
-                                const generated = await generateDescription(title, token, description, breakdown?.effortScore, breakdown?.actionPlan?.steps?.map((s) => s.action));
+                                const generated = await generateDescription(
+                                  title,
+                                  token,
+                                  description,
+                                  breakdown?.effortScore,
+                                  breakdown?.actionPlan?.steps?.map((s) => s.action),
+                                  breakdown?.filteredTerminology && breakdown?.domain ? { domain: breakdown.domain, filteredTerminology: breakdown.filteredTerminology } : undefined
+                                );
                                 logger.debug('AI Generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,

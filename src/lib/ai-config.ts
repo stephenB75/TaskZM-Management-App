@@ -88,8 +88,8 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   maxExtractedVerbs: 10, // Maximum extracted verbs to return (increased for better context and more comprehensive matching)
   maxExtractedNouns: 10, // Maximum extracted nouns to return (increased for better context and more comprehensive matching)
   maxExtractedPronouns: 5, // Maximum extracted pronouns to return (increased for better context)
-  /** Max terms per category sent to server AI for contextual prompts (local + shared terminology). */
-  maxTerminologyTermsForServer: 25,
+  /** Max terms per category sent to server AI (stricter filter keeps prompt focused; use with filterTerminologyRelevantToTask). */
+  maxTerminologyTermsForServer: 15,
   maxSnippetLength: 200, // Maximum snippet length for context extraction
   // Confidence calculation weights
   baseConfidence: 0.3, // Base confidence for fallback descriptions
@@ -943,6 +943,16 @@ export const DOMAIN_EXCLUSION_TERMS = {
   HEALTH_TASK_INDICATORS: ['health', 'fitness', 'workout', 'exercise'] as const,
   // Technical task indicators (if task contains these, don't exclude technical terms)
   TECHNICAL_TASK_INDICATORS: ['code', 'software', 'programming', 'test'] as const,
+  /** Terms to exclude from allowed vocabulary when they don't fit the situation (e.g. event terms for medical tasks). */
+  TERMINOLOGY_WRONG_CONTEXT: {
+    business: ['anniversary', 'banquet', 'celebration', 'birthday party', 'wedding', 'holiday party', 'family dinner', 'vacation', 'personal time'] as const,
+    home: ['meeting', 'deadline', 'presentation', 'report', 'client', 'stakeholder', 'office', 'corporate'] as const,
+    personal: ['anniversary', 'banquet', 'celebration', 'birthday party', 'wedding', 'holiday party', 'code', 'codebase', 'software', 'api', 'debug', 'deployment', 'pull request', 'repository'] as const,
+    world: ['anniversary', 'banquet', 'celebration', 'workout', 'gym', 'exercise'] as const,
+    mixed: [] as const,
+  } as const,
+  /** Minimum relevance score (0=one word, 1=two words, 2=full phrase) for a term to be included. */
+  TERMINOLOGY_RELEVANCE_MIN_SCORE: 1,
 } as const;
 
 /**

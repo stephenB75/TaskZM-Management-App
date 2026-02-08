@@ -358,6 +358,24 @@ const OPENAI_DESC_TEMPERATURE = 0.5;
 const OPENAI_OPTS_MAX_TOKENS = 600;
 const OPENAI_OPTS_TEMPERATURE = 0.6;
 
+/** High-risk cross-context terms to forbid per domain (reduces jumbling). */
+const DO_NOT_USE_TERMS: Record<string, string[]> = {
+  business: ['anniversary', 'banquet', 'celebration', 'birthday party', 'wedding', 'holiday party', 'family dinner', 'vacation', 'personal time'],
+  home: ['meeting', 'deadline', 'presentation', 'report', 'client', 'stakeholder', 'office', 'corporate'],
+  personal: ['anniversary', 'banquet', 'celebration', 'birthday party', 'wedding', 'holiday party', 'code', 'codebase', 'software', 'api', 'debug', 'deployment', 'pull request', 'repository'],
+  world: ['anniversary', 'banquet', 'celebration', 'workout', 'gym', 'exercise'],
+  mixed: [],
+};
+
+function buildSituationLine(taskName: string, actionPlanSteps: string[], maxLen: number = 120): string {
+  let s = `This task is about: ${taskName}.`;
+  if (actionPlanSteps.length > 0) {
+    const stepsPart = ` Steps: ${actionPlanSteps.slice(0, 5).join(', ')}.`;
+    if (s.length + stepsPart.length <= maxLen) s += stepsPart;
+  }
+  return s.slice(0, maxLen);
+}
+
 async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
   const hash = await crypto.subtle.digest('SHA-256', buf);
@@ -413,23 +431,24 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
       }
     } catch (_) { /* ignore cache errors */ }
 
-    const actionPlanContext = actionPlanSteps.length > 0
-      ? `\n\nAction plan steps (weave these into the description): ${actionPlanSteps.join('; ')}. Include research, strategy, timeline/schedule as appropriate.`
-      : '';
-
+    const situationLine = buildSituationLine(taskName, actionPlanSteps);
     const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
-    const terminologyContext = hasTerms
-      ? `\n\nUse ONLY these task-relevant terms where they fit naturally (do not list them; do not use any term that is unrelated to the task): keywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}; phrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}; verbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}; nouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}.`
+    const allowedVocabulary = hasTerms
+      ? `\n\nAllowed vocabulary (use only where they fit this situation; do not use any term that does not apply):\nKeywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}\nPhrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}\nVerbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}\nNouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}`
+      : '';
+    const doNotUseList = (DO_NOT_USE_TERMS[domain] || DO_NOT_USE_TERMS.mixed || []).slice(0, 12);
+    const doNotUseBlock = doNotUseList.length > 0
+      ? `\n\nDo not use any of these words (they refer to different contexts): ${doNotUseList.join(', ')}.`
       : '';
 
     const prompt = `Generate a clear, accurate description for this ${domain} task.
 
-Task Name: "${taskName}"${actionPlanContext || ''}${terminologyContext}
+Situation: ${situationLine}${allowedVocabulary}${doNotUseBlock}
 
 Requirements:
-- Describe ONLY what the task name and action plan refer to. Do not introduce any topic, concept, or vocabulary that is not directly related to the task (e.g. for a medical appointment do not mention events, parties, celebrations, or unrelated activities).
-- Be SPECIFIC and CONTEXTUAL. Use correct English: complete sentences, proper grammar, no redundant phrases, no sentence fragments.
-- Use only the vocabulary provided above where it fits; do not use other domain terms that are not in the task or the provided list.
+- Describe ONLY what the situation refers to. Do not introduce any topic or vocabulary that is not directly related (e.g. for a medical appointment do not mention events, parties, or celebrations).
+- Be SPECIFIC and CONTEXTUAL. Use correct English: complete sentences, proper grammar, no redundant phrases.
+- Use only the allowed vocabulary above where it fits. Do not use any term that does not apply to this situation.
 - Keep the description to 1-3 sentences (about 15-50 words). Avoid run-on sentences.
 - Do not repeat the task name verbatim.
 
@@ -517,21 +536,22 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
       }
     } catch (_) { /* ignore */ }
 
-    const actionPlanContext = actionPlanSteps.length > 0
-      ? `\nAction plan steps (weave into descriptions): ${actionPlanSteps.join('; ')}.`
-      : '';
-
+    const situationLine = buildSituationLine(taskName, actionPlanSteps);
     const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
-    const terminologyContext = hasTerms
-      ? `\nUse ONLY these task-relevant terms where they fit (do not use vocabulary unrelated to the task): keywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}; phrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}; verbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}; nouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}.`
+    const allowedVocabulary = hasTerms
+      ? `\n\nAllowed vocabulary (use only where they fit this situation):\nKeywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}\nPhrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}\nVerbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}\nNouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}`
+      : '';
+    const doNotUseList = (DO_NOT_USE_TERMS[domain] || DO_NOT_USE_TERMS.mixed || []).slice(0, 12);
+    const doNotUseBlock = doNotUseList.length > 0
+      ? `\n\nDo not use any of these words (different contexts): ${doNotUseList.join(', ')}.`
       : '';
 
     const prompt = `Generate exactly 3-5 short description options for this ${domain} task. Each description should be 1-3 sentences (about 15-50 words).
 
-Task Name: "${taskName}"${actionPlanContext || ''}${terminologyContext}
+Situation: ${situationLine}${allowedVocabulary}${doNotUseBlock}
 
 Requirements:
-- Describe ONLY what the task refers to. Do not introduce any topic or term that is unrelated to the task (e.g. for a medical task do not mention events, parties, or celebrations). Use only the vocabulary above where it fits.
+- Describe ONLY what the situation refers to. Do not introduce any topic or term unrelated to the task. Use only the allowed vocabulary where it fits.
 - Use correct English, complete sentences, no run-on sentences.
 - Vary the options (different wording, detail level, or angle).
 
@@ -596,6 +616,106 @@ JSON array:`;
     return c.json(result);
   } catch (error) {
     console.error('Error in ai/description-options:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// POST /taskzm-database-function/ai/action-plan — generate action plan steps with OpenAI (same context as description)
+app.post("/taskzm-database-function/ai/action-plan", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!apiKey || apiKey.trim().length === 0) {
+      return c.json({ error: 'Server AI not configured' }, 503);
+    }
+
+    const body = await c.req.json().catch(() => ({}));
+    const taskName = typeof body.taskName === 'string' ? body.taskName.trim() : '';
+    const domain = typeof body.domain === 'string' ? body.domain : 'business';
+    const effortScore = typeof body.effortScore === 'number' ? body.effortScore : 2.5;
+    const existingDescription = typeof body.existingDescription === 'string' ? body.existingDescription.trim() : '';
+    const terminology = body.terminology && typeof body.terminology === 'object'
+      ? {
+          keywords: Array.isArray(body.terminology.keywords) ? body.terminology.keywords.filter((x: unknown) => typeof x === 'string') : [],
+          phrases: Array.isArray(body.terminology.phrases) ? body.terminology.phrases.filter((x: unknown) => typeof x === 'string') : [],
+          verbs: Array.isArray(body.terminology.verbs) ? body.terminology.verbs.filter((x: unknown) => typeof x === 'string') : [],
+          nouns: Array.isArray(body.terminology.nouns) ? body.terminology.nouns.filter((x: unknown) => typeof x === 'string') : [],
+        }
+      : { keywords: [] as string[], phrases: [] as string[], verbs: [] as string[], nouns: [] as string[] };
+
+    if (!taskName) {
+      return c.json({ error: 'taskName is required' }, 400);
+    }
+
+    const situationLine = buildSituationLine(taskName, [], 100);
+    const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
+    const allowedTerms = hasTerms
+      ? `Allowed vocabulary (use only where they fit): Keywords: ${(terminology.keywords as string[]).slice(0, 15).join(', ')}. Phrases: ${(terminology.phrases as string[]).slice(0, 8).join('; ')}. Verbs: ${(terminology.verbs as string[]).slice(0, 10).join(', ')}. Nouns: ${(terminology.nouns as string[]).slice(0, 10).join(', ')}.`
+      : '';
+
+    const prompt = `Given this ${domain} task and allowed vocabulary, produce 3-5 ordered action steps. Each step: short action phrase (few words), estimated minutes (integer). Use only the provided vocabulary; do not introduce unrelated concepts.
+
+Situation: ${situationLine}
+${allowedTerms}
+
+Return ONLY a valid JSON object with a single key "steps", an array of objects each with "action" (string) and "estimatedMinutes" (number). No other text.
+Example: {"steps":[{"action":"Review requirements","estimatedMinutes":10},{"action":"Implement changes","estimatedMinutes":30}]}
+
+JSON:`;
+
+    const openaiRes = await fetch(OPENAI_CHAT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 400,
+        temperature: 0.4,
+      }),
+    });
+
+    if (!openaiRes.ok) {
+      const errText = await openaiRes.text();
+      console.error('OpenAI API error (action-plan):', openaiRes.status, errText);
+      return c.json({ error: 'AI service error' }, 502);
+    }
+
+    const openaiData = await openaiRes.json();
+    const content = openaiData?.choices?.[0]?.message?.content;
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      return c.json({ error: 'Empty AI response' }, 502);
+    }
+
+    let jsonText = content.trim();
+    const objMatch = jsonText.match(/\{[\s\S]*\}/);
+    if (objMatch) jsonText = objMatch[0];
+    let parsed: { steps?: Array<{ action?: string; estimatedMinutes?: number }> };
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      return c.json({ error: 'Invalid AI response format' }, 502);
+    }
+
+    const steps = Array.isArray(parsed.steps)
+      ? parsed.steps
+          .filter((s) => s && typeof (s as { action?: string }).action === 'string')
+          .slice(0, 8)
+          .map((s, i) => ({
+            action: String((s as { action: string }).action).trim().slice(0, 120),
+            estimatedMinutes: typeof (s as { estimatedMinutes?: number }).estimatedMinutes === 'number' ? Math.max(1, Math.round((s as { estimatedMinutes: number }).estimatedMinutes)) : 15,
+          }))
+      : [];
+
+    return c.json({ steps });
+  } catch (error) {
+    console.error('Error in ai/action-plan:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
 });

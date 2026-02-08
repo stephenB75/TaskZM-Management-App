@@ -3161,27 +3161,62 @@ function buildContextualDescription(
   );
 }
 
+/** Filtered terminology shape returned by filterTerminologyRelevantToTask (for description and action plan). */
+export interface FilteredTerminology {
+  keywords: string[];
+  phrases: string[];
+  verbs: string[];
+  nouns: string[];
+}
+
 /**
- * Filter domain terminology to only terms relevant to the task name.
- * Prevents the model from using unrelated terms (e.g. "anniversary", "banquet" for a medical appointment).
+ * Relevance score: 2 = full phrase in task, 1 = two+ words match, 0 = single word only.
+ * Only terms with score >= TERMINOLOGY_RELEVANCE_MIN_SCORE are kept.
  */
-function filterTerminologyRelevantToTask(
+function relevanceScore(term: string, taskLower: string, taskWords: string[]): number {
+  if (!term || typeof term !== 'string') return 0;
+  const t = term.toLowerCase().trim();
+  if (t.length < 2) return 0;
+  if (taskLower.includes(t)) return 2;
+  const termWords = t.split(/\s+/).filter(w => w.length >= 2);
+  if (termWords.length === 0) return taskLower.includes(t) ? 2 : 0;
+  const matchedWords = termWords.filter(tw => taskLower.includes(tw) || taskWords.some(tw2 => tw2.includes(tw) || tw.includes(tw2)));
+  if (matchedWords.length >= 2 || matchedWords.length === termWords.length) return 1;
+  if (matchedWords.length === 1) return 0;
+  return 0;
+}
+
+/**
+ * Filter domain terminology to only terms relevant to the task name and situation.
+ * Uses stricter matching (phrase/substring or two+ words) and excludes wrong-context terms.
+ * Exported for use by action-plan-generator so description and action plan share one vocabulary.
+ */
+export function filterTerminologyRelevantToTask(
   taskName: string,
+  domain: Domain,
   domainTerms: ReturnType<typeof getDomainTerminology>,
   maxPerCategory: number
-): { keywords: string[]; phrases: string[]; verbs: string[]; nouns: string[] } {
+): FilteredTerminology {
   const taskLower = taskName.toLowerCase().replace(/\bappt\.?\b/gi, 'appointment').replace(/\bdr\.?\b/gi, 'doctor');
   const taskWords = taskLower.split(/\W+/).filter(w => w.length >= 2);
+  const minScore = DOMAIN_EXCLUSION_TERMS.TERMINOLOGY_RELEVANCE_MIN_SCORE ?? 1;
+  const wrongContext: readonly string[] = (DOMAIN_EXCLUSION_TERMS.TERMINOLOGY_WRONG_CONTEXT as Record<string, readonly string[]>)[domain] ?? [];
 
-  const isRelevant = (term: string): boolean => {
-    if (!term || typeof term !== 'string') return false;
+  const isWrongContext = (term: string): boolean => {
     const t = term.toLowerCase().trim();
-    if (taskLower.includes(t)) return true;
-    const termWords = t.split(/\s+/).filter(w => w.length >= 2);
-    return termWords.some(tw => taskLower.includes(tw) || taskWords.some(tw2 => tw2.includes(tw) || tw.includes(tw2)));
+    if (taskLower.includes(t)) return false;
+    return wrongContext.some(wc => t.includes(wc) || wc.includes(t) || t === wc);
   };
 
-  const filterAndCap = (arr: string[]) => (arr || []).filter(isRelevant).slice(0, maxPerCategory);
+  const filterAndCap = (arr: string[]): string[] => {
+    return (arr || [])
+      .filter(term => !isWrongContext(term))
+      .map(term => ({ term, score: relevanceScore(term, taskLower, taskWords) }))
+      .filter(({ score }) => score >= minScore)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxPerCategory)
+      .map(({ term }) => term);
+  };
 
   return {
     keywords: filterAndCap(domainTerms.keywords || []),
@@ -3201,13 +3236,15 @@ function filterTerminologyRelevantToTask(
  * @param existingDescription - Optional existing description to use for domain detection
  * @param effortScore - Optional effort score (1-5) to adjust description detail level
  * @param actionPlanSteps - Optional action plan step titles to weave into descriptions
+ * @param breakdownContext - Optional domain + filtered terminology from breakdown (use same context as action plan)
  */
 export async function generateDescription(
   taskName: string, 
   accessToken?: string | null,
   existingDescription?: string | null,
   effortScore?: number,
-  actionPlanSteps?: string[]
+  actionPlanSteps?: string[],
+  breakdownContext?: { domain: Domain; filteredTerminology: FilteredTerminology }
 ): Promise<GeneratedDescription> {
   try {
   if (!taskName || taskName.trim().length === 0) {
@@ -3219,60 +3256,54 @@ export async function generateDescription(
     };
   }
 
+  const taskNameLower = taskName.toLowerCase().trim();
+  let domainRef: Domain;
+  let terminology: FilteredTerminology;
+  let domainTerms: ReturnType<typeof getDomainTerminology>;
+
+  if (breakdownContext?.domain && breakdownContext?.filteredTerminology) {
+    domainRef = breakdownContext.domain;
+    terminology = breakdownContext.filteredTerminology;
+    domainTerms = getDomainTerminology(domainRef);
+    logger.debug('📝 Description Generation: Using breakdown context (same as action plan)', { domain: domainRef });
+  } else {
     // Detect domain from task name AND description (if available) for better accuracy
-    // ENHANCED: If existing description is clearly wrong/irrelevant, prioritize task name for domain detection
     const descriptionForDetection = existingDescription?.trim() || '';
-    
-    // Check if existing description is clearly wrong (contains personal/fitness terms for technical tasks)
-    // Use constants from DOMAIN_EXCLUSION_TERMS for technical task detection
     const taskNameLower = taskName.toLowerCase();
     const descriptionLower = descriptionForDetection.toLowerCase();
-    
-    // Use TECHNICAL_TASK_INDICATORS constant for technical task detection
     const technicalIndicators = DOMAIN_EXCLUSION_TERMS.TECHNICAL_TASK_INDICATORS;
     const isTechnicalTask = technicalIndicators.some(indicator => taskNameLower.includes(indicator)) ||
                            taskNameLower.includes('prd') || taskNameLower.includes('bug') ||
                            taskNameLower.includes('issue') || taskNameLower.includes('fix') ||
                            taskNameLower.includes('recurring') || taskNameLower.includes('re-occurring');
-    
-    // Use BUSINESS_EXCLUDE_PERSONAL constant for wrong personal terms detection
     const personalExcludeTerms = DOMAIN_EXCLUSION_TERMS.BUSINESS_EXCLUDE_PERSONAL;
     const hasWrongPersonalTerms = personalExcludeTerms.some(term => descriptionLower.includes(term)) ||
                                   descriptionLower.includes('purchase') || descriptionLower.includes('travel') ||
                                   (descriptionLower.includes('personal') && !taskNameLower.includes('personal'));
-    
-    // If task is clearly technical but description has wrong personal terms, prioritize task name
-    const textForDetection = (isTechnicalTask && hasWrongPersonalTerms && descriptionForDetection.length > 0)
-      ? taskName  // Use only task name if description is clearly wrong
-      : `${taskName} ${descriptionForDetection}`.trim(); // Otherwise use both
-    
     const domainResult = detectDomain(taskName, isTechnicalTask && hasWrongPersonalTerms ? '' : descriptionForDetection);
-    const domain = domainResult.domain;
-    // Capture for use in nested blocks/after await (avoids ReferenceError: domain is not defined when minified)
-    const domainRef = domain;
+    domainRef = domainResult.domain;
 
-    // Defer async terminology fetch to avoid blocking UI
-    // Use setTimeout(0) to yield to event loop before heavy async operation
-    const domainTerms = await new Promise<ReturnType<typeof getDomainTerminology>>((resolve) => {
+    domainTerms = await new Promise<ReturnType<typeof getDomainTerminology>>((resolve) => {
       setTimeout(async () => {
         try {
-          const terms = await getDomainTerminologyAsync(domain);
+          const terms = await getDomainTerminologyAsync(domainRef);
           resolve(terms);
         } catch (error) {
           logger.warn('Error fetching domain terminology, using sync version:', error);
-          // Fallback to sync version if async fails
-          resolve(getDomainTerminology(domain));
+          resolve(getDomainTerminology(domainRef));
         }
       }, 0);
     });
 
-  logger.debug(`📝 Description Generation: Using domain detection with description`, {
-    taskName,
-    hasDescription: !!descriptionForDetection,
-    descriptionLength: descriptionForDetection.length,
-    detectedDomain: domainRef,
-    confidence: domainResult.confidence,
-  });
+    const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
+    const textForFilter = `${taskName} ${descriptionForDetection}`.trim();
+    terminology = filterTerminologyRelevantToTask(textForFilter, domainRef, domainTerms, maxTerms);
+    logger.debug('📝 Description Generation: Using domain detection with description', {
+      taskName,
+      detectedDomain: domainRef,
+      confidence: domainResult.confidence,
+    });
+  }
 
   // PRIMARY: OpenAI (server) — try Edge Function first. FALLBACK: local processing when no token, 4xx/5xx, or timeout.
   const serverAITimeoutMs = 10000;
@@ -3283,8 +3314,6 @@ export async function generateDescription(
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), serverAITimeoutMs);
-      const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
-      const terminology = filterTerminologyRelevantToTask(taskName, domainTerms, maxTerms);
       const res = await fetch(`${API_BASE}/ai/description`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
@@ -3722,7 +3751,8 @@ export async function generateDescriptionOptions(
   effortScore: number,
   accessToken?: string | null,
   existingDescription?: string | null,
-  actionPlanSteps?: string[]
+  actionPlanSteps?: string[],
+  breakdownContext?: { domain: Domain; filteredTerminology: FilteredTerminology }
 ): Promise<GeneratedDescription[]> {
   try {
     if (!taskName || taskName.trim().length === 0) {
@@ -3737,11 +3767,18 @@ export async function generateDescriptionOptions(
     // PRIMARY: OpenAI (server) for 3-5 options. FALLBACK: local generation below.
     if (accessToken) {
       try {
-        const domainResult = detectDomain(taskName, existingDescription?.trim() || '');
-        const domain = domainResult.domain;
-        const domainTerms = await getDomainTerminologyAsync(domain);
-        const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
-        const terminology = filterTerminologyRelevantToTask(taskName, domainTerms, maxTerms);
+        let domain: Domain;
+        let terminology: FilteredTerminology;
+        if (breakdownContext?.domain && breakdownContext?.filteredTerminology) {
+          domain = breakdownContext.domain;
+          terminology = breakdownContext.filteredTerminology;
+        } else {
+          const domainResult = detectDomain(taskName, existingDescription?.trim() || '');
+          domain = domainResult.domain;
+          const domainTerms = await getDomainTerminologyAsync(domain);
+          const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
+          terminology = filterTerminologyRelevantToTask(taskName, domain, domainTerms, maxTerms);
+        }
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
         const res = await fetch(`${API_BASE}/ai/description-options`, {
@@ -3799,7 +3836,8 @@ export async function generateDescriptionOptions(
               accessToken,
               existingDescription,
               variantEffortScore,
-              actionPlanSteps
+              actionPlanSteps,
+              breakdownContext
             );
 
             // Only add if description is not empty and not duplicate

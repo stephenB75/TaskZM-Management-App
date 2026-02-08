@@ -16,11 +16,14 @@ import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from '../lib/business-constants'
 import {
   TASK_BREAKDOWN_DEBOUNCE_MS,
   TASK_BREAKDOWN_CACHE_SIZE,
+  DESCRIPTION_GENERATION_CONFIG,
 } from '../lib/ai-config';
+import { filterTerminologyRelevantToTask, type FilteredTerminology } from '../lib/description-generator';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY, TEMP_TASK_ID } from '../lib/task-constants';
 import { createAIContextSync, type AIContext } from '../lib/ai-context';
 import { getDomainTerminology } from '../lib/domain-terminology';
 import { DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from '../lib/ai-config';
+import { getAIActionPlan } from '../lib/api';
 
 export interface TaskBreakdown {
   estimatedMinutes: number;
@@ -32,11 +35,15 @@ export interface TaskBreakdown {
   descriptionAnalysis: DescriptionAnalysis | null;
   domain: Domain;
   confidence: number;
+  /** Task-relevant terminology (same filter as description generation) for use when calling generateDescription. */
+  filteredTerminology?: FilteredTerminology;
 }
 
 interface UseTaskBreakdownOptions {
   debounceMs?: number;
   enabled?: boolean;
+  /** When provided, breakdown will try server AI for action plan steps (same context as description); falls back to rule-based if unavailable. */
+  getAccessToken?: () => Promise<string | null>;
 }
 
 /**
@@ -69,7 +76,7 @@ export function useTaskBreakdown(
   isLoading: boolean;
   error: Error | null;
 } {
-  const { debounceMs = TASK_BREAKDOWN_DEBOUNCE_MS, enabled = true } = options;
+  const { debounceMs = TASK_BREAKDOWN_DEBOUNCE_MS, enabled = true, getAccessToken } = options;
   const [breakdown, setBreakdown] = useState<TaskBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -122,7 +129,7 @@ export function useTaskBreakdown(
     // This allows the UI to remain responsive while analysis runs
     // Note: This timeout cannot be cancelled from here, but the useEffect that calls
     // this function will handle cleanup by preventing state updates if dependencies change
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         // Create temporary task for analysis
         const tempTask: Partial<Task> = {
@@ -251,8 +258,48 @@ export function useTaskBreakdown(
         // Analyze description (pass shared context and effort score to avoid redundant work)
         const descriptionAnalysis = analyzeDescription(title, description, safeAIContext, verbAnalysis.effortScore);
 
-        // Generate action plan (pass shared context to avoid redundant work)
-        const actionPlan = generateActionPlan(tempTask as Task, safeAIContext);
+        // Generate action plan (pass shared context to avoid redundant work) — used as fallback if AI action plan is not used
+        let actionPlan = generateActionPlan(tempTask as Task, safeAIContext);
+
+        // Task-relevant terminology for description generation (same filter as action plan)
+        const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
+        const filteredTerminology = filterTerminologyRelevantToTask(
+          `${title} ${description}`.trim(),
+          validDomain,
+          aiContext.domainTerms,
+          maxTerms
+        );
+
+        // Optionally try server AI for action plan (same context as description); use rule-based if unavailable
+        if (getAccessToken) {
+          try {
+            const token = await getAccessToken();
+            const aiSteps = await getAIActionPlan(
+              `${title} ${description}`.trim(),
+              validDomain,
+              filteredTerminology,
+              token,
+              { effortScore: verbAnalysis.effortScore, existingDescription: description.trim() || undefined }
+            );
+            if (aiSteps && aiSteps.length > 0) {
+              const totalFromAi = aiSteps.reduce((sum, s) => sum + s.estimatedMinutes, 0);
+              actionPlan = {
+                steps: aiSteps.map((s, i) => ({
+                  action: s.action,
+                  estimatedMinutes: s.estimatedMinutes,
+                  category: 'execution' as const,
+                  order: i + 1,
+                })),
+                totalEstimatedMinutes: totalFromAi,
+                suggestedSubtasks: [],
+                context: validDomain,
+                confidence: 0.85,
+              };
+            }
+          } catch {
+            // Keep rule-based action plan on any error
+          }
+        }
 
         // Determine suggested category from domain
         let suggestedCategory: 'work' | 'personal' | 'projects' | null = null;
@@ -274,6 +321,7 @@ export function useTaskBreakdown(
           descriptionAnalysis,
           domain: validDomain,
           confidence: safeAIContext.domainConfidence,
+          filteredTerminology,
         };
 
         // Cache result using current hash (not from closure)
@@ -323,7 +371,7 @@ export function useTaskBreakdown(
     
     // Store timeout ID in a way that can be cleaned up by the useEffect
     // Note: The actual cleanup happens in the useEffect that calls this function
-  }, [title, description, enabled]);
+  }, [title, description, enabled, getAccessToken]);
 
   // Debounce analysis
   useEffect(() => {

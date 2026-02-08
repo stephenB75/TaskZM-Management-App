@@ -12,7 +12,7 @@ import { estimateTaskHours } from './daily-hours-utils';
 import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from './business-constants';
 import { ACTION_PLAN_TIME_DISTRIBUTION, SEQUENTIAL_INDICATORS, DESCRIPTION_GENERATION_CONFIG, ACTION_PLAN_CONFIG, EFFORT_SCORE_THRESHOLDS } from './ai-config';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY } from './task-constants';
-import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName } from './description-generator';
+import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName, filterTerminologyRelevantToTask } from './description-generator';
 import type { AIContext } from './ai-context';
 
 export interface ActionPlanStep {
@@ -113,6 +113,17 @@ export function generateActionPlan(
   // Capture for use in downstream calls and return (avoids ReferenceError: domain is not defined when minified)
   const domainVal: Domain = domain ?? DEFAULT_TASK_DOMAIN;
 
+  // Use task-relevant terminology only (same filter as description generation) so description and action plan share one vocabulary
+  const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
+  const filtered = filterTerminologyRelevantToTask(fullText, domainVal, terminology, maxTerms);
+  const terminologyForSteps: ReturnType<typeof getDomainTerminology> = {
+    ...terminology,
+    keywords: filtered.keywords,
+    phrases: filtered.phrases,
+    verbs: filtered.verbs,
+    nouns: filtered.nouns,
+  };
+
   // Estimate total time
   const taskForEstimation: Task = {
     id: task.id || 'temp', // Temporary ID for estimation (not a constant as it's a placeholder)
@@ -141,26 +152,25 @@ export function generateActionPlan(
   const totalHours = estimateTaskHours(taskForEstimation);
   const totalMinutes = Math.round(totalHours * MINUTES_PER_HOUR);
 
-  // Generate steps based on domain and description
-  // ENHANCED: Pass effort score and enhanced terms for better coordination
+  // Generate steps based on domain and description (using filtered terminology for consistent vocabulary with description)
   const effortScore = aiContext?.effortScore;
   const steps = generateSteps(
     title,
     description,
     domainVal,
-    terminology,
+    terminologyForSteps,
     totalMinutes,
     extractedTerms,
     aiContext?.enhancedTerms,
     effortScore
   );
 
-  // Generate suggested subtasks
+  // Generate suggested subtasks (using filtered terminology)
   const suggestedSubtasks = generateSubtasks(
     title,
     description,
     domainVal,
-    terminology,
+    terminologyForSteps,
     extractedTerms
   );
 

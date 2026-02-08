@@ -1261,6 +1261,45 @@ export async function getAIConfigStatus(): Promise<{ configured: boolean }> {
   }
 }
 
+/** Response shape from POST /ai/action-plan. */
+export interface AIActionPlanResponse {
+  steps: Array<{ action: string; estimatedMinutes: number }>;
+}
+
+/**
+ * Fetch action plan steps from server AI (same context as description).
+ * Uses filtered terminology and domain so description and action plan stay aligned.
+ * Returns null on any error or when server AI is not configured.
+ */
+export async function getAIActionPlan(
+  taskName: string,
+  domain: Domain,
+  terminology: { keywords: string[]; phrases: string[]; verbs: string[]; nouns: string[] },
+  accessToken: string | null,
+  options?: { effortScore?: number; existingDescription?: string }
+): Promise<AIActionPlanResponse['steps'] | null> {
+  if (!accessToken || !taskName.trim()) return null;
+  try {
+    const response = await fetch(`${API_BASE}/ai/action-plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        taskName,
+        domain,
+        terminology,
+        effortScore: options?.effortScore ?? 2.5,
+        existingDescription: options?.existingDescription?.trim() || undefined,
+      }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!data?.steps || !Array.isArray(data.steps) || data.steps.length === 0) return null;
+    return data.steps;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Save new terminology to the shared database
  * This allows all users to benefit from learned terms
