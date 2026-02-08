@@ -10,6 +10,8 @@ import { TIME_ROUNDING_INTERVAL_MINUTES } from './ai-config';
  */
 export interface FindSlotOptions {
   ensureAfterCurrentTime?: boolean;
+  /** When true, only move tasks that overlap each other; do not move tasks for being "before work start" or "before now". */
+  onlyFixOverlaps?: boolean;
   categoryHours?: { start: number; end: number } | null; // in minutes from midnight
   calendarEvents?: Array<{ start: Date; end: Date; title: string }>; // Calendar events to avoid
 }
@@ -536,6 +538,9 @@ export function reorganizeAllTasksForDate(
     const categoryStart = new Date(targetDate);
     categoryStart.setHours(Math.floor(start / MINUTES_PER_HOUR), start % MINUTES_PER_HOUR, 0, 0);
     lastScheduledEnd = categoryStart.getTime();
+  } else if (options?.onlyFixOverlaps) {
+    // Only resolve overlaps; do not move tasks that are merely "before work start" or "before now"
+    lastScheduledEnd = 0;
   } else {
     // Start from default work start time
     const defaultStart = new Date(targetDate);
@@ -544,9 +549,7 @@ export function reorganizeAllTasksForDate(
     lastScheduledEnd = defaultStart.getTime();
   }
 
-  // Reorganize each task to ensure no overlaps and tasks are after current time (for today)
-  // lastScheduledEnd is initialized to current time (for today) or category start/default start
-  // So any task before lastScheduledEnd will be moved forward
+  // Reorganize: move a task only if it overlaps the previous one (or is before earliest allowed when not onlyFixOverlaps)
   for (const taskInfo of sortedTasks) {
     const task = taskInfo.task;
     const taskDuration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator

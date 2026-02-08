@@ -336,9 +336,10 @@ export function TodayAgendaView({
     if (timelineBlocks.length === 0) return;
     const reorganizations = reorganizeAllTasksForDate(todayDateForReorganize, tasks, {
       ensureAfterCurrentTime: false,
+      onlyFixOverlaps: true,
       calendarEvents: calendarEventsForReorganize,
     });
-    // Reorganize only fixes overlaps; it does not use current time to move tasks (indicator is display-only).
+    // Only overlapping tasks are moved; times are not changed for "before work start" or "before now".
     if (reorganizations.length === 0) return;
     reorganizations.forEach(({ taskId, newTime }) => {
       updateTask(taskId, { scheduledDate: newTime.toISOString() });
