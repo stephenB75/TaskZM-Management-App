@@ -499,7 +499,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   };
 
   return (
-    <div className={`h-full flex flex-col ${UI_SETTINGS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}>
+    <div className={`h-full flex flex-col min-w-0 ${UI_SETTINGS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`}>
       <AppHeader
         title={NAVIGATION_UI_TEXT.settings}
         panelOpen={true}
@@ -528,18 +528,19 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         }
       />
       <div
-        className="flex-1 overflow-y-auto overflow-x-auto overscroll-y-contain min-w-0"
+        className="flex-1 overflow-y-auto overflow-x-auto overscroll-y-contain min-w-0 flex flex-col items-stretch"
         style={{ 
           WebkitOverflowScrolling: 'touch',
           paddingBottom: shouldUseMobileLayout ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` : undefined, // Add padding to scroll container on mobile/tablet to ensure content can scroll past nav bar
         } as React.CSSProperties}
       >
         <div 
-          className="mx-auto w-full box-border min-w-0" 
+          className="mx-auto w-full box-border min-w-0 break-words" 
           style={{ 
             padding: SETTINGS_PANEL_CONTAINER_PADDING_SMALL,
-            paddingLeft: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
-            paddingRight: SETTINGS_PANEL_CONTAINER_PADDING_MEDIUM,
+            paddingLeft: SETTINGS_PANEL_CONTAINER_PADDING_SMALL,
+            paddingRight: SETTINGS_PANEL_CONTAINER_PADDING_SMALL,
+            maxWidth: '100%',
             // On mobile/tablet, header is fixed at top, so minimal top padding needed (scroll container handles spacing)
             // On desktop, use larger padding since header is relative
             paddingTop: shouldUseMobileLayout 
@@ -551,16 +552,16 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <div 
-            className="mx-auto w-full max-w-full box-border min-w-0" 
+            className="mx-auto w-full max-w-full box-border min-w-0 break-words overflow-x-auto" 
             style={{ 
-              maxWidth: SETTINGS_PANEL_MAX_WIDTH,
+              maxWidth: `min(${SETTINGS_PANEL_MAX_WIDTH}, 100%)`,
               paddingBottom: 0, // Bottom padding handled by parent container
               paddingTop: shouldUseMobileLayout
                 ? SETTINGS_PANEL_PADDING_MEDIUM // 0.75rem (12px) on mobile/tablet for better spacing after AppHeader
                 : SETTINGS_PANEL_PADDING_TOP 
             }}
           >
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="w-full min-w-0">
         {/* User Profile */}
         <AccordionItem 
           value="user-profile" 
