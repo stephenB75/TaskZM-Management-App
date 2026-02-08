@@ -488,11 +488,11 @@ export function TodayAgendaView({
                 return (
                   <div
                     key={minutesFromStart}
-                    className="absolute left-0 flex items-center gap-1"
+                    className="absolute left-0 flex items-center w-full"
                     style={{ top: topPx, transform: 'translateY(-50%)' }}
                   >
                     <span className="text-xs text-muted-foreground whitespace-nowrap">{label}</span>
-                    <span className="rounded-full bg-primary flex-shrink-0" style={{ width: dotSizePx, height: dotSizePx }} aria-hidden />
+                    <span className="rounded-full bg-primary flex-shrink-0 ml-auto" style={{ width: dotSizePx, height: dotSizePx }} aria-hidden />
                   </div>
                 );
               })}
@@ -506,7 +506,7 @@ export function TodayAgendaView({
                     key={`line-${minutesFromStart}`}
                     className="absolute top-0 h-0 border-t-2 border-primary/70"
                     style={{
-                      left: -columnGapPx,
+                      left: -(columnGapPx + dotSizePx),
                       right: 0,
                       top: topPx,
                       transform: 'translateY(-50%)',
