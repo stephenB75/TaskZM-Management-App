@@ -172,9 +172,7 @@ export function getOccurrenceDates(
   if (type === 'none') {
     const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
     return [d];
-  }
-
-  const maxCount = options?.maxCount ?? 52;
+  }  const maxCount = options?.maxCount ?? 52;
   const endDateOnly = options?.endDate
     ? (() => {
         const s = options.endDate!.trim();

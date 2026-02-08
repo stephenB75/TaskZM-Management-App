@@ -50,9 +50,10 @@ import {
   validateDependencies,
   getIncompleteDependencies,
   getInitials,
+  calculateRecurringTaskSeriesTotalTime,
 } from "../lib/utils";
 import { getOccurrenceDates } from "../lib/recurrence";
-import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, DATE_ONLY_PARSE_SUFFIX, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, DATE_ONLY_PARSE_SUFFIX, DEFAULT_PROJECT_ID, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -731,8 +732,15 @@ export function TaskDialog({
   const [showDeleteConfirm, setShowDeleteConfirm] =
     useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /** When true and task is part of a series, save applies title/description/priority/etc. to all tasks in the series. */
+  const [applyToSeries, setApplyToSeries] = useState(false);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  /** True when editing a task that is part of a pre-created series (id = baseId__YYYY-MM-DD). */
+  const isSeriesOccurrence = Boolean(task?.id && getSeriesBaseId(task.id));
+  const seriesBaseId = task?.id ? getSeriesBaseId(task.id) : null;
+  const seriesTotalMinutes = seriesBaseId ? calculateRecurringTaskSeriesTotalTime(seriesBaseId, tasks) : 0;
 
   // AI Task Breakdown - Real-time analysis
   const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
@@ -939,10 +947,12 @@ export function TaskDialog({
         }
 
         setProjectId(task.projectId || "default");
-        // Find folder by checking if any folder name is in the task's tags
+        // Prefer task.folderId when set (e.g. series occurrences); otherwise infer from folder name in tags
         const taskTags = Array.isArray(task.tags) ? task.tags : [];
         try {
-          if (folders && Array.isArray(folders) && folders.length > 0) {
+          if (task.folderId != null && task.folderId !== '') {
+            setFolderId(task.folderId);
+          } else if (folders && Array.isArray(folders) && folders.length > 0) {
             const matchingFolder = folders.find(f => {
               try {
                 return f && typeof f === 'object' && f.name && typeof f.name === 'string' && taskTags.includes(f.name);
@@ -1908,6 +1918,32 @@ export function TaskDialog({
       } else {
         await updateTask(task.id, taskData);
         savedTask = { ...task, ...taskData } as Task;
+        // Apply to all in series: update every task in this series with shared fields (not scheduledDate/status)
+        if (applyToSeries && seriesBaseId) {
+          const seriesIds = tasks
+            .filter((t) => getSeriesBaseId(t.id) === seriesBaseId || t.id === seriesBaseId)
+            .map((t) => t.id)
+            .filter((id) => id !== task.id);
+          const seriesUpdates = {
+            title: taskData.title,
+            description: taskData.description,
+            priority: taskData.priority,
+            estimatedTime: taskData.estimatedTime,
+            notes: taskData.notes ?? '',
+            tags: taskData.tags,
+            assignedTo: taskData.assignedTo,
+            folderId: taskData.folderId ?? null,
+          };
+          for (const id of seriesIds) {
+            await updateTask(id, seriesUpdates);
+          }
+          if (seriesIds.length > 0) {
+            toast.success('Updated this occurrence and the rest of the series', {
+              description: `${seriesIds.length + 1} tasks updated.`,
+              duration: TOAST_DURATION_SHORT_MS,
+            });
+          }
+        }
       }
     } else {
       const recurrence = taskData.recurrence || RECURRENCE_NONE_CONFIG;
@@ -1933,7 +1969,7 @@ export function TaskDialog({
             priority: (taskData.priority as Task['priority']) || 'medium',
             dueDate: taskData.dueDate ?? null,
             scheduledDate: scheduledAt.toISOString(),
-            projectId: taskData.projectId || 'default',
+            projectId: taskData.projectId || DEFAULT_PROJECT_ID,
             tags: taskData.tags || [],
             assignedTo: taskData.assignedTo || [],
             createdBy: user?.id || 'local',
@@ -3950,15 +3986,54 @@ export function TaskDialog({
                         initialTime={occurrenceTime}
                         estimatedTime={task.estimatedTime || undefined}
                       />
+                      {isSeriesOccurrence && (seriesTotalMinutes > 0 || (task.actualTime ?? 0) > 0) && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {task.actualTime != null && task.actualTime > 0 && (
+                            <span>This occurrence: {Math.floor(task.actualTime / MINUTES_PER_HOUR)}h {task.actualTime % MINUTES_PER_HOUR}m</span>
+                          )}
+                          {seriesTotalMinutes > 0 && (
+                            <span className={task.actualTime != null && task.actualTime > 0 ? ' ml-3' : ''}>
+                              Series total: {Math.floor(seriesTotalMinutes / MINUTES_PER_HOUR)}h {seriesTotalMinutes % MINUTES_PER_HOUR}m
+                            </span>
+                          )}
+                        </p>
+                      )}
                     </div>
                   );
                 })()}
+                {/* Series time summary when not showing Pomodoro (so series tasks always see time) */}
+                {task && isSeriesOccurrence && !hasFeature("pomodoroTimer") && (seriesTotalMinutes > 0 || (task.actualTime ?? 0) > 0) && (
+                  <p className="text-xs text-muted-foreground">
+                    {task.actualTime != null && task.actualTime > 0 && (
+                      <span>This occurrence: {Math.floor(task.actualTime / MINUTES_PER_HOUR)}h {task.actualTime % MINUTES_PER_HOUR}m</span>
+                    )}
+                    {seriesTotalMinutes > 0 && (
+                      <span className={task.actualTime != null && task.actualTime > 0 ? ' ml-3' : ''}>
+                        Series total: {Math.floor(seriesTotalMinutes / MINUTES_PER_HOUR)}h {seriesTotalMinutes % MINUTES_PER_HOUR}m
+                      </span>
+                    )}
+                  </p>
+                )}
                 </TabsContent>
 
                 {/* Advanced Tab - Removed (merged into Organization) */}
               </div>
             </div>
           </Tabs>
+
+          {/* Apply to series: when editing a series occurrence, optionally apply shared fields to all in series */}
+          {isSeriesOccurrence && task && (
+            <div className="flex items-center gap-2 py-2">
+              <Checkbox
+                id="apply-to-series"
+                checked={applyToSeries}
+                onCheckedChange={(checked) => setApplyToSeries(checked === true)}
+              />
+              <label htmlFor="apply-to-series" className="text-sm text-muted-foreground cursor-pointer">
+                Apply title, description, priority, and other details to all tasks in this series
+              </label>
+            </div>
+          )}
 
           {/* Footer - Reference: two prominent buttons - red cancel, purple + CREATE */}
           <div
