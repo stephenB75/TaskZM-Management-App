@@ -3,6 +3,9 @@
  * Centralized timeout and delay values for consistent timing across the application
  */
 
+/** Fallback IANA timezone when browser timezone cannot be resolved (e.g. calendar sync, server requests) */
+export const DEFAULT_FALLBACK_TIMEZONE = 'America/New_York';
+
 export const TIMING_CONSTANTS = {
   // Intervals (in milliseconds)
   intervals: {

@@ -19,6 +19,7 @@ import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
+import { DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
 
 interface AppleCalDAVSetupDialogProps {
   open: boolean;
@@ -146,22 +147,29 @@ export function AppleCalDAVSetupDialog({
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          email, 
-          appPassword, 
-          selectedCalendars 
+        body: JSON.stringify({
+          email,
+          appPassword,
+          selectedCalendars,
         }),
       });
 
-      const saveData = await saveResponse.json();
+      let saveData: { success?: boolean; error?: string };
+      try {
+        saveData = await saveResponse.json();
+      } catch {
+        setError('Invalid response from server. Please try again.');
+        return;
+      }
 
       if (!saveData.success) {
-        throw new Error(saveData.error || 'Failed to save settings');
+        setError(saveData.error || 'Failed to save settings. Please check your app-specific password.');
+        return;
       }
 
       // Trigger initial sync with user's timezone
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
-      
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_FALLBACK_TIMEZONE;
+
       const syncResponse = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
         method: 'POST',
         headers: {
@@ -171,22 +179,38 @@ export function AppleCalDAVSetupDialog({
         body: JSON.stringify({ userTimezone }),
       });
 
-      const syncData = await syncResponse.json();
+      let syncData: { success?: boolean; error?: string; errors?: string[]; created?: number };
+      try {
+        syncData = await syncResponse.json();
+      } catch {
+        setError('Sync started but we couldn’t read the result. You can try syncing again from Settings.');
+        setStep(3);
+        toast.warning('Calendar saved', {
+          description: 'Sync result unclear. Use "Sync" in Settings to refresh events.',
+        });
+        return;
+      }
+
+      const syncMessage = syncData.error || (Array.isArray(syncData.errors) && syncData.errors.length > 0 ? syncData.errors.join(' ') : undefined);
 
       if (syncData.success) {
         setStep(3);
         toast.success('Calendar sync complete!', {
-          description: `Imported ${syncData.created} events`,
+          description: `Imported ${syncData.created ?? 0} events`,
         });
       } else {
-        // Still move forward if save succeeded
         setStep(3);
-        toast.warning('Sync completed with some issues', {
-          description: syncData.error || 'Some events may not have been imported',
+        toast.warning('Sync had issues', {
+          description: syncMessage || 'Some events may not have been imported. You can sync again from Settings.',
         });
+        if (syncMessage) {
+          setError(syncMessage);
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Setup failed');
+      const message = err instanceof Error ? err.message : 'Setup failed';
+      const isNetwork = err instanceof TypeError && (err.message === 'Failed to fetch' || (err as Error).message?.includes('network'));
+      setError(isNetwork ? 'Network error. Check your connection and try again.' : message);
       console.error('CalDAV save/sync error:', err);
     } finally {
       setIsLoading(false);

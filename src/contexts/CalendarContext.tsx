@@ -6,7 +6,7 @@ import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { supabase } from '../lib/supabase-client';
-import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { TIMING_CONSTANTS, DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
 import { clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { createDefaultCalendarContext } from '../lib/context-defaults';
@@ -753,7 +753,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
       
       // Auto-detect user's timezone from browser
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_FALLBACK_TIMEZONE;
       
       const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
         method: 'POST',
@@ -764,7 +764,22 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ userTimezone }),
       });
 
-      const data = await response.json();
+      let data: { success?: boolean; error?: string; errors?: string[]; created?: number; updated?: number; deleted?: number };
+      try {
+        data = await response.json();
+      } catch {
+        const fallbackMessage = response.status === 401
+          ? 'Please sign in again and try syncing.'
+          : response.status >= 500
+            ? 'Calendar service is temporarily unavailable. Please try again in a few minutes.'
+            : 'Could not read server response. Please try again.';
+        if (!silent) {
+          toast.error('Apple Calendar sync failed', { description: fallbackMessage });
+        }
+        return false;
+      }
+
+      const serverMessage = data.error || (Array.isArray(data.errors) && data.errors.length > 0 ? data.errors.join(' ') : undefined);
 
       if (data.success) {
         setLastSync(new Date());
@@ -787,30 +802,40 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           console.debug(`Apple Calendar auto-sync complete: ${data.created} new, ${data.updated} updated, ${data.deleted} removed`);
         }
         return true;
-      } else if (response.status === 400 && data.error?.includes('not configured')) {
-        // CalDAV not set up yet
+      } else if (response.status === 401) {
+        if (!silent) {
+          toast.error('Session expired', {
+            description: 'Please sign in again and try syncing Apple Calendar.',
+          });
+        }
+        return false;
+      } else if (response.status === 400 && (serverMessage?.toLowerCase().includes('not configured') || serverMessage?.toLowerCase().includes('connect') || serverMessage?.toLowerCase().includes('credentials'))) {
+        // CalDAV not set up or credentials issue
         if (!silent) {
           toast.info('Apple Calendar not configured', {
-            description: 'Please complete the setup first.',
+            description: serverMessage || 'Please complete the setup first.',
           });
           setShowAppleCalDAVDialog(true);
         }
         return false;
       } else {
         if (!silent) {
-          toast.error('Sync failed', {
-            description: data.error || 'Failed to sync with iCloud Calendar',
+          toast.error('Apple Calendar sync failed', {
+            description: serverMessage || 'Failed to sync with iCloud Calendar. Please check your app-specific password and try again.',
           });
         } else {
-          console.debug('Apple Calendar auto-sync failed:', data.error);
+          console.debug('Apple Calendar auto-sync failed:', serverMessage);
         }
         return false;
       }
     } catch (error) {
       console.error('Apple CalDAV sync error:', error);
+      const isNetwork = error instanceof TypeError && (error.message === 'Failed to fetch' || error.message?.includes('network'));
       if (!silent) {
-        toast.error('Sync failed', {
-          description: 'Could not connect to iCloud Calendar',
+        toast.error('Apple Calendar sync failed', {
+          description: isNetwork
+            ? 'Network error. Check your connection and try again.'
+            : 'Could not connect to calendar service. Please try again.',
         });
       } else {
         console.debug('Apple Calendar auto-sync error (silent):', error);
@@ -846,7 +871,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
       
       // Auto-detect user's timezone from browser
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_FALLBACK_TIMEZONE;
       
       const response = await fetch(`${CALENDAR_API_BASE}/calendar/google/sync`, {
         method: 'POST',
