@@ -219,8 +219,6 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Minimum task block height (px) when duration is very short. */
   minBlockHeightPx: 48,
   columnWidth: '1in',
-  /** Time column width in px (1in) – used so horizontal timeline line can extend to the dot. */
-  columnWidthPx: 96,
   dotSizePx: 10,
   lineMinWidthPx: 28,
   rowPaddingTopPx: 2,

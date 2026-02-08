@@ -430,7 +430,7 @@ export function TodayAgendaView({
   /** Vertical timeline: show hourly stamps (hide only those strictly inside a block) plus every task/event start time so each block has its timestamp. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, columnWidth, columnWidthPx, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
       const allSlotMinutes: number[] = [];
       for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
         allSlotMinutes.push(m);
@@ -506,7 +506,7 @@ export function TodayAgendaView({
                     key={`line-${minutesFromStart}`}
                     className="absolute top-0 h-0 border-t-2 border-primary/70"
                     style={{
-                      left: -(columnGapPx + columnWidthPx),
+                      left: -columnGapPx,
                       right: 0,
                       top: topPx,
                       transform: 'translateY(-50%)',
