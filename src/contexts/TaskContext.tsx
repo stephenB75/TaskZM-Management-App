@@ -7,7 +7,7 @@ import { useSubscription } from './SubscriptionContext';
 // Use useTeam hook in components that need team member info instead
 import { useDemoActivity } from '../hooks/useDemoActivity';
 import * as api from '../lib/api';
-import { generateId, getFromLocalStorage, saveToLocalStorage, getDateString } from '../lib/utils';
+import { generateId, getFromLocalStorage, saveToLocalStorage, getDateString, getSeriesBaseId } from '../lib/utils';
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
 import { findNextAvailableSlot } from '../lib/time-conflict';
@@ -82,6 +82,7 @@ interface TaskContextType {
   isSyncing: boolean;
   lastSync: Date | null;
   addTask: (task: Partial<Task>) => Promise<void>;
+  addTaskSeries: (tasks: Task[]) => Promise<void>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   bulkDeleteTasks: (taskIds: string[]) => Promise<void>;
@@ -1779,8 +1780,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       currentWorkspaceId = validWorkspaceId;
     }
     
+    const taskId = taskData.id && typeof taskData.id === 'string' && taskData.id.trim().length > 0
+      ? taskData.id.trim()
+      : generateId();
     const newTask: Task = {
-      id: generateId(),
+      id: taskId,
       title: taskData.title || 'Untitled Task',
       description: taskData.description || '',
       status: taskData.status || 'todo',
@@ -1869,16 +1873,54 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [user, workspaceId, accessToken, updateActivity, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]);
 
+  const addTaskSeries = useCallback(async (seriesTasks: Task[]) => {
+    if (!seriesTasks.length) return;
+    updateActivity();
+    let currentWorkspaceId = workspaceId;
+    if (!currentWorkspaceId) {
+      const validWorkspaceId = await ensureWorkspace();
+      if (!validWorkspaceId) {
+        toast.error('Workspace not available. Please refresh the page.');
+        return;
+      }
+      currentWorkspaceId = validWorkspaceId;
+    }
+    if (currentWorkspaceId && accessToken) {
+      try {
+        setTasks((prev) => {
+          const updated = [...prev, ...seriesTasks];
+          saveToLocalStorage('tasks', updated);
+          return updated;
+        });
+        for (const t of seriesTasks) {
+          await api.saveTask(currentWorkspaceId!, t);
+        }
+        debouncedSync(false);
+        toast.success(seriesTasks.length === 1 ? 'Task created' : `Series created: ${seriesTasks.length} tasks`);
+      } catch (error) {
+        logger.error('Failed to save task series', error);
+        await loadTasksFromServer(currentWorkspaceId!).catch(() => {});
+        toast.error('Failed to create series. Please try again.');
+      }
+    } else {
+      setTasks((prev) => {
+        const updated = [...prev, ...seriesTasks];
+        saveToLocalStorage('tasks', updated);
+        return updated;
+      });
+      toast.success(seriesTasks.length === 1 ? 'Task created (offline)' : `Series created: ${seriesTasks.length} tasks (offline)`);
+    }
+  }, [user, workspaceId, accessToken, updateActivity, ensureWorkspace, loadTasksFromServer, debouncedSync]);
+
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
 
-    // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; occurrence subtask IDs are baseId + SUFFIX + YYYY-MM-DD
+    // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; occurrence subtask IDs are baseId + SUFFIX + YYYY-MM-DD. Series occurrence ids are baseId__YYYY-MM-DD.
     const isOccurrenceSubtaskId = taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS);
+    const seriesBase = getSeriesBaseId(taskId);
     const baseTaskId = isOccurrenceSubtaskId
       ? taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0]
-      : taskId.includes('__')
-        ? taskId.split('__')[0]
-        : taskId;
+      : seriesBase ?? (taskId.includes('__') ? taskId.split('__')[0] : taskId);
 
     try {
     // Permission check removed to break circular dependency with TeamContext
@@ -1896,8 +1938,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       currentWorkspaceId = validWorkspaceId;
     }
 
-    // Find the task to update: for occurrence subtask ID use taskId itself; otherwise use base task ID
-    const lookupId = isOccurrenceSubtaskId ? taskId : baseTaskId;
+    // Find the task to update: for occurrence subtask or series occurrence use taskId; otherwise use base task ID
+    const lookupId = isOccurrenceSubtaskId || seriesBase ? taskId : baseTaskId;
     let currentTask = tasks.find(t => t.id === lookupId);
 
     // Occurrence subtask task may not exist yet (first time saving subtasks for this occurrence) – upsert
@@ -1915,6 +1957,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         ...baseTask,
         id: taskId,
         subtasks: updates.subtasks ?? baseTask.subtasks,
+        actualTime: updates.actualTime ?? baseTask.actualTime ?? null,
         recurrence: RECURRENCE_NONE_CONFIG,
         updatedAt: new Date().toISOString(),
         scheduledDate: occurrenceDate.toISOString(),
@@ -2011,7 +2054,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             const occurrenceScheduled = new Date(completionDate);
             occurrenceScheduled.setHours(baseScheduled.getHours(), baseScheduled.getMinutes(), baseScheduled.getSeconds(), baseScheduled.getMilliseconds());
             const completedAt = new Date().toISOString();
-            // Create completed occurrence (stays visible, grayed out on today)
+            // Use per-occurrence time from _subtasks_ for this date if present, else base task
+            const subtasksOccurrenceId = `${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${completionDateKey}`;
+            const subtasksOccurrence = tasks.find(t => t.id === subtasksOccurrenceId);
+            const occurrenceActualTime = subtasksOccurrence?.actualTime ?? currentTask.actualTime ?? null;
             completedOccurrence = {
               ...currentTask,
               id: completedOccurrenceId,
@@ -2019,7 +2065,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               status: 'done',
               completedAt,
               updatedAt: completedAt,
-              actualTime: null,
+              actualTime: occurrenceActualTime,
               scheduledDate: occurrenceScheduled.toISOString(), // Today at same time so Today Agenda shows it
             };
           }
@@ -3170,6 +3216,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         updateRolloverSettings,
         syncWithServer,
         ensureWorkspace,
+        addTaskSeries,
       }}
     >
       {children}

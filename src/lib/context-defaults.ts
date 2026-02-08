@@ -314,6 +314,7 @@ export function createDefaultTaskContext() {
     isSyncing: false,
     lastSync: null,
     addTask: async () => {},
+    addTaskSeries: async () => {},
     updateTask: async () => {},
     deleteTask: async () => {},
     bulkDeleteTasks: async () => {},

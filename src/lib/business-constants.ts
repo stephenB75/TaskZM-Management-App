@@ -76,6 +76,8 @@ export const RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS = '_subtasks_';
 export const RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED = '_completed_';
 /** Default recurrence config when no recurrence (single occurrence or cleared). */
 export const RECURRENCE_NONE_CONFIG = { type: 'none' as const, interval: 1 };
+/** Separator for task series occurrence ids: baseId + this + YYYY-MM-DD (each occurrence is a full task). */
+export const RECURRENCE_SERIES_OCCURRENCE_SEPARATOR = '__';
 
 // Date/Time Constants
 /** Suffix for parsing date-only strings (YYYY-MM-DD) to a Date at noon, avoiding UTC-midnight timezone shifts. */

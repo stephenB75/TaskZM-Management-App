@@ -45,11 +45,14 @@ import {
   cn,
   formatDate,
   getDateString,
+  getSeriesBaseId,
+  generateId,
   validateDependencies,
   getIncompleteDependencies,
   getInitials,
 } from "../lib/utils";
-import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, DATE_ONLY_PARSE_SUFFIX, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG } from "../lib/business-constants";
+import { getOccurrenceDates } from "../lib/recurrence";
+import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, DATE_ONLY_PARSE_SUFFIX, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -92,16 +95,18 @@ interface TaskDialogProps {
   onShowUpgradePrompt?: (feature: 'recurringTasks' | 'taskDependencies' | 'taskTemplates') => void;
 }
 
-/** Recurring tasks can be opened as base task (id) or occurrence (baseId + SUFFIX + YYYY-MM-DD). Always use base id for occurrence logic. */
+/** Recurring tasks can be opened as base task (id) or occurrence (baseId + SUFFIX + YYYY-MM-DD). Series occurrence ids are baseId__YYYY-MM-DD. Always use base id for occurrence/series logic. */
 function getBaseTaskId(taskId: string): string {
   if (taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)) return taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0];
   if (taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)) return taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0];
+  const seriesBase = getSeriesBaseId(taskId);
+  if (seriesBase) return seriesBase;
   return taskId;
 }
 
 const OCCURRENCE_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Extract occurrence date from occurrence-style task id when present. */
+/** Extract occurrence date from occurrence-style task id when present (subtasks, completed, or series baseId__YYYY-MM-DD). */
 function getOccurrenceDateFromTaskId(taskId: string): string | undefined {
   if (taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)) {
     const part = taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[1];
@@ -109,6 +114,10 @@ function getOccurrenceDateFromTaskId(taskId: string): string | undefined {
   }
   if (taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)) {
     const part = taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[1];
+    return part && OCCURRENCE_DATE_REGEX.test(part) ? part : undefined;
+  }
+  if (taskId.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)) {
+    const part = taskId.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)[1];
     return part && OCCURRENCE_DATE_REGEX.test(part) ? part : undefined;
   }
   return undefined;
@@ -619,7 +628,7 @@ export function TaskDialog({
   initialFolderId,
   onShowUpgradePrompt,
 }: TaskDialogProps) {
-  const { accessToken, getSessionToken } = useAuth();
+  const { accessToken, getSessionToken, user } = useAuth();
   const isMobile = useIsMobile();
   const [subtaskCheckboxSize, setSubtaskCheckboxSize] = useState(TASK_DIALOG_SUBTASK_CHECKBOX_SIZE.laptop);
   useEffect(() => {
@@ -635,6 +644,7 @@ export function TaskDialog({
   }, []);
   const {
     addTask,
+    addTaskSeries,
     updateTask,
     deleteTask,
     availableTags,
@@ -1900,10 +1910,51 @@ export function TaskDialog({
         savedTask = { ...task, ...taskData } as Task;
       }
     } else {
-      await addTask(taskData);
-      // After adding, the task will be in the tasks list - find it by matching properties
-      // Note: This is a workaround since addTask returns void
-      savedTask = { ...taskData, id: `temp-${Date.now()}` } as Task;
+      const recurrence = taskData.recurrence || RECURRENCE_NONE_CONFIG;
+      const isNewRecurringSeries = recurrence.type && recurrence.type !== 'none';
+      if (isNewRecurringSeries && taskData.scheduledDate) {
+        const baseId = generateId();
+        const startDate = finalScheduledDate ? new Date(finalScheduledDate) : new Date(taskData.scheduledDate);
+        const maxCount = Math.min(TIMING_CONSTANTS.calendar.maxOccurrences ?? 52, 90);
+        const occurrenceDates = getOccurrenceDates(recurrence, startDate, {
+          maxCount,
+          endDate: recurrence.endDate ?? undefined,
+        });
+        const nowIso = new Date().toISOString();
+        const seriesTasks: Task[] = occurrenceDates.map((date) => {
+          const dateStr = getDateString(date);
+          const scheduledAt = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          scheduledAt.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds());
+          return {
+            id: `${baseId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}${dateStr}`,
+            title: taskData.title || 'Untitled Task',
+            description: taskData.description || '',
+            status: (taskData.status as Task['status']) || 'todo',
+            priority: (taskData.priority as Task['priority']) || 'medium',
+            dueDate: taskData.dueDate ?? null,
+            scheduledDate: scheduledAt.toISOString(),
+            projectId: taskData.projectId || 'default',
+            tags: taskData.tags || [],
+            assignedTo: taskData.assignedTo || [],
+            createdBy: user?.id || 'local',
+            createdAt: nowIso,
+            updatedAt: nowIso,
+            completedAt: null,
+            estimatedTime: taskData.estimatedTime ?? null,
+            actualTime: null,
+            dependencies: taskData.dependencies || [],
+            subtasks: taskData.subtasks || [],
+            recurrence: RECURRENCE_NONE_CONFIG,
+            notes: taskData.notes || '',
+            folderId: taskData.folderId ?? null,
+          } as Task;
+        });
+        await addTaskSeries(seriesTasks);
+        savedTask = seriesTasks[0] ?? ({ ...taskData, id: baseId } as Task);
+      } else {
+        await addTask(taskData);
+        savedTask = { ...taskData, id: `temp-${Date.now()}` } as Task;
+      }
     }
 
     // Auto-sync to calendar if task has scheduled date and calendar is connected
@@ -2026,32 +2077,38 @@ export function TaskDialog({
   const handlePomodoroTimeUpdate = async (minutes: number) => {
     if (task) {
       try {
-        // UPDATED: For recurring tasks, track time on the base task to maintain series progress
-        // Time tracking is on the initial/base task, not per-occurrence
+        // For recurring tasks, track time on the specific occurrence (_subtasks_ record) so each occurrence has its own time; series total is summed elsewhere
         const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
         if (isRecurringTask) {
-          // Extract base task ID (remove any existing occurrence suffix)
-          const baseTaskId = task.id.includes('__') 
-            ? task.id.split('__')[0] 
-            : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
-              ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
-              : task.id;
-          
-          // Update the base task with tracked time - this maintains progress across the series
-          await updateTask(baseTaskId, {
-            actualTime: minutes,
-          });
+          const baseTaskId = getBaseTaskId(task.id);
+          // Use form's current scheduled date so time is attributed to the occurrence being edited (including if user changed the date)
+          let occurrenceDateStr =
+            getOccurrenceDateFromTaskId(task.id) ??
+            (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+          if (!occurrenceDateStr && (scheduledDate || (scheduledYear && scheduledDay && scheduledMonth))) {
+            const dateToUse = scheduledDate ?? (() => {
+              const month = parseInt(scheduledMonth, 10) - 1;
+              const day = parseInt(scheduledDay, 10);
+              const year = parseInt(scheduledYear, 10);
+              if (Number.isNaN(month) || Number.isNaN(day) || Number.isNaN(year)) return null;
+              const d = new Date(year, month, day);
+              return isNaN(d.getTime()) ? null : d;
+            })();
+            occurrenceDateStr = dateToUse ? getDateString(dateToUse) : occurrenceDateStr;
+          }
+          if (occurrenceDateStr) {
+            const occurrenceSubtaskId = `${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${occurrenceDateStr}`;
+            await updateTask(occurrenceSubtaskId, { actualTime: minutes });
+          } else {
+            await updateTask(baseTaskId, { actualTime: minutes });
+          }
         } else {
-          // Non-recurring task - update normally
-          await updateTask(task.id, {
-            actualTime: minutes,
-          });
+          await updateTask(task.id, { actualTime: minutes });
         }
         toast.success(
           `Time tracked: ${Math.floor(minutes / MINUTES_PER_HOUR)}h ${minutes % MINUTES_PER_HOUR}m`,
         );
       } catch (error) {
-        // Error handled by toast
         toast.error("Failed to track time");
       }
     }
@@ -3855,23 +3912,25 @@ export function TaskDialog({
                 {/* Pomodoro Timer - Moved from Advanced */}
                 {task && hasFeature("pomodoroTimer") && (() => {
                   // For recurring tasks, use occurrence-specific ID for pomodoro timer to ensure each occurrence has its own timer state
-                  // This prevents the timer from being shared across all occurrences in the series
+                  // Use canonical occurrence id (_subtasks_) for recurring so time is stored/read per occurrence
                   const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
-                  const pomodoroTimerId = isRecurringTask && task.scheduledDate
-                    ? `${task.id}__${getDateString(new Date(task.scheduledDate))}`
-                    : task.id;
-                  
-                  // For recurring tasks, get the correct occurrence's time (completed occurrence if exists, otherwise current task)
-                  let occurrenceTime = task.actualTime || 0;
-                  if (isRecurringTask && task.scheduledDate) {
-                    const scheduledDate = new Date(task.scheduledDate);
-                    scheduledDate.setHours(0, 0, 0, 0);
-                    const scheduledDateKey = getDateString(scheduledDate);
-                    const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${scheduledDateKey}`;
-                    const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
-                    if (completedOccurrence && completedOccurrence.actualTime) {
-                      occurrenceTime = completedOccurrence.actualTime;
-                    }
+                  const baseId = getBaseTaskId(task.id);
+                  const occurrenceDateStr =
+                    getOccurrenceDateFromTaskId(task.id) ??
+                    (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+                  const pomodoroTimerId =
+                    isRecurringTask && occurrenceDateStr
+                      ? `${baseId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${occurrenceDateStr}`
+                      : task.id;
+                  // Per-occurrence time: completed occurrence for this date, else _subtasks_ occurrence, else base/task
+                  let occurrenceTime = task.actualTime ?? 0;
+                  if (isRecurringTask && occurrenceDateStr) {
+                    const completedId = `${baseId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${occurrenceDateStr}`;
+                    const subtasksId = `${baseId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${occurrenceDateStr}`;
+                    const completedOccurrence = tasks.find(t => t.id === completedId);
+                    const subtasksOccurrence = tasks.find(t => t.id === subtasksId);
+                    if (completedOccurrence?.actualTime != null) occurrenceTime = completedOccurrence.actualTime;
+                    else if (subtasksOccurrence?.actualTime != null) occurrenceTime = subtasksOccurrence.actualTime;
                   }
                   
                   return (

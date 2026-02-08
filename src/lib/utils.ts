@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { logger } from './logger';
 import type { Task, TaskPriority, TaskStatus, RecurrenceConfig } from '../types';
-import { MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_DAY, MINUTES_PER_HOUR, HOURS_PER_DAY, DAYS_IN_WEEK, PERCENTAGE_MULTIPLIER, SECONDS_PER_MINUTE, SECONDS_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG } from './business-constants';
+import { MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_DAY, MINUTES_PER_HOUR, HOURS_PER_DAY, DAYS_IN_WEEK, PERCENTAGE_MULTIPLIER, SECONDS_PER_MINUTE, SECONDS_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from './business-constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -120,15 +120,14 @@ export function dateStringToLocalDate(dateString: string): Date {
  */
 export function calculateRecurringTaskSeriesTotalTime(baseTaskId: string, allTasks: Array<{ id: string; actualTime?: number | null }>): number {
   // Find all tasks that belong to this recurring series:
-  // 1. Tasks with the exact base ID (active occurrence on current date)
-  // 2. Active occurrences with ID pattern: `${baseTaskId}__${dateString}` (used in kanban/today views)
-  // 3. Completed occurrences with ID pattern: baseId + RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED + dateString
+  // 1. Base task (may hold time for legacy or first occurrence)
+  // 2. Per-occurrence records: baseId + _subtasks_ + date (subtasks + actualTime per occurrence)
+  // 3. Legacy active occurrences: baseId__date (kanban/today)
+  // 4. Completed occurrences: baseId + _completed_ + date
   const seriesTasks = allTasks.filter(t => {
-    // Match base task ID (active occurrence)
     if (t.id === baseTaskId) return true;
-    // Match active occurrences with date suffix (used in kanban/today views for occurrence-specific tracking)
-    if (t.id.startsWith(`${baseTaskId}__`)) return true;
-    // Match completed occurrences
+    if (t.id.startsWith(`${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}`)) return true;
+    if (t.id.startsWith(`${baseTaskId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}`)) return true;
     if (t.id.startsWith(`${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}`)) return true;
     return false;
   });
@@ -138,6 +137,21 @@ export function calculateRecurringTaskSeriesTotalTime(baseTaskId: string, allTas
     const time = task.actualTime || 0;
     return total + time;
   }, 0);
+}
+
+const SERIES_OCCURRENCE_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * If taskId is a series occurrence id (baseId__YYYY-MM-DD), return the baseId; otherwise null.
+ * Used to find all tasks in a series and for "Edit series" / series time total.
+ */
+export function getSeriesBaseId(taskId: string): string | null {
+  if (!taskId || !taskId.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)) return null;
+  const parts = taskId.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR);
+  if (parts.length !== 2) return null;
+  const datePart = parts[1];
+  if (!SERIES_OCCURRENCE_DATE_REGEX.test(datePart)) return null;
+  return parts[0] || null;
 }
 
 export function isOverdue(dueDate: string | null): boolean {
@@ -619,10 +633,15 @@ export function getTaskWithOccurrenceSubtasks(
   }
   const occurrenceSubtaskId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${occurrenceDateStr}`;
   const occurrenceTask = allTasks.find((t) => t.id === occurrenceSubtaskId);
-  if (!occurrenceTask || !Array.isArray(occurrenceTask.subtasks)) {
+  if (!occurrenceTask) {
     return task;
   }
-  return { ...task, subtasks: occurrenceTask.subtasks };
+  return {
+    ...task,
+    subtasks: Array.isArray(occurrenceTask.subtasks) ? occurrenceTask.subtasks : task.subtasks,
+    actualTime: occurrenceTask.actualTime ?? task.actualTime,
+    scheduledDate: occurrenceTask.scheduledDate ?? task.scheduledDate,
+  };
 }
 
 /**

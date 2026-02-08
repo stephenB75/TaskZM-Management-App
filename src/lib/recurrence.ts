@@ -140,3 +140,70 @@ export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
   }
 }
 
+/** Synthetic task shape used only for isDateInRecurrence when expanding occurrence dates */
+function syntheticTaskForRecurrence(
+  config: RecurrenceConfig,
+  baseScheduledDate: string
+): Pick<Task, 'recurrence' | 'scheduledDate' | 'status'> {
+  return {
+    recurrence: config,
+    scheduledDate: baseScheduledDate,
+    status: 'todo',
+  };
+}
+
+export interface GetOccurrenceDatesOptions {
+  /** Max number of occurrence dates to return (default from TIMING_CONSTANTS.calendar.maxOccurrences) */
+  maxCount?: number;
+  /** Stop at this date (inclusive); overrides maxCount if reached first */
+  endDate?: string | null;
+}
+
+/**
+ * Return an array of dates that match the recurrence pattern, starting from startDate.
+ * Used when creating a task series so each occurrence becomes its own task.
+ */
+export function getOccurrenceDates(
+  config: RecurrenceConfig,
+  startDate: Date,
+  options?: GetOccurrenceDatesOptions
+): Date[] {
+  const type = config?.type === 'none' ? 'none' : (config?.type || 'none');
+  if (type === 'none') {
+    const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    return [d];
+  }
+
+  const maxCount = options?.maxCount ?? 52;
+  const endDateOnly = options?.endDate
+    ? (() => {
+        const s = options.endDate!.trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+          const [y, m, d] = s.split('-').map(Number);
+          if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) {
+            return new Date(y, m - 1, d);
+          }
+        }
+        return new Date(options.endDate!);
+      })()
+    : null;
+
+  const baseIso = startDate.toISOString();
+  const synthetic = syntheticTaskForRecurrence(config, baseIso);
+  const results: Date[] = [];
+  const startOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+
+  // Iterate day by day from start; cap total iterations to avoid runaway (e.g. 2 years)
+  const maxDays = 366 * 2;
+  for (let i = 0; i < maxDays && results.length < maxCount; i++) {
+    const check = new Date(startOnly);
+    check.setDate(startOnly.getDate() + i);
+    if (endDateOnly && check > endDateOnly) break;
+    const asTask = { ...synthetic, scheduledDate: baseIso } as Task;
+    if (isDateInRecurrence(asTask, check)) {
+      results.push(new Date(check.getFullYear(), check.getMonth(), check.getDate()));
+    }
+  }
+
+  return results;
+}

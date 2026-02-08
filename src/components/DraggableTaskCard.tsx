@@ -69,7 +69,7 @@ import {
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, COLOR_BACKGROUND_LIGHT, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
-import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from "../lib/business-constants";
 import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT, COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
@@ -259,25 +259,24 @@ export const DraggableTaskCard = React.forwardRef<
       minutes: number,
     ) => {
       try {
-        // UPDATED: For recurring tasks, track time on the base task to maintain series progress
-        // Time tracking is on the initial/base task, not per-occurrence
-        if (isRecurringTask && task.scheduledDate) {
-          // Extract base task ID (remove any existing occurrence suffix)
-          const baseTaskId = task.id.includes('__')
-            ? task.id.split('__')[0]
+        // Recurring: track time on the occurrence record (_subtasks_YYYY-MM-DD) so each occurrence has its own time; series total is summed elsewhere
+        if (isRecurringTask && (occurrenceDate || task.scheduledDate)) {
+          const baseTaskId = task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)
+            ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0]
             : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
               ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
-              : task.id;
-          
-          // Update the base task with tracked time - this maintains progress across the series
-          await updateTask(baseTaskId, {
-            actualTime: minutes,
-          });
+              : task.id.includes('__')
+                ? task.id.split('__')[0]
+                : task.id;
+          const dateStr = occurrenceDate ?? (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+          if (dateStr) {
+            const occurrenceSubtaskId = `${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${dateStr}`;
+            await updateTask(occurrenceSubtaskId, { actualTime: minutes });
+          } else {
+            await updateTask(baseTaskId, { actualTime: minutes });
+          }
         } else {
-          // Non-recurring task - update normally
-          await updateTask(task.id, {
-            actualTime: minutes,
-          });
+          await updateTask(task.id, { actualTime: minutes });
         }
       } catch (error) {
         console.error("Failed to update task time:", error);
@@ -1041,24 +1040,8 @@ export const DraggableTaskCard = React.forwardRef<
               )}
               {/* Tracked Time - Inline with play button */}
               {!pomodoroIsRunning && (() => {
-                // For recurring tasks, get the correct occurrence's time (completed occurrence if exists, otherwise current task)
-                let occurrenceTime = task.actualTime || 0;
-                // UPDATED: For recurring tasks, time is tracked on the base task to maintain series progress
-                if (isRecurringTask) {
-                  // Extract base task ID (remove any existing occurrence suffix)
-                  const baseTaskId = task.id.includes('__')
-                    ? task.id.split('__')[0]
-                    : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
-                      ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
-                      : task.id;
-                  
-                  // Use base task time - time tracking is on the base task for series progress
-                  const baseTask = tasks.find(t => t.id === baseTaskId);
-                  if (baseTask && baseTask.actualTime) {
-                    occurrenceTime = baseTask.actualTime;
-                  }
-                }
-                
+                // task is already merged with getTaskWithOccurrenceSubtasks so task.actualTime is this occurrence's time for recurring tasks
+                const occurrenceTime = task.actualTime || 0;
                 if (occurrenceTime > 0) {
                   return (
                     <div className="flex items-center gap-1">
