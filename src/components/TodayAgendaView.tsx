@@ -332,6 +332,7 @@ export function TodayAgendaView({
       title: event.title ?? "",
     }));
   }, [todayCalendarEvents]);
+  // Reorganize: only fix overlapping tasks. Task times are not altered for current time, work start, or non-overlapping tasks.
   useEffect(() => {
     if (timelineBlocks.length === 0) return;
     const reorganizations = reorganizeAllTasksForDate(todayDateForReorganize, tasks, {
@@ -339,7 +340,6 @@ export function TodayAgendaView({
       onlyFixOverlaps: true,
       calendarEvents: calendarEventsForReorganize,
     });
-    // Only overlapping tasks are moved; times are not changed for "before work start" or "before now".
     if (reorganizations.length === 0) return;
     reorganizations.forEach(({ taskId, newTime }) => {
       updateTask(taskId, { scheduledDate: newTime.toISOString() });
