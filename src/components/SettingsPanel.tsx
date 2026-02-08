@@ -1449,7 +1449,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {/* Notifications */}
         <AccordionItem 
           value="notifications" 
-          className=""
+          className="min-w-0"
           style={{
             paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
             paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
@@ -1611,9 +1611,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
             {/* Notification Settings */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
-              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
+            <div className="min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+              <div className="flex items-start justify-between min-w-0 gap-2">
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
                   <Label htmlFor="notifications-enabled" className="text-xs md:text-sm cursor-pointer">Enable Notifications</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Turn on all notification features</p>
                 </div>
@@ -1635,8 +1635,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
+              <div className="flex items-start justify-between min-w-0 gap-2" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
                   <Label htmlFor="notifications-badge" className="text-xs md:text-sm cursor-pointer">{NOTIFICATION_PANEL_TEXT.badge.showAppIconBadge}</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>{NOTIFICATION_PANEL_TEXT.badge.displayTaskCount}</p>
                 </div>
@@ -1649,8 +1649,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
+              <div className="flex items-start justify-between min-w-0 gap-2" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
                   <Label htmlFor="notifications-overdue" className="text-xs md:text-sm cursor-pointer">Overdue Alerts</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify when tasks become overdue</p>
                 </div>
@@ -1663,8 +1663,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 />
               </div>
 
-              <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
+              <div className="flex items-start justify-between min-w-0 gap-2" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
+                <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
                   <Label htmlFor="notifications-reminders" className="text-xs md:text-sm cursor-pointer">Due Date Reminders</Label>
                   <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify 1 hour before tasks are due</p>
                 </div>
@@ -1680,9 +1680,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
               {/* Additional Notification Options */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
+              <div className="min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+                <div className="flex items-start justify-between min-w-0 gap-2" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
+                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
                     <Label htmlFor="push-notif" className="text-xs md:text-sm cursor-pointer">Push Notifications</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Desktop and mobile alerts</p>
                   </div>
@@ -1694,8 +1694,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   />
                 </div>
                 
-                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
+                <div className="flex items-start justify-between min-w-0 gap-2" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
+                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
                     <Label htmlFor="email-notif" className="text-xs md:text-sm cursor-pointer">Email Notifications</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Daily task summary emails</p>
                   </div>
@@ -1706,8 +1706,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   />
                 </div>
 
-                <div className="flex items-start justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_PADDING_RIGHT_SMALL }}>
+                <div className="flex items-start justify-between min-w-0 gap-2" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
+                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
                     <Label htmlFor="sound-notif" className="text-xs md:text-sm cursor-pointer">Sound</Label>
                     <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Play sound for notifications</p>
                   </div>
