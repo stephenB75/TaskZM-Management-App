@@ -803,80 +803,80 @@ export const DraggableTaskCard = React.forwardRef<
         >
           {isTodayAgenda ? (
             <>
-              {/* Today Agenda: tab horizontally centered at top of block (full-bleed row so center matches block center) */}
+              {/* Today Agenda: full-width badge bar (extended with spaced content), then full-width headline */}
               <div
-                className="flex justify-center flex-shrink-0"
+                className="flex flex-shrink-0 w-full"
                 style={{
                   width: `calc(100% + ${TODAY_AGENDA_TIMELINE.cardPaddingLeftPx + TODAY_AGENDA_TIMELINE.cardPaddingRightPx}px)`,
                   marginLeft: -TODAY_AGENDA_TIMELINE.cardPaddingLeftPx,
                   marginRight: -TODAY_AGENDA_TIMELINE.cardPaddingRightPx,
                 }}
               >
-              <div
-                className="flex items-center rounded-lg flex-shrink-0 min-w-max"
-                style={{
-                  gap: TASK_CARD_TIMELINE.todayAgenda.tabContentGapPx,
-                  backgroundColor: getPriorityTabBackgroundColor(task.priority),
-                  minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
-                  paddingTop: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
-                  paddingBottom: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
-                  paddingLeft: TODAY_AGENDA_TIMELINE.tabPaddingPx,
-                  paddingRight: TODAY_AGENDA_TIMELINE.tabPaddingPx,
-                  minWidth: 'max-content',
-                  marginLeft: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
-                  marginRight: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
-                }}
-              >
-                <Icon
-                  name="clock"
-                  size={TASK_CARD_TIMELINE.todayAgenda.clockIconSize}
-                  className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
-                  weight="fill"
-                />
-                {scheduledTimeLabel && (
-                  <span className="text-white font-normal whitespace-nowrap flex-shrink-0" style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgenda.timeFontSizePx}px` }}>
-                    {scheduledTimeLabel}
-                  </span>
-                )}
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
-                    TASK_CARD_TIMELINE.todayAgenda.priorityBadgeClass,
-                  )}
+                <div
+                  className="flex items-center rounded-lg w-full min-w-0"
                   style={{
-                    color: !task.priority || task.priority === "default"
-                      ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
-                      : getPriorityLineColor(task.priority),
+                    gap: TASK_CARD_TIMELINE.todayAgenda.tabContentGapPx,
+                    backgroundColor: getPriorityTabBackgroundColor(task.priority),
+                    minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
+                    paddingTop: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
+                    paddingBottom: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
+                    paddingLeft: TODAY_AGENDA_TIMELINE.tabPaddingPx,
+                    paddingRight: TODAY_AGENDA_TIMELINE.tabPaddingPx,
+                    marginLeft: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
+                    marginRight: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
                   }}
                 >
-                  {task.priority}
-                </Badge>
-                {task.tags && task.tags.length > 0 && (
+                  <Icon
+                    name="clock"
+                    size={TASK_CARD_TIMELINE.todayAgenda.clockIconSize}
+                    className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
+                    weight="fill"
+                  />
+                  {scheduledTimeLabel && (
+                    <span className="text-white font-normal whitespace-nowrap flex-shrink-0" style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgenda.timeFontSizePx}px` }}>
+                      {scheduledTimeLabel}
+                    </span>
+                  )}
                   <Badge
                     variant="secondary"
-                    className={cn("border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white", TASK_CARD_TIMELINE.todayAgenda.tagClass)}
+                    className={cn(
+                      "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
+                      TASK_CARD_TIMELINE.todayAgenda.priorityBadgeClass,
+                    )}
+                    style={{
+                      color: !task.priority || task.priority === "default"
+                        ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
+                        : getPriorityLineColor(task.priority),
+                    }}
                   >
-                    {task.tags[0]}
+                    {task.priority}
                   </Badge>
-                )}
-                {task.estimatedTime && (
-                  <span className="text-white font-semibold flex-shrink-0 whitespace-nowrap" style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgenda.durationFontSizePx}px` }}>
-                    {formatDuration(task.estimatedTime)}
-                  </span>
-                )}
-                {task.recurrence && task.recurrence.type !== "none" && (
-                  <Icon
-                    name="repeat"
-                    size={TASK_CARD_TIMELINE.todayAgenda.repeatIconSize}
-                    className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
-                    weight="duotone"
-                  />
-                )}
-              </div>
+                  {task.tags && task.tags.length > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className={cn("border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white", TASK_CARD_TIMELINE.todayAgenda.tagClass)}
+                    >
+                      {task.tags[0]}
+                    </Badge>
+                  )}
+                  <div className="flex-1 min-w-2" aria-hidden />
+                  {task.estimatedTime && (
+                    <span className="text-white font-semibold flex-shrink-0 whitespace-nowrap" style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgenda.durationFontSizePx}px` }}>
+                      {formatDuration(task.estimatedTime)}
+                    </span>
+                  )}
+                  {task.recurrence && task.recurrence.type !== "none" && (
+                    <Icon
+                      name="repeat"
+                      size={TASK_CARD_TIMELINE.todayAgenda.repeatIconSize}
+                      className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
+                      weight="duotone"
+                    />
+                  )}
+                </div>
               </div>
               <div
-                className="flex items-start flex-1 min-w-0"
+                className="flex items-start flex-1 min-w-0 w-full"
                 style={{
                   gap: TASK_CARD_TIMELINE.todayAgenda.titleRowGapPx,
                   paddingTop: TASK_CARD_TIMELINE.todayAgenda.titleRowPaddingTopPx,
@@ -903,8 +903,12 @@ export const DraggableTaskCard = React.forwardRef<
                   />
                 </button>
                 <h3
-                  className={cn("font-bold leading-snug flex-1 min-w-0 line-clamp-2 break-words", TASK_CARD_TEXT_COLORS.title)}
-                  style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgendaHeadlineFontSizePx}px` }}
+                  className={cn("font-bold leading-snug flex-1 min-w-0 w-full break-words line-clamp-3", TASK_CARD_TEXT_COLORS.title)}
+                  style={{
+                    fontSize: `${TASK_CARD_TIMELINE.todayAgendaHeadlineFontSizePx}px`,
+                    overflowWrap: 'break-word',
+                    wordBreak: 'break-word',
+                  }}
                 >
                   {task.title}
                 </h3>
