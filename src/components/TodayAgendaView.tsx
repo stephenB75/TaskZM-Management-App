@@ -462,7 +462,7 @@ export function TodayAgendaView({
       });
       const nextUpBlock = timelineBlocks.find((b) => b.item.type === 'task' && b.item.task && b.item.task.id === nextUpTaskId);
       const nextUpTopPx = nextUpBlock != null ? nextUpBlock.topPx : null;
-      const nextUpBadgeTopPx = nextUpTopPx != null ? nextUpTopPx - TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx - TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx : 0;
+      const nextUpBadgeTopPx = nextUpTopPx != null ? nextUpTopPx - TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx - TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveTimePx : 0;
 
       return (
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
