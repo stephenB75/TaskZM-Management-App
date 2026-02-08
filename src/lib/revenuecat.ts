@@ -1135,8 +1135,16 @@ export async function getCustomerInfo(): Promise<any | null> {
   }
   try {
     return await purchasesInstance.getCustomerInfo();
-  } catch (error) {
-    console.error('❌ Failed to fetch RevenueCat customer info:', error);
+  } catch (error: any) {
+    const msg = String(error?.message ?? error ?? '');
+    const isNetworkRelated =
+      /network|timeout|408|unreachable|failed to fetch|ERR_/i.test(msg) ||
+      /not valid JSON|SyntaxError/i.test(msg);
+    if (isNetworkRelated) {
+      console.warn('RevenueCat customer info unavailable (network):', msg || error);
+    } else {
+      console.error('❌ Failed to fetch RevenueCat customer info:', error);
+    }
     return null;
   }
 }
