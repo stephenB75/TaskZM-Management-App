@@ -12,6 +12,7 @@ import {
   END_OF_DAY_MILLISECOND,
   TWO_WEEKS_DAYS,
   DAYS_IN_WEEK,
+  RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED,
 } from "../lib/business-constants";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { Button } from "./ui/button";
@@ -915,7 +916,7 @@ export function DashboardView({
         if (!matches) return false;
         // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence
         if (task.recurrence && task.recurrence.type !== 'none') {
-          const completedOccurrenceId = `${task.id}_completed_${dateString}`;
+          const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${dateString}`;
           if (tasks.some((t) => t.id === completedOccurrenceId)) return false;
         }
         return true;

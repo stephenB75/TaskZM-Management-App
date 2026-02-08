@@ -69,6 +69,14 @@ export const AI_SCHEDULER_TIME_SLOT_INTERVAL = 15; // Minutes - time slots are 1
 export const AI_SCHEDULER_MIN_START_HOUR = 6; // Earliest hour to schedule tasks (6 AM)
 export const AI_SCHEDULER_MAX_END_HOUR = 23; // Latest hour to schedule tasks (11 PM)
 
+// Recurrence occurrence ID patterns (used in TaskDialog, TaskContext, utils, etc.)
+/** Separator in occurrence subtask id: baseId + this + YYYY-MM-DD. */
+export const RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS = '_subtasks_';
+/** Separator in completed occurrence id: baseId + this + YYYY-MM-DD. */
+export const RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED = '_completed_';
+/** Default recurrence config when no recurrence (single occurrence or cleared). */
+export const RECURRENCE_NONE_CONFIG = { type: 'none' as const, interval: 1 };
+
 // Date/Time Constants
 /** Suffix for parsing date-only strings (YYYY-MM-DD) to a Date at noon, avoiding UTC-midnight timezone shifts. */
 export const DATE_ONLY_PARSE_SUFFIX = 'T12:00:00';

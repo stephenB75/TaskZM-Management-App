@@ -30,6 +30,7 @@ import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { reorganizeAllTasksForDate } from "../lib/time-conflict";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
+import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED } from "../lib/business-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -103,7 +104,7 @@ export function TodayAgendaView({
       if (!isDateInRecurrence(task, today)) return false;
       // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for today, show only the completed occurrence
       if (task.recurrence && task.recurrence.type !== 'none') {
-        const completedOccurrenceId = `${task.id}_completed_${todayDateString}`;
+        const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${todayDateString}`;
         if (tasks.some((t) => t.id === completedOccurrenceId)) return false;
       }
       return true;

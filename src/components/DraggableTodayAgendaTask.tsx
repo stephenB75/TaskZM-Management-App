@@ -7,6 +7,7 @@ import { Icon } from "./Icon";
 import { ICON_SIZE_XS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import { Badge } from "./ui/badge";
 import { cn, getDateString } from "../lib/utils";
+import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED } from "../lib/business-constants";
 import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -198,7 +199,7 @@ export function DraggableTodayAgendaTask({
         const scheduledDate = new Date(task.scheduledDate);
         scheduledDate.setHours(0, 0, 0, 0);
         const scheduledDateKey = getDateString(new Date(task.scheduledDate));
-        const completedOccurrenceId = `${task.id}_completed_${scheduledDateKey}`;
+        const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${scheduledDateKey}`;
         
         // Check if completed occurrence exists (task was already marked done)
         const completedOccurrence = tasks.find(t => t.id === completedOccurrenceId);

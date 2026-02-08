@@ -60,6 +60,9 @@ import {
   WORKSPACE_SYNC_ACTIVE_MULTIPLIER,
   WORKSPACE_SYNC_IDLE_MULTIPLIER,
   DATE_ONLY_PARSE_SUFFIX,
+  RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS,
+  RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED,
+  RECURRENCE_NONE_CONFIG,
 } from '../lib/business-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
@@ -1795,7 +1798,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       actualTime: null,
       dependencies: taskData.dependencies || [],
       subtasks: taskData.subtasks || [],
-      recurrence: taskData.recurrence || { type: 'none', interval: 1 },
+      recurrence: taskData.recurrence || RECURRENCE_NONE_CONFIG,
       notes: taskData.notes || '',
     };
 
@@ -1869,10 +1872,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
 
-    // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; occurrence subtask IDs are baseId_subtasks_YYYY-MM-DD
-    const isOccurrenceSubtaskId = taskId.includes('_subtasks_');
+    // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; occurrence subtask IDs are baseId + SUFFIX + YYYY-MM-DD
+    const isOccurrenceSubtaskId = taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS);
     const baseTaskId = isOccurrenceSubtaskId
-      ? taskId.split('_subtasks_')[0]
+      ? taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0]
       : taskId.includes('__')
         ? taskId.split('__')[0]
         : taskId;
@@ -1904,7 +1907,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         toast.error('Task not found');
         return;
       }
-      const occurrenceDateStr = taskId.split('_subtasks_')[1];
+      const occurrenceDateStr = taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[1];
       const occurrenceDate = occurrenceDateStr ? new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX) : new Date();
       const baseScheduled = baseTask.scheduledDate ? new Date(baseTask.scheduledDate) : occurrenceDate;
       occurrenceDate.setHours(baseScheduled.getHours(), baseScheduled.getMinutes(), baseScheduled.getSeconds(), baseScheduled.getMilliseconds());
@@ -1912,7 +1915,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         ...baseTask,
         id: taskId,
         subtasks: updates.subtasks ?? baseTask.subtasks,
-        recurrence: { type: 'none', interval: 1 },
+        recurrence: RECURRENCE_NONE_CONFIG,
         updatedAt: new Date().toISOString(),
         scheduledDate: occurrenceDate.toISOString(),
       };
@@ -1995,7 +1998,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const completionDate = new Date();
           completionDate.setHours(0, 0, 0, 0);
           const completionDateKey = getDateString(completionDate);
-          const completedOccurrenceId = `${currentTask.id}_completed_${completionDateKey}`;
+          const completedOccurrenceId = `${currentTask.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${completionDateKey}`;
           
           // Check if completed occurrence already exists (prevent duplicates)
           const existingCompletedOccurrence = tasks.find(t => t.id === completedOccurrenceId);
@@ -2012,7 +2015,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             completedOccurrence = {
               ...currentTask,
               id: completedOccurrenceId,
-              recurrence: { type: 'none', interval: 1 }, // Mark as non-recurring
+              recurrence: RECURRENCE_NONE_CONFIG,
               status: 'done',
               completedAt,
               updatedAt: completedAt,

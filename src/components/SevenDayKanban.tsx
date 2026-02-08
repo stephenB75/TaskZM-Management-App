@@ -36,6 +36,7 @@ import {
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
+import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
@@ -632,7 +633,7 @@ export function SevenDayKanban({
             if (!matches) return false;
             // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence
             if (task.recurrence && task.recurrence.type !== 'none') {
-              const completedOccurrenceId = `${task.id}_completed_${dateString}`;
+              const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${dateString}`;
               if (tasks.some(t => t.id === completedOccurrenceId)) return false;
             }
             return true;

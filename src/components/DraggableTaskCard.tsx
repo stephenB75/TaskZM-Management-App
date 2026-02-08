@@ -69,7 +69,7 @@ import {
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, COLOR_BACKGROUND_LIGHT, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
-import { MINUTES_PER_HOUR } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED } from "../lib/business-constants";
 import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT, COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
@@ -263,10 +263,10 @@ export const DraggableTaskCard = React.forwardRef<
         // Time tracking is on the initial/base task, not per-occurrence
         if (isRecurringTask && task.scheduledDate) {
           // Extract base task ID (remove any existing occurrence suffix)
-          const baseTaskId = task.id.includes('__') 
-            ? task.id.split('__')[0] 
-            : task.id.includes('_completed_')
-              ? task.id.split('_completed_')[0]
+          const baseTaskId = task.id.includes('__')
+            ? task.id.split('__')[0]
+            : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
+              ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
               : task.id;
           
           // Update the base task with tracked time - this maintains progress across the series
@@ -1046,10 +1046,10 @@ export const DraggableTaskCard = React.forwardRef<
                 // UPDATED: For recurring tasks, time is tracked on the base task to maintain series progress
                 if (isRecurringTask) {
                   // Extract base task ID (remove any existing occurrence suffix)
-                  const baseTaskId = task.id.includes('__') 
-                    ? task.id.split('__')[0] 
-                    : task.id.includes('_completed_')
-                      ? task.id.split('_completed_')[0]
+                  const baseTaskId = task.id.includes('__')
+                    ? task.id.split('__')[0]
+                    : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
+                      ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
                       : task.id;
                   
                   // Use base task time - time tracking is on the base task for series progress

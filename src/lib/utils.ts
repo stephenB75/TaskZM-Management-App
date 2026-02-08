@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { logger } from './logger';
 import type { Task, TaskPriority, TaskStatus, RecurrenceConfig } from '../types';
-import { MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_DAY, MINUTES_PER_HOUR, HOURS_PER_DAY, DAYS_IN_WEEK, PERCENTAGE_MULTIPLIER, SECONDS_PER_MINUTE, SECONDS_PER_HOUR } from './business-constants';
+import { MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_DAY, MINUTES_PER_HOUR, HOURS_PER_DAY, DAYS_IN_WEEK, PERCENTAGE_MULTIPLIER, SECONDS_PER_MINUTE, SECONDS_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG } from './business-constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -122,14 +122,14 @@ export function calculateRecurringTaskSeriesTotalTime(baseTaskId: string, allTas
   // Find all tasks that belong to this recurring series:
   // 1. Tasks with the exact base ID (active occurrence on current date)
   // 2. Active occurrences with ID pattern: `${baseTaskId}__${dateString}` (used in kanban/today views)
-  // 3. Completed occurrences with ID pattern: `${baseTaskId}_completed_${dateString}`
+  // 3. Completed occurrences with ID pattern: baseId + RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED + dateString
   const seriesTasks = allTasks.filter(t => {
     // Match base task ID (active occurrence)
     if (t.id === baseTaskId) return true;
     // Match active occurrences with date suffix (used in kanban/today views for occurrence-specific tracking)
     if (t.id.startsWith(`${baseTaskId}__`)) return true;
     // Match completed occurrences
-    if (t.id.startsWith(`${baseTaskId}_completed_`)) return true;
+    if (t.id.startsWith(`${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}`)) return true;
     return false;
   });
   
@@ -617,7 +617,7 @@ export function getTaskWithOccurrenceSubtasks(
   if (!task?.id || !occurrenceDateStr || !(task.recurrence?.type && task.recurrence.type !== 'none')) {
     return task;
   }
-  const occurrenceSubtaskId = `${task.id}_subtasks_${occurrenceDateStr}`;
+  const occurrenceSubtaskId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${occurrenceDateStr}`;
   const occurrenceTask = allTasks.find((t) => t.id === occurrenceSubtaskId);
   if (!occurrenceTask || !Array.isArray(occurrenceTask.subtasks)) {
     return task;
@@ -660,15 +660,15 @@ export function prepareTaskForDialog(task: Task | null | undefined): Task | null
       dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
       assignedTo: Array.isArray(task.assignedTo) ? task.assignedTo : [],
       // Ensure recurrence config is valid
-      recurrence: task.recurrence && typeof task.recurrence === 'object' 
+      recurrence: task.recurrence && typeof task.recurrence === 'object'
         ? {
-            type: task.recurrence.type || 'none',
-            interval: task.recurrence.interval || 1,
+            type: task.recurrence.type || RECURRENCE_NONE_CONFIG.type,
+            interval: (typeof task.recurrence.interval === 'number' && task.recurrence.interval > 0) ? task.recurrence.interval : RECURRENCE_NONE_CONFIG.interval,
             daysOfWeek: Array.isArray(task.recurrence.daysOfWeek) ? task.recurrence.daysOfWeek : undefined,
             dayOfMonth: task.recurrence.dayOfMonth,
             endDate: task.recurrence.endDate || null,
           }
-        : { type: 'none', interval: 1 },
+        : { ...RECURRENCE_NONE_CONFIG },
       // Optional fields with safe defaults
       notes: task.notes || '',
       dueDate: task.dueDate || null,
