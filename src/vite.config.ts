@@ -98,17 +98,18 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // React + React-DOM only (keeps vendor under 500 KB)
+          // React, React-DOM, and motion in vendor so lazy chunks never request a separate motion chunk
+          // (a separate motion-[hash].js can 404 after deploy → "Importing a module script failed")
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor';
+          }
+          if (id.includes('node_modules/motion')) {
             return 'vendor';
           }
           // Phosphor (tree-shaken via phosphor-icons.ts) in its own chunk
           if (id.includes('phosphor-react')) {
             return 'phosphor';
           }
-          // Do NOT split motion into its own chunk: lazy-loaded chunks (e.g. AuthenticatedAppProviders)
-          // depend on it; a separate motion-[hash].js can 404 after deploy (stale cache) and cause
-          // "Importing a module script failed". Let Vite bundle motion with the chunks that use it.
           // UI libraries
           if (id.includes('@radix-ui')) {
             return 'ui';
@@ -120,7 +121,6 @@ export default defineConfig(({ mode }) => {
         chunkFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'vendor') return 'assets/vendor-[hash].js';
           if (chunkInfo.name === 'phosphor') return 'assets/phosphor-[hash].js';
-          // motion no longer has its own chunk
           return 'assets/[name]-[hash].js';
         },
       },
