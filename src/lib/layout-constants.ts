@@ -804,7 +804,9 @@ export const Z_INDEX = {
   APP_TOUR: 10000, // z-[10000] - Used in AppTour overlay
   TOUR_HIGHLIGHT: 9998, // z-index for tour highlighted elements (below tour overlay)
   DROP_ZONE: 100, // z-100 - Used in TodayAgendaView for drop zone overlay
-  TIME_INDICATOR: 50, // z-50 - Used in TodayAgendaView for current time indicator
+  TIME_INDICATOR: 50, // z-50 - Current time line (drawn behind task blocks so it passes through)
+  /** Today Agenda: task/event blocks above time indicator so the "now" line passes behind them. */
+  TIMELINE_BLOCK: 55,
   /** Today Agenda: timestamp connector line (from dot to task tab) drawn in front of blocks. */
   TIMELINE_STAMP_LINE: 20,
   /** Today Agenda: timeline column container. */

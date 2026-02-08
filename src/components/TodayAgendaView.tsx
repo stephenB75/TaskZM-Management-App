@@ -538,6 +538,7 @@ export function TodayAgendaView({
                         top: topPx,
                         height: Math.max(minBlockHeightPx, heightPx),
                         minHeight: minBlockHeightPx,
+                        zIndex: Z_INDEX.TIMELINE_BLOCK,
                         ...(blockStyle
                           ? {
                               backgroundColor: blockStyle.backgroundColor,
