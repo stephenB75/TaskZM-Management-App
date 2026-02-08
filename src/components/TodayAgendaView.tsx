@@ -287,7 +287,7 @@ export function TodayAgendaView({
   /** Base timeline height (px) for 7 AM–12 AM scale. Layout height may be larger when blocks are stacked. */
   const timelineHeightPx = TODAY_AGENDA_TIMELINE.totalMinutes * TODAY_AGENDA_TIMELINE.pxPerMinute;
 
-  /** Current time position (px from top) for indicator; null if outside 7AM–12AM. */
+  /** Current time position (px from top) for the "now" line. Display-only; does not move or change any task times. */
   const currentTimeTopPx = useMemo(() => {
     const now = new Date();
     const mins = now.getHours() * 60 + now.getMinutes() - TODAY_AGENDA_TIMELINE.startHour * 60;
@@ -335,9 +335,10 @@ export function TodayAgendaView({
   useEffect(() => {
     if (timelineBlocks.length === 0) return;
     const reorganizations = reorganizeAllTasksForDate(todayDateForReorganize, tasks, {
-      ensureAfterCurrentTime: true,
+      ensureAfterCurrentTime: false,
       calendarEvents: calendarEventsForReorganize,
     });
+    // Reorganize only fixes overlaps; it does not use current time to move tasks (indicator is display-only).
     if (reorganizations.length === 0) return;
     reorganizations.forEach(({ taskId, newTime }) => {
       updateTask(taskId, { scheduledDate: newTime.toISOString() });
@@ -516,6 +517,7 @@ export function TodayAgendaView({
                   />
                 );
               })}
+              {/* Current time indicator: display-only line showing "now"; does not move or change task times */}
               {currentTimeTopPx != null && (
                 <div
                   className="absolute left-0 right-0 bg-primary"
