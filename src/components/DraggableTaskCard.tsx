@@ -813,8 +813,9 @@ export const DraggableTaskCard = React.forwardRef<
                 }}
               >
               <div
-                className="flex items-center gap-3 rounded-lg flex-shrink-0 min-w-max"
+                className="flex items-center rounded-lg flex-shrink-0 min-w-max"
                 style={{
+                  gap: TASK_CARD_TIMELINE.todayAgenda.tabContentGapPx,
                   backgroundColor: getPriorityTabBackgroundColor(task.priority),
                   minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
                   paddingTop: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
@@ -828,12 +829,12 @@ export const DraggableTaskCard = React.forwardRef<
               >
                 <Icon
                   name="clock"
-                  size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop}
+                  size={TASK_CARD_TIMELINE.todayAgenda.clockIconSize}
                   className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
                   weight="fill"
                 />
                 {scheduledTimeLabel && (
-                  <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                  <span className="text-white font-normal whitespace-nowrap flex-shrink-0" style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgenda.timeFontSizePx}px` }}>
                     {scheduledTimeLabel}
                   </span>
                 )}
@@ -841,7 +842,7 @@ export const DraggableTaskCard = React.forwardRef<
                   variant="secondary"
                   className={cn(
                     "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
-                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
+                    TASK_CARD_TIMELINE.todayAgenda.priorityBadgeClass,
                   )}
                   style={{
                     color: !task.priority || task.priority === "default"
@@ -854,35 +855,40 @@ export const DraggableTaskCard = React.forwardRef<
                 {task.tags && task.tags.length > 0 && (
                   <Badge
                     variant="secondary"
-                    className={cn(
-                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white",
-                      isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
-                    )}
+                    className={cn("border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white", TASK_CARD_TIMELINE.todayAgenda.tagClass)}
                   >
                     {task.tags[0]}
                   </Badge>
                 )}
                 {task.estimatedTime && (
-                  <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+                  <span className="text-white font-semibold flex-shrink-0 whitespace-nowrap" style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgenda.durationFontSizePx}px` }}>
                     {formatDuration(task.estimatedTime)}
                   </span>
                 )}
                 {task.recurrence && task.recurrence.type !== "none" && (
                   <Icon
                     name="repeat"
-                    size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop}
+                    size={TASK_CARD_TIMELINE.todayAgenda.repeatIconSize}
                     className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
                     weight="duotone"
                   />
                 )}
               </div>
               </div>
-              <div className={cn("flex items-start gap-2 pt-2", isMobile ? "pb-2" : "pb-2.5")}>
+              <div
+                className="flex items-start flex-1 min-w-0"
+                style={{
+                  gap: TASK_CARD_TIMELINE.todayAgenda.titleRowGapPx,
+                  paddingTop: TASK_CARD_TIMELINE.todayAgenda.titleRowPaddingTopPx,
+                  paddingBottom: TASK_CARD_TIMELINE.todayAgenda.titleRowPaddingBottomPx,
+                }}
+              >
                 <button
                   type="button"
                   onClick={handleToggleComplete}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5"
+                  className="flex-shrink-0 hover:opacity-80 transition-opacity"
+                  style={{ marginTop: TASK_CARD_TIMELINE.todayAgenda.checkboxMarginTopPx }}
                   aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
                 >
                   <Icon

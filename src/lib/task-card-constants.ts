@@ -944,9 +944,22 @@ export const TASK_CARD_TIMELINE = {
     // Space between Next Up badge and task card (Today Agenda panel)
     badgeMarginBottom: 'mb-2', // 8px - compact spacing
   },
-  /** Today Agenda compact row: checkbox and headline size (px). */
-  todayAgendaCheckboxSize: 18,
-  todayAgendaHeadlineFontSizePx: 15,
+  /** Today Agenda compact row: smaller sizes so content fits inside timeline block. */
+  todayAgendaCheckboxSize: 16,
+  todayAgendaHeadlineFontSizePx: 13,
+  todayAgenda: {
+    timeFontSizePx: 13,
+    priorityBadgeClass: 'text-[11px] px-1.5 py-0 h-[18px]',
+    tagClass: 'text-[11px] px-1.5 py-0 h-[18px]',
+    durationFontSizePx: 12,
+    clockIconSize: 16,
+    repeatIconSize: 14,
+    tabContentGapPx: 6,
+    titleRowGapPx: 6,
+    titleRowPaddingTopPx: 6,
+    titleRowPaddingBottomPx: 8,
+    checkboxMarginTopPx: 2,
+  },
   scale: {
     dragging: 'scale-95', // scale-95 for dragging state
     draggingKanban: 'scale-95', // scale-95 for Kanban dragging state
