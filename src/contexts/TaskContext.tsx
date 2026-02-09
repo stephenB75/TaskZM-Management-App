@@ -10,7 +10,6 @@ import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage, getDateString, getSeriesBaseId } from '../lib/utils';
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
-import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { getTaskMinutes } from '../lib/daily-hours-utils';
 import type { Task, Project, Folder, TaskFilters, ViewConfig, HoursSettings, RolloverSettings, RecurrenceConfig } from '../types';

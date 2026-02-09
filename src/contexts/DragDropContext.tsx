@@ -657,33 +657,11 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       const warningLevel = getDailyHoursWarningLevel(limitCheck.currentHours, limitCheck.newTotalHours - limitCheck.currentHours, maxHoursPerDay);
       
       if (limitCheck.wouldExceed) {
-        // Would exceed limit - try to find a slot that fits
-        const alternativeTime = findNextAvailableSlot(
-          taskId,
-          finalTime,
-          taskDuration,
-          tasks,
-          {
-            ensureAfterCurrentTime: isToday,
-            categoryHours: categoryHours,
-          }
-        );
-        
-        // Check if alternative time would also exceed limit
-        const altLimitCheck = checkDailyLimit(alternativeTime, task, tasks, maxHoursPerDay);
-        if (altLimitCheck.wouldExceed) {
-          toast.error('Daily limit exceeded', {
-            description: `This task would exceed the ${maxHoursPerDay}-hour daily limit. Current: ${limitCheck.currentHours.toFixed(1)}h, Adding: ${(limitCheck.newTotalHours - limitCheck.currentHours).toFixed(1)}h, Total: ${limitCheck.newTotalHours.toFixed(1)}h`,
-            duration: TIMING_CONSTANTS.dragDrop.toastDuration,
-          });
-          return;
-        }
-        
-        // Use alternative time that fits within limit
-        updateTask(taskId, {
-          scheduledDate: alternativeTime.toISOString(),
+        // Today Agenda: do not move task to a different time. Place at drop time and warn.
+        toast.warning('Daily limit exceeded', {
+          description: `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Task placed at chosen time (total would be ${limitCheck.newTotalHours.toFixed(1)}h).`,
+          duration: TIMING_CONSTANTS.dragDrop.toastDuration,
         });
-        return;
       }
       
       if (warningLevel === 'warning') {
@@ -928,15 +906,15 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                 minutes = maxStartMinutes % MINUTES_PER_HOUR;
                 minutes = Math.floor(minutes / 15) * 15;
               } else {
-                hours = Math.floor(categoryHours.start / 60);
+                hours = Math.floor(categoryHours.start / MINUTES_PER_HOUR);
                 minutes = categoryHours.start % MINUTES_PER_HOUR;
               }
             }
           }
           
           // Clamp to valid range
-          if (hours >= 24) {
-            hours = 23;
+          if (hours >= HOURS_PER_DAY) {
+            hours = HOURS_PER_DAY - 1;
             minutes = 0;
           }
           
@@ -1007,41 +985,62 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       }
     }
     
-    // If we have a requestedTime from drop position, check if that time is available first
-    // This ensures tasks (especially recurring tasks) go to the time slot the user selected
+    // For today: use drop time as-is; only find a later slot when time is in the past. Overlap is cosmetic (timeline stacks). For other dates: use conflict/next-slot as before.
+    const isTargetToday = (() => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const t = new Date(targetDate);
+      t.setHours(0, 0, 0, 0);
+      return t.getTime() === today.getTime();
+    })();
+
     let newDate: Date;
-    
-    if (requestedTime) {
-      // Check if the requested time conflicts with existing tasks
-      const conflictCheck = checkTimeConflict(taskId, requestedTime, taskDuration, tasks);
-      if (!conflictCheck) {
-        // No conflict - use the requested time directly
-        newDate = requestedTime;
+    if (isTargetToday) {
+      const effectiveRequested = requestedTime || startTime;
+      const needLaterSlot = (() => {
+        const now = new Date();
+        const currentMinutes = now.getMinutes();
+        const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+        const t = new Date(now);
+        if (roundedMinutes >= MINUTES_PER_HOUR) {
+          t.setHours(t.getHours() + 1, 0, 0, 0);
+        } else {
+          t.setMinutes(roundedMinutes, 0, 0);
+        }
+        return effectiveRequested.getTime() < t.getTime();
+      })();
+      newDate = needLaterSlot
+        ? findNextAvailableSlot(
+            taskId,
+            effectiveRequested,
+            taskDuration,
+            tasks,
+            { ensureAfterCurrentTime: true, categoryHours: categoryHours }
+          )
+        : new Date(effectiveRequested.getTime());
+    } else {
+      if (requestedTime) {
+        const conflictCheck = checkTimeConflict(taskId, requestedTime, taskDuration, tasks);
+        if (!conflictCheck) {
+          newDate = requestedTime;
+        } else {
+          newDate = findNextAvailableSlot(
+            taskId,
+            requestedTime,
+            taskDuration,
+            tasks,
+            { ensureAfterCurrentTime: false, categoryHours: categoryHours }
+          );
+        }
       } else {
-        // Conflict - find next available slot starting from requested time
         newDate = findNextAvailableSlot(
           taskId,
-          requestedTime,
+          startTime,
           taskDuration,
           tasks,
-          {
-            ensureAfterCurrentTime: false,
-            categoryHours: categoryHours,
-          }
+          { ensureAfterCurrentTime: false, categoryHours: categoryHours }
         );
       }
-    } else {
-      // No requestedTime from drop position - use findNextAvailableSlot with calculated startTime
-      newDate = findNextAvailableSlot(
-        taskId,
-        startTime,
-        taskDuration,
-        tasks,
-        {
-          ensureAfterCurrentTime: false,
-          categoryHours: categoryHours,
-        }
-      );
     }
     
     if (isNaN(newDate.getTime())) {
