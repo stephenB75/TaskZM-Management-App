@@ -318,7 +318,7 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks]);
 
-  // Overlap handling: DragDropContext uses findNextAvailableSlot when dropping on Today Agenda; TaskDialog uses it on save. This view does not auto-move tasks.
+  // Overlap is cosmetic only: overlapping blocks are stacked with a gap (see timeline block layout). Task times are never changed by this view or by drop-for-overlap.
 
   // LAYER 1: Basic vertical scroll - ScrollArea handles scrolling automatically
   // LAYER 2: Next up badge is implemented via nextUpTaskId and isNextUp prop (see below)

@@ -602,18 +602,31 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         }
       }
       
-      // Always use findNextAvailableSlot so Today Agenda task blocks never overlap
-      // (assigns a conflict-free timeslot; TodayAgendaView also runs reorganizeAllTasksForDate to fix any existing overlaps)
-      const finalTime = findNextAvailableSlot(
-        taskId,
-        requestedTime,
-        taskDuration,
-        tasks,
-        {
-          ensureAfterCurrentTime: isToday,
-          categoryHours: categoryHours,
+      // Today Agenda: use drop time as-is. Only find a later slot when (for today) drop time is in the past. Overlap is cosmetic only (timeline stacks overlapping blocks); we do not change task times for overlap.
+      const needLaterSlot = isToday && (() => {
+        const now = new Date();
+        const currentMinutes = now.getMinutes();
+        const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+        const t = new Date(now);
+        if (roundedMinutes >= MINUTES_PER_HOUR) {
+          t.setHours(t.getHours() + 1, 0, 0, 0);
+        } else {
+          t.setMinutes(roundedMinutes, 0, 0);
         }
-      );
+        return requestedTime.getTime() < t.getTime();
+      })();
+      const finalTime = needLaterSlot
+        ? findNextAvailableSlot(
+            taskId,
+            requestedTime,
+            taskDuration,
+            tasks,
+            {
+              ensureAfterCurrentTime: true,
+              categoryHours: categoryHours,
+            }
+          )
+        : new Date(requestedTime.getTime());
       
       // Check if a valid slot was found
       if (finalTime.getHours() >= HOURS_PER_DAY) {
@@ -681,37 +694,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         });
       }
 
-      // Double-check for conflicts before scheduling (safety check)
-      const conflictCheck = checkTimeConflict(taskId, finalTime, taskDuration, tasks);
-      if (conflictCheck) {
-        // If there's still a conflict, find the next available slot
-        const safeTime = findNextAvailableSlot(
-          taskId,
-          finalTime,
-          taskDuration,
-          tasks,
-          {
-            ensureAfterCurrentTime: isToday,
-            categoryHours: categoryHours,
-          }
-        );
-        
-        // Verify the safe time doesn't conflict
-        const safeConflictCheck = checkTimeConflict(taskId, safeTime, taskDuration, tasks);
-        if (safeConflictCheck) {
-          toast.error('Unable to schedule task', {
-            description: 'No available time slots without conflicts. Please try a different time.',
-          });
-          return;
-        }
-        
-        updateTask(taskId, {
-          scheduledDate: safeTime.toISOString(),
-        });
-        return;
-      }
-
-      // No conflict and within limit, proceed with update
+      // Place at finalTime; overlapping tasks are shown stacked on the timeline (cosmetic only, no time change).
       updateTask(taskId, {
         scheduledDate: finalTime.toISOString(),
       });
