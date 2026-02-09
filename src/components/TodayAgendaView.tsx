@@ -66,6 +66,7 @@ export function TodayAgendaView({
     };
   }, []);
 
+  // Current time indicator is display-only; it must never call updateTask or modify task.scheduledDate.
   // Update current time every minute for display (position stays static)
   useEffect(() => {
     const updateTime = () => {
@@ -270,6 +271,7 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
+    // Stacking only changes visual topPx; it does not write to task.scheduledDate.
     // Stack overlapping blocks: each block starts at max(its time position, previous block bottom + gap)
     let prevBottomPx = -blockGapPx;
     for (const block of blocks) {
@@ -316,7 +318,7 @@ export function TodayAgendaView({
     
     // If no uncompleted task is after current time, return the first uncompleted task
     return uncompletedTasks[0]?.id || null;
-  }, [todayTasks]);
+  }, [todayTasks, currentTime]);
 
   // Overlap is cosmetic only: overlapping blocks are stacked with a gap (see timeline block layout). Task times are never changed by this view or by drop-for-overlap.
 
@@ -492,7 +494,7 @@ export function TodayAgendaView({
                   />
                 );
               })}
-              {/* Current time indicator: display-only line showing "now"; does not move or change task times */}
+              {/* Current time indicator is display-only; it must never call updateTask or modify task.scheduledDate. */}
               {currentTimeTopPx != null && (
                 <div
                   className="absolute left-0 right-0 bg-primary"

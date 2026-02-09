@@ -1914,6 +1914,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
 
+    // Debug: trace who updates scheduledDate (e.g. DragDropContext, TaskDialog, sync overwrite)
+    if (updates.scheduledDate !== undefined && typeof console !== 'undefined' && console.debug) {
+      console.debug('[TaskContext.updateTask] scheduledDate update', { taskId, scheduledDate: updates.scheduledDate }, new Error().stack);
+    }
+
     // Recurring tasks use occurrence IDs (taskId__YYYY-MM-DD) for Pomodoro; occurrence subtask IDs are baseId + SUFFIX + YYYY-MM-DD. Series occurrence ids are baseId__YYYY-MM-DD.
     const isOccurrenceSubtaskId = taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS);
     const seriesBase = getSeriesBaseId(taskId);
