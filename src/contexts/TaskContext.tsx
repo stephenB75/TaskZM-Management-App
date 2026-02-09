@@ -1290,18 +1290,39 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // This prevents unnecessary re-renders that feel like refreshes
         const currentTasks = tasksRef.current; // Get current tasks from ref (avoids dependency issues)
         const tasksChanged = !areTasksEqual(currentTasks, serverTasks);
-        
+
+        // Option D: merge strategy for today's tasks so local scheduledDate for today is not overwritten by server unless server is strictly newer
+        const todayString = getDateString(new Date());
+        const currentById = new Map(currentTasks.map((t) => [t.id, t]));
+        const mergePreservingTodayTimes = (serverList: Task[]): Task[] =>
+          serverList.map((serverTask) => {
+            const localTask = currentById.get(serverTask.id);
+            if (!localTask) return serverTask;
+            const localScheduledForToday =
+              localTask.scheduledDate &&
+              getDateString(new Date(localTask.scheduledDate)) === todayString;
+            if (!localScheduledForToday) return serverTask;
+            const serverNewer =
+              serverTask.updatedAt &&
+              localTask.updatedAt &&
+              new Date(serverTask.updatedAt).getTime() > new Date(localTask.updatedAt).getTime();
+            if (serverNewer) return serverTask;
+            return { ...serverTask, scheduledDate: localTask.scheduledDate };
+          });
+
+        const tasksToSet = tasksChanged ? mergePreservingTodayTimes(serverTasks) : serverTasks;
+
         if (tasksChanged) {
           logger.info(`Synced ${serverTasks.length} tasks from server (data changed)`);
           // Use startTransition to make state update non-blocking (runs in background)
           startTransition(() => {
-            setTasks(serverTasks);
-            saveToLocalStorage('tasks', serverTasks, user?.id);
+            setTasks(tasksToSet);
+            saveToLocalStorage('tasks', tasksToSet, user?.id);
           });
         } else {
           logger.debug(`Sync completed but no task changes detected (skipping state update)`);
           // Still update localStorage and sync timestamp even if state doesn't change
-          saveToLocalStorage('tasks', serverTasks, user?.id);
+          saveToLocalStorage('tasks', tasksToSet, user?.id);
         }
 
         // Clear sync flags to ensure fresh sync
