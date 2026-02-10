@@ -5,7 +5,8 @@ import { useSubscription } from './SubscriptionContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
-import { CALENDAR_OAUTH_ORIGINS, CALENDAR_OAUTH_MESSAGE_TYPES, CALENDAR_PROVIDER_DISPLAY_NAMES, type CalendarProviderId } from '../lib/calendar-integration-constants';
+import { CALENDAR_OAUTH_ORIGINS, CALENDAR_OAUTH_MESSAGE_TYPES, CALENDAR_PROVIDER_DISPLAY_NAMES, CALENDAR_PROVIDERS, type CalendarProviderId } from '../lib/calendar-integration-constants';
+import { RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { supabase } from '../lib/supabase-client';
 import { TIMING_CONSTANTS, DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
@@ -280,9 +281,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       
       // If this calendar is already connected, allow reconnection
       const isAlreadyConnected = 
-        (provider === 'google' && calendarStatus.google) ||
-        (provider === 'outlook' && calendarStatus.outlook) ||
-        (provider === 'apple' && calendarStatus.apple);
+        (provider === CALENDAR_PROVIDERS.google && calendarStatus.google) ||
+        (provider === CALENDAR_PROVIDERS.outlook && calendarStatus.outlook) ||
+        (provider === CALENDAR_PROVIDERS.apple && calendarStatus.apple);
       
       if (!isAlreadyConnected && connectedCalendars >= features.calendarSyncLimit) {
         toast.error('Calendar Connection Limit Reached', {
@@ -307,23 +308,23 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
 
     // Optimistic update for Google/Outlook so the toggle turns on immediately; Apple opens dialog so no optimistic update
-    if (provider === 'google' || provider === 'outlook') {
+    if (provider === CALENDAR_PROVIDERS.google || provider === CALENDAR_PROVIDERS.outlook) {
       setCalendarStatus(prev => ({ ...prev, [provider]: true }));
     }
 
     // Apple Calendar uses CalDAV for one-way import
-    if (provider === 'apple') {
+    if (provider === CALENDAR_PROVIDERS.apple) {
       setShowAppleCalDAVDialog(true);
       return;
     }
 
     // For Google Calendar, check if user signed in with Google via Supabase
-    if (provider === 'google') {
+    if (provider === CALENDAR_PROVIDERS.google) {
       try {
         // Check if user has Google OAuth tokens from Supabase
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (session?.user?.app_metadata?.provider === 'google') {
+        if (session?.user?.app_metadata?.provider === CALENDAR_PROVIDERS.google) {
           // User signed in with Google - try to use Supabase tokens
           const providerToken = (session as any).provider_token;
           const providerRefreshToken = (session as any).provider_refresh_token;
@@ -628,7 +629,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
     try {
       // Apple Calendar uses CalDAV endpoint, other providers use OAuth endpoint
-      const endpoint = provider === 'apple' 
+      const endpoint = provider === CALENDAR_PROVIDERS.apple
         ? `${CALENDAR_API_BASE}/calendar/apple/caldav`
         : `${CALENDAR_API_BASE}/calendar/${provider}`;
       
@@ -669,8 +670,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const syncTask = useCallback(async (taskId: string, provider: CalendarProvider) => {
     if (!user) return;
 
-    // Recurring tasks may pass occurrence ID (taskId__YYYY-MM-DD); resolve to base task ID
-    const baseTaskId = taskId.includes('__') ? taskId.split('__')[0] : taskId;
+    // Recurring tasks may pass occurrence ID (baseId + SEPARATOR + YYYY-MM-DD); resolve to base task ID
+    const baseTaskId = taskId.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR) ? taskId.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)[0] : taskId;
     const task = tasks.find(t => t.id === baseTaskId);
     if (!task) {
       toast.error('Task not found');
@@ -683,7 +684,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
 
     // Apple Calendar is one-way import only (iCloud → TaskZM)
-    if (provider === 'apple') {
+    if (provider === CALENDAR_PROVIDERS.apple) {
       toast.info('Apple Calendar is import-only', {
         description: 'Events are imported from iCloud. To add events, use Apple Calendar app.',
       });
@@ -946,13 +947,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     // Apple Calendar - trigger CalDAV sync (import from iCloud)
-    if (provider === 'apple') {
+    if (provider === CALENDAR_PROVIDERS.apple) {
       await syncAppleCalendarInternal(false);
       return;
     }
 
     // Google Calendar - trigger sync (import from Google Calendar)
-    if (provider === 'google') {
+    if (provider === CALENDAR_PROVIDERS.google) {
       await syncGoogleCalendarInternal(false);
       return;
     }

@@ -1322,7 +1322,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             {!features.calendarSync ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
                 <p className="text-sm text-muted-foreground">
-                  Sync your tasks with Google, Outlook, and Apple Calendar with TaskZM Pro
+                  {CALENDAR_SETTINGS_UI.proUpsellTitle}
                 </p>
                 <div className={`border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.background.darkClassName}`} style={{ padding: SETTINGS_PANEL_PADDING_LARGE }}>
                   <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
@@ -1330,10 +1330,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     <span className="text-sm">Pro Feature</span>
                   </div>
                 <p className="text-xs text-muted-foreground" style={{ marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                  • Google Calendar OAuth sync<br />
-                  • Apple Calendar via Shortcuts<br />
-                  • Automatic sync when tasks are created or updated<br />
-                  • Manual sync all tasks
+                  {CALENDAR_SETTINGS_UI.proUpsellBullets.map((line) => (
+                    <React.Fragment key={line}>
+                      • {line}<br />
+                    </React.Fragment>
+                  ))}
                 </p>
                   <Button 
                     size="sm" 
@@ -1348,7 +1349,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Sync your tasks with external calendar services
+                  {CALENDAR_SETTINGS_UI.sectionSubtitle}
                 </p>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>

@@ -61,7 +61,17 @@ export const CALENDAR_SETTINGS_LABELS: Record<CalendarProviderId, string> = {
 /** Settings panel: section and button copy. */
 export const CALENDAR_SETTINGS_UI = {
   sectionTitle: 'Calendar Integration',
+  sectionSubtitle: 'Sync your tasks with external calendar services',
   syncButtonLabel: 'Sync All Tasks',
   syncButtonSyncing: 'Syncing...',
   lastSyncedLabel: 'Last synced:',
+  /** Pro upsell: title when calendar sync is gated. */
+  proUpsellTitle: `Sync your tasks with Google, Outlook, and Apple Calendar with TaskZM Pro`,
+  /** Pro upsell: bullet list (each item one line). */
+  proUpsellBullets: [
+    'Google Calendar OAuth sync',
+    'Apple Calendar via Shortcuts',
+    'Automatic sync when tasks are created or updated',
+    'Manual sync all tasks',
+  ],
 } as const;

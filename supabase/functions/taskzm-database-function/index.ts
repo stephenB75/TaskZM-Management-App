@@ -6437,4 +6437,21 @@ app.all('*', async (c) => {
   }, 404);
 });
 
-Deno.serve(app.fetch);
+// Normalize request path: Supabase may pass /functions/v1/taskzm-database-function/... so routes (which use /taskzm-database-function/...) match
+Deno.serve(async (req) => {
+  const url = new URL(req.url);
+  const pathname = url.pathname;
+  if (pathname.startsWith("/functions/v1/")) {
+    const newPathname = pathname.replace(/^\/functions\/v1/, "");
+    const newUrl = new URL(req.url);
+    newUrl.pathname = newPathname;
+    const normalizedRequest = new Request(newUrl.toString(), {
+      method: req.method,
+      headers: req.headers,
+      body: req.body,
+      duplex: "half",
+    });
+    return app.fetch(normalizedRequest);
+  }
+  return app.fetch(req);
+});
