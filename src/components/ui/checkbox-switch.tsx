@@ -100,18 +100,20 @@ function CheckboxSwitch({
         WebkitTapHighlightColor: 'transparent',
       }}
     >
+      {/* Full-size invisible input so clicks always hit it (sr-only is 1px and track was capturing clicks) */}
       <input
         id={id}
         type="checkbox"
         checked={isChecked}
         onChange={handleChange}
         disabled={disabled}
-        className="sr-only peer"
+        className="absolute inset-0 z-[1] h-full w-full cursor-pointer opacity-0 peer"
+        aria-label={id ? undefined : 'Toggle'}
       />
-      {/* Background track */}
+      {/* Background track - behind input so thumb can sit on top */}
       <span
         className={cn(
-          "absolute inset-0 rounded-full transition-colors duration-200 ease-in-out",
+          "absolute inset-0 z-0 rounded-full transition-colors duration-200 ease-in-out",
           isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
           "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
         )}
@@ -121,10 +123,10 @@ function CheckboxSwitch({
         }}
         aria-hidden="true"
       />
-      {/* Sliding thumb - circular (pill-shaped container, circular thumb) */}
+      {/* Thumb on top so it stays visible; pointer-events-none so clicks pass to input */}
       <span
         className={cn(
-          "pointer-events-none absolute rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
+          "pointer-events-none absolute z-[2] rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}

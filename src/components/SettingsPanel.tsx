@@ -1353,7 +1353,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
                   {/* Google Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                    <div
+                      className="flex items-center flex-1 min-w-0 cursor-pointer select-none"
+                      style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={!!calendarStatus.google}
+                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.google) connectCalendar('google'); else disconnectCalendar('google'); } }}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.google) connectCalendar('google'); else disconnectCalendar('google'); } }}
+                    >
                       <Label htmlFor="google-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Google Calendar</Label>
                     </div>
                     <Switch 
@@ -1375,7 +1383,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   
                   {/* Outlook Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                    <div
+                      className="flex items-center flex-1 min-w-0 cursor-pointer select-none"
+                      style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={!!calendarStatus.outlook}
+                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.outlook) connectCalendar('outlook'); else disconnectCalendar('outlook'); } }}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.outlook) connectCalendar('outlook'); else disconnectCalendar('outlook'); } }}
+                    >
                       <Label htmlFor="outlook-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Outlook Calendar</Label>
                     </div>
                     <Switch 
@@ -1397,7 +1413,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   
                   {/* Apple Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <div className="flex items-center flex-1 min-w-0" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                    <div
+                      className="flex items-center flex-1 min-w-0 cursor-pointer select-none"
+                      style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={!!calendarStatus.apple}
+                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.apple) connectCalendar('apple'); else disconnectCalendar('apple'); } }}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.apple) connectCalendar('apple'); else disconnectCalendar('apple'); } }}
+                    >
                       <Label htmlFor="apple-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Apple Calendar</Label>
                     </div>
                     <Switch 
