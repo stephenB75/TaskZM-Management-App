@@ -106,12 +106,12 @@ function CheckboxSwitch({
         checked={isChecked}
         onChange={handleChange}
         disabled={disabled}
-        className="absolute inset-0 z-[1] h-full w-full cursor-pointer opacity-0 peer"
+        className="sr-only peer"
       />
       {/* Background track */}
       <span
         className={cn(
-          "absolute inset-0 z-0 rounded-full transition-colors duration-200 ease-in-out",
+          "absolute inset-0 rounded-full transition-colors duration-200 ease-in-out",
           isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
           "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
         )}
@@ -121,10 +121,10 @@ function CheckboxSwitch({
         }}
         aria-hidden="true"
       />
-      {/* Sliding thumb - above input so it stays visible and animates; pointer-events-none so clicks hit input */}
+      {/* Sliding thumb - circular (pill-shaped container, circular thumb) */}
       <span
         className={cn(
-          "pointer-events-none absolute z-[2] rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
+          "pointer-events-none absolute rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
