@@ -2,6 +2,7 @@ import { publicAnonKey } from '../utils/supabase/info';
 import type { Task, TimeTrackingSession, Activity, Folder, UserAward } from '../types';
 import { logger } from './logger';
 import type { Domain } from './domain-types';
+import { supabase } from './supabase-client';
 
 import { API_BASE } from './api-base';
 
@@ -35,6 +36,29 @@ function getHeaders() {
   return headers;
 }
 
+/**
+ * Fetch with optional retry on 401: forces session refresh then retries once with new token.
+ * Use for authenticated endpoints so expired tokens don't cause permanent 401.
+ */
+async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Response> {
+  const headers = { ...getHeaders(), ...(init.headers as Record<string, string>) };
+  let response = await fetch(url, { ...init, headers });
+  if (response.status === 401) {
+    try {
+      // Force refresh so we get a new access token if the current one expired
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+      const token = !error && session?.access_token ? session.access_token : (await supabase.auth.getSession()).data.session?.access_token;
+      if (token) {
+        setAccessToken(token);
+        response = await fetch(url, { ...init, headers: { ...getHeaders(), ...(init.headers as Record<string, string>) } });
+      }
+    } catch (e) {
+      logger.debug('Session refresh on 401 failed:', e);
+    }
+  }
+  return response;
+}
+
 // Auth API
 export async function signup(email: string, password: string, name: string) {
   const response = await fetch(`${API_BASE}/signup`, {
@@ -54,7 +78,7 @@ export async function signup(email: string, password: string, name: string) {
 // Workspace API
 export async function getUserWorkspaces() {
   try {
-    const response = await fetch(`${API_BASE}/user/workspaces`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/user/workspaces`, {
       method: 'GET',
       headers: getHeaders(),
     });
@@ -210,7 +234,7 @@ export async function getTasks(
     // Note: If-Modified-Since header removed due to CORS policy restrictions
     // Using query parameter instead for conditional requests
 
-    const response = await fetch(url, {
+    const response = await fetchWithAuthRetry(url, {
       method: 'GET',
       headers,
     });
@@ -291,7 +315,7 @@ export async function saveTask(workspaceId: string, task: Task): Promise<Task> {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/tasks/${workspaceId}`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/tasks/${workspaceId}`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(task),
