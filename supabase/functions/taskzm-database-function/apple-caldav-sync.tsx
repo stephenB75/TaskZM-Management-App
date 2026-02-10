@@ -573,9 +573,12 @@ export async function discoverCalendars(
       continue;
     }
 
-    // Extract href
+    // Extract href and normalize to full URL so we use the same host (e.g. p02-caldav.icloud.com) when fetching events.
+    // Relative hrefs (e.g. 218434715/calendars/primary) would otherwise be resolved with ICLOUD_CALDAV_URL and get 403.
     const hrefMatch = resp.match(/<href[^>]*>([^<]+)<\/href>/i);
     if (!hrefMatch) continue;
+    const rawHref = hrefMatch[1].trim();
+    const fullHref = rawHref.startsWith('http') ? rawHref : normalizeUrl(rawHref, response.finalUrl);
 
     // Extract display name
     const displayNameMatch = resp.match(/<displayname[^>]*>([^<]*)<\/displayname>/i);
@@ -587,7 +590,7 @@ export async function discoverCalendars(
     const ctagMatch = resp.match(/<getctag[^>]*>([^<]*)<\/getctag>/i);
 
     calendars.push({
-      href: hrefMatch[1],
+      href: fullHref,
       displayName: displayNameMatch?.[1] || 'Untitled Calendar',
       color: colorMatch?.[1],
       ctag: ctagMatch?.[1],
