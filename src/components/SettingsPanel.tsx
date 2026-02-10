@@ -184,6 +184,7 @@ import {
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
+import { CALENDAR_PROVIDERS } from '../lib/calendar-integration-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 import { COLOR_PRIMARY, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
 import { API_BASE, getAIConfigStatus } from '../lib/api';
@@ -1359,21 +1360,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       role="button"
                       tabIndex={0}
                       aria-pressed={!!calendarStatus.google}
-                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.google) connectCalendar('google'); else disconnectCalendar('google'); } }}
-                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.google) connectCalendar('google'); else disconnectCalendar('google'); } }}
+                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.google) connectCalendar(CALENDAR_PROVIDERS.google); else disconnectCalendar(CALENDAR_PROVIDERS.google); } }}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.google) connectCalendar(CALENDAR_PROVIDERS.google); else disconnectCalendar(CALENDAR_PROVIDERS.google); } }}
                     >
                       <Label htmlFor="google-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Google Calendar</Label>
                     </div>
-                    <Switch 
+                    <Switch
                       key={`google-cal-${!!calendarStatus.google}`}
-                      id="google-cal" 
+                      id="google-cal"
                       className="flex-shrink-0"
                       checked={!!calendarStatus.google}
                       disabled={!!isCalendarSyncing}
                       onCheckedChange={async (checked) => {
                         try {
-                          if (checked) await connectCalendar('google');
-                          else await disconnectCalendar('google');
+                          if (checked) await connectCalendar(CALENDAR_PROVIDERS.google);
+                          else await disconnectCalendar(CALENDAR_PROVIDERS.google);
                         } catch (error) {
                           logger.error('Calendar toggle error:', error);
                         }
@@ -1389,8 +1390,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       role="button"
                       tabIndex={0}
                       aria-pressed={!!calendarStatus.outlook}
-                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.outlook) connectCalendar('outlook'); else disconnectCalendar('outlook'); } }}
-                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.outlook) connectCalendar('outlook'); else disconnectCalendar('outlook'); } }}
+                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.outlook) connectCalendar(CALENDAR_PROVIDERS.outlook); else disconnectCalendar(CALENDAR_PROVIDERS.outlook); } }}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.outlook) connectCalendar(CALENDAR_PROVIDERS.outlook); else disconnectCalendar(CALENDAR_PROVIDERS.outlook); } }}
                     >
                       <Label htmlFor="outlook-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Outlook Calendar</Label>
                     </div>
@@ -1402,8 +1403,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       disabled={!!isCalendarSyncing}
                       onCheckedChange={async (checked) => {
                         try {
-                          if (checked) await connectCalendar('outlook');
-                          else await disconnectCalendar('outlook');
+                          if (checked) await connectCalendar(CALENDAR_PROVIDERS.outlook);
+                          else await disconnectCalendar(CALENDAR_PROVIDERS.outlook);
                         } catch (error) {
                           logger.error('Calendar toggle error:', error);
                         }
@@ -1419,21 +1420,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       role="button"
                       tabIndex={0}
                       aria-pressed={!!calendarStatus.apple}
-                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.apple) connectCalendar('apple'); else disconnectCalendar('apple'); } }}
-                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.apple) connectCalendar('apple'); else disconnectCalendar('apple'); } }}
+                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.apple) connectCalendar(CALENDAR_PROVIDERS.apple); else disconnectCalendar(CALENDAR_PROVIDERS.apple); } }}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.apple) connectCalendar(CALENDAR_PROVIDERS.apple); else disconnectCalendar(CALENDAR_PROVIDERS.apple); } }}
                     >
                       <Label htmlFor="apple-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Apple Calendar</Label>
                     </div>
-                    <Switch 
+                    <Switch
                       key={`apple-cal-${!!calendarStatus.apple}`}
-                      id="apple-cal" 
+                      id="apple-cal"
                       className="flex-shrink-0"
                       checked={!!calendarStatus.apple}
                       disabled={!!isCalendarSyncing}
                       onCheckedChange={async (checked) => {
                         try {
-                          if (checked) await connectCalendar('apple');
-                          else await disconnectCalendar('apple');
+                          if (checked) await connectCalendar(CALENDAR_PROVIDERS.apple);
+                          else await disconnectCalendar(CALENDAR_PROVIDERS.apple);
                         } catch (error) {
                           logger.error('Calendar toggle error:', error);
                         }
@@ -1451,9 +1452,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 size="sm" 
                 className="w-full"
                 onClick={() => {
-                  if (calendarStatus.google) syncAllTasksToCalendar('google');
-                  else if (calendarStatus.outlook) syncAllTasksToCalendar('outlook');
-                  else if (calendarStatus.apple) syncAllTasksToCalendar('apple');
+                  if (calendarStatus.google) syncAllTasksToCalendar(CALENDAR_PROVIDERS.google);
+                  else if (calendarStatus.outlook) syncAllTasksToCalendar(CALENDAR_PROVIDERS.outlook);
+                  else if (calendarStatus.apple) syncAllTasksToCalendar(CALENDAR_PROVIDERS.apple);
                 }}
                 disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.outlook && !calendarStatus.apple)}
               >

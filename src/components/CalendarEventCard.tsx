@@ -4,6 +4,7 @@ import { Icon } from './Icon';
 import { cn, parseCalendarEventTime } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS, CALENDAR_EVENT_UI_TEXT } from '../lib/calendar-event-constants';
+import { CALENDAR_PROVIDER_EVENT_SOURCE_LABELS, type CalendarProviderId } from '../lib/calendar-integration-constants';
 import { TASK_CARD_SPACING } from '../lib/task-card-constants';
 import { useIsMobile } from './ui/use-mobile';
 
@@ -12,7 +13,7 @@ interface CalendarEventCardProps {
   start: string;
   end: string;
   location?: string;
-  provider: 'google' | 'apple' | 'outlook';
+  provider: CalendarProviderId;
   calendarColor?: string;
   isRecurring?: boolean; // Flag indicating if this is a recurring event
   /** When 'kanban', uses light gray background, square left corners, rounded right; background starts at vertical line. */
@@ -327,7 +328,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           <div className="flex items-center gap-2">
             <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
             <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
-              {provider === 'apple' ? 'iCloud' : provider === 'outlook' ? 'Outlook' : 'Google'} Calendar
+              {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]} Calendar
             </span>
             {isRecurring && (
               <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />
@@ -374,7 +375,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         <div className="flex items-center gap-2">
           <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
           <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
-            {provider === 'apple' ? 'iCloud' : provider === 'outlook' ? 'Outlook' : 'Google'} Calendar
+            {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]} Calendar
           </span>
           {isRecurring && (
             <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />

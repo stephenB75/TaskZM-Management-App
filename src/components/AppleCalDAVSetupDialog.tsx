@@ -19,6 +19,7 @@ import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
+import { APPLE_ID_BASE_URL, APPLE_ID_DISPLAY_NAME, APPLE_CALENDAR_FALLBACK_COLOR, ICLOUD_EMAIL_PLACEHOLDER } from '../lib/calendar-integration-constants';
 import { DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
 
 interface AppleCalDAVSetupDialogProps {
@@ -51,7 +52,7 @@ export function AppleCalDAVSetupDialog({
   const totalSteps = 3;
 
   const handleOpenAppleID = () => {
-    window.open('https://appleid.apple.com', '_blank');
+    window.open(APPLE_ID_BASE_URL, '_blank');
   };
 
   const handleTestConnection = async () => {
@@ -276,7 +277,7 @@ export function AppleCalDAVSetupDialog({
                   <div className="text-xs text-blue-800 dark:text-blue-300">
                     <p className="font-semibold mb-2">How to get an App-Specific Password:</p>
                     <ol className="list-decimal list-inside space-y-1 ml-2">
-                      <li>Go to <button type="button" onClick={handleOpenAppleID} className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">appleid.apple.com</button> <Icon name="external-link" size={ICON_SIZE_XS} className="inline ml-1" /></li>
+                      <li>Go to <button type="button" onClick={handleOpenAppleID} className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">{APPLE_ID_DISPLAY_NAME}</button> <Icon name="external-link" size={ICON_SIZE_XS} className="inline ml-1" /></li>
                       <li>Sign in with your Apple ID</li>
                       <li>Navigate to <strong>Sign-In and Security</strong> → <strong>App-Specific Passwords</strong></li>
                       <li>Click <strong>"Generate Password"</strong></li>
@@ -293,7 +294,7 @@ export function AppleCalDAVSetupDialog({
                   <Input
                     id="icloud-email"
                     type="email"
-                    placeholder="your.email@icloud.com"
+                    placeholder={ICLOUD_EMAIL_PLACEHOLDER}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
@@ -373,7 +374,7 @@ export function AppleCalDAVSetupDialog({
                           <div
                             className="w-4 h-4 rounded-full flex-shrink-0"
                             style={{ 
-                              backgroundColor: calendar.color || '#6366f1' 
+                              backgroundColor: calendar.color || APPLE_CALENDAR_FALLBACK_COLOR 
                             }}
                           />
                           <span className="text-sm font-medium flex-1">

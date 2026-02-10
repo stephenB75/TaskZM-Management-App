@@ -5,13 +5,14 @@ import { useSubscription } from './SubscriptionContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
+import { CALENDAR_OAUTH_ORIGINS, CALENDAR_OAUTH_MESSAGE_TYPES, CALENDAR_PROVIDER_DISPLAY_NAMES, type CalendarProviderId } from '../lib/calendar-integration-constants';
 import { supabase } from '../lib/supabase-client';
 import { TIMING_CONSTANTS, DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
 import { clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { createDefaultCalendarContext } from '../lib/context-defaults';
 
-type CalendarProvider = 'google' | 'outlook' | 'apple';
+type CalendarProvider = CalendarProviderId;
 
 interface CalendarStatus {
   google: boolean;
@@ -387,7 +388,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           // If response isn't JSON, use status text
           errorMessage = `${errorMessage}: ${response.statusText}`;
         }
-        toast.error(`Failed to connect ${provider} Calendar`, {
+        toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
           description: errorMessage,
         });
         await checkCalendarStatus(); // Revert optimistic update
@@ -398,7 +399,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       
       // Validate response contains authUrl
       if (!data || !data.authUrl) {
-        toast.error(`Failed to connect ${provider} Calendar`, {
+        toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
           description: 'Server did not return a valid OAuth URL. Please check your OAuth configuration.',
         });
         console.error('Invalid OAuth response:', data);
@@ -450,7 +451,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         }
         
         // Fast path: Only process calendar OAuth messages
-        if (event.data.type !== 'calendar-oauth-success' && event.data.type !== 'calendar-oauth-error') {
+        if (event.data.type !== CALENDAR_OAUTH_MESSAGE_TYPES.success && event.data.type !== CALENDAR_OAUTH_MESSAGE_TYPES.error) {
           return;
         }
         
@@ -472,9 +473,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           const allowedOrigins = [
             window.location.origin,
             `https://${projectId}.supabase.co`,
-            'https://accounts.google.com',
-            'https://login.microsoftonline.com',
-            'https://appleid.apple.com',
+            CALENDAR_OAUTH_ORIGINS.google,
+            CALENDAR_OAUTH_ORIGINS.microsoft,
+            CALENDAR_OAUTH_ORIGINS.apple,
           ];
           
           // ENHANCED: More lenient origin check for OAuth callbacks
@@ -521,7 +522,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           }, TIMING_CONSTANTS.delays.calendarPopup);
           
           // Defer all heavy operations to next tick to keep handler fast
-          if (event.data.type === 'calendar-oauth-success') {
+          if (event.data.type === CALENDAR_OAUTH_MESSAGE_TYPES.success) {
             console.log('[Calendar OAuth] Success message received for', provider, 'from origin:', event.origin);
             const connectedProvider = provider;
             // Use setTimeout(0) to defer to next event loop tick
@@ -542,13 +543,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
               }).catch((err) => {
                 console.error('[Calendar OAuth] Error checking calendar status:', err);
               });
-              toast.success(`${connectedProvider.charAt(0).toUpperCase() + connectedProvider.slice(1)} Calendar connected successfully!`);
+              toast.success(`${CALENDAR_PROVIDER_DISPLAY_NAMES[connectedProvider]} Calendar connected successfully!`);
             }, 0);
-          } else if (event.data.type === 'calendar-oauth-error') {
+          } else if (event.data.type === CALENDAR_OAUTH_MESSAGE_TYPES.error) {
             console.error('[Calendar OAuth] Error message received for', provider, 'from origin:', event.origin, 'error:', event.data.error);
             setTimeout(() => {
               checkCalendarStatus(); // Revert optimistic update
-              toast.error(`Failed to connect ${provider} Calendar`, {
+              toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
                 description: event.data.error || 'An error occurred during authorization',
               });
             }, 0);
@@ -609,12 +610,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         }
       }, TIMING_CONSTANTS.calendar.popupCheckInterval);
 
-      toast.success(`Connecting to ${provider} Calendar...`, {
+      toast.success(`Connecting to ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar...`, {
         description: 'Complete the authorization in the popup window',
       });
     } catch (error) {
       console.error(`Failed to connect ${provider}:`, error);
-      toast.error(`Failed to connect ${provider} Calendar`, {
+      toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
         description: String(error),
       });
       await checkCalendarStatus(); // Revert optimistic update
@@ -657,10 +658,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(`calendar_status_cache_time_${user.id}`);
       }
 
-      toast.success(`${provider === 'apple' ? 'Apple' : provider} Calendar disconnected`);
+      toast.success(`${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar disconnected`);
     } catch (error) {
       console.error(`Failed to disconnect ${provider}:`, error);
-      toast.error(`Failed to disconnect ${provider === 'apple' ? 'Apple' : provider} Calendar`);
+      toast.error(`Failed to disconnect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`);
     }
   }, [user, accessToken, calendarStatus]);
 
@@ -710,7 +711,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
 
       setLastSync(new Date());
-      toast.success(`Task synced to ${provider} Calendar`);
+      toast.success(`Task synced to ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`);
     } catch (error) {
       console.error(`Failed to sync task to ${provider}:`, error);
       toast.error(`Failed to sync task`, {
