@@ -4003,8 +4003,8 @@ app.get("/taskzm-database-function/calendar/apple/sync-token", async (c) => {
 // ============================================================================
 // Import events from Apple iCloud Calendar into TaskZM as read-only items
 
-// Test CalDAV connection with credentials
-app.post("/taskzm-database-function/calendar/apple/caldav/test", async (c) => {
+// Test CalDAV connection with credentials (register both path formats for compatibility)
+const appleCalDAVTestHandler = async (c: any) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -4027,10 +4027,12 @@ app.post("/taskzm-database-function/calendar/apple/caldav/test", async (c) => {
       message: getErrorMessage(error)
     }, 500);
   }
-});
+};
+app.post("/taskzm-database-function/calendar/apple/caldav/test", appleCalDAVTestHandler);
+app.post("/calendar/apple/caldav/test", appleCalDAVTestHandler);
 
-// Discover calendars
-app.post("/taskzm-database-function/calendar/apple/caldav/discover", async (c) => {
+// Discover calendars (register both path formats)
+const appleCalDAVDiscoverHandler = async (c: any) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -4056,10 +4058,12 @@ app.post("/taskzm-database-function/calendar/apple/caldav/discover", async (c) =
       error: getErrorMessage(error) 
     }, 500);
   }
-});
+};
+app.post("/taskzm-database-function/calendar/apple/caldav/discover", appleCalDAVDiscoverHandler);
+app.post("/calendar/apple/caldav/discover", appleCalDAVDiscoverHandler);
 
-// Save CalDAV credentials and selected calendars
-app.post("/taskzm-database-function/calendar/apple/caldav/save", async (c) => {
+// Save CalDAV credentials and selected calendars (register both path formats)
+const appleCalDAVSaveHandler = async (c: any) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -4072,7 +4076,6 @@ app.post("/taskzm-database-function/calendar/apple/caldav/save", async (c) => {
       return c.json({ error: 'Email and app-specific password are required' }, 400);
     }
 
-    // Store credentials securely in KV store (encrypted in production)
     await kv.set(`caldav_credentials_${userId}`, JSON.stringify({
       email,
       appPassword,
@@ -4091,7 +4094,9 @@ app.post("/taskzm-database-function/calendar/apple/caldav/save", async (c) => {
       error: getErrorMessage(error) 
     }, 500);
   }
-});
+};
+app.post("/taskzm-database-function/calendar/apple/caldav/save", appleCalDAVSaveHandler);
+app.post("/calendar/apple/caldav/save", appleCalDAVSaveHandler);
 
 // Get CalDAV connection status
 app.get("/taskzm-database-function/calendar/apple/caldav/status", async (c) => {
@@ -4132,8 +4137,8 @@ app.get("/taskzm-database-function/calendar/apple/caldav/status", async (c) => {
   }
 });
 
-// Trigger CalDAV sync
-app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
+// Apple CalDAV sync handler (shared for both path formats so sync works regardless of how Supabase forwards the path)
+const appleCalDAVSyncHandler = async (c: any) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
     if (authError || !userId) {
@@ -4222,7 +4227,11 @@ app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
       ...result,
     }));
 
-    return c.json(result);
+    // Frontend expects either data.error or data.errors; when success is false, set error from errors array
+    const payload = result.success
+      ? result
+      : { ...result, error: result.errors?.length ? result.errors.join(' ') : 'Apple Calendar sync failed' };
+    return c.json(payload);
   } catch (error) {
     console.error('CalDAV sync error:', error);
     return c.json({
@@ -4230,7 +4239,10 @@ app.post("/taskzm-database-function/calendar/apple/caldav/sync", async (c) => {
       error: getErrorMessage(error),
     }, 500);
   }
-});
+};
+
+app.post("/taskzm-database-function/calendar/apple/caldav/sync", appleCalDAVSyncHandler);
+app.post("/calendar/apple/caldav/sync", appleCalDAVSyncHandler);
 
 // Disconnect CalDAV
 app.delete("/taskzm-database-function/calendar/apple/caldav", async (c) => {
