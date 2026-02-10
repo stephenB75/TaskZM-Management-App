@@ -69,7 +69,7 @@ import {
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, COLOR_BACKGROUND_LIGHT, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
-import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
 import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT, COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
@@ -200,29 +200,28 @@ export const DraggableTaskCard = React.forwardRef<
     // it activates in all locations
     // For recurring tasks, use unique sortable ID per date occurrence to maintain chronological order
     const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
-    const sortableId = isRecurringTask ? `${task.id}__${droppableId}` : task.id;
-    
-    // For recurring tasks, use occurrence-specific ID so tracking is per day, not the whole series
-    // occurrenceDate is the column/day this card is for (from Kanban/Agenda); fallback to task.scheduledDate for single occurrence
-    const pomodoroTimerId = isRecurringTask && (occurrenceDate ?? task.scheduledDate)
-      ? `${task.id}__${occurrenceDate ?? getDateString(new Date(task.scheduledDate))}`
-      : task.id;
+    const sortableId = isRecurringTask ? `${task.id}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}${droppableId}` : task.id;
+
+    // Canonical occurrence id for this task instance (recurring + date): baseId_subtasks_YYYY-MM-DD.
+    // Used for both Pomodoro timer and subtask updates so the timer is active wherever the task appears (Agenda, Kanban, Dialog) and time is stored per occurrence.
+    const baseTaskIdForOccurrence = task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)
+      ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0]
+      : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
+        ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
+        : task.id.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)
+          ? task.id.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)[0]
+          : task.id;
+    const occurrenceDateStr = occurrenceDate ?? (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+    const canonicalOccurrenceId = isRecurringTask && occurrenceDateStr
+      ? `${baseTaskIdForOccurrence}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${occurrenceDateStr}`
+      : null;
+
+    // Pomodoro timer ID: use canonical occurrence id so timer is activated wherever this task is (Today Agenda, Kanban, Task Dialog).
+    const pomodoroTimerId = canonicalOccurrenceId ?? task.id;
     const timerState = getTimerState(pomodoroTimerId);
 
     // For recurring tasks, subtask completion must apply only to this occurrence, not the whole series.
-    // Use the occurrence subtask record id (baseId_subtasks_YYYY-MM-DD) when updating subtasks so only this instance is updated.
-    const effectiveTaskIdForSubtasks = (() => {
-      if (!isRecurringTask || (!occurrenceDate && !task.scheduledDate)) return task.id;
-      const baseTaskId = task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)
-        ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0]
-        : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
-          ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
-          : task.id.includes('__')
-            ? task.id.split('__')[0]
-            : task.id;
-      const dateStr = occurrenceDate ?? (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
-      return dateStr ? `${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${dateStr}` : task.id;
-    })();
+    const effectiveTaskIdForSubtasks = canonicalOccurrenceId ?? task.id;
     
     const {
       attributes,
@@ -280,8 +279,8 @@ export const DraggableTaskCard = React.forwardRef<
             ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0]
             : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
               ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
-              : task.id.includes('__')
-                ? task.id.split('__')[0]
+              : task.id.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)
+                ? task.id.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)[0]
                 : task.id;
           const dateStr = occurrenceDate ?? (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
           if (dateStr) {
