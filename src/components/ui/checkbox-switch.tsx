@@ -106,12 +106,12 @@ function CheckboxSwitch({
         checked={isChecked}
         onChange={handleChange}
         disabled={disabled}
-        className="sr-only peer"
+        className="absolute inset-0 z-[1] h-full w-full cursor-pointer opacity-0 peer"
       />
       {/* Background track */}
       <span
         className={cn(
-          "absolute inset-0 rounded-full transition-colors duration-200 ease-in-out",
+          "absolute inset-0 z-0 rounded-full transition-colors duration-200 ease-in-out",
           isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
           "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
         )}
