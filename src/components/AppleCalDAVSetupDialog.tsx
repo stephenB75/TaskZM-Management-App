@@ -360,7 +360,11 @@ export function AppleCalDAVSetupDialog({
                               ? 'bg-primary/10 border-primary' 
                               : 'hover:bg-muted'
                           }`}
-                          onClick={() => handleToggleCalendar(calendar)}
+                          onClick={(e) => {
+                            // Avoid double-toggle: checkbox has its own onCheckedChange; ignore row click when click was on checkbox
+                            if ((e.target as HTMLElement).closest?.('[data-slot="checkbox"]')) return;
+                            handleToggleCalendar(calendar);
+                          }}
                         >
                           <Checkbox
                             checked={isSelected}
