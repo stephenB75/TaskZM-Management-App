@@ -50,3 +50,18 @@ export const CALENDAR_PROVIDER_EVENT_SOURCE_LABELS: Record<CalendarProviderId, s
   outlook: 'Outlook',
   apple: 'iCloud',
 };
+
+/** Settings panel: label for each provider toggle (e.g. "Google Calendar"). */
+export const CALENDAR_SETTINGS_LABELS: Record<CalendarProviderId, string> = {
+  google: 'Google Calendar',
+  outlook: 'Outlook Calendar',
+  apple: 'Apple Calendar',
+};
+
+/** Settings panel: section and button copy. */
+export const CALENDAR_SETTINGS_UI = {
+  sectionTitle: 'Calendar Integration',
+  syncButtonLabel: 'Sync All Tasks',
+  syncButtonSyncing: 'Syncing...',
+  lastSyncedLabel: 'Last synced:',
+} as const;

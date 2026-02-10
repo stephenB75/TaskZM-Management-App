@@ -184,7 +184,7 @@ import {
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
-import { CALENDAR_PROVIDERS } from '../lib/calendar-integration-constants';
+import { CALENDAR_PROVIDERS, CALENDAR_SETTINGS_LABELS, CALENDAR_SETTINGS_UI } from '../lib/calendar-integration-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 import { COLOR_PRIMARY, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
 import { API_BASE, getAIConfigStatus } from '../lib/api';
@@ -1304,7 +1304,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
             <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
               <Icon name="calendar" size={SETTINGS_PANEL_ICON_SIZE_LARGE} weight="duotone" className="text-primary" />
-              <span>Calendar Integration</span>
+              <span>{CALENDAR_SETTINGS_UI.sectionTitle}</span>
               {!features.calendarSync && (
                 <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
                   PRO
@@ -1363,11 +1363,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.google) connectCalendar(CALENDAR_PROVIDERS.google); else disconnectCalendar(CALENDAR_PROVIDERS.google); } }}
                       onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.google) connectCalendar(CALENDAR_PROVIDERS.google); else disconnectCalendar(CALENDAR_PROVIDERS.google); } }}
                     >
-                      <Label htmlFor="google-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Google Calendar</Label>
+                      <Label htmlFor={`${CALENDAR_PROVIDERS.google}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
                     </div>
                     <Switch
-                      key={`google-cal-${!!calendarStatus.google}`}
-                      id="google-cal"
+                      key={`${CALENDAR_PROVIDERS.google}-cal-${!!calendarStatus.google}`}
+                      id={`${CALENDAR_PROVIDERS.google}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.google}
                       disabled={!!isCalendarSyncing}
@@ -1393,11 +1393,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.outlook) connectCalendar(CALENDAR_PROVIDERS.outlook); else disconnectCalendar(CALENDAR_PROVIDERS.outlook); } }}
                       onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.outlook) connectCalendar(CALENDAR_PROVIDERS.outlook); else disconnectCalendar(CALENDAR_PROVIDERS.outlook); } }}
                     >
-                      <Label htmlFor="outlook-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Outlook Calendar</Label>
+                      <Label htmlFor={`${CALENDAR_PROVIDERS.outlook}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
                     </div>
                     <Switch 
-                      key={`outlook-cal-${!!calendarStatus.outlook}`}
-                      id="outlook-cal" 
+                      key={`${CALENDAR_PROVIDERS.outlook}-cal-${!!calendarStatus.outlook}`}
+                      id={`${CALENDAR_PROVIDERS.outlook}-cal`} 
                       className="flex-shrink-0"
                       checked={!!calendarStatus.outlook}
                       disabled={!!isCalendarSyncing}
@@ -1423,11 +1423,11 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.apple) connectCalendar(CALENDAR_PROVIDERS.apple); else disconnectCalendar(CALENDAR_PROVIDERS.apple); } }}
                       onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.apple) connectCalendar(CALENDAR_PROVIDERS.apple); else disconnectCalendar(CALENDAR_PROVIDERS.apple); } }}
                     >
-                      <Label htmlFor="apple-cal" className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>Apple Calendar</Label>
+                      <Label htmlFor={`${CALENDAR_PROVIDERS.apple}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
                     </div>
                     <Switch
-                      key={`apple-cal-${!!calendarStatus.apple}`}
-                      id="apple-cal"
+                      key={`${CALENDAR_PROVIDERS.apple}-cal-${!!calendarStatus.apple}`}
+                      id={`${CALENDAR_PROVIDERS.apple}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.apple}
                       disabled={!!isCalendarSyncing}
@@ -1459,12 +1459,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.outlook && !calendarStatus.apple)}
               >
                 <Icon name="calendar" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} weight="duotone" className="mr-2" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                {isCalendarSyncing ? 'Syncing...' : 'Sync All Tasks'}
+                {isCalendarSyncing ? CALENDAR_SETTINGS_UI.syncButtonSyncing : CALENDAR_SETTINGS_UI.syncButtonLabel}
               </Button>
               
               {lastCalendarSync && (
                 <p className="text-xs text-muted-foreground text-center">
-                  Last synced: {new Date(lastCalendarSync).toLocaleString()}
+                  {CALENDAR_SETTINGS_UI.lastSyncedLabel} {new Date(lastCalendarSync).toLocaleString()}
                 </p>
               )}
             </div>
