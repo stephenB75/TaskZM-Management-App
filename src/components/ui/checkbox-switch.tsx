@@ -121,10 +121,10 @@ function CheckboxSwitch({
         }}
         aria-hidden="true"
       />
-      {/* Sliding thumb - circular (pill-shaped container, circular thumb) */}
+      {/* Sliding thumb - above input so it stays visible and animates; pointer-events-none so clicks hit input */}
       <span
         className={cn(
-          "pointer-events-none absolute rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
+          "pointer-events-none absolute z-[2] rounded-full shadow-md ring-0 transition-[left] duration-200 ease-in-out",
           TOGGLE_SWITCH_COLORS.switch.thumb.light,
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
