@@ -208,6 +208,21 @@ export const DraggableTaskCard = React.forwardRef<
       ? `${task.id}__${occurrenceDate ?? getDateString(new Date(task.scheduledDate))}`
       : task.id;
     const timerState = getTimerState(pomodoroTimerId);
+
+    // For recurring tasks, subtask completion must apply only to this occurrence, not the whole series.
+    // Use the occurrence subtask record id (baseId_subtasks_YYYY-MM-DD) when updating subtasks so only this instance is updated.
+    const effectiveTaskIdForSubtasks = (() => {
+      if (!isRecurringTask || (!occurrenceDate && !task.scheduledDate)) return task.id;
+      const baseTaskId = task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)
+        ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0]
+        : task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)
+          ? task.id.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[0]
+          : task.id.includes('__')
+            ? task.id.split('__')[0]
+            : task.id;
+      const dateStr = occurrenceDate ?? (task.scheduledDate ? getDateString(new Date(task.scheduledDate)) : undefined);
+      return dateStr ? `${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${dateStr}` : task.id;
+    })();
     
     const {
       attributes,
@@ -624,7 +639,7 @@ export const DraggableTaskCard = React.forwardRef<
                       ? { ...st, completed: !st.completed }
                       : st
                   );
-                  await updateTask(task.id, { subtasks: updatedSubtasks });
+                  await updateTask(effectiveTaskIdForSubtasks, { subtasks: updatedSubtasks });
                 } else {
                   const stepSubtask = task.subtasks?.find(st =>
                     st.title.toLowerCase().trim() === itemTitle.toLowerCase().trim() ||
@@ -636,7 +651,7 @@ export const DraggableTaskCard = React.forwardRef<
                         ? { ...st, completed: !st.completed }
                         : st
                     );
-                    await updateTask(task.id, { subtasks: updatedSubtasks });
+                    await updateTask(effectiveTaskIdForSubtasks, { subtasks: updatedSubtasks });
                   } else {
                     const newSubtask = {
                       id: itemId,
@@ -645,7 +660,7 @@ export const DraggableTaskCard = React.forwardRef<
                       createdAt: new Date().toISOString(),
                     };
                     const updatedSubtasks = [...(task.subtasks || []), newSubtask];
-                    await updateTask(task.id, { subtasks: updatedSubtasks });
+                    await updateTask(effectiveTaskIdForSubtasks, { subtasks: updatedSubtasks });
                   }
                 }
               };
@@ -1158,7 +1173,7 @@ export const DraggableTaskCard = React.forwardRef<
                         createdAt: new Date().toISOString(),
                       };
                       const updatedSubtasks = [...(task.subtasks || []), newSubtask];
-                      await updateTask(task.id, { subtasks: updatedSubtasks });
+                      await updateTask(effectiveTaskIdForSubtasks, { subtasks: updatedSubtasks });
                       setNewSubtaskTitle('');
                     }
                   }}
