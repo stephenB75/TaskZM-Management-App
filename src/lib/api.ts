@@ -237,6 +237,7 @@ export async function getTasks(
     const response = await fetchWithAuthRetry(url, {
       method: 'GET',
       headers,
+      cache: 'no-store', // Prevent browsers (e.g. Edge) from using cached response; avoids tasks "disappearing" when sync overwrites with stale/empty cache
     });
     const lastModifiedHeader = response.headers.get('last-modified') || undefined;
 

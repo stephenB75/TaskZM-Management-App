@@ -1291,6 +1291,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         const currentTasks = tasksRef.current; // Get current tasks from ref (avoids dependency issues)
         const tasksChanged = !areTasksEqual(currentTasks, serverTasks);
 
+        // Safeguard: do not overwrite local tasks with empty server response when we have local tasks.
+        // On some browsers (e.g. Edge) GET can return 404/empty due to caching or request handling;
+        // overwriting would make tasks "disappear" after marking complete when sync runs.
+        if (serverTasks.length === 0 && currentTasks.length > 0) {
+          logger.warn('Server returned no tasks but local state has tasks; preserving local state to avoid tasks disappearing');
+          return;
+        }
+
         // Option D: merge strategy for today's tasks so local scheduledDate for today is not overwritten by server unless server is strictly newer
         const todayString = getDateString(new Date());
         const currentById = new Map(currentTasks.map((t) => [t.id, t]));
