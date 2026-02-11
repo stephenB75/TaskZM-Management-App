@@ -596,9 +596,15 @@ export function SevenDayKanban({
           if (!task || typeof task !== 'object') {
             return false;
           }
-          // Exclude recurrence occurrence records: they are merged into the base task via getTaskWithOccurrenceSubtasks, not shown as separate cards
-          if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS) || task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)) {
+          // Exclude _subtasks_ occurrence records: they are merged into the base/completed task via getTaskWithOccurrenceSubtasks, not shown as separate cards
+          if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)) {
             return false;
+          }
+          // Include completed occurrences for the day they belong to (id = baseId_completed_YYYY-MM-DD) so they show grayed on kanban
+          if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)) {
+            const suffix = RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED;
+            const datePart = task.id.split(suffix)[1];
+            return datePart === dateString;
           }
           
           // CRITICAL: For recurring tasks, ensure they have a scheduledDate
@@ -635,7 +641,7 @@ export function SevenDayKanban({
             }
             
             if (!matches) return false;
-            // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence
+            // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence (grayed)
             if (task.recurrence && task.recurrence.type !== 'none') {
               const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${dateString}`;
               if (tasks.some(t => t.id === completedOccurrenceId)) return false;

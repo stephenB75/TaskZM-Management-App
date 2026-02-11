@@ -1280,11 +1280,20 @@ export function InboxView() {
                                       </span>
                                     </div>
                                   )}
+                                  {task.recurrence && task.recurrence.type !== "none" && (
+                                    <div className="flex items-center gap-1 text-muted-foreground">
+                                      {(task.dueDate || task.estimatedTime) && (
+                                        <span>•</span>
+                                      )}
+                                      <Icon name="repeat" size={ICON_SIZE_XS} weight="duotone" className="text-muted-foreground" />
+                                    </div>
+                                  )}
                                   {task.tags &&
                                     task.tags.length > 0 && (
                                       <div className="flex items-center gap-1">
                                         {(task.dueDate ||
-                                          task.estimatedTime) && (
+                                          task.estimatedTime ||
+                                          (task.recurrence && task.recurrence.type !== "none")) && (
                                           <span className="text-muted-foreground">
                                             •
                                           </span>
@@ -1583,11 +1592,20 @@ export function InboxView() {
                                     </span>
                                   </div>
                                 )}
+                                {task.recurrence && task.recurrence.type !== "none" && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    {(task.dueDate || task.estimatedTime) && (
+                                      <span>•</span>
+                                    )}
+                                    <Icon name="repeat" size={ICON_SIZE_XS} weight="duotone" className="text-muted-foreground" />
+                                  </div>
+                                )}
                                 {task.tags &&
                                   task.tags.length > 0 && (
                                     <div className="flex items-center gap-1">
                                       {(task.dueDate ||
-                                        task.estimatedTime) && (
+                                        task.estimatedTime ||
+                                        (task.recurrence && task.recurrence.type !== "none")) && (
                                         <span className="text-muted-foreground">
                                           •
                                         </span>
