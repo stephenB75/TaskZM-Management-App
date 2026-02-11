@@ -1367,7 +1367,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <Label htmlFor={`${CALENDAR_PROVIDERS.google}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
                     </div>
                     <Switch
-                      key={`${CALENDAR_PROVIDERS.google}-cal-${!!calendarStatus.google}`}
                       id={`${CALENDAR_PROVIDERS.google}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.google}
@@ -1396,8 +1395,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     >
                       <Label htmlFor={`${CALENDAR_PROVIDERS.outlook}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
                     </div>
-                    <Switch 
-                      key={`${CALENDAR_PROVIDERS.outlook}-cal-${!!calendarStatus.outlook}`}
+                    <Switch
                       id={`${CALENDAR_PROVIDERS.outlook}-cal`} 
                       className="flex-shrink-0"
                       checked={!!calendarStatus.outlook}
@@ -1427,7 +1425,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <Label htmlFor={`${CALENDAR_PROVIDERS.apple}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
                     </div>
                     <Switch
-                      key={`${CALENDAR_PROVIDERS.apple}-cal-${!!calendarStatus.apple}`}
                       id={`${CALENDAR_PROVIDERS.apple}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.apple}

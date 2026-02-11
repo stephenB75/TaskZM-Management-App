@@ -87,9 +87,24 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   // Calendar sync interval - use constant from TIMING_CONSTANTS
   const CALENDAR_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.syncInterval;
-  
+
   // Minimum time between auto syncs - use constant from TIMING_CONSTANTS
   const MIN_AUTO_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.minAutoSyncInterval;
+
+  /** Merge API/cache status with grace-period refs so recent connect/disconnect is not overwritten. */
+  const mergeStatusWithGraceRefs = useCallback((status: CalendarStatus): CalendarStatus => {
+    const graceMs = TIMING_CONSTANTS.calendar.statusConnectGraceMs;
+    const now = Date.now();
+    const merged: CalendarStatus = { ...status };
+    const providers: CalendarProvider[] = [CALENDAR_PROVIDERS.google, CALENDAR_PROVIDERS.outlook, CALENDAR_PROVIDERS.apple];
+    for (const p of providers) {
+      const connectAt = lastConnectAtRef.current[p];
+      const disconnectAt = lastDisconnectAtRef.current[p];
+      if (connectAt != null && (now - connectAt) < graceMs) merged[p] = true;
+      else if (disconnectAt != null && (now - disconnectAt) < graceMs) merged[p] = false;
+    }
+    return merged;
+  }, []);
 
   // Check calendar connection status from server with caching
   const checkCalendarStatus = useCallback(async () => {
@@ -116,7 +131,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         if (cached) {
           try {
             const data = JSON.parse(cached);
-            setCalendarStatus(normalizeCalendarStatus(data));
+            setCalendarStatus(mergeStatusWithGraceRefs(normalizeCalendarStatus(data)));
             return; // Use cached data, skip Edge Function call
           } catch (e) {
             // Cache parse error, continue to fetch
@@ -135,17 +150,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         const status = normalizeCalendarStatus(data);
-        // Don't overwrite recent connect with stale false, or recent disconnect with stale true (so toggle off stays off and can be turned back on)
-        const graceMs = TIMING_CONSTANTS.calendar.statusConnectGraceMs;
-        const now = Date.now();
-        const merged: CalendarStatus = { ...status };
-        const providers: CalendarProvider[] = [CALENDAR_PROVIDERS.google, CALENDAR_PROVIDERS.outlook, CALENDAR_PROVIDERS.apple];
-        for (const p of providers) {
-          const connectAt = lastConnectAtRef.current[p];
-          const disconnectAt = lastDisconnectAtRef.current[p];
-          if (connectAt != null && (now - connectAt) < graceMs) merged[p] = true;
-          else if (disconnectAt != null && (now - disconnectAt) < graceMs) merged[p] = false;
-        }
+        const merged = mergeStatusWithGraceRefs(status);
         setCalendarStatus(merged);
 
         // Update localStorage and cache
@@ -160,7 +165,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         if (cached) {
           try {
             const data = JSON.parse(cached);
-            setCalendarStatus(normalizeCalendarStatus(data));
+            setCalendarStatus(mergeStatusWithGraceRefs(normalizeCalendarStatus(data)));
           } catch (e) {
             // Ignore cache parse errors
           }
@@ -173,7 +178,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (cached) {
         try {
           const data = JSON.parse(cached);
-          setCalendarStatus(normalizeCalendarStatus(data));
+          setCalendarStatus(mergeStatusWithGraceRefs(normalizeCalendarStatus(data)));
         } catch (e) {
           // Ignore cache parse errors
         }
@@ -185,7 +190,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         }, TIMING_CONSTANTS.delays.calendarCheck);
       }
     }
-  }, [user, accessToken]);
+  }, [user, accessToken, mergeStatusWithGraceRefs]);
 
   // Load calendar status from localStorage on mount; re-run when accessToken becomes available so server status is fetched
   useEffect(() => {
@@ -195,7 +200,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         const status = JSON.parse(stored);
-        setCalendarStatus(normalizeCalendarStatus(status));
+        setCalendarStatus(mergeStatusWithGraceRefs(normalizeCalendarStatus(status)));
       } catch (e) {
         console.error('Failed to parse calendar status:', e);
       }
@@ -203,7 +208,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (accessToken) {
       checkCalendarStatus();
     }
-  }, [user?.id, accessToken, checkCalendarStatus]);
+  }, [user?.id, accessToken, checkCalendarStatus, mergeStatusWithGraceRefs]);
 
   // Re-check calendar status when tab becomes visible (e.g. user connected calendar in another tab, or stale cache)
   useEffect(() => {
@@ -640,7 +645,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       });
       await checkCalendarStatus(); // Revert optimistic update
     }
-  }, [user, accessToken, checkCalendarStatus]);
+  }, [user, accessToken, checkCalendarStatus, calendarStatus]);
 
   // Disconnect from a calendar provider
   const disconnectCalendar = useCallback(async (provider: CalendarProvider) => {
