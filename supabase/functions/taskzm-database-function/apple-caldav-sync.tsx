@@ -567,6 +567,9 @@ export async function discoverCalendars(
   const responsePattern = /<response[^>]*>[\s\S]*?<\/response>/gi;
   const responses = response.body.match(responsePattern) || [];
 
+  // Normalize calendar home URL for comparison (no trailing slash)
+  const normalizedHome = fullHomeUrl.replace(/\/$/, '');
+
   for (const resp of responses) {
     // Check if it's a calendar (has calendar resourcetype)
     if (!resp.includes('calendar') || resp.includes('schedule-inbox') || resp.includes('schedule-outbox')) {
@@ -579,6 +582,11 @@ export async function discoverCalendars(
     if (!hrefMatch) continue;
     const rawHref = hrefMatch[1].trim();
     const fullHref = rawHref.startsWith('http') ? rawHref : normalizeUrl(rawHref, response.finalUrl);
+
+    // Skip the calendar home collection itself (e.g. .../218434715/calendars/). REPORT (calendar-query) is only valid on
+    // individual calendar resources (e.g. .../calendars/primary); iCloud returns 403 when REPORT is sent to the collection.
+    const normalizedHref = fullHref.replace(/\/$/, '');
+    if (normalizedHref === normalizedHome) continue;
 
     // Extract display name
     const displayNameMatch = resp.match(/<displayname[^>]*>([^<]*)<\/displayname>/i);
