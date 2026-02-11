@@ -1320,6 +1320,10 @@ export function TaskDialog({
           dateWithTime.setTime(slot.getTime());
         }
 
+        // Always resolve to next available slot so we never save a time that conflicts with another task (guidelines)
+        const conflictFreeSlot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
+        dateWithTime.setTime(conflictFreeSlot.getTime());
+
         // Final validation before converting to ISO
         if (!isNaN(dateWithTime.getTime())) {
           // If a specific timezone is selected (not "local"), convert the time to UTC
@@ -1578,6 +1582,9 @@ export function TaskDialog({
           const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
           firstOccurrenceDate.setTime(slot.getTime());
         }
+        // Always resolve to next available slot so we never save a time that conflicts with another task (guidelines)
+        const recurringConflictFreeSlot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
+        firstOccurrenceDate.setTime(recurringConflictFreeSlot.getTime());
         finalScheduledDate = firstOccurrenceDate.toISOString();
       }
     }
