@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
@@ -34,8 +34,12 @@ import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CHECKBOX_SIZE_SMALL_MONITOR, INBOX_CHECKBOX_SIZE_LANDSCAPE, INBOX_CHECKBOX_SIZE_DESKTOP, INBOX_CARD_SHADOW_MOBILE, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL } from "../lib/layout-constants";
 import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES, TASK_CARD_TEXT_COLORS } from "../lib/task-card-constants";
 import { toast } from "../lib/toast-wrapper";
-import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getDateString, parseCalendarEventTime } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
+import { useAuth } from "../contexts/AuthContext";
+import { useCalendarEvents } from "../hooks/useCalendarEvents";
+import { CalendarEventCard } from "./CalendarEventCard";
+import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useOrientation } from "../hooks/useOrientation";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Checkbox } from "./ui/checkbox";
@@ -132,6 +136,41 @@ export function InboxView() {
   const [showScheduled, setShowScheduled] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+  // Today's date for calendar events (stable per calendar day)
+  const todayDateString = getDateString(new Date());
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [todayDateString]);
+  const todayEnd = useMemo(() => {
+    const d = new Date();
+    d.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
+    return d;
+  }, [todayDateString]);
+  const { accessToken } = useAuth();
+  const { events: todayCalendarEventsData } = useCalendarEvents(todayStart, todayEnd, {
+    enabled: !!accessToken,
+    debounceMs: TIMING_CONSTANTS.delays.calendarEventsDebounce,
+  });
+  const todayCalendarEvents = useMemo(() => {
+    return todayCalendarEventsData.filter((event) => {
+      if (!event?.start) return false;
+      try {
+        const eventDate = parseCalendarEventTime(event.start);
+        if (isNaN(eventDate.getTime())) return false;
+        return getDateString(eventDate) === todayDateString;
+      } catch {
+        return false;
+      }
+    });
+  }, [todayCalendarEventsData, todayDateString]);
+
+  const sortedTodayCalendarEvents = useMemo(
+    () => [...todayCalendarEvents].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()),
+    [todayCalendarEvents]
+  );
 
   // Get unscheduled tasks (or scheduled if showScheduled is true)
   // Consistent definition: unscheduled = scheduledDate === null/undefined and not done
@@ -1017,6 +1056,29 @@ export function InboxView() {
           {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet ? (
             <ScrollArea className="h-full">
               <div className="p-4 md:p-8 pb-safe">
+                {/* Today's calendar events - timeline context in Inbox */}
+                {todayCalendarEvents.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" />
+                      Today&apos;s calendar
+                    </h3>
+                    <div className="space-y-2">
+                      {sortedTodayCalendarEvents.map((event) => (
+                        <CalendarEventCard
+                          key={event.id}
+                          title={event.title}
+                          start={event.start}
+                          end={event.end}
+                          location={event.location}
+                          provider={event.provider}
+                          calendarColor={event.calendarColor}
+                          isRecurring={event.isRecurring}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <AnimatePresence mode="popLayout">
                     {sortedTasks.length === 0 ? (
@@ -1321,6 +1383,29 @@ export function InboxView() {
             </ScrollArea>
             ) : (
               <div className="p-4 md:p-8" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? MOBILE_PADDING_BOTTOM : undefined }}>
+                {/* Today's calendar events - timeline context in Inbox */}
+                {todayCalendarEvents.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" />
+                      Today&apos;s calendar
+                    </h3>
+                    <div className="space-y-2">
+                      {sortedTodayCalendarEvents.map((event) => (
+                        <CalendarEventCard
+                          key={event.id}
+                          title={event.title}
+                          start={event.start}
+                          end={event.end}
+                          location={event.location}
+                          provider={event.provider}
+                          calendarColor={event.calendarColor}
+                          isRecurring={event.isRecurring}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               <div className="space-y-2">
                 <AnimatePresence mode="popLayout">
                   {sortedTasks.length === 0 ? (
