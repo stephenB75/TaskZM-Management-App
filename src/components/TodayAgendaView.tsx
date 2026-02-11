@@ -14,7 +14,7 @@ import { Button } from "./ui/button";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
-import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks } from "../lib/utils";
+import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "sonner";
 import type { Task } from "../types";
@@ -89,11 +89,15 @@ export function TodayAgendaView({
     disabled: shouldUseMobileLayout, // Disable drop on mobile/tablet - only allow vertical scroll
   });
 
-  // Get today's tasks (local date; timezone: today and filtering use local timezone via getDateString / isDateInRecurrence)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Get today's date (stable per calendar day so useCalendarEvents gets a stable range and doesn't refetch every render)
+  const todayDateString = getDateString(new Date());
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [todayDateString]);
   
-  const todayDateString = getDateString(today);
+  const todayString = todayDateString;
   const allTodayTasks = Array.isArray(tasks) ? tasks.filter((task) => {
     // Defensive check: ensure task is valid
     if (!task || typeof task !== 'object') {
@@ -162,18 +166,13 @@ export function TodayAgendaView({
     debounceMs: TIMING_CONSTANTS.delays.calendarEventsDebounce, // Slightly faster for today view
   });
 
-  // Filter calendar events to only include those on today's date (using local timezone)
-  // This prevents timezone conversion issues where events appear on wrong dates
-  const todayString = useMemo(() => getDateString(today), [today]);
-
-  // Update state when events change, filtering by local date
+  // Update state when events change, filtering by local date (use parseCalendarEventTime for consistent UTC/local handling with API)
   useEffect(() => {
     const filteredEvents = todayCalendarEventsData.filter((event) => {
       if (!event?.start) return false;
       try {
-        const eventDate = new Date(event.start);
+        const eventDate = parseCalendarEventTime(event.start);
         if (isNaN(eventDate.getTime())) return false;
-        // Compare using local date string to avoid timezone issues
         const eventDateString = getDateString(eventDate);
         return eventDateString === todayString;
       } catch (error) {
