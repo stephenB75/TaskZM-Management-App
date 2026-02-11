@@ -367,13 +367,20 @@ const DO_NOT_USE_TERMS: Record<string, string[]> = {
   mixed: [],
 };
 
-function buildSituationLine(taskName: string, actionPlanSteps: string[], maxLen: number = 120): string {
-  let s = `This task is about: ${taskName}.`;
+/** Max length for task name in situation (avoid huge payloads; do not truncate below this). */
+const TASK_NAME_MAX_LEN = 500;
+
+/**
+ * Build situation line with task name as explicit user input. Task name is not truncated
+ * (capped at TASK_NAME_MAX_LEN for safety). Optional steps are appended when provided.
+ */
+function buildSituationLine(taskName: string, actionPlanSteps: string[], _maxLen?: number): string {
+  const safeTaskName = taskName.length > TASK_NAME_MAX_LEN ? taskName.slice(0, TASK_NAME_MAX_LEN) + '...' : taskName;
+  let s = `Task name (user input): ${safeTaskName}`;
   if (actionPlanSteps.length > 0) {
-    const stepsPart = ` Steps: ${actionPlanSteps.slice(0, 5).join(', ')}.`;
-    if (s.length + stepsPart.length <= maxLen) s += stepsPart;
+    s += `\nSteps (if any): ${actionPlanSteps.slice(0, 5).join(', ')}.`;
   }
-  return s.slice(0, maxLen);
+  return s;
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -440,15 +447,18 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
     const doNotUseBlock = doNotUseList.length > 0
       ? `\n\nDo not use any of these words (they refer to different contexts): ${doNotUseList.join(', ')}.`
       : '';
+    const additionalContextBlock = existingDescription
+      ? `\n\nAdditional context (current description): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
+      : '';
 
-    const prompt = `Generate a clear, accurate description for this ${domain} task.
+    const systemMessage = "You turn the user's task name into 1-3 short, contextual sentences that explain what the task involves. Use the task name as the basis; do not repeat it verbatim. Stay on-topic and use correct English.";
+    const prompt = `${situationLine}${additionalContextBlock}${allowedVocabulary}${doNotUseBlock}
 
-Situation: ${situationLine}${allowedVocabulary}${doNotUseBlock}
+Using the task name above as the user input, generate a clear description in 1-3 full sentences that explain what this ${domain} task involves. Be specific and contextual. Use the allowed vocabulary where it fits.
 
 Requirements:
-- Describe ONLY what the situation refers to. Do not introduce any topic or vocabulary that is not directly related (e.g. for a medical appointment do not mention events, parties, or celebrations).
-- Be SPECIFIC and CONTEXTUAL. Use correct English: complete sentences, proper grammar, no redundant phrases.
-- Use only the allowed vocabulary above where it fits. Do not use any term that does not apply to this situation.
+- Describe ONLY what the situation refers to. Do not introduce any topic or vocabulary that is not directly related.
+- Use correct English: complete sentences, proper grammar, no redundant phrases.
 - Keep the description to 1-3 sentences (about 15-50 words). Avoid run-on sentences.
 - Do not repeat the task name verbatim.
 
@@ -462,7 +472,10 @@ Generate the description now:`;
       },
       body: JSON.stringify({
         model: OPENAI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: prompt },
+        ],
         max_tokens: OPENAI_DESC_MAX_TOKENS,
         temperature: OPENAI_DESC_TEMPERATURE,
       }),
@@ -651,16 +664,19 @@ app.post("/taskzm-database-function/ai/action-plan", async (c) => {
       return c.json({ error: 'taskName is required' }, 400);
     }
 
-    const situationLine = buildSituationLine(taskName, [], 100);
+    const situationLine = buildSituationLine(taskName, []);
     const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
     const allowedTerms = hasTerms
-      ? `Allowed vocabulary (use only where they fit): Keywords: ${(terminology.keywords as string[]).slice(0, 15).join(', ')}. Phrases: ${(terminology.phrases as string[]).slice(0, 8).join('; ')}. Verbs: ${(terminology.verbs as string[]).slice(0, 10).join(', ')}. Nouns: ${(terminology.nouns as string[]).slice(0, 10).join(', ')}.`
+      ? `\nAllowed vocabulary (use only where they fit): Keywords: ${(terminology.keywords as string[]).slice(0, 15).join(', ')}. Phrases: ${(terminology.phrases as string[]).slice(0, 8).join('; ')}. Verbs: ${(terminology.verbs as string[]).slice(0, 10).join(', ')}. Nouns: ${(terminology.nouns as string[]).slice(0, 10).join(', ')}.`
+      : '';
+    const descriptionBlock = existingDescription
+      ? `\nDescription (if any): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
       : '';
 
-    const prompt = `Given this ${domain} task and allowed vocabulary, produce 3-5 ordered action steps. Each step: short action phrase (few words), estimated minutes (integer). Use only the provided vocabulary; do not introduce unrelated concepts.
+    const systemMessage = "You produce 3-5 ordered action steps for the user's task. Use the task name (and description if provided) as the basis. Each step: short action phrase (few words), estimated minutes (integer). Use only the allowed vocabulary; do not introduce unrelated concepts.";
+    const prompt = `${situationLine}${descriptionBlock}${allowedTerms}
 
-Situation: ${situationLine}
-${allowedTerms}
+Using the task name above (and description if any), produce 3-5 ordered action steps for this ${domain} task. Each step: short action phrase (few words), estimated minutes (integer). Use only the provided vocabulary; do not introduce unrelated concepts.
 
 Return ONLY a valid JSON object with a single key "steps", an array of objects each with "action" (string) and "estimatedMinutes" (number). No other text.
 Example: {"steps":[{"action":"Review requirements","estimatedMinutes":10},{"action":"Implement changes","estimatedMinutes":30}]}
@@ -675,7 +691,10 @@ JSON:`;
       },
       body: JSON.stringify({
         model: OPENAI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: prompt },
+        ],
         max_tokens: 400,
         temperature: 0.4,
       }),
