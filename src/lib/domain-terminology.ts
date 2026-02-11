@@ -1301,6 +1301,8 @@ const CONTEXT_KEYWORDS: Record<Domain, string[]> = {
     'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr', 'technical', 
     'architecture', 'design', 'specification', 'requirement', 'spec', 'task dialog',
     'dialog box', 'task code', 'code base', 'base for', 'for the task',
+    // Presentation / content keywords
+    'slide', 'deck', 'slides', 'presentation deck', 'slide deck',
     // Product/Project Management keywords
     'prd', 'product requirements document', 'product requirement', 'requirements document',
     're-occurring', 'recurring', 'recurring issue', 'recurring task', 'recurring problem',
@@ -1842,7 +1844,9 @@ function saveUserTerminology(userTerminology: UserLearnedTerminology): void {
 }
 
 /**
- * Add new keywords and phrases to user-learned terminology
+ * Saves new keywords, phrases, verbs, and nouns to both libraries so users can access them:
+ * - Local library: user terminology in localStorage (user-specific)
+ * - Shared library: shared_terminology table via API (for all users)
  * @param domain - The domain to add terms to
  * @param newKeywords - New keywords to add (if not already in library)
  * @param newPhrases - New phrases to add (if not already in library)
@@ -1883,6 +1887,10 @@ export function saveNewTerminologyToLibrary(
 
   const domainTerminology = userTerminology[domain];
   let addedCount = 0;
+  const addedKeywords: string[] = [];
+  const addedPhrases: string[] = [];
+  const addedVerbs: string[] = [];
+  const addedNouns: string[] = [];
 
   // Add new keywords (case-insensitive check)
   newKeywords.forEach(keyword => {
@@ -1895,7 +1903,9 @@ export function saveNewTerminologyToLibrary(
     const existsInUser = domainTerminology.keywords.some(kw => kw.toLowerCase() === keywordLower);
     
     if (!existsInBase && !existsInUser) {
-      domainTerminology.keywords.push(keyword.trim());
+      const trimmed = keyword.trim();
+      domainTerminology.keywords.push(trimmed);
+      addedKeywords.push(trimmed);
       addedCount++;
       logger.debug(`Added new keyword to ${domain} terminology: "${keyword}"`);
     }
@@ -1912,7 +1922,9 @@ export function saveNewTerminologyToLibrary(
     const existsInUser = domainTerminology.phrases.some(p => p.toLowerCase() === phraseLower);
     
     if (!existsInBase && !existsInUser) {
-      domainTerminology.phrases.push(phrase.trim());
+      const trimmed = phrase.trim();
+      domainTerminology.phrases.push(trimmed);
+      addedPhrases.push(trimmed);
       addedCount++;
       logger.debug(`Added new phrase to ${domain} terminology: "${phrase}"`);
     }
@@ -1927,7 +1939,9 @@ export function saveNewTerminologyToLibrary(
     const existsInUser = domainTerminology.verbs.some(v => v.toLowerCase() === verbLower);
     
     if (!existsInBase && !existsInUser) {
-      domainTerminology.verbs.push(verb.trim());
+      const trimmed = verb.trim();
+      domainTerminology.verbs.push(trimmed);
+      addedVerbs.push(trimmed);
       addedCount++;
       logger.debug(`Added new verb to ${domain} terminology: "${verb}"`);
     }
@@ -1942,20 +1956,21 @@ export function saveNewTerminologyToLibrary(
     const existsInUser = domainTerminology.nouns.some(n => n.toLowerCase() === nounLower);
     
     if (!existsInBase && !existsInUser) {
-      domainTerminology.nouns.push(noun.trim());
+      const trimmed = noun.trim();
+      domainTerminology.nouns.push(trimmed);
+      addedNouns.push(trimmed);
       addedCount++;
       logger.debug(`Added new noun to ${domain} terminology: "${noun}"`);
     }
   });
 
-  // Save updated terminology if any new terms were added
+  // Save to both libraries when any new terms were added
   if (addedCount > 0) {
-    // Save to localStorage (user-specific)
+    // 1. Local library: user terminology (localStorage, user-specific)
     saveUserTerminology(userTerminology);
     
-    // Save to shared database (for all users)
-    // This happens asynchronously and doesn't block
-    saveSharedTerminologyToApi(domain, newKeywords, newPhrases, newVerbs, newNouns)
+    // 2. Shared library: shared_terminology table (for all users). Send only the terms we just added so both libraries stay in sync.
+    saveSharedTerminologyToApi(domain, addedKeywords, addedPhrases, addedVerbs, addedNouns)
       .then(result => {
         if (result.success) {
           logger.info(`✅ Saved ${result.saved} new terms to shared ${domain} terminology (${result.skipped} skipped)`, {

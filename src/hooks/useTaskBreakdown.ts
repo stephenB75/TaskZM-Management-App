@@ -20,7 +20,7 @@ import {
 } from '../lib/ai-config';
 import { filterTerminologyRelevantToTask, type FilteredTerminology } from '../lib/description-generator';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY, TEMP_TASK_ID } from '../lib/task-constants';
-import { createAIContextSync, type AIContext } from '../lib/ai-context';
+import { createAIContext, createAIContextSync, type AIContext } from '../lib/ai-context';
 import { getDomainTerminology } from '../lib/domain-terminology';
 import { DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from '../lib/ai-config';
 import { getAIActionPlan } from '../lib/api';
@@ -144,11 +144,11 @@ export function useTaskBreakdown(
         const verbAnalysis = analyzeTaskVerbs(tempTask as Task);
         
         // Create shared AI context once (eliminates redundant domain detection and term extraction)
-        // ENHANCED: Include effort score and primary verb in context for coordinated intelligence
+        // Use async context so both local and shared terminology are fetched and used for description and action plan
         // CRITICAL: Add error handling to ensure domain is always defined
-        let aiContext;
+        let aiContext: AIContext;
         try {
-          aiContext = createAIContextSync(title, description);
+          aiContext = await createAIContext(title, description, true);
           
           // Validate that domain is defined
           if (!aiContext.domain || (aiContext.domain !== 'business' && aiContext.domain !== 'home' && aiContext.domain !== 'personal' && aiContext.domain !== 'world' && aiContext.domain !== 'mixed')) {
@@ -166,10 +166,14 @@ export function useTaskBreakdown(
             };
           }
         } catch (error) {
-          console.error('AI Analysis: Error creating AI context, using fallback:', error);
-          // Create minimal fallback context
-          const defaultDomain = DEFAULT_TASK_DOMAIN;
-          aiContext = {
+          console.error('AI Analysis: Error creating AI context (async), falling back to sync context:', error);
+          // Fall back to sync context (local + cached shared terminology only)
+          try {
+            aiContext = createAIContextSync(title, description);
+          } catch (syncError) {
+            console.error('AI Analysis: Sync context failed, using minimal fallback:', syncError);
+            const defaultDomain = DEFAULT_TASK_DOMAIN;
+            aiContext = {
             domain: defaultDomain,
             domainConfidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
             domainKeywords: [],
@@ -193,6 +197,7 @@ export function useTaskBreakdown(
             title: title.trim(),
             description: description.trim(),
           };
+          }
         }
         
         // Add effort analysis to context for coordination

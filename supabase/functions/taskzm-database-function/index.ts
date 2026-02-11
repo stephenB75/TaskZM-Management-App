@@ -451,13 +451,14 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
       ? `\n\nAdditional context (current description): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
       : '';
 
-    const systemMessage = "You turn the user's task name into 1-3 short, contextual sentences that explain what the task involves. Use the task name as the basis; do not repeat it verbatim. Stay on-topic and use correct English.";
+    const systemMessage = "You turn the user's task name into 1-3 short, contextual sentences that explain what the task involves. The description must describe ONLY what the task name refers to. Do not mention any topic, activity, or concept that is not directly stated or clearly implied by the task name (e.g. if the task name is about a slide deck and a software update, do not mention meditation, exploration, personal devices, or any other unrelated topic). Use the task name as the basis; do not repeat it verbatim. Stay strictly on-topic and use correct English.";
     const prompt = `${situationLine}${additionalContextBlock}${allowedVocabulary}${doNotUseBlock}
 
-Using the task name above as the user input, generate a clear description in 1-3 full sentences that explain what this ${domain} task involves. Be specific and contextual. Use the allowed vocabulary where it fits.
+Using the task name above as the user input, generate a clear description in 1-3 full sentences that explain what this task involves. Be specific and contextual. Use a term from the allowed vocabulary ONLY if it is clearly about the same topic as the task name; ignore any listed term that is not relevant to the task name.
 
 Requirements:
-- Describe ONLY what the situation refers to. Do not introduce any topic or vocabulary that is not directly related.
+- The description must describe ONLY what the task name refers to. Do not introduce any topic or vocabulary that is not directly stated or clearly implied by the task name.
+- Do not mention meditation, exploration, personal devices, wellness, or any other topic unless the task name itself is about that.
 - Use correct English: complete sentences, proper grammar, no redundant phrases.
 - Keep the description to 1-3 sentences (about 15-50 words). Avoid run-on sentences.
 - Do not repeat the task name verbatim.
@@ -559,14 +560,10 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
       ? `\n\nDo not use any of these words (different contexts): ${doNotUseList.join(', ')}.`
       : '';
 
-    const prompt = `Generate exactly 3-5 short description options for this ${domain} task. Each description should be 1-3 sentences (about 15-50 words).
+    const systemMessageOpts = "You generate 3-5 short description options from the user's task name. Each description must describe ONLY what the task name refers to. Do not mention any topic not directly stated or implied by the task name (e.g. do not mention meditation, exploration, personal devices, or other unrelated topics). Use allowed vocabulary only when clearly relevant to the task name.";
+    const prompt = `${situationLine}${allowedVocabulary}${doNotUseBlock}
 
-Situation: ${situationLine}${allowedVocabulary}${doNotUseBlock}
-
-Requirements:
-- Describe ONLY what the situation refers to. Do not introduce any topic or term unrelated to the task. Use only the allowed vocabulary where it fits.
-- Use correct English, complete sentences, no run-on sentences.
-- Vary the options (different wording, detail level, or angle).
+Generate exactly 3-5 short description options. Each description should be 1-3 sentences (about 15-50 words). Describe ONLY what the task name above refers to; do not introduce unrelated topics. Use a term from the allowed vocabulary ONLY if it is clearly about the same topic as the task name. Use correct English; vary the options (different wording, detail level, or angle).
 
 Return ONLY a valid JSON array of objects, each with keys: "description" (string), "domain" (string, e.g. "business"), "confidence" (number 0-1). No other text.
 
@@ -583,7 +580,10 @@ JSON array:`;
       },
       body: JSON.stringify({
         model: OPENAI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: systemMessageOpts },
+          { role: 'user', content: prompt },
+        ],
         max_tokens: OPENAI_OPTS_MAX_TOKENS,
         temperature: OPENAI_OPTS_TEMPERATURE,
       }),
