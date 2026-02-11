@@ -3675,7 +3675,70 @@ export function useAIScheduler() {
         tasksPerDayCount.set(scheduledDayIndex, currentCount + 1);
       }
     });
-    
+
+    // Final pass: resolve any remaining same-day overlaps so no two tasks share the same time
+    const planByDate = new Map<string, typeof plan>();
+    for (const item of plan) {
+      if (!item.scheduledDate) continue;
+      const dateKey = getDateKey(item.scheduledDate);
+      const list = planByDate.get(dateKey) || [];
+      list.push(item);
+      planByDate.set(dateKey, list);
+    }
+    for (const [, dayItems] of planByDate) {
+      if (dayItems.length < 2) continue;
+      dayItems.sort((a, b) => {
+        const tA = a.scheduledDate instanceof Date ? a.scheduledDate.getTime() : new Date(a.scheduledDate).getTime();
+        const tB = b.scheduledDate instanceof Date ? b.scheduledDate.getTime() : new Date(b.scheduledDate).getTime();
+        return tA - tB;
+      });
+      const dateKey = getDateKey(dayItems[0].scheduledDate);
+      const existingForDay = dailyTasks.get(dateKey) || [];
+      for (let i = 0; i < dayItems.length; i++) {
+        const item = dayItems[i];
+        const itemStart = item.scheduledDate instanceof Date ? item.scheduledDate.getTime() : new Date(item.scheduledDate).getTime();
+        const itemDuration = getTaskMinutes(item.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
+        const itemEnd = itemStart + itemDuration;
+        const othersForDay: Task[] = [
+          ...existingForDay,
+          ...dayItems.filter((_, j) => j !== i).map(p => ({
+            ...p.task,
+            scheduledDate: p.scheduledDate instanceof Date ? p.scheduledDate.toISOString() : p.scheduledDate,
+          })),
+        ];
+        const hasOverlap = othersForDay.some(t => {
+          if (!t.scheduledDate) return false;
+          const start = new Date(t.scheduledDate).getTime();
+          const dur = getTaskMinutes(t, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
+          const end = start + dur;
+          return itemStart < end && itemEnd > start;
+        });
+        if (hasOverlap) {
+          const targetDate = item.scheduledDate instanceof Date ? new Date(item.scheduledDate) : new Date(item.scheduledDate);
+          const categoryHours = getCategoryHoursForTask(item.task, targetDate, hoursSettings);
+          const slot = findNextAvailableSlot(
+            item.task.id,
+            targetDate,
+            Math.round(itemDuration / MILLISECONDS_PER_MINUTE),
+            othersForDay,
+            { ensureAfterCurrentTime: false, categoryHours: categoryHours ?? undefined }
+          );
+          if (slot.getHours() < HOURS_PER_DAY && slot.getTime() !== itemStart) {
+            const newDate = new Date(slot.getTime());
+            item.scheduledDate = newDate;
+            item.task = { ...item.task, scheduledDate: newDate.toISOString() };
+            if (import.meta.env.DEV) {
+              logger.debug('Plan overlap resolved in final pass', {
+                taskId: item.task.id,
+                taskTitle: item.task.title,
+                newTime: newDate.toLocaleTimeString(),
+              });
+            }
+          }
+        }
+      }
+    }
+
     return { scheduled: plan, exceedsLimit, daysExceedingLimit };
   };
 

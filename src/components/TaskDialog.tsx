@@ -1294,7 +1294,8 @@ export function TaskDialog({
           // Validate parsed time values
           if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < HOURS_PER_DAY && minutes >= 0 && minutes < MINUTES_PER_HOUR) {
             dateWithTime.setHours(hours, minutes, 0, 0);
-          } else if (recurrenceType !== "none") {
+          } else {
+            // Invalid or missing time: use next available slot so tasks are not assigned the same default time
             dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
             const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
             dateWithTime.setTime(slot.getTime());
@@ -1307,12 +1308,13 @@ export function TaskDialog({
           // Validate parsed time values
           if (!isNaN(hours) && !isNaN(minutes)) {
             dateWithTime.setHours(hours, minutes, 0, 0);
-          } else if (recurrenceType !== "none") {
+          } else {
             dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
             const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
             dateWithTime.setTime(slot.getTime());
           }
-        } else if (recurrenceType !== "none") {
+        } else {
+          // No time set: use next available slot for both recurring and non-recurring so tasks are not assigned the same time
           dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
           const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
           dateWithTime.setTime(slot.getTime());

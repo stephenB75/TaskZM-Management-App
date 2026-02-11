@@ -602,31 +602,17 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         }
       }
       
-      // Today Agenda: use drop time as-is. Only find a later slot when (for today) drop time is in the past. Overlap is cosmetic only (timeline stacks overlapping blocks); we do not change task times for overlap.
-      const needLaterSlot = isToday && (() => {
-        const now = new Date();
-        const currentMinutes = now.getMinutes();
-        const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-        const t = new Date(now);
-        if (roundedMinutes >= MINUTES_PER_HOUR) {
-          t.setHours(t.getHours() + 1, 0, 0, 0);
-        } else {
-          t.setMinutes(roundedMinutes, 0, 0);
+      // Always use findNextAvailableSlot so tasks are never assigned the same time (avoids overlapping drop targets)
+      const finalTime = findNextAvailableSlot(
+        taskId,
+        requestedTime,
+        taskDuration,
+        tasks,
+        {
+          ensureAfterCurrentTime: isToday,
+          categoryHours: categoryHours,
         }
-        return requestedTime.getTime() < t.getTime();
-      })();
-      const finalTime = needLaterSlot
-        ? findNextAvailableSlot(
-            taskId,
-            requestedTime,
-            taskDuration,
-            tasks,
-            {
-              ensureAfterCurrentTime: true,
-              categoryHours: categoryHours,
-            }
-          )
-        : new Date(requestedTime.getTime());
+      );
       
       // Check if a valid slot was found
       if (finalTime.getHours() >= HOURS_PER_DAY) {
@@ -985,7 +971,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       }
     }
     
-    // For today: use drop time as-is; only find a later slot when time is in the past. Overlap is cosmetic (timeline stacks). For other dates: use conflict/next-slot as before.
+    // Always use findNextAvailableSlot so tasks are never assigned the same time when dropping on a date column
     const isTargetToday = (() => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -994,54 +980,17 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       return t.getTime() === today.getTime();
     })();
 
-    let newDate: Date;
-    if (isTargetToday) {
-      const effectiveRequested = requestedTime || startTime;
-      const needLaterSlot = (() => {
-        const now = new Date();
-        const currentMinutes = now.getMinutes();
-        const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-        const t = new Date(now);
-        if (roundedMinutes >= MINUTES_PER_HOUR) {
-          t.setHours(t.getHours() + 1, 0, 0, 0);
-        } else {
-          t.setMinutes(roundedMinutes, 0, 0);
-        }
-        return effectiveRequested.getTime() < t.getTime();
-      })();
-      newDate = needLaterSlot
-        ? findNextAvailableSlot(
-            taskId,
-            effectiveRequested,
-            taskDuration,
-            tasks,
-            { ensureAfterCurrentTime: true, categoryHours: categoryHours }
-          )
-        : new Date(effectiveRequested.getTime());
-    } else {
-      if (requestedTime) {
-        const conflictCheck = checkTimeConflict(taskId, requestedTime, taskDuration, tasks);
-        if (!conflictCheck) {
-          newDate = requestedTime;
-        } else {
-          newDate = findNextAvailableSlot(
-            taskId,
-            requestedTime,
-            taskDuration,
-            tasks,
-            { ensureAfterCurrentTime: false, categoryHours: categoryHours }
-          );
-        }
-      } else {
-        newDate = findNextAvailableSlot(
-          taskId,
-          startTime,
-          taskDuration,
-          tasks,
-          { ensureAfterCurrentTime: false, categoryHours: categoryHours }
-        );
+    const effectiveRequested = requestedTime || startTime;
+    const newDate = findNextAvailableSlot(
+      taskId,
+      effectiveRequested,
+      taskDuration,
+      tasks,
+      {
+        ensureAfterCurrentTime: isTargetToday,
+        categoryHours: categoryHours,
       }
-    }
+    );
     
     if (isNaN(newDate.getTime())) {
       console.error('Invalid date created from:', { year, month, day, targetDateString });
