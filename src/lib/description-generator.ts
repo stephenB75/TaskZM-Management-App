@@ -1565,17 +1565,25 @@ export function extractTermsFromTaskName(
  * Uses Browser AI extracted terms and domain terminology to create actionable descriptions
  * for the AI Action Plan to use when building steps
  */
+/** Verbs that end in 's' (so we don't treat plural nouns like "articles" or "reports" as verbs). */
+const KNOWN_VERBS_ENDING_S = new Set(['focus', 'address', 'discuss', 'process', 'access', 'progress', 'assess', 'express', 'compress']);
+
 /**
  * Get proper verb form based on template type
  * Templates like "enables", "requires", "allows" can use gerund (preferred) or "to" + infinitive
  * Templates like "involves", "includes" use gerund
- * This ensures grammatically correct sentences
+ * This ensures grammatically correct sentences. Does not gerundize nouns (e.g. "articles" -> avoid "articlesing").
  */
 function getVerbFormForTemplate(verb: string, template: string): string {
   if (!verb) return '';
+  const trimmed = verb.toLowerCase().trim();
+  // Avoid turning plural nouns (articles, reports, forecasts) into fake verbs like "articlesing"
+  if (trimmed.endsWith('s') && !KNOWN_VERBS_ENDING_S.has(trimmed)) {
+    return '';
+  }
   
   // Get base verb form (handle -ing, -ed endings)
-  let baseVerb = verb.toLowerCase().trim();
+  let baseVerb = trimmed;
   
   // If already in gerund form, extract base
   if (baseVerb.endsWith('ing')) {
@@ -3520,19 +3528,25 @@ export async function generateDescription(
     const taskNameLowerForRebuild = taskName.toLowerCase();
     const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainRef];
     
-    // Get domain phrases, verbs, and nouns for building contextual description
+    // Get domain phrases that relate to the task name (share at least one word) so we don't insert unrelated terms like "report" or "forecast"
+    const taskWordsForRebuild = taskNameLowerForRebuild.split(/\s+/).filter(w => w.length >= 2);
     const domainPhrases = domainTerms.phrases.filter(phrase => {
       const phraseLower = phrase.toLowerCase();
-      // Use phrases that add context, not just repeat task name
-      return !taskNameLowerForRebuild.includes(phraseLower) && phraseLower.length > DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minPhraseLength;
+      if (taskNameLowerForRebuild.includes(phraseLower) || phraseLower.length <= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minPhraseLength) return false;
+      const phraseWords = phraseLower.split(/\s+/);
+      const relatesToTask = phraseWords.some(pw => taskWordsForRebuild.some(tw => tw.includes(pw) || pw.includes(tw)));
+      return relatesToTask;
     }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
     
     const domainVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
-    const domainNouns = domainTerms.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
+    const domainNounsForFallback = domainTerms.nouns.filter(noun => {
+      const n = noun.toLowerCase();
+      return taskWordsForRebuild.some(tw => tw.includes(n) || n.includes(tw));
+    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
     
-    // Get extracted terms
+    // Get extracted terms; prefer task-relevant final terms over generic domain lists
     const actionVerb = finalVerbs.length > 0 ? finalVerbs[0] : (domainVerbs.length > 0 ? domainVerbs[0] : '');
-    const contextNouns = finalNouns.length > 0 ? finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (domainNouns.length > 0 ? domainNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
+    const contextNouns = finalNouns.length > 0 ? finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (domainNounsForFallback.length > 0 ? domainNounsForFallback.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
     const relevantKeywords = finalKeywords.filter(kw => {
       const kwLower = kw.toLowerCase();
       return !taskNameLowerForRebuild.includes(kwLower) && kwLower.length >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minKeywordLength;

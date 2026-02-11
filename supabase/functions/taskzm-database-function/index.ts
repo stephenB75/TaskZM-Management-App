@@ -451,15 +451,14 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
       ? `\n\nAdditional context (current description): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
       : '';
 
-    const systemMessage = "You turn the user's task name into 1-3 short, contextual sentences that explain what the task involves. The description must describe ONLY what the task name refers to. Do not mention any topic, activity, or concept that is not directly stated or clearly implied by the task name (e.g. if the task name is about a slide deck and a software update, do not mention meditation, exploration, personal devices, or any other unrelated topic). Use the task name as the basis; do not repeat it verbatim. Stay strictly on-topic and use correct English.";
+    const systemMessage = "You turn the user's task name into 1-3 short, contextual sentences that explain what the task involves. The description must describe ONLY what the task name refers to. Do not mention any topic, activity, or concept that is not directly stated or clearly implied by the task name. Do not invent or modify words (e.g. use 'writing' not 'articlesing'); use standard English only. Use the task name as the basis; do not repeat it verbatim. Stay strictly on-topic and use correct English.";
     const prompt = `${situationLine}${additionalContextBlock}${allowedVocabulary}${doNotUseBlock}
 
-Using the task name above as the user input, generate a clear description in 1-3 full sentences that explain what this task involves. Be specific and contextual. Use a term from the allowed vocabulary ONLY if it is clearly about the same topic as the task name; ignore any listed term that is not relevant to the task name.
+Using the task name above as the user input, generate a clear description in 1-3 full sentences that explain what this task involves. Be specific and contextual. Use a term from the allowed vocabulary ONLY if it is clearly about the same topic as the task name; ignore any listed term that is not relevant (e.g. do not mention report, forecast, meditation, or exploration unless the task name refers to them).
 
 Requirements:
 - The description must describe ONLY what the task name refers to. Do not introduce any topic or vocabulary that is not directly stated or clearly implied by the task name.
-- Do not mention meditation, exploration, personal devices, wellness, or any other topic unless the task name itself is about that.
-- Use correct English: complete sentences, proper grammar, no redundant phrases.
+- Use correct English only: complete sentences, proper grammar, no made-up words, no redundant phrases.
 - Keep the description to 1-3 sentences (about 15-50 words). Avoid run-on sentences.
 - Do not repeat the task name verbatim.
 
