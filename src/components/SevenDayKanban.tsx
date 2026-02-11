@@ -36,7 +36,7 @@ import {
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
-import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED } from '../lib/business-constants';
+import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
@@ -594,6 +594,10 @@ export function SevenDayKanban({
         .filter(task => {
           // Defensive check: ensure task is valid
           if (!task || typeof task !== 'object') {
+            return false;
+          }
+          // Exclude recurrence occurrence records: they are merged into the base task via getTaskWithOccurrenceSubtasks, not shown as separate cards
+          if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS) || task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)) {
             return false;
           }
           
