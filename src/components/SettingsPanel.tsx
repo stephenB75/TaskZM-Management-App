@@ -1355,7 +1355,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
                   {/* Google Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <Label className={`${SETTINGS_PANEL_TEXT_SIZES.label}`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
+                    <Label htmlFor={`${CALENDAR_PROVIDERS.google}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
                     <Switch
                       id={`${CALENDAR_PROVIDERS.google}-cal`}
                       className="flex-shrink-0"
@@ -1376,7 +1376,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   
                   {/* Outlook Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <Label className={`${SETTINGS_PANEL_TEXT_SIZES.label}`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
+                    <Label htmlFor={`${CALENDAR_PROVIDERS.outlook}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
                     <Switch
                       id={`${CALENDAR_PROVIDERS.outlook}-cal`}
                       className="flex-shrink-0"
@@ -1397,7 +1397,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   
                   {/* Apple Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <Label className={`${SETTINGS_PANEL_TEXT_SIZES.label}`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
+                    <Label htmlFor={`${CALENDAR_PROVIDERS.apple}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
                     <Switch
                       id={`${CALENDAR_PROVIDERS.apple}-cal`}
                       className="flex-shrink-0"
