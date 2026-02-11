@@ -3547,9 +3547,13 @@ export async function generateDescription(
     // Get extracted terms; prefer task-relevant final terms over generic domain lists
     const actionVerb = finalVerbs.length > 0 ? finalVerbs[0] : (domainVerbs.length > 0 ? domainVerbs[0] : '');
     const contextNouns = finalNouns.length > 0 ? finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (domainNounsForFallback.length > 0 ? domainNounsForFallback.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
+    // Only use keywords that relate to the task name (share at least one word) so we don't insert "milestone", "customer", "forecast", etc.
     const relevantKeywords = finalKeywords.filter(kw => {
       const kwLower = kw.toLowerCase();
-      return !taskNameLowerForRebuild.includes(kwLower) && kwLower.length >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minKeywordLength;
+      if (taskNameLowerForRebuild.includes(kwLower) || kwLower.length < DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minKeywordLength) return false;
+      const kwWords = kwLower.split(/\s+/).filter(w => w.length >= 2);
+      const relatesToTask = kwWords.some(pw => taskWordsForRebuild.some(tw => tw.includes(pw) || pw.includes(tw)));
+      return relatesToTask;
     }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
     
     // Build contextual sentence using available terms - clean all inputs first
