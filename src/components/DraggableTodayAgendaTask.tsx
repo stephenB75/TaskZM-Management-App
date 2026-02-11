@@ -119,6 +119,7 @@ export function DraggableTodayAgendaTask({
   // Today Agenda uses compact layout: tab + headline only; height from parent (TODAY_AGENDA_TIMELINE.taskRowHeightPx)
   const taskCardHeight = getTaskHeight(task);
   
+  const cardContentRef = React.useRef<HTMLDivElement>(null);
   const {
     attributes,
     listeners,
@@ -381,4 +382,10 @@ export function DraggableTodayAgendaTask({
             >
               {task.title}
             </h3>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 

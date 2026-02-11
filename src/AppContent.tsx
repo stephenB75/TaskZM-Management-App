@@ -36,10 +36,6 @@ const AnalyticsPanel = lazyWithRetry(() => import('./components/AnalyticsPanel')
 const TeamPanel = lazyWithRetry(() => import('./components/TeamPanel').then(m => ({ default: m.TeamPanel })));
 const FoldersPanel = lazyWithRetry(() => import('./components/FoldersPanel').then(m => ({ default: m.FoldersPanel })));
 const NotificationsPanel = lazyWithRetry(() => import('./components/NotificationsPanel').then(m => ({ default: m.NotificationsPanel })));
-import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
-import { PricingDialog } from './components/PricingDialog';
-import { UpgradePrompt } from './components/UpgradePrompt';
-import { DemoAccountDisclaimer } from './components/DemoAccountDisclaimer';
 import { useAIScheduler, type SchedulePlan } from './hooks/useAIScheduler';
 import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
