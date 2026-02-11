@@ -39,10 +39,15 @@ function getHeaders() {
 /**
  * Fetch with optional retry on 401: forces session refresh then retries once with new token.
  * Use for authenticated endpoints so expired tokens don't cause permanent 401.
+ * GET requests default to cache: 'no-store' to avoid stale UI after user actions (workspaces, tasks, etc.).
  */
 async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Response> {
-  const headers = { ...getHeaders(), ...(init.headers as Record<string, string>) };
-  let response = await fetch(url, { ...init, headers });
+  const method = init?.method ?? 'GET';
+  const isGet = method === 'GET';
+  const cacheOption = isGet && !(init && 'cache' in init) ? { cache: 'no-store' as RequestCache } : {};
+  const mergedInit = { ...init, ...cacheOption };
+  const headers = { ...getHeaders(), ...(mergedInit.headers as Record<string, string>) };
+  let response = await fetch(url, { ...mergedInit, headers });
   if (response.status === 401) {
     try {
       // Force refresh so we get a new access token if the current one expired
@@ -50,7 +55,7 @@ async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Respo
       const token = !error && session?.access_token ? session.access_token : (await supabase.auth.getSession()).data.session?.access_token;
       if (token) {
         setAccessToken(token);
-        response = await fetch(url, { ...init, headers: { ...getHeaders(), ...(init.headers as Record<string, string>) } });
+        response = await fetch(url, { ...mergedInit, headers: { ...getHeaders(), ...(mergedInit.headers as Record<string, string>) } });
       }
     } catch (e) {
       logger.debug('Session refresh on 401 failed:', e);
@@ -195,6 +200,7 @@ export async function getWorkspace(workspaceId: string) {
   const response = await fetch(`${API_BASE}/workspace/${workspaceId}`, {
     method: 'GET',
     headers: getHeaders(),
+    cache: 'no-store',
   });
 
   if (!response.ok) {
@@ -404,6 +410,7 @@ export async function getActivities(workspaceId: string): Promise<Activity[]> {
     const response = await fetch(`${API_BASE}/activities/${workspaceId}`, {
       method: 'GET',
       headers: getHeaders(),
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -441,6 +448,7 @@ export async function getTimeTrackingSessions(workspaceId: string): Promise<Time
   const response = await fetch(`${API_BASE}/time-tracking/${workspaceId}`, {
     method: 'GET',
     headers: getHeaders(),
+    cache: 'no-store',
   });
 
   if (!response.ok) {
@@ -477,6 +485,7 @@ export async function getProjects(
     const response = await fetch(url, {
       method: 'GET',
       headers,
+      cache: 'no-store',
     });
 
     // Handle 304 Not Modified (no changes)
@@ -567,6 +576,7 @@ export async function getFolders(
     const response = await fetch(url, {
       method: 'GET',
       headers,
+      cache: 'no-store',
     });
 
     // Handle 304 Not Modified (no changes)
@@ -750,6 +760,7 @@ export async function getSettings(workspaceId: string) {
     const response = await fetch(`${API_BASE}/settings/${workspaceId}`, {
       method: 'GET',
       headers: getHeaders(),
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -819,6 +830,7 @@ export async function getSubscription() {
   const response = await fetch(`${API_BASE}/subscription`, {
     method: 'GET',
     headers: getHeaders(),
+    cache: 'no-store',
   });
 
   if (!response.ok) {
@@ -943,6 +955,7 @@ export async function getTeamMembers(workspaceId: string) {
     const response = await fetch(`${API_BASE}/team/${workspaceId}/members`, {
       method: 'GET',
       headers: getHeaders(),
+      cache: 'no-store',
     }).catch((fetchError) => {
       // Handle network errors gracefully
       logger.debug('Network error fetching team members:', fetchError);
@@ -1079,6 +1092,7 @@ export async function getTeams(workspaceId: string) {
     const response = await fetch(`${API_BASE}/teams/${workspaceId}`, {
       method: 'GET',
       headers: getHeaders(),
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -1106,6 +1120,7 @@ export async function getTeamMembersByTeam(teamId: string) {
     const response = await fetch(`${API_BASE}/teams/${teamId}/members`, {
       method: 'GET',
       headers: getHeaders(),
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -1149,6 +1164,7 @@ export async function getAdminUserInfo(email: string) {
   const response = await fetch(`${API_BASE}/admin/get-user/${encodeURIComponent(email)}`, {
     method: 'GET',
     headers: getHeaders(),
+    cache: 'no-store',
   });
 
   if (!response.ok) {
@@ -1256,6 +1272,7 @@ export async function getSharedTerminology(domain: Domain): Promise<SharedTermin
     const response = await fetch(`${API_BASE}/shared-terminology/${domain}`, {
       method: 'GET',
       headers: getHeaders(),
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -1375,6 +1392,7 @@ export async function getUserAwards(): Promise<UserAward[]> {
     const response = await fetch(`${API_BASE}/user/awards`, {
       method: 'GET',
       headers: getHeaders(),
+      cache: 'no-store',
     });
 
     if (!response.ok) {
