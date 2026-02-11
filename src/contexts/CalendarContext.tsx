@@ -414,10 +414,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         let errorMessage = 'Failed to initiate OAuth';
         try {
           const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
+          errorMessage = errorData.error ?? errorData.message ?? errorMessage;
         } catch (e) {
           // If response isn't JSON, use status text
           errorMessage = `${errorMessage}: ${response.statusText}`;
+        }
+        if (response.status === 404) {
+          errorMessage = "Calendar auth endpoint not found. Make sure the Supabase Edge Function 'taskzm-database-function' is deployed and the function URL is correct.";
         }
         toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
           description: errorMessage,
@@ -429,12 +432,20 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       
-      // Validate response contains authUrl
-      if (!data || !data.authUrl) {
+      // Validate response contains authUrl and that it is the provider's OAuth URL (not our backend)
+      const authUrl = typeof data?.authUrl === 'string' ? data.authUrl : '';
+      const expectedOrigin = provider === CALENDAR_PROVIDERS.google
+        ? CALENDAR_OAUTH_ORIGINS.google
+        : provider === CALENDAR_PROVIDERS.outlook
+          ? CALENDAR_OAUTH_ORIGINS.microsoft
+          : null;
+      if (!authUrl || (expectedOrigin && !authUrl.startsWith(expectedOrigin))) {
         toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
-          description: 'Server did not return a valid OAuth URL. Please check your OAuth configuration.',
+          description: expectedOrigin
+            ? 'Server did not return a valid OAuth URL. The calendar function may not be deployed or the request path may be wrong.'
+            : 'Server did not return a valid OAuth URL. Please check your OAuth configuration.',
         });
-        console.error('Invalid OAuth response:', data);
+        console.error('Invalid OAuth response (expected URL starting with', expectedOrigin, '):', data);
         await checkCalendarStatus(); // Revert optimistic update
         setConnectingProvider(null);
         return;
@@ -447,7 +458,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       const top = window.screen.height / 2 - height / 2;
       
       const popup = window.open(
-        data.authUrl,
+        authUrl,
         'Calendar OAuth',
         `width=${width},height=${height},left=${left},top=${top}`
       );

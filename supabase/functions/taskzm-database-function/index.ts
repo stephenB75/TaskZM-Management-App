@@ -6450,21 +6450,26 @@ app.all('*', async (c) => {
   }, 404);
 });
 
-// Normalize request path: Supabase may pass /functions/v1/taskzm-database-function/... so routes (which use /taskzm-database-function/...) match
+// Normalize request path so Hono routes match.
+// Supabase can pass either:
+// - /functions/v1/taskzm-database-function/... → use /taskzm-database-function/...
+// - /calendar/... (path after function name only) → use /taskzm-database-function/calendar/...
+const FUNCTION_NAME = "taskzm-database-function";
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  const pathname = url.pathname;
+  let pathname = url.pathname;
   if (pathname.startsWith("/functions/v1/")) {
-    const newPathname = pathname.replace(/^\/functions\/v1/, "");
-    const newUrl = new URL(req.url);
-    newUrl.pathname = newPathname;
-    const normalizedRequest = new Request(newUrl.toString(), {
-      method: req.method,
-      headers: req.headers,
-      body: req.body,
-      duplex: "half",
-    });
-    return app.fetch(normalizedRequest);
+    pathname = pathname.replace(/^\/functions\/v1/, "");
+  } else if (!pathname.startsWith(`/${FUNCTION_NAME}`) && (pathname.startsWith("/calendar/") || pathname === "/calendar" || pathname === "")) {
+    pathname = `/${FUNCTION_NAME}` + (pathname.startsWith("/") ? pathname : "/" + pathname);
   }
-  return app.fetch(req);
+  const newUrl = new URL(req.url);
+  newUrl.pathname = pathname;
+  const normalizedRequest = new Request(newUrl.toString(), {
+    method: req.method,
+    headers: req.headers,
+    body: req.body,
+    duplex: "half",
+  });
+  return app.fetch(normalizedRequest);
 });
