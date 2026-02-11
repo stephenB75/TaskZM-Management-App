@@ -82,6 +82,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const calendarStatusRetryRef = useRef(false);
   /** When we optimistically or successfully set a provider to true, store timestamp so checkCalendarStatus does not overwrite with stale false. */
   const lastConnectAtRef = useRef<Partial<Record<CalendarProvider, number>>>({});
+  /** When we disconnect a provider, store timestamp so checkCalendarStatus does not overwrite with stale true (so toggle stays off and can be turned back on). */
+  const lastDisconnectAtRef = useRef<Partial<Record<CalendarProvider, number>>>({});
 
   // Calendar sync interval - use constant from TIMING_CONSTANTS
   const CALENDAR_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.syncInterval;
@@ -133,14 +135,16 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         const status = normalizeCalendarStatus(data);
-        // Don't overwrite a recently connected provider with stale false (e.g. visibility change right after OAuth)
+        // Don't overwrite recent connect with stale false, or recent disconnect with stale true (so toggle off stays off and can be turned back on)
         const graceMs = TIMING_CONSTANTS.calendar.statusConnectGraceMs;
         const now = Date.now();
         const merged: CalendarStatus = { ...status };
         const providers: CalendarProvider[] = [CALENDAR_PROVIDERS.google, CALENDAR_PROVIDERS.outlook, CALENDAR_PROVIDERS.apple];
         for (const p of providers) {
-          const at = lastConnectAtRef.current[p];
-          if (at != null && (now - at) < graceMs) merged[p] = true;
+          const connectAt = lastConnectAtRef.current[p];
+          const disconnectAt = lastDisconnectAtRef.current[p];
+          if (connectAt != null && (now - connectAt) < graceMs) merged[p] = true;
+          else if (disconnectAt != null && (now - disconnectAt) < graceMs) merged[p] = false;
         }
         setCalendarStatus(merged);
 
@@ -321,6 +325,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     // Optimistic update for Google/Outlook so the toggle turns on immediately; Apple opens dialog so no optimistic update
     if (provider === CALENDAR_PROVIDERS.google || provider === CALENDAR_PROVIDERS.outlook) {
       lastConnectAtRef.current[provider] = Date.now();
+      lastDisconnectAtRef.current[provider] = undefined;
       setCalendarStatus(prev => ({ ...prev, [provider]: true }));
     }
 
@@ -541,6 +546,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             // Use setTimeout(0) to defer to next event loop tick
             setTimeout(() => {
               lastConnectAtRef.current[connectedProvider] = Date.now();
+              lastDisconnectAtRef.current[connectedProvider] = undefined;
               setCalendarStatus(prev => {
                 const next = { ...prev, [connectedProvider]: true };
                 if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
@@ -657,8 +663,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         throw new Error('Failed to disconnect calendar');
       }
 
-      // Update status and stop protecting this provider from status re-checks
+      // Update status and protect this provider from stale API "true" so toggle stays off and can be turned back on
       lastConnectAtRef.current[provider] = undefined;
+      lastDisconnectAtRef.current[provider] = Date.now();
       setCalendarStatus(prev => ({
         ...prev,
         [provider]: false,
@@ -1101,6 +1108,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     lastConnectAtRef.current[CALENDAR_PROVIDERS.apple] = Date.now();
+    lastDisconnectAtRef.current[CALENDAR_PROVIDERS.apple] = undefined;
     setCalendarStatus(prev => ({ ...prev, apple: true }));
     if (user.id) {
       const newStatus = { ...calendarStatus, apple: true };
