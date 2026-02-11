@@ -62,6 +62,8 @@ export const CALENDAR_SETTINGS_LABELS: Record<CalendarProviderId, string> = {
 export const CALENDAR_SETTINGS_UI = {
   sectionTitle: 'Calendar Integration',
   sectionSubtitle: 'Sync your tasks with external calendar services',
+  /** Shown when Google or Outlook is connected (read-only: we only display calendar, we do not write). */
+  viewOnlyMessage: 'Your calendar is shown in the app for scheduling. We only read your events; we don\'t add or change them.',
   syncButtonLabel: 'Sync All Tasks',
   syncButtonSyncing: 'Syncing...',
   lastSyncedLabel: 'Last synced:',

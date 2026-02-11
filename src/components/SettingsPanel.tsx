@@ -201,7 +201,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { teams, currentTeamMembers, teamMembers, getTeamMember } = useTeam();
   const { settings: aiSettings, toggleAutoScheduling, togglePriorityBasedScheduling, toggleScheduleUnscheduledTasks, updateSettings } = useAI();
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
-  const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
+  const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectingProvider, disconnectingProvider, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
   const { awards, earnedAwards, getAwardProgress } = useAwards();
   const { permission, settings: notificationSettings, badgeCount, requestPermission, updateSettings: updateNotificationSettings } = useNotifications();
   const [dayType, setDayType] = useState<'weekday' | 'weekend'>('weekday');
@@ -1360,7 +1360,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       id={`${CALENDAR_PROVIDERS.google}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.google}
-                      disabled={!!isCalendarSyncing}
+                      disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.google || disconnectingProvider === CALENDAR_PROVIDERS.google}
                       aria-label={CALENDAR_SETTINGS_LABELS.google}
                       onCheckedChange={async (checked) => {
                         try {
@@ -1368,6 +1368,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           else await disconnectCalendar(CALENDAR_PROVIDERS.google);
                         } catch (error) {
                           logger.error('Calendar toggle error:', error);
+                          toast.error(error instanceof Error ? error.message : String(error));
                         }
                       }}
                     />
@@ -1380,7 +1381,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       id={`${CALENDAR_PROVIDERS.outlook}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.outlook}
-                      disabled={!!isCalendarSyncing}
+                      disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.outlook || disconnectingProvider === CALENDAR_PROVIDERS.outlook}
                       aria-label={CALENDAR_SETTINGS_LABELS.outlook}
                       onCheckedChange={async (checked) => {
                         try {
@@ -1388,6 +1389,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           else await disconnectCalendar(CALENDAR_PROVIDERS.outlook);
                         } catch (error) {
                           logger.error('Calendar toggle error:', error);
+                          toast.error(error instanceof Error ? error.message : String(error));
                         }
                       }}
                     />
@@ -1400,7 +1402,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       id={`${CALENDAR_PROVIDERS.apple}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.apple}
-                      disabled={!!isCalendarSyncing}
+                      disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.apple || disconnectingProvider === CALENDAR_PROVIDERS.apple}
                       aria-label={CALENDAR_SETTINGS_LABELS.apple}
                       onCheckedChange={async (checked) => {
                         try {
@@ -1408,6 +1410,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           else await disconnectCalendar(CALENDAR_PROVIDERS.apple);
                         } catch (error) {
                           logger.error('Calendar toggle error:', error);
+                          toast.error(error instanceof Error ? error.message : String(error));
                         }
                       }}
                     />
@@ -1418,25 +1421,30 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
             <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
+            {(calendarStatus.google || calendarStatus.outlook) && (
+              <p className="text-sm text-muted-foreground">
+                {CALENDAR_SETTINGS_UI.viewOnlyMessage}
+              </p>
+            )}
+
             <div className="space-y-2">
-              <Button 
-                size="sm" 
-                className="w-full"
-                onClick={() => {
-                  if (calendarStatus.google) syncAllTasksToCalendar(CALENDAR_PROVIDERS.google);
-                  else if (calendarStatus.outlook) syncAllTasksToCalendar(CALENDAR_PROVIDERS.outlook);
-                  else if (calendarStatus.apple) syncAllTasksToCalendar(CALENDAR_PROVIDERS.apple);
-                }}
-                disabled={isCalendarSyncing || (!calendarStatus.google && !calendarStatus.outlook && !calendarStatus.apple)}
-              >
-                <Icon name="calendar" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} weight="duotone" className="mr-2" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                {isCalendarSyncing ? CALENDAR_SETTINGS_UI.syncButtonSyncing : CALENDAR_SETTINGS_UI.syncButtonLabel}
-              </Button>
-              
-              {lastCalendarSync && (
-                <p className="text-xs text-muted-foreground text-center">
-                  {CALENDAR_SETTINGS_UI.lastSyncedLabel} {new Date(lastCalendarSync).toLocaleString()}
-                </p>
+              {calendarStatus.apple && (
+                <>
+                  <Button 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => syncAllTasksToCalendar(CALENDAR_PROVIDERS.apple)}
+                    disabled={isCalendarSyncing}
+                  >
+                    <Icon name="calendar" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} weight="duotone" className="mr-2" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                    {isCalendarSyncing ? CALENDAR_SETTINGS_UI.syncButtonSyncing : CALENDAR_SETTINGS_UI.syncButtonLabel}
+                  </Button>
+                  {lastCalendarSync && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      {CALENDAR_SETTINGS_UI.lastSyncedLabel} {new Date(lastCalendarSync).toLocaleString()}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </AccordionContent>

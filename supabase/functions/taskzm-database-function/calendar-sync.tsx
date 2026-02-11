@@ -218,7 +218,7 @@ async function refreshOutlookToken(tokens: CalendarTokens): Promise<CalendarToke
       client_secret: clientSecret,
       refresh_token: tokens.refreshToken,
       grant_type: 'refresh_token',
-      scope: 'https://graph.microsoft.com/Calendars.ReadWrite offline_access',
+      scope: 'https://graph.microsoft.com/Calendars.Read offline_access',
     }),
   });
 

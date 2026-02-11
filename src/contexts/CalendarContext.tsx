@@ -51,6 +51,8 @@ interface CalendarContextType {
   calendarStatus: CalendarStatus;
   isSyncing: boolean;
   lastSync: Date | null;
+  connectingProvider: CalendarProvider | null;
+  disconnectingProvider: CalendarProvider | null;
   connectCalendar: (provider: CalendarProvider) => Promise<void>;
   disconnectCalendar: (provider: CalendarProvider) => Promise<void>;
   syncTask: (taskId: string, provider: CalendarProvider) => Promise<void>;
@@ -73,6 +75,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [showAppleCalDAVDialog, setShowAppleCalDAVDialog] = useState(false);
+  const [connectingProvider, setConnectingProvider] = useState<CalendarProvider | null>(null);
+  const [disconnectingProvider, setDisconnectingProvider] = useState<CalendarProvider | null>(null);
   
   // Refs to prevent multiple simultaneous syncs and track sync state
   const isSyncingRef = useRef(false);
@@ -266,7 +270,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       toast.error('Please sign in to connect calendar');
       return;
     }
-    
+    setConnectingProvider(provider);
     // Gate: Calendar sync requires Pro subscription (Monthly or Yearly)
     // Check both tier and feature to ensure proper gating
     if (subscription.tier !== 'pro' || !hasFeature('calendarSync')) {
@@ -288,6 +292,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           description: 'Please contact support if you have a Pro subscription.',
         });
       }
+      setConnectingProvider(null);
       return;
     }
     
@@ -317,6 +322,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             },
           },
         });
+        setConnectingProvider(null);
         return;
       }
     }
@@ -337,6 +343,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     // Apple Calendar uses CalDAV for one-way import
     if (provider === CALENDAR_PROVIDERS.apple) {
       setShowAppleCalDAVDialog(true);
+      setConnectingProvider(null);
       return;
     }
 
@@ -380,6 +387,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
                 toast.success('Google Calendar connected!', {
                   description: 'Using your Google account from sign-in',
                 });
+                setConnectingProvider(null);
                 return;
               }
             }
@@ -415,6 +423,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           description: errorMessage,
         });
         await checkCalendarStatus(); // Revert optimistic update
+        setConnectingProvider(null);
         return;
       }
 
@@ -427,6 +436,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         });
         console.error('Invalid OAuth response:', data);
         await checkCalendarStatus(); // Revert optimistic update
+        setConnectingProvider(null);
         return;
       }
       
@@ -447,6 +457,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           description: 'Your browser blocked the popup window. Please allow popups for this site and try again.',
         });
         await checkCalendarStatus(); // Revert optimistic update
+        setConnectingProvider(null);
         return;
       }
 
@@ -568,11 +579,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
               }).catch((err) => {
                 console.error('[Calendar OAuth] Error checking calendar status:', err);
               });
+              setConnectingProvider(null);
               toast.success(`${CALENDAR_PROVIDER_DISPLAY_NAMES[connectedProvider]} Calendar connected successfully!`);
             }, 0);
           } else if (event.data.type === CALENDAR_OAUTH_MESSAGE_TYPES.error) {
             console.error('[Calendar OAuth] Error message received for', provider, 'from origin:', event.origin, 'error:', event.data.error);
             setTimeout(() => {
+              setConnectingProvider(null);
               checkCalendarStatus(); // Revert optimistic update
               toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
                 description: event.data.error || 'An error occurred during authorization',
@@ -627,6 +640,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           if (!messageReceived) {
             console.log('[Calendar OAuth] Popup closed without message, checking calendar status...');
             setTimeout(() => {
+              setConnectingProvider(null);
               checkCalendarStatus();
               // If status shows connected, show success toast
               // Otherwise, the user might have cancelled or there was an error
@@ -640,6 +654,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       console.error(`Failed to connect ${provider}:`, error);
+      setConnectingProvider(null);
       toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
         description: String(error),
       });
@@ -651,6 +666,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const disconnectCalendar = useCallback(async (provider: CalendarProvider) => {
     if (!user || !accessToken) return;
 
+    setDisconnectingProvider(provider);
     try {
       // Apple Calendar uses CalDAV endpoint, other providers use OAuth endpoint
       const endpoint = provider === CALENDAR_PROVIDERS.apple
@@ -689,11 +705,15 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
 
       toast.success(`${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar disconnected`);
+      // Reconfirm with backend after short delay so toggle stays in sync
+      setTimeout(() => { checkCalendarStatus(); }, 500);
     } catch (error) {
       console.error(`Failed to disconnect ${provider}:`, error);
       toast.error(`Failed to disconnect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`);
+    } finally {
+      setDisconnectingProvider(null);
     }
-  }, [user, accessToken, calendarStatus]);
+  }, [user, accessToken, calendarStatus, checkCalendarStatus]);
 
   // Sync a single task to calendar
   const syncTask = useCallback(async (taskId: string, provider: CalendarProvider) => {
@@ -716,6 +736,14 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     if (provider === CALENDAR_PROVIDERS.apple) {
       toast.info('Apple Calendar is import-only', {
         description: 'Events are imported from iCloud. To add events, use Apple Calendar app.',
+      });
+      return;
+    }
+
+    // Google/Outlook are read-only: we only display calendar events, we do not write tasks to the calendar
+    if (provider === CALENDAR_PROVIDERS.google || provider === CALENDAR_PROVIDERS.outlook) {
+      toast.info('Calendar is view-only', {
+        description: 'We only read your calendar to show it in the app. Tasks are not written to your calendar.',
       });
       return;
     }
@@ -981,9 +1009,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Google Calendar - trigger sync (import from Google Calendar)
-    if (provider === CALENDAR_PROVIDERS.google) {
-      await syncGoogleCalendarInternal(false);
+    // Google/Outlook are read-only: we only display calendar events, we do not write tasks to the calendar
+    if (provider === CALENDAR_PROVIDERS.google || provider === CALENDAR_PROVIDERS.outlook) {
+      toast.info('Calendar is view-only', {
+        description: 'We only read your calendar to show it in the app. Tasks are not written to your calendar.',
+      });
       return;
     }
 
@@ -1238,6 +1268,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         calendarStatus,
         isSyncing,
         lastSync,
+        connectingProvider,
+        disconnectingProvider,
         connectCalendar,
         disconnectCalendar,
         syncTask,

@@ -2574,8 +2574,8 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
     }
 
     const scopes = [
-      'https://www.googleapis.com/auth/calendar',
-      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/calendar.events.readonly',
     ];
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -2982,7 +2982,7 @@ app.get("/taskzm-database-function/calendar/outlook/auth", async (c) => {
     }
 
     const scopes = [
-      'https://graph.microsoft.com/Calendars.ReadWrite',
+      'https://graph.microsoft.com/Calendars.Read',
       'offline_access',
     ];
 
@@ -3099,7 +3099,7 @@ app.get("/taskzm-database-function/calendar/outlook/callback", async (c) => {
         client_secret: clientSecret,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
-        scope: 'https://graph.microsoft.com/Calendars.ReadWrite offline_access',
+        scope: 'https://graph.microsoft.com/Calendars.Read offline_access',
       }),
     });
 
