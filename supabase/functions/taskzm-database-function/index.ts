@@ -4222,6 +4222,19 @@ const appleCalDAVSyncHandler = async (c: any) => {
       userTimezone
     );
 
+    // If sync corrected stored calendar list (e.g. removed calendar-home URL), persist for next time
+    if (result.correctedCalendars && result.correctedCalendars.length > 0) {
+      const credentialsRaw = await kv.get(`caldav_credentials_${userId}`);
+      if (credentialsRaw) {
+        const stored = typeof credentialsRaw === 'string' ? JSON.parse(credentialsRaw) : credentialsRaw;
+        await kv.set(`caldav_credentials_${userId}`, JSON.stringify({
+          ...stored,
+          selectedCalendars: result.correctedCalendars,
+        }));
+        console.log('[CalDAV] Persisted corrected calendar selection');
+      }
+    }
+
     await kv.set(`caldav_last_sync_${userId}`, JSON.stringify({
       syncedAt: new Date().toISOString(),
       ...result,

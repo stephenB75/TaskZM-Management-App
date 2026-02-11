@@ -58,6 +58,8 @@ export interface SyncResult {
   updated: number;
   deleted: number;
   errors: string[];
+  /** Set when we had to re-discover calendars (e.g. stored hrefs were only calendar-home); caller should persist selectedCalendars. */
+  correctedCalendars?: DiscoveredCalendar[];
 }
 
 // Constants
@@ -509,13 +511,28 @@ function normalizeUrl(url: string, baseUrl: string): string {
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  
+
   const base = new URL(baseUrl);
   if (url.startsWith('/')) {
     return `${base.protocol}//${base.host}${url}`;
   }
-  
+
   return `${base.protocol}//${base.host}/${url}`;
+}
+
+/**
+ * Returns true if href is the calendar home collection (e.g. .../218434715/calendars/).
+ * REPORT (calendar-query) is only valid on individual calendar resources; iCloud returns 403 for the home.
+ * Stored credentials from before we filtered discovery may still contain this URL.
+ */
+function isCalendarHomeUrl(href: string): boolean {
+  try {
+    const u = new URL(href);
+    const path = u.pathname.replace(/\/$/, '');
+    return path.endsWith('/calendars');
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -1335,11 +1352,33 @@ export async function syncCalendarsToDatabase(
         calendarColorMap.set(cal.href, cal.color);
       }
     }
-    
+
+    // Exclude calendar-home URLs (e.g. .../218434715/calendars/). Stored credentials from before we
+    // filtered discovery may still contain it; REPORT on the home returns 403.
+    let hrefsToFetch = selectedCalendarHrefs.filter((href) => {
+      if (isCalendarHomeUrl(href)) {
+        console.warn('[Calendar Sync] Skipping calendar home URL (REPORT not allowed):', href);
+        return false;
+      }
+      return true;
+    });
+    if (hrefsToFetch.length === 0) {
+      // Stored selection was only the calendar home; re-discover to get real calendars (caller should persist)
+      console.log('[Calendar Sync] Stored selection was invalid; re-discovering calendars');
+      const rediscovered = await discoverCalendars(credentials);
+      hrefsToFetch = rediscovered.map((cal) => cal.href);
+      if (hrefsToFetch.length === 0) {
+        result.success = false;
+        result.errors.push('No calendars found. Please check your iCloud account.');
+        return result;
+      }
+      result.correctedCalendars = rediscovered;
+    }
+
     // Fetch events from each selected calendar
     const allEvents: CalendarEvent[] = [];
-    
-    for (const href of selectedCalendarHrefs) {
+
+    for (const href of hrefsToFetch) {
       try {
         console.log(`[Calendar Sync] Fetching events from calendar: ${href}`);
         const events = await fetchCalendarEvents(credentials, href);
