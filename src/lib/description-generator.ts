@@ -359,6 +359,34 @@ export interface GeneratedDescription {
   source?: 'openai' | 'local';
 }
 
+/** Terms that must not appear in a description unless they appear in the task name (avoids off-topic drift). */
+const DESCRIPTION_OFF_TOPIC_FORBIDDEN_TERMS = [
+  'milestone', 'customer', 'forecast', 'report', 'deliverable', 'proposal', 'testing',
+];
+
+/**
+ * Remove sentences that contain forbidden off-topic terms unless the term appears in the task name.
+ * Used as a safety net so descriptions stay contextual.
+ */
+export function stripOffTopicSentences(description: string, taskName: string): string {
+  if (!description || typeof description !== 'string') return description;
+  const taskLower = taskName.toLowerCase().trim();
+  const sentences = description.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+  const kept: string[] = [];
+  for (const sentence of sentences) {
+    const sentLower = sentence.toLowerCase();
+    const hasForbidden = DESCRIPTION_OFF_TOPIC_FORBIDDEN_TERMS.some(term => {
+      if (taskLower.includes(term)) return false;
+      const wordBoundary = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      return wordBoundary.test(sentLower);
+    });
+    if (!hasForbidden) kept.push(sentence);
+  }
+  if (kept.length === 0) return description.trim();
+  const result = kept.join('. ').trim();
+  return result ? (result.match(/[.!?]$/) ? result : `${result}.`) : description.trim();
+}
+
 /**
  * Calculate Levenshtein distance between two strings
  * Used for better fuzzy matching
@@ -3361,7 +3389,7 @@ export async function generateDescription(
           if (notIdentical && notJustTaskName) {
             logger.debug('OpenAI (primary) description used');
             return {
-              description: desc,
+              description: stripOffTopicSentences(desc, taskName),
               domain: typeof data.domain === 'string' ? data.domain : domainRef,
               confidence: typeof data.confidence === 'number' ? data.confidence : 0.85,
               source: 'openai',
@@ -3732,7 +3760,7 @@ export async function generateDescription(
     }
 
   return {
-    description: finalDescription,
+    description: stripOffTopicSentences(finalDescription, taskName),
     domain: domainRef,
     confidence,
     source: 'local',
@@ -3746,7 +3774,7 @@ export async function generateDescription(
     const fallbackDescription = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${domainGuidance}`;
     
     return {
-      description: fallbackDescription,
+      description: stripOffTopicSentences(fallbackDescription, taskName),
       domain,
       confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
       source: 'local',
@@ -3820,7 +3848,7 @@ export async function generateDescriptionOptions(
             const mapped: GeneratedDescription[] = opts
               .filter((o: { description?: string }) => o && typeof o.description === 'string' && o.description.trim().length > 0)
               .map((o: { description: string; domain?: string; confidence?: number }) => ({
-                description: (o.description as string).trim(),
+                description: stripOffTopicSentences((o.description as string).trim(), taskName),
                 domain: typeof o.domain === 'string' ? o.domain : DEFAULT_TASK_DOMAIN,
                 confidence: typeof o.confidence === 'number' ? o.confidence : 0.75,
                 source: 'openai' as const,

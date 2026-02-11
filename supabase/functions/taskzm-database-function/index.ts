@@ -354,9 +354,9 @@ const AI_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const OPENAI_CHAT_URL = Deno.env.get('OPENAI_CHAT_URL') || 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL = Deno.env.get('OPENAI_MODEL') || 'gpt-4o-mini';
 const OPENAI_DESC_MAX_TOKENS = 250;
-const OPENAI_DESC_TEMPERATURE = 0.5;
+const OPENAI_DESC_TEMPERATURE = 0.3;
 const OPENAI_OPTS_MAX_TOKENS = 600;
-const OPENAI_OPTS_TEMPERATURE = 0.6;
+const OPENAI_OPTS_TEMPERATURE = 0.4;
 
 /** High-risk cross-context terms to forbid per domain (reduces jumbling). */
 const DO_NOT_USE_TERMS: Record<string, string[]> = {
@@ -387,6 +387,27 @@ async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Filter terminology to terms that appear in or share a word with the task name (reduces off-topic drift). */
+function filterTerminologyToTask(
+  taskName: string,
+  terminology: { keywords: string[]; phrases: string[]; verbs: string[]; nouns: string[] }
+): { keywords: string[]; phrases: string[]; verbs: string[]; nouns: string[] } {
+  const taskLower = taskName.toLowerCase();
+  const taskWords = taskLower.split(/\W+/).filter((w) => w.length >= 2);
+  const relatesToTask = (term: string): boolean => {
+    const t = term.toLowerCase();
+    if (taskLower.includes(t)) return true;
+    const termWords = t.split(/\W+/).filter((w) => w.length >= 2);
+    return termWords.some((pw) => taskWords.some((tw) => tw.includes(pw) || pw.includes(tw)));
+  };
+  return {
+    keywords: (terminology.keywords || []).filter(relatesToTask),
+    phrases: (terminology.phrases || []).filter(relatesToTask),
+    verbs: (terminology.verbs || []).filter(relatesToTask),
+    nouns: (terminology.nouns || []).filter(relatesToTask),
+  };
 }
 
 // GET /taskzm-database-function/ai/status — check if OpenAI is configured (no auth; returns configured only)
@@ -439,9 +460,10 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
     } catch (_) { /* ignore cache errors */ }
 
     const situationLine = buildSituationLine(taskName, actionPlanSteps);
-    const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
+    const filteredTerminology = filterTerminologyToTask(taskName, terminology);
+    const hasTerms = filteredTerminology.keywords.length > 0 || filteredTerminology.phrases.length > 0 || filteredTerminology.verbs.length > 0 || filteredTerminology.nouns.length > 0;
     const allowedVocabulary = hasTerms
-      ? `\n\nAllowed vocabulary (use only where they fit this situation; do not use any term that does not apply):\nKeywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}\nPhrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}\nVerbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}\nNouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}`
+      ? `\n\nAllowed vocabulary (use only where they fit this situation; do not use any term that does not apply):\nKeywords: ${filteredTerminology.keywords.slice(0, 25).join(', ')}\nPhrases: ${filteredTerminology.phrases.slice(0, 15).join('; ')}\nVerbs: ${filteredTerminology.verbs.slice(0, 15).join(', ')}\nNouns: ${filteredTerminology.nouns.slice(0, 15).join(', ')}`
       : '';
     const doNotUseList = (DO_NOT_USE_TERMS[domain] || DO_NOT_USE_TERMS.mixed || []).slice(0, 12);
     const doNotUseBlock = doNotUseList.length > 0
@@ -554,9 +576,10 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
     } catch (_) { /* ignore */ }
 
     const situationLine = buildSituationLine(taskName, actionPlanSteps);
-    const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
+    const filteredTerminologyOpts = filterTerminologyToTask(taskName, terminology);
+    const hasTerms = filteredTerminologyOpts.keywords.length > 0 || filteredTerminologyOpts.phrases.length > 0 || filteredTerminologyOpts.verbs.length > 0 || filteredTerminologyOpts.nouns.length > 0;
     const allowedVocabulary = hasTerms
-      ? `\n\nAllowed vocabulary (use only where they fit this situation):\nKeywords: ${(terminology.keywords as string[]).slice(0, 25).join(', ')}\nPhrases: ${(terminology.phrases as string[]).slice(0, 15).join('; ')}\nVerbs: ${(terminology.verbs as string[]).slice(0, 15).join(', ')}\nNouns: ${(terminology.nouns as string[]).slice(0, 15).join(', ')}`
+      ? `\n\nAllowed vocabulary (use only where they fit this situation):\nKeywords: ${filteredTerminologyOpts.keywords.slice(0, 25).join(', ')}\nPhrases: ${filteredTerminologyOpts.phrases.slice(0, 15).join('; ')}\nVerbs: ${filteredTerminologyOpts.verbs.slice(0, 15).join(', ')}\nNouns: ${filteredTerminologyOpts.nouns.slice(0, 15).join(', ')}`
       : '';
     const doNotUseList = (DO_NOT_USE_TERMS[domain] || DO_NOT_USE_TERMS.mixed || []).slice(0, 12);
     const doNotUseBlock = doNotUseList.length > 0
@@ -670,18 +693,22 @@ app.post("/taskzm-database-function/ai/action-plan", async (c) => {
     }
 
     const situationLine = buildSituationLine(taskName, []);
-    const hasTerms = terminology.keywords.length > 0 || terminology.phrases.length > 0 || terminology.verbs.length > 0 || terminology.nouns.length > 0;
+    const taskContextForFilter = `${taskName} ${existingDescription}`.trim();
+    const filteredTerminologyPlan = filterTerminologyToTask(taskContextForFilter, terminology);
+    const hasTerms = filteredTerminologyPlan.keywords.length > 0 || filteredTerminologyPlan.phrases.length > 0 || filteredTerminologyPlan.verbs.length > 0 || filteredTerminologyPlan.nouns.length > 0;
     const allowedTerms = hasTerms
-      ? `\nAllowed vocabulary (use only where they fit): Keywords: ${(terminology.keywords as string[]).slice(0, 15).join(', ')}. Phrases: ${(terminology.phrases as string[]).slice(0, 8).join('; ')}. Verbs: ${(terminology.verbs as string[]).slice(0, 10).join(', ')}. Nouns: ${(terminology.nouns as string[]).slice(0, 10).join(', ')}.`
+      ? `\nAllowed vocabulary (use only where they fit): Keywords: ${filteredTerminologyPlan.keywords.slice(0, 15).join(', ')}. Phrases: ${filteredTerminologyPlan.phrases.slice(0, 8).join('; ')}. Verbs: ${filteredTerminologyPlan.verbs.slice(0, 10).join(', ')}. Nouns: ${filteredTerminologyPlan.nouns.slice(0, 10).join(', ')}.`
       : '';
     const descriptionBlock = existingDescription
       ? `\nDescription (if any): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
       : '';
 
-    const systemMessage = "You produce 3-5 ordered action steps for the user's task. Use the task name (and description if provided) as the basis. Each step: short action phrase (few words), estimated minutes (integer). Use only the allowed vocabulary; do not introduce unrelated concepts.";
+    const systemMessage = "You produce 3-5 ordered action steps for the user's task. Each step must be directly derived from the task name (and description if provided). Do not add generic business steps (e.g. report, forecast, milestone, customer) unless the task name or description clearly refers to them. Use only the allowed vocabulary where it fits the task; do not introduce unrelated concepts.";
     const prompt = `${situationLine}${descriptionBlock}${allowedTerms}
 
-Using the task name above (and description if any), produce 3-5 ordered action steps for this ${domain} task. Each step: short action phrase (few words), estimated minutes (integer). Use only the provided vocabulary; do not introduce unrelated concepts.
+Do not use these words in any step unless they appear in the task name or description: milestone, customer, forecast, report, deliverable, proposal, test (as in testing).
+
+Using the task name above (and description if any), produce 3-5 ordered action steps for this ${domain} task. Each step: short action phrase (few words), estimated minutes (integer). Every step must be clearly implied by the task (e.g. for \"Write help articles for the website\" use steps about writing, articles, website—not \"Create report\" or \"Forecast demand\" unless the task mentions them).
 
 Return ONLY a valid JSON object with a single key "steps", an array of objects each with "action" (string) and "estimatedMinutes" (number). No other text.
 Example: {"steps":[{"action":"Review requirements","estimatedMinutes":10},{"action":"Implement changes","estimatedMinutes":30}]}
