@@ -80,7 +80,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const syncAppleCalendarInternalRef = useRef<((silent?: boolean) => Promise<boolean>) | null>(null);
   const calendarStatusRetryRef = useRef(false);
-  
+  /** When we optimistically or successfully set a provider to true, store timestamp so checkCalendarStatus does not overwrite with stale false. */
+  const lastConnectAtRef = useRef<Partial<Record<CalendarProvider, number>>>({});
+
   // Calendar sync interval - use constant from TIMING_CONSTANTS
   const CALENDAR_SYNC_INTERVAL = TIMING_CONSTANTS.calendar.syncInterval;
   
@@ -131,12 +133,21 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         const status = normalizeCalendarStatus(data);
-        setCalendarStatus(status);
+        // Don't overwrite a recently connected provider with stale false (e.g. visibility change right after OAuth)
+        const graceMs = TIMING_CONSTANTS.calendar.statusConnectGraceMs;
+        const now = Date.now();
+        const merged: CalendarStatus = { ...status };
+        const providers: CalendarProvider[] = [CALENDAR_PROVIDERS.google, CALENDAR_PROVIDERS.outlook, CALENDAR_PROVIDERS.apple];
+        for (const p of providers) {
+          const at = lastConnectAtRef.current[p];
+          if (at != null && (now - at) < graceMs) merged[p] = true;
+        }
+        setCalendarStatus(merged);
 
         // Update localStorage and cache
         if (user.id) {
-          localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(status));
-          localStorage.setItem(cacheKey, JSON.stringify(status));
+          localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(merged));
+          localStorage.setItem(cacheKey, JSON.stringify(merged));
           localStorage.setItem(cacheTimeKey, Date.now().toString());
         }
       } else {
@@ -309,6 +320,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
     // Optimistic update for Google/Outlook so the toggle turns on immediately; Apple opens dialog so no optimistic update
     if (provider === CALENDAR_PROVIDERS.google || provider === CALENDAR_PROVIDERS.outlook) {
+      lastConnectAtRef.current[provider] = Date.now();
       setCalendarStatus(prev => ({ ...prev, [provider]: true }));
     }
 
@@ -528,6 +540,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
             const connectedProvider = provider;
             // Use setTimeout(0) to defer to next event loop tick
             setTimeout(() => {
+              lastConnectAtRef.current[connectedProvider] = Date.now();
               setCalendarStatus(prev => {
                 const next = { ...prev, [connectedProvider]: true };
                 if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
@@ -644,11 +657,15 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         throw new Error('Failed to disconnect calendar');
       }
 
-      // Update status
+      // Update status and stop protecting this provider from status re-checks
+      lastConnectAtRef.current[provider] = undefined;
       setCalendarStatus(prev => ({
         ...prev,
         [provider]: false,
       }));
+
+      // Clear calendar events cache so views don't show stale events from this provider
+      clearCalendarEventsCache();
 
       // Update localStorage and clear cache
       if (user.id) {
@@ -1082,7 +1099,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   // Handle Apple CalDAV setup completion
   const handleAppleCalDAVComplete = useCallback(() => {
     if (!user) return;
-    
+
+    lastConnectAtRef.current[CALENDAR_PROVIDERS.apple] = Date.now();
     setCalendarStatus(prev => ({ ...prev, apple: true }));
     if (user.id) {
       const newStatus = { ...calendarStatus, apple: true };
