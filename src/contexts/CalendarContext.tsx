@@ -705,8 +705,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
 
       toast.success(`${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar disconnected`);
-      // Reconfirm with backend after short delay so toggle stays in sync
-      setTimeout(() => { checkCalendarStatus(); }, 500);
+      // Reconfirm with backend so toggle stays in sync (no delay needed; DELETE already completed)
+      checkCalendarStatus();
     } catch (error) {
       console.error(`Failed to disconnect ${provider}:`, error);
       toast.error(`Failed to disconnect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`);
