@@ -1355,22 +1355,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
                   {/* Google Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <div
-                      className="flex items-center flex-1 min-w-0 cursor-pointer select-none"
-                      style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={!!calendarStatus.google}
-                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.google) connectCalendar(CALENDAR_PROVIDERS.google); else disconnectCalendar(CALENDAR_PROVIDERS.google); } }}
-                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.google) connectCalendar(CALENDAR_PROVIDERS.google); else disconnectCalendar(CALENDAR_PROVIDERS.google); } }}
-                    >
-                      <Label htmlFor={`${CALENDAR_PROVIDERS.google}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
-                    </div>
+                    <Label className={`${SETTINGS_PANEL_TEXT_SIZES.label}`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
                     <Switch
                       id={`${CALENDAR_PROVIDERS.google}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.google}
                       disabled={!!isCalendarSyncing}
+                      aria-label={CALENDAR_SETTINGS_LABELS.google}
                       onCheckedChange={async (checked) => {
                         try {
                           if (checked) await connectCalendar(CALENDAR_PROVIDERS.google);
@@ -1384,22 +1375,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   
                   {/* Outlook Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <div
-                      className="flex items-center flex-1 min-w-0 cursor-pointer select-none"
-                      style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={!!calendarStatus.outlook}
-                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.outlook) connectCalendar(CALENDAR_PROVIDERS.outlook); else disconnectCalendar(CALENDAR_PROVIDERS.outlook); } }}
-                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.outlook) connectCalendar(CALENDAR_PROVIDERS.outlook); else disconnectCalendar(CALENDAR_PROVIDERS.outlook); } }}
-                    >
-                      <Label htmlFor={`${CALENDAR_PROVIDERS.outlook}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
-                    </div>
+                    <Label className={`${SETTINGS_PANEL_TEXT_SIZES.label}`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
                     <Switch
-                      id={`${CALENDAR_PROVIDERS.outlook}-cal`} 
+                      id={`${CALENDAR_PROVIDERS.outlook}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.outlook}
                       disabled={!!isCalendarSyncing}
+                      aria-label={CALENDAR_SETTINGS_LABELS.outlook}
                       onCheckedChange={async (checked) => {
                         try {
                           if (checked) await connectCalendar(CALENDAR_PROVIDERS.outlook);
@@ -1413,22 +1395,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   
                   {/* Apple Calendar */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                    <div
-                      className="flex items-center flex-1 min-w-0 cursor-pointer select-none"
-                      style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={!!calendarStatus.apple}
-                      onClick={() => { if (!isCalendarSyncing) { if (!calendarStatus.apple) connectCalendar(CALENDAR_PROVIDERS.apple); else disconnectCalendar(CALENDAR_PROVIDERS.apple); } }}
-                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCalendarSyncing) { e.preventDefault(); if (!calendarStatus.apple) connectCalendar(CALENDAR_PROVIDERS.apple); else disconnectCalendar(CALENDAR_PROVIDERS.apple); } }}
-                    >
-                      <Label htmlFor={`${CALENDAR_PROVIDERS.apple}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
-                    </div>
+                    <Label className={`${SETTINGS_PANEL_TEXT_SIZES.label}`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
                     <Switch
                       id={`${CALENDAR_PROVIDERS.apple}-cal`}
                       className="flex-shrink-0"
                       checked={!!calendarStatus.apple}
                       disabled={!!isCalendarSyncing}
+                      aria-label={CALENDAR_SETTINGS_LABELS.apple}
                       onCheckedChange={async (checked) => {
                         try {
                           if (checked) await connectCalendar(CALENDAR_PROVIDERS.apple);
