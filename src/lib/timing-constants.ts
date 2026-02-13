@@ -44,6 +44,8 @@ export const TIMING_CONSTANTS = {
     throttle: 1000, // Throttle delay for activity tracking
     calendarPopup: 100, // Calendar popup delay
     calendarCheck: 1000, // Calendar check interval delay
+    /** Delay before re-checking calendar status after OAuth callback so backend has time to store tokens. */
+    calendarStatusAfterOAuthMs: 1500,
     rolloverCheck: 3000, // Rollover check delay to allow UI to load
     nextUpScrollReset: 5000, // Reset scroll tracking after 5 seconds of inactivity to allow next up to work again
     programmaticScrollComplete: 600, // Timeout for programmatic scroll completion (smooth scroll ~500ms + buffer)

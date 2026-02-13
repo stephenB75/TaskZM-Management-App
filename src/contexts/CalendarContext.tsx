@@ -57,7 +57,7 @@ interface CalendarContextType {
   disconnectCalendar: (provider: CalendarProvider) => Promise<void>;
   syncTask: (taskId: string, provider: CalendarProvider) => Promise<void>;
   syncAllTasks: (provider: CalendarProvider) => Promise<void>;
-  checkCalendarStatus: () => Promise<void>;
+  checkCalendarStatus: () => Promise<CalendarStatus | undefined>;
   testAppleConnection: () => Promise<AppleCalendarTestResult>;
 }
 
@@ -110,13 +110,13 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     return merged;
   }, []);
 
-  // Check calendar connection status from server with caching
-  const checkCalendarStatus = useCallback(async () => {
+  // Check calendar connection status from server with caching. Returns merged status when fetched or from cache.
+  const checkCalendarStatus = useCallback(async (): Promise<CalendarStatus | undefined> => {
     if (!user || !accessToken) {
       if (import.meta.env.DEV) {
         console.debug('[Calendar] checkCalendarStatus skipped: missing user or accessToken');
       }
-      return;
+      return undefined;
     }
     if (import.meta.env.DEV) {
       console.debug('[Calendar] checkCalendarStatus running');
@@ -135,8 +135,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         if (cached) {
           try {
             const data = JSON.parse(cached);
-            setCalendarStatus(mergeStatusWithGraceRefs(normalizeCalendarStatus(data)));
-            return; // Use cached data, skip Edge Function call
+            const merged = mergeStatusWithGraceRefs(normalizeCalendarStatus(data));
+            setCalendarStatus(merged);
+            return merged;
           } catch (e) {
             // Cache parse error, continue to fetch
           }
@@ -163,17 +164,21 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(cacheKey, JSON.stringify(merged));
           localStorage.setItem(cacheTimeKey, Date.now().toString());
         }
+        return merged;
       } else {
         // Non-ok response: use cached status if available so we don't leave default forever
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
           try {
             const data = JSON.parse(cached);
-            setCalendarStatus(mergeStatusWithGraceRefs(normalizeCalendarStatus(data)));
+            const merged = mergeStatusWithGraceRefs(normalizeCalendarStatus(data));
+            setCalendarStatus(merged);
+            return merged;
           } catch (e) {
             // Ignore cache parse errors
           }
         }
+        return undefined;
       }
     } catch (error) {
       console.error('Failed to check calendar status:', error);
@@ -182,7 +187,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (cached) {
         try {
           const data = JSON.parse(cached);
-          setCalendarStatus(mergeStatusWithGraceRefs(normalizeCalendarStatus(data)));
+          const merged = mergeStatusWithGraceRefs(normalizeCalendarStatus(data));
+          setCalendarStatus(merged);
+          return merged;
         } catch (e) {
           // Ignore cache parse errors
         }
@@ -193,6 +200,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           checkCalendarStatus();
         }, TIMING_CONSTANTS.delays.calendarCheck);
       }
+      return undefined;
     }
   }, [user, accessToken, mergeStatusWithGraceRefs]);
 
@@ -579,16 +587,25 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
                 return next;
               });
               clearCalendarEventsCache();
-              checkCalendarStatus().then(() => {
-                setCalendarStatus(prev => {
-                  const next = { ...prev, [connectedProvider]: true };
-                  if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
-                  return next;
+              // Clear status cache so re-check fetches fresh data (avoids stale false from race)
+              if (user?.id) {
+                localStorage.removeItem(`calendar_status_cache_${user.id}`);
+                localStorage.removeItem(`calendar_status_cache_time_${user.id}`);
+              }
+              // Delay re-check so backend has time to finish storing tokens, then force connected state
+              const delayMs = TIMING_CONSTANTS.delays.calendarStatusAfterOAuthMs ?? 1500;
+              setTimeout(() => {
+                checkCalendarStatus().then(() => {
+                  setCalendarStatus(prev => {
+                    const next = { ...prev, [connectedProvider]: true };
+                    if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
+                    return next;
+                  });
+                  console.log('[Calendar OAuth] Calendar status checked after success message');
+                }).catch((err) => {
+                  console.error('[Calendar OAuth] Error checking calendar status:', err);
                 });
-                console.log('[Calendar OAuth] Calendar status checked after success message');
-              }).catch((err) => {
-                console.error('[Calendar OAuth] Error checking calendar status:', err);
-              });
+              }, delayMs);
               setConnectingProvider(null);
               toast.success(`${CALENDAR_PROVIDER_DISPLAY_NAMES[connectedProvider]} Calendar connected successfully!`);
             }, 0);
@@ -645,16 +662,29 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           }
           window.removeEventListener('message', messageHandler);
           
-          // If we didn't receive a message, check calendar status anyway
-          // The connection might have succeeded even if the message wasn't received
+          // If we didn't receive a message, check calendar status after a delay so backend has time to store tokens
           if (!messageReceived) {
             console.log('[Calendar OAuth] Popup closed without message, checking calendar status...');
+            if (user?.id) {
+              localStorage.removeItem(`calendar_status_cache_${user.id}`);
+              localStorage.removeItem(`calendar_status_cache_time_${user.id}`);
+            }
+            const delayMs = TIMING_CONSTANTS.delays.calendarStatusAfterOAuthMs ?? 1500;
             setTimeout(() => {
-              setConnectingProvider(null);
-              checkCalendarStatus();
-              // If status shows connected, show success toast
-              // Otherwise, the user might have cancelled or there was an error
-            }, TIMING_CONSTANTS.delays.calendarCheck);
+              checkCalendarStatus().then((status) => {
+                if (status?.[provider]) {
+                  setCalendarStatus(prev => {
+                    const next = { ...prev, [provider]: true };
+                    if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
+                    return next;
+                  });
+                  toast.success(`${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar connected successfully!`);
+                }
+                setConnectingProvider(null);
+              }).catch(() => {
+                setConnectingProvider(null);
+              });
+            }, delayMs);
           }
         }
       }, TIMING_CONSTANTS.calendar.popupCheckInterval);
