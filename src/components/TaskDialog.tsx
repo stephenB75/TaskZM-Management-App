@@ -1932,7 +1932,9 @@ export function TaskDialog({
       } else {
         await updateTask(task.id, taskData);
         savedTask = { ...task, ...taskData } as Task;
-        // Apply to all in series: update every task in this series with shared fields (not scheduledDate/status)
+        // Apply to all in series: update every task in this series with shared fields only.
+        // Intentionally exclude subtasks, status, and scheduledDate so each occurrence keeps its own;
+        // user can close one occurrence without closing the series, and subtasks stay per-occurrence.
         if (applyToSeries && seriesBaseId) {
           const seriesIds = tasks
             .filter((t) => getSeriesBaseId(t.id) === seriesBaseId || t.id === seriesBaseId)

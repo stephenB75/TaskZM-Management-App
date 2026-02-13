@@ -29,7 +29,7 @@ import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
-import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED } from "../lib/business-constants";
+import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from "../lib/business-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -118,6 +118,10 @@ export function TodayAgendaView({
       return false;
     }
     try {
+      // Exclude _subtasks_ occurrence records: they are merged into the base/completed task via getTaskWithOccurrenceSubtasks, not shown as separate cards (prevents duplicate on Today)
+      if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)) {
+        return false;
+      }
       // Check if task matches today (either exact match or recurrence pattern)
       if (!isDateInRecurrence(task, today)) return false;
       // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for today, show only the completed occurrence
