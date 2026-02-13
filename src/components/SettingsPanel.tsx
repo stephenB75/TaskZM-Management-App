@@ -175,6 +175,7 @@ import {
   SETTINGS_PANEL_PROFILE_ICON_SIZE,
   SETTINGS_PANEL_PROFILE_EMAIL_ICON_SIZE,
   COMPONENT_DIMENSIONS,
+  MIN_TOUCH_TARGET_PX,
   ICON_SIZE_XS,
   ICON_SIZE_LG,
   PANEL_GAP_SMALL,
@@ -1353,8 +1354,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 </p>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
-                  {/* Google Calendar */}
-                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
+                  {/* Google Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
                     <Label htmlFor={`${CALENDAR_PROVIDERS.google}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
                     <Switch
                       id={`${CALENDAR_PROVIDERS.google}-cal`}
@@ -1374,8 +1375,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     />
                   </div>
                   
-                  {/* Outlook Calendar */}
-                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
+                  {/* Outlook Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
                     <Label htmlFor={`${CALENDAR_PROVIDERS.outlook}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
                     <Switch
                       id={`${CALENDAR_PROVIDERS.outlook}-cal`}
@@ -1395,8 +1396,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                     />
                   </div>
                   
-                  {/* Apple Calendar */}
-                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM }}>
+                  {/* Apple Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
+                  <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
                     <Label htmlFor={`${CALENDAR_PROVIDERS.apple}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
                     <Switch
                       id={`${CALENDAR_PROVIDERS.apple}-cal`}

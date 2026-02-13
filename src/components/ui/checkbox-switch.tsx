@@ -98,6 +98,7 @@ function CheckboxSwitch({
         height: `${height}px`,
         width: `${width}px`,
         WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation',
       }}
     >
       {/* Full-size invisible input so clicks always hit it (sr-only is 1px and track was capturing clicks) */}

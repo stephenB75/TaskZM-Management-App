@@ -3,6 +3,9 @@
  * These values are used by the header, panels, and dashboard components
  */
 
+// Minimum touch target size (Apple HIG / WCAG); use for toggles and controls on touch devices
+export const MIN_TOUCH_TARGET_PX = 44;
+
 // Sidebar width (matches Tailwind w-16 = 64px)
 export const SIDEBAR_WIDTH = 64;
 

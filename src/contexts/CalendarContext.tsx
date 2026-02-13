@@ -340,10 +340,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       setCalendarStatus(prev => ({ ...prev, [provider]: true }));
     }
 
-    // Apple Calendar uses CalDAV for one-way import
+    // Apple Calendar uses CalDAV for one-way import; keep connectingProvider so toggle stays disabled and prevents double-tap until dialog closes
     if (provider === CALENDAR_PROVIDERS.apple) {
       setShowAppleCalDAVDialog(true);
-      setConnectingProvider(null);
       return;
     }
 
@@ -1162,7 +1161,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
     clearCalendarEventsCache();
     setShowAppleCalDAVDialog(false);
-    
+    setConnectingProvider(null);
+
     // Trigger initial sync after setup (silent so failures don't toast; user already got dialog feedback)
     setTimeout(() => {
       if (syncAppleCalendarInternalRef.current) {
@@ -1292,7 +1292,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       {children}
       <AppleCalDAVSetupDialog
         open={showAppleCalDAVDialog}
-        onOpenChange={setShowAppleCalDAVDialog}
+        onOpenChange={(open) => {
+          setShowAppleCalDAVDialog(open);
+          if (!open) setConnectingProvider(null);
+        }}
         onComplete={handleAppleCalDAVComplete}
       />
     </CalendarContext.Provider>
