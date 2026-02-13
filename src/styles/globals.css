@@ -255,6 +255,13 @@ body {
   overscroll-behavior-x: none;
 }
 
+/* Safari / iOS: improve viewport height (100vh includes browser chrome; 100dvh when supported) */
+@supports (min-height: 100dvh) {
+  .min-h-viewport-safe {
+    min-height: 100dvh;
+  }
+}
+
 /* Safe area support for modern mobile devices (notch, home indicator) */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .safe-area-inset-bottom {

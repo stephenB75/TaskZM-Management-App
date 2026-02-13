@@ -1184,28 +1184,29 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     };
     
     let initialSyncTimer: NodeJS.Timeout | number | null = null;
+    let usedIdleCallback = false;
     
     // Use constants for timeout values
     const IDLE_CALLBACK_TIMEOUT = 5 * TIMING_CONSTANTS.timeConversions.secondsToMs; // 5 seconds
     const FALLBACK_SYNC_DELAY = 5 * TIMING_CONSTANTS.timeConversions.secondsToMs; // 5 seconds
     
     if ('requestIdleCallback' in window) {
-      // Use idle callback to sync when browser is idle (after 5 seconds max wait)
-      const idleCallback = (window as any).requestIdleCallback(
+      // Use idle callback to sync when browser is idle (Safari 15.4+; fallback for older Safari)
+      usedIdleCallback = true;
+      initialSyncTimer = (window as any).requestIdleCallback(
         scheduleSync,
         { timeout: IDLE_CALLBACK_TIMEOUT }
       );
-      initialSyncTimer = idleCallback;
     } else {
-      // Fallback: Wait 5 seconds after mount to let app fully load
+      // Fallback: Wait 5 seconds after mount (older Safari, etc.)
       initialSyncTimer = setTimeout(scheduleSync, FALLBACK_SYNC_DELAY);
     }
     
     return () => {
-      if (typeof initialSyncTimer === 'number') {
-        clearTimeout(initialSyncTimer);
-      } else if (initialSyncTimer && 'cancelIdleCallback' in window) {
+      if (usedIdleCallback && typeof initialSyncTimer === 'number' && 'cancelIdleCallback' in window) {
         (window as any).cancelIdleCallback(initialSyncTimer);
+      } else if (initialSyncTimer != null) {
+        clearTimeout(initialSyncTimer as NodeJS.Timeout);
       }
     };
   }, [user, accessToken, calendarStatus.apple]); // Removed syncAppleCalendarInternal from dependencies
@@ -1222,17 +1223,21 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     const IDLE_CALLBACK_TIMEOUT = 5 * TIMING_CONSTANTS.timeConversions.secondsToMs;
     const FALLBACK_SYNC_DELAY = 5 * TIMING_CONSTANTS.timeConversions.secondsToMs;
     let timer: NodeJS.Timeout | number | null = null;
+    let usedIdleCallback = false;
 
     if ('requestIdleCallback' in window) {
+      usedIdleCallback = true;
       timer = (window as any).requestIdleCallback(scheduleSync, { timeout: IDLE_CALLBACK_TIMEOUT });
     } else {
       timer = setTimeout(scheduleSync, FALLBACK_SYNC_DELAY);
     }
 
     return () => {
-      if (typeof timer === 'number') {
-        if ('cancelIdleCallback' in window) (window as any).cancelIdleCallback(timer);
-      } else if (timer) clearTimeout(timer);
+      if (usedIdleCallback && typeof timer === 'number' && 'cancelIdleCallback' in window) {
+        (window as any).cancelIdleCallback(timer);
+      } else if (timer != null) {
+        clearTimeout(timer as NodeJS.Timeout);
+      }
     };
   }, [user, accessToken, calendarStatus.google]); // syncGoogleCalendarInternal omitted to avoid re-running on callback identity change
 
