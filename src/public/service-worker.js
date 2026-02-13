@@ -67,7 +67,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch - network first, then cache
+// Fetch - network first, then cache. API/data URLs are never cached so stale data is not displayed.
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
@@ -85,8 +85,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Skip Supabase API calls (always use network)
-  if (event.request.url.includes('supabase.co')) {
+  // Skip API and data requests (Supabase, Edge Functions) so stale data is never served from cache
+  if (event.request.url.includes('supabase.co') || event.request.url.includes('/functions/')) {
     return;
   }
 
@@ -95,10 +95,12 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         // Only cache successful responses with valid schemes
         // Double-check the request URL is valid before attempting to cache
-        if (response && response.status === 200 && 
+        if (response && response.status === 200 &&
             response.type === 'basic' &&
             (url.protocol === 'http:' || url.protocol === 'https:') &&
-            event.request.url.startsWith('http')) {
+            event.request.url.startsWith('http') &&
+            !event.request.url.includes('supabase.co') &&
+            !event.request.url.includes('/functions/')) {
           const responseClone = response.clone();
           caches.open(RUNTIME_CACHE).then((cache) => {
             try {

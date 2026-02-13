@@ -122,7 +122,8 @@ function serveSPA(req, res) {
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Length': content.length,
-      'Cache-Control': 'public, max-age=0, must-revalidate',
+      // Revalidate so browsers don't show stale app after deploy
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
     });
     res.end(content);
   } catch (error) {

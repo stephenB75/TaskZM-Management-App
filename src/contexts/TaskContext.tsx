@@ -296,6 +296,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     };
   }, [workspaceId, accessToken, user]); // Removed 'tasks' from dependencies to prevent infinite loop
 
+  // Refetch tasks when tab becomes visible so user sees fresh data after switching tabs (avoids stale cache)
+  const prevVisibilityRef = useRef(typeof document !== 'undefined' ? document.visibilityState : 'visible');
+  useEffect(() => {
+    if (!workspaceId || !user?.id || !accessToken) return;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && prevVisibilityRef.current === 'hidden') {
+        loadTasksFromServer(workspaceId).catch((err) => {
+          logger.debug('Visibility refetch tasks failed:', err);
+        });
+      }
+      prevVisibilityRef.current = document.visibilityState;
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [workspaceId, user?.id, accessToken]);
+
   async function loadWorkspace() {
     if (!user || !accessToken) {
       logger.warn('Cannot load workspace: user or accessToken missing', { 

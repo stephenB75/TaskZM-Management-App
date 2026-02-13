@@ -210,9 +210,9 @@ export function TodayAgendaView({
       });
     }
     
-    // Add calendar events (always have a specific time)
+    // Add calendar events (always have a specific time; use parseCalendarEventTime for consistency with card display)
     for (const event of todayCalendarEvents) {
-      const sortTime = new Date(event.start).getTime();
+      const sortTime = parseCalendarEventTime(event.start).getTime();
       items.push({
         type: 'event',
         event,
@@ -229,7 +229,7 @@ export function TodayAgendaView({
   }, [todayTasks, todayCalendarEvents]);
 
   /** Split items into timeline blocks (have time in 7AM–12AM) and unscheduled (no time or outside range).
-   * Overlapping blocks are stacked: each block's top is at least (previous block bottom + blockGapPx) so they never overlap. */
+   * Blocks are drawn at their actual time so timeline labels and card times stay aligned. */
   const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const endHour = TODAY_AGENDA_TIMELINE.endHour;
@@ -237,8 +237,8 @@ export function TodayAgendaView({
     const pxPerMinute = TODAY_AGENDA_TIMELINE.pxPerMinute;
     const minH = TODAY_AGENDA_TIMELINE.minBlockHeightPx;
     const eventCardMinHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx;
-    const blockGapPx = TODAY_AGENDA_TIMELINE.blockGapPx;
-    const blocks: { item: CombinedItem; topPx: number; heightPx: number }[] = [];
+    type Block = { item: CombinedItem; topPx: number; heightPx: number; actualStartMins: number; actualDurationMins: number };
+    const blocks: Block[] = [];
     const unscheduled: CombinedItem[] = [];
     for (const item of combinedItems) {
       if (item.type === 'task' && item.task) {
@@ -255,10 +255,10 @@ export function TodayAgendaView({
         const durationMins = getTaskMinutes(item.task);
         const heightPx = Math.max(minH, Math.round(durationMins * pxPerMinute));
         const topPx = Math.round(startMins * pxPerMinute);
-        blocks.push({ item, topPx, heightPx });
+        blocks.push({ item, topPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins });
       } else if (item.type === 'event' && item.event) {
-        const start = new Date(item.event.start);
-        const end = new Date(item.event.end);
+        const start = parseCalendarEventTime(item.event.start);
+        const end = parseCalendarEventTime(item.event.end);
         const startMins = start.getHours() * 60 + start.getMinutes() - startHour * 60;
         const durationMins = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
         if (startMins < 0 || startMins >= totalMinutes) {
@@ -268,7 +268,7 @@ export function TodayAgendaView({
         // Use eventCardMinHeightPx so calendar cards never overflow and overlap the next block
         const heightPx = Math.max(minH, eventCardMinHeightPx, Math.round(durationMins * pxPerMinute));
         const topPx = Math.round(startMins * pxPerMinute);
-        blocks.push({ item, topPx, heightPx });
+        blocks.push({ item, topPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins });
       }
     }
     // Sort by start time (topPx), then by stable key so overlapping items get a deterministic order
@@ -278,21 +278,13 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Stacking only changes visual topPx; it does not write to task.scheduledDate.
-    // Stack overlapping blocks: each block starts at max(its time position, previous block bottom + gap)
-    let prevBottomPx = -blockGapPx;
-    for (const block of blocks) {
-      const naturalTop = block.topPx;
-      block.topPx = Math.max(naturalTop, prevBottomPx + blockGapPx);
-      prevBottomPx = block.topPx + block.heightPx;
-    }
+    // Draw blocks at their actual time position so timeline labels and card times align (no stacking).
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
-    const maxBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.topPx + b.heightPx)) : 0;
-    const timelineLayoutHeightPx = Math.max(baseTimelineHeightPx, maxBottomPx + blockGapPx);
+    const timelineLayoutHeightPx = baseTimelineHeightPx;
     return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx };
   }, [combinedItems, getTaskMinutes]);
 
-  /** Base timeline height (px) for 7 AM–12 AM scale. Layout height may be larger when blocks are stacked. */
+  /** Base timeline height (px) for 7 AM–12 AM scale. */
   const timelineHeightPx = TODAY_AGENDA_TIMELINE.totalMinutes * TODAY_AGENDA_TIMELINE.pxPerMinute;
 
   /** Current time position (px from top) for the "now" line. Display-only; does not move or change any task times. */
@@ -397,7 +389,7 @@ export function TodayAgendaView({
 
   const getEventTime = (isoStart: string) => {
     try {
-      const date = new Date(isoStart);
+      const date = parseCalendarEventTime(isoStart);
       if (isNaN(date.getTime())) return "";
       return date.toLocaleTimeString("en-US", {
         hour: "numeric",
@@ -434,12 +426,12 @@ export function TodayAgendaView({
       }
       const hiddenSlotMinutes = new Set<number>();
       const blockStartMinutes = new Set<number>();
-      for (const { topPx, heightPx } of timelineBlocks) {
-        const startMins = Math.round(topPx / pxPerMinute);
-        const endMins = Math.round((topPx + heightPx) / pxPerMinute);
-        if (startMins >= 0 && startMins <= totalMinutes) blockStartMinutes.add(startMins);
+      for (const block of timelineBlocks) {
+        const { actualStartMins, actualDurationMins } = block;
+        const endMins = actualStartMins + actualDurationMins;
+        if (actualStartMins >= 0 && actualStartMins <= totalMinutes) blockStartMinutes.add(actualStartMins);
         for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
-          if (m > startMins && m < endMins) hiddenSlotMinutes.add(m);
+          if (m > actualStartMins && m < endMins) hiddenSlotMinutes.add(m);
         }
       }
       const visibleHourly = allSlotMinutes.filter((m) => !hiddenSlotMinutes.has(m));
