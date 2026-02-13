@@ -29,7 +29,7 @@ import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
-import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from "../lib/business-constants";
+import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, MINUTES_PER_HOUR } from "../lib/business-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -296,7 +296,7 @@ export function TodayAgendaView({
   /** Current time position (px from top) for the "now" line. Display-only; does not move or change any task times. */
   const currentTimeTopPx = useMemo(() => {
     const now = new Date();
-    const mins = now.getHours() * 60 + now.getMinutes() - TODAY_AGENDA_TIMELINE.startHour * 60;
+    const mins = now.getHours() * MINUTES_PER_HOUR + now.getMinutes() - TODAY_AGENDA_TIMELINE.startHour * MINUTES_PER_HOUR;
     if (mins < 0 || mins >= TODAY_AGENDA_TIMELINE.totalMinutes) return null;
     return Math.round(mins * TODAY_AGENDA_TIMELINE.pxPerMinute);
   }, [currentTime]);
