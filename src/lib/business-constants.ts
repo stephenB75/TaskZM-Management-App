@@ -14,9 +14,13 @@ export const PROTECTED_TAGS = ['Work', 'Personal', 'Projects', 'Business']; // T
 export const RESERVED_TAG_URGENT = 'urgent'; // Reserved tag that cannot be added manually
 
 // Pomodoro Timer Constants (in seconds)
-export const POMODORO_WORK_DURATION = 25 * 60; // 25 minutes
-export const POMODORO_SHORT_BREAK_DURATION = 5 * 60; // 5 minutes
-export const POMODORO_LONG_BREAK_DURATION = 15 * 60; // 15 minutes
+export const POMODORO_WORK_DURATION = 25 * 60; // 25 minutes (in seconds)
+export const POMODORO_SHORT_BREAK_DURATION = 5 * 60; // 5 minutes (in seconds)
+export const POMODORO_LONG_BREAK_DURATION = 15 * 60; // 15 minutes (in seconds)
+/** Minimum custom work duration in minutes (clamp in setWorkDuration). */
+export const POMODORO_MIN_WORK_MINUTES = 5;
+/** Maximum custom work duration in minutes (clamp in setWorkDuration). */
+export const POMODORO_MAX_WORK_MINUTES = 120;
 
 // Default Hours Settings
 export const DEFAULT_WEEKDAY_WORK_START = '09:00';

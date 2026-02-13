@@ -6,8 +6,11 @@ import {
   POMODORO_WORK_DURATION,
   POMODORO_SHORT_BREAK_DURATION,
   POMODORO_LONG_BREAK_DURATION,
+  POMODORO_MIN_WORK_MINUTES,
+  POMODORO_MAX_WORK_MINUTES,
   STORAGE_KEY_POMODORO,
   SECONDS_PER_MINUTE,
+  MILLISECONDS_PER_SECOND,
 } from '../lib/business-constants';
 import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES } from '../lib/notification-constants';
 import { useTasks } from './TaskContext';
@@ -105,8 +108,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setWorkDuration = useCallback((taskId: string, durationMinutes: number) => {
-    // Clamp duration between 5 minutes and 120 minutes (2 hours)
-    const clampedMinutes = Math.max(5, Math.min(120, durationMinutes));
+    const clampedMinutes = Math.max(POMODORO_MIN_WORK_MINUTES, Math.min(POMODORO_MAX_WORK_MINUTES, durationMinutes));
     const durationSeconds = clampedMinutes * SECONDS_PER_MINUTE;
     workDurationsRef.current[taskId] = durationSeconds;
 
@@ -255,7 +257,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
 
       if (state.isRunning) {
         const savedAt = data.savedAt ?? Date.now();
-        const elapsedSinceSaved = Math.max(0, Math.floor((Date.now() - savedAt) / 1000));
+        const elapsedSinceSaved = Math.max(0, Math.floor((Date.now() - savedAt) / MILLISECONDS_PER_SECOND));
         totalElapsed += elapsedSinceSaved;
 
         // Use custom work duration if available, otherwise use default
@@ -282,7 +284,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           };
           elapsedSecondsRef.current[taskId] = totalElapsed;
           lastUpdateTimeRef.current[taskId] = savedLastUpdate;
-          sessionStartTimeRef.current[taskId] = savedSessionStart > 0 ? savedSessionStart : Date.now() - totalElapsed * 1000;
+          sessionStartTimeRef.current[taskId] = savedSessionStart > 0 ? savedSessionStart : Date.now() - totalElapsed * MILLISECONDS_PER_SECOND;
           resumeQueue.push(taskId);
         }
       } else {
@@ -554,14 +556,14 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
 
         if (current.mode === 'work') {
           if (!sessionStart) {
-            sessionStart = Date.now() - (elapsedSecondsRef.current[taskId] || 0) * 1000;
+            sessionStart = Date.now() - (elapsedSecondsRef.current[taskId] || 0) * MILLISECONDS_PER_SECOND;
             sessionStartTimeRef.current[taskId] = sessionStart;
           }
         }
 
         if (current.mode === 'work' && sessionStart > 0) {
           // Use wall-clock elapsed time so tracking stays accurate (no drift when tab backgrounded or event loop busy)
-          const elapsedSeconds = Math.floor((Date.now() - sessionStart) / 1000);
+          const elapsedSeconds = Math.floor((Date.now() - sessionStart) / MILLISECONDS_PER_SECOND);
           elapsedSecondsRef.current[taskId] = elapsedSeconds;
           const timeLeft = Math.max(0, workDuration - elapsedSeconds);
 
@@ -592,7 +594,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
                   baseTimeTrackedRef.current[taskId] = totalMinutes;
                   const remainingSeconds = elapsedSeconds % SECONDS_PER_MINUTE;
                   elapsedSecondsRef.current[taskId] = remainingSeconds;
-                  sessionStartTimeRef.current[taskId] = Date.now() - remainingSeconds * 1000;
+                  sessionStartTimeRef.current[taskId] = Date.now() - remainingSeconds * MILLISECONDS_PER_SECOND;
                   lastUpdateTimeRef.current[taskId] = 0;
                   setTimers(prevTimers => ({
                     ...prevTimers,
@@ -623,7 +625,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           }
         };
       });
-    }, 1000);
+    }, MILLISECONDS_PER_SECOND);
   };
 
   // Persist timers to local storage for refresh resilience

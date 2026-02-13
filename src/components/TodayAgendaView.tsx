@@ -661,7 +661,7 @@ export function TodayAgendaView({
           `flex flex-col transition-all duration-300`,
           isOver &&
             "bg-primary/20 border-4 border-primary/70 border-dashed shadow-xl shadow-primary/30 ring-4 ring-primary/40",
-          shouldUseMobileLayout ? "w-full" : "h-full min-h-0", // h-full ensures proper height chain for ScrollArea (matches InboxView pattern)
+          shouldUseMobileLayout ? "w-full" : "h-full min-h-0 min-h-full", // min-h-full so background fills panel in Edge/others when content is short
           // On desktop, apply gradient background to root container (like Folders Panel)
           !shouldUseMobileLayout && `${UI_GRADIENT_COLORS.timeline.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`,
         )}

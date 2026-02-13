@@ -763,7 +763,7 @@ export default function AppContent() {
 
   return (
     <>
-      <div className={`h-screen flex ${LOADING_SCREEN_GRADIENT_CLASS} relative overflow-hidden`}>
+      <div className={`h-screen h-viewport-safe min-h-viewport-safe flex ${LOADING_SCREEN_GRADIENT_CLASS} relative overflow-hidden`}>
         <AppSidebar 
           currentView={currentView} 
           onViewChange={handleViewChange}
@@ -782,7 +782,7 @@ export default function AppContent() {
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehaviorY: 'contain',
                 minHeight: shouldUseMobileLayout
-                  ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
+                  ? `calc(var(--viewport-height, 100vh) - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
                   : 'auto',
                 paddingTop: shouldUseMobileLayout
                   ? MOBILE_SCROLL_CONTAINER_PADDING_TOP
@@ -841,20 +841,22 @@ export default function AppContent() {
                 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="h-full bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
+                className="h-full h-viewport-safe bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
                 style={{ 
                   zIndex: HEADER_Z_INDEX + 1,
                   position: 'fixed',
                   left: `${SIDEBAR_WIDTH}px`,
                   top: 0,
+                  minHeight: 'var(--viewport-height, 100vh)',
                 }}
               >
                 <div 
-                  className="h-full w-full overflow-y-auto overflow-x-auto min-w-0"
+                  className="h-full min-h-full w-full overflow-y-auto overflow-x-auto min-w-0"
                   style={{
                     WebkitOverflowScrolling: 'touch',
                     touchAction: 'pan-y',
                     overscrollBehaviorY: 'contain',
+                    minHeight: '100%',
                   } as React.CSSProperties}
                 >
                   {currentView === 'notifications' && <NotificationsPanel />}

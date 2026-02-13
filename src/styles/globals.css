@@ -255,12 +255,33 @@ body {
   overscroll-behavior-x: none;
 }
 
-/* Viewport height: 100vh everywhere; 100dvh on Safari/iOS when supported (excludes browser chrome) */
+/* Viewport height for consistent full-height layout in all browsers (Edge, Chrome, Safari, Firefox) */
+:root {
+  --viewport-height: 100vh;
+}
+@supports (min-height: 100dvh) {
+  :root {
+    --viewport-height: 100dvh;
+  }
+}
+
 .min-h-viewport-safe {
   min-height: 100vh;
 }
 @supports (min-height: 100dvh) {
   .min-h-viewport-safe {
+    min-height: 100dvh;
+  }
+}
+
+/* Full viewport height so panels (e.g. Today Agenda) background fills vertically in Edge and others */
+.h-viewport-safe {
+  height: 100vh;
+  min-height: 100vh;
+}
+@supports (min-height: 100dvh) {
+  .h-viewport-safe {
+    height: 100dvh;
     min-height: 100dvh;
   }
 }
