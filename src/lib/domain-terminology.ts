@@ -11,6 +11,7 @@ import {
   DOMAIN_EXCLUSION_TERMS,
   DESCRIPTION_GENERATION_CONFIG,
 } from './ai-config';
+import { MILLISECONDS_PER_HOUR } from './business-constants';
 import { logger } from './logger';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
@@ -42,7 +43,7 @@ const TERMINOLOGY_CONFIG = {
   minPhraseLength: 3, // Minimum length for phrases
   minVerbLength: 2, // Minimum length for verbs
   minNounLength: 2, // Minimum length for nouns
-  sharedTerminologyCacheTTL: 1000 * 60 * 60, // 1 hour cache TTL in milliseconds
+  sharedTerminologyCacheTTL: MILLISECONDS_PER_HOUR, // 1 hour cache TTL in milliseconds
   maxSharedTermsPerDomain: 1000, // Maximum number of shared terms to fetch per domain
 } as const;
 

@@ -29,6 +29,7 @@ import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { Icon } from "./Icon";
+import { MILLISECONDS_PER_DAY } from "../lib/business-constants";
 import { EMPTY_STATE_ICON_SIZE_LARGE, ICON_SIZE_MD, ICON_SIZE_XS } from "../lib/layout-constants";
 import {
   AlertDialog,
@@ -236,7 +237,7 @@ export function ArchiveView() {
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+      (now.getTime() - date.getTime()) / MILLISECONDS_PER_DAY,
     );
 
     if (diffInDays === 0) return "Completed today";

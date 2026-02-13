@@ -1745,8 +1745,9 @@ export function TaskDialog({
           setConflictDialogOpen(true);
           return;
         } else {
+          const maxHours = aiSettings.maxHoursPerDay ?? 5;
           toast.error('No available time slots', {
-            description: 'No available slots after current time within category hours and 5-hour limit.',
+            description: `No available slots after current time within category hours and ${maxHours}-hour limit.`,
           });
           return;
         }
@@ -1804,7 +1805,7 @@ export function TaskDialog({
       
       finalScheduledTime = scheduledDateTime;
       
-      // Check 5-hour daily limit if scheduling for today
+      // Check daily hour limit if scheduling for today
       // Only check if time has changed OR if estimated time has changed (which affects daily hours)
       if (isToday) {
         // Check if this is an existing task that's already scheduled for today

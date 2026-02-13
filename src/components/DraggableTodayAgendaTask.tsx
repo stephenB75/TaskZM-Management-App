@@ -7,7 +7,7 @@ import { Icon } from "./Icon";
 import { ICON_SIZE_XS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
 import { Badge } from "./ui/badge";
 import { cn, getDateString } from "../lib/utils";
-import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from "../lib/business-constants";
 import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -153,9 +153,9 @@ export function DraggableTodayAgendaTask({
   // Format duration display
   const formatDuration = (minutes: number | null) => {
     if (!minutes) return null;
-    if (minutes >= 60) {
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
+    if (minutes >= MINUTES_PER_HOUR) {
+      const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+      const mins = minutes % MINUTES_PER_HOUR;
       return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
     }
     return `${minutes}m`;
@@ -164,8 +164,8 @@ export function DraggableTodayAgendaTask({
   // Format timer display (actualTime tracked)
   const formatTimer = (minutes: number | null) => {
     if (!minutes) return null;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+    const mins = minutes % MINUTES_PER_HOUR;
     if (hours > 0) {
       return `${hours}:${mins.toString().padStart(2, "0")}`;
     }

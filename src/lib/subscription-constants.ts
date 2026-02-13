@@ -3,6 +3,8 @@
  * Centralized configuration for subscription features, pricing, and UI text
  */
 
+import { MILLISECONDS_PER_MINUTE } from './business-constants';
+
 // Default pricing
 export const DEFAULT_MONTHLY_PRICE = "$3.99";
 export const DEFAULT_YEARLY_PRICE = "$39.99";
@@ -28,8 +30,8 @@ export const FEATURES_DISPLAY_LIMIT = 4;
 export const SUBSCRIPTION_STORAGE_KEY_PREFIX = 'subscription_';
 
 // Subscription sync intervals (in milliseconds)
-export const SUBSCRIPTION_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
-export const PRICING_REFRESH_INTERVAL = 60 * 1000; // 60 seconds
+export const SUBSCRIPTION_SYNC_INTERVAL = 5 * MILLISECONDS_PER_MINUTE; // 5 minutes
+export const PRICING_REFRESH_INTERVAL = 1 * MILLISECONDS_PER_MINUTE; // 60 seconds
 
 // UI Text
 export const SUBSCRIPTION_UI_TEXT = {

@@ -45,6 +45,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useCalendar } from "../contexts/CalendarContext";
 import { logger } from "../lib/logger";
+import { useAI } from "../contexts/AIContext";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { useCalendarEventCounts } from "../hooks/useCalendarEvents";
 import { cn, sanitizeHTML, hasHTMLTags, getDateString, getWeekStart } from "../lib/utils";
@@ -529,6 +530,7 @@ export function DashboardView({
   // and should be caught by Error Boundary, not try-catch here
   const tasksContext = useTasks();
   const subscriptionContext = useSubscription();
+  const { settings: aiSettings } = useAI();
   const aiSchedulerContext = useAIScheduler();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
@@ -1231,21 +1233,22 @@ export function DashboardView({
       const exceedsLimitCount = result.exceedsLimit?.length || 0;
       const daysExceedingLimitCount = result.daysExceedingLimit?.length || 0;
 
+      const maxHours = aiSettings.maxHoursPerDay ?? 5;
       // Check if any tasks exceeded the limit (couldn't be scheduled)
       if (exceedsLimitCount > 0) {
         toast.warning(
           `${exceedsLimitCount} task${exceedsLimitCount === 1 ? '' : 's'} could not be rescheduled`,
           {
-            description: "These tasks exceed the 5-hour daily limit and need manual scheduling.",
+            description: `These tasks exceed the ${maxHours}-hour daily limit and need manual scheduling.`,
             duration: 5000,
           }
         );
       }
 
-      // Check if any days exceed 5 hours
+      // Check if any days exceed the daily hour limit
       if (daysExceedingLimitCount > 0) {
         toast.warning(
-          `${daysExceedingLimitCount} day${daysExceedingLimitCount === 1 ? '' : 's'} exceed${daysExceedingLimitCount === 1 ? 's' : ''} the 5-hour limit`,
+          `${daysExceedingLimitCount} day${daysExceedingLimitCount === 1 ? '' : 's'} exceed${daysExceedingLimitCount === 1 ? 's' : ''} the ${maxHours}-hour limit`,
           {
             description: "Some tasks may need manual adjustment.",
             duration: 5000,

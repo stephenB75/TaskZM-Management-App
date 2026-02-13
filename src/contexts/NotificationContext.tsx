@@ -16,6 +16,7 @@ import {
   NOTIFICATION_TIME_FORMATS,
   NOTIFICATION_INTERVALS,
 } from '../lib/notification-constants';
+import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR } from '../lib/business-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { createDefaultNotificationContext } from '../lib/context-defaults';
 import {
@@ -215,7 +216,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         const notificationId = `due-soon_${task.id}`;
         if (dismissedNotifications.has(notificationId)) return false;
         
-        const reminderTime = new Date(now.getTime() + settings.reminderTime * 60 * 1000);
+        const reminderTime = new Date(now.getTime() + settings.reminderTime * MILLISECONDS_PER_MINUTE);
         
         // For badge count, prioritize scheduledDate over dueDate
         // Only count tasks that are actually scheduled (have a scheduledDate)
@@ -420,7 +421,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     // Check for tasks due soon (check both dueDate and scheduledDate)
     if (settings.dueDateReminders) {
-      const reminderTime = new Date(now.getTime() + settings.reminderTime * 60 * 1000);
+      const reminderTime = new Date(now.getTime() + settings.reminderTime * MILLISECONDS_PER_MINUTE);
       
       const dueSoonTasks = tasks.filter(task => {
         if (task.status === 'done') return false;
@@ -454,13 +455,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           if (!dateToUse) return;
           
           const targetDate = new Date(dateToUse);
-          const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
+          const timeUntil = Math.round((targetDate.getTime() - now.getTime()) / MILLISECONDS_PER_MINUTE);
           
-          // Distinguish between "due now" (within 5 minutes) and "upcoming" (more than 5 minutes away)
-          const isDueNow = timeUntil <= 5;
-          const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold 
+          // Distinguish between "due now" (within dueNowMinutes) and "upcoming" (more than that away)
+          const isDueNow = timeUntil <= TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes;
+          const timeText = timeUntil < NOTIFICATION_TIME_FORMATS.minutesThreshold
             ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
-            : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / 60));
+            : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / MINUTES_PER_HOUR));
           
             await showNativeNotification({
               title: isDueNow ? NOTIFICATION_TITLES.taskDueNow : NOTIFICATION_TITLES.taskUpcoming,

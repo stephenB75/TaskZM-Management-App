@@ -3,6 +3,7 @@ import React from 'react';
 import { Icon } from './Icon';
 import { cn, parseCalendarEventTime } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
+import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR, MINUTES_PER_DAY } from '../lib/business-constants';
 import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS, CALENDAR_EVENT_UI_TEXT } from '../lib/calendar-event-constants';
 import { CALENDAR_PROVIDER_EVENT_SOURCE_LABELS, type CalendarProviderId } from '../lib/calendar-integration-constants';
 import { TASK_CARD_SPACING } from '../lib/task-card-constants';
@@ -24,7 +25,7 @@ interface CalendarEventCardProps {
 function getDurationMinutes(start: string, end: string): number {
   const startDate = parseCalendarEventTime(start);
   const endDate = parseCalendarEventTime(end);
-  return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+  return Math.round((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_MINUTE);
 }
 
 // Format time to AM/PM in user's local timezone (uses parseCalendarEventTime so UTC-from-API displays correctly)
@@ -40,17 +41,17 @@ function isAllDayEvent(start: string, end: string): boolean {
   const startDate = parseCalendarEventTime(start);
   const endDate = parseCalendarEventTime(end);
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return false;
-  const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+  const durationMinutes = (endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_MINUTE;
   const startHour = startDate.getHours();
   const startMin = startDate.getMinutes();
-  return durationMinutes >= 24 * 60 - 1 && startHour === 0 && startMin === 0;
+  return durationMinutes >= MINUTES_PER_DAY - 1 && startHour === 0 && startMin === 0;
 }
 
 // Format duration display
 function formatDuration(minutes: number): string {
-  if (minutes >= 60) {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+  if (minutes >= MINUTES_PER_HOUR) {
+    const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+    const mins = minutes % MINUTES_PER_HOUR;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   }
   return `${minutes}m`;
@@ -264,7 +265,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   // Calculate visual height based on duration (similar to tasks but with different styling)
   // Minimum height for very short events, scale up for longer ones
   const calculatedHeight = Math.min(
-    CALENDAR_EVENT_DIMENSIONS.height.base + (durationMinutes / 60) * CALENDAR_EVENT_DIMENSIONS.height.perHour,
+    CALENDAR_EVENT_DIMENSIONS.height.base + (durationMinutes / MINUTES_PER_HOUR) * CALENDAR_EVENT_DIMENSIONS.height.perHour,
     CALENDAR_EVENT_DIMENSIONS.height.max
   );
   

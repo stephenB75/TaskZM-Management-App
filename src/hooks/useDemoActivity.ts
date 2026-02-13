@@ -49,7 +49,7 @@ export function useDemoActivity() {
     if (!user?.isDemo || !accessToken || !user?.id) return;
 
     const timeSinceActivity = Date.now() - lastActivityRef.current;
-    const inactiveMinutes = Math.floor(timeSinceActivity / (60 * 1000));
+    const inactiveMinutes = Math.floor(timeSinceActivity / TIMING_CONSTANTS.timeConversions.minutesToMs);
 
     logger.debug('Checking demo user inactivity', {
       timeSinceActivity,

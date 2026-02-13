@@ -30,6 +30,7 @@ import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
+import { MINUTES_PER_HOUR } from "../lib/business-constants";
 import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
 import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
@@ -631,9 +632,9 @@ export function MonthCalendarView({
             if (!dateA || isNaN(dateA.getTime())) return 1;
             if (!dateB || isNaN(dateB.getTime())) return -1;
             
-            // Extract time of day in minutes (hours * 60 + minutes)
-            const timeOfDayA = dateA.getHours() * 60 + dateA.getMinutes();
-            const timeOfDayB = dateB.getHours() * 60 + dateB.getMinutes();
+            // Extract time of day in minutes (hours * MINUTES_PER_HOUR + minutes)
+            const timeOfDayA = dateA.getHours() * MINUTES_PER_HOUR + dateA.getMinutes();
+            const timeOfDayB = dateB.getHours() * MINUTES_PER_HOUR + dateB.getMinutes();
             
             return timeOfDayA - timeOfDayB;
           } catch (error) {

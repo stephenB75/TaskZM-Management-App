@@ -243,7 +243,7 @@ export function AIRecommendationPanel({
     // Show warning if tasks exceed limit (no available slots)
     if (result.exceedsLimit.length > 0) {
       toast.warning(
-        `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} exceed the 5-hour daily limit`,
+        `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} exceed the ${aiSettings.maxHoursPerDay ?? 5}-hour daily limit`,
         {
           description: 'These tasks will need to be scheduled manually.',
           duration: 5000,
@@ -501,13 +501,13 @@ export function AIRecommendationPanel({
             <AlertDialogDescription asChild>
               <div className="space-y-3 pt-2">
                 <p>
-                  Some days in the schedule exceed the 5-hour daily limit. 
+                  Some days in the schedule exceed the {aiSettings.maxHoursPerDay ?? 5}-hour daily limit.
                   Would you like to proceed with scheduling anyway?
                 </p>
                 {exceedsLimitData && exceedsLimitData.days.length > 0 && (
                   <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 space-y-2">
                     <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                      Days exceeding 5 hours:
+                      Days exceeding {aiSettings.maxHoursPerDay ?? 5} hours:
                     </p>
                     <ul className="space-y-1 text-sm text-orange-800 dark:text-orange-200">
                       {exceedsLimitData.days.map((day, idx) => (

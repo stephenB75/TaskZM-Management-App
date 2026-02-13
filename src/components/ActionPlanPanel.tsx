@@ -9,6 +9,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
+import { MINUTES_PER_HOUR } from '../lib/business-constants';
 import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from '../lib/layout-constants';
 import type { ActionPlan, ActionPlanStep } from '../lib/action-plan-generator';
 import type { DescriptionAnalysis } from '../lib/description-analyzer';
@@ -97,11 +98,11 @@ export function ActionPlanPanel({
   }
 
   const formatTime = (minutes: number): string => {
-    if (minutes < 60) {
+    if (minutes < MINUTES_PER_HOUR) {
       return `${minutes}m`;
     }
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+    const mins = minutes % MINUTES_PER_HOUR;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 

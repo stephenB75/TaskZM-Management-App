@@ -152,7 +152,8 @@ export default function AppContent() {
   // Calculate count of overdue and due now tasks for mobile badge
   const getUpcomingAndDueNowCount = () => {
     const now = new Date();
-    const dueNowThreshold = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes
+    const dueNowMs = TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes * TIMING_CONSTANTS.timeConversions.minutesToMs;
+    const dueNowThreshold = new Date(now.getTime() + dueNowMs);
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     const allTasksWithDates = tasks.filter((t: { dueDate?: string | null; scheduledDate?: string | null; status: string }) => (t.dueDate || t.scheduledDate) && t.status !== 'done');
@@ -189,7 +190,7 @@ export default function AppContent() {
       const isDue = targetTime <= thresholdTime;
       
       if (isDue) {
-        const timeDiff = (targetTime - nowTime) / (60 * 1000);
+        const timeDiff = (targetTime - nowTime) / TIMING_CONSTANTS.timeConversions.minutesToMs;
         console.log(`🔔 [Today Agenda Badge] Task "${task.title}" is counted as due:`, {
           taskId: task.id,
           dateType,
@@ -212,9 +213,11 @@ export default function AppContent() {
           note: 'Only tasks with scheduledDate are counted (rolled-over tasks excluded)',
         });
       } else {
-        const timeDiff = (targetTime - nowTime) / (60 * 1000);
+        const timeDiff = (targetTime - nowTime) / TIMING_CONSTANTS.timeConversions.minutesToMs;
         const isFutureDate = targetDateOnly > todayDateOnly;
-        if (isFutureDate || (timeDiff > 5 && timeDiff < 60)) {
+        const dueNowMin = TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes;
+        const dueSoonMax = TIMING_CONSTANTS.todayAgendaBadge.dueSoonMaxMinutes;
+        if (isFutureDate || (timeDiff > dueNowMin && timeDiff < dueSoonMax)) {
           console.debug(`⏭️ [Today Agenda Badge] Task "${task.title}" NOT counted:`, {
             taskId: task.id,
             reason: isFutureDate ? 'Future date (tomorrow or later)' : `Scheduled for later today (${Math.round(timeDiff)} minutes from now)`,
@@ -238,13 +241,14 @@ export default function AppContent() {
         Local: now.toLocaleString(),
         Timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
-      console.log('Threshold (5 minutes from now):', {
+      console.log(`Threshold (${TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes} minutes from now):`, {
         UTC: dueNowThreshold.toISOString(),
         Local: dueNowThreshold.toLocaleString(),
       });
       console.log('Tasks being counted:', dueTasks.map((t: { id: string; title: string; status: string; dueDate?: string | null; scheduledDate?: string | null }) => {
         const targetDate = t.dueDate ? new Date(t.dueDate) : (t.scheduledDate ? new Date(t.scheduledDate) : null);
-        const timeDiff = targetDate ? (targetDate.getTime() - now.getTime()) / (60 * 1000) : null;
+        const timeDiff = targetDate ? (targetDate.getTime() - now.getTime()) / TIMING_CONSTANTS.timeConversions.minutesToMs : null;
+        const dueNowMin = TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes;
         return {
           id: t.id,
           title: t.title,
@@ -254,12 +258,12 @@ export default function AppContent() {
           targetDateLocal: targetDate?.toLocaleString(),
           timeDiffMinutes: timeDiff ? Math.round(timeDiff * 10) / 10 : null,
           isOverdue: timeDiff ? timeDiff < 0 : false,
-          isDueSoon: timeDiff ? timeDiff >= 0 && timeDiff <= 5 : false,
+          isDueSoon: timeDiff ? timeDiff >= 0 && timeDiff <= dueNowMin : false,
         };
       }));
       console.groupEnd();
     } else {
-      console.log(`✅ [Today Agenda Badge] No badge - ${allTasksWithDates.length} task(s) with dates, but none are due within 5 minutes`);
+      console.log(`✅ [Today Agenda Badge] No badge - ${allTasksWithDates.length} task(s) with dates, but none are due within ${TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes} minutes`);
     }
     
     return dueTasks.length;
@@ -283,12 +287,13 @@ export default function AppContent() {
       const completedTasks = tasks.filter((t: { status: string }) => t.status === 'done');
       const completedCount = completedTasks.length;
       
-      if (completedCount >= 3 && completedCount <= 5 && !upgradePromptShown) {
+      const { minCompletedTasks, maxCompletedTasks, delayMs: upgradeDelayMs } = TIMING_CONSTANTS.upgradePrompt;
+      if (completedCount >= minCompletedTasks && completedCount <= maxCompletedTasks && !upgradePromptShown) {
         const timer = setTimeout(() => {
           setUpgradeFeature('aiScheduler');
           setShowUpgradePrompt(true);
           window?.localStorage?.setItem('taskzm_upgrade_prompt_shown', 'true');
-        }, 2000);
+        }, upgradeDelayMs);
         
         return () => clearTimeout(timer);
       }
@@ -366,7 +371,7 @@ export default function AppContent() {
         if (!disclaimerSeen) {
           const timer = setTimeout(() => {
             setShowDemoDisclaimer(true);
-          }, 1000);
+          }, TIMING_CONSTANTS.demoDisclaimer.delayMs);
           
           return () => clearTimeout(timer);
         }
@@ -691,11 +696,12 @@ export default function AppContent() {
         });
       }
       
+      const maxHours = aiSettings.maxHoursPerDay ?? 5;
       if (result.exceedsLimit.length > 0) {
         toast.warning(
           `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} need${result.exceedsLimit.length === 1 ? 's' : ''} manual scheduling`,
           {
-            description: `These tasks exceed the 5-hour daily limit. Please schedule them manually.`,
+            description: `These tasks exceed the ${maxHours}-hour daily limit. Please schedule them manually.`,
             duration: TOAST_DURATION_DEFAULT_MS,
           }
         );
@@ -703,7 +709,7 @@ export default function AppContent() {
       
       if (result.scheduled.length === 0 && result.exceedsLimit.length > 0) {
         toast.info('No tasks could be automatically scheduled', {
-          description: `All tasks exceed the 5-hour daily limit. Please schedule them manually.`,
+          description: `All tasks exceed the ${maxHours}-hour daily limit. Please schedule them manually.`,
           duration: TOAST_DURATION_LONG_MS,
         });
       }

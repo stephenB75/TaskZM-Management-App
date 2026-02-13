@@ -164,5 +164,28 @@ export const TIMING_CONSTANTS = {
     cleanupTimeoutMs: 15 * 60 * 1000, // 15 minutes in milliseconds - Demo account cleanup timeout
     activityTrackingInterval: 5 * 60 * 1000, // 5 minutes - How often to track demo user activity
   },
+
+  // Today Agenda badge (due now / due soon)
+  todayAgendaBadge: {
+    /** Tasks within this many minutes of now are "due now" and count for the badge. */
+    dueNowMinutes: 5,
+    /** Upper bound (minutes) for "scheduled later today" in debug (timeDiff < this = later today). */
+    dueSoonMaxMinutes: 60,
+  },
+
+  // Upgrade prompt (strategic prompt for new free users)
+  upgradePrompt: {
+    /** Show prompt when completed task count is in this range (inclusive). */
+    minCompletedTasks: 3,
+    maxCompletedTasks: 5,
+    /** Delay (ms) before showing the prompt after condition is met. */
+    delayMs: 2000,
+  },
+
+  // Demo account disclaimer
+  demoDisclaimer: {
+    /** Delay (ms) before showing disclaimer after mount. */
+    delayMs: 1000,
+  },
 } as const;
 

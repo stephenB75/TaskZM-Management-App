@@ -142,6 +142,7 @@ import {
   TEAM_PANEL_MARGIN_LEFT_MEDIUM,
   TEAM_PANEL_TEXT_SIZE_XS,
 } from "../lib/layout-constants";
+import { MILLISECONDS_PER_DAY } from "../lib/business-constants";
 import { TEAM_PANEL_UI_TEXT } from "../lib/team-panel-constants";
 import {
   COLOR_PASTEL_LAVENDER,
@@ -586,7 +587,7 @@ export function TeamPanel() {
     if (!expiresAt) return null;
     const date = new Date(expiresAt);
     const now = new Date();
-    const daysLeft = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.ceil((date.getTime() - now.getTime()) / MILLISECONDS_PER_DAY);
     
     if (daysLeft < 0) return { text: "Expired", isExpired: true };
     if (daysLeft === 0) return { text: "Expires today", isExpired: false };

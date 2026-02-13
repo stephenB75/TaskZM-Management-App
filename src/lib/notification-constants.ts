@@ -3,6 +3,8 @@
  * Centralized configuration for notifications, toast messages, and notification settings
  */
 
+import { MILLISECONDS_PER_MINUTE } from './business-constants';
+
 // Default notification settings
 export const DEFAULT_NOTIFICATION_SETTINGS = {
   enabled: true,
@@ -134,7 +136,7 @@ export const NOTIFICATION_TIME_FORMATS = {
 // Notification check intervals (in milliseconds)
 export const NOTIFICATION_INTERVALS = {
   taskUpdateDelay: 100, // Delay before checking notifications after task update (ms)
-  defaultCheckInterval: DEFAULT_NOTIFICATION_SETTINGS.checkInterval * 60 * 1000, // Convert minutes to ms
+  defaultCheckInterval: DEFAULT_NOTIFICATION_SETTINGS.checkInterval * MILLISECONDS_PER_MINUTE, // Convert minutes to ms
 } as const;
 
 // Error messages

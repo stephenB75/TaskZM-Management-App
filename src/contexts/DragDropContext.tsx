@@ -616,8 +616,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       
       // Check if a valid slot was found
       if (finalTime.getHours() >= HOURS_PER_DAY) {
+        const maxHours = aiSettings.maxHoursPerDay ?? 5;
         toast.error('No available time slots', {
-          description: 'No available slots after current time within category hours and 5-hour limit.',
+          description: `No available slots after current time within category hours and ${maxHours}-hour limit.`,
         });
         return;
       }

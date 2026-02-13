@@ -36,7 +36,7 @@ import {
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
-import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from '../lib/business-constants';
+import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
@@ -665,9 +665,9 @@ export function SevenDayKanban({
             if (!dateA || isNaN(dateA.getTime())) return 1;
             if (!dateB || isNaN(dateB.getTime())) return -1;
             
-            // Extract time of day in minutes (hours * 60 + minutes)
-            const timeOfDayA = dateA.getHours() * 60 + dateA.getMinutes();
-            const timeOfDayB = dateB.getHours() * 60 + dateB.getMinutes();
+            // Extract time of day in minutes (hours * MINUTES_PER_HOUR + minutes)
+            const timeOfDayA = dateA.getHours() * MINUTES_PER_HOUR + dateA.getMinutes();
+            const timeOfDayB = dateB.getHours() * MINUTES_PER_HOUR + dateB.getMinutes();
             
             return timeOfDayA - timeOfDayB;
           } catch (error) {

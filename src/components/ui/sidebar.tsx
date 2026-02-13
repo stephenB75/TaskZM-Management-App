@@ -24,9 +24,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./tooltip";
+import { DAYS_IN_WEEK, SECONDS_PER_DAY } from "../../lib/business-constants";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const SIDEBAR_COOKIE_MAX_AGE = SECONDS_PER_DAY * DAYS_IN_WEEK; // 7 days in seconds
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";

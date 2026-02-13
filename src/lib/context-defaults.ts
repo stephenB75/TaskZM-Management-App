@@ -17,6 +17,7 @@ import type {
 // Note: Context types are not imported to avoid circular dependencies
 // All context types are inferred from return values
 import {
+  DAYS_IN_MONTH_APPROX,
   DEFAULT_WEEKDAY_WORK_START,
   DEFAULT_WEEKDAY_WORK_END,
   DEFAULT_WEEKDAY_PERSONAL_START,
@@ -30,8 +31,8 @@ import {
   DEFAULT_WEEKEND_PROJECTS_START,
   DEFAULT_WEEKEND_PROJECTS_END,
   DEFAULT_TAGS,
+  POMODORO_WORK_DURATION,
 } from './business-constants';
-import { DAYS_IN_MONTH_APPROX } from './business-constants';
 
 /**
  * Create default HoursSettings
@@ -352,7 +353,7 @@ export function createDefaultPomodoroContext() {
   return {
     getTimerState: () => ({
       mode: 'work',
-      timeLeft: 25 * 60,
+      timeLeft: POMODORO_WORK_DURATION,
       isRunning: false,
       sessionsCompleted: 0,
       totalTimeTracked: 0,
