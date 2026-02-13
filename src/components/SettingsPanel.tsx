@@ -1357,64 +1357,94 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   {/* Google Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
                     <Label htmlFor={`${CALENDAR_PROVIDERS.google}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
-                    <Switch
-                      id={`${CALENDAR_PROVIDERS.google}-cal`}
-                      className="flex-shrink-0"
-                      checked={!!calendarStatus.google}
-                      disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.google || disconnectingProvider === CALENDAR_PROVIDERS.google}
-                      aria-label={CALENDAR_SETTINGS_LABELS.google}
-                      onCheckedChange={async (checked) => {
-                        try {
-                          if (checked) await connectCalendar(CALENDAR_PROVIDERS.google);
-                          else await disconnectCalendar(CALENDAR_PROVIDERS.google);
-                        } catch (error) {
-                          logger.error('Calendar toggle error:', error);
-                          toast.error(error instanceof Error ? error.message : String(error));
-                        }
-                      }}
-                    />
+                    <div
+                      className="flex-shrink-0 cursor-pointer"
+                      style={{ padding: `${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px`, margin: `-${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px` }}
+                      onClick={(e) => { if (e.target === e.currentTarget) document.getElementById(`${CALENDAR_PROVIDERS.google}-cal`)?.click(); }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById(`${CALENDAR_PROVIDERS.google}-cal`)?.click(); } }}
+                      aria-label={`Toggle ${CALENDAR_SETTINGS_LABELS.google}`}
+                    >
+                      <Switch
+                        id={`${CALENDAR_PROVIDERS.google}-cal`}
+                        className="flex-shrink-0"
+                        checked={!!calendarStatus.google}
+                        disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.google || disconnectingProvider === CALENDAR_PROVIDERS.google}
+                        aria-label={CALENDAR_SETTINGS_LABELS.google}
+                        onCheckedChange={async (checked) => {
+                          try {
+                            if (checked) await connectCalendar(CALENDAR_PROVIDERS.google);
+                            else await disconnectCalendar(CALENDAR_PROVIDERS.google);
+                          } catch (error) {
+                            logger.error('Calendar toggle error:', error);
+                            toast.error(error instanceof Error ? error.message : String(error));
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                   
                   {/* Outlook Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
                     <Label htmlFor={`${CALENDAR_PROVIDERS.outlook}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
-                    <Switch
-                      id={`${CALENDAR_PROVIDERS.outlook}-cal`}
-                      className="flex-shrink-0"
-                      checked={!!calendarStatus.outlook}
-                      disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.outlook || disconnectingProvider === CALENDAR_PROVIDERS.outlook}
-                      aria-label={CALENDAR_SETTINGS_LABELS.outlook}
-                      onCheckedChange={async (checked) => {
-                        try {
-                          if (checked) await connectCalendar(CALENDAR_PROVIDERS.outlook);
-                          else await disconnectCalendar(CALENDAR_PROVIDERS.outlook);
-                        } catch (error) {
-                          logger.error('Calendar toggle error:', error);
-                          toast.error(error instanceof Error ? error.message : String(error));
-                        }
-                      }}
-                    />
+                    <div
+                      className="flex-shrink-0 cursor-pointer"
+                      style={{ padding: `${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px`, margin: `-${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px` }}
+                      onClick={(e) => { if (e.target === e.currentTarget) document.getElementById(`${CALENDAR_PROVIDERS.outlook}-cal`)?.click(); }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById(`${CALENDAR_PROVIDERS.outlook}-cal`)?.click(); } }}
+                      aria-label={`Toggle ${CALENDAR_SETTINGS_LABELS.outlook}`}
+                    >
+                      <Switch
+                        id={`${CALENDAR_PROVIDERS.outlook}-cal`}
+                        className="flex-shrink-0"
+                        checked={!!calendarStatus.outlook}
+                        disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.outlook || disconnectingProvider === CALENDAR_PROVIDERS.outlook}
+                        aria-label={CALENDAR_SETTINGS_LABELS.outlook}
+                        onCheckedChange={async (checked) => {
+                          try {
+                            if (checked) await connectCalendar(CALENDAR_PROVIDERS.outlook);
+                            else await disconnectCalendar(CALENDAR_PROVIDERS.outlook);
+                          } catch (error) {
+                            logger.error('Calendar toggle error:', error);
+                            toast.error(error instanceof Error ? error.message : String(error));
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                   
                   {/* Apple Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
                   <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
                     <Label htmlFor={`${CALENDAR_PROVIDERS.apple}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
-                    <Switch
-                      id={`${CALENDAR_PROVIDERS.apple}-cal`}
-                      className="flex-shrink-0"
-                      checked={!!calendarStatus.apple}
-                      disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.apple || disconnectingProvider === CALENDAR_PROVIDERS.apple}
-                      aria-label={CALENDAR_SETTINGS_LABELS.apple}
-                      onCheckedChange={async (checked) => {
-                        try {
-                          if (checked) await connectCalendar(CALENDAR_PROVIDERS.apple);
-                          else await disconnectCalendar(CALENDAR_PROVIDERS.apple);
-                        } catch (error) {
-                          logger.error('Calendar toggle error:', error);
-                          toast.error(error instanceof Error ? error.message : String(error));
-                        }
-                      }}
-                    />
+                    <div
+                      className="flex-shrink-0 cursor-pointer"
+                      style={{ padding: `${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px`, margin: `-${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px` }}
+                      onClick={(e) => { if (e.target === e.currentTarget) document.getElementById(`${CALENDAR_PROVIDERS.apple}-cal`)?.click(); }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById(`${CALENDAR_PROVIDERS.apple}-cal`)?.click(); } }}
+                      aria-label={`Toggle ${CALENDAR_SETTINGS_LABELS.apple}`}
+                    >
+                      <Switch
+                        id={`${CALENDAR_PROVIDERS.apple}-cal`}
+                        className="flex-shrink-0"
+                        checked={!!calendarStatus.apple}
+                        disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.apple || disconnectingProvider === CALENDAR_PROVIDERS.apple}
+                        aria-label={CALENDAR_SETTINGS_LABELS.apple}
+                        onCheckedChange={async (checked) => {
+                          try {
+                            if (checked) await connectCalendar(CALENDAR_PROVIDERS.apple);
+                            else await disconnectCalendar(CALENDAR_PROVIDERS.apple);
+                          } catch (error) {
+                            logger.error('Calendar toggle error:', error);
+                            toast.error(error instanceof Error ? error.message : String(error));
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </>

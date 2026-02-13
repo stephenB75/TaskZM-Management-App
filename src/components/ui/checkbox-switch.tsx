@@ -27,6 +27,8 @@ function CheckboxSwitch({
   // Use controlled checked if provided, otherwise use internal state
   const isChecked = controlledChecked !== undefined ? controlledChecked : internalChecked;
   
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) return;
     
@@ -39,6 +41,13 @@ function CheckboxSwitch({
     
     // Call onChange handler
     onCheckedChange?.(newChecked);
+  };
+
+  const handleLabelClick = (e: React.MouseEvent<HTMLLabelElement>) => {
+    if (disabled) return;
+    if (e.target === e.currentTarget) {
+      inputRef.current?.click();
+    }
   };
 
   // Extract width and height from className if provided, otherwise use defaults matching Switch component
@@ -100,15 +109,18 @@ function CheckboxSwitch({
         WebkitTapHighlightColor: 'transparent',
         touchAction: 'manipulation',
       }}
+      onClick={handleLabelClick}
     >
-      {/* Full-size invisible input so clicks always hit it (sr-only is 1px and track was capturing clicks) */}
+      {/* Full-size invisible input so clicks always hit it; ref for programmatic click fallback (Safari/touch) */}
       <input
+        ref={inputRef}
         id={id}
         type="checkbox"
         checked={isChecked}
         onChange={handleChange}
         disabled={disabled}
         className="absolute inset-0 z-[1] h-full w-full cursor-pointer opacity-0 peer"
+        style={{ pointerEvents: 'auto' }}
         aria-label={id ? undefined : 'Toggle'}
       />
       {/* Background track - behind input so thumb can sit on top */}
