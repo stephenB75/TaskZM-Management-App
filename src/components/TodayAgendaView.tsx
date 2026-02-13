@@ -53,6 +53,9 @@ export function TodayAgendaView({
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
   // ScrollArea ref for programmatic scrolling (Layer 3 - optional)
   const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  // Ref for the current-time indicator line so we can scroll it into view once on mount
+  const currentTimeIndicatorRef = useRef<HTMLDivElement | null>(null);
+  const hasScrolledToCurrentTimeRef = useRef(false);
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
   const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' | 'outlook'; calendarColor?: string; isRecurring?: boolean }>>([]);
@@ -82,6 +85,17 @@ export function TodayAgendaView({
     return () => clearInterval(interval);
   }, []);
 
+  // Scroll to current time once when the timeline is shown so the "now" line is in view; user can still scroll freely afterward
+  useEffect(() => {
+    if (currentTimeTopPx == null || hasScrolledToCurrentTimeRef.current) return;
+    const run = () => {
+      if (!currentTimeIndicatorRef.current) return;
+      hasScrolledToCurrentTimeRef.current = true;
+      currentTimeIndicatorRef.current.scrollIntoView({ block: 'center', behavior: 'auto' });
+    };
+    const id = requestAnimationFrame(() => requestAnimationFrame(run));
+    return () => cancelAnimationFrame(id);
+  }, [currentTimeTopPx, combinedItems.length]);
 
   // Make this view a droppable zone for tasks from Kanban (disabled on mobile)
   const { setNodeRef, isOver } = useDroppable({
@@ -496,6 +510,7 @@ export function TodayAgendaView({
               {/* Current time indicator is display-only; it must never call updateTask or modify task.scheduledDate. */}
               {currentTimeTopPx != null && (
                 <div
+                  ref={currentTimeIndicatorRef}
                   className="absolute left-0 right-0 bg-primary"
                   style={{ top: currentTimeTopPx, height: currentTimeLineHeightPx, zIndex: Z_INDEX.TIME_INDICATOR }}
                   aria-hidden
