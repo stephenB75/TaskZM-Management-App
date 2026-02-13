@@ -7,6 +7,7 @@ import {
   POMODORO_SHORT_BREAK_DURATION,
   POMODORO_LONG_BREAK_DURATION,
   STORAGE_KEY_POMODORO,
+  SECONDS_PER_MINUTE,
 } from '../lib/business-constants';
 import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES } from '../lib/notification-constants';
 import { useTasks } from './TaskContext';
@@ -106,7 +107,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const setWorkDuration = useCallback((taskId: string, durationMinutes: number) => {
     // Clamp duration between 5 minutes and 120 minutes (2 hours)
     const clampedMinutes = Math.max(5, Math.min(120, durationMinutes));
-    const durationSeconds = clampedMinutes * 60;
+    const durationSeconds = clampedMinutes * SECONDS_PER_MINUTE;
     workDurationsRef.current[taskId] = durationSeconds;
 
     // Update timer state if it exists and is in work mode
@@ -269,7 +270,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
             isRunning: false,
           };
           elapsedSecondsRef.current[taskId] = duration;
-          lastUpdateTimeRef.current[taskId] = Math.floor(duration / 60);
+          lastUpdateTimeRef.current[taskId] = Math.floor(duration / SECONDS_PER_MINUTE);
           sessionStartTimeRef.current[taskId] = 0;
           completionQueue.push(taskId);
         } else {
@@ -313,7 +314,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     // Save elapsed time when pausing a work session
     if (current.mode === 'work' && elapsedSecondsRef.current[taskId] > 0) {
       const elapsedSeconds = elapsedSecondsRef.current[taskId];
-      const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+      const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
       if (elapsedMinutes > 0) {
         // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
         const baseTime = baseTimeTrackedRef.current[taskId] || 0;
@@ -362,7 +363,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     // Save elapsed time when stopping a work session
     if (current && current.mode === 'work' && elapsedSecondsRef.current[taskId] > 0) {
       const elapsedSeconds = elapsedSecondsRef.current[taskId];
-      const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+      const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
       if (elapsedMinutes > 0) {
         // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
         const baseTime = baseTimeTrackedRef.current[taskId] || 0;
@@ -426,9 +427,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       // Calculate total time: existing tracked time + elapsed time in this session
       // Use elapsedSecondsRef to get accurate time (handles pause/resume cases)
       const elapsedSeconds = elapsedSecondsRef.current[taskId] || 0;
-      const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+      const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
       // Ensure we account for at least the full work duration if timer completed
-      const workDurationMinutes = Math.floor(getWorkDuration(taskId) / 60);
+      const workDurationMinutes = Math.floor(getWorkDuration(taskId) / SECONDS_PER_MINUTE);
       const sessionMinutes = Math.max(elapsedMinutes, workDurationMinutes);
       const newSessions = current.sessionsCompleted + 1;
       // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
@@ -578,7 +579,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           };
 
           // Periodic save: every full minute, persist to task.actualTime (flows to Analytics and Pomodoro reports)
-          const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+          const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
           const lastUpdate = lastUpdateTimeRef.current[taskId] || 0;
           if (elapsedMinutes > lastUpdate && elapsedMinutes > 0) {
             lastUpdateTimeRef.current[taskId] = elapsedMinutes;
@@ -589,7 +590,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
               callback(totalMinutes)
                 .then(() => {
                   baseTimeTrackedRef.current[taskId] = totalMinutes;
-                  const remainingSeconds = elapsedSeconds % 60;
+                  const remainingSeconds = elapsedSeconds % SECONDS_PER_MINUTE;
                   elapsedSecondsRef.current[taskId] = remainingSeconds;
                   sessionStartTimeRef.current[taskId] = Date.now() - remainingSeconds * 1000;
                   lastUpdateTimeRef.current[taskId] = 0;
@@ -657,7 +658,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     const current = timers[taskId];
     if (current && current.mode === 'work' && elapsedSecondsRef.current[taskId] > 0) {
       const elapsedSeconds = elapsedSecondsRef.current[taskId];
-      const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+      const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
       if (elapsedMinutes > 0) {
         // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
         const baseTime = baseTimeTrackedRef.current[taskId] || 0;

@@ -84,7 +84,8 @@ export function PomodoroTimer({
     if (timerState.isRunning) {
       await pauseTimer(taskId);
     } else {
-      startTimer(taskId);
+      // Pass task duration when starting so timer uses accurate duration (from dialog form or card getTaskMinutes)
+      startTimer(taskId, estimatedTime != null && estimatedTime > 0 ? { durationMinutes: estimatedTime } : undefined);
     }
   };
 

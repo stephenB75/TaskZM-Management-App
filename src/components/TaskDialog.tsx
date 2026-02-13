@@ -3973,7 +3973,7 @@ export function TaskDialog({
 
                 <Separator className="bg-primary/20" />
 
-                {/* Pomodoro Timer - Moved from Advanced */}
+                {/* Pomodoro Timer - Moved from Advanced. Use form's estimated time so duration matches what user sees and can start from dialog. */}
                 {task && hasFeature("pomodoroTimer") && (() => {
                   // For recurring tasks, use occurrence-specific ID for pomodoro timer to ensure each occurrence has its own timer state
                   // Use canonical occurrence id (_subtasks_) for recurring so time is stored/read per occurrence
@@ -3996,7 +3996,10 @@ export function TaskDialog({
                     if (completedOccurrence?.actualTime != null) occurrenceTime = completedOccurrence.actualTime;
                     else if (subtasksOccurrence?.actualTime != null) occurrenceTime = subtasksOccurrence.actualTime;
                   }
-                  
+                  // Use form's current estimated duration so timer matches what user sees (and any edits before starting)
+                  const formEstimatedMinutes = (parseInt(estimatedHours, 10) || 0) * MINUTES_PER_HOUR + (parseInt(estimatedMinutes, 10) || 0);
+                  const pomodoroEstimatedTime = formEstimatedMinutes > 0 ? formEstimatedMinutes : (task.estimatedTime ?? undefined);
+
                   return (
                     <div className={cn(
                     cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
@@ -4012,7 +4015,7 @@ export function TaskDialog({
                         onTimeUpdate={handlePomodoroTimeUpdate}
                         compact={false}
                         initialTime={occurrenceTime}
-                        estimatedTime={task.estimatedTime || undefined}
+                        estimatedTime={pomodoroEstimatedTime}
                       />
                       {isSeriesOccurrence && (seriesTotalMinutes > 0 || (task.actualTime ?? 0) > 0) && (
                         <p className="text-xs text-muted-foreground mt-2">
