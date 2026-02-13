@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL, TOAST_DURATION_SHORT_MS } from "../lib/layout-constants";
+import { getCheckboxSizePxForWidth, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL, TOAST_DURATION_SHORT_MS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
@@ -105,6 +105,12 @@ export function AIRecommendationPanel({
     days: Array<{ date: string; hours: number; tasks: Task[] }>;
     tasks: Task[];
   } | null>(null);
+  const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  useEffect(() => {
+    const onResize = () => setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleType, setRescheduleType] = useState<'day' | 'week' | 'month' | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -734,7 +740,8 @@ export function AIRecommendationPanel({
                         <Checkbox
                           checked={selectedPlanTaskIds.has(task.id)}
                           onCheckedChange={() => togglePlanSelection(task.id)}
-                          className="mt-1 shrink-0"
+                          className="mt-1 shrink-0 flex-shrink-0"
+                          style={{ width: checkboxSizePx, height: checkboxSizePx, minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
                           aria-label={`Accept schedule for ${task.title}`}
                         />
                         <div className="flex-1 min-w-0">

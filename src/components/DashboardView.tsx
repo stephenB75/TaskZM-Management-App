@@ -52,6 +52,7 @@ import { cn, sanitizeHTML, hasHTMLTags, getDateString, getWeekStart } from "../l
 import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
 import { 
+  getCheckboxSizePxForWidth,
   TOGGLE_SWITCH_DIMENSIONS, 
   TOGGLE_SWITCH_SPACING, 
   TOGGLE_SWITCH_TEXT_SIZES, 
@@ -1817,7 +1818,8 @@ export function DashboardView({
                         <Checkbox
                           checked={selectedPlanTaskIds.has(task.id)}
                           onCheckedChange={() => togglePlanSelection(task.id)}
-                          className="mt-1 shrink-0"
+                          className="mt-1 shrink-0 flex-shrink-0"
+                          style={{ width: getCheckboxSizePxForWidth(screenWidth), height: getCheckboxSizePxForWidth(screenWidth), minWidth: getCheckboxSizePxForWidth(screenWidth), minHeight: getCheckboxSizePxForWidth(screenWidth) }}
                           aria-label={`Accept schedule for ${task.title}`}
                         />
                         <div className="flex-1 min-w-0">

@@ -4,6 +4,7 @@ import * as React from "react";
 import { cn } from "./utils";
 import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_ANIMATIONS, TOGGLE_SWITCH_EFFECTS } from "../../lib/layout-constants";
 import { TOGGLE_SWITCH_COLORS } from "../../lib/ui-colors";
+import { useMobileLayout } from "../../hooks/useMobileLayout";
 
 interface CheckboxSwitchProps {
   id?: string;
@@ -85,9 +86,11 @@ function CheckboxSwitch({
   };
 
   const { width, height, thumbHeight, thumbWidth, thumbOffset } = getDimensions();
+  const shouldUseMobileLayout = useMobileLayout();
+  const minHeightPx = shouldUseMobileLayout ? TOGGLE_SWITCH_DIMENSIONS.container.minHeightTouchPx : height;
 
   // Circular thumb: use thumb dimensions (both are 14px for perfect circle)
-  const circularThumbSize = TOGGLE_SWITCH_DIMENSIONS.thumb.width; // Both width and height are 14px
+  const circularThumbSize = TOGGLE_SWITCH_DIMENSIONS.thumb.width;
   
   // Use calculated thumbOffset for custom sizes, or constant for default sizes
   const checkedOffset = width !== TOGGLE_SWITCH_DIMENSIONS.container.width 
@@ -104,7 +107,8 @@ function CheckboxSwitch({
         className
       )}
       style={{
-        height: `${height}px`,
+        height: `${minHeightPx}px`,
+        minHeight: `${minHeightPx}px`,
         width: `${width}px`,
         WebkitTapHighlightColor: 'transparent',
         touchAction: 'manipulation',
@@ -123,16 +127,17 @@ function CheckboxSwitch({
         style={{ pointerEvents: 'auto' }}
         aria-label={id ? undefined : 'Toggle'}
       />
-      {/* Background track - behind input so thumb can sit on top */}
+      {/* Background track - behind input; vertically centered when label is taller (touch target) */}
       <span
         className={cn(
-          "absolute inset-0 z-0 rounded-full transition-colors duration-200 ease-in-out",
+          "absolute left-0 z-0 rounded-full transition-colors duration-200 ease-in-out",
           isChecked ? TOGGLE_SWITCH_COLORS.switch.background.checked : TOGGLE_SWITCH_COLORS.switch.background.unchecked,
           "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
         )}
         style={{
           height: `${height}px`,
           width: `${width}px`,
+          top: `${(minHeightPx - height) / 2}px`,
         }}
         aria-hidden="true"
       />
@@ -144,11 +149,9 @@ function CheckboxSwitch({
           TOGGLE_SWITCH_COLORS.switch.thumb.dark,
         )}
         style={{
-          // Circular thumb: perfectly circular, perfectly centered
           height: `${circularThumbSize}px`,
           width: `${circularThumbSize}px`,
-          // Perfect vertical centering: (container height - thumb height) / 2
-          top: `${(height - circularThumbSize) / 2}px`,
+          top: `${(minHeightPx - circularThumbSize) / 2}px`,
           // Perfect horizontal positioning: use calculated offset for custom sizes, constant for defaults
           left: isChecked 
             ? `${checkedOffset}px` 

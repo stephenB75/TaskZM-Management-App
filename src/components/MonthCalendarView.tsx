@@ -31,7 +31,7 @@ import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
-import { NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS } from "../lib/layout-constants";
+import { getCheckboxSizePxForWidth, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
 import type { Task } from "../types";
@@ -60,6 +60,12 @@ function DraggableMonthTask({
   const isMobile = useIsMobile();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === "dark";
+  const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  useEffect(() => {
+    const onResize = () => setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const {
     attributes,
     listeners,
@@ -112,12 +118,14 @@ function DraggableMonthTask({
         <button
           onClick={handleToggleComplete}
           onPointerDown={(e) => e.stopPropagation()}
-          className="flex-shrink-0 w-3 h-3 hover:opacity-80 transition-opacity mt-0.5"
+          className="flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5 flex items-center justify-center"
+          style={{ width: checkboxSizePx, height: checkboxSizePx, minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
           aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
         >
           <Icon name="circle"
+            size={checkboxSizePx}
             className={cn(
-              "w-3 h-3 transition-colors",
+              "transition-colors",
               task.status === "done"
                 ? isDark ? `${TASK_CARD_ICON_COLORS.tab.dark} ${TASK_CARD_ICON_COLORS.tabCheckboxFill.dark}` : `${TASK_CARD_ICON_COLORS.tab.light} ${TASK_CARD_ICON_COLORS.tabCheckboxFill.light}`
                 : "text-gray-300 hover:text-gray-400",

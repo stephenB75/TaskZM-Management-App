@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 // Icons migrated to Icon component
@@ -75,7 +75,7 @@ import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { ACTION_PLAN_CONFIG } from "../lib/ai-config";
-import { INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CHECKBOX_SIZE_DESKTOP, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
+import { getCheckboxSizePxForWidth, TODAY_AGENDA_TIMELINE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -134,6 +134,13 @@ export const DraggableTaskCard = React.forwardRef<
     const cardContentRef = React.useRef<HTMLDivElement>(null);
     const taskInstanceKey = `${task.id}-${droppableId}`;
     const previousTaskInstanceKeyRef = React.useRef<string | null>(null);
+
+    const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+    useEffect(() => {
+      const onResize = () => setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, []);
 
     // Ensure cards always start collapsed (closed state with chevron-right)
     // Reset expanded state on mount and whenever task instance changes
@@ -675,10 +682,10 @@ export const DraggableTaskCard = React.forwardRef<
                     onClick={handleToggle}
                     className="mt-0.5 flex-shrink-0"
                     style={{
-                      width: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
-                      height: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
-                      minWidth: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
-                      minHeight: isMobile ? INBOX_CHECKBOX_SIZE_MOBILE : INBOX_CHECKBOX_SIZE_DESKTOP,
+                      width: checkboxSizePx,
+                      height: checkboxSizePx,
+                      minWidth: checkboxSizePx,
+                      minHeight: checkboxSizePx,
                     }}
                   />
                   <span className={cn("leading-tight flex-1", domainColors.textLight, isCompleted && "line-through opacity-60")} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
@@ -907,7 +914,7 @@ export const DraggableTaskCard = React.forwardRef<
                 >
                   <Icon
                     name="circle"
-                    size={TASK_CARD_TIMELINE.todayAgendaCheckboxSize}
+                    size={checkboxSizePx}
                     className={cn(
                       "transition-colors flex-shrink-0",
                       isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,

@@ -196,6 +196,38 @@ export const VIEWPORT_BREAKPOINTS = {
   // Desktop: 1280px and above (use desktop layout - multi-column)
 } as const;
 
+/** Checkbox and mark-as-complete button visual size (px) by breakpoint. Mobile meets MIN_TOUCH_TARGET_PX. */
+export const CHECKBOX_AND_MARK_COMPLETE_SIZE_PX = {
+  mobile: MIN_TOUCH_TARGET_PX,
+  tablet: 28,
+  laptop: 20,
+  desktop: 16,
+} as const;
+
+/** Check icon size (px) by breakpoint, proportional to checkbox. */
+export const CHECKBOX_CHECK_ICON_SIZE_PX = {
+  mobile: 18,
+  tablet: 14,
+  laptop: 12,
+  desktop: 12,
+} as const;
+
+/** Return checkbox/mark-complete size (px) for a given viewport width. */
+export function getCheckboxSizePxForWidth(width: number): number {
+  if (width < VIEWPORT_BREAKPOINTS.mobile) return CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.mobile;
+  if (width < VIEWPORT_BREAKPOINTS.tablet) return CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.tablet;
+  if (width < VIEWPORT_BREAKPOINTS.desktop) return CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.laptop;
+  return CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.desktop;
+}
+
+/** Return check icon size (px) for a given viewport width. */
+export function getCheckboxCheckIconSizePxForWidth(width: number): number {
+  if (width < VIEWPORT_BREAKPOINTS.mobile) return CHECKBOX_CHECK_ICON_SIZE_PX.mobile;
+  if (width < VIEWPORT_BREAKPOINTS.tablet) return CHECKBOX_CHECK_ICON_SIZE_PX.tablet;
+  if (width < VIEWPORT_BREAKPOINTS.desktop) return CHECKBOX_CHECK_ICON_SIZE_PX.laptop;
+  return CHECKBOX_CHECK_ICON_SIZE_PX.desktop;
+}
+
 // Timeline Constants
 export const TIMELINE_PADDING = {
   mobile: 27.6, // Timeline padding on mobile
@@ -534,28 +566,28 @@ export const EMPTY_STATE_ICON_INNER_SIZE = '1.5rem'; // w-6 h-6 = 1.5rem (24px) 
 export const EMPTY_STATE_MARGIN_BOTTOM_SMALL = '0.75rem'; // mb-3 = 0.75rem (12px)
 export const EMPTY_STATE_MARGIN_BOTTOM_LARGE = '1.5rem'; // mb-6 = 1.5rem (24px)
 export const EMPTY_STATE_PADDING_X = '1rem'; // px-4 = 1rem (16px)
-// Inbox checkbox sizes for responsive layouts
-export const INBOX_CHECKBOX_SIZE_MOBILE = '20px'; // w-5 h-5 = 20px - increased for better mobile touch target (minimum 20px recommended)
-export const INBOX_CHECKBOX_SIZE_SMALL_MONITOR = '16px'; // w-4 h-4 = 16px - small monitor checkbox
-export const INBOX_CHECKBOX_SIZE_LANDSCAPE = '20px'; // w-5 h-5 = 20px - increased for better touch target in landscape mode
-export const INBOX_CHECKBOX_SIZE_DESKTOP = '16px'; // w-4 h-4 = 16px - desktop checkbox
+// Inbox checkbox sizes (derived from CHECKBOX_AND_MARK_COMPLETE_SIZE_PX)
+export const INBOX_CHECKBOX_SIZE_MOBILE = `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.mobile}px`;
+export const INBOX_CHECKBOX_SIZE_SMALL_MONITOR = `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.laptop}px`;
+export const INBOX_CHECKBOX_SIZE_LANDSCAPE = `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.tablet}px`;
+export const INBOX_CHECKBOX_SIZE_DESKTOP = `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.desktop}px`;
 
-// Task Dialog Create Subtask checkbox: smaller, responsive (mobile / tablet / laptop)
+// Task Dialog Create Subtask checkbox (same scale as standard checkbox)
 export const TASK_DIALOG_SUBTASK_CHECKBOX_SIZE = {
-  mobile: '18px',   // < 768px - touch-friendly, not as large as 20px
-  tablet: '16px',   // 768–1023px
-  laptop: '14px',   // 1024px+ - compact for dialog
+  mobile: `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.mobile}px`,
+  tablet: `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.tablet}px`,
+  laptop: `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.laptop}px`,
 } as const;
 
-// Checkbox check icon sizes (proportional to checkbox size)
-export const CHECKBOX_CHECK_ICON_SIZE = 12; // w-3 = 12px - standard check icon size for 16px checkbox
-export const CHECKBOX_CHECK_ICON_SIZE_MOBILE = 14; // w-3.5 = 14px - check icon size for 20px mobile checkbox
+// Checkbox check icon sizes (proportional; use CHECKBOX_CHECK_ICON_SIZE_PX for responsive)
+export const CHECKBOX_CHECK_ICON_SIZE = CHECKBOX_CHECK_ICON_SIZE_PX.desktop;
+export const CHECKBOX_CHECK_ICON_SIZE_MOBILE = CHECKBOX_CHECK_ICON_SIZE_PX.mobile;
 // Inbox card shadow for mobile/tablet layout
 export const INBOX_CARD_SHADOW_MOBILE = '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.12)';
 
-// Archive Panel Sizes
-export const ARCHIVE_CHECKBOX_SIZE = '12px'; // w-3 h-3 = 12px - compact checkbox for archive panel (desktop)
-export const ARCHIVE_CHECKBOX_SIZE_MOBILE = '20px'; // w-5 h-5 = 20px - larger checkbox for mobile touch target
+// Archive Panel Sizes (checkbox uses same responsive scale)
+export const ARCHIVE_CHECKBOX_SIZE = `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.desktop}px`;
+export const ARCHIVE_CHECKBOX_SIZE_MOBILE = `${CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.mobile}px`;
 export const ARCHIVE_CHECKMARK_CONTAINER_SIZE = '1.25rem'; // w-5 h-5 = 1.25rem (20px) - checkmark icon container
 export const ARCHIVE_CHECKMARK_ICON_SIZE = '0.75rem'; // w-3 h-3 = 0.75rem (12px) - checkmark icon
 export const ARCHIVE_TITLE_TEXT_SIZE = '0.8125rem'; // text-[13px] = 0.8125rem (13px) - task title text size
@@ -1184,11 +1216,13 @@ export const TOUR_CONSTANTS = {
   },
 } as const;
 
-// Toggle Switch Dimensions
+// Toggle Switch Dimensions (container height on mobile meets MIN_TOUCH_TARGET_PX for touch)
 export const TOGGLE_SWITCH_DIMENSIONS = {
   container: {
-    width: 48, // w-12 = 48px
-    height: 20, // Reduced from 28px to 20px for better thumb fit
+    width: 48,
+    height: 20,
+    /** Min height (px) on touch devices so the switch meets MIN_TOUCH_TARGET_PX. */
+    minHeightTouchPx: MIN_TOUCH_TARGET_PX,
   },
   thumb: {
     width: 14, // Slightly smaller for better padding within 20px container

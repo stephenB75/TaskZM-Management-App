@@ -3,41 +3,46 @@
 import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { Icon } from "../Icon";
-import { CHECKBOX_CHECK_ICON_SIZE, CHECKBOX_CHECK_ICON_SIZE_MOBILE } from "../../lib/layout-constants";
+import {
+  CHECKBOX_AND_MARK_COMPLETE_SIZE_PX,
+  CHECKBOX_CHECK_ICON_SIZE,
+  CHECKBOX_CHECK_ICON_SIZE_MOBILE,
+} from "../../lib/layout-constants";
 
 import { cn } from "./utils";
+
+const DEFAULT_CHECKBOX_SIZE_PX = CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.desktop;
+const CHECKBOX_THRESHOLD_LARGE_ICON_PX = CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.tablet;
 
 function Checkbox({
   className,
   style,
   ...props
 }: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
-  // Determine check icon size based on checkbox size from style prop
   const checkboxSize = style?.width || style?.height;
-  let checkIconSize = CHECKBOX_CHECK_ICON_SIZE;
-  
-  if (checkboxSize) {
-    const sizeValue = typeof checkboxSize === 'string' 
-      ? parseInt(checkboxSize.replace('px', '')) 
-      : typeof checkboxSize === 'number' 
-        ? checkboxSize 
-        : 16;
-    // Use larger icon for checkboxes 20px or larger
-    if (sizeValue >= 20) {
-      checkIconSize = CHECKBOX_CHECK_ICON_SIZE_MOBILE;
-    }
-  }
-  
+  const sizeValue = checkboxSize
+    ? typeof checkboxSize === 'string'
+      ? parseInt(checkboxSize.replace('px', ''), 10)
+      : typeof checkboxSize === 'number'
+        ? checkboxSize
+        : DEFAULT_CHECKBOX_SIZE_PX
+    : DEFAULT_CHECKBOX_SIZE_PX;
+  const checkIconSize = sizeValue >= CHECKBOX_THRESHOLD_LARGE_ICON_PX
+    ? CHECKBOX_CHECK_ICON_SIZE_MOBILE
+    : CHECKBOX_CHECK_ICON_SIZE;
+
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
         "peer border bg-[var(--input-background)] dark:bg-[var(--input-background)] data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        // Default size w-4 h-4, but allow override via className or style
-        !style?.width && !style?.height && "w-4 h-4",
+        !style?.width && !style?.height && "shrink-0",
         className,
       )}
-      style={style}
+      style={{
+        ...(style || {}),
+        ...(!style?.width && !style?.height ? { width: DEFAULT_CHECKBOX_SIZE_PX, height: DEFAULT_CHECKBOX_SIZE_PX, minWidth: DEFAULT_CHECKBOX_SIZE_PX, minHeight: DEFAULT_CHECKBOX_SIZE_PX } : {}),
+      }}
       {...props}
     >
       <CheckboxPrimitive.Indicator
