@@ -69,7 +69,7 @@ import {
 } from "../lib/task-card-constants";
 import { COLOR_PASTEL_LAVENDER, COLOR_BACKGROUND_WHITE, COLOR_BACKGROUND_LIGHT, getColorWithOpacity } from "../lib/color-theme";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
-import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR, SECONDS_PER_MINUTE } from "../lib/business-constants";
 import { COLOR_PRIMARY, COLOR_BACKGROUND_TRANSPARENT, COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
@@ -418,6 +418,13 @@ export const DraggableTaskCard = React.forwardRef<
         return `${hours}:${mins.toString().padStart(2, "0")}`;
       }
       return `${mins}m`;
+    };
+
+    // Format Pomodoro countdown (timeLeft in seconds) as MM:SS
+    const formatPomodoroCountdown = (seconds: number) => {
+      const mins = Math.floor(seconds / SECONDS_PER_MINUTE);
+      const secs = seconds % SECONDS_PER_MINUTE;
+      return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
 
@@ -1036,12 +1043,16 @@ export const DraggableTaskCard = React.forwardRef<
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
                   {pomodoroIsRunning ? (
                     <>
+                      <span className={cn("text-sm font-mono font-medium min-w-[3rem]", TASK_CARD_ICON_COLORS.trackedLabel)} aria-label="Time remaining">
+                        {formatPomodoroCountdown(timerState.timeLeft)}
+                      </span>
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
                           await pauseTimer(pomodoroTimerId);
                         }}
                         className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        aria-label="Pause timer"
                       >
                         <Icon name="pause" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
                       </button>
@@ -1051,10 +1062,10 @@ export const DraggableTaskCard = React.forwardRef<
                           await stopTimer(pomodoroTimerId);
                         }}
                         className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        aria-label="Stop timer"
                       >
                         <Icon name="stop" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
                       </button>
-                      <span className={cn("text-sm font-medium ml-1", TASK_CARD_ICON_COLORS.trackedLabel)}>{TASK_CARD_TEXT.tracking}</span>
                     </>
                   ) : (
                     <button

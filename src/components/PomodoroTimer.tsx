@@ -99,17 +99,15 @@ export function PomodoroTimer({
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const getProgress = () => {
-    // Calculate progress based on initial timeLeft when timer started
-    // We need to track the initial duration, but since we can't easily get it,
-    // we'll use estimatedTime if available, otherwise default
-    const initialDuration = timerState.mode === 'work' 
+  const getTotalDurationSeconds = () =>
+    timerState.mode === 'work'
       ? (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)
-      : timerState.mode === 'shortBreak' 
-        ? DURATIONS.shortBreak 
+      : timerState.mode === 'shortBreak'
+        ? DURATIONS.shortBreak
         : DURATIONS.longBreak;
-    
-    // Calculate how much time has elapsed
+
+  const getProgress = () => {
+    const initialDuration = getTotalDurationSeconds();
     const elapsed = initialDuration - timerState.timeLeft;
     return Math.min(PERCENTAGE_MULTIPLIER, Math.max(0, (elapsed / initialDuration) * PERCENTAGE_MULTIPLIER));
   };
@@ -259,10 +257,13 @@ export function PomodoroTimer({
         )}
       </div>
 
-      {/* Timer Display */}
+      {/* Timer Display - countdown and total duration */}
       <div className="text-center">
-        <div className="text-3xl font-mono font-bold text-foreground">
+        <div className="text-3xl font-mono font-bold text-foreground tabular-nums">
           {formatTime(timerState.timeLeft)}
+        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          of {formatTime(getTotalDurationSeconds())} duration
         </div>
       </div>
 
