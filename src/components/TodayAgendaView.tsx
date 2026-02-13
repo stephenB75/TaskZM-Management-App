@@ -29,7 +29,7 @@ import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
-import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, MINUTES_PER_HOUR } from "../lib/business-constants";
+import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, MINUTES_PER_HOUR, MILLISECONDS_PER_MINUTE } from "../lib/business-constants";
 
 interface TodayAgendaViewProps {
   hideHeader?: boolean;
@@ -229,7 +229,8 @@ export function TodayAgendaView({
   }, [todayTasks, todayCalendarEvents]);
 
   /** Split items into timeline blocks (have time in 7AM–12AM) and unscheduled (no time or outside range).
-   * Blocks are drawn at their actual time so timeline labels and card times stay aligned. */
+   * Overlapping blocks are stacked: each block is pushed to the next free slot (prevBottomPx + blockGapPx) so they never overlap.
+   * Timeline labels use actualStartMins so the axis shows real task times; block position may be lower when stacked. */
   const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const endHour = TODAY_AGENDA_TIMELINE.endHour;
@@ -237,6 +238,7 @@ export function TodayAgendaView({
     const pxPerMinute = TODAY_AGENDA_TIMELINE.pxPerMinute;
     const minH = TODAY_AGENDA_TIMELINE.minBlockHeightPx;
     const eventCardMinHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx;
+    const blockGapPx = TODAY_AGENDA_TIMELINE.blockGapPx;
     type Block = { item: CombinedItem; topPx: number; heightPx: number; actualStartMins: number; actualDurationMins: number };
     const blocks: Block[] = [];
     const unscheduled: CombinedItem[] = [];
@@ -247,7 +249,7 @@ export function TodayAgendaView({
           continue;
         }
         const start = new Date(item.task.scheduledDate);
-        const startMins = start.getHours() * 60 + start.getMinutes() - startHour * 60;
+        const startMins = start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - startHour * MINUTES_PER_HOUR;
         if (startMins < 0 || startMins >= totalMinutes) {
           unscheduled.push(item);
           continue;
@@ -259,8 +261,8 @@ export function TodayAgendaView({
       } else if (item.type === 'event' && item.event) {
         const start = parseCalendarEventTime(item.event.start);
         const end = parseCalendarEventTime(item.event.end);
-        const startMins = start.getHours() * 60 + start.getMinutes() - startHour * 60;
-        const durationMins = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
+        const startMins = start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - startHour * MINUTES_PER_HOUR;
+        const durationMins = Math.max(1, Math.round((end.getTime() - start.getTime()) / MILLISECONDS_PER_MINUTE));
         if (startMins < 0 || startMins >= totalMinutes) {
           unscheduled.push(item);
           continue;
@@ -271,16 +273,23 @@ export function TodayAgendaView({
         blocks.push({ item, topPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins });
       }
     }
-    // Sort by start time (topPx), then by stable key so overlapping items get a deterministic order
+    // Sort by start time (actualStartMins), then by stable key so overlapping items get a deterministic order
     blocks.sort((a, b) => {
-      if (a.topPx !== b.topPx) return a.topPx - b.topPx;
+      if (a.actualStartMins !== b.actualStartMins) return a.actualStartMins - b.actualStartMins;
       const keyA = a.item.type === 'task' && a.item.task ? a.item.task.id : a.item.type === 'event' && a.item.event ? a.item.event.id : '';
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Draw blocks at their actual time position so timeline labels and card times align (no stacking).
+    // Stack overlapping blocks: each block's top is at least (previous block bottom + blockGapPx), using task duration so they don't overlap
+    let prevBottomPx = -blockGapPx;
+    for (const block of blocks) {
+      const naturalTopPx = block.topPx;
+      block.topPx = Math.max(naturalTopPx, prevBottomPx + blockGapPx);
+      prevBottomPx = block.topPx + block.heightPx;
+    }
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
-    const timelineLayoutHeightPx = baseTimelineHeightPx;
+    const maxBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.topPx + b.heightPx)) : 0;
+    const timelineLayoutHeightPx = Math.max(baseTimelineHeightPx, maxBottomPx + blockGapPx);
     return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx };
   }, [combinedItems, getTaskMinutes]);
 
@@ -419,7 +428,7 @@ export function TodayAgendaView({
   /** Vertical timeline: show hourly stamps (hide only those strictly inside a block) plus every task/event start time so each block has its timestamp. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
       const allSlotMinutes: number[] = [];
       for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
         allSlotMinutes.push(m);
@@ -437,9 +446,9 @@ export function TodayAgendaView({
       const visibleHourly = allSlotMinutes.filter((m) => !hiddenSlotMinutes.has(m));
       const sortedSlots = Array.from(new Set([...visibleHourly, ...blockStartMinutes])).sort((a, b) => a - b);
       const timelineLabels: { minutesFromStart: number; label: string }[] = sortedSlots.map((m) => {
-        const h = startHour + Math.floor(m / 60);
-        const min = m % 60;
-        const isMidnight = h === 24 && min === 0;
+        const h = startHour + Math.floor(m / MINUTES_PER_HOUR);
+        const min = m % MINUTES_PER_HOUR;
+        const isMidnight = h === endHour && min === 0;
         const label = isMidnight
           ? TODAY_AGENDA_TEXT.timelineMidnightLabel
           : (() => {
