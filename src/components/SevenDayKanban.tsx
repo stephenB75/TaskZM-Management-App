@@ -430,22 +430,24 @@ export function SevenDayKanban({
     // Use a longer delay to ensure DOM is fully rendered and animations are complete
     timeoutId = setTimeout(calculateZoom, KANBAN_ZOOM.calculateDelay);
     
-    // Recalculate on window resize and container resize
-    const resizeObserver = new ResizeObserver(handleResize);
-    
-    if (scrollContainerRef.current) {
-      resizeObserver.observe(scrollContainerRef.current);
+    // Recalculate on window resize and (when supported) container resize
+    const hasResizeObserver = typeof ResizeObserver !== 'undefined';
+    let resizeObserver: ResizeObserver | null = null;
+    if (hasResizeObserver) {
+      resizeObserver = new ResizeObserver(handleResize);
+      if (scrollContainerRef.current) {
+        resizeObserver.observe(scrollContainerRef.current);
+      }
+      if (columnsContainerRef.current) {
+        resizeObserver.observe(columnsContainerRef.current);
+      }
     }
-    
-    if (columnsContainerRef.current) {
-      resizeObserver.observe(columnsContainerRef.current);
-    }
-    
-    // Also listen for window resize events
     window.addEventListener('resize', handleResize);
     
     return () => {
-      resizeObserver.disconnect();
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       window.removeEventListener('resize', handleResize);
       if (timeoutId) clearTimeout(timeoutId);
       if (resizeTimeoutId) clearTimeout(resizeTimeoutId);

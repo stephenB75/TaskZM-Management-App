@@ -236,6 +236,7 @@ export function TodayAgendaView({
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
     const pxPerMinute = TODAY_AGENDA_TIMELINE.pxPerMinute;
     const minH = TODAY_AGENDA_TIMELINE.minBlockHeightPx;
+    const eventCardMinHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx;
     const blockGapPx = TODAY_AGENDA_TIMELINE.blockGapPx;
     const blocks: { item: CombinedItem; topPx: number; heightPx: number }[] = [];
     const unscheduled: CombinedItem[] = [];
@@ -264,7 +265,8 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const heightPx = Math.max(minH, Math.round(durationMins * pxPerMinute));
+        // Use eventCardMinHeightPx so calendar cards never overflow and overlap the next block
+        const heightPx = Math.max(minH, eventCardMinHeightPx, Math.round(durationMins * pxPerMinute));
         const topPx = Math.round(startMins * pxPerMinute);
         blocks.push({ item, topPx, heightPx });
       }

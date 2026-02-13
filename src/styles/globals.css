@@ -255,7 +255,10 @@ body {
   overscroll-behavior-x: none;
 }
 
-/* Safari / iOS: improve viewport height (100vh includes browser chrome; 100dvh when supported) */
+/* Viewport height: 100vh everywhere; 100dvh on Safari/iOS when supported (excludes browser chrome) */
+.min-h-viewport-safe {
+  min-height: 100vh;
+}
 @supports (min-height: 100dvh) {
   .min-h-viewport-safe {
     min-height: 100dvh;
@@ -529,6 +532,7 @@ body {
   
   .glass-effect {
     background: rgba(255, 255, 255, 0.9);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
@@ -670,10 +674,11 @@ body {
     overscroll-behavior-x: contain;
   }
   
-  /* GPU-accelerated smooth transforms for drag operations */
+  /* GPU-accelerated smooth transforms for drag operations (cross-browser) */
   .smooth-drag-transform {
     will-change: transform;
     transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     perspective: 1000px;
   }
