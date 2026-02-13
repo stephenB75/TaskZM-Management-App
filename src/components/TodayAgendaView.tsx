@@ -85,18 +85,6 @@ export function TodayAgendaView({
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll to current time once when the timeline is shown so the "now" line is in view; user can still scroll freely afterward
-  useEffect(() => {
-    if (currentTimeTopPx == null || hasScrolledToCurrentTimeRef.current) return;
-    const run = () => {
-      if (!currentTimeIndicatorRef.current) return;
-      hasScrolledToCurrentTimeRef.current = true;
-      currentTimeIndicatorRef.current.scrollIntoView({ block: 'center', behavior: 'auto' });
-    };
-    const id = requestAnimationFrame(() => requestAnimationFrame(run));
-    return () => cancelAnimationFrame(id);
-  }, [currentTimeTopPx, combinedItems.length]);
-
   // Make this view a droppable zone for tasks from Kanban (disabled on mobile)
   const { setNodeRef, isOver } = useDroppable({
     id: "today-agenda",
@@ -312,6 +300,18 @@ export function TodayAgendaView({
     if (mins < 0 || mins >= TODAY_AGENDA_TIMELINE.totalMinutes) return null;
     return Math.round(mins * TODAY_AGENDA_TIMELINE.pxPerMinute);
   }, [currentTime]);
+
+  // Scroll to current time once when the timeline is shown so the "now" line is in view; user can still scroll freely afterward (must run after currentTimeTopPx and combinedItems are defined)
+  useEffect(() => {
+    if (currentTimeTopPx == null || hasScrolledToCurrentTimeRef.current) return;
+    const run = () => {
+      if (!currentTimeIndicatorRef.current) return;
+      hasScrolledToCurrentTimeRef.current = true;
+      currentTimeIndicatorRef.current.scrollIntoView({ block: 'center', behavior: 'auto' });
+    };
+    const id = requestAnimationFrame(() => requestAnimationFrame(run));
+    return () => cancelAnimationFrame(id);
+  }, [currentTimeTopPx, combinedItems.length]);
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
