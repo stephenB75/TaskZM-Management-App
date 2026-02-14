@@ -2573,6 +2573,30 @@ async function cleanupDemoUser(userId: string): Promise<{
 // CALENDAR INTEGRATION ENDPOINTS
 // ========================================
 
+/** Canonical path for Google OAuth callback (no leading slash for URL constructor). */
+const GOOGLE_CALLBACK_PATH = 'functions/v1/taskzm-database-function/calendar/google/callback';
+
+/**
+ * Resolve redirect URI for Google Calendar OAuth. Uses GOOGLE_REDIRECT_URI if set and valid;
+ * otherwise builds from SUPABASE_URL so it always matches the actual callback URL.
+ */
+function getGoogleRedirectUri(): string | null {
+  let uri = Deno.env.get('GOOGLE_REDIRECT_URI');
+  if (uri) {
+    uri = uri.trim().split('?')[0].split('#')[0].replace(/\/+$/, '');
+    try {
+      const url = new URL(uri);
+      if (url.protocol === 'https:') return uri;
+    } catch {
+      // fall through to built
+    }
+  }
+  const base = Deno.env.get('SUPABASE_URL');
+  if (!base) return null;
+  const built = new URL('/' + GOOGLE_CALLBACK_PATH, base.replace(/\/+$/, '') + '/').href.replace(/\/+$/, '');
+  return built;
+}
+
 // Initiate Google Calendar OAuth flow
 app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
   try {
@@ -2582,29 +2606,7 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
     }
 
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
-    let redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI');
-
-    // Clean and validate redirect URI (must match exactly what is in Google Console)
-    if (redirectUri) {
-      // Remove any query parameters, fragments, and trailing slash
-      redirectUri = redirectUri.trim().split('?')[0].split('#')[0].replace(/\/+$/, '');
-      
-      // Validate it's a proper HTTPS URL
-      try {
-        const url = new URL(redirectUri);
-        if (url.protocol !== 'https:') {
-          console.error('Invalid redirect URI protocol:', redirectUri);
-          return c.json({ 
-            error: 'GOOGLE_REDIRECT_URI must use https:// protocol',
-          }, 500);
-        }
-      } catch (e) {
-        console.error('Invalid redirect URI format:', redirectUri);
-        return c.json({ 
-          error: 'GOOGLE_REDIRECT_URI is not a valid URL',
-        }, 500);
-      }
-    }
+    const redirectUri = getGoogleRedirectUri();
 
     console.log('Google OAuth config check:', {
       hasClientId: !!clientId,
@@ -2616,7 +2618,7 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
     if (!clientId || !redirectUri) {
       console.log('Google OAuth not configured - missing env vars');
       return c.json({ 
-        error: 'Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI environment variables.',
+        error: 'Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI (or rely on SUPABASE_URL).',
         details: {
           hasClientId: !!clientId,
           hasRedirectUri: !!redirectUri,
@@ -2767,12 +2769,7 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
 
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
     const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
-    let redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI');
-
-    // Clean redirect URI (must match auth step and Google Console exactly)
-    if (redirectUri) {
-      redirectUri = redirectUri.trim().split('?')[0].split('#')[0].replace(/\/+$/, '');
-    }
+    const redirectUri = getGoogleRedirectUri();
 
     if (!clientId || !clientSecret || !redirectUri) {
       const html = `<!DOCTYPE html>
