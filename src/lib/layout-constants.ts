@@ -204,18 +204,18 @@ export const CHECKBOX_AND_MARK_COMPLETE_SIZE_PX = {
   desktop: 16,
 } as const;
 
-/** Drawn size (px) of the circle/checkbox icon so it stays proportionate to title and other icons (e.g. 17–24px). Tap target remains CHECKBOX_AND_MARK_COMPLETE_SIZE_PX. */
+/** Drawn size (px) of the circle/checkbox icon so it stays proportionate to title and other icons. Tap target remains CHECKBOX_AND_MARK_COMPLETE_SIZE_PX. */
 export const CHECKBOX_VISUAL_SIZE_PX = {
-  mobile: 28,
-  tablet: 28,
+  mobile: 20,
+  tablet: 20,
   laptop: 20,
   desktop: 16,
 } as const;
 
 /** Check icon size (px) by breakpoint, proportional to checkbox. */
 export const CHECKBOX_CHECK_ICON_SIZE_PX = {
-  mobile: 18,
-  tablet: 18,
+  mobile: 12,
+  tablet: 12,
   laptop: 12,
   desktop: 12,
 } as const;

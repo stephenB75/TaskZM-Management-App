@@ -693,10 +693,10 @@ export const DraggableTaskCard = React.forwardRef<
                     onClick={handleToggle}
                     className="mt-0.5 flex-shrink-0"
                     style={{
-                      width: checkboxSizePx,
-                      height: checkboxSizePx,
-                      minWidth: checkboxSizePx,
-                      minHeight: checkboxSizePx,
+                      width: visualSizePx,
+                      height: visualSizePx,
+                      minWidth: visualSizePx,
+                      minHeight: visualSizePx,
                     }}
                   />
                   <span className={cn("leading-tight flex-1", domainColors.textLight, isCompleted && "line-through opacity-60")} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
