@@ -2584,10 +2584,10 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
     let redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI');
 
-    // Clean and validate redirect URI
+    // Clean and validate redirect URI (must match exactly what is in Google Console)
     if (redirectUri) {
-      // Remove any query parameters or fragments that might have been accidentally included
-      redirectUri = redirectUri.trim().split('?')[0].split('#')[0];
+      // Remove any query parameters, fragments, and trailing slash
+      redirectUri = redirectUri.trim().split('?')[0].split('#')[0].replace(/\/+$/, '');
       
       // Validate it's a proper HTTPS URL
       try {
@@ -2769,9 +2769,9 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
     const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
     let redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI');
 
-    // Clean redirect URI (remove any query parameters or fragments)
+    // Clean redirect URI (must match auth step and Google Console exactly)
     if (redirectUri) {
-      redirectUri = redirectUri.trim().split('?')[0].split('#')[0];
+      redirectUri = redirectUri.trim().split('?')[0].split('#')[0].replace(/\/+$/, '');
     }
 
     if (!clientId || !clientSecret || !redirectUri) {
@@ -2814,11 +2814,26 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
 
     if (!response.ok) {
       const errorText = await response.text();
+      let userMessage = 'Failed to exchange authorization code';
+      try {
+        const errJson = JSON.parse(errorText);
+        const code = errJson.error;
+        const msg = errJson.error_description || errJson.error;
+        if (code === 'redirect_uri_mismatch') {
+          userMessage = 'Redirect URI mismatch: the redirect URL in Google Cloud Console must exactly match GOOGLE_REDIRECT_URI (no trailing slash).';
+        } else if (msg) {
+          userMessage = typeof msg === 'string' ? msg : userMessage;
+        }
+      } catch {
+        // use default userMessage
+      }
       console.log('Google token exchange failed:', {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
       });
+      const escapedMessage = userMessage.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const bodyEscaped = userMessage.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       // Return HTML page that closes popup and notifies parent of error
       const html = `<!DOCTYPE html>
 <html>
@@ -2831,14 +2846,14 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
       window.opener.postMessage({ 
         type: 'calendar-oauth-error', 
         provider: 'google',
-        error: 'Failed to exchange authorization code'
+        error: '${escapedMessage}'
       }, '*');
       window.close();
     } else {
       window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
     }
   </script>
-  <p>Connection failed: Failed to exchange authorization code. This window will close automatically.</p>
+  <p>Connection failed: ${bodyEscaped} This window will close automatically.</p>
 </body>
 </html>`;
       return c.html(html);
@@ -6510,7 +6525,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   let pathname = url.pathname;
   if (pathname.startsWith("/functions/v1/")) {
-    pathname = pathname.replace(/^\/functions\/v1/, "");
+    pathname = pathname.replace(/^\/functions\/v1\/?/, "/");
   } else if (!pathname.startsWith(`/${FUNCTION_NAME}`) && (pathname.startsWith("/calendar/") || pathname === "/calendar" || pathname === "")) {
     pathname = `/${FUNCTION_NAME}` + (pathname.startsWith("/") ? pathname : "/" + pathname);
   }
