@@ -3,7 +3,11 @@
  * Centralized configuration for notifications, toast messages, and notification settings
  */
 
-import { MILLISECONDS_PER_MINUTE } from './business-constants';
+import {
+  MILLISECONDS_PER_MINUTE,
+  DEFAULT_NOTIFICATION_REMINDER_TIME,
+  DEFAULT_NOTIFICATION_CHECK_INTERVAL,
+} from './business-constants';
 
 // Default notification settings
 export const DEFAULT_NOTIFICATION_SETTINGS = {
@@ -11,8 +15,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   showBadge: true,
   dueDateReminders: true,
   overdueAlerts: true,
-  reminderTime: 60, // 1 hour before due date (in minutes)
-  checkInterval: 15, // Check every 15 minutes (in minutes)
+  reminderTime: DEFAULT_NOTIFICATION_REMINDER_TIME,
+  checkInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL,
 } as const;
 
 // LocalStorage keys

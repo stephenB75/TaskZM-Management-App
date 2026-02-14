@@ -32,6 +32,8 @@ import {
   DEFAULT_WEEKEND_PROJECTS_END,
   DEFAULT_TAGS,
   POMODORO_WORK_DURATION,
+  DEFAULT_NOTIFICATION_REMINDER_TIME,
+  DEFAULT_NOTIFICATION_CHECK_INTERVAL,
 } from './business-constants';
 
 /**
@@ -396,8 +398,8 @@ export function createDefaultNotificationContext() {
       showBadge: true,
       dueDateReminders: true,
       overdueAlerts: true,
-      reminderTime: 60,
-      checkInterval: 15,
+      reminderTime: DEFAULT_NOTIFICATION_REMINDER_TIME,
+      checkInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL,
     },
     badgeCount: 0,
     requestPermission: async () => false,

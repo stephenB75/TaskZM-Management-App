@@ -29,6 +29,7 @@ import {
   STATUS_WEIGHTS,
   getCategoryFromTags,
   isWeekend as isWeekendDate,
+  DEFAULT_CATEGORY_WORK_WINDOW_HOURS,
 } from '../lib/ai-config';
 import {
   DEFAULT_WEEKDAY_WORK_START,
@@ -54,6 +55,7 @@ import {
   END_OF_DAY_MINUTE,
   END_OF_DAY_SECOND,
   END_OF_DAY_MILLISECOND,
+  AI_SCHEDULER_MAX_END_HOUR,
 } from '../lib/business-constants';
 import type { Task, RecurrenceConfig } from '../types';
 
@@ -329,8 +331,7 @@ export function useAIScheduler() {
       if (forceCategoryHours) {
         // Use default category hours as the time window (e.g., 9:00-17:00 for work)
         const defaultStartHour = DEFAULT_CATEGORY_HOURS[category] || DEFAULT_CATEGORY_HOURS[DEFAULT_TASK_CATEGORY];
-        // Default to 8-hour window from start hour (e.g., 9:00-17:00)
-        const defaultEndHour = Math.min(defaultStartHour + 8, 23);
+        const defaultEndHour = Math.min(defaultStartHour + DEFAULT_CATEGORY_WORK_WINDOW_HOURS, AI_SCHEDULER_MAX_END_HOUR);
         const defaultTotalHours = defaultEndHour - defaultStartHour;
         
         // Determine the earliest time we can schedule

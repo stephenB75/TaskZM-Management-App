@@ -655,6 +655,9 @@ export const DEFAULT_CATEGORY_HOURS = {
  */
 export const DEFAULT_TASK_CATEGORY: 'work' | 'personal' | 'projects' = 'work';
 
+/** Default work window length (hours) when category hours are disabled but forceCategoryHours is true (e.g. 9–17). */
+export const DEFAULT_CATEGORY_WORK_WINDOW_HOURS = 8;
+
 // ============================================================================
 // Priority Weights (for sorting)
 // ============================================================================
