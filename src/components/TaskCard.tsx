@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
-import { getCheckboxSizePxForWidth, ICON_SIZE_MD, ICON_SIZE_XS, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
+import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, ICON_SIZE_MD, ICON_SIZE_XS, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
@@ -44,8 +44,12 @@ export function TaskCard({
   const { getTeamMember } = useTeam();
   const [isHovered, setIsHovered] = useState(false);
   const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  const [visualSizePx, setVisualSizePx] = useState(() => getCheckboxVisualSizePxForWidth(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
   useEffect(() => {
-    const onResize = () => setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+    const onResize = () => {
+      setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      setVisualSizePx(getCheckboxVisualSizePxForWidth(window.innerWidth));
+    };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -132,14 +136,19 @@ export function TaskCard({
         
         <div className="flex items-start justify-between gap-2 pt-2">
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <Checkbox
-              checked={task.status === 'done'}
-              onCheckedChange={handleToggleComplete}
+            <div
+              className="mt-1 flex-shrink-0 flex items-center justify-center"
+              style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
               onClick={(e) => e.stopPropagation()}
-              className="mt-1 flex-shrink-0"
-              style={{ width: checkboxSizePx, height: checkboxSizePx, minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
-            />
-          
+            >
+              <Checkbox
+                checked={task.status === 'done'}
+                onCheckedChange={handleToggleComplete}
+                onClick={(e) => e.stopPropagation()}
+                className="flex-shrink-0"
+                style={{ width: visualSizePx, height: visualSizePx, minWidth: visualSizePx, minHeight: visualSizePx }}
+              />
+            </div>
           <div className="flex-1 min-w-0">
             {/* Scheduled Time with AM/PM - Top Left Corner */}
             {formatTimeAMPM(task.scheduledDate || task.dueDate) && (

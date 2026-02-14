@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { getCheckboxSizePxForWidth, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL, TOAST_DURATION_SHORT_MS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL, TOAST_DURATION_SHORT_MS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
@@ -106,8 +106,12 @@ export function AIRecommendationPanel({
     tasks: Task[];
   } | null>(null);
   const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  const [visualSizePx, setVisualSizePx] = useState(() => getCheckboxVisualSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
   useEffect(() => {
-    const onResize = () => setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+    const onResize = () => {
+      setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      setVisualSizePx(getCheckboxVisualSizePxForWidth(window.innerWidth));
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -737,13 +741,18 @@ export function AIRecommendationPanel({
                   >
                     <Card className={cn("p-4", UI_INBOX_GRADIENTS.card.className, !selectedPlanTaskIds.has(task.id) && "opacity-75")}>
                       <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedPlanTaskIds.has(task.id)}
-                          onCheckedChange={() => togglePlanSelection(task.id)}
-                          className="mt-1 shrink-0 flex-shrink-0"
-                          style={{ width: checkboxSizePx, height: checkboxSizePx, minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
-                          aria-label={`Accept schedule for ${task.title}`}
-                        />
+                        <div
+                          className="mt-1 shrink-0 flex-shrink-0 flex items-center justify-center"
+                          style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
+                        >
+                          <Checkbox
+                            checked={selectedPlanTaskIds.has(task.id)}
+                            onCheckedChange={() => togglePlanSelection(task.id)}
+                            className="flex-shrink-0"
+                            style={{ width: visualSizePx, height: visualSizePx, minWidth: visualSizePx, minHeight: visualSizePx }}
+                            aria-label={`Accept schedule for ${task.title}`}
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h4 className="font-medium text-sm">

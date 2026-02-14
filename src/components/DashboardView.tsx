@@ -53,6 +53,7 @@ import { toast } from "../lib/toast-wrapper";
 import type { Task } from "../types";
 import { 
   getCheckboxSizePxForWidth,
+  getCheckboxVisualSizePxForWidth,
   TOGGLE_SWITCH_DIMENSIONS, 
   TOGGLE_SWITCH_SPACING, 
   TOGGLE_SWITCH_TEXT_SIZES, 
@@ -1815,13 +1816,18 @@ export function DashboardView({
                   >
                     <Card className={cn("p-4", UI_INBOX_GRADIENTS.card.className, !selectedPlanTaskIds.has(task.id) && "opacity-75")}>
                       <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedPlanTaskIds.has(task.id)}
-                          onCheckedChange={() => togglePlanSelection(task.id)}
-                          className="mt-1 shrink-0 flex-shrink-0"
-                          style={{ width: getCheckboxSizePxForWidth(screenWidth), height: getCheckboxSizePxForWidth(screenWidth), minWidth: getCheckboxSizePxForWidth(screenWidth), minHeight: getCheckboxSizePxForWidth(screenWidth) }}
-                          aria-label={`Accept schedule for ${task.title}`}
-                        />
+                        <div
+                          className="mt-1 shrink-0 flex-shrink-0 flex items-center justify-center"
+                          style={{ minWidth: getCheckboxSizePxForWidth(screenWidth), minHeight: getCheckboxSizePxForWidth(screenWidth) }}
+                        >
+                          <Checkbox
+                            checked={selectedPlanTaskIds.has(task.id)}
+                            onCheckedChange={() => togglePlanSelection(task.id)}
+                            className="flex-shrink-0"
+                            style={{ width: getCheckboxVisualSizePxForWidth(screenWidth), height: getCheckboxVisualSizePxForWidth(screenWidth), minWidth: getCheckboxVisualSizePxForWidth(screenWidth), minHeight: getCheckboxVisualSizePxForWidth(screenWidth) }}
+                            aria-label={`Accept schedule for ${task.title}`}
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <h4 className="font-medium text-sm">

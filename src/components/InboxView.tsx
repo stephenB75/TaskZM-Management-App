@@ -31,7 +31,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CHECKBOX_SIZE_MOBILE, INBOX_CHECKBOX_SIZE_SMALL_MONITOR, INBOX_CHECKBOX_SIZE_LANDSCAPE, INBOX_CHECKBOX_SIZE_DESKTOP, INBOX_CARD_SHADOW_MOBILE, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CARD_SHADOW_MOBILE, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth } from "../lib/layout-constants";
 import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES, TASK_CARD_TEXT_COLORS } from "../lib/task-card-constants";
 import { toast } from "../lib/toast-wrapper";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getDateString, parseCalendarEventTime } from "../lib/utils";
@@ -105,21 +105,17 @@ export function InboxView() {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
   
-  // Calculate responsive checkbox size
-  const getCheckboxSize = () => {
-    if (shouldUseMobileLayout) {
-      return INBOX_CHECKBOX_SIZE_MOBILE;
-    }
-    if (isSmallMonitor && isLandscape) {
-      return INBOX_CHECKBOX_SIZE_LANDSCAPE;
-    }
-    if (isSmallMonitor) {
-      return INBOX_CHECKBOX_SIZE_SMALL_MONITOR;
-    }
-    return INBOX_CHECKBOX_SIZE_DESKTOP;
-  };
-  
-  const checkboxSize = getCheckboxSize();
+  // Tap target (44px on touch) and drawn size (20px on mobile/tablet) for checkboxes
+  const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  const [visualSizePx, setVisualSizePx] = useState(() => getCheckboxVisualSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  useEffect(() => {
+    const onResize = () => {
+      setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      setVisualSizePx(getCheckboxVisualSizePxForWidth(window.innerWidth));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] =
@@ -1154,22 +1150,29 @@ export function InboxView() {
                             onClick={() => handleTaskClick(task)}
                           >
                             <div className="flex items-start gap-2 md:gap-3">
-                              <Checkbox
-                                checked={selectedTaskIds.has(task.id)}
-                                onCheckedChange={() => {
-                                  setSelectedTaskIds(prev => {
-                                    const newSet = new Set(prev);
-                                    if (newSet.has(task.id)) {
-                                      newSet.delete(task.id);
-                                    } else {
-                                      newSet.add(task.id);
-                                    }
-                                    return newSet;
-                                  });
-                                }}
+                              <div
+                                className="mt-0.5 flex-shrink-0 flex items-center justify-center"
+                                style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="mt-0.5 flex-shrink-0"
-                              />
+                              >
+                                <Checkbox
+                                  checked={selectedTaskIds.has(task.id)}
+                                  onCheckedChange={() => {
+                                    setSelectedTaskIds(prev => {
+                                      const newSet = new Set(prev);
+                                      if (newSet.has(task.id)) {
+                                        newSet.delete(task.id);
+                                      } else {
+                                        newSet.add(task.id);
+                                      }
+                                      return newSet;
+                                    });
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex-shrink-0"
+                                  style={{ width: visualSizePx, height: visualSizePx, minWidth: visualSizePx, minHeight: visualSizePx }}
+                                />
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2 mb-2">
                                   <h4 className="font-medium text-sm leading-tight">
@@ -1481,28 +1484,29 @@ export function InboxView() {
                           onClick={() => handleTaskClick(task)}
                         >
                           <div className="flex items-start gap-2 md:gap-3">
-                            <Checkbox
-                              checked={selectedTaskIds.has(task.id)}
-                              onCheckedChange={() => {
-                                setSelectedTaskIds(prev => {
-                                  const newSet = new Set(prev);
-                                  if (newSet.has(task.id)) {
-                                    newSet.delete(task.id);
-                                  } else {
-                                    newSet.add(task.id);
-                                  }
-                                  return newSet;
-                                });
-                              }}
+                            <div
+                              className="mt-0.5 flex-shrink-0 flex items-center justify-center"
+                              style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
                               onClick={(e) => e.stopPropagation()}
-                              className="mt-0.5 flex-shrink-0"
-                              style={{ 
-                                width: checkboxSize, 
-                                height: checkboxSize, 
-                                minWidth: checkboxSize, 
-                                minHeight: checkboxSize 
-                              }}
-                            />
+                            >
+                              <Checkbox
+                                checked={selectedTaskIds.has(task.id)}
+                                onCheckedChange={() => {
+                                  setSelectedTaskIds(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(task.id)) {
+                                      newSet.delete(task.id);
+                                    } else {
+                                      newSet.add(task.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex-shrink-0"
+                                style={{ width: visualSizePx, height: visualSizePx, minWidth: visualSizePx, minHeight: visualSizePx }}
+                              />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <h4 className="font-medium text-sm leading-tight">

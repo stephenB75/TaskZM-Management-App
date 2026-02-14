@@ -8,10 +8,9 @@ import {
   VIEWPORT_BREAKPOINTS, 
   NAV_BAR_BOTTOM_PADDING_MOBILE, 
   MOBILE_PADDING_BOTTOM,
-  ARCHIVE_CHECKBOX_SIZE,
-  ARCHIVE_CHECKBOX_SIZE_MOBILE,
-  INBOX_CHECKBOX_SIZE_MOBILE,
   ARCHIVE_TITLE_TEXT_SIZE,
+  getCheckboxSizePxForWidth,
+  getCheckboxVisualSizePxForWidth,
 } from "../lib/layout-constants";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -46,6 +45,16 @@ import type { Task } from "../types";
 export function ArchiveView() {
   const { tasks, updateTask, deleteTask, bulkDeleteTasks } = useTasks();
   const isMobile = useIsMobile();
+  const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  const [visualSizePx, setVisualSizePx] = useState(() => getCheckboxVisualSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  useEffect(() => {
+    const onResize = () => {
+      setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      setVisualSizePx(getCheckboxVisualSizePxForWidth(window.innerWidth));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] =
     useState<string>("all");
@@ -401,27 +410,28 @@ export function ArchiveView() {
                             className="flex items-center gap-2 md:gap-3 py-2 px-1 cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => handleTaskClick(task)}
                           >
-                            <Checkbox
-                              checked={selectedTaskIds.has(task.id)}
-                              onCheckedChange={() => {
-                                setSelectedTaskIds(prev => {
-                                  const newSet = new Set(prev);
-                                  if (newSet.has(task.id)) {
-                                    newSet.delete(task.id);
-                                  } else {
-                                    newSet.add(task.id);
-                                  }
-                                  return newSet;
-                                });
-                              }}
+                            <div
+                              className="flex-shrink-0 flex items-center justify-center"
+                              style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
                               onClick={(e) => e.stopPropagation()}
-                              style={{ 
-                                width: isMobile ? ARCHIVE_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE, 
-                                height: isMobile ? ARCHIVE_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
-                                minWidth: isMobile ? ARCHIVE_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
-                                minHeight: isMobile ? ARCHIVE_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
-                              }}
-                            />
+                            >
+                              <Checkbox
+                                checked={selectedTaskIds.has(task.id)}
+                                onCheckedChange={() => {
+                                  setSelectedTaskIds(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(task.id)) {
+                                      newSet.delete(task.id);
+                                    } else {
+                                      newSet.add(task.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{ width: visualSizePx, height: visualSizePx, minWidth: visualSizePx, minHeight: visualSizePx }}
+                              />
+                            </div>
                             {/* Task Title - Just the headline */}
                             <h3 
                               className="flex-1 line-through opacity-70 line-clamp-2 font-semibold"
@@ -498,27 +508,28 @@ export function ArchiveView() {
                           className="flex items-center gap-2 md:gap-3 py-2 px-1 cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={() => handleTaskClick(task)}
                         >
-                          <Checkbox
-                            checked={selectedTaskIds.has(task.id)}
-                            onCheckedChange={() => {
-                              setSelectedTaskIds(prev => {
-                                const newSet = new Set(prev);
-                                if (newSet.has(task.id)) {
-                                  newSet.delete(task.id);
-                                } else {
-                                  newSet.add(task.id);
-                                }
-                                return newSet;
-                              });
-                            }}
+                          <div
+                            className="flex-shrink-0 flex items-center justify-center"
+                            style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
                             onClick={(e) => e.stopPropagation()}
-                            style={{ 
-                              width: isMobile ? ARCHIVE_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE, 
-                              height: isMobile ? ARCHIVE_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
-                              minWidth: isMobile ? ARCHIVE_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
-                              minHeight: isMobile ? ARCHIVE_CHECKBOX_SIZE_MOBILE : ARCHIVE_CHECKBOX_SIZE,
-                            }}
-                          />
+                          >
+                            <Checkbox
+                              checked={selectedTaskIds.has(task.id)}
+                              onCheckedChange={() => {
+                                setSelectedTaskIds(prev => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(task.id)) {
+                                    newSet.delete(task.id);
+                                  } else {
+                                    newSet.add(task.id);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ width: visualSizePx, height: visualSizePx, minWidth: visualSizePx, minHeight: visualSizePx }}
+                            />
+                          </div>
                           {/* Task Title - Just the headline */}
                           <h3 
                             className="flex-1 line-through opacity-70 line-clamp-2 font-semibold"
