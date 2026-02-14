@@ -872,7 +872,7 @@ export const DraggableTaskCard = React.forwardRef<
                   <Badge
                     variant="secondary"
                     className={cn(
-                      "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
+                      "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white dark:bg-card whitespace-nowrap",
                       TASK_CARD_TIMELINE.todayAgenda.priorityBadgeClass,
                     )}
                     style={{
@@ -974,7 +974,7 @@ export const DraggableTaskCard = React.forwardRef<
                 <Badge
                   variant="secondary"
                   className={cn(
-                    "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white whitespace-nowrap",
+                    "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white dark:bg-card whitespace-nowrap",
                     isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
                   )}
                   style={{

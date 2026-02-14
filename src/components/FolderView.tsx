@@ -199,7 +199,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
       case "low":
         return "bg-gray-100 text-gray-700 border-gray-300 dark:bg-muted dark:text-muted-foreground";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-300";
+        return "bg-gray-100 text-gray-700 border-gray-300 dark:bg-muted dark:text-muted-foreground dark:border-border";
     }
   };
 

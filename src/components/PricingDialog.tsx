@@ -564,7 +564,7 @@ export function PricingDialog({
           </div>
 
           {offeringsError && (
-            <div className={`mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 ${PRICING_DIALOG_TEXT_SIZES.description} text-red-700`}>
+            <div className={`mb-3 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-3 py-1.5 ${PRICING_DIALOG_TEXT_SIZES.description} text-red-700 dark:text-red-300`}>
               {offeringsError}
             </div>
           )}

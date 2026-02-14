@@ -381,7 +381,7 @@ export function DraggableTodayAgendaTask({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); pauseTimer(pomodoroTimerId); }}
-                    className="p-0.5 rounded hover:bg-white/20 transition-colors"
+                    className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
                     aria-label="Pause timer"
                   >
                     <Icon name="pause" size={ICON_SIZE_XS} weight="fill" className="text-white" />
@@ -389,7 +389,7 @@ export function DraggableTodayAgendaTask({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); stopTimer(pomodoroTimerId); }}
-                    className="p-0.5 rounded hover:bg-white/20 transition-colors"
+                    className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
                     aria-label="Stop timer"
                   >
                     <Icon name="stop" size={ICON_SIZE_XS} weight="fill" className="text-white" />

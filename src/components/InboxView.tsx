@@ -1185,7 +1185,7 @@ export function InboxView() {
                                         "text-xs",
                                         task.priority ===
                                           "urgent" &&
-                                          "border-red-400 text-red-700 bg-red-50",
+                                          "border-red-400 text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800",
                                         task.priority ===
                                           "high" &&
                                           "border-orange-400 text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/20",
@@ -1202,7 +1202,7 @@ export function InboxView() {
                                       "in-progress" && (
                                       <Badge
                                         variant="outline"
-                                        className="text-xs border-green-400 text-green-700 bg-green-50"
+                                        className="text-xs border-green-400 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800"
                                       >
                                         active
                                       </Badge>
@@ -1211,7 +1211,7 @@ export function InboxView() {
                                       "on-hold" && (
                                       <Badge
                                         variant="outline"
-                                        className="text-xs border-yellow-400 text-yellow-700 bg-yellow-50"
+                                        className="text-xs border-yellow-400 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/30 dark:text-yellow-300 dark:border-yellow-800"
                                       >
                                         on hold
                                       </Badge>
@@ -1519,7 +1519,7 @@ export function InboxView() {
                                       "text-xs",
                                       task.priority ===
                                         "urgent" &&
-                                        "border-red-400 text-red-700 bg-red-50",
+                                        "border-red-400 text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800",
                                       task.priority ===
                                         "high" &&
                                         "border-orange-400 text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/20",
@@ -1536,7 +1536,7 @@ export function InboxView() {
                                     "in-progress" && (
                                     <Badge
                                       variant="outline"
-                                      className="text-xs border-green-400 text-green-700 bg-green-50"
+                                      className="text-xs border-green-400 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800"
                                     >
                                       active
                                     </Badge>
@@ -1545,7 +1545,7 @@ export function InboxView() {
                                     "on-hold" && (
                                     <Badge
                                       variant="outline"
-                                      className="text-xs border-yellow-400 text-yellow-700 bg-yellow-50"
+                                      className="text-xs border-yellow-400 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/30 dark:text-yellow-300 dark:border-yellow-800"
                                     >
                                       on hold
                                     </Badge>

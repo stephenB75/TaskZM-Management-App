@@ -359,7 +359,7 @@ export function TaskCard({
               
               {/* Blocked indicator */}
               {blocked && (
-                <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 bg-amber-50">
+                <Badge variant="outline" className="text-xs border-amber-400 text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800">
                   Blocked ({incompleteDeps.length})
                 </Badge>
               )}

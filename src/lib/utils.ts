@@ -165,20 +165,20 @@ export function isOverdue(dueDate: string | null): boolean {
 // Task utilities
 export function getPriorityColor(priority: TaskPriority): string {
   const colors = {
-    low: 'text-gray-600 bg-gray-50 border-gray-200',
-    medium: 'text-blue-600 bg-blue-50 border-blue-200',
-    high: 'text-orange-600 bg-orange-50 border-orange-200',
-    urgent: 'text-red-600 bg-red-50 border-red-200',
+    low: 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-400 dark:bg-muted dark:border-border',
+    medium: 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/30 dark:border-blue-800',
+    high: 'text-orange-600 bg-orange-50 border-orange-200 dark:text-orange-400 dark:bg-orange-950/30 dark:border-orange-800',
+    urgent: 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-950/30 dark:border-red-800',
   };
   return colors[priority];
 }
 
 export function getStatusColor(status: TaskStatus): string {
   const colors = {
-    'todo': 'text-gray-600 bg-gray-50 border-gray-200',
-    'in-progress': 'text-blue-600 bg-blue-50 border-blue-200',
-    'done': 'text-green-600 bg-green-50 border-green-200',
-    'on-hold': 'text-yellow-600 bg-yellow-50 border-yellow-200',
+    'todo': 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-400 dark:bg-muted dark:border-border',
+    'in-progress': 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/30 dark:border-blue-800',
+    'done': 'text-green-600 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/30 dark:border-green-800',
+    'on-hold': 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-950/30 dark:border-yellow-800',
   };
   return colors[status];
 }

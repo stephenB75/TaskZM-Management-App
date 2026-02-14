@@ -92,11 +92,11 @@ export function AIScheduleResultDialog({
                               className={cn(
                                 "text-xs",
                                 task.priority === "urgent" &&
-                                  "border-red-400 text-red-700 bg-red-50",
+                                  "border-red-400 text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800",
                                 task.priority === "high" &&
-                                  "border-orange-400 text-orange-700 bg-orange-50",
+                                  "border-orange-400 text-orange-700 bg-orange-50 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800",
                                 task.priority === "medium" &&
-                                  "border-blue-400 text-blue-700 bg-blue-50",
+                                  "border-blue-400 text-blue-700 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800",
                                 task.priority === "low" &&
                                   "border-gray-400 text-gray-700 dark:text-foreground bg-gray-50 dark:bg-muted/20",
                               )}
@@ -106,7 +106,7 @@ export function AIScheduleResultDialog({
                             {task.status === "in-progress" && (
                               <Badge
                                 variant="outline"
-                                className="text-xs border-green-400 text-green-700 bg-green-50"
+                                className="text-xs border-green-400 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800"
                               >
                                 active
                               </Badge>
