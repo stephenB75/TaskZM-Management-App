@@ -368,8 +368,7 @@ export function SevenDayKanban({
           const columnElements = columns.children;
           
           // OPTIMIZED: Limit the number of columns checked and batch reads efficiently
-          // Only check visible columns or a reasonable subset
-          const maxColumnsToCheck = 14; // 14 days max
+          const maxColumnsToCheck = KANBAN_TIME.daysInWeek;
           const columnsToCheck = Array.from(columnElements).slice(0, maxColumnsToCheck);
           
           // OPTIMIZED: Batch all layout reads in a single pass to minimize forced reflows
@@ -411,7 +410,7 @@ export function SevenDayKanban({
         
         // Use requestIdleCallback if available, otherwise use setTimeout with small delay
         if (typeof requestIdleCallback !== 'undefined') {
-          requestIdleCallback(processMeasurements, { timeout: 100 });
+          requestIdleCallback(processMeasurements, { timeout: KANBAN_ZOOM.idleCallbackTimeoutMs });
         } else {
           setTimeout(processMeasurements, 0);
         }
@@ -567,10 +566,10 @@ export function SevenDayKanban({
     
     // Wait for zoom calculation to complete before scrolling
     // This ensures columns are properly sized/resized before calculating scroll position
-    // Use a delay that accounts for zoom calculation delay (KANBAN_ZOOM.calculateDelay = 200ms)
+    // Use a delay that accounts for zoom calculation and buffer (KANBAN_ZOOM.calculateDelay + KANBAN_SCROLL.zoomBufferMs)
     // plus additional time for DOM rendering, transform application, and browser scroll restoration
     // Increased delay to ensure browser scroll restoration completes before we calculate
-    const scrollTimeout = setTimeout(scrollToNextDay, Math.max(KANBAN_SCROLL.initialScrollDelay, KANBAN_ZOOM.calculateDelay + 200));
+    const scrollTimeout = setTimeout(scrollToNextDay, Math.max(KANBAN_SCROLL.initialScrollDelay, KANBAN_ZOOM.calculateDelay + KANBAN_SCROLL.zoomBufferMs));
     
     return () => {
       clearTimeout(scrollTimeout);
@@ -1155,6 +1154,7 @@ export function SevenDayKanban({
           >
             <div 
               ref={columnsContainerRef}
+              data-kanban-zoom-scale={zoomScale}
               className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3 min-w-max"
               style={{
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',

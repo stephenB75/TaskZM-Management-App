@@ -264,12 +264,14 @@ export const KANBAN_ZOOM = {
   padding: 60, // px total (30px top + 30px bottom)
   resizeDebounce: 100, // ms
   calculateDelay: 200, // ms
+  idleCallbackTimeoutMs: 100, // ms - requestIdleCallback timeout for measurement
 } as const;
 
 // Scroll Constants
 export const KANBAN_SCROLL = {
   speedMultiplier: 0.8,
   initialScrollDelay: 300, // ms - Delay to wait for zoom calculation and column rendering to complete
+  zoomBufferMs: 200, // Extra ms after calculateDelay before scroll-to-next-day (ensures zoom applied)
 } as const;
 
 // Time Constants
