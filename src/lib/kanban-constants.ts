@@ -277,7 +277,8 @@ export const KANBAN_SCROLL = {
 // Time Constants
 export const KANBAN_TIME = {
   defaultHour: parseTimeToHour(DEFAULT_WEEKDAY_WORK_START), // Default work start time for new tasks
-  daysInWeek: 14,
+  daysPerWeek: 7,
+  daysInWeek: 14, // Desktop shows 2 weeks (14 days)
 } as const;
 
 // Mobile View Constants

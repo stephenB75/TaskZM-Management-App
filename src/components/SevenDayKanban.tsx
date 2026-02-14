@@ -36,6 +36,7 @@ import {
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
 import { buildTaskLayouts } from '../lib/task-layout';
@@ -124,6 +125,16 @@ export function SevenDayKanban({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // Current calendar day key so column "today" indicator updates after midnight or when returning to app
+  const [todayDateKey, setTodayDateKey] = useState(() => getDateString(new Date()));
+  React.useEffect(() => {
+    const intervalMs = TIMING_CONSTANTS.delays.todayIndicatorCheckIntervalMs;
+    const interval = setInterval(() => {
+      const next = getDateString(new Date());
+      setTodayDateKey((prev) => (next !== prev ? next : prev));
+    }, intervalMs);
+    return () => clearInterval(interval);
+  }, []);
   // Calendar events by date: use hook data directly so week view always shows latest (no stale local state)
   
   // Drag-to-scroll state
@@ -195,17 +206,17 @@ export function SevenDayKanban({
       if (weekStart === 'sunday') {
         // Start from Sunday of the current week
         const sundayOffset = currentDay === 0 ? 0 : currentDay; // If today is Sunday, offset is 0
-        startDate.setDate(startDate.getDate() - sundayOffset + currentWeekOffset * 7);
+        startDate.setDate(startDate.getDate() - sundayOffset + currentWeekOffset * KANBAN_TIME.daysPerWeek);
       } else {
         // Start from Monday of the current week
-        const mondayOffset = (currentDay + 6) % 7; // Convert to Monday=0
-        startDate.setDate(startDate.getDate() - mondayOffset + currentWeekOffset * 7);
+        const mondayOffset = (currentDay + KANBAN_TIME.daysPerWeek - 1) % KANBAN_TIME.daysPerWeek; // Convert to Monday=0
+        startDate.setDate(startDate.getDate() - mondayOffset + currentWeekOffset * KANBAN_TIME.daysPerWeek);
       }
     } else {
       // Desktop: Start from tomorrow (today is shown in Today Agenda timeline, so exclude it)
       // But align to week start for proper week grouping
       startDate = new Date(today);
-      startDate.setDate(startDate.getDate() + 1 + (currentWeekOffset * 7));
+      startDate.setDate(startDate.getDate() + 1 + (currentWeekOffset * KANBAN_TIME.daysPerWeek));
       
       // Align to week start
       const currentDay = startDate.getDay(); // 0 (Sun) - 6 (Sat)
@@ -215,12 +226,12 @@ export function SevenDayKanban({
         startDate.setDate(startDate.getDate() - sundayOffset);
       } else {
         // Align to Monday
-        const mondayOffset = currentDay === 0 ? 6 : currentDay - 1; // If Sunday, go back 6 days to Monday
+        const mondayOffset = currentDay === 0 ? KANBAN_TIME.daysPerWeek - 1 : currentDay - 1; // If Sunday, go back 6 days to Monday
         startDate.setDate(startDate.getDate() - mondayOffset);
       }
     }
 
-    const totalDays = mobileMode ? 7 : KANBAN_TIME.daysInWeek;
+    const totalDays = mobileMode ? KANBAN_TIME.daysPerWeek : KANBAN_TIME.daysInWeek;
 
     return Array.from({ length: totalDays }, (_, i) => {
       const date = new Date(startDate);
@@ -246,18 +257,18 @@ export function SevenDayKanban({
         dateString,
         isToday,
         isWeekend: dayOfWeek === 0 || dayOfWeek === 6, // Sunday or Saturday
-        weekNumber: Math.floor(i / 7) + 1,
+        weekNumber: Math.floor(i / KANBAN_TIME.daysPerWeek) + 1,
         dayIndex: i,
       };
     });
   };
 
-  // Memoize week columns so downstream effects don't re-run every render
-  const weekColumns = React.useMemo(() => getWeekColumns(), [mobileMode, mobileWeekOffset, weekOffset]);
+  // Memoize week columns so downstream effects don't re-run every render. Include todayDateKey so the "today" column indicator stays correct after midnight.
+  const weekColumns = React.useMemo(() => getWeekColumns(), [mobileMode, mobileWeekOffset, weekOffset, todayDateKey]);
   const weekGroups = React.useMemo(() => {
     const groups: DayColumn[][] = [];
-    for (let i = 0; i < weekColumns.length; i += 7) {
-      groups.push(weekColumns.slice(i, i + 7));
+    for (let i = 0; i < weekColumns.length; i += KANBAN_TIME.daysPerWeek) {
+      groups.push(weekColumns.slice(i, i + KANBAN_TIME.daysPerWeek));
     }
     return groups;
   }, [weekColumns]);
@@ -275,10 +286,10 @@ export function SevenDayKanban({
     };
   }, [weekColumns]);
 
-  // Fallback range when visibleRange not yet set (e.g. first paint): next 14 days so hook can fetch
+  // Fallback range when visibleRange not yet set (e.g. first paint): next KANBAN_TIME.daysInWeek days so hook can fetch
   const fallbackEnd = React.useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 14);
+    d.setDate(d.getDate() + KANBAN_TIME.daysInWeek);
     d.setHours(23, 59, 59, 999);
     return d;
   }, []);
@@ -300,10 +311,7 @@ export function SevenDayKanban({
   const { eventsByDate: calendarEventsByDate, refetch: refetchCalendarEvents } = useCalendarEventsByDate(
     startDate,
     endDate,
-    {
-      enabled: !!accessToken,
-      debounceMs: 300,
-    }
+    { enabled: !!accessToken }
   );
 
   // Force refetch when week view's visible range becomes available so calendar events show without waiting for cache
@@ -862,7 +870,7 @@ export function SevenDayKanban({
                         className="rounded-full h-7 px-3 gap-1.5 sm:h-8 sm:px-3 flex-shrink-0 text-xs ml-auto sm:ml-2"
                         aria-label="Jump to today"
                       >
-                        <Icon name="calendar-days" size={14} className="hidden sm:block flex-shrink-0 mr-1" />
+                        <Icon name="calendar-days" size={KANBAN_MOBILE.button.iconSize.mobile} className="hidden sm:block flex-shrink-0 mr-1" />
                         <span>Today</span>
                       </Button>
                       
@@ -873,7 +881,7 @@ export function SevenDayKanban({
                         className="rounded-full h-7 w-7 p-0 gap-0 sm:w-auto sm:h-8 sm:px-3 sm:gap-1.5 flex-shrink-0 text-xs"
                         aria-label="Add new task"
                       >
-                        <Icon name="plus" size={14} className="flex-shrink-0 sm:mr-1" />
+                        <Icon name="plus" size={KANBAN_MOBILE.button.iconSize.mobile} className="flex-shrink-0 sm:mr-1" />
                         <span className="hidden sm:inline">Add</span>
                       </Button>
                     </div>
@@ -1214,7 +1222,7 @@ export function SevenDayKanban({
                     return isRecurring ? `${t.id}__${column.dateString}` : t.id;
                   })
                   .filter((id): id is string => id !== null) : [];
-                      const globalIndex = groupIndex * 7 + columnIndex;
+                      const globalIndex = groupIndex * KANBAN_TIME.daysPerWeek + columnIndex;
                       const isSecondWeek = groupIndex === 1;
                       const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
 
