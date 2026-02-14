@@ -75,7 +75,7 @@ import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { ACTION_PLAN_CONFIG } from "../lib/ai-config";
-import { getCheckboxSizePxForWidth, TODAY_AGENDA_TIMELINE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, TODAY_AGENDA_TIMELINE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -136,8 +136,12 @@ export const DraggableTaskCard = React.forwardRef<
     const previousTaskInstanceKeyRef = React.useRef<string | null>(null);
 
     const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+    const [visualSizePx, setVisualSizePx] = useState(() => getCheckboxVisualSizePxForWidth(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
     useEffect(() => {
-      const onResize = () => setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      const onResize = () => {
+        setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+        setVisualSizePx(getCheckboxVisualSizePxForWidth(window.innerWidth));
+      };
       window.addEventListener('resize', onResize);
       return () => window.removeEventListener('resize', onResize);
     }, []);
@@ -915,13 +919,17 @@ export const DraggableTaskCard = React.forwardRef<
                   type="button"
                   onClick={handleToggleComplete}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="flex-shrink-0 hover:opacity-80 transition-opacity"
-                  style={{ marginTop: TASK_CARD_TIMELINE.todayAgenda.checkboxMarginTopPx }}
+                  className="flex-shrink-0 hover:opacity-80 transition-opacity flex items-center justify-center"
+                  style={{
+                    marginTop: TASK_CARD_TIMELINE.todayAgenda.checkboxMarginTopPx,
+                    minWidth: checkboxSizePx,
+                    minHeight: checkboxSizePx,
+                  }}
                   aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
                 >
                   <Icon
                     name="circle"
-                    size={checkboxSizePx}
+                    size={visualSizePx}
                     className={cn(
                       "transition-colors flex-shrink-0",
                       isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
@@ -1006,12 +1014,13 @@ export const DraggableTaskCard = React.forwardRef<
               type="button"
               onClick={handleToggleComplete}
               onPointerDown={(e) => e.stopPropagation()}
-              className="flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5 mr-1"
+              className="flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5 mr-1 flex items-center justify-center"
+              style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
               aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
             >
               <Icon 
                 name="circle"
-                size={isMobile ? TASK_CARD_ICON_SIZES.checkbox.mobile : TASK_CARD_ICON_SIZES.checkbox.desktop}
+                size={visualSizePx}
                 className={cn(
                   "transition-colors flex-shrink-0",
                   isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,

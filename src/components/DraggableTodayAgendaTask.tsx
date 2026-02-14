@@ -4,7 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_XS, ICON_SIZE_SM, ICON_SIZE_MD } from "../lib/layout-constants";
+import { ICON_SIZE_XS, ICON_SIZE_SM, ICON_SIZE_MD, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { Badge } from "./ui/badge";
 import { cn, getDateString } from "../lib/utils";
 import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, SECONDS_PER_MINUTE } from "../lib/business-constants";
@@ -93,6 +93,16 @@ export function DraggableTodayAgendaTask({
   const { actualTheme } = useTheme();
   const shouldUseMobileLayout = useMobileLayout(); // Covers mobile, iPad, tablet, and landscape on smaller screens
   const isMobile = shouldUseMobileLayout; // Keep isMobile for backward compatibility with existing code
+  const [checkboxSizePx, setCheckboxSizePx] = React.useState(() => getCheckboxSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  const [visualSizePx, setVisualSizePx] = React.useState(() => getCheckboxVisualSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  React.useEffect(() => {
+    const onResize = () => {
+      setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      setVisualSizePx(getCheckboxVisualSizePxForWidth(window.innerWidth));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   // Use canonical occurrence id (_subtasks_) for recurring so timer state and stored time match the same record
   const isRecurringTask = task.recurrence && task.recurrence.type !== 'none';
   const baseId = isRecurringTask && task.id
@@ -390,12 +400,15 @@ export function DraggableTodayAgendaTask({
                 type="button"
                 onClick={handleToggleComplete}
                 onPointerDown={(e) => e.stopPropagation()}
-                className={canUsePomodoro && timerState.isRunning ? "flex-shrink-0 p-0.5 rounded-full hover:opacity-80 transition-opacity" : "ml-auto flex-shrink-0 p-0.5 rounded-full hover:opacity-80 transition-opacity"}
+                className={cn(
+                  canUsePomodoro && timerState.isRunning ? "flex-shrink-0 rounded-full hover:opacity-80 transition-opacity flex items-center justify-center" : "ml-auto flex-shrink-0 rounded-full hover:opacity-80 transition-opacity flex items-center justify-center",
+                )}
+                style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
                 aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
               >
                 <Icon
                   name="circle"
-                  size={ICON_SIZE_SM}
+                  size={visualSizePx}
                   className="text-white/90"
                   weight={task.status === "done" ? "fill" : "regular"}
                 />

@@ -31,7 +31,7 @@ import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
-import { getCheckboxSizePxForWidth, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
 import type { Task } from "../types";
@@ -61,8 +61,12 @@ function DraggableMonthTask({
   const { actualTheme } = useTheme();
   const isDark = actualTheme === "dark";
   const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
+  const [visualSizePx, setVisualSizePx] = useState(() => getCheckboxVisualSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
   useEffect(() => {
-    const onResize = () => setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+    const onResize = () => {
+      setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      setVisualSizePx(getCheckboxVisualSizePxForWidth(window.innerWidth));
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -119,11 +123,11 @@ function DraggableMonthTask({
           onClick={handleToggleComplete}
           onPointerDown={(e) => e.stopPropagation()}
           className="flex-shrink-0 hover:opacity-80 transition-opacity mt-0.5 flex items-center justify-center"
-          style={{ width: checkboxSizePx, height: checkboxSizePx, minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
+          style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
           aria-label={task.status === "done" ? "Mark as incomplete" : "Mark as complete"}
         >
           <Icon name="circle"
-            size={checkboxSizePx}
+            size={visualSizePx}
             className={cn(
               "transition-colors",
               task.status === "done"

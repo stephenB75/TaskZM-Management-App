@@ -196,9 +196,17 @@ export const VIEWPORT_BREAKPOINTS = {
   // Desktop: 1280px and above (use desktop layout - multi-column)
 } as const;
 
-/** Checkbox and mark-as-complete button visual size (px) by breakpoint. Mobile meets MIN_TOUCH_TARGET_PX. */
+/** Checkbox and mark-as-complete button: minimum tap target (px). Mobile and tablet use MIN_TOUCH_TARGET_PX. */
 export const CHECKBOX_AND_MARK_COMPLETE_SIZE_PX = {
   mobile: MIN_TOUCH_TARGET_PX,
+  tablet: MIN_TOUCH_TARGET_PX,
+  laptop: 20,
+  desktop: 16,
+} as const;
+
+/** Drawn size (px) of the circle/checkbox icon so it stays proportionate to title and other icons (e.g. 17–24px). Tap target remains CHECKBOX_AND_MARK_COMPLETE_SIZE_PX. */
+export const CHECKBOX_VISUAL_SIZE_PX = {
+  mobile: 28,
   tablet: 28,
   laptop: 20,
   desktop: 16,
@@ -207,17 +215,25 @@ export const CHECKBOX_AND_MARK_COMPLETE_SIZE_PX = {
 /** Check icon size (px) by breakpoint, proportional to checkbox. */
 export const CHECKBOX_CHECK_ICON_SIZE_PX = {
   mobile: 18,
-  tablet: 14,
+  tablet: 18,
   laptop: 12,
   desktop: 12,
 } as const;
 
-/** Return checkbox/mark-complete size (px) for a given viewport width. */
+/** Return checkbox/mark-complete tap target size (px) for a given viewport width. */
 export function getCheckboxSizePxForWidth(width: number): number {
   if (width < VIEWPORT_BREAKPOINTS.mobile) return CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.mobile;
   if (width < VIEWPORT_BREAKPOINTS.tablet) return CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.tablet;
   if (width < VIEWPORT_BREAKPOINTS.desktop) return CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.laptop;
   return CHECKBOX_AND_MARK_COMPLETE_SIZE_PX.desktop;
+}
+
+/** Return drawn icon size (px) for mark-complete circle so it stays proportionate to surrounding text/icons. */
+export function getCheckboxVisualSizePxForWidth(width: number): number {
+  if (width < VIEWPORT_BREAKPOINTS.mobile) return CHECKBOX_VISUAL_SIZE_PX.mobile;
+  if (width < VIEWPORT_BREAKPOINTS.tablet) return CHECKBOX_VISUAL_SIZE_PX.tablet;
+  if (width < VIEWPORT_BREAKPOINTS.desktop) return CHECKBOX_VISUAL_SIZE_PX.laptop;
+  return CHECKBOX_VISUAL_SIZE_PX.desktop;
 }
 
 /** Return check icon size (px) for a given viewport width. */
