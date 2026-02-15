@@ -38,7 +38,8 @@ export const AUTH_UI_TEXT = {
     forgotPassword: 'Forgot password?',
     rememberMe: 'Remember me',
     button: 'Sign In',
-    successMessage: 'Welcome back!',
+    successMessage: 'Welcome back! 🎉',
+    invalidCredentialsWithForgot: 'Invalid credentials. Forgot your password?',
   },
   
   // Sign Up
@@ -106,6 +107,7 @@ export const AUTH_UI_TEXT = {
   // General
   or: 'OR',
   loading: 'Loading...',
+  accountExistsTrySignIn: 'Account already exists. Try signing in!',
   error: {
     generic: 'An error occurred. Please try again.',
     accountCreationFailed: 'Failed to create account',
@@ -150,6 +152,9 @@ export const AUTH_COLORS = {
   },
 } as const;
 
+/** localStorage key for "remember me" email */
+export const AUTH_REMEMBER_EMAIL_KEY = 'taskzm_remember_email';
+
 // Configuration Constants
 export const AUTH_CONFIG = {
   featuresPerPage: 6, // 2 rows x 3 columns
@@ -158,6 +163,8 @@ export const AUTH_CONFIG = {
   passwordVeryStrongLength: 12,
   toastDuration: 4000, // milliseconds
   carouselAutoScrollInterval: 4000, // milliseconds
+  invalidCredentialsToastDurationMs: 6000,
+  accountExistsToastDurationMs: 5000,
 } as const;
 
 // Background Image URL

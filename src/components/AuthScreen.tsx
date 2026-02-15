@@ -30,6 +30,7 @@ import {
 } from "./ui/dialog";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { logger } from "../lib/logger";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -43,7 +44,8 @@ import {
   AUTH_UI_TEXT, 
   AUTH_CONFIG,
   AUTH_BACKGROUND_IMAGE,
-  AUTH_COLORS
+  AUTH_COLORS,
+  AUTH_REMEMBER_EMAIL_KEY,
 } from '../lib/auth-constants';
 import { getUserFriendlyErrorMessage } from '../lib/error-utils';
 import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS, PANEL_GAP_MEDIUM, PANEL_GAP_SMALL, PANEL_FIELD_SPACING } from '../lib/layout-constants';
@@ -197,7 +199,7 @@ export function AuthScreen() {
     e.preventDefault();
     
     if (!validateEmail(signInEmail, false)) {
-      toast.error("Please enter a valid email address");
+      toast.error(AUTH_UI_TEXT.validation.emailRequired);
       return;
     }
 
@@ -205,39 +207,34 @@ export function AuthScreen() {
 
     try {
       await signIn(signInEmail, signInPassword);
-      
-      // Store remember me preference
+
       if (rememberMe) {
-        localStorage.setItem('taskzm_remember_email', signInEmail);
+        localStorage.setItem(AUTH_REMEMBER_EMAIL_KEY, signInEmail);
       } else {
-        localStorage.removeItem('taskzm_remember_email');
+        localStorage.removeItem(AUTH_REMEMBER_EMAIL_KEY);
       }
-      
-      toast.success("Welcome back! 🎉");
+
+      toast.success(AUTH_UI_TEXT.signIn.successMessage);
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to sign in";
+          : AUTH_UI_TEXT.error.signInFailed;
 
-      // If invalid credentials, suggest signing up or forgot password
       if (
         errorMessage.toLowerCase().includes("invalid") ||
         errorMessage.toLowerCase().includes("credentials")
       ) {
-        toast.error(
-          "Invalid credentials. Forgot your password?",
-          {
-            duration: 6000,
-            action: {
-              label: AUTH_UI_TEXT.forgotPassword.title,
-              onClick: () => {
-                setForgotPasswordEmail(signInEmail);
-                setShowForgotPasswordDialog(true);
-              },
+        toast.error(AUTH_UI_TEXT.signIn.invalidCredentialsWithForgot, {
+          duration: AUTH_CONFIG.invalidCredentialsToastDurationMs,
+          action: {
+            label: AUTH_UI_TEXT.forgotPassword.title,
+            onClick: () => {
+              setForgotPasswordEmail(signInEmail);
+              setShowForgotPasswordDialog(true);
             },
           },
-        );
+        });
       } else {
         toast.error(errorMessage);
       }
@@ -263,8 +260,8 @@ export function AuthScreen() {
         },
       );
     } catch (error) {
-      console.error("Demo account creation error:", error);
-      
+      logger.error("Demo account creation error", error);
+
       // Provide more specific error messages
       const userFriendlyMessage = getUserFriendlyErrorMessage(error, AUTH_UI_TEXT.demo.errorMessage);
       
@@ -324,10 +321,10 @@ export function AuthScreen() {
         errorMessage.toLowerCase().includes("already") ||
         errorMessage.toLowerCase().includes("exists")
       ) {
-        toast.error("Account already exists. Try signing in!", {
-          duration: 5000,
+        toast.error(AUTH_UI_TEXT.accountExistsTrySignIn, {
+          duration: AUTH_CONFIG.accountExistsToastDurationMs,
           action: {
-            label: "Sign In",
+            label: AUTH_UI_TEXT.signIn.title,
             onClick: () => setActiveTab("signin"),
           },
         });
@@ -341,7 +338,7 @@ export function AuthScreen() {
 
   // Load remembered email on mount
   React.useEffect(() => {
-    const rememberedEmail = localStorage.getItem('taskzm_remember_email');
+    const rememberedEmail = localStorage.getItem(AUTH_REMEMBER_EMAIL_KEY);
     if (rememberedEmail) {
       setSignInEmail(rememberedEmail);
       setRememberMe(true);
@@ -711,8 +708,8 @@ export function AuthScreen() {
                           type="submit"
                           className="w-full shadow-lg border-0 text-xs sm:text-sm"
                           style={{
-                            height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
-                            minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                            height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
+                            minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
                             background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
                             backgroundSize: 'cover',
                             backgroundRepeat: 'no-repeat',
@@ -771,8 +768,8 @@ export function AuthScreen() {
                         variant="outline"
                         className="w-full border-2 border-primary text-primary hover:bg-primary/10 text-xs sm:text-sm"
                         style={{
-                          height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
-                          minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                          height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
+                          minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
                         } as React.CSSProperties}
                         disabled={isLoading}
                       >
@@ -1041,8 +1038,8 @@ export function AuthScreen() {
                           type="submit"
                           className="w-full shadow-lg border-0 text-xs sm:text-sm"
                           style={{
-                            height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
-                            minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                            height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
+                            minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
                             background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
                             backgroundSize: 'cover',
                             backgroundRepeat: 'no-repeat',
@@ -1351,8 +1348,8 @@ export function AuthScreen() {
                 type="submit"
                 disabled={isSendingReset || !forgotPasswordEmail}
                 style={{
-                  height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
-                  minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? '2.5rem' : '2.75rem',
+                  height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
+                  minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
                   background: `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`,
                   backgroundSize: 'cover',
                   backgroundRepeat: 'no-repeat',

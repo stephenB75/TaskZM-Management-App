@@ -966,6 +966,9 @@ export const AUTH_SCREEN = {
       badgeMarginBottom: '1.25rem', // mb-5 = 1.25rem (20px) - spacing below badge (increased for better separation)
       taglineMarginTop: '1rem', // mt-4 = 1rem (16px) - spacing above tagline
     },
+    button: {
+      height: '2.5rem', // h-10 = 2.5rem (40px) - tablet primary button
+    },
   },
   desktop: {
     padding: {
@@ -995,6 +998,9 @@ export const AUTH_SCREEN = {
       taglineMarginTop: '0.75rem', // mt-3 = 0.75rem (12px) - spacing above tagline
       formSpacing: '0.625rem', // space-y-2.5 = 0.625rem (10px) - reduced form spacing
       cardHeaderSpacing: '0.375rem', // space-y-1.5 = 0.375rem (6px) - reduced header spacing
+    },
+    button: {
+      height: '2.75rem', // h-11 = 2.75rem (44px) - desktop primary button
     },
   },
 } as const;
