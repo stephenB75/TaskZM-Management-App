@@ -3068,14 +3068,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       // 2. They have a dueDate that has passed (before today, even if no scheduledDate)
       // 3. They are not completed (status !== 'done')
       // 4. They are not already in inbox (scheduledDate === null/undefined means already in inbox)
-      // 5. They are NOT recurring tasks (recurring tasks have their own scheduling mechanism)
+      // 5. They are NOT recurring tasks (rollover rule does not apply to recurring tasks)
+      // Guideline: Recurring tasks are never rolled over; they use their own recurrence scheduling.
       // Note: Rollover occurs after midnight when the date changes, rolling over tasks from previous days
       const tasksToRollover = tasks.filter(task => {
         // Skip completed tasks
         if (task.status === 'done') return false;
         
-        // CRITICAL: Skip recurring tasks - they have their own scheduling mechanism
-        // Recurring tasks should not be rolled over as they appear on multiple days
+        // Do not apply rollover to recurring tasks (guideline: recurring tasks excluded from rollover)
         if (task.recurrence && task.recurrence.type !== 'none') return false;
         
         // Skip tasks already in inbox (scheduledDate === null/undefined means already in inbox)
@@ -3172,11 +3172,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const failedTasks: string[] = [];
       
       // Move tasks to inbox by setting scheduledDate to null
-      // CRITICAL: Only roll over non-recurring tasks
+      // Guideline: Recurring tasks are never rolled over; safety filter to exclude any recurring task
       const validTasksToRollover = tasksToRollover.filter(task => {
-        // Double-check: exclude recurring tasks (should already be filtered, but safety check)
         if (task.recurrence && task.recurrence.type !== 'none') {
-          logger.warn('Attempted to roll over recurring task, skipping:', task.id, task.title);
+          logger.warn('Attempted to roll over recurring task, skipping (rollover does not apply to recurring tasks):', task.id, task.title);
           return false;
         }
         return true;
