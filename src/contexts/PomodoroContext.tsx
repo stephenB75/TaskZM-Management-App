@@ -40,7 +40,9 @@ interface PomodoroContextType {
   setWorkDuration: (taskId: string, durationMinutes: number) => void;
   registerCallback: (taskId: string, callback: (minutes: number) => void | Promise<void>, taskTitle: string) => void;
   unregisterCallback: (taskId: string) => Promise<void>;
-  timers: Record<string, TimerState>; // Expose timers state for subscription
+  timers: Record<string, TimerState>;
+  /** Increments every second while any timer is running; use so all timer UIs re-render and show countdown. */
+  timerTick: number;
 }
 
 const PomodoroContext = createContext<PomodoroContextType | null>(null);
@@ -73,6 +75,7 @@ const STORAGE_KEY = STORAGE_KEY_POMODORO;
 export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const { updateTask } = useTasks();
   const [timers, setTimers] = useState<Record<string, TimerState>>({});
+  const [timerTick, setTimerTick] = useState(0);
   const intervalsRef = useRef<Record<string, NodeJS.Timeout>>({});
   const onTimeUpdateCallbacksRef = useRef<Record<string, (minutes: number) => void | Promise<void>>>({});
   const taskTitlesRef = useRef<Record<string, string>>({});
@@ -544,7 +547,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       sessionStartTimeRef.current[taskId] = now;
     }
 
-    intervalsRef.current[taskId] = setInterval(() => {
+    const tick = () => {
       setTimers(prev => {
         const current = prev[taskId];
         if (!current || !current.isRunning) {
@@ -562,7 +565,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (current.mode === 'work' && sessionStart > 0) {
-          // Use wall-clock elapsed time so tracking stays accurate (no drift when tab backgrounded or event loop busy)
           const elapsedSeconds = Math.floor((Date.now() - sessionStart) / MILLISECONDS_PER_SECOND);
           elapsedSecondsRef.current[taskId] = elapsedSeconds;
           const timeLeft = Math.max(0, workDuration - elapsedSeconds);
@@ -580,7 +582,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
             }
           };
 
-          // Periodic save: every full minute, persist to task.actualTime (flows to Analytics and Pomodoro reports)
           const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
           const lastUpdate = lastUpdateTimeRef.current[taskId] || 0;
           if (elapsedMinutes > lastUpdate && elapsedMinutes > 0) {
@@ -612,7 +613,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           return updated;
         }
 
-        // Break mode: count down timeLeft by 1 second (breaks don't need wall-clock accuracy for reporting)
         if (current.timeLeft <= 1) {
           handleTimerComplete(taskId);
           return prev;
@@ -625,7 +625,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           }
         };
       });
-    }, MILLISECONDS_PER_SECOND);
+      setTimerTick(t => t + 1);
+    };
+
+    tick();
+    intervalsRef.current[taskId] = setInterval(tick, MILLISECONDS_PER_SECOND);
   };
 
   // Persist timers to local storage for refresh resilience
@@ -696,7 +700,8 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     setWorkDuration,
     registerCallback,
     unregisterCallback,
-    timers, // Expose timers state so components can subscribe to changes
+    timers,
+    timerTick,
   };
 
   return (

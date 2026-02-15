@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, startTransition } from 'react';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 // Removed TeamContext import to break circular dependency
@@ -1864,7 +1864,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await api.saveTask(validWorkspaceId, newTask);
 
         debouncedSync(false);
-        toast.success('Task created');
+        toast.success('Task created', { playSound: true });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to save task to server:', error);
@@ -1888,7 +1888,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               });
               await api.saveTask(retryWorkspaceId, newTask);
               debouncedSync(false);
-              toast.success('Task created');
+              toast.success('Task created', { playSound: true });
               return;
             } else {
               logger.error('Workspace creation failed - no workspace ID returned');
@@ -1913,7 +1913,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         saveToLocalStorage('tasks', updated);
         return updated;
       });
-      toast.success('Task created (offline)');
+      toast.success('Task created (offline)', { playSound: true });
     }
   }, [user, workspaceId, accessToken, updateActivity, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]);
 
@@ -1952,7 +1952,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         saveToLocalStorage('tasks', updated);
         return updated;
       });
-      toast.success(seriesTasks.length === 1 ? 'Task created (offline)' : `Series created: ${seriesTasks.length} tasks (offline)`);
+      toast.success(seriesTasks.length === 1 ? 'Task created (offline)' : `Series created: ${seriesTasks.length} tasks (offline)`, { playSound: true });
     }
   }, [user, workspaceId, accessToken, updateActivity, ensureWorkspace, loadTasksFromServer, debouncedSync]);
 

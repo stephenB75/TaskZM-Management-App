@@ -9,6 +9,8 @@
 import { toast as sonnerToast } from 'sonner';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
 import { NOTIFICATION_STORAGE_KEYS } from './notification-constants';
+import { playNotificationSound } from './toast-sound';
+import { MAX_STORED_TOASTS, TOAST_STORAGE_ID_PREFIX } from './toast-constants';
 
 interface ToastNotification {
   id: string;
@@ -24,19 +26,16 @@ const addToastToStorage = (type: 'success' | 'error' | 'info' | 'warning', title
   try {
     const toastNotifications = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, []);
     const newNotification: ToastNotification = {
-      id: `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `${TOAST_STORAGE_ID_PREFIX}${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
       title,
       description,
       timestamp: new Date().toISOString(),
       read: false,
     };
-    
-    // Add to beginning of array (newest first)
+
     const updated = [newNotification, ...toastNotifications];
-    
-    // Keep only last 100 notifications to prevent storage bloat
-    const trimmed = updated.slice(0, 100);
+    const trimmed = updated.slice(0, MAX_STORED_TOASTS);
     
     saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.toastNotifications, trimmed);
   } catch (error) {
@@ -46,7 +45,8 @@ const addToastToStorage = (type: 'success' | 'error' | 'info' | 'warning', title
 
 // Wrapped toast functions that show popup AND store in notification panel
 export const toast = {
-  success: (message: string, options?: { description?: string; duration?: number; [key: string]: any }) => {
+  success: (message: string, options?: { description?: string; duration?: number; playSound?: boolean; [key: string]: any }) => {
+    if (options?.playSound) playNotificationSound();
     addToastToStorage('success', message, options?.description);
     return sonnerToast.success(message, options);
   },

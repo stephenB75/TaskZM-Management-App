@@ -752,9 +752,9 @@ body {
   }
 }
 
-/* Toaster Notifications - Above dialogs and in-dialog dropdowns so messages are always visible */
+/* Toaster Notifications - Above dialogs and dropdowns so messages are always visible (value must match Z_INDEX.TOAST in layout-constants) */
 [data-sonner-toaster] {
-  z-index: 9990 !important; /* Above dialogs (z-50) and SelectContent (z-200) */
+  z-index: 10001 !important;
 }
 
 /* Mobile Toaster Notifications - Top Position */
@@ -765,7 +765,7 @@ body {
     transform: translateX(-50%) !important;
     right: auto !important;
     bottom: auto !important;
-    z-index: 9990 !important; /* Above dialogs so in-app notifications are visible */
+    z-index: 10001 !important;
   }
 
   [data-sonner-toast] {

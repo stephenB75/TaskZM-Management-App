@@ -282,6 +282,7 @@ export function InboxView() {
     toast.success("Task added to inbox", {
       description:
         "You can schedule it later or let AI handle it",
+      playSound: true,
     });
   };
 

@@ -14,7 +14,7 @@ import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants'
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { MINUTES_PER_HOUR, HOURS_PER_DAY, MILLISECONDS_PER_MINUTE } from '../lib/business-constants';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -688,7 +688,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         updateTask(taskId, {
           tags: updatedTags,
         });
-        toast.success(`Task added to "${folder.name}" folder`);
+        toast.success(`Task added to "${folder.name}" folder`, { playSound: true });
       } else {
         toast.info(`Task is already in "${folder.name}" folder`);
       }
