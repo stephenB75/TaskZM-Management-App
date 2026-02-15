@@ -1,4 +1,11 @@
 **Add your own guidelines here**
+
+# Demo account
+
+- Demo user has a **yearly** (Pro) license for the duration of the demo.
+- Demo session is limited to **15 minutes of use** per session; after 15 minutes from login, the session ends (cleanup and sign out). In addition, 15 minutes of **inactivity** triggers cleanup and sign out.
+- All demo timing and license behavior use constants from `auth-constants` and `timing-constants` (no hardcoded minutes).
+
 <!--
 
 System Guidelines

@@ -4,13 +4,18 @@
  * Centralized constants for the sign-in/sign-up screen to avoid hardcoded values
  */
 
-// Demo Account Configuration
+// Demo Account Configuration (per guidelines: yearly license, 15 mins use per session)
 export const DEMO_ACCOUNT_CONFIG = {
   emailDomain: '@taskzm.app',
   emailPrefix: 'demo_',
   password: 'demo123456',
   name: 'Demo User',
-  cleanupTimeoutMinutes: 15, // Minutes - Demo accounts are cleaned up after this inactivity period
+  /** Minutes of inactivity after which demo account is cleaned up. */
+  cleanupTimeoutMinutes: 15,
+  /** Maximum session use in minutes; demo ends when this is reached (guideline: 15 mins use). */
+  maxSessionUseMinutes: 15,
+  /** Billing period shown for demo (Pro tier, yearly license per guidelines). */
+  billingPeriod: 'yearly' as const,
 } as const;
 
 // UI Text Constants

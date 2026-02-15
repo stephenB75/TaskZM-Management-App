@@ -63,8 +63,9 @@ export function DemoAccountDisclaimer({
           </div>
           <DialogDescription className="text-left space-y-4 pt-2">
             <p className="text-sm text-muted-foreground">
-              You're currently using a <strong className="text-foreground">temporary demo account</strong> with{' '}
-              <strong className="text-foreground">full access</strong> to all Pro features.
+              You're currently using a <strong className="text-foreground">temporary demo account</strong> with a{' '}
+              <strong className="text-foreground">yearly Pro license</strong> and full access to all Pro features for{' '}
+              <strong className="text-foreground">{DEMO_ACCOUNT_CONFIG.maxSessionUseMinutes} minutes</strong> per session.
             </p>
 
             <div className="space-y-3 pt-2">
@@ -75,6 +76,9 @@ export function DemoAccountDisclaimer({
                     Important: This account is temporary
                   </p>
                   <ul className="text-xs text-amber-800 dark:text-amber-200 space-y-1.5 list-disc list-inside">
+                    <li>
+                      <strong>{DEMO_ACCOUNT_CONFIG.maxSessionUseMinutes}-minute use limit</strong> per session (yearly license for demo)
+                    </li>
                     <li>
                       <strong>Account will be removed</strong> when you log out
                     </li>
@@ -92,11 +96,11 @@ export function DemoAccountDisclaimer({
                 <Icon name="clock" size={ICON_SIZE_LG} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
-                    Inactivity Timer
+                    Session &amp; Inactivity
                   </p>
                   <p className="text-xs text-blue-800 dark:text-blue-200">
-                    Your account will be automatically cleaned up if inactive for more than{' '}
-                    <strong>{DEMO_ACCOUNT_CONFIG.cleanupTimeoutMinutes} minutes</strong>. Stay active to keep your session!
+                    Your session ends after <strong>{DEMO_ACCOUNT_CONFIG.maxSessionUseMinutes} minutes</strong> of use. You will also be signed out after{' '}
+                    <strong>{DEMO_ACCOUNT_CONFIG.cleanupTimeoutMinutes} minutes</strong> of inactivity. Sign in again to start a new demo session.
                   </p>
                 </div>
               </div>

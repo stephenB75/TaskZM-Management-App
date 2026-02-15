@@ -307,6 +307,12 @@ export function InboxView() {
   const isSchedulingRef = useRef(false);
   
   const handleScheduleSelected = useCallback(async () => {
+    if (!permissions.canEditTask) {
+      toast.error('Permission Denied', {
+        description: 'Viewer role does not have permission to edit tasks. Please contact an admin.',
+      });
+      return;
+    }
     if (selectedTaskIds.size === 0) {
       toast.info("No tasks selected", {
         description: "Please select tasks to schedule",
@@ -410,9 +416,15 @@ export function InboxView() {
       // Reset flag when done
       isSchedulingRef.current = false;
     }
-  }, [selectedTaskIds, sortedTasks, generateSchedulePlan, applySchedulePlan, isScheduling]);
+  }, [permissions.canEditTask, selectedTaskIds, sortedTasks, generateSchedulePlan, applySchedulePlan, isScheduling]);
 
   const handleUnscheduleSelected = useCallback(async () => {
+    if (!permissions.canEditTask) {
+      toast.error('Permission Denied', {
+        description: 'Viewer role does not have permission to edit tasks. Please contact an admin.',
+      });
+      return;
+    }
     if (selectedTaskIds.size === 0) {
       toast.info("No tasks selected", {
         description: "Please select tasks to unschedule",
@@ -460,9 +472,15 @@ export function InboxView() {
         description: errorMessage || "Please try again",
       });
     }
-  }, [selectedTaskIds, sortedTasks, updateTask]);
+  }, [permissions.canEditTask, selectedTaskIds, sortedTasks, updateTask]);
 
   const handleScheduleAll = useCallback(async () => {
+    if (!permissions.canEditTask) {
+      toast.error('Permission Denied', {
+        description: 'Viewer role does not have permission to edit tasks. Please contact an admin.',
+      });
+      return;
+    }
     console.log('🎬 handleScheduleAll CALLED', { 
       unscheduledTasksCount: unscheduledTasks.length,
       unscheduledTasks: unscheduledTasks.map(t => ({ id: t.id, title: t.title, dueDate: t.dueDate }))
@@ -552,7 +570,7 @@ export function InboxView() {
       // Reset flag when done
       isSchedulingRef.current = false;
     }
-  }, [unscheduledTasks, scheduleAllTasks, isScheduling]);
+  }, [permissions.canEditTask, unscheduledTasks, scheduleAllTasks, isScheduling]);
 
   const handleToggleSelect = (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -688,15 +706,15 @@ export function InboxView() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div
-                        onClick={isScheduling ? undefined : handleScheduleSelected}
+                        onClick={isScheduling || !permissions.canEditTask ? undefined : handleScheduleSelected}
                         className={cn(
                           "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
-                          isScheduling && "opacity-50 cursor-not-allowed"
+                          (isScheduling || !permissions.canEditTask) && "opacity-50 cursor-not-allowed"
                         )}
                         role="button"
-                        tabIndex={isScheduling ? -1 : 0}
+                        tabIndex={isScheduling || !permissions.canEditTask ? -1 : 0}
                         onKeyDown={(e) => {
-                          if (isScheduling) return;
+                          if (isScheduling || !permissions.canEditTask) return;
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             handleScheduleSelected();
@@ -723,11 +741,15 @@ export function InboxView() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div
-                        onClick={handleUnscheduleSelected}
-                        className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                        onClick={!permissions.canEditTask ? undefined : handleUnscheduleSelected}
+                        className={cn(
+                          "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
+                          !permissions.canEditTask && "opacity-50 cursor-not-allowed"
+                        )}
                         role="button"
-                        tabIndex={0}
+                        tabIndex={!permissions.canEditTask ? -1 : 0}
                         onKeyDown={(e) => {
+                          if (!permissions.canEditTask) return;
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             handleUnscheduleSelected();
@@ -794,15 +816,15 @@ export function InboxView() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div
-                        onClick={unscheduledTasks.length === 0 ? undefined : handleScheduleAll}
+                        onClick={unscheduledTasks.length === 0 || !permissions.canEditTask ? undefined : handleScheduleAll}
                         className={cn(
                           "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
-                          unscheduledTasks.length === 0 && "opacity-50 cursor-not-allowed"
+                          (unscheduledTasks.length === 0 || !permissions.canEditTask) && "opacity-50 cursor-not-allowed"
                         )}
                         role="button"
-                        tabIndex={unscheduledTasks.length === 0 ? -1 : 0}
+                        tabIndex={unscheduledTasks.length === 0 || !permissions.canEditTask ? -1 : 0}
                         onKeyDown={(e) => {
-                          if (unscheduledTasks.length === 0) return;
+                          if (unscheduledTasks.length === 0 || !permissions.canEditTask) return;
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             handleScheduleAll();

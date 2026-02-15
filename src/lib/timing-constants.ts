@@ -162,10 +162,13 @@ export const TIMING_CONSTANTS = {
     toastDuration: 5000, // 5 seconds - Duration for toast notifications
   },
   
-  // Demo account constants
+  // Demo account constants (guidelines: yearly license, 15 mins use per session)
   demo: {
-    cleanupTimeoutMinutes: 15, // 15 minutes - Demo accounts are cleaned up after this inactivity period
-    cleanupTimeoutMs: 15 * 60 * 1000, // 15 minutes in milliseconds - Demo account cleanup timeout
+    cleanupTimeoutMinutes: 15, // Inactivity period after which demo is cleaned up
+    cleanupTimeoutMs: 15 * 60 * 1000,
+    /** Maximum session use in minutes; session ends when reached (guideline: 15 mins use). */
+    maxSessionUseMinutes: 15,
+    maxSessionUseMs: 15 * 60 * 1000,
     activityTrackingInterval: 5 * 60 * 1000, // 5 minutes - How often to track demo user activity
   },
 
