@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL } from "../lib/layout-constants";
@@ -139,6 +139,8 @@ export function AuthScreen() {
   const [signUpGender, setSignUpGender] = useState<"male" | "female">(AVATAR_UI_TEXT.defaultGender);
   const [signUpAvatar, setSignUpAvatar] = useState<string | undefined>(undefined);
 
+  // Prevent concurrent sign-in (double submit / multiple clicks)
+  const signInInProgressRef = useRef(false);
 
   // Password strength
   const passwordStrength = getPasswordStrength(signUpPassword);
@@ -197,16 +199,23 @@ export function AuthScreen() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (signInInProgressRef.current) return;
     if (!validateEmail(signInEmail, false)) {
       toast.error(AUTH_UI_TEXT.validation.emailRequired);
       return;
     }
+    const password = signInPassword.trim();
+    if (!password) {
+      toast.error(AUTH_UI_TEXT.validation.passwordRequired);
+      return;
+    }
 
+    signInInProgressRef.current = true;
     setIsLoading(true);
 
     try {
-      await signIn(signInEmail, signInPassword);
+      await signIn(signInEmail, password);
 
       if (rememberMe) {
         localStorage.setItem(AUTH_REMEMBER_EMAIL_KEY, signInEmail);
@@ -239,6 +248,7 @@ export function AuthScreen() {
         toast.error(errorMessage);
       }
     } finally {
+      signInInProgressRef.current = false;
       setIsLoading(false);
     }
   };

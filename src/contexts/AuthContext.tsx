@@ -182,7 +182,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return null;
     } catch (error) {
-      logger.error('Sign in error:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      const isInvalidCredentials =
+        msg.toLowerCase().includes('invalid') && msg.toLowerCase().includes('credentials');
+      if (isInvalidCredentials) {
+        logger.debug('Sign in failed: invalid credentials');
+      } else {
+        logger.error('Sign in error:', error);
+      }
       throw error;
     }
   }
