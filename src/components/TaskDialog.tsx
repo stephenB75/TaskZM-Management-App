@@ -220,7 +220,7 @@ function FixedMiniCalendar({
   const activeDate = activeField === "scheduled" ? scheduledDate : dueDate;
 
   return (
-    <div className={cn("w-full bg-white/70 dark:bg-card/60 text-foreground dark:text-foreground rounded-lg border-0", TASK_DIALOG_MINIMAL_SPACING.cardPadding)}>
+    <div className={cn("w-full bg-white/70 dark:bg-gray-800/95 dark:border dark:border-gray-600 text-foreground dark:text-gray-100 rounded-lg border-0", TASK_DIALOG_MINIMAL_SPACING.cardPadding)}>
       {/* Toggle Buttons (Scheduled / Due Date / Clear) - min-w-0 + truncate so content doesn't spill on mobile */}
       <div className={cn("flex gap-1 sm:gap-2 mb-2 min-w-0", TASK_DIALOG_MINIMAL_SPACING.statusPriorityRowGap)}>
         <Button
@@ -232,7 +232,7 @@ function FixedMiniCalendar({
             "flex-1 min-w-0 overflow-hidden rounded-lg px-2 sm:px-3",
             activeField === "scheduled"
               ? "bg-primary text-primary-foreground"
-              : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+              : "border-primary/20 hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:hover:bg-gray-700"
           )}
           style={{
             fontSize: TASK_DIALOG_FONT_SIZES.xs,
@@ -254,7 +254,7 @@ function FixedMiniCalendar({
             "flex-1 min-w-0 overflow-hidden rounded-lg px-2 sm:px-3",
             activeField === "due"
               ? "bg-primary text-primary-foreground"
-              : "border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+              : "border-primary/20 hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:hover:bg-gray-700"
           )}
           style={{
             fontSize: TASK_DIALOG_FONT_SIZES.xs,
@@ -272,7 +272,7 @@ function FixedMiniCalendar({
           variant="outline"
           size="sm"
           onClick={() => onDateSelect(undefined, activeField)}
-          className="flex-1 min-w-0 overflow-hidden rounded-lg px-2 sm:px-3 border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+          className="flex-1 min-w-0 overflow-hidden rounded-lg px-2 sm:px-3 border-primary/20 hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-gray-200"
           style={{
             fontSize: TASK_DIALOG_FONT_SIZES.xs,
             height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
@@ -292,18 +292,18 @@ function FixedMiniCalendar({
           variant="ghost"
           size="icon"
           onClick={goToPreviousMonth}
-          className="h-7 w-7"
+          className="h-7 w-7 dark:text-gray-200 dark:hover:bg-white/10"
         >
           <Icon name="chevron-left" size={ICON_SIZE_MD} />
         </Button>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">{monthName}</span>
+          <span className="text-sm font-semibold">{monthName}</span>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={goToToday}
-            className="px-2 text-primary hover:bg-primary/10"
+            className="px-2 text-primary hover:bg-primary/10 dark:text-primary-foreground dark:hover:bg-primary/30"
             style={{ 
               height: TASK_DIALOG_DIMENSIONS.calendarButton.height,
               fontSize: TASK_DIALOG_FONT_SIZES.xs,
@@ -317,7 +317,7 @@ function FixedMiniCalendar({
           variant="ghost"
           size="icon"
           onClick={goToNextMonth}
-          className="h-7 w-7"
+          className="h-7 w-7 dark:text-gray-200 dark:hover:bg-white/10"
         >
           <Icon name="chevron-right" size={ICON_SIZE_MD} />
         </Button>
@@ -328,7 +328,7 @@ function FixedMiniCalendar({
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center font-medium text-muted-foreground py-1 flex items-center justify-center"
+            className="text-center font-medium text-muted-foreground dark:text-gray-400 py-1 flex items-center justify-center"
             style={{ fontSize: TASK_DIALOG_FONT_SIZES.calendarDayHeader }}
           >
             {day}
@@ -358,14 +358,14 @@ function FixedMiniCalendar({
                   : isSelectedDue && activeField === "due"
                   ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
                   : isSelectedScheduled && activeField !== "scheduled"
-                  ? "bg-primary/30 text-primary font-medium"
+                  ? "bg-primary/30 text-primary font-medium dark:bg-primary/50 dark:text-primary-foreground"
                   : isSelectedDue && activeField !== "due"
-                  ? "bg-primary/30 text-primary font-medium"
+                  ? "bg-primary/30 text-primary font-medium dark:bg-primary/50 dark:text-primary-foreground"
                   : isTodayDate
-                  ? "bg-primary/20 text-primary font-bold ring-1 ring-primary/30"
+                  ? "bg-primary/20 text-primary font-bold ring-1 ring-primary/30 dark:bg-primary/50 dark:text-primary-foreground dark:ring-primary/50"
                   : isCurrentMonthDate
-                  ? "text-foreground hover:bg-primary/10"
-                  : "text-muted-foreground/50 hover:bg-muted/50"
+                  ? "text-foreground hover:bg-primary/10 dark:text-gray-100 dark:hover:bg-gray-700"
+                  : "text-muted-foreground/50 hover:bg-muted/50 dark:text-gray-500 dark:hover:bg-gray-700"
               )}
               style={{ 
                 height: TASK_DIALOG_DIMENSIONS.dateButton.height,
@@ -380,10 +380,10 @@ function FixedMiniCalendar({
 
       {/* Selected date info */}
       {activeDate && (
-        <div className="mt-3 pt-3 flex items-center justify-between">
+        <div className="mt-3 pt-3 border-t border-primary/20 dark:border-gray-600 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon name="calendar" size={14} className="text-primary" weight="duotone" />
-            <span className="text-xs font-medium text-foreground">
+            <span className="text-xs font-medium text-foreground dark:text-gray-200">
               {activeDate.toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
@@ -399,7 +399,7 @@ function FixedMiniCalendar({
               onClick={() => {
               onDateSelect(undefined, activeField);
             }}
-            className="px-2"
+            className="px-2 dark:text-gray-200 dark:hover:bg-white/10"
             style={{
               height: TASK_DIALOG_DIMENSIONS.calendarButton.height,
               fontSize: TASK_DIALOG_FONT_SIZES.xs,
@@ -499,7 +499,7 @@ function SingleDateMiniCalendar({
   const weekDays = TASK_DIALOG_CALENDAR.WEEK_DAYS_SHORT;
 
   return (
-    <div className="w-full bg-white/80 dark:bg-card/80 text-foreground dark:text-foreground rounded-lg p-3">
+    <div className="w-full bg-white/80 dark:bg-gray-800/95 dark:border dark:border-gray-600 text-foreground dark:text-gray-100 rounded-lg p-3">
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-3">
         <Button
@@ -507,18 +507,18 @@ function SingleDateMiniCalendar({
           variant="ghost"
           size="icon"
           onClick={goToPreviousMonth}
-          className="h-7 w-7"
+          className="h-7 w-7 dark:text-gray-200 dark:hover:bg-white/10"
         >
           <Icon name="chevron-left" size={ICON_SIZE_MD} />
         </Button>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">{monthName}</span>
+          <span className="text-sm font-semibold">{monthName}</span>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={goToToday}
-            className="px-2 text-primary hover:bg-primary/10"
+            className="px-2 text-primary hover:bg-primary/10 dark:text-primary-foreground dark:hover:bg-primary/30"
             style={{ 
               height: TASK_DIALOG_DIMENSIONS.calendarButton.height,
               fontSize: TASK_DIALOG_FONT_SIZES.xs,
@@ -532,7 +532,7 @@ function SingleDateMiniCalendar({
           variant="ghost"
           size="icon"
           onClick={goToNextMonth}
-          className="h-7 w-7"
+          className="h-7 w-7 dark:text-gray-200 dark:hover:bg-white/10"
         >
           <Icon name="chevron-right" size={ICON_SIZE_MD} />
         </Button>
@@ -543,7 +543,7 @@ function SingleDateMiniCalendar({
         {weekDays.map((day) => (
           <div
             key={day}
-            className="text-center font-medium text-muted-foreground py-1 flex items-center justify-center"
+            className="text-center font-medium text-muted-foreground dark:text-gray-400 py-1 flex items-center justify-center"
             style={{ fontSize: TASK_DIALOG_FONT_SIZES.calendarDayHeader }}
           >
             {day}
@@ -570,10 +570,10 @@ function SingleDateMiniCalendar({
                 isSelectedDate
                   ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
                   : isTodayDate
-                  ? "bg-primary/20 text-primary font-bold ring-1 ring-primary/30"
+                  ? "bg-primary/20 text-primary font-bold ring-1 ring-primary/30 dark:bg-primary/50 dark:text-primary-foreground dark:ring-primary/50"
                   : isCurrentMonthDate
-                  ? "text-foreground hover:bg-primary/10"
-                  : "text-muted-foreground/50 hover:bg-muted/50"
+                  ? "text-foreground hover:bg-primary/10 dark:text-gray-100 dark:hover:bg-gray-700"
+                  : "text-muted-foreground/50 hover:bg-muted/50 dark:text-gray-500 dark:hover:bg-gray-700"
               )}
               style={{ 
                 height: TASK_DIALOG_DIMENSIONS.dateButton.height,
@@ -588,10 +588,10 @@ function SingleDateMiniCalendar({
 
       {/* Selected date info */}
       {selectedDate && (
-        <div className="mt-3 pt-3 flex items-center justify-between">
+        <div className="mt-3 pt-3 border-t border-primary/20 dark:border-gray-600 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon name="calendar" size={14} className="text-primary" weight="duotone" />
-            <span className="text-xs font-medium text-foreground">
+            <span className="text-xs font-medium text-foreground dark:text-gray-200">
               {selectedDate.toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
@@ -607,7 +607,7 @@ function SingleDateMiniCalendar({
             onClick={() => {
               onDateSelect(undefined);
             }}
-            className="px-2"
+            className="px-2 dark:text-gray-200 dark:hover:bg-white/10"
             style={{
               height: TASK_DIALOG_DIMENSIONS.calendarButton.height,
               fontSize: TASK_DIALOG_FONT_SIZES.xs,
