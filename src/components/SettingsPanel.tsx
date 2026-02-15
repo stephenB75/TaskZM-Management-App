@@ -1874,6 +1874,67 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           </AccordionContent>
         </AccordionItem>
 
+        {/* Priority Levels */}
+        <AccordionItem 
+          value="priority-levels" 
+          className=""
+          style={{
+            paddingLeft: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingRight: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+            paddingTop: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            paddingBottom: SETTINGS_PANEL_ACCORDION_ITEM_PADDING_Y_SMALL,
+            marginTop: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+            marginBottom: SETTINGS_PANEL_ACCORDION_ITEM_MARGIN_Y,
+          }}
+        >
+          <AccordionTrigger className="hover:no-underline" style={{ paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y, paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y }}>
+            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
+              <Icon name="target" size={SETTINGS_PANEL_ACCORDION_ICON_SIZE} weight="duotone" className="text-primary" />
+              <span className="font-semibold">{SETTINGS_PANEL_UI_TEXT.priorityLevels.sectionTitle}</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent 
+            style={{ 
+              paddingTop: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_TOP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_CONTENT_PADDING_BOTTOM,
+              gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
+            }}
+          >
+            <p 
+              className="text-sm text-muted-foreground"
+              style={{ marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}
+            >
+              {SETTINGS_PANEL_UI_TEXT.priorityLevels.intro}
+            </p>
+            <ul className="space-y-3 text-sm">
+              <li className="flex gap-2">
+                <Badge variant="secondary" className="bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-200 border border-red-200 dark:border-red-800 flex-shrink-0 w-16 justify-center">
+                  {SETTINGS_PANEL_UI_TEXT.priorityLevels.urgent.label}
+                </Badge>
+                <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.urgent.description}</span>
+              </li>
+              <li className="flex gap-2">
+                <Badge variant="secondary" className="bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-200 border border-orange-200 dark:border-orange-800 flex-shrink-0 w-16 justify-center">
+                  {SETTINGS_PANEL_UI_TEXT.priorityLevels.high.label}
+                </Badge>
+                <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.high.description}</span>
+              </li>
+              <li className="flex gap-2">
+                <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-800 flex-shrink-0 w-16 justify-center">
+                  {SETTINGS_PANEL_UI_TEXT.priorityLevels.medium.label}
+                </Badge>
+                <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.medium.description}</span>
+              </li>
+              <li className="flex gap-2">
+                <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 flex-shrink-0 w-16 justify-center">
+                  {SETTINGS_PANEL_UI_TEXT.priorityLevels.low.label}
+                </Badge>
+                <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.low.description}</span>
+              </li>
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+
         {/* AI Settings */}
         <AccordionItem 
           value="ai-settings" 

@@ -100,7 +100,16 @@ export const MONTH_VIEW_TASK_PRIORITY_STYLES = {
   urgent: 'border-l-red-400 bg-red-50 dark:bg-red-950/35',
   high: 'border-l-orange-400 bg-orange-50 dark:bg-orange-950/35',
   medium: 'border-l-blue-400 bg-blue-50 dark:bg-blue-950/35',
-  low: 'border-l-gray-400 bg-gray-50 dark:bg-muted/30',
+  /** Low (and default): solid dark bg in dark mode so title/time stay readable (no light gray on white) */
+  low: 'border-l-gray-400 bg-gray-50 dark:bg-gray-700/95 dark:border-gray-600',
+  default: 'border-l-gray-400 bg-gray-50 dark:bg-gray-700/95 dark:border-gray-600',
+} as const;
+
+/** Month view: text classes for low/default priority in dark mode (readable on dark card) */
+export const MONTH_VIEW_LOW_PRIORITY_DARK_TEXT = {
+  title: 'text-gray-100',
+  titleDone: 'text-gray-300',
+  time: 'text-gray-300',
 } as const;
 
 // Tag Colors

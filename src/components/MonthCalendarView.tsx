@@ -32,7 +32,7 @@ import { TaskDialog } from "./TaskDialog";
 import { toast } from "sonner";
 import { MINUTES_PER_HOUR } from "../lib/business-constants";
 import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
-import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES } from "../lib/task-card-constants";
+import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES, MONTH_VIEW_LOW_PRIORITY_DARK_TEXT } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
 import type { Task } from "../types";
 
@@ -107,7 +107,7 @@ function DraggableMonthTask({
       className={cn(
         "text-xs p-1 rounded border-l-2 transition-all relative select-none smooth-drag-transform",
         !isMobile && "cursor-grab hover:shadow-sm active:cursor-grabbing", // Only show drag cursor on desktop
-        MONTH_VIEW_TASK_PRIORITY_STYLES[task.priority],
+        MONTH_VIEW_TASK_PRIORITY_STYLES[task.priority as keyof typeof MONTH_VIEW_TASK_PRIORITY_STYLES] ?? MONTH_VIEW_TASK_PRIORITY_STYLES.default,
         task.status === "done" && "opacity-60",
       )}
       data-dnd-kit-dragging={isDragging}
@@ -146,11 +146,15 @@ function DraggableMonthTask({
               task.status === "done"
                 ? "line-through text-muted-foreground"
                 : "text-foreground/90",
+              (task.priority === "low" || !task.priority) && isDark && (task.status === "done" ? MONTH_VIEW_LOW_PRIORITY_DARK_TEXT.titleDone : MONTH_VIEW_LOW_PRIORITY_DARK_TEXT.title),
             )}>
               {task.title}
             </p>
             {task.scheduledDate && (
-              <div className="flex items-center gap-0.5 text-muted-foreground mt-0.5">
+              <div className={cn(
+                "flex items-center gap-0.5 mt-0.5",
+                (task.priority === "low" || !task.priority) && isDark ? MONTH_VIEW_LOW_PRIORITY_DARK_TEXT.time : "text-muted-foreground",
+              )}>
                 <Icon name="clock" size={8} className="flex-shrink-0" />
                 <span className="text-[9px] leading-none">
                   {new Date(
@@ -368,7 +372,7 @@ function DroppableDay({
         <div className="flex items-center justify-between mb-0.5 flex-shrink-0 px-0.5">
           <span
             className={cn(
-              "text-[10px] md:text-xs font-medium",
+              "text-[10px] md:text-xs font-medium text-foreground dark:text-gray-100",
               dayData.isToday &&
                 "bg-primary text-primary-foreground rounded-full h-5 w-5 md:h-6 md:w-6 flex items-center justify-center shadow-md font-bold text-[10px] md:text-xs",
             )}
@@ -380,7 +384,7 @@ function DroppableDay({
               {dayData.tasks.length > 0 && (
                 <Badge
                   variant="secondary"
-                  className="h-3.5 md:h-4 text-[9px] md:text-[10px] px-0.5 md:px-1 bg-primary/10 text-primary flex-shrink-0"
+                  className="h-3.5 md:h-4 text-[9px] md:text-[10px] px-0.5 md:px-1 bg-primary/10 text-primary dark:bg-primary/50 dark:text-primary-foreground flex-shrink-0"
                 >
                   {dayData.tasks.length}
                 </Badge>
@@ -429,7 +433,7 @@ function DroppableDay({
                   e.stopPropagation();
                   onExpandToggle();
                 }}
-                className="text-[9px] text-center text-primary hover:text-primary/80 hover:underline py-0.5 flex-shrink-0 w-full transition-colors cursor-pointer"
+                className="text-[9px] text-center text-primary hover:text-primary/80 hover:underline dark:text-primary-foreground dark:hover:text-primary-foreground/90 py-0.5 flex-shrink-0 w-full transition-colors cursor-pointer"
               >
                 +{remainingCount} more
               </button>
@@ -740,15 +744,15 @@ export function MonthCalendarView({
 
   return (
     <div className={`h-full flex flex-col ${MAIN_BG_GRADIENT_CLASS}`} data-month-calendar="true">
-      {/* Calendar Header */}
+      {/* Calendar Header - dark mode: solid dark bar with light text/icons for visibility */}
       <motion.div
-        className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-background/70 backdrop-blur-md"
+        className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-gray-800/95 dark:border-gray-700 backdrop-blur-md"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between text-foreground dark:text-gray-100">
           <div className="flex items-center gap-3">
-            <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary" weight="duotone" />
+            <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary dark:text-primary" weight="duotone" />
             <h2 className="text-lg font-semibold">
               {monthName}
             </h2>
@@ -758,7 +762,7 @@ export function MonthCalendarView({
               variant="outline"
               size="sm"
               onClick={goToToday}
-              className="rounded-full text-xs"
+              className="rounded-full text-xs dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-700"
             >
               Today
             </Button>
@@ -767,7 +771,7 @@ export function MonthCalendarView({
                 variant="outline"
                 size="sm"
                 onClick={zoomOut}
-                className="rounded-full text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                className="rounded-full text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10 dark:border-primary/50 dark:text-primary-foreground dark:hover:bg-primary/30"
                 title="Zoom out to normal view"
               >
                 <Icon name="zoom-out" size={14} />
@@ -779,7 +783,7 @@ export function MonthCalendarView({
                 variant="ghost"
                 size="icon"
                 onClick={goToPreviousMonth}
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full dark:text-gray-200 dark:hover:bg-white/10"
               >
                 <Icon name="chevron-left" size={16} />
               </Button>
@@ -787,7 +791,7 @@ export function MonthCalendarView({
                 variant="ghost"
                 size="icon"
                 onClick={goToNextMonth}
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full dark:text-gray-200 dark:hover:bg-white/10"
               >
                 <Icon name="chevron-right" size={16} />
               </Button>
@@ -926,11 +930,11 @@ export function MonthCalendarView({
       {/* Mobile-specific info panel */}
       {mobileMode && (
         <motion.div
-          className="flex-shrink-0 p-3 border-t border-primary/10 bg-white/70 dark:bg-background/70 backdrop-blur-md"
+          className="flex-shrink-0 p-3 border-t border-primary/10 bg-white/70 dark:bg-gray-800/95 dark:border-gray-700 dark:text-gray-200 backdrop-blur-md"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground dark:text-gray-300">
             <span>Drag tasks between days</span>
             <Badge variant="outline" className="text-xs">
               {Array.isArray(tasks) ? tasks.filter((t) => t?.scheduledDate).length : 0}{" "}
