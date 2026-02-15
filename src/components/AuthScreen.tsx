@@ -625,6 +625,7 @@ export function AuthScreen() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
+                      noValidate
                     >
                       <div className="space-y-1">
                         <Input
@@ -729,6 +730,10 @@ export function AuthScreen() {
                             e.currentTarget.style.background = `linear-gradient(to right, ${AUTH_COLORS.primary}, ${AUTH_COLORS.secondary})`;
                           }}
                           disabled={isLoading}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSignIn(e);
+                          }}
                         >
                           {isLoading ? (
                             <motion.div
