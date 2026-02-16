@@ -34,6 +34,7 @@ import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
 import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CARD_SHADOW_MOBILE, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth } from "../lib/layout-constants";
 import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES, TASK_CARD_TEXT_COLORS } from "../lib/task-card-constants";
 import { toast } from "../lib/toast-wrapper";
+import { logger } from "../lib/logger";
 import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getDateString, parseCalendarEventTime } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { useAuth } from "../contexts/AuthContext";
@@ -251,7 +252,7 @@ export function InboxView() {
     // Use AI Duration Estimator to get estimated duration
     const aiEstimatedMinutes = getTaskMinutes(tempTask);
     
-    console.log('🤖 InboxView: AI Duration Estimator triggered for quick add task', {
+    logger.debug('InboxView: AI Duration Estimator triggered for quick add task', {
       taskTitle: quickAddTitle.trim(),
       aiEstimatedMinutes,
     });
@@ -323,7 +324,7 @@ export function InboxView() {
 
     // Prevent duplicate calls - if already scheduling, return early
     if (isScheduling || isSchedulingRef.current) {
-      console.log('⚠️ Already scheduling, ignoring duplicate call', { isScheduling, isSchedulingRef: isSchedulingRef.current });
+      logger.debug('Already scheduling, ignoring duplicate call', { isScheduling, isSchedulingRef: isSchedulingRef.current });
       return;
     }
 
@@ -360,14 +361,14 @@ export function InboxView() {
           enforceMinimumHours: true
         }
       ).catch((error) => {
-        console.error('❌ Promise rejected in generateSchedulePlan:', error);
+        logger.error('Promise rejected in generateSchedulePlan:', error);
         throw error;
       });
 
       // Apply the schedule plan
       if (result && result.scheduled && result.scheduled.length > 0) {
         await applySchedulePlan(result.scheduled, false).catch((planError) => {
-          console.error('❌ Error applying schedule plan:', planError);
+          logger.error('Error applying schedule plan:', planError);
           // Don't throw - result is still valid even if some tasks failed to update
         });
       }
@@ -397,7 +398,7 @@ export function InboxView() {
       }
     } catch (error) {
       toast.dismiss(loadingToast);
-      console.error('❌ Error in handleScheduleSelected:', error);
+      logger.error('Error in handleScheduleSelected:', error);
       
       // Filter out browser extension errors from user-facing messages
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -411,7 +412,7 @@ export function InboxView() {
         });
       } else {
         // Extension error - log but don't show to user, scheduler might still work
-        console.warn('⚠️ Browser extension error detected (non-critical):', errorMessage);
+        logger.warn('Browser extension error detected (non-critical):', errorMessage);
       }
     } finally {
       // Reset flag when done
@@ -466,7 +467,7 @@ export function InboxView() {
       setSelectedTaskIds(new Set());
     } catch (error) {
       toast.dismiss(loadingToast);
-      console.error('❌ Error in handleUnscheduleSelected:', error);
+      logger.error('Error in handleUnscheduleSelected:', error);
       
       const errorMessage = error instanceof Error ? error.message : String(error);
       toast.error("Unscheduling failed", {
@@ -482,19 +483,16 @@ export function InboxView() {
       });
       return;
     }
-    console.log('🎬 handleScheduleAll CALLED', { 
-      unscheduledTasksCount: unscheduledTasks.length,
-      unscheduledTasks: unscheduledTasks.map(t => ({ id: t.id, title: t.title, dueDate: t.dueDate }))
-    });
+    logger.debug('handleScheduleAll called', { unscheduledTasksCount: unscheduledTasks.length });
     
     // Prevent duplicate calls - if already scheduling, return early
     if (isScheduling || isSchedulingRef.current) {
-      console.log('⚠️ Already scheduling, ignoring duplicate call', { isScheduling, isSchedulingRef: isSchedulingRef.current });
+      logger.debug('Already scheduling, ignoring duplicate call', { isScheduling, isSchedulingRef: isSchedulingRef.current });
       return;
     }
     
     if (unscheduledTasks.length === 0) {
-      console.log('⚠️ No tasks to schedule - inbox is empty');
+      logger.debug('No tasks to schedule - inbox is empty');
       toast.info("No tasks to schedule", {
         description: "Your inbox is empty!",
       });
@@ -512,11 +510,7 @@ export function InboxView() {
     );
 
     try {
-      console.log('🎯 About to call scheduleAllTasks', {
-        period: 'twoWeeks',
-        onlyWithoutDueDate: true,
-        forceCategoryHours: true
-      });
+      logger.debug('Calling scheduleAllTasks', { period: 'twoWeeks', onlyWithoutDueDate: true, forceCategoryHours: true });
       
       // Schedule only tasks without due dates for a two week period, using category hours
       const result = await scheduleAllTasks({ 
@@ -524,8 +518,7 @@ export function InboxView() {
         onlyWithoutDueDate: true,
         forceCategoryHours: true 
       }).catch((error) => {
-        // Handle promise rejection explicitly
-        console.error('❌ Promise rejected in scheduleAllTasks:', error);
+        logger.error('Promise rejected in scheduleAllTasks:', error);
         throw error;
       });
       
@@ -551,7 +544,7 @@ export function InboxView() {
       }
     } catch (error) {
       toast.dismiss(loadingToast);
-      console.error('❌ Error in handleScheduleAll:', error);
+      logger.error('Error in handleScheduleAll:', error);
       
       // Filter out browser extension errors from user-facing messages
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -564,8 +557,7 @@ export function InboxView() {
           description: errorMessage || "Please try again",
         });
       } else {
-        // Extension error - log but don't show to user, scheduler might still work
-        console.warn('⚠️ Browser extension error detected (non-critical):', errorMessage);
+        logger.warn('Browser extension error detected (non-critical):', errorMessage);
       }
     } finally {
       // Reset flag when done

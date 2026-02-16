@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import * as api from '../lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../lib/logger';
 
 interface InviteAcceptancePageProps {
   token: string;
@@ -82,7 +83,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
           try {
             await signIn(invitation!.email, password);
           } catch (signInError) {
-            console.error('Auto sign-in failed:', signInError);
+            logger.error('Auto sign-in failed:', signInError);
             // Still redirect to home, user can sign in manually
             window.location.href = '/';
             return;
@@ -93,7 +94,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
         window.location.href = '/';
       }
     } catch (err) {
-      console.error('Error accepting invitation:', err);
+      logger.error('Error accepting invitation:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to accept invitation';
       
       // Check if error indicates password is required
