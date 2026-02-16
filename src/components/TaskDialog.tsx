@@ -4068,11 +4068,12 @@ export function TaskDialog({
               </label>
             </div>
           )}
+        </form>
 
-          {/* Footer - Reference: two prominent buttons - red cancel, purple + CREATE */}
+          {/* Footer outside form so all buttons behave as regular buttons (avoids Radix form/dialog quirks) */}
           <div
             className={cn(
-              "flex flex-col gap-3 pt-5 sm:pt-6"
+              "flex flex-col gap-3 pt-5 sm:pt-6 flex-shrink-0"
             )}
             style={{
               paddingLeft: 0,
@@ -4126,7 +4127,7 @@ export function TaskDialog({
                 <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.cancel}</span>
               </Button>
               <Button
-                type="submit"
+                type="button"
                 disabled={isSubmitting || (task ? !permissions.canEditTask : !permissions.canCreateTask)}
                 onClick={(e) => {
                   e.preventDefault();
@@ -4166,7 +4167,6 @@ export function TaskDialog({
               </Button>
             </div>
           </div>
-        </form>
         </div>
       </DialogContent>
 
