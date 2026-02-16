@@ -334,6 +334,7 @@ export function AppleCalDAVSetupDialog({
                   Select the calendars you want to import:
                 </p>
                 <Button
+                  type="button"
                   variant="ghost"
                   size="sm"
                   onClick={handleDiscoverCalendars}
@@ -447,8 +448,9 @@ export function AppleCalDAVSetupDialog({
           )}
           
           {step === 1 && (
-            <Button 
-              onClick={handleTestConnection} 
+            <Button
+              type="button"
+              onClick={handleTestConnection}
               disabled={isLoading || !email || !appPassword}
             >
               {isLoading ? (
@@ -466,8 +468,9 @@ export function AppleCalDAVSetupDialog({
           )}
 
           {step === 2 && (
-            <Button 
-              onClick={handleSaveAndSync} 
+            <Button
+              type="button"
+              onClick={handleSaveAndSync}
               disabled={isLoading || selectedCalendars.length === 0}
             >
               {isLoading ? (
@@ -485,7 +488,7 @@ export function AppleCalDAVSetupDialog({
           )}
 
           {step === 3 && (
-            <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700" style={{ color: COLOR_TEXT_WHITE }}>
+            <Button type="button" onClick={handleComplete} className="bg-green-600 hover:bg-green-700" style={{ color: COLOR_TEXT_WHITE }}>
               <Icon name="check" size={ICON_SIZE_MD} className="mr-2" style={{ color: COLOR_TEXT_WHITE }} />
               Done
             </Button>

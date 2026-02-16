@@ -271,13 +271,18 @@ function FixedMiniCalendar({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => onDateSelect(undefined, activeField)}
+          disabled={!activeDate}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDateSelect(undefined, activeField);
+          }}
           className="flex-1 min-w-0 overflow-hidden rounded-lg px-2 sm:px-3 border-primary/20 hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-gray-200"
           style={{
             fontSize: TASK_DIALOG_FONT_SIZES.xs,
             height: TASK_DIALOG_DIMENSIONS.inputHeight.small,
           }}
-          title={TASK_DIALOG_UI_TEXT.clear}
+          title={activeDate ? TASK_DIALOG_UI_TEXT.clear : undefined}
         >
           <span className="flex items-center justify-center min-w-0 overflow-hidden">
             <span className="truncate">{TASK_DIALOG_UI_TEXT.clear}</span>
@@ -396,7 +401,9 @@ function FixedMiniCalendar({
             type="button"
             variant="ghost"
             size="sm"
-              onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               onDateSelect(undefined, activeField);
             }}
             className="px-2 dark:text-gray-200 dark:hover:bg-white/10"
@@ -604,7 +611,9 @@ function SingleDateMiniCalendar({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               onDateSelect(undefined);
             }}
             className="px-2 dark:text-gray-200 dark:hover:bg-white/10"
@@ -2882,22 +2891,24 @@ export function TaskDialog({
                             {TASK_DIALOG_UI_TEXT.dueDate}
                           </Label>
                           {dueDate && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setDueDate(undefined);
-                                setDueMonth("");
-                                setDueDay("");
-                                setDueYear("");
-                              }}
-                              className="h-6 text-xs text-muted-foreground hover:text-foreground shrink-0"
-                              title={TASK_DIALOG_UI_TEXT.clear}
-                            >
-                              {TASK_DIALOG_UI_TEXT.clear}
-                            </Button>
-                          )}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDueDate(undefined);
+                                  setDueMonth("");
+                                  setDueDay("");
+                                  setDueYear("");
+                                }}
+                                className="h-6 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                                title={TASK_DIALOG_UI_TEXT.clear}
+                              >
+                                {TASK_DIALOG_UI_TEXT.clear}
+                              </Button>
+                            )}
                         </div>
                         {dueDate && (
                           <div className="text-xs text-muted-foreground bg-primary/10 rounded px-2 py-1">
@@ -3137,7 +3148,9 @@ export function TaskDialog({
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   setScheduledHours("");
                                   setScheduledMinutes("");
                                   setScheduledTime("");

@@ -1822,7 +1822,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 onChange={(e) => setNewTagInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
               />
-              <Button size="sm" onClick={handleAddTag}>Add</Button>
+              <Button type="button" size="sm" onClick={handleAddTag}>Add</Button>
             </div>
 
             <div 
