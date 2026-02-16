@@ -1379,7 +1379,7 @@ export function TaskDialog({
                 finalScheduledDate = dateWithTime.toISOString();
               }
             } catch (error) {
-              console.warn('Error converting timezone:', error);
+              logger.warn('Error converting timezone:', error);
               // Fallback to local timezone conversion
               finalScheduledDate = dateWithTime.toISOString();
             }
@@ -1642,7 +1642,7 @@ export function TaskDialog({
       const aiEstimatedMinutes = getTaskMinutes(tempTask);
       finalEstimatedTime = aiEstimatedMinutes > 0 ? aiEstimatedMinutes : null;
       
-      console.log('🤖 TaskDialog: AI Duration Estimator triggered for new task', {
+      logger.debug('TaskDialog: AI Duration Estimator triggered for new task', {
         taskTitle: title.trim(),
         taskDescription: description.trim(),
         taskPriority: priority,
