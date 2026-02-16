@@ -1240,6 +1240,7 @@ export function TaskDialog({
     e.preventDefault();
 
     if (!title.trim()) {
+      toast.error(TASK_DIALOG_UI_TEXT.taskNameRequired);
       return;
     }
     if (isSubmitting) return;
@@ -2365,6 +2366,7 @@ export function TaskDialog({
               : TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
         </DialogTitle>
         <form
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             handleSubmit(e as any);
@@ -4126,6 +4128,10 @@ export function TaskDialog({
               <Button
                 type="submit"
                 disabled={isSubmitting || (task ? !permissions.canEditTask : !permissions.canCreateTask)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSubmit(e as unknown as React.FormEvent);
+                }}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCreate,
                   "flex-1 lg:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base shadow-md min-w-0",

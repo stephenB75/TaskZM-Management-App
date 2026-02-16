@@ -96,6 +96,8 @@ export const TASK_DIALOG_UI_TEXT = {
     hasSubtasks: (count: number) => `This task has ${count} subtask${count !== 1 ? 's' : ''} that will also be deleted.`,
   },
   
+  // Validation
+  taskNameRequired: 'Please enter a task name.',
   // Recurrence + Schedule validation
   recurrenceScheduleRequired: 'Recurring tasks need a start date. Please pick a date or turn off recurrence.',
 
