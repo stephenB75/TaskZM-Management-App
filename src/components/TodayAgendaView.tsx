@@ -14,7 +14,7 @@ import { Button } from "./ui/button";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
-import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime } from "../lib/utils";
+import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "sonner";
 import type { Task } from "../types";
@@ -112,6 +112,8 @@ export function TodayAgendaView({
       }
       // Check if task matches today (either exact match or recurrence pattern)
       if (!isDateInRecurrence(task, today)) return false;
+      // When a series has pre-created occurrences (baseId__date), show only the occurrence for today and hide the base to avoid duplicates
+      if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, todayDateString)) return false;
       // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for today, show only the completed occurrence
       if (task.recurrence && task.recurrence.type !== 'none') {
         const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${todayDateString}`;

@@ -1924,21 +1924,74 @@ export function TaskDialog({
       occurrenceDateStr = occurrenceDateStr ?? getOccurrenceDateFromTaskId(task.id);
       const isRecurringWithOccurrence = baseTask.recurrence?.type !== 'none' && occurrenceDateStr;
       if (isRecurringWithOccurrence) {
-        // 1. Update the series (base task) with full form data so user edits (title, recurrence pattern, etc.) are saved.
-        // Keep the base task's scheduledDate (series reference) so we don't overwrite it with this occurrence's date.
-        const baseTaskData = { ...taskData, scheduledDate: baseTask.scheduledDate ?? taskData.scheduledDate };
+        // 1. Update the series (base task) with full form data. When user cleared schedule (taskData.scheduledDate null), apply it so base is unscheduled and Today agenda updates.
+        const baseTaskData = { ...taskData, scheduledDate: taskData.scheduledDate !== undefined ? taskData.scheduledDate : baseTask.scheduledDate };
         await updateTask(baseTaskId, baseTaskData);
-        // 2. Update this occurrence's subtasks and scheduled time. Use the user's chosen date (finalScheduledDate) so date changes are saved.
+        // 2. Update this occurrence's subtasks and scheduled time. When user cleared (finalScheduledDate null), set occurrence scheduledDate to null so it disappears from Today agenda.
         const saveOccurrenceDateStr = finalScheduledDate ? getDateString(new Date(finalScheduledDate)) : occurrenceDateStr;
         const occurrenceSubtaskId = `${baseTaskId}${RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS}${saveOccurrenceDateStr}`;
-        const occurrenceScheduled = finalScheduledDate ? new Date(finalScheduledDate) : (task.scheduledDate ? new Date(task.scheduledDate) : new Date(occurrenceDateStr + DATE_ONLY_PARSE_SUFFIX));
-        const occurrenceDateOnly = new Date((saveOccurrenceDateStr || occurrenceDateStr) + DATE_ONLY_PARSE_SUFFIX);
-        occurrenceDateOnly.setHours(occurrenceScheduled.getHours(), occurrenceScheduled.getMinutes(), occurrenceScheduled.getSeconds(), occurrenceScheduled.getMilliseconds());
-        await updateTask(occurrenceSubtaskId, {
-          subtasks,
-          recurrence: RECURRENCE_NONE_CONFIG,
-          scheduledDate: occurrenceDateOnly.toISOString(),
-        });
+        if (finalScheduledDate) {
+          const occurrenceScheduled = new Date(finalScheduledDate);
+          const occurrenceDateOnly = new Date(saveOccurrenceDateStr + DATE_ONLY_PARSE_SUFFIX);
+          occurrenceDateOnly.setHours(occurrenceScheduled.getHours(), occurrenceScheduled.getMinutes(), occurrenceScheduled.getSeconds(), occurrenceScheduled.getMilliseconds());
+          await updateTask(occurrenceSubtaskId, {
+            subtasks,
+            recurrence: RECURRENCE_NONE_CONFIG,
+            scheduledDate: occurrenceDateOnly.toISOString(),
+          });
+        } else {
+          await updateTask(occurrenceSubtaskId, {
+            subtasks,
+            recurrence: RECURRENCE_NONE_CONFIG,
+            scheduledDate: null,
+          });
+        }
+        // When user cleared and we're editing a series occurrence (task.id !== baseTaskId), clear that occurrence's scheduledDate so it disappears from Today agenda timeline.
+        if (!finalScheduledDate && task.id !== baseTaskId) {
+          await updateTask(task.id, { scheduledDate: null });
+        }
+        // Update the series occurrence task (baseId__date) so the card on Kanban/Today reflects title, description, scheduledDate, etc.
+        if (task.id !== baseTaskId) {
+          const occurrenceUpdates: Partial<Task> = {
+            title: taskData.title,
+            description: taskData.description,
+            priority: taskData.priority,
+            dueDate: taskData.dueDate,
+            estimatedTime: taskData.estimatedTime,
+            tags: taskData.tags,
+            assignedTo: taskData.assignedTo,
+            folderId: taskData.folderId ?? null,
+            notes: taskData.notes ?? '',
+            scheduledDate: finalScheduledDate ?? null,
+          };
+          await updateTask(task.id, occurrenceUpdates);
+        }
+        // Apply to series: update all other occurrences (and base) with shared fields when user checked "Apply to all in series"
+        if (applyToSeries && seriesBaseId) {
+          const seriesIds = tasks
+            .filter((t) => getSeriesBaseId(t.id) === seriesBaseId || t.id === seriesBaseId)
+            .map((t) => t.id)
+            .filter((id) => id !== task.id);
+          const seriesUpdates = {
+            title: taskData.title,
+            description: taskData.description,
+            priority: taskData.priority,
+            estimatedTime: taskData.estimatedTime,
+            notes: taskData.notes ?? '',
+            tags: taskData.tags,
+            assignedTo: taskData.assignedTo,
+            folderId: taskData.folderId ?? null,
+          };
+          for (const id of seriesIds) {
+            await updateTask(id, seriesUpdates);
+          }
+          if (seriesIds.length > 0) {
+            toast.success('Updated this occurrence and the rest of the series', {
+              description: `${seriesIds.length + 1} tasks updated.`,
+              duration: TOAST_DURATION_SHORT_MS,
+            });
+          }
+        }
         savedTask = { ...baseTask, ...taskData, id: baseTaskId, subtasks } as Task;
       } else {
         await updateTask(task.id, taskData);
@@ -1988,10 +2041,14 @@ export function TaskDialog({
           occurrenceDates = [new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())];
         }
         const nowIso = new Date().toISOString();
+        const allTasksForSlots = tasks ?? [];
+        // Place each occurrence in the next available slot on that day to avoid conflicts across the series
         const seriesTasks: Task[] = occurrenceDates.map((date) => {
           const dateStr = getDateString(date);
-          const scheduledAt = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-          scheduledAt.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds());
+          const requestedTime = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+          requestedTime.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds());
+          const slot = findNextAvailableSlot(null, requestedTime, durationForSlot, allTasksForSlots);
+          const scheduledAt = new Date(slot.getTime());
           return {
             id: `${baseId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}${dateStr}`,
             title: taskData.title || 'Untitled Task',
@@ -2016,7 +2073,32 @@ export function TaskDialog({
             folderId: taskData.folderId ?? null,
           } as Task;
         });
-        await addTaskSeries(seriesTasks);
+        // Base task stores the recurrence pattern so "edit series schedule" can be supported later; views hide it when an occurrence exists for that date
+        const firstScheduled = seriesTasks[0]?.scheduledDate ? new Date(seriesTasks[0].scheduledDate) : startDate;
+        const baseTask: Task = {
+          id: baseId,
+          title: taskData.title || 'Untitled Task',
+          description: taskData.description || '',
+          status: (taskData.status as Task['status']) || 'todo',
+          priority: (taskData.priority as Task['priority']) || 'medium',
+          dueDate: taskData.dueDate ?? null,
+          scheduledDate: firstScheduled.toISOString(),
+          projectId: taskData.projectId || DEFAULT_PROJECT_ID,
+          tags: taskData.tags || [],
+          assignedTo: taskData.assignedTo || [],
+          createdBy: user?.id || 'local',
+          createdAt: nowIso,
+          updatedAt: nowIso,
+          completedAt: null,
+          estimatedTime: taskData.estimatedTime ?? null,
+          actualTime: null,
+          dependencies: taskData.dependencies || [],
+          subtasks: taskData.subtasks || [],
+          recurrence: { ...recurrence },
+          notes: taskData.notes || '',
+          folderId: taskData.folderId ?? null,
+        } as Task;
+        await addTaskSeries([baseTask, ...seriesTasks]);
         savedTask = seriesTasks[0] ?? ({ ...taskData, id: baseId } as Task);
       } else {
         await addTask(taskData);

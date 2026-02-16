@@ -15,7 +15,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime } from '../lib/utils';
+import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
@@ -650,6 +650,8 @@ export function SevenDayKanban({
             }
             
             if (!matches) return false;
+            // When a series has pre-created occurrences (baseId__date), show only the occurrence for this day and hide the base to avoid duplicates
+            if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
             // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence (grayed)
             if (task.recurrence && task.recurrence.type !== 'none') {
               const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${dateString}`;

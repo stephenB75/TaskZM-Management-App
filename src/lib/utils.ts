@@ -154,6 +154,28 @@ export function getSeriesBaseId(taskId: string): string | null {
   return parts[0] || null;
 }
 
+/**
+ * True when the task is a recurring series "base" (holds recurrence pattern, not an occurrence).
+ * Such a task has recurrence.type !== 'none' and an id that does not contain the series occurrence separator.
+ */
+export function isSeriesBaseTask(task: { id?: string; recurrence?: { type?: string } }): boolean {
+  if (!task?.id || !task.recurrence || task.recurrence.type === 'none') return false;
+  return !task.id.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR);
+}
+
+/**
+ * True when there is a series occurrence task (baseId__dateStr) for the given date.
+ * Used so day views show the occurrence and hide the base to avoid duplicates.
+ */
+export function hasSeriesOccurrenceForDate(
+  tasks: Array<{ id: string }>,
+  baseId: string,
+  dateString: string
+): boolean {
+  const occurrenceId = `${baseId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}${dateString}`;
+  return tasks.some((t) => t.id === occurrenceId);
+}
+
 export function isOverdue(dueDate: string | null): boolean {
   if (!dueDate) return false;
   const due = new Date(dueDate);

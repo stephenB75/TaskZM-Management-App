@@ -8,6 +8,7 @@ import { useSubscription } from './SubscriptionContext';
 import { useDemoActivity } from '../hooks/useDemoActivity';
 import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage, getDateString, getSeriesBaseId } from '../lib/utils';
+import { migrateOrphanRecurringSeries } from '../lib/migrate-recurring-series';
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
@@ -669,8 +670,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       logger.warn('Invalid workspace ID for loadTasksFromServer:', wsId);
       const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
       if (savedTasks.length > 0) {
-        setTasks(savedTasks);
-        return savedTasks;
+        const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
+        setTasks(migratedTasks);
+        return migratedTasks;
       }
       return [];
     }
@@ -691,19 +693,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           });
           // Don't fall back to localStorage for auth errors
           const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
-          setTasks(savedTasks);
-          return savedTasks;
+          const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
+          setTasks(migratedTasks);
+          return migratedTasks;
         }
         
         // For other errors, fall back to localStorage if available
         const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
         if (savedTasks.length > 0) {
           logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
-          setTasks(savedTasks);
+          const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
+          setTasks(migratedTasks);
+          saveToLocalStorage('tasks', migratedTasks, user?.id);
           toast.error('Failed to load tasks from server, using offline data', {
             description: error.message || 'Please check your internet connection',
           });
-          return savedTasks;
+          return migratedTasks;
         } else {
           // No local data, show error but don't set empty array yet
           toast.error('Failed to load tasks', {
@@ -719,17 +724,30 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Deduplicate recurring task occurrences before using server data
         const deduplicatedTasks = deduplicateRecurringTasks(serverTasks);
         
-        // Server has data - use it as source of truth
+        // Migrate existing recurring series (occurrence-only) to new model: add base task per series
+        const { tasks: migratedTasks, newBases } = migrateOrphanRecurringSeries(deduplicatedTasks);
+        if (newBases.length > 0) {
+          for (const base of newBases) {
+            try {
+              await api.saveTask(wsId, base);
+              logger.debug('Migrated recurring series: saved base task', { baseId: base.id });
+            } catch (err) {
+              logger.error('Failed to save migrated base task', { baseId: base.id, err });
+            }
+          }
+        }
+        
+        // Server has data - use it as source of truth (with any new base tasks from migration)
         if (deduplicatedTasks.length !== serverTasks.length) {
           logger.warn(`Found ${serverTasks.length - deduplicatedTasks.length} duplicate recurring tasks, removed them`, {
             originalCount: serverTasks.length,
             deduplicatedCount: deduplicatedTasks.length
           });
         }
-        logger.info(`Loaded ${serverTasks.length} tasks from server${deduplicatedTasks.length !== serverTasks.length ? ` (deduplicated to ${deduplicatedTasks.length})` : ''}`);
-        setTasks(deduplicatedTasks);
-        // Always update localStorage with deduplicated server data (overwrite any stale local data)
-        saveToLocalStorage('tasks', deduplicatedTasks, user?.id);
+        logger.info(`Loaded ${serverTasks.length} tasks from server${deduplicatedTasks.length !== serverTasks.length ? ` (deduplicated to ${deduplicatedTasks.length})` : ''}${newBases.length > 0 ? `, migrated ${newBases.length} recurring series` : ''}`);
+        setTasks(migratedTasks);
+        // Always update localStorage with migrated server data (overwrite any stale local data)
+        saveToLocalStorage('tasks', migratedTasks, user?.id);
         setLastSync(new Date());
         
         // Store sync timestamp and ETag for next delta sync
@@ -741,7 +759,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Clear any sync flags to ensure fresh sync on next load
         const syncFlagKey = `synced_local_data_${wsId}`;
         localStorage.removeItem(syncFlagKey);
-        return deduplicatedTasks;
+        return migratedTasks;
       } else {
         // No server data - this is valid (workspace exists but has no tasks)
         logger.info('No tasks found on server (workspace may be empty)');
@@ -761,11 +779,21 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // After syncing, reload from server to get authoritative data
           const refreshedResult = await api.getTasks(wsId);
           if (!refreshedResult.error && refreshedResult.tasks && refreshedResult.tasks.length > 0) {
-            // Deduplicate recurring task occurrences
+            // Deduplicate recurring task occurrences and migrate orphan series
             const deduplicatedTasks = deduplicateRecurringTasks(refreshedResult.tasks);
-            setTasks(deduplicatedTasks);
-            saveToLocalStorage('tasks', deduplicatedTasks, user?.id);
-            return deduplicatedTasks;
+            const { tasks: migratedTasks, newBases } = migrateOrphanRecurringSeries(deduplicatedTasks);
+            if (newBases.length > 0) {
+              for (const base of newBases) {
+                try {
+                  await api.saveTask(wsId, base);
+                } catch (err) {
+                  logger.error('Failed to save migrated base task after refresh', { baseId: base.id, err });
+                }
+              }
+            }
+            setTasks(migratedTasks);
+            saveToLocalStorage('tasks', migratedTasks, user?.id);
+            return migratedTasks;
           }
         }
         // No tasks in server or localStorage - this is valid for a new workspace
@@ -780,11 +808,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
       if (savedTasks.length > 0) {
         logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
-        setTasks(savedTasks);
+        const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
+        setTasks(migratedTasks);
+        saveToLocalStorage('tasks', migratedTasks, user?.id);
         toast.error('Failed to load tasks from server, using offline data', {
           description: 'Please check your internet connection',
         });
-        return savedTasks;
+        return migratedTasks;
       } else {
         setTasks([]);
         return [];
@@ -1334,10 +1364,23 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             return { ...serverTask, scheduledDate: localTask.scheduledDate };
           });
 
-        const tasksToSet = tasksChanged ? mergePreservingTodayTimes(serverTasks) : serverTasks;
+        let tasksToSet = tasksChanged ? mergePreservingTodayTimes(serverTasks) : serverTasks;
+        // Migrate existing recurring series (occurrence-only) to new model
+        const { tasks: migratedTasks, newBases } = migrateOrphanRecurringSeries(tasksToSet);
+        if (newBases.length > 0) {
+          tasksToSet = migratedTasks;
+          for (const base of newBases) {
+            try {
+              await api.saveTask(targetWorkspaceId, base);
+              logger.debug('Synced migrated base task', { baseId: base.id });
+            } catch (err) {
+              logger.error('Failed to save migrated base task during sync', { baseId: base.id, err });
+            }
+          }
+        }
 
-        if (tasksChanged) {
-          logger.info(`Synced ${serverTasks.length} tasks from server (data changed)`);
+        if (tasksChanged || newBases.length > 0) {
+          logger.info(`Synced ${serverTasks.length} tasks from server${newBases.length > 0 ? `, migrated ${newBases.length} recurring series` : ''} (data changed)`);
           // Use startTransition to make state update non-blocking (runs in background)
           startTransition(() => {
             setTasks(tasksToSet);
