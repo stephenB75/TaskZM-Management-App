@@ -13,5 +13,9 @@ export const TODAY_AGENDA_TEXT = {
   noTimeSlot: "—",
   /** Timeline label for midnight (end of day). */
   timelineMidnightLabel: "12:00 AM",
+  /** Shown in drop zone when dragging over today agenda. */
+  dropPlaceholder: "Drop task here to schedule for today",
+  /** Shown in drop zone with emphasis (e.g. mobile). */
+  dropPlaceholderWithEmoji: "✨ Drop task here to schedule for today",
 } as const;
 

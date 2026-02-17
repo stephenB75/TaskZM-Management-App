@@ -232,8 +232,7 @@ export function TodayAgendaView({
   }, [todayTasks, todayCalendarEvents]);
 
   /** Split items into timeline blocks (have time in 7AM–12AM) and unscheduled (no time or outside range).
-   * Overlapping blocks are stacked: each block is pushed to the next free slot (prevBottomPx + blockGapPx) so they never overlap.
-   * Timeline labels use actualStartMins so the axis shows real task times; block position may be lower when stacked. */
+   * Overlapping blocks are stacked so they never overlap; timeline height stretches to fit and the time axis extends to match (same pxPerMinute scale to the bottom). */
   const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const endHour = TODAY_AGENDA_TIMELINE.endHour;
@@ -429,12 +428,14 @@ export function TodayAgendaView({
     }
   };
 
-  /** Vertical timeline: show hourly stamps (hide only those strictly inside a block) plus every task/event start time so each block has its timestamp. */
+  /** Vertical timeline: show hourly stamps so the axis matches the stacked layout height; add labels from 7 AM to the bottom (stretched when stacked). */
   const agendaListRows = useMemo(
     () => {
       const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+      // Extend axis to match stacked layout so time scale runs to the bottom (same pxPerMinute)
+      const maxMinutesForAxis = Math.max(totalMinutes, Math.ceil(timelineLayoutHeightPx / pxPerMinute));
       const allSlotMinutes: number[] = [];
-      for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
+      for (let m = 0; m <= maxMinutesForAxis; m += labelIntervalMinutes) {
         allSlotMinutes.push(m);
       }
       const hiddenSlotMinutes = new Set<number>();
@@ -442,8 +443,8 @@ export function TodayAgendaView({
       for (const block of timelineBlocks) {
         const { actualStartMins, actualDurationMins } = block;
         const endMins = actualStartMins + actualDurationMins;
-        if (actualStartMins >= 0 && actualStartMins <= totalMinutes) blockStartMinutes.add(actualStartMins);
-        for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
+        if (actualStartMins >= 0 && actualStartMins <= maxMinutesForAxis) blockStartMinutes.add(actualStartMins);
+        for (let m = 0; m <= maxMinutesForAxis; m += labelIntervalMinutes) {
           if (m > actualStartMins && m < endMins) hiddenSlotMinutes.add(m);
         }
       }
@@ -456,8 +457,9 @@ export function TodayAgendaView({
         const label = isMidnight
           ? TODAY_AGENDA_TEXT.timelineMidnightLabel
           : (() => {
-              const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-              const ampm = h < 12 ? 'AM' : 'PM';
+              const hour24 = h % 24;
+              const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+              const ampm = hour24 < 12 ? 'AM' : 'PM';
               return `${hour12}:${min.toString().padStart(2, '0')} ${ampm}`;
             })();
         return { minutesFromStart: m, label };
@@ -702,7 +704,7 @@ export function TodayAgendaView({
             isSidePanelHeader={true}
             description={
               isOver
-                ? "✨ Drop task here to schedule for today"
+                ? TODAY_AGENDA_TEXT.dropPlaceholderWithEmoji
                 : undefined
             }
             hideDesktopLogo
@@ -819,7 +821,7 @@ export function TodayAgendaView({
                     marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
                   }}
                 >
-                  {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
+                  {isOver ? TODAY_AGENDA_TEXT.dropPlaceholder : TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button
                   size="sm"
@@ -1008,7 +1010,7 @@ export function TodayAgendaView({
                     marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
                   }}
                 >
-                  {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
+                  {isOver ? TODAY_AGENDA_TEXT.dropPlaceholder : TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button
                   size="sm"
@@ -1171,7 +1173,7 @@ export function TodayAgendaView({
                 "text-sm text-muted-foreground mb-3 pointer-events-none transition-colors duration-300",
                 isOver && "text-primary/80 font-medium"
               )}>
-                {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
+                {isOver ? TODAY_AGENDA_TEXT.dropPlaceholder : TODAY_AGENDA_TEXT.emptyState.noTasks}
               </p>
               <Button
                 size="sm"
@@ -1353,7 +1355,7 @@ export function TodayAgendaView({
                     marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
                   }}
                 >
-                  {isOver ? "Drop task here to schedule for today" : TODAY_AGENDA_TEXT.emptyState.noTasks}
+                  {isOver ? TODAY_AGENDA_TEXT.dropPlaceholder : TODAY_AGENDA_TEXT.emptyState.noTasks}
                 </p>
                 <Button
                   size="sm"
