@@ -158,7 +158,7 @@ export const KANBAN_DAY_COLORS = {
     boxShadowNone: 'none', // CSS value for no box shadow
     // Horizontal line indicator above tab for current day
     indicatorLine: {
-      height: '3px', // Height of the horizontal line
+      height: '6px', // Height of the horizontal line (doubled for visibility)
       widthPercent: 50, // Width as percentage of column (50% = half width)
       marginBottom: '4px', // Space between line and tab
       borderRadius: '2px', // Border radius for rounded corners

@@ -1,5 +1,6 @@
 import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
+import { parseCalendarEventTime } from './utils';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
 import { getTaskMinutes } from './daily-hours-utils';
 import { DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MINUTES_PER_HOUR, HOURS_PER_DAY } from './business-constants';
@@ -13,7 +14,7 @@ export interface FindSlotOptions {
   /** When true, only move tasks that overlap each other; do not move tasks for being "before work start" or "before now". */
   onlyFixOverlaps?: boolean;
   categoryHours?: { start: number; end: number } | null; // in minutes from midnight
-  calendarEvents?: Array<{ start: Date; end: Date; title: string }>; // Calendar events to avoid
+  calendarEvents?: Array<{ start: Date | string; end: Date | string; title: string }>; // Calendar events to avoid (start/end as ISO string or Date)
 }
 
 /**
@@ -202,8 +203,8 @@ export function findNextAvailableSlot(
   const calendarConflicts: Array<{ start: number; end: number; title: string }> = [];
   if (options?.calendarEvents) {
     for (const event of options.calendarEvents) {
-      const eventStart = new Date(event.start);
-      const eventEnd = new Date(event.end);
+      const eventStart = typeof event.start === 'string' ? parseCalendarEventTime(event.start) : event.start;
+      const eventEnd = typeof event.end === 'string' ? parseCalendarEventTime(event.end) : event.end;
       
       // Check if event is on the target date
       const eventDate = new Date(eventStart);

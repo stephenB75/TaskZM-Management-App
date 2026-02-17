@@ -25,7 +25,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { cn, prepareTaskForDialog } from "../lib/utils";
+import { cn, prepareTaskForDialog, parseCalendarEventTime } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
@@ -265,7 +265,7 @@ const monthEventColorPalette = [
 ];
 
 function MonthCalendarEvent({ event }: { event: CalendarEventData }) {
-  const startTime = new Date(event.start).toLocaleTimeString([], { 
+  const startTime = parseCalendarEventTime(event.start).toLocaleTimeString([], { 
     hour: 'numeric', 
     minute: '2-digit', 
     hour12: true 
@@ -343,9 +343,9 @@ function DroppableDay({
     combinedItems.push({ type: 'task', data: task, sortTime });
   }
   
-  // Add calendar events
+  // Add calendar events (use parseCalendarEventTime so UTC-from-API shows correct local time)
   for (const event of calendarEvents) {
-    const sortTime = new Date(event.start).getTime();
+    const sortTime = parseCalendarEventTime(event.start).getTime();
     combinedItems.push({ type: 'event', data: event, sortTime });
   }
   

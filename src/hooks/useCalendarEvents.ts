@@ -90,7 +90,7 @@ async function fetchProviderEvents(
     const events: CalendarEvent[] = [];
     for (const event of data.events) {
       if (!event?.start || !event?.end) continue;
-      const eventStart = new Date(event.start);
+      const eventStart = parseCalendarEventTime(event.start);
       if (isNaN(eventStart.getTime())) continue;
 
       events.push({

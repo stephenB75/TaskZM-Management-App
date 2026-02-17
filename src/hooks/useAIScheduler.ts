@@ -3,7 +3,7 @@ import { useTasks } from '../contexts/TaskContext';
 import { useAI } from '../contexts/AIContext';
 import { useCalendar } from '../contexts/CalendarContext';
 import { useAuth } from '../contexts/AuthContext';
-import { isTaskBlocked, calculateDependencyDepth, getDateString } from '../lib/utils';
+import { isTaskBlocked, calculateDependencyDepth, getDateString, parseCalendarEventTime } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
@@ -106,8 +106,8 @@ export function useAIScheduler() {
           if (data.events && Array.isArray(data.events)) {
             for (const event of data.events) {
               events.push({
-                start: new Date(event.start),
-                end: new Date(event.end),
+                start: parseCalendarEventTime(event.start),
+                end: parseCalendarEventTime(event.end),
                 title: event.title || 'Calendar Event',
               });
             }

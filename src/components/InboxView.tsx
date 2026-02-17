@@ -165,7 +165,7 @@ export function InboxView() {
   }, [todayCalendarEventsData, todayDateString]);
 
   const sortedTodayCalendarEvents = useMemo(
-    () => [...todayCalendarEvents].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()),
+    () => [...todayCalendarEvents].sort((a, b) => parseCalendarEventTime(a.start).getTime() - parseCalendarEventTime(b.start).getTime()),
     [todayCalendarEvents]
   );
 
