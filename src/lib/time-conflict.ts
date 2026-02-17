@@ -4,7 +4,7 @@ import { parseCalendarEventTime } from './utils';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
 import { getTaskMinutes } from './daily-hours-utils';
 import { DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MINUTES_PER_HOUR, HOURS_PER_DAY } from './business-constants';
-import { TIME_ROUNDING_INTERVAL_MINUTES } from './ai-config';
+import { TIME_ROUNDING_INTERVAL_MINUTES, MIN_TASK_DURATION_MINUTES } from './ai-config';
 
 /**
  * Options for finding next available slot
@@ -54,7 +54,8 @@ export function checkTimeConflict(
       : new Date(existingTask.scheduledDate);
     
     const existingTaskStart = existingTaskScheduledDate.getTime();
-    const existingTaskDuration = getTaskMinutes(existingTask) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+    // Use at least MIN_TASK_DURATION_MINUTES so we never treat a scheduled block as zero-length (prevents overlaps)
+    const existingTaskDuration = Math.max(getTaskMinutes(existingTask), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
 
     // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
@@ -170,6 +171,7 @@ export function findNextAvailableSlot(
   // Sort tasks by scheduled time in chronological order (earliest first)
   // IMPORTANT: Ensure we properly parse scheduledDate (could be ISO string or Date object)
   // CRITICAL: Filter out invalid dates to ensure proper sorting
+  // CRITICAL: Use at least MIN_TASK_DURATION_MINUTES for each block so we never treat a scheduled task as zero-length (prevents overlaps)
   const sortedTasks = dateTasks
     .filter((task) => task.scheduledDate)
     .map((task) => {
@@ -184,7 +186,7 @@ export function findNextAvailableSlot(
       }
       
       const start = scheduledDate.getTime();
-      const duration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+      const duration = Math.max(getTaskMinutes(task), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
       const end = start + duration;
       
       return { task, start, end };
@@ -443,7 +445,7 @@ export function reorganizeAllTasksForDate(
 
   // Sort tasks by scheduled time in chronological order (earliest first)
   // IMPORTANT: Ensure we properly parse scheduledDate (could be ISO string or Date object)
-  // CRITICAL: Filter out invalid dates to ensure proper sorting
+  // CRITICAL: Use at least MIN_TASK_DURATION_MINUTES so we never treat a scheduled block as zero-length
   const sortedTasks = dateTasks
     .filter((task) => task.scheduledDate)
     .map((task) => {
@@ -458,7 +460,7 @@ export function reorganizeAllTasksForDate(
       }
       
       const start = scheduledDate.getTime();
-      const duration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+      const duration = Math.max(getTaskMinutes(task), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
       const end = start + duration;
       
       return { task, start, end };
@@ -605,7 +607,7 @@ export function reorganizeConflictingTasks(
       : new Date(task.scheduledDate);
     
     const existingTaskStart = existingTaskScheduledDate.getTime();
-    const existingTaskDuration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+    const existingTaskDuration = Math.max(getTaskMinutes(task), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
     
     // Check for overlap
