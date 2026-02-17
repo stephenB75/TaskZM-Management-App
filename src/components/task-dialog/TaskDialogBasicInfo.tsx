@@ -14,6 +14,7 @@ import { Icon } from "../Icon";
 import { ICON_SIZE_SM } from "../../lib/layout-constants";
 import { UI_FOLDER_COLORS } from "../../lib/ui-colors";
 import { Z_INDEX } from "../../lib/layout-constants";
+import { TASK_DIALOG_UI_TEXT } from "../../lib/task-dialog-constants";
 import type { TaskStatus, TaskPriority, Folder as FolderType } from "../../types";
 
 interface TaskDialogBasicInfoProps {
@@ -70,7 +71,7 @@ export const TaskDialogBasicInfo = React.memo(function TaskDialogBasicInfo({
           id="title"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="Task title"
+          placeholder={TASK_DIALOG_UI_TEXT.taskTitlePlaceholder}
           autoFocus
           className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20 h-10 sm:h-11"
         />
@@ -83,7 +84,7 @@ export const TaskDialogBasicInfo = React.memo(function TaskDialogBasicInfo({
         <RichTextEditor
           value={description}
           onChange={onDescriptionChange}
-          placeholder="Add a description..."
+          placeholder={TASK_DIALOG_UI_TEXT.descriptionPlaceholderShort}
           rows={3}
           className="focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary"
         />
@@ -134,10 +135,10 @@ export const TaskDialogBasicInfo = React.memo(function TaskDialogBasicInfo({
           </Label>
           <Select value={folderId || "none"} onValueChange={handleFolderChange}>
             <SelectTrigger className="bg-white dark:bg-card/80 border-primary/20 focus:border-primary focus:ring-primary/20 h-10 sm:h-11">
-              <SelectValue placeholder="No folder" />
+              <SelectValue placeholder={TASK_DIALOG_UI_TEXT.noFolder} />
             </SelectTrigger>
             <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-              <SelectItem value="none">No folder</SelectItem>
+              <SelectItem value="none">{TASK_DIALOG_UI_TEXT.noFolder}</SelectItem>
               {folders
                 .filter((folder) => folder && folder.id && folder.name)
                 .map((folder) => (

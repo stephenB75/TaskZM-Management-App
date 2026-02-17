@@ -362,6 +362,7 @@ export interface GeneratedDescription {
 /** Terms that must not appear in a description unless they appear in the task name (avoids off-topic drift). */
 const DESCRIPTION_OFF_TOPIC_FORBIDDEN_TERMS = [
   'milestone', 'customer', 'forecast', 'report', 'deliverable', 'proposal', 'testing',
+  'workout', 'fitness', 'gym', 'exercise', 'notifications', 're-occurring',
 ];
 
 /**

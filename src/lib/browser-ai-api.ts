@@ -393,9 +393,9 @@ export async function generateDescriptionWithBrowserAI(
 Task Name: "${taskName}"${termsContext}${actionPlanContext || ''}
 
 Requirements:
-- Write 1-3 full, contextual sentences: each sentence should clearly connect to the task (what is being done, for whom or what, and in what scope). Use natural, flowing prose; avoid generic or standalone phrases that could apply to any task.
-- Describe ONLY what the task name and action plan refer to. Do not introduce topics (e.g. workout, learning, fitness) that are not clearly stated in the task name or action plan.
-- Be SPECIFIC and CONTEXTUAL - use the extracted keywords and phrases that match the task name to describe what the task involves.
+- The task name is the user's exact input and the only source of truth. The description must reflect ONLY the task name; do not use any word or concept that is not stated or clearly implied by the task name.
+- Write 1-3 full, contextual sentences that explain what the task involves. Use natural, flowing prose. Do not introduce topics (e.g. workout, fitness, notifications, re-occurring) that are not in the task name or action plan.
+- Be SPECIFIC and CONTEXTUAL - use only extracted keywords and phrases that appear in or are clearly implied by the task name.
 - DO NOT repeat the task name verbatim. Use correct English: complete sentences, proper grammar, no redundant phrases (e.g. "X enables X"), no sentence fragments.
 - Use professional, clear language appropriate for ${domain} tasks.
 - ${BROWSER_AI_CONFIG.PROMPT.ACCURATE_LENGTH}

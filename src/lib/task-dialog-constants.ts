@@ -15,6 +15,8 @@ export const TASK_DIALOG_UI_TEXT = {
   // Form Labels
   taskName: 'Task Name *',
   taskNamePlaceholder: 'Enter task name...',
+  taskTitlePlaceholder: 'Task title',
+  descriptionPlaceholderShort: 'Add a description...',
   status: 'Status',
   priority: 'Priority',
   description: 'Description (Optional)',
@@ -104,9 +106,35 @@ export const TASK_DIALOG_UI_TEXT = {
   // Conflict Resolution Dialog
   conflictResolution: {
     title: 'Time Slot Already Taken',
-    description: (requestedTime: string, alternativeTime: string) => 
+    description: (requestedTime: string, alternativeTime: string) =>
       `The time slot ${requestedTime} is already occupied by another task. Would you like to schedule this task at ${alternativeTime} instead?`,
     useAlternative: (alternativeTime: string) => `Use ${alternativeTime}`,
+  },
+
+  // Description / AI
+  descriptionRedo: 'Redo',
+  descriptionRedoTooltip: 'Redo/Regenerate description (replaces current)',
+  aiGenerate: 'AI Generate',
+  aiGenerateTooltip: 'Generate new description (appends to existing)',
+  aiAnalysis: 'AI Analysis',
+  addedAsSubtask: 'Added as subtask',
+  enterNewTagName: 'Enter new tag name...',
+  enterSubtaskName: 'Enter subtask name...',
+  selectOrAddTag: 'Select or add tag...',
+  noFolder: 'No folder',
+  addDependency: 'Add dependency...',
+  addAssignee: 'Add assignee...',
+  selectHour: 'Hour',
+  selectMin: 'Min',
+  selectAmPm: 'AM/PM',
+
+  // Toasts (description generation)
+  toast: {
+    aiDescriptionGenerated: 'AI description generated',
+    aiDescriptionGeneratedDetail: (domain: string) => `Generated based on ${domain} context. AI Action Plan will update automatically.`,
+    aiDescriptionFailed: 'Failed to generate description',
+    aiDescriptionFailedDetail: 'The AI could not generate a description. Please try again or enter description manually.',
+    aiDescriptionFailedShort: 'Please try again or enter description manually',
   },
 } as const;
 

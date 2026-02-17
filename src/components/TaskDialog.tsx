@@ -2599,7 +2599,7 @@ export function TaskDialog({
                               fontSize: COMPONENT_DIMENSIONS.taskDialog.aiButton.textSize,
                               gap: SETTINGS_PANEL_GAP_SMALL 
                             }}
-                            title="Redo/Regenerate description (replaces current)"
+                            title={TASK_DIALOG_UI_TEXT.descriptionRedoTooltip}
                           >
                             <Icon 
                               name="arrow-clockwise"
@@ -2609,7 +2609,7 @@ export function TaskDialog({
                                 isGeneratingDescription && "animate-spin"
                               )}
                             />
-                            <span className="hidden lg:inline">Redo</span>
+                            <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.descriptionRedo}</span>
                           </Button>
                         )}
                         {/* Generate New Description Button - Appends to existing or creates new */}
@@ -2668,19 +2668,19 @@ export function TaskDialog({
                                   }, TIMING_CONSTANTS.STATE_UPDATE_LOG_DELAY);
                                 }
                                 
-                                toast.success('AI description generated', {
-                                  description: `Generated based on ${generated.domain} context. AI Action Plan will update automatically.`,
+                                toast.success(TASK_DIALOG_UI_TEXT.toast.aiDescriptionGenerated, {
+                                  description: TASK_DIALOG_UI_TEXT.toast.aiDescriptionGeneratedDetail(generated.domain),
                                 });
                               } else {
                                 logger.warn('AI Generate returned empty description:', generated);
-                                toast.error('Failed to generate description', {
-                                  description: 'The AI could not generate a description. Please try again or enter description manually.',
+                                toast.error(TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailed, {
+                                  description: TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailedDetail,
                                 });
                               }
                               } catch (error) {
                                 logger.warn('Description generation failed:', error);
-                                toast.error('Failed to generate description', {
-                                  description: 'Please try again or enter description manually',
+                                toast.error(TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailed, {
+                                  description: TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailedShort,
                                 });
                               } finally {
                                 setIsGeneratingDescription(false);
@@ -2694,14 +2694,14 @@ export function TaskDialog({
                             fontSize: COMPONENT_DIMENSIONS.taskDialog.aiButton.textSize,
                             gap: SETTINGS_PANEL_GAP_SMALL 
                           }}
-                          title="Generate new description (appends to existing)"
+                          title={TASK_DIALOG_UI_TEXT.aiGenerateTooltip}
                         >
                           <Icon 
                             name="sparkles" 
                             size={COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize} 
                             weight="duotone"
                           />
-                          <span className="hidden lg:inline">AI Generate</span>
+                          <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.aiGenerate}</span>
                         </Button>
                       </div>
                     )}
@@ -2741,7 +2741,7 @@ export function TaskDialog({
                         <div className="space-y-2 min-w-0 overflow-hidden">
                           <div className="flex items-center gap-2 min-w-0">
                             <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary shrink-0" />
-                            <span className="font-semibold text-foreground truncate">AI Analysis</span>
+                            <span className="font-semibold text-foreground truncate">{TASK_DIALOG_UI_TEXT.aiAnalysis}</span>
                           </div>
                           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm min-w-0">
                             <Badge variant="outline" className="text-xs border-primary/30 shrink-0 max-w-full truncate">
@@ -2829,7 +2829,7 @@ export function TaskDialog({
                           {breakdown.actionPlan && breakdown.actionPlan.suggestedSubtasks.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 min-w-0">
                               {breakdown.actionPlan.suggestedSubtasks.slice(0, 3).map((subtask, idx) => (
-                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs max-w-full min-w-0 truncate" onClick={() => { const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() }; setSubtasks([...subtasks, newSubtask]); toast.success('Added as subtask', { description: subtask }); }} title={subtask}>
+                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs max-w-full min-w-0 truncate" onClick={() => { const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() }; setSubtasks([...subtasks, newSubtask]); toast.success(TASK_DIALOG_UI_TEXT.addedAsSubtask, { description: subtask }); }} title={subtask}>
                                   <span className="truncate block">+ {subtask}</span>
                                 </Badge>
                               ))}
@@ -3126,7 +3126,7 @@ export function TaskDialog({
                                 }}
                               >
                                 <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, "text-xs cursor-pointer rounded-lg min-w-0")}>
-                                  <SelectValue placeholder="Hour" />
+                                  <SelectValue placeholder={TASK_DIALOG_UI_TEXT.selectHour} />
                                 </SelectTrigger>
                                 <SelectContent 
                                   className="max-h-60"
@@ -3181,7 +3181,7 @@ export function TaskDialog({
                                   className={cn(TASK_DIALOG_COLORS.inputFieldBg, TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, "text-xs cursor-pointer pointer-events-auto rounded-lg min-w-0")}
                                   aria-label="Select minutes"
                                 >
-                                  <SelectValue placeholder="Min" />
+                                  <SelectValue placeholder={TASK_DIALOG_UI_TEXT.selectMin} />
                                 </SelectTrigger>
                                 <SelectContent 
                                   className="max-h-60"
@@ -3219,7 +3219,7 @@ export function TaskDialog({
                                   }}
                                 >
                                   <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, TASK_DIALOG_MINIMAL_SPACING.timeRowHeight, "text-xs cursor-pointer rounded-lg min-w-0")}>
-                                    <SelectValue placeholder="AM/PM" />
+                                    <SelectValue placeholder={TASK_DIALOG_UI_TEXT.selectAmPm} />
                                   </SelectTrigger>
                                   <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                                     <SelectItem value="AM" className="cursor-pointer">AM</SelectItem>
@@ -3390,10 +3390,10 @@ export function TaskDialog({
                         }}
                       >
                         <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
-                          <SelectValue placeholder="No folder" />
+                          <SelectValue placeholder={TASK_DIALOG_UI_TEXT.noFolder} />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
-                          <SelectItem value="none">No folder</SelectItem>
+                          <SelectItem value="none">{TASK_DIALOG_UI_TEXT.noFolder}</SelectItem>
                           {folders && Array.isArray(folders) ? folders.filter(folder => folder && folder.id && folder.name).map((folder) => (
                             <SelectItem key={folder.id} value={folder.id}>
                               <div className="flex items-center gap-2">
@@ -3435,7 +3435,7 @@ export function TaskDialog({
                       }}
                     >
                       <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "flex-1 h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
-                        <SelectValue placeholder="Select or add tag..." />
+                        <SelectValue placeholder={TASK_DIALOG_UI_TEXT.selectOrAddTag} />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                         {availableTags && availableTags.length > 0 ? (
@@ -3471,7 +3471,7 @@ export function TaskDialog({
                           addTag();
                         }
                       }}
-                      placeholder="Enter new tag name..."
+                      placeholder={TASK_DIALOG_UI_TEXT.enterNewTagName}
                       className={cn(TASK_DIALOG_COLORS.inputFieldBg, "rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 h-10")}
                     />
                     <Button
@@ -3529,7 +3529,7 @@ export function TaskDialog({
                         e.key === "Enter" &&
                         (e.preventDefault(), addSubtask())
                       }
-                      placeholder="Enter subtask name..."
+                      placeholder={TASK_DIALOG_UI_TEXT.enterSubtaskName}
                       className={cn(TASK_DIALOG_COLORS.inputFieldBg, "rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 h-10")}
                     />
                     <Button
@@ -3840,7 +3840,7 @@ export function TaskDialog({
                         }}
                       >
                         <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground border-2 border-primary/30 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
-                          <SelectValue placeholder="Add dependency..." />
+                          <SelectValue placeholder={TASK_DIALOG_UI_TEXT.addDependency} />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                           {availableTasksForDependencies
@@ -3985,7 +3985,7 @@ export function TaskDialog({
                       }}
                     >
                       <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
-                        <SelectValue placeholder="Add assignee..." />
+                        <SelectValue placeholder={TASK_DIALOG_UI_TEXT.addAssignee} />
                       </SelectTrigger>
                       <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                         {teamMembers

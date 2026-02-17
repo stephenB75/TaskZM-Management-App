@@ -357,6 +357,16 @@ const OPENAI_DESC_MAX_TOKENS = 250;
 const OPENAI_DESC_TEMPERATURE = 0.3;
 const OPENAI_OPTS_MAX_TOKENS = 600;
 const OPENAI_OPTS_TEMPERATURE = 0.4;
+const OPENAI_ACTION_PLAN_MAX_TOKENS = 400;
+const OPENAI_ACTION_PLAN_TEMPERATURE = 0.4;
+const AI_DESC_CONFIDENCE_DEFAULT = 0.85;
+const AI_OPTS_CONFIDENCE_DEFAULT = 0.75;
+
+/** Words that must not appear in description/action plan unless they appear in the task name (avoids off-topic drift). */
+const DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK = [
+  'milestone', 'customer', 'forecast', 'report', 'deliverable', 'proposal', 'test (as in testing)',
+  'workout', 'fitness', 'gym', 'exercise', 'notifications', 're-occurring',
+];
 
 /** High-risk cross-context terms to forbid per domain (reduces jumbling). */
 const DO_NOT_USE_TERMS: Record<string, string[]> = {
@@ -470,20 +480,17 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
       ? `\n\nDo not use any of these words (they refer to different contexts): ${doNotUseList.join(', ')}.`
       : '';
     const additionalContextBlock = existingDescription
-      ? `\n\nAdditional context (current description): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
+      ? `\n\nOptional current description (use only to refine the same task; do NOT copy any topic or phrase from here that is not in the task name above): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
       : '';
 
-    const systemMessage = `You write 1-3 short, contextual sentences that explain what the task involves. Be specific to the task: each sentence should clearly connect to the subject, object, and goal implied by the task name (e.g. what is being done, for or about what, and in what scope). Use natural, flowing prose—avoid stilted or list-like phrasing. Describe ONLY what the task name refers to; do not introduce topics, activities, or concepts not directly stated or clearly implied. Use standard English only; do not invent or modify words. Do not repeat the task name verbatim.`;
+    const systemMessage = `The task name is the user's exact input and the only source of truth. You write 1-3 short, contextual sentences that explain what the task involves. Every word and concept in your description must come from or be clearly implied by the task name. Do not introduce any topic, activity, or concept that is not stated or clearly implied by the task name. Use natural, flowing prose. Do not repeat the task name verbatim. Use standard English only.`;
     const prompt = `${situationLine}${additionalContextBlock}${allowedVocabulary}${doNotUseBlock}
 
-Using the task name above, generate a clear description in 1-3 full, contextual sentences. Each sentence should:
-- Refer clearly to the task (what is being done, for whom or what, and in what scope).
-- Flow naturally; avoid generic or standalone phrases that could apply to any task.
-- Use a term from the allowed vocabulary ONLY if it fits this specific situation; ignore irrelevant terms.
+Using ONLY the task name above, generate a clear description in 1-3 full sentences. The description must reflect the task name and nothing else.
+- Do not use any word or concept that does not appear in or is not clearly implied by the task name. Ignore the optional description and allowed vocabulary for any topic not in the task name.
+- Do not use these words unless they appear in the task name: ${DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK.join(', ')}.
 
-Do not use these words unless they appear in the task name: milestone, customer, forecast, report, deliverable, proposal, test (as in testing).
-
-Use complete, grammatical sentences (e.g. "articles for the software website", not "articles software website"). Keep to 1-3 sentences (about 15-50 words). Do not repeat the task name verbatim.
+Use complete, grammatical sentences. Keep to 1-3 sentences (about 15-50 words). Do not repeat the task name verbatim.
 
 Generate the description now:`;
 
@@ -517,7 +524,7 @@ Generate the description now:`;
     }
 
     const description = content.trim().replace(/^["']|["']$/g, '');
-    const result = { description, domain, confidence: 0.85 };
+    const result = { description, domain, confidence: AI_DESC_CONFIDENCE_DEFAULT };
 
     try {
       await kv.set(cacheKey, { v: result, exp: Date.now() + AI_CACHE_TTL_MS });
@@ -583,12 +590,12 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
       ? `\n\nDo not use any of these words (different contexts): ${doNotUseList.join(', ')}.`
       : '';
 
-    const systemMessageOpts = `You generate 3-5 short description options from the user's task name. Each option must be 1-3 contextual sentences: clearly connected to the task (what is being done, for or about what, scope). Use natural, flowing prose; avoid generic or list-like phrasing. Describe ONLY what the task name refers to; use allowed vocabulary only when clearly relevant. Use complete, grammatical English (e.g. "articles for the software website", not "articles software website").`;
+    const systemMessageOpts = `The task name is the user's exact input and the only source of truth. You generate 3-5 short description options. Each option must describe ONLY what the task name refers to; every word and concept must come from or be clearly implied by the task name. Do not introduce any topic not in the task name. Use natural, flowing prose. Use allowed vocabulary only when a term appears in or is clearly implied by the task name.`;
     const prompt = `${situationLine}${allowedVocabulary}${doNotUseBlock}
 
-Do not use these words in any description unless they appear in the task name: milestone, customer, forecast, report, deliverable, proposal, test (as in testing).
+Do not use these words in any description unless they appear in the task name: ${DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK.join(', ')}.
 
-Generate exactly 3-5 description options. Each option: 1-3 full, contextual sentences (about 15-50 words). Each sentence should refer clearly to the task and flow naturally; avoid phrases that could apply to any task. Describe ONLY what the task name refers to. Vary options by wording, detail level, or angle. Use correct English.
+Generate exactly 3-5 description options. Each option must reflect ONLY the task name above; do not add topics from the allowed vocabulary that are not in the task name. Each option: 1-3 full, contextual sentences (about 15-50 words). Each sentence should refer clearly to the task and flow naturally; avoid phrases that could apply to any task. Describe ONLY what the task name refers to. Vary options by wording, detail level, or angle. Use correct English.
 
 Return ONLY a valid JSON array of objects, each with keys: "description" (string), "domain" (string, e.g. "business"), "confidence" (number 0-1). No other text.
 
@@ -643,7 +650,7 @@ JSON array:`;
       .map((o) => ({
         description: (o.description as string).trim().replace(/^["']|["']$/g, ''),
         domain: typeof o.domain === 'string' ? o.domain : 'business',
-        confidence: typeof o.confidence === 'number' ? o.confidence : 0.75,
+        confidence: typeof o.confidence === 'number' ? o.confidence : AI_OPTS_CONFIDENCE_DEFAULT,
       }));
 
     const result = { options: normalized };
@@ -703,7 +710,7 @@ app.post("/taskzm-database-function/ai/action-plan", async (c) => {
     const systemMessage = `You produce 3-5 ordered action steps for the user's task. Each step must be contextual: use the same subject, object, and goal as the task name and description (e.g. for "Write help articles for the website", steps should be about writing, articles, and the website—not generic "Create report" or "Forecast demand"). Use short, concrete action phrases (verb + object from the task). Do not add generic business steps unless the task explicitly mentions them. Use allowed vocabulary only where it fits the task.`;
     const prompt = `${situationLine}${descriptionBlock}${allowedTerms}
 
-Do not use these words in any step unless they appear in the task name or description: milestone, customer, forecast, report, deliverable, proposal, test (as in testing).
+Do not use these words in any step unless they appear in the task name or description: ${DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK.join(', ')}.
 
 Using the task name and description above, produce 3-5 ordered action steps for this ${domain} task. Each step must be contextual to this task:
 - Use the same nouns, goals, and domain as the task (e.g. for "Write help articles for the website" use steps like "Draft outline for help articles", "Write first article", "Review and publish to website"—not "Create report" or "Send to customer").
@@ -726,8 +733,8 @@ JSON:`;
           { role: 'system', content: systemMessage },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 400,
-        temperature: 0.4,
+        max_tokens: OPENAI_ACTION_PLAN_MAX_TOKENS,
+        temperature: OPENAI_ACTION_PLAN_TEMPERATURE,
       }),
     });
 
