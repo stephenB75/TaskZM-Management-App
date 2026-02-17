@@ -474,10 +474,11 @@ export function TodayAgendaView({
             <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx }}>
               {nextUpTopPx != null && (
                 <div
-                  className="absolute left-0 flex items-center z-10"
+                  className="absolute right-0 flex items-center justify-end z-10"
                   style={{
                     top: nextUpBadgeTopPx,
                     height: TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx,
+                    width: columnWidth,
                   }}
                 >
                   <span className="text-xs font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground inline-block">
