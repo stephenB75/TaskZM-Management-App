@@ -63,6 +63,7 @@ import { useAI } from "../contexts/AIContext";
 import { useAuth } from "../contexts/AuthContext";
 import * as api from "../lib/api";
 import { toast } from "sonner";
+import { playSubtaskCompleteSound } from "../lib/toast-sound";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_MEDIUM_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
@@ -2210,6 +2211,8 @@ export function TaskDialog({
   };
 
   const toggleSubtask = (subtaskId: string) => {
+    const st = subtasks.find((s) => s.id === subtaskId);
+    if (st && !st.completed) playSubtaskCompleteSound();
     setSubtasks(
       subtasks.map((st) =>
         st.id === subtaskId

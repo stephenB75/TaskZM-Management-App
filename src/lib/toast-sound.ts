@@ -8,6 +8,7 @@ import {
   NOTIFICATION_SOUND,
   TASK_COMPLETE_SOUND,
   DUE_REMINDER_CHIME,
+  SUBTASK_COMPLETE_SOUND,
 } from './toast-constants';
 
 type SoundConfig = {
@@ -62,4 +63,11 @@ export function playTaskCompleteSound(): void {
  */
 export function playDueReminderChime(): void {
   playSoundFromConfig(DUE_REMINDER_CHIME);
+}
+
+/**
+ * Plays when a subtask is marked complete on a task card.
+ */
+export function playSubtaskCompleteSound(): void {
+  playSoundFromConfig(SUBTASK_COMPLETE_SOUND);
 }

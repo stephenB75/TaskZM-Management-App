@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
+import { playSubtaskCompleteSound } from "../lib/toast-sound";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
 import * as api from "../lib/api";
@@ -649,6 +650,9 @@ export const DraggableTaskCard = React.forwardRef<
                   });
                   return;
                 }
+
+                const markingComplete = !isCompleted;
+                if (markingComplete) playSubtaskCompleteSound();
 
                 if (isUserSubtask) {
                   const updatedSubtasks = task.subtasks.map(st =>

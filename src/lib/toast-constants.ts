@@ -28,6 +28,14 @@ export const DUE_REMINDER_CHIME = {
   gainRampEnd: 0.001,
 } as const;
 
+/** Sound when user marks a subtask complete on a task card */
+export const SUBTASK_COMPLETE_SOUND = {
+  frequencyHz: 523,
+  durationMs: 80,
+  volume: 0.18,
+  gainRampEnd: 0.001,
+} as const;
+
 /** Prefix for stored toast notification IDs */
 export const TOAST_STORAGE_ID_PREFIX = 'toast_';
 
