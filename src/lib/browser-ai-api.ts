@@ -388,18 +388,19 @@ export async function generateDescriptionWithBrowserAI(
 - Important Nouns: ${extractedTerms.nouns.slice(0, 5).join(', ')}${extractedTerms.nouns.length > 5 ? '...' : ''}`
       : '';
 
-    const prompt = `Generate a clear, accurate description for this ${domain} task.
+    const prompt = `Generate a clear, contextual description for this ${domain} task.
 
 Task Name: "${taskName}"${termsContext}${actionPlanContext || ''}
 
 Requirements:
+- Write 1-3 full, contextual sentences: each sentence should clearly connect to the task (what is being done, for whom or what, and in what scope). Use natural, flowing prose; avoid generic or standalone phrases that could apply to any task.
 - Describe ONLY what the task name and action plan refer to. Do not introduce topics (e.g. workout, learning, fitness) that are not clearly stated in the task name or action plan.
-- Be SPECIFIC and CONTEXTUAL - use the extracted keywords and phrases that match the task name to describe what the task involves
+- Be SPECIFIC and CONTEXTUAL - use the extracted keywords and phrases that match the task name to describe what the task involves.
 - DO NOT repeat the task name verbatim. Use correct English: complete sentences, proper grammar, no redundant phrases (e.g. "X enables X"), no sentence fragments.
-- Use professional, clear language appropriate for ${domain} tasks
+- Use professional, clear language appropriate for ${domain} tasks.
 - ${BROWSER_AI_CONFIG.PROMPT.ACCURATE_LENGTH}
-- Avoid run-on sentences: do not chain many clauses with "and", "but", or commas; use separate sentences when you have multiple points
-- Use only extracted keywords/phrases/verbs/nouns that are relevant to the task name to build an accurate description (sentence or paragraph as needed)
+- Avoid run-on sentences: do not chain many clauses with "and", "but", or commas; use separate sentences when you have multiple points.
+- Use only extracted keywords/phrases/verbs/nouns that are relevant to the task name to build an accurate description (sentence or paragraph as needed).
 
 Example (marketing plan):
 Task: "Create a marketing plan that explain the new product launch."

@@ -376,9 +376,9 @@ const TASK_NAME_MAX_LEN = 500;
  */
 function buildSituationLine(taskName: string, actionPlanSteps: string[], _maxLen?: number): string {
   const safeTaskName = taskName.length > TASK_NAME_MAX_LEN ? taskName.slice(0, TASK_NAME_MAX_LEN) + '...' : taskName;
-  let s = `Task name (user input): ${safeTaskName}`;
+  let s = `Task name (the specific task the user wants to accomplish): ${safeTaskName}`;
   if (actionPlanSteps.length > 0) {
-    s += `\nSteps (if any): ${actionPlanSteps.slice(0, 5).join(', ')}.`;
+    s += `\nExisting steps (if any): ${actionPlanSteps.slice(0, 5).join(', ')}.`;
   }
   return s;
 }
@@ -473,20 +473,17 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
       ? `\n\nAdditional context (current description): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
       : '';
 
-    const systemMessage = "You turn the user's task name into 1-3 short, contextual sentences that explain what the task involves. The description must describe ONLY what the task name refers to. Do not mention any topic, activity, or concept that is not directly stated or clearly implied by the task name. Do not invent or modify words (e.g. use 'writing' not 'articlesing'); use standard English only. Use the task name as the basis; do not repeat it verbatim. Stay strictly on-topic and use correct English.";
+    const systemMessage = `You write 1-3 short, contextual sentences that explain what the task involves. Be specific to the task: each sentence should clearly connect to the subject, object, and goal implied by the task name (e.g. what is being done, for or about what, and in what scope). Use natural, flowing prose—avoid stilted or list-like phrasing. Describe ONLY what the task name refers to; do not introduce topics, activities, or concepts not directly stated or clearly implied. Use standard English only; do not invent or modify words. Do not repeat the task name verbatim.`;
     const prompt = `${situationLine}${additionalContextBlock}${allowedVocabulary}${doNotUseBlock}
 
-Using the task name above as the user input, generate a clear description in 1-3 full sentences that explain what this task involves. Be specific and contextual. Use a term from the allowed vocabulary ONLY if it is clearly about the same topic as the task name; ignore any listed term that is not relevant.
+Using the task name above, generate a clear description in 1-3 full, contextual sentences. Each sentence should:
+- Refer clearly to the task (what is being done, for whom or what, and in what scope).
+- Flow naturally; avoid generic or standalone phrases that could apply to any task.
+- Use a term from the allowed vocabulary ONLY if it fits this specific situation; ignore irrelevant terms.
 
-Do not use these words in the description unless they appear in the task name: milestone, customer, forecast, report, deliverable, proposal, test (as in testing).
+Do not use these words unless they appear in the task name: milestone, customer, forecast, report, deliverable, proposal, test (as in testing).
 
-Use complete, grammatical phrases (e.g. "articles for the software website", not "articles software website").
-
-Requirements:
-- The description must describe ONLY what the task name refers to. Do not introduce any topic or vocabulary that is not directly stated or clearly implied by the task name.
-- Use correct English only: complete sentences, proper grammar, no made-up words, no redundant phrases.
-- Keep the description to 1-3 sentences (about 15-50 words). Avoid run-on sentences.
-- Do not repeat the task name verbatim.
+Use complete, grammatical sentences (e.g. "articles for the software website", not "articles software website"). Keep to 1-3 sentences (about 15-50 words). Do not repeat the task name verbatim.
 
 Generate the description now:`;
 
@@ -586,12 +583,12 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
       ? `\n\nDo not use any of these words (different contexts): ${doNotUseList.join(', ')}.`
       : '';
 
-    const systemMessageOpts = "You generate 3-5 short description options from the user's task name. Each description must describe ONLY what the task name refers to. Do not mention any topic not directly stated or implied by the task name. Use allowed vocabulary only when clearly relevant to the task name. Use complete, grammatical phrases (e.g. 'articles for the software website', not 'articles software website').";
+    const systemMessageOpts = `You generate 3-5 short description options from the user's task name. Each option must be 1-3 contextual sentences: clearly connected to the task (what is being done, for or about what, scope). Use natural, flowing prose; avoid generic or list-like phrasing. Describe ONLY what the task name refers to; use allowed vocabulary only when clearly relevant. Use complete, grammatical English (e.g. "articles for the software website", not "articles software website").`;
     const prompt = `${situationLine}${allowedVocabulary}${doNotUseBlock}
 
 Do not use these words in any description unless they appear in the task name: milestone, customer, forecast, report, deliverable, proposal, test (as in testing).
 
-Generate exactly 3-5 short description options. Each description should be 1-3 sentences (about 15-50 words). Describe ONLY what the task name above refers to; do not introduce unrelated topics. Use a term from the allowed vocabulary ONLY if it is clearly about the same topic as the task name. Use correct English; vary the options (different wording, detail level, or angle).
+Generate exactly 3-5 description options. Each option: 1-3 full, contextual sentences (about 15-50 words). Each sentence should refer clearly to the task and flow naturally; avoid phrases that could apply to any task. Describe ONLY what the task name refers to. Vary options by wording, detail level, or angle. Use correct English.
 
 Return ONLY a valid JSON array of objects, each with keys: "description" (string), "domain" (string, e.g. "business"), "confidence" (number 0-1). No other text.
 
@@ -703,15 +700,17 @@ app.post("/taskzm-database-function/ai/action-plan", async (c) => {
       ? `\nDescription (if any): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
       : '';
 
-    const systemMessage = "You produce 3-5 ordered action steps for the user's task. Each step must be directly derived from the task name (and description if provided). Do not add generic business steps (e.g. report, forecast, milestone, customer) unless the task name or description clearly refers to them. Use only the allowed vocabulary where it fits the task; do not introduce unrelated concepts.";
+    const systemMessage = `You produce 3-5 ordered action steps for the user's task. Each step must be contextual: use the same subject, object, and goal as the task name and description (e.g. for "Write help articles for the website", steps should be about writing, articles, and the website—not generic "Create report" or "Forecast demand"). Use short, concrete action phrases (verb + object from the task). Do not add generic business steps unless the task explicitly mentions them. Use allowed vocabulary only where it fits the task.`;
     const prompt = `${situationLine}${descriptionBlock}${allowedTerms}
 
 Do not use these words in any step unless they appear in the task name or description: milestone, customer, forecast, report, deliverable, proposal, test (as in testing).
 
-Using the task name above (and description if any), produce 3-5 ordered action steps for this ${domain} task. Each step: short action phrase (few words), estimated minutes (integer). Every step must be clearly implied by the task (e.g. for \"Write help articles for the website\" use steps about writing, articles, website—not \"Create report\" or \"Forecast demand\" unless the task mentions them).
+Using the task name and description above, produce 3-5 ordered action steps for this ${domain} task. Each step must be contextual to this task:
+- Use the same nouns, goals, and domain as the task (e.g. for "Write help articles for the website" use steps like "Draft outline for help articles", "Write first article", "Review and publish to website"—not "Create report" or "Send to customer").
+- Short action phrase (few words) + estimated minutes (integer). Every step must be clearly implied by the task name or description.
 
 Return ONLY a valid JSON object with a single key "steps", an array of objects each with "action" (string) and "estimatedMinutes" (number). No other text.
-Example: {"steps":[{"action":"Review requirements","estimatedMinutes":10},{"action":"Implement changes","estimatedMinutes":30}]}
+Example: {"steps":[{"action":"Draft outline for help articles","estimatedMinutes":10},{"action":"Write and edit first article","estimatedMinutes":30}]}
 
 JSON:`;
 
