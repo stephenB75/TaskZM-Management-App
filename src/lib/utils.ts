@@ -541,6 +541,20 @@ export function getInitials(name: string | undefined | null): string {
     .toUpperCase();
 }
 
+/**
+ * Abbreviate name for display on user/assignee cards: "FirstName L." (first name + first letter of last name + dot).
+ * Single-word names are returned as-is (trimmed).
+ */
+export function getAbbreviatedDisplayName(name: string | undefined | null): string {
+  if (!name || typeof name !== 'string') return '';
+  const parts = name.trim().split(/\s+/).filter(p => p.length > 0);
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0];
+  const first = parts[0];
+  const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+  return `${first} ${lastInitial}.`;
+}
+
 // Safe first name extraction
 // Sanitize HTML to prevent XSS attacks while preserving formatting
 /**

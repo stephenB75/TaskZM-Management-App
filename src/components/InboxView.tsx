@@ -35,7 +35,7 @@ import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZ
 import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES, TASK_CARD_TEXT_COLORS } from "../lib/task-card-constants";
 import { toast } from "../lib/toast-wrapper";
 import { logger } from "../lib/logger";
-import { cn, getInitials, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getDateString, parseCalendarEventTime } from "../lib/utils";
+import { cn, getInitials, getAbbreviatedDisplayName, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getDateString, parseCalendarEventTime } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
@@ -1317,7 +1317,7 @@ export function InboxView() {
                                                 </div>
                                               )}
                                               <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameStandalone.fontSize }}>
-                                                {member.name}
+                                                {getAbbreviatedDisplayName(member.name)}
                                               </span>
                                             </div>
                                           );
@@ -1651,7 +1651,7 @@ export function InboxView() {
                                               </div>
                                             )}
                                             <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameStandalone.fontSize }}>
-                                              {member.name}
+                                              {getAbbreviatedDisplayName(member.name)}
                                             </span>
                                           </div>
                                         );

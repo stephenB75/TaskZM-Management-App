@@ -50,6 +50,7 @@ import {
   validateDependencies,
   getIncompleteDependencies,
   getInitials,
+  getAbbreviatedDisplayName,
   calculateRecurringTaskSeriesTotalTime,
 } from "../lib/utils";
 import { getOccurrenceDates } from "../lib/recurrence";
@@ -4061,7 +4062,7 @@ export function TaskDialog({
                                     {getInitials(member.name)}
                                   </div>
                                 )}
-                                <span className="font-medium" style={{ fontSize: COMPONENT_DIMENSIONS.taskDialog.assignee.textSize }}>{member.name}</span>
+                                <span className="font-medium" style={{ fontSize: COMPONENT_DIMENSIONS.taskDialog.assignee.textSize }}>{getAbbreviatedDisplayName(member.name)}</span>
                                 <Icon name="x" size={ICON_SIZE_XS} className="ml-1 flex-shrink-0" />
                               </div>
                             </Badge>

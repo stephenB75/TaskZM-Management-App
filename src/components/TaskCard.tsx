@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { cn, getPriorityColor, formatDate, formatTimeAMPM, isOverdue, calculateProgress, isTaskBlocked, getIncompleteDependencies, getInitials, sanitizeHTML, hasHTMLTags } from '../lib/utils';
+import { cn, getPriorityColor, formatDate, formatTimeAMPM, isOverdue, calculateProgress, isTaskBlocked, getIncompleteDependencies, getInitials, getAbbreviatedDisplayName, sanitizeHTML, hasHTMLTags } from '../lib/utils';
 import { useTasks } from '../contexts/TaskContext';
 import { useTeam } from '../contexts/TeamContext';
 import type { Task } from '../types';
@@ -274,7 +274,7 @@ export function TaskCard({
                         </div>
                       )}
                       <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameStandalone.fontSize }}>
-                        {member.name}
+                        {getAbbreviatedDisplayName(member.name)}
                       </span>
                     </div>
                   );

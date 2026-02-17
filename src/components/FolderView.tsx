@@ -19,7 +19,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { ScrollArea } from "./ui/scroll-area";
-import { cn, getInitials, sanitizeHTML, hasHTMLTags } from "../lib/utils";
+import { cn, getInitials, getAbbreviatedDisplayName, sanitizeHTML, hasHTMLTags } from "../lib/utils";
 import { toast } from "sonner";
 import type { Task, Folder as FolderType } from "../types";
 import { Z_INDEX } from "../lib/layout-constants";
@@ -571,7 +571,7 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
                                           {initials}
                                         </div>
                                       )}
-                                      <span>{member.name}</span>
+                                      <span>{getAbbreviatedDisplayName(member.name)}</span>
                                     </div>
                                   </Badge>
                                 );

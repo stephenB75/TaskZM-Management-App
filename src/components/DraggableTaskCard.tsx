@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
-import { cn, formatTimeAMPM, getInitials, sanitizeHTML, hasHTMLTags, calculateProgress, getDateString, calculateRecurringTaskSeriesTotalTime } from "../lib/utils";
+import { cn, formatTimeAMPM, getInitials, getAbbreviatedDisplayName, sanitizeHTML, hasHTMLTags, calculateProgress, getDateString, calculateRecurringTaskSeriesTotalTime } from "../lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
@@ -1261,7 +1261,7 @@ export const DraggableTaskCard = React.forwardRef<
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <div className="flex flex-col items-end text-right min-w-0">
-                                <span className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate max-w-full">{member.name}</span>
+                                <span className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate max-w-full">{getAbbreviatedDisplayName(member.name)}</span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-full">{member.role || 'Team Member'}</span>
                                 {member.teamId && (() => {
                                   const team = teams.find(t => t.id === member.teamId);

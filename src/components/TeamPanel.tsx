@@ -46,7 +46,7 @@ import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { toast } from "sonner";
-import { cn, getInitials } from "../lib/utils";
+import { cn, getInitials, getAbbreviatedDisplayName } from "../lib/utils";
 import type { User } from "../types";
 import {
   PANEL_PADDING,
@@ -984,7 +984,7 @@ export function TeamPanel() {
               paddingRight: TEAM_PANEL_CARD_PADDING,
             }}
           >
-            {member.name}
+            {getAbbreviatedDisplayName(member.name)}
           </h3>
 
           {/* Role/Job Title */}
