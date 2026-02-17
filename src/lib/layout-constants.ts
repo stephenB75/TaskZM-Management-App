@@ -317,6 +317,8 @@ export const TODAY_AGENDA_TIMELINE = {
   currentTimeLineHeightPx: 6,
   /** Padding left (px) for the timeline blocks column (matches pl-2). */
   blocksColumnPaddingLeftPx: 8,
+  /** Gap (px) between horizontal lanes when overlapping blocks are shown side-by-side. */
+  laneGapPx: 8,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 

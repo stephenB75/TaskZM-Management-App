@@ -428,14 +428,13 @@ export function TodayAgendaView({
     }
   };
 
-  /** Vertical timeline: show hourly stamps so the axis matches the stacked layout height; add labels from 7 AM to the bottom (stretched when stacked). */
+  /** Vertical timeline: labels only for 7 AM–12 AM so the axis matches the task time scale (pxPerMinute). Stacked blocks extend below 12 AM with no extra labels so the scale stays correct. */
   const agendaListRows = useMemo(
     () => {
       const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
-      // Extend axis to match stacked layout so time scale runs to the bottom (same pxPerMinute)
-      const maxMinutesForAxis = Math.max(totalMinutes, Math.ceil(timelineLayoutHeightPx / pxPerMinute));
+      // Time axis fixed to 7 AM–12 AM (totalMinutes); stacked overflow below has no labels so block heights match the scale
       const allSlotMinutes: number[] = [];
-      for (let m = 0; m <= maxMinutesForAxis; m += labelIntervalMinutes) {
+      for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
         allSlotMinutes.push(m);
       }
       const hiddenSlotMinutes = new Set<number>();
@@ -443,8 +442,8 @@ export function TodayAgendaView({
       for (const block of timelineBlocks) {
         const { actualStartMins, actualDurationMins } = block;
         const endMins = actualStartMins + actualDurationMins;
-        if (actualStartMins >= 0 && actualStartMins <= maxMinutesForAxis) blockStartMinutes.add(actualStartMins);
-        for (let m = 0; m <= maxMinutesForAxis; m += labelIntervalMinutes) {
+        if (actualStartMins >= 0 && actualStartMins <= totalMinutes) blockStartMinutes.add(actualStartMins);
+        for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
           if (m > actualStartMins && m < endMins) hiddenSlotMinutes.add(m);
         }
       }
@@ -457,9 +456,8 @@ export function TodayAgendaView({
         const label = isMidnight
           ? TODAY_AGENDA_TEXT.timelineMidnightLabel
           : (() => {
-              const hour24 = h % 24;
-              const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-              const ampm = hour24 < 12 ? 'AM' : 'PM';
+              const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+              const ampm = h < 12 ? 'AM' : 'PM';
               return `${hour12}:${min.toString().padStart(2, '0')} ${ampm}`;
             })();
         return { minutesFromStart: m, label };
