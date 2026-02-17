@@ -1482,9 +1482,6 @@ export function SevenDayKanban({
                                       className="flex flex-col items-center justify-center py-12 text-center pointer-events-none"
                                       style={{ minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px` }}
                               >
-                                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 pointer-events-none">
-                                  <Icon name="plus" size={24} className="text-primary/40" />
-                                </div>
                                       <p className="text-sm text-muted-foreground pointer-events-none">No tasks</p>
                               </motion.div>
                             ) : (
