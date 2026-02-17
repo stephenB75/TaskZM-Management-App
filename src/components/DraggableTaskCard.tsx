@@ -1012,13 +1012,13 @@ export const DraggableTaskCard = React.forwardRef<
 
           {/* Bordered content area: border lays behind tab, starts where tab ends (L/B/R only) */}
           <div className={cn("flex flex-col flex-1 min-w-0", "rounded-b-lg", isExpanded && "rounded-b-none", TASK_CARD_BORDERS.cardBody)}>
-          {/* Headline (Title) - Mark complete at start, then title; checkbox aligned with first line */}
-          <div className={cn("flex items-start px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
+          {/* Headline (Title) - Mark complete inline with title; checkbox vertically centered with headline */}
+          <div className={cn("flex items-center gap-2 px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
             <button
               type="button"
               onClick={handleToggleComplete}
               onPointerDown={(e) => e.stopPropagation()}
-              className="flex-shrink-0 hover:opacity-80 transition-opacity mr-1 flex items-center justify-center self-start"
+              className="flex-shrink-0 hover:opacity-80 transition-opacity flex items-center justify-center"
               style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
               aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
             >
