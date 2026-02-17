@@ -340,7 +340,7 @@ export function TodayAgendaView({
         { ensureAfterCurrentTime: true }
       );
       const diffMs = Math.abs(slot.getTime() - taskDate.getTime());
-      if (diffMs > 60 * 1000) {
+      if (diffMs > MILLISECONDS_PER_MINUTE) {
         updateTask(task.id, { scheduledDate: slot.toISOString() });
         if (import.meta.env.DEV) {
           logger.debug('Today Agenda: adjusted overlapping task to next available slot', {
