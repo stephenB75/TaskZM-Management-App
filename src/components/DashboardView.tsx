@@ -50,6 +50,7 @@ import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { useCalendarEventCounts } from "../hooks/useCalendarEvents";
 import { cn, sanitizeHTML, hasHTMLTags, getDateString, getWeekStart } from "../lib/utils";
 import { toast } from "../lib/toast-wrapper";
+import { playTaskCompleteSound } from "../lib/toast-sound";
 import type { Task } from "../types";
 import { 
   getCheckboxSizePxForWidth,
@@ -611,6 +612,7 @@ export function DashboardView({
   const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTaskComplete = useCallback((originElement?: HTMLElement | null) => {
+    playTaskCompleteSound();
     let origin: { x: number; y: number } | null = null;
     if (originElement) {
       const rect = originElement.getBoundingClientRect();

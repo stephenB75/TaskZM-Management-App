@@ -1983,7 +1983,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           await api.saveTask(currentWorkspaceId!, t);
         }
         debouncedSync(false);
-        toast.success(seriesTasks.length === 1 ? 'Task created' : `Series created: ${seriesTasks.length} tasks`);
+        toast.success(seriesTasks.length === 1 ? 'Task created' : `Series created: ${seriesTasks.length} tasks`, { playSound: true });
       } catch (error) {
         logger.error('Failed to save task series', error);
         await loadTasksFromServer(currentWorkspaceId!).catch(() => {});

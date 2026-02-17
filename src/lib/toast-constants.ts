@@ -3,12 +3,28 @@
  * Used by toast-wrapper and Toaster; no hardcoded values in toast logic.
  */
 
-/** Notification sound when user adds a task (Web Audio API params) */
+/** Notification sound when user creates a task (Web Audio API params) */
 export const NOTIFICATION_SOUND = {
   frequencyHz: 880,
   durationMs: 150,
   volume: 0.25,
   /** Gain ramp target (near zero) for exponentialRampToValueAtTime. */
+  gainRampEnd: 0.001,
+} as const;
+
+/** Sound when user marks a task complete (plays with confetti) */
+export const TASK_COMPLETE_SOUND = {
+  frequencyHz: 1047,
+  durationMs: 200,
+  volume: 0.2,
+  gainRampEnd: 0.001,
+} as const;
+
+/** Chime for due/upcoming task reminders */
+export const DUE_REMINDER_CHIME = {
+  frequencyHz: 659,
+  durationMs: 120,
+  volume: 0.2,
   gainRampEnd: 0.001,
 } as const;
 

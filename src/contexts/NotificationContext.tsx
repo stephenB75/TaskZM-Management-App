@@ -3,6 +3,7 @@ import { useTasks } from './TaskContext';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
+import { playDueReminderChime } from '../lib/toast-sound';
 import { logger } from '../lib/logger';
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
@@ -401,6 +402,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           const dateToUse = task.dueDate || task.scheduledDate;
           const dateText = dateToUse ? new Date(dateToUse).toLocaleDateString() : '';
             
+            playDueReminderChime();
             await showNativeNotification({
               title: NOTIFICATION_TITLES.taskOverdue,
             body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
@@ -463,6 +465,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             ? NOTIFICATION_MESSAGES.timeMinutes(timeUntil)
             : NOTIFICATION_MESSAGES.timeHours(Math.round(timeUntil / MINUTES_PER_HOUR));
           
+            playDueReminderChime();
             await showNativeNotification({
               title: isDueNow ? NOTIFICATION_TITLES.taskDueNow : NOTIFICATION_TITLES.taskUpcoming,
               body: isDueNow 

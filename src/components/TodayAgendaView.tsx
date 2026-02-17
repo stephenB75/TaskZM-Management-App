@@ -16,7 +16,8 @@ import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
 import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
-import { toast } from "sonner";
+import { toast } from "../lib/toast-wrapper";
+import { playTaskCompleteSound } from "../lib/toast-sound";
 import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
@@ -367,8 +368,9 @@ export function TodayAgendaView({
     });
   };
 
-  // Handle task completion - trigger confetti at card position (or center if no element)
+  // Handle task completion - play sound and trigger confetti at card position (or center if no element)
   const handleTaskComplete = useCallback((originElement?: HTMLElement | null) => {
+    playTaskCompleteSound();
     if (originElement) {
       const rect = originElement.getBoundingClientRect();
       setConfettiOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
