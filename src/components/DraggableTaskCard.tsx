@@ -62,6 +62,10 @@ import {
   TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR,
   TASK_CARD_KANBAN_TIME_PERIOD_AM,
   TASK_CARD_KANBAN_TIME_PERIOD_PM,
+  TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX,
+  TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS,
+  TASK_CARD_KANBAN_TIME_PERIOD_ICON_AM,
+  TASK_CARD_KANBAN_TIME_PERIOD_ICON_PM,
   TASK_CARD_AI_SUGGESTIONS_IN_EXPANDED_MAX_MINUTES,
   TASK_CARD_TEXT,
   TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS,
@@ -1046,10 +1050,13 @@ export const DraggableTaskCard = React.forwardRef<
                     const timeAndPeriod = getTimeAndPeriod(task.scheduledDate || task.dueDate || null);
                     if (isKanban && timeAndPeriod) {
                       const { timePart, period } = timeAndPeriod;
+                      const periodClass = period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_AM : TASK_CARD_KANBAN_TIME_PERIOD_PM;
+                      const periodIconName = period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_ICON_AM : TASK_CARD_KANBAN_TIME_PERIOD_ICON_PM;
                       return (
-                        <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                        <span className={cn("text-white font-normal whitespace-nowrap flex items-center gap-0.5", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
                           {timePart}{' '}
-                          <span className={period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_AM : TASK_CARD_KANBAN_TIME_PERIOD_PM}>{period}</span>
+                          <span className={periodClass}>{period}</span>
+                          <Icon name={periodIconName} size={TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX} className={TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS} />
                         </span>
                       );
                     }

@@ -76,9 +76,17 @@ export const TASK_CARD_PRIORITY_COLORS = {
 /** Dark gray for priority badge text on white when priority is default (light gray would be hard to see) */
 export const TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR = '#374151'; // gray-700
 
-/** Kanban week view: Tailwind classes for AM/PM suffix on task time (readable on priority tab backgrounds). */
-export const TASK_CARD_KANBAN_TIME_PERIOD_AM = 'text-slate-800 dark:text-slate-200';
-export const TASK_CARD_KANBAN_TIME_PERIOD_PM = 'text-gray-700 dark:text-gray-300';
+/** Kanban week view: Tailwind classes for AM/PM suffix on task time (black text; sun/moon icon after period). */
+export const TASK_CARD_KANBAN_TIME_PERIOD_AM = 'text-black dark:text-white';
+export const TASK_CARD_KANBAN_TIME_PERIOD_PM = 'text-black dark:text-white';
+/** Icon size (px) for sun/moon after AM/PM on Kanban time row. */
+export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX = 12;
+/** Tailwind class for the sun/moon icon after AM/PM (match period text). */
+export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS = 'text-black dark:text-white flex-shrink-0';
+/** Icon name for AM period (sun). */
+export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_AM = 'sun';
+/** Icon name for PM period (moon). */
+export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_PM = 'moon';
 
 /** Priority key for lookup in TASK_CARD_PRIORITY_COLORS */
 type PriorityKey = keyof typeof TASK_CARD_PRIORITY_COLORS;
