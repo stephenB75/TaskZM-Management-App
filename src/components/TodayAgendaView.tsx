@@ -28,8 +28,6 @@ import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
-import { findNextAvailableSlot } from "../lib/time-conflict";
-import { MIN_TASK_DURATION_MINUTES } from "../lib/ai-config";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
 import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, MINUTES_PER_HOUR, MILLISECONDS_PER_MINUTE } from "../lib/business-constants";
@@ -41,7 +39,7 @@ interface TodayAgendaViewProps {
 export function TodayAgendaView({
   hideHeader = false,
 }: TodayAgendaViewProps = {}) {
-  const { tasks, updateTask } = useTasks();
+  const { tasks } = useTasks();
   const { actualTheme } = useTheme();
   const shouldUseMobileLayout = useMobileLayout();
   const { calendarStatus } = useCalendar();
@@ -320,39 +318,7 @@ export function TodayAgendaView({
     return () => cancelAnimationFrame(id);
   }, [currentTimeTopPx, combinedItems.length]);
 
-  // Adjust overlapping task time blocks: when a task is scheduled inside a previous task's block, move it to the next available slot (persisted)
-  useEffect(() => {
-    if (!todayTasks.length || !tasks?.length) return;
-    const sorted = [...todayTasks].filter((t) => t.scheduledDate).sort((a, b) => {
-      const ta = new Date(a.scheduledDate!).getTime();
-      const tb = new Date(b.scheduledDate!).getTime();
-      return ta - tb;
-    });
-    for (const task of sorted) {
-      const taskDate = new Date(task.scheduledDate!);
-      if (getDateString(taskDate) !== todayDateString) continue;
-      const durationMins = Math.max(getTaskMinutes(task), MIN_TASK_DURATION_MINUTES);
-      const slot = findNextAvailableSlot(
-        task.id,
-        new Date(task.scheduledDate!),
-        durationMins,
-        tasks,
-        { ensureAfterCurrentTime: true }
-      );
-      const diffMs = Math.abs(slot.getTime() - taskDate.getTime());
-      if (diffMs > MILLISECONDS_PER_MINUTE) {
-        updateTask(task.id, { scheduledDate: slot.toISOString() });
-        if (import.meta.env.DEV) {
-          logger.debug('Today Agenda: adjusted overlapping task to next available slot', {
-            taskId: task.id,
-            taskTitle: task.title,
-            from: taskDate.toLocaleTimeString(),
-            to: slot.toLocaleTimeString(),
-          });
-        }
-      }
-    }
-  }, [todayTasks, tasks, todayDateString, updateTask]);
+  // Overlapping tasks are not rescheduled: timeline accommodates them by stacking blocks visually (see timelineBlocks layout above). Task times (scheduledDate) are never auto-changed here.
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
