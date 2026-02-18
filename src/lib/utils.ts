@@ -26,6 +26,19 @@ export function formatTimeAMPM(dateStr: string | null): string | null {
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+/** Returns time part (e.g. "11:00") and period ("AM" | "PM") for styling AM/PM separately. */
+export function getTimeAndPeriod(dateStr: string | null): { timePart: string; period: 'AM' | 'PM' } | null {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  const hours = date.getHours();
+  const period: 'AM' | 'PM' = hours < 12 ? 'AM' : 'PM';
+  const hour12 = hours % 12 || 12;
+  const minutes = date.getMinutes();
+  const timePart = `${hour12}:${minutes.toString().padStart(2, '0')}`;
+  return { timePart, period };
+}
+
 export function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();

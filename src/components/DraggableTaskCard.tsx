@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
-import { cn, formatTimeAMPM, getInitials, getAbbreviatedDisplayName, sanitizeHTML, hasHTMLTags, calculateProgress, getDateString, calculateRecurringTaskSeriesTotalTime } from "../lib/utils";
+import { cn, formatTimeAMPM, getTimeAndPeriod, getInitials, getAbbreviatedDisplayName, sanitizeHTML, hasHTMLTags, calculateProgress, getDateString, calculateRecurringTaskSeriesTotalTime } from "../lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
@@ -60,6 +60,8 @@ import {
   TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE,
   TASK_CARD_EXPANDABLE,
   TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR,
+  TASK_CARD_KANBAN_TIME_PERIOD_AM,
+  TASK_CARD_KANBAN_TIME_PERIOD_PM,
   TASK_CARD_AI_SUGGESTIONS_IN_EXPANDED_MAX_MINUTES,
   TASK_CARD_TEXT,
   TASK_CARD_AI_SUGGESTIONS_DOMAIN_COLORS,
@@ -1040,9 +1042,23 @@ export const DraggableTaskCard = React.forwardRef<
               >
                 <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
                 {scheduledTimeLabel && (
-                  <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-                    {scheduledTimeLabel}
-                  </span>
+                  (() => {
+                    const timeAndPeriod = getTimeAndPeriod(task.scheduledDate || task.dueDate || null);
+                    if (isKanban && timeAndPeriod) {
+                      const { timePart, period } = timeAndPeriod;
+                      return (
+                        <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                          {timePart}{' '}
+                          <span className={period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_AM : TASK_CARD_KANBAN_TIME_PERIOD_PM}>{period}</span>
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+                        {scheduledTimeLabel}
+                      </span>
+                    );
+                  })()
                 )}
                 <Badge
                   variant="secondary"
