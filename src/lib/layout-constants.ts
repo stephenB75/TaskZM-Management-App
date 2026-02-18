@@ -280,7 +280,7 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Minimum gap (px) between consecutive timeline blocks so they don’t touch. */
   blockGapPx: 8,
   /** Gap (px) between back-to-back blocks in same lane so calendar event and task never overlap visually. */
-  blockBackToBackGapPx: 2,
+  blockBackToBackGapPx: 4,
   /** Gap (px) between consecutive agenda items when using list fallback (e.g. no time). */
   itemGapPx: 12,
   /** Estimated height (px) for calendar event cards when computing cumulative spacing (+20% for larger container). */

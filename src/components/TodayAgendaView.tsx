@@ -523,7 +523,7 @@ export function TodayAgendaView({
               })}
             </div>
             {/* Right: horizontal line from dot to tab, then task/event blocks aren’t cut off */}
-            <div className="flex-1 min-w-0 relative overflow-x-auto" style={{ marginLeft: columnGapPx, paddingLeft: blocksColumnPaddingLeftPx, paddingRight: cardPaddingRightPx, height: timelineLayoutHeightPx, ...(laneCount > 1 ? { minWidth: laneCount * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx) - TODAY_AGENDA_TIMELINE.laneGapPx } : {}) }}>
+            <div className="flex-1 min-w-0 relative" style={{ marginLeft: columnGapPx, paddingLeft: blocksColumnPaddingLeftPx, paddingRight: cardPaddingRightPx, height: timelineLayoutHeightPx, overflowX: laneCount > 1 ? 'auto' : 'visible', overflowY: 'hidden', ...(laneCount > 1 ? { minWidth: laneCount * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx) - TODAY_AGENDA_TIMELINE.laneGapPx } : {}) }}>
               {timelineLabels.map(({ minutesFromStart }) => {
                 const topPx = minutesFromStart * pxPerMinute;
                 return (
@@ -567,6 +567,8 @@ export function TodayAgendaView({
                         height: heightPx,
                         minHeight: TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
                         zIndex: Z_INDEX.TIMELINE_BLOCK,
+                        contain: 'layout paint',
+                        isolation: 'isolate',
                         ...(blockStyle
                           ? {
                               backgroundColor: blockStyle.backgroundColor,
