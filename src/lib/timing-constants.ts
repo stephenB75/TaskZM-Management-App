@@ -160,6 +160,8 @@ export const TIMING_CONSTANTS = {
   dragDrop: {
     timeDifferenceThreshold: 15 * 60 * 1000, // 15 minutes - Threshold for showing time difference dialog
     toastDuration: 5000, // 5 seconds - Duration for toast notifications
+    approachingLimitToastDuration: 4000, // 4 seconds - Duration for "approaching daily limit" toast
+    overlayTransitionMs: 400, // Drag overlay transition duration (ms)
   },
   
   // Demo account constants (guidelines: yearly license, 15 mins use per session)

@@ -95,6 +95,15 @@ export function getTodayAgendaBlockColors(
   };
 }
 
+/** Today Agenda: priority indicator dot background class (e.g. next-up badge, list indicator) */
+export const TODAY_AGENDA_PRIORITY_INDICATOR_BG: Record<PriorityKey, string> = {
+  urgent: 'bg-red-400',
+  high: 'bg-orange-400',
+  medium: 'bg-blue-400',
+  low: 'bg-gray-400',
+  default: 'bg-gray-300',
+};
+
 /** Month calendar view: task card border + background per priority (adjusted for visibility) */
 export const MONTH_VIEW_TASK_PRIORITY_STYLES = {
   urgent: 'border-l-red-400 bg-red-50 dark:bg-red-950/35',

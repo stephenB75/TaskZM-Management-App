@@ -319,6 +319,8 @@ export const TODAY_AGENDA_TIMELINE = {
   blocksColumnPaddingLeftPx: 8,
   /** Gap (px) between horizontal lanes when overlapping blocks are shown side-by-side. */
   laneGapPx: 8,
+  /** Min width (px) per lane when overlapping blocks share the same time (so time axis stays aligned). */
+  laneMinWidthPx: 200,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, pointerWithin, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from './TaskContext';
+import { useCalendarEvents } from '../hooks/useCalendarEvents';
 // DraggableTaskCard import removed - using lightweight drag overlay instead
 import { isTaskBlocked, getIncompleteDependencies, cn, getDateString } from '../lib/utils';
 import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
@@ -10,7 +11,7 @@ import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { createDefaultDragDropContext } from '../lib/context-defaults';
 import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
 import { TASK_CARD_LAYOUT_METRICS, TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS } from '../lib/task-card-constants';
-import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS } from '../lib/layout-constants';
+import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, TODAY_AGENDA_TIMELINE } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { MINUTES_PER_HOUR, HOURS_PER_DAY, MILLISECONDS_PER_MINUTE } from '../lib/business-constants';
@@ -55,6 +56,15 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
   const { tasks, updateTask, folders, hoursSettings } = useTasks();
   const { settings: aiSettings } = useAI();
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Today's calendar events for conflict check when dropping on Today Agenda (ensure timeslot not taken by task or event)
+  const todayRange = useMemo(() => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    return { start, end };
+  }, []);
+  const { events: todayCalendarEvents } = useCalendarEvents(todayRange.start, todayRange.end, { enabled: true });
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [pendingTaskUpdate, setPendingTaskUpdate] = useState<{
     taskId: string;
@@ -145,7 +155,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       const incompleteDeps = getIncompleteDependencies(task, tasks);
       toast.error('Cannot schedule blocked task', {
         description: `This task depends on ${incompleteDeps.length} incomplete task${incompleteDeps.length > 1 ? 's' : ''}. Complete them first.`,
-        duration: 4000,
+        duration: TIMING_CONSTANTS.dragDrop.approachingLimitToastDuration,
       });
       // Add visual shake animation to indicate invalid drop
       const activeElement = document.querySelector(`[data-task-id="${taskId}"]`) || 
@@ -291,7 +301,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             };
             
             let accumulatedHeight = 0;
-            const gapBetweenTasks = 12; // space-y-3 = 12px
+            const gapBetweenTasks = TODAY_AGENDA_TIMELINE.itemGapPx;
             
             for (const taskInfo of sortedTasks) {
               const taskHeight = calculateTaskHeight(taskInfo.task);
@@ -349,8 +359,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             let hours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
             let minutes = totalMinutes % MINUTES_PER_HOUR;
             
-            // Round to nearest 15-minute slot
-            minutes = Math.round(minutes / 15) * 15;
+            // Round to nearest slot (use TIME_ROUNDING_INTERVAL_MINUTES)
+            minutes = Math.round(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
             if (minutes >= MINUTES_PER_HOUR) {
               hours += 1;
               minutes = 0;
@@ -423,9 +433,9 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
             dropTime.setHours(hours, minutes, 0, 0);
           }
           
-          // Round to nearest 15-minute slot
+          // Round to nearest slot (use TIME_ROUNDING_INTERVAL_MINUTES)
           const finalMinutes = dropTime.getMinutes();
-          const roundedMinutes = Math.round(finalMinutes / 15) * 15;
+          const roundedMinutes = Math.round(finalMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
           if (roundedMinutes >= MINUTES_PER_HOUR) {
             dropTime.setHours(dropTime.getHours() + 1);
             dropTime.setMinutes(0);
@@ -478,7 +488,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               let minutes = totalMinutes % MINUTES_PER_HOUR;
               
               // Round to nearest 15-minute slot
-              minutes = Math.round(minutes / 15) * 15;
+              minutes = Math.round(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
               if (minutes >= MINUTES_PER_HOUR) {
                 hours += 1;
                 minutes = 0;
@@ -550,8 +560,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               let hours = Math.floor(totalMinutes / MINUTES_PER_HOUR);
               let minutes = totalMinutes % MINUTES_PER_HOUR;
               
-              // Round to nearest 15-minute slot
-              minutes = Math.round(minutes / 15) * 15;
+              // Round to nearest slot (use TIME_ROUNDING_INTERVAL_MINUTES)
+              minutes = Math.round(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
               if (minutes >= MINUTES_PER_HOUR) {
                 hours += 1;
                 minutes = 0;
@@ -602,7 +612,12 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         }
       }
       
-      // Always use findNextAvailableSlot so tasks are never assigned the same time (avoids overlapping drop targets)
+      // Always use findNextAvailableSlot so the timeslot is not taken by another task or calendar event
+      const calendarEventsForConflict = todayCalendarEvents.map((e) => ({
+        start: e.start,
+        end: e.end,
+        title: e.title,
+      }));
       const finalTime = findNextAvailableSlot(
         taskId,
         requestedTime,
@@ -611,6 +626,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         {
           ensureAfterCurrentTime: isToday,
           categoryHours: categoryHours,
+          calendarEvents: calendarEventsForConflict,
         }
       );
       
@@ -655,7 +671,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         // Close to limit - show warning but allow
         toast.warning('Approaching daily limit', {
           description: `Today already has ${limitCheck.currentHours.toFixed(1)}h scheduled. Adding this task will bring it to ${limitCheck.newTotalHours.toFixed(1)}h (limit: ${maxHoursPerDay}h)`,
-          duration: 4000,
+          duration: TIMING_CONSTANTS.dragDrop.approachingLimitToastDuration,
         });
       }
 
@@ -874,7 +890,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
           let minutes = totalMinutes % MINUTES_PER_HOUR;
           
           // Round to nearest 15-minute slot
-          minutes = Math.round(minutes / 15) * 15;
+          minutes = Math.round(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
           if (minutes >= MINUTES_PER_HOUR) {
             hours += 1;
             minutes = 0;
@@ -891,7 +907,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
               if (maxStartMinutes >= categoryHours.start) {
                 hours = Math.floor(maxStartMinutes / MINUTES_PER_HOUR);
                 minutes = maxStartMinutes % MINUTES_PER_HOUR;
-                minutes = Math.floor(minutes / 15) * 15;
+                minutes = Math.floor(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
               } else {
                 hours = Math.floor(categoryHours.start / MINUTES_PER_HOUR);
                 minutes = categoryHours.start % MINUTES_PER_HOUR;
@@ -952,7 +968,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         const lastTask = sortedTasks[sortedTasks.length - 1];
         startTime = new Date(lastTask.end);
         const minutes = startTime.getMinutes();
-        const roundedMinutes = Math.ceil(minutes / 15) * 15;
+        const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
         if (roundedMinutes >= 60) {
           startTime.setHours(startTime.getHours() + 1);
           startTime.setMinutes(0);
@@ -1061,7 +1077,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         
         <DragOverlay
           dropAnimation={{
-            duration: 400,
+            duration: TIMING_CONSTANTS.dragDrop.overlayTransitionMs,
             easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
           }}
           style={{

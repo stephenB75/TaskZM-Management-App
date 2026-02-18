@@ -21,7 +21,7 @@ import { playTaskCompleteSound } from "../lib/toast-sound";
 import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
-import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE, getTodayAgendaBlockColors } from "../lib/task-card-constants";
+import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE, getTodayAgendaBlockColors, TODAY_AGENDA_PRIORITY_INDICATOR_BG } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
@@ -232,8 +232,9 @@ export function TodayAgendaView({
   }, [todayTasks, todayCalendarEvents]);
 
   /** Split items into timeline blocks (have time in 7AM–12AM) and unscheduled (no time or outside range).
-   * Overlapping blocks are stacked so they never overlap; timeline height stretches to fit and the time axis extends to match (same pxPerMinute scale to the bottom). */
-  const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx } = useMemo(() => {
+   * Each block is placed at its actual start time so calendar events and tasks show at the time they are scheduled/imported.
+   * Overlapping blocks use horizontal lanes (same topPx, side by side) so the time axis stays correct. */
+  const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, maxLanes } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const endHour = TODAY_AGENDA_TIMELINE.endHour;
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
@@ -241,7 +242,7 @@ export function TodayAgendaView({
     const minH = TODAY_AGENDA_TIMELINE.minBlockHeightPx;
     const eventCardMinHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx;
     const blockGapPx = TODAY_AGENDA_TIMELINE.blockGapPx;
-    type Block = { item: CombinedItem; topPx: number; heightPx: number; actualStartMins: number; actualDurationMins: number };
+    type Block = { item: CombinedItem; topPx: number; heightPx: number; actualStartMins: number; actualDurationMins: number; laneIndex: number };
     const blocks: Block[] = [];
     const unscheduled: CombinedItem[] = [];
     for (const item of combinedItems) {
@@ -259,7 +260,7 @@ export function TodayAgendaView({
         const durationMins = getTaskMinutes(item.task);
         const heightPx = Math.max(minH, Math.round(durationMins * pxPerMinute));
         const topPx = Math.round(startMins * pxPerMinute);
-        blocks.push({ item, topPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins });
+        blocks.push({ item, topPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, laneIndex: 0 });
       } else if (item.type === 'event' && item.event) {
         const start = parseCalendarEventTime(item.event.start);
         const end = parseCalendarEventTime(item.event.end);
@@ -272,7 +273,7 @@ export function TodayAgendaView({
         // Use eventCardMinHeightPx so calendar cards never overflow and overlap the next block
         const heightPx = Math.max(minH, eventCardMinHeightPx, Math.round(durationMins * pxPerMinute));
         const topPx = Math.round(startMins * pxPerMinute);
-        blocks.push({ item, topPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins });
+        blocks.push({ item, topPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, laneIndex: 0 });
       }
     }
     // Sort by start time (actualStartMins), then by stable key so overlapping items get a deterministic order
@@ -282,17 +283,22 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Stack overlapping blocks: each block's top is at least (previous block bottom + blockGapPx), using task duration so they don't overlap
-    let prevBottomPx = -blockGapPx;
+    // Assign lanes so overlapping blocks sit side-by-side at the same time (topPx = actual start time; calendar events stay at imported time)
+    const endMins = (b: Block) => b.actualStartMins + b.actualDurationMins;
+    const overlaps = (a: Block, b: Block) => a.actualStartMins < endMins(b) && b.actualStartMins < endMins(a);
+    const lanes: Block[][] = [];
     for (const block of blocks) {
-      const naturalTopPx = block.topPx;
-      block.topPx = Math.max(naturalTopPx, prevBottomPx + blockGapPx);
-      prevBottomPx = block.topPx + block.heightPx;
+      let lane = 0;
+      while (lane < lanes.length && lanes[lane].some((existing) => overlaps(block, existing))) lane++;
+      if (lane === lanes.length) lanes.push([]);
+      lanes[lane].push(block);
+      block.laneIndex = lane;
     }
+    const maxLanes = lanes.length;
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
     const maxBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.topPx + b.heightPx)) : 0;
     const timelineLayoutHeightPx = Math.max(baseTimelineHeightPx, maxBottomPx + blockGapPx);
-    return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx };
+    return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx, maxLanes };
   }, [combinedItems, getTaskMinutes]);
 
   /** Base timeline height (px) for 7 AM–12 AM scale. */
@@ -318,7 +324,7 @@ export function TodayAgendaView({
     return () => cancelAnimationFrame(id);
   }, [currentTimeTopPx, combinedItems.length]);
 
-  // Overlapping tasks are not rescheduled: timeline accommodates them by stacking blocks visually (see timelineBlocks layout above). Task times (scheduledDate) are never auto-changed here.
+  // Calendar events and tasks are placed at their actual start time; overlapping items use lanes so the time axis is correct.
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
@@ -344,7 +350,7 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks, currentTime]);
 
-  // Overlap is cosmetic only: overlapping blocks are stacked with a gap (see timeline block layout). Task times are never changed by this view or by drop-for-overlap.
+  // Overlap is visual only: overlapping blocks share the same time in lanes; task times are never changed by this view or by drop-for-overlap.
 
   // LAYER 1: Basic vertical scroll - ScrollArea handles scrolling automatically
   // LAYER 2: Next up badge is implemented via nextUpTaskId and isNextUp prop (see below)
@@ -416,18 +422,8 @@ export function TodayAgendaView({
   };
 
   const getPriorityColor = (priority: Task["priority"]) => {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-400"; // Red
-      case "high":
-        return "bg-orange-400"; // Orange
-      case "medium":
-        return "bg-blue-400"; // Blue
-      case "low":
-        return "bg-gray-400"; // Grey
-      default:
-        return "bg-gray-300";
-    }
+    const key = priority && priority in TODAY_AGENDA_PRIORITY_INDICATOR_BG ? priority : 'default';
+    return TODAY_AGENDA_PRIORITY_INDICATOR_BG[key as keyof typeof TODAY_AGENDA_PRIORITY_INDICATOR_BG];
   };
 
   /** Vertical timeline: labels only for 7 AM–12 AM so the axis matches the task time scale (pxPerMinute). Stacked blocks extend below 12 AM with no extra labels so the scale stays correct. */
@@ -470,7 +466,7 @@ export function TodayAgendaView({
 
       return (
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
-          {/* Timeline: height fits stacked blocks so they never overlap */}
+          {/* Timeline: blocks at actual start time; overlapping items in lanes */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}>
             {/* Left: time label + dot (flipped: label then dot); NEXT UP badge above next time due */}
             <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx }}>
@@ -530,22 +526,31 @@ export function TodayAgendaView({
                   aria-hidden
                 />
               )}
-              {timelineBlocks.map(({ item, topPx, heightPx }) => {
+              {timelineBlocks.map(({ item, topPx, heightPx, laneIndex }) => {
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
                 const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
                 const isTask = item.type === 'task' && item.task;
                 const blockStyle = isTask
                   ? getTodayAgendaBlockColors(item.task!.priority, TODAY_AGENDA_TIMELINE.blockTintOpacity)
                   : null;
+                const n = Math.max(1, maxLanes);
+                const laneGapPx = TODAY_AGENDA_TIMELINE.laneGapPx;
+                const laneStyle = n > 1
+                  ? {
+                      left: `calc(${laneIndex} * (100% + ${laneGapPx}px) / ${n})`,
+                      width: `calc((100% - ${n - 1} * ${laneGapPx}px) / ${n})`,
+                    }
+                  : { left: 0, right: 0 };
                 return (
                   <React.Fragment key={key}>
                     <div
-                      className="absolute left-0 right-0 overflow-hidden rounded-r"
+                      className="absolute overflow-hidden rounded-r"
                       style={{
                         top: topPx,
                         height: Math.max(minBlockHeightPx, heightPx),
                         minHeight: minBlockHeightPx,
                         zIndex: Z_INDEX.TIMELINE_BLOCK,
+                        ...laneStyle,
                         ...(blockStyle
                           ? {
                               backgroundColor: blockStyle.backgroundColor,
@@ -640,7 +645,7 @@ export function TodayAgendaView({
         </div>
       );
     },
-    [timelineBlocks, unscheduledItems, timelineHeightPx, timelineLayoutHeightPx, currentTimeTopPx, nextUpTaskId, todayString, tasks]
+    [timelineBlocks, unscheduledItems, timelineHeightPx, timelineLayoutHeightPx, currentTimeTopPx, nextUpTaskId, todayString, tasks, maxLanes]
   );
 
   return (
