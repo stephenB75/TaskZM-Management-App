@@ -483,11 +483,18 @@ app.post("/taskzm-database-function/ai/description", async (c) => {
       ? `\n\nOptional current description (use only to refine the same task; do NOT copy any topic or phrase from here that is not in the task name above): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
       : '';
 
-    const systemMessage = `The task name is the user's exact input and the only source of truth. You write 1-3 short, contextual sentences that explain what the task involves. Every word and concept in your description must come from or be clearly implied by the task name. Do not introduce any topic, activity, or concept that is not stated or clearly implied by the task name. Use natural, flowing prose. Do not repeat the task name verbatim. Use standard English only.`;
+    const systemMessage = `You write 1-3 short, contextual sentences that explain what the task involves. The task name is the only source of content: every idea in your description must come from or be clearly implied by the task name. You may use the allowed vocabulary (from local and shared terminology) only as an aid—to rephrase, elaborate, or add domain-appropriate wording for concepts that are already in the task name. Do not use any term to introduce a topic or concept that is not in the task name. Use natural, flowing prose. Do not repeat the task name verbatim. Use standard English only.`;
+    const fewShotExamples = `
+Examples (task name → description; use allowed vocabulary only to rephrase or elaborate on what the task name refers to):
+- Task name: "Fix login bug on mobile" → "This task involves debugging and resolving authentication issues affecting the mobile login flow."
+- Task name: "Draft Q3 marketing plan" → "This task involves creating a marketing plan for the third quarter, including channels, budget, and goals."
+- Task name: "Test PRD - Test Side Panel" → "This task involves testing the side panel described in the PRD and verifying it meets requirements."
+`;
     const prompt = `${situationLine}${additionalContextBlock}${allowedVocabulary}${doNotUseBlock}
+${fewShotExamples}
 
-Using ONLY the task name above, generate a clear description in 1-3 full sentences. The description must reflect the task name and nothing else.
-- Do not use any word or concept that does not appear in or is not clearly implied by the task name. Ignore the optional description and allowed vocabulary for any topic not in the task name.
+Using the task name above, generate a clear description in 1-3 full sentences. The description must reflect the task name and nothing else.
+- Allowed vocabulary is an aid: use it only to rephrase or elaborate on what the task name already refers to. Do not use any term to introduce a topic not in the task name.
 - Do not use these words unless they appear in the task name: ${DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK.join(', ')}.
 
 Use complete, grammatical sentences. Keep to 1-3 sentences (about 15-50 words). Do not repeat the task name verbatim.
@@ -590,10 +597,12 @@ app.post("/taskzm-database-function/ai/description-options", async (c) => {
       ? `\n\nDo not use any of these words (different contexts): ${doNotUseList.join(', ')}.`
       : '';
 
-    const systemMessageOpts = `The task name is the user's exact input and the only source of truth. You generate 3-5 short description options. Each option must describe ONLY what the task name refers to; every word and concept must come from or be clearly implied by the task name. Do not introduce any topic not in the task name. Use natural, flowing prose. Use allowed vocabulary only when a term appears in or is clearly implied by the task name.`;
+    const systemMessageOpts = `You generate 3-5 short description options. The task name is the only source of content; every idea in each option must come from or be clearly implied by the task name. You may use the allowed vocabulary (from local and shared terminology) only as an aid—to rephrase, elaborate, or add domain-appropriate wording for concepts already in the task name. Do not use any term to introduce a topic not in the task name. Use natural, flowing prose.`;
     const prompt = `${situationLine}${allowedVocabulary}${doNotUseBlock}
 
 Do not use these words in any description unless they appear in the task name: ${DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK.join(', ')}.
+
+Allowed vocabulary is an aid: use it only to rephrase or elaborate on what the task name already refers to.
 
 Generate exactly 3-5 description options. Each option must reflect ONLY the task name above; do not add topics from the allowed vocabulary that are not in the task name. Each option: 1-3 full, contextual sentences (about 15-50 words). Each sentence should refer clearly to the task and flow naturally; avoid phrases that could apply to any task. Describe ONLY what the task name refers to. Vary options by wording, detail level, or angle. Use correct English.
 

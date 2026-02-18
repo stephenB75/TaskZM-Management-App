@@ -266,10 +266,10 @@ export function useTaskBreakdown(
         // Generate action plan (pass shared context to avoid redundant work) — used as fallback if AI action plan is not used
         let actionPlan = generateActionPlan(tempTask as Task, safeAIContext);
 
-        // Task-relevant terminology for description generation (same filter as action plan)
+        // Task-relevant terminology for description (and action plan): filter by title only so aid set is task-name-based
         const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
         const filteredTerminology = filterTerminologyRelevantToTask(
-          `${title} ${description}`.trim(),
+          title.trim(),
           validDomain,
           aiContext.domainTerms,
           maxTerms

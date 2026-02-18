@@ -3333,13 +3333,32 @@ export async function generateDescription(
     });
 
     const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
-    const textForFilter = `${taskName} ${descriptionForDetection}`.trim();
-    terminology = filterTerminologyRelevantToTask(textForFilter, domainRef, domainTerms, maxTerms);
-    logger.debug('📝 Description Generation: Using domain detection with description', {
+    // Terminology for server: filter by task name only so the aid set is task-relevant (description used only for domain detection above)
+    terminology = filterTerminologyRelevantToTask(taskName, domainRef, domainTerms, maxTerms);
+    logger.debug('📝 Description Generation: Using domain detection with description; terminology filtered to task name only', {
       taskName,
       detectedDomain: domainRef,
       confidence: domainResult.confidence,
     });
+  }
+
+  // Create/save: add new keywords or phrases from description when present (runs for both server and fallback paths)
+  if (existingDescription && existingDescription.trim().length > 0 && domainRef !== 'mixed') {
+    const descExtracted = extractTermsFromTaskName(existingDescription.trim(), domainTerms);
+    const hasDescTerms =
+      descExtracted.keywords.length > 0 ||
+      descExtracted.phrases.length > 0 ||
+      descExtracted.verbs.length > 0 ||
+      descExtracted.nouns.length > 0;
+    if (hasDescTerms) {
+      saveNewTerminologyToLibrary(
+        domainRef,
+        descExtracted.keywords,
+        descExtracted.phrases,
+        descExtracted.verbs,
+        descExtracted.nouns
+      );
+    }
   }
 
   // PRIMARY: OpenAI (server) — try Edge Function first. FALLBACK: local processing when no token, 4xx/5xx, or timeout.
@@ -3437,16 +3456,13 @@ export async function generateDescription(
     logger.debug(`Extracted terms from existing description: ${descriptionExtracted.keywords.length} keywords, ${descriptionExtracted.phrases.length} phrases`);
   }
   
-  // Combine terms from both task name and description
-  // Merge unique terms, prioritizing task name terms but including description terms
-  const combinedKeywords = [...new Set([...taskNameExtracted.keywords, ...descriptionExtracted.keywords])];
-  const combinedPhrases = [...new Set([...taskNameExtracted.phrases, ...descriptionExtracted.phrases])];
-  const combinedVerbs = [...new Set([...taskNameExtracted.verbs, ...descriptionExtracted.verbs])];
-  const combinedNouns = [...new Set([...taskNameExtracted.nouns, ...descriptionExtracted.nouns])];
-  const combinedPronouns = [...new Set([...taskNameExtracted.pronouns, ...descriptionExtracted.pronouns])];
-  
-  // Use combined context (task name + description)
-  const combinedContext = `${taskName} ${existingDescription || ''}`.trim();
+  // Fallback: task name = basis, terminology = aid. Use only task-name-derived terms so we don't inject description-only topics.
+  const combinedKeywords = taskNameExtracted.keywords;
+  const combinedPhrases = taskNameExtracted.phrases;
+  const combinedVerbs = taskNameExtracted.verbs;
+  const combinedNouns = taskNameExtracted.nouns;
+  const combinedPronouns = taskNameExtracted.pronouns;
+  const combinedContext = taskName.trim();
   
   searchExtracted = {
     keywords: combinedKeywords,
@@ -3457,7 +3473,7 @@ export async function generateDescription(
     context: combinedContext
   };
   
-  searchContext = combinedContext; // Combined task name + description as context
+  searchContext = combinedContext;
   usedSearchResults = false; // Not using external search, using Browser AI only
   
   logger.debug(`✅ Local Terminology extraction COMPLETE: ${searchExtracted.keywords.length} keywords, ${searchExtracted.phrases.length} phrases, ${searchExtracted.verbs.length} verbs, ${searchExtracted.nouns.length} nouns`, {
