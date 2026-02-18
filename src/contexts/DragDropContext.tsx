@@ -969,7 +969,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         startTime = new Date(lastTask.end);
         const minutes = startTime.getMinutes();
         const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-        if (roundedMinutes >= 60) {
+        if (roundedMinutes >= MINUTES_PER_HOUR) {
           startTime.setHours(startTime.getHours() + 1);
           startTime.setMinutes(0);
         } else {
