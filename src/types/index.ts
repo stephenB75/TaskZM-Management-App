@@ -25,6 +25,8 @@ export interface Task {
   subtasks: Subtask[];
   recurrence: RecurrenceConfig;
   notes: string;
+  /** Set when task was created from an imported calendar event; used to avoid showing duplicate event on Today Agenda */
+  calendar_event_id?: string | null;
 }
 
 export interface Subtask {

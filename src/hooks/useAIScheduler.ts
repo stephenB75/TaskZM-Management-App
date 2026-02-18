@@ -2981,8 +2981,15 @@ export function useAIScheduler() {
           
           // Use findNextAvailableSlot to find actual open slot with category hours
           // IMPORTANT: Pass allTasksForDay (which includes tasks from current plan) to findNextAvailableSlot
-          // so it can see tasks being scheduled in the same batch and avoid conflicts
-          // Note: validTasksForDay is now defined before this block
+          // so it can see tasks being scheduled in the same batch and avoid conflicts.
+          // CRITICAL: Pass calendar events for this day so the AI does not schedule at the same time as calendar events.
+          const dayCalendarEventsForFinalSlot = calendarEvents.filter(event => {
+            const eventDate = new Date(event.start);
+            eventDate.setHours(0, 0, 0, 0);
+            const scheduleDateOnly = new Date(scheduleDate);
+            scheduleDateOnly.setHours(0, 0, 0, 0);
+            return eventDate.getTime() === scheduleDateOnly.getTime();
+          });
           const finalSlot = findNextAvailableSlot(
             task.id,
             proposedTime,
@@ -2994,6 +3001,7 @@ export function useAIScheduler() {
                 start: effectiveCategoryHours.start,
                 end: effectiveCategoryHours.end,
               } : undefined,
+              calendarEvents: dayCalendarEventsForFinalSlot,
             }
           );
           
@@ -3717,12 +3725,19 @@ export function useAIScheduler() {
         if (hasOverlap) {
           const targetDate = item.scheduledDate instanceof Date ? new Date(item.scheduledDate) : new Date(item.scheduledDate);
           const categoryHours = getCategoryHoursForTask(item.task, targetDate, hoursSettings);
+          const targetDateOnly = new Date(targetDate);
+          targetDateOnly.setHours(0, 0, 0, 0);
+          const dayCalendarEventsForOverlap = calendarEvents.filter(event => {
+            const eventDate = new Date(event.start);
+            eventDate.setHours(0, 0, 0, 0);
+            return eventDate.getTime() === targetDateOnly.getTime();
+          });
           const slot = findNextAvailableSlot(
             item.task.id,
             targetDate,
             Math.round(itemDuration / MILLISECONDS_PER_MINUTE),
             othersForDay,
-            { ensureAfterCurrentTime: false, categoryHours: categoryHours ?? undefined }
+            { ensureAfterCurrentTime: false, categoryHours: categoryHours ?? undefined, calendarEvents: dayCalendarEventsForOverlap }
           );
           if (slot.getHours() < HOURS_PER_DAY && slot.getTime() !== itemStart) {
             const newDate = new Date(slot.getTime());

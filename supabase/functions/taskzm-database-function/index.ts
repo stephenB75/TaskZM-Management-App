@@ -3914,9 +3914,13 @@ app.get("/taskzm-database-function/calendar/apple/tasks", async (c) => {
 // Receive events FROM Apple Calendar (Shortcut sends events here)
 app.post("/taskzm-database-function/calendar/apple/events", async (c) => {
   try {
+    // Parse body once (consumable only once)
+    const body = await c.req.json().catch(() => ({}));
+    const events = Array.isArray(body?.events) ? body.events : [];
+
     // Support both Bearer token auth and sync token auth
     let userId: string | null = null;
-    
+
     const authHeader = c.req.header('Authorization');
     if (authHeader?.startsWith('Bearer ')) {
       const result = await verifyUser(c.req.raw);
@@ -3924,10 +3928,9 @@ app.post("/taskzm-database-function/calendar/apple/events", async (c) => {
         userId = result.userId;
       }
     }
-    
+
     // Also check for sync token in body or query (for Shortcuts)
     if (!userId) {
-      const body = await c.req.json().catch(() => ({}));
       const syncToken = body.token || c.req.query('token');
       if (syncToken) {
         try {
@@ -3940,16 +3943,9 @@ app.post("/taskzm-database-function/calendar/apple/events", async (c) => {
         }
       }
     }
-    
+
     if (!userId) {
       return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const body = await c.req.json();
-    const events = body.events || [];
-
-    if (!Array.isArray(events)) {
-      return c.json({ error: 'Events must be an array' }, 400);
     }
 
     const supabase = getSupabaseClient();
@@ -3969,8 +3965,30 @@ app.post("/taskzm-database-function/calendar/apple/events", async (c) => {
     let updated = 0;
     let errors = 0;
 
+    // Use full start datetime when available so tasks are scheduled at the same time as the calendar event.
+    const getScheduledDate = (event: { start?: string; startDate?: string; startTime?: string }): string => {
+      const fullStart = event.start ?? event.startDate;
+      if (!fullStart || typeof fullStart !== 'string') return event.startDate || new Date().toISOString();
+      const trimmed = fullStart.trim();
+      if (/^\d{4}-\d{2}-\d{2}T\d/.test(trimmed)) {
+        return trimmed.endsWith('Z') || /[-+]\d{2}:?\d{2}$/.test(trimmed) ? trimmed : trimmed + 'Z';
+      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed) && event.startTime && typeof event.startTime === 'string') {
+        const t = event.startTime.trim();
+        const match = t.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+        if (match) {
+          const [, h, m, s] = match;
+          const time = `${h!.padStart(2, '0')}:${m}:${(s || '00').padStart(2, '0')}`;
+          return `${trimmed}T${time}Z`;
+        }
+      }
+      return event.startDate ?? fullStart;
+    };
+
     for (const event of events) {
       try {
+        const scheduledDate = getScheduledDate(event);
+
         // Check if this event already exists as a task (by calendar_event_id)
         const { data: existingTask } = await supabase
           .from('tasks')
@@ -3986,7 +4004,7 @@ app.post("/taskzm-database-function/calendar/apple/events", async (c) => {
             .update({
               title: event.title,
               description: event.notes || null,
-              scheduled_date: event.startDate,
+              scheduled_date: scheduledDate,
               updated_at: new Date().toISOString(),
             })
             .eq('id', existingTask.id);
@@ -4005,7 +4023,7 @@ app.post("/taskzm-database-function/calendar/apple/events", async (c) => {
               workspace_id: membership.workspace_id,
               title: event.title,
               description: event.notes || null,
-              scheduled_date: event.startDate,
+              scheduled_date: scheduledDate,
               status: 'todo',
               priority: 'medium',
               calendar_event_id: event.id,

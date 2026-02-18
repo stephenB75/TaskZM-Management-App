@@ -202,7 +202,12 @@ export function TodayAgendaView({
 
   const combinedItems = useMemo(() => {
     const items: CombinedItem[] = [];
-    
+    const eventIdsRepresentedByTasks = new Set(
+      todayTasks
+        .map((t) => (t as Task & { calendar_event_id?: string | null }).calendar_event_id)
+        .filter((id): id is string => !!id)
+    );
+
     // Add tasks with their sort time
     for (const task of todayTasks) {
       const taskTime = task.scheduledDate ? new Date(task.scheduledDate).getTime() : Number.MAX_SAFE_INTEGER;
@@ -212,9 +217,10 @@ export function TodayAgendaView({
         sortTime: taskTime,
       });
     }
-    
-    // Add calendar events (always have a specific time; use parseCalendarEventTime for consistency with card display)
+
+    // Add calendar events (skip if a task already represents this event to avoid duplicate at same time)
     for (const event of todayCalendarEvents) {
+      if (eventIdsRepresentedByTasks.has(event.id)) continue;
       const sortTime = parseCalendarEventTime(event.start).getTime();
       items.push({
         type: 'event',
@@ -223,9 +229,14 @@ export function TodayAgendaView({
       });
     }
     
-    // Chronological order: earliest first; items without time go to end
+    // Chronological order: earliest first; items without time go to end.
+    // When a task and a calendar event have the same time, use stable order: events first, then tasks, then by id.
     items.sort((a, b) => {
-      return a.sortTime - b.sortTime;
+      if (a.sortTime !== b.sortTime) return a.sortTime - b.sortTime;
+      if (a.type !== b.type) return a.type === 'event' ? -1 : 1;
+      const idA = a.type === 'task' && a.task ? a.task.id : a.type === 'event' && a.event ? a.event.id : '';
+      const idB = b.type === 'task' && b.task ? b.task.id : b.type === 'event' && b.event ? b.event.id : '';
+      return idA.localeCompare(idB);
     });
     
     return items;
