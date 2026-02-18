@@ -80,7 +80,7 @@ export const TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR = '#374151'; // gra
 export const TASK_CARD_KANBAN_TIME_PERIOD_AM = 'text-black dark:text-white';
 export const TASK_CARD_KANBAN_TIME_PERIOD_PM = 'text-black dark:text-white';
 /** Icon size (px) for sun/moon after AM/PM on Kanban time row. */
-export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX = 12;
+export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX = 16;
 /** Tailwind class for the sun/moon icon after AM/PM (match period text). */
 export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS = 'text-black dark:text-white flex-shrink-0';
 /** Icon name for AM period (sun). */
