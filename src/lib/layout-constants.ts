@@ -325,6 +325,10 @@ export const TODAY_AGENDA_TIMELINE = {
   laneGapPx: 8,
   /** Min width (px) per lane when overlapping blocks share the same time (so time axis stays aligned). */
   laneMinWidthPx: 200,
+  /** Duration (minutes) below which timeline items use compact single-row layout so info is not clipped. */
+  shortItemThresholdMinutes: 20,
+  /** Target height (px) for compact single-row layout; block height remains duration-based. */
+  shortItemCompactRowHeightPx: 40,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 

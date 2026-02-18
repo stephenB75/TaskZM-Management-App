@@ -1,12 +1,19 @@
 import React from 'react';
 // Icons migrated to Icon component - already using Icon
 import { Icon } from './Icon';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 import { cn, parseCalendarEventTime } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR, MINUTES_PER_DAY } from '../lib/business-constants';
 import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS, CALENDAR_EVENT_UI_TEXT } from '../lib/calendar-event-constants';
 import { CALENDAR_PROVIDER_EVENT_SOURCE_LABELS, type CalendarProviderId } from '../lib/calendar-integration-constants';
 import { TASK_CARD_SPACING } from '../lib/task-card-constants';
+import { TODAY_AGENDA_TIMELINE } from '../lib/layout-constants';
 import { useIsMobile } from './ui/use-mobile';
 
 interface CalendarEventCardProps {
@@ -18,7 +25,8 @@ interface CalendarEventCardProps {
   calendarColor?: string;
   isRecurring?: boolean; // Flag indicating if this is a recurring event
   /** When 'kanban', uses light gray background, square left corners, rounded right; background starts at vertical line. */
-  variant?: 'default' | 'kanban';
+  /** When 'timelineCompact', single-row layout for short events on Today Agenda timeline. */
+  variant?: 'default' | 'kanban' | 'timelineCompact';
 }
 
 // Calculate duration in minutes between two ISO date strings (uses parseCalendarEventTime for correct timezone)
@@ -286,6 +294,51 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   };
 
   const contentPaddingLeft = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.left.desktop;
+
+  // Today Agenda timeline (short events): single-row compact layout with tooltip
+  if (variant === 'timelineCompact') {
+    const timeRange = allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime}–${endTime}`;
+    const providerLabel = CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider];
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                'flex items-center w-full h-full min-w-0 rounded-lg gap-1.5 py-1 pr-2',
+                colors.bg,
+              )}
+              style={{
+                paddingLeft: contentPaddingLeft,
+                minHeight: TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx,
+              }}
+            >
+              <Icon name="calendar" size={12} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
+              <span className={cn('flex-shrink-0 font-medium', colors.mutedText)} style={{ fontSize: 11 }}>
+                {providerLabel}
+              </span>
+              <span className={cn('flex-shrink-0', colors.mutedText)} style={{ fontSize: 11 }}>
+                {timeRange}
+              </span>
+              <span className={cn('font-medium px-1 py-0 rounded-full flex-shrink-0', colors.iconBg, colors.mutedText)} style={{ fontSize: 10 }}>
+                {formatDuration(durationMinutes)}
+              </span>
+              <span className={cn('flex-1 min-w-0 truncate font-semibold', colors.text)} style={{ fontSize: 12 }} title={title}>
+                {title}
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs">
+            <p className="font-semibold">{title}</p>
+            <p className="text-muted-foreground text-xs mt-0.5">
+              {allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`} · {formatDuration(durationMinutes)}
+              {location && ` · ${location}`}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   // Kanban week view: light gray background, square left, rounded right, background starts at vertical line; same width as task cards
   if (variant === 'kanban') {

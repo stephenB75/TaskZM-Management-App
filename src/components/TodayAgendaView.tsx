@@ -550,10 +550,11 @@ export function TodayAgendaView({
                   aria-hidden
                 />
               )}
-              {timelineBlocks.map(({ item, topPx, heightPx, laneIndex }) => {
+              {timelineBlocks.map(({ item, topPx, heightPx, laneIndex, actualDurationMins }) => {
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
                 const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
                 const isTask = item.type === 'task' && item.task;
+                const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
                 const blockStyle = isTask
                   ? getTodayAgendaBlockColors(item.task!.priority, TODAY_AGENDA_TIMELINE.blockTintOpacity)
                   : null;
@@ -599,6 +600,8 @@ export function TodayAgendaView({
                                   ? Math.round(heightPx / TASK_CARD_TIMELINE.scale.todayAgenda)
                                   : heightPx
                               }
+                              compactTimeline={compactTimeline}
+                              durationMinutes={compactTimeline ? actualDurationMins : undefined}
                             />
                           </div>
                         </div>
@@ -612,7 +615,7 @@ export function TodayAgendaView({
                                 : {}),
                             }}
                           >
-                            <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
+                            <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} variant={compactTimeline ? 'timelineCompact' : 'default'} />
                           </div>
                         </div>
                       ) : null}

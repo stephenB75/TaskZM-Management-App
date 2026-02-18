@@ -90,6 +90,10 @@ interface DraggableTaskCardProps {
   onComplete?: (originElement?: HTMLElement | null) => void;
   /** When set, card height is forced to this (px) so it aligns with Today Agenda vertical timeline duration. */
   timelineBlockHeightPx?: number;
+  /** When true (Today Agenda), use single-row compact layout for short-duration blocks so content is not clipped. */
+  compactTimeline?: boolean;
+  /** Duration in minutes; used for compact layout tooltip and display. */
+  durationMinutes?: number;
 }
 
 export const DraggableTaskCard = React.forwardRef<
@@ -97,7 +101,7 @@ export const DraggableTaskCard = React.forwardRef<
   DraggableTaskCardProps
 >(
   (
-    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx },
+    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx, compactTimeline = false, durationMinutes },
     forwardedRef,
   ) => {
     const isTodayAgenda = droppableId === 'today-agenda';
@@ -838,6 +842,70 @@ export const DraggableTaskCard = React.forwardRef<
           }}
         >
           {isTodayAgenda ? (
+            isTodayAgenda && compactTimeline ? (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="flex items-center w-full h-full min-w-0 rounded-lg"
+                      style={{
+                        gap: 6,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        paddingLeft: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
+                        paddingRight: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
+                        backgroundColor: getPriorityTabBackgroundColor(task.priority),
+                        minHeight: TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx,
+                      }}
+                    >
+                      <Icon
+                        name="clock"
+                        size={12}
+                        className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
+                        weight="fill"
+                      />
+                      {scheduledTimeLabel && (
+                        <span className="text-white font-normal whitespace-nowrap flex-shrink-0 text-[11px]">
+                          {scheduledTimeLabel}
+                        </span>
+                      )}
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white dark:bg-card whitespace-nowrap text-[10px] px-1.5 py-0",
+                          TASK_CARD_TIMELINE.todayAgenda.priorityBadgeClass,
+                        )}
+                        style={{
+                          color: !task.priority || task.priority === "default"
+                            ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
+                            : getPriorityLineColor(task.priority),
+                        }}
+                      >
+                        {task.priority}
+                      </Badge>
+                      <span className="flex-1 min-w-0 truncate text-white font-medium text-xs" title={task.title}>
+                        {task.title}
+                      </span>
+                      <span className="text-white font-semibold flex-shrink-0 whitespace-nowrap text-[11px]">
+                        {formatDuration(durationMinutes ?? task.estimatedTime ?? null)}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <p className="font-semibold">{task.title}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5">
+                      {scheduledTimeLabel && <span>{scheduledTimeLabel}</span>}
+                      {durationMinutes != null && (
+                        <span> · {formatDuration(durationMinutes)}</span>
+                      )}
+                      {task.priority && task.priority !== 'default' && (
+                        <span> · {task.priority}</span>
+                      )}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
             <>
               {/* Today Agenda: full-width badge bar (extended with spaced content), then full-width headline */}
               <div
@@ -954,6 +1022,7 @@ export const DraggableTaskCard = React.forwardRef<
                 </h3>
               </div>
             </>
+            )
           ) : (
             <>
               {/* Full card tab: in front of body, overlaps top so top border doesn't show */}
