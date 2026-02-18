@@ -87,6 +87,8 @@ export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS = 'text-black dark:text-whi
 export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_AM = 'sun';
 /** Icon name for PM period (moon). */
 export const TASK_CARD_KANBAN_TIME_PERIOD_ICON_PM = 'moon';
+/** Tailwind gap class between time, AM/PM, and icon in Kanban time row. */
+export const TASK_CARD_KANBAN_TIME_ROW_GAP_CLASS = 'gap-1.5';
 
 /** Priority key for lookup in TASK_CARD_PRIORITY_COLORS */
 type PriorityKey = keyof typeof TASK_CARD_PRIORITY_COLORS;
