@@ -313,7 +313,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
                 minHeight: TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx,
               }}
             >
-              <Icon name="calendar" size={12} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
+              <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.timelineCompactCalendar} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
               <span className={cn('flex-shrink-0 font-medium', colors.mutedText)} style={{ fontSize: 11 }}>
                 {providerLabel}
               </span>
@@ -330,7 +330,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
             <p className="font-semibold">{title}</p>
-            <p className="text-muted-foreground text-xs mt-0.5">
+            <p className="text-primary-foreground/90 text-xs mt-0.5">
               {allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`} · {formatDuration(durationMinutes)}
               {location && ` · ${location}`}
             </p>

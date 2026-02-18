@@ -893,7 +893,7 @@ export const DraggableTaskCard = React.forwardRef<
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-xs">
                     <p className="font-semibold">{task.title}</p>
-                    <p className="text-muted-foreground text-xs mt-0.5">
+                    <p className="text-primary-foreground/90 text-xs mt-0.5">
                       {scheduledTimeLabel && <span>{scheduledTimeLabel}</span>}
                       {durationMinutes != null && (
                         <span> · {formatDuration(durationMinutes)}</span>

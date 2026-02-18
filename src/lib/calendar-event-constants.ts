@@ -43,6 +43,8 @@ export const CALENDAR_EVENT_DIMENSIONS = {
     clock: 19,
     mapPin: 19,
     repeat: 24,   // +20% from 20
+    /** Calendar icon size (px) in timelineCompact variant for better visibility. */
+    timelineCompactCalendar: 18,
   },
   height: {
     base: 77,     // +20% from 64 (min height so contents fit)
