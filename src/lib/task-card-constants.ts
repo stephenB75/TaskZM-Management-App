@@ -77,8 +77,8 @@ export const TASK_CARD_PRIORITY_COLORS = {
 export const TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR = '#374151'; // gray-700
 
 /** Kanban week view: Tailwind classes for AM/PM suffix on task time (readable on priority tab backgrounds). */
-export const TASK_CARD_KANBAN_TIME_PERIOD_AM = 'text-cyan-400 dark:text-cyan-300';
-export const TASK_CARD_KANBAN_TIME_PERIOD_PM = 'text-amber-400 dark:text-amber-300';
+export const TASK_CARD_KANBAN_TIME_PERIOD_AM = 'text-slate-800 dark:text-slate-200';
+export const TASK_CARD_KANBAN_TIME_PERIOD_PM = 'text-gray-700 dark:text-gray-300';
 
 /** Priority key for lookup in TASK_CARD_PRIORITY_COLORS */
 type PriorityKey = keyof typeof TASK_CARD_PRIORITY_COLORS;
