@@ -279,6 +279,8 @@ export const TODAY_AGENDA_TIMELINE = {
   rowGapPx: 4,
   /** Minimum gap (px) between consecutive timeline blocks so they don’t touch. */
   blockGapPx: 8,
+  /** Gap (px) between back-to-back blocks in same lane so calendar event and task never overlap visually. */
+  blockBackToBackGapPx: 2,
   /** Gap (px) between consecutive agenda items when using list fallback (e.g. no time). */
   itemGapPx: 12,
   /** Estimated height (px) for calendar event cards when computing cumulative spacing (+20% for larger container). */
@@ -868,6 +870,8 @@ export const Z_INDEX = {
   TIMELINE_STAMP_LINE: 20,
   /** Today Agenda: timeline column container. */
   TIMELINE_CONTAINER: 10,
+  /** Today Agenda: time labels + NEXT UP column above blocks so badge and labels are never hidden. */
+  TIMELINE_LABELS_AND_NEXT_UP: 60,
   DIALOG: 50, // z-50 - Used in Dialog overlay and content
   /** Above dialogs (50), dropdowns (9999), and app tour (10000) so toasts are always visible in front. */
   TOAST: 10001,

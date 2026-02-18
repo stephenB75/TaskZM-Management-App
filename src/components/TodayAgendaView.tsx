@@ -307,6 +307,18 @@ export function TodayAgendaView({
       laneEndMins[lane] = end;
     }
     const laneCount = Math.max(1, laneEndMins.length);
+    const backToBackGapPx = TODAY_AGENDA_TIMELINE.blockBackToBackGapPx;
+    const minBlockPx = TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx;
+    for (let lane = 0; lane < laneCount; lane++) {
+      const inLane = blocks.filter((b) => b.laneIndex === lane).sort((a, b) => a.actualStartMins - b.actualStartMins);
+      for (let i = 0; i < inLane.length - 1; i++) {
+        const curr = inLane[i];
+        const next = inLane[i + 1];
+        if (next.actualStartMins === curr.actualEndMins && curr.heightPx > minBlockPx) {
+          curr.heightPx = Math.max(minBlockPx, curr.heightPx - backToBackGapPx);
+        }
+      }
+    }
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
     const maxBlockBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.naturalTopPx + b.heightPx)) : 0;
     const timelineLayoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
@@ -480,8 +492,8 @@ export function TodayAgendaView({
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
           {/* Timeline: blocks at their time positions (lane-based when overlapping so axis stays aligned) */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}>
-            {/* Left: time label + dot (flipped: label then dot); NEXT UP badge above next time due */}
-            <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx }}>
+            {/* Left: time label + dot; NEXT UP badge — higher z-index so never hidden by blocks */}
+            <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx, zIndex: Z_INDEX.TIMELINE_LABELS_AND_NEXT_UP }}>
               {nextUpTopPx != null && (
                 <div
                   className="absolute right-0 flex items-center justify-end z-10"
