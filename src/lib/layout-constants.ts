@@ -269,6 +269,8 @@ export const TODAY_AGENDA_TIMELINE = {
   pxPerMinute: 3,
   /** Minimum task block height (px) when duration is very short. */
   minBlockHeightPx: 48,
+  /** Minimum timeline block height (px) so short events are still visible; kept small so blocks never exceed their duration and overlap. */
+  minTimelineBlockHeightPx: 24,
   columnWidth: '1in',
   dotSizePx: 10,
   lineMinWidthPx: 28,

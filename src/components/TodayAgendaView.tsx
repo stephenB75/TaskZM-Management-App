@@ -247,8 +247,6 @@ export function TodayAgendaView({
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
     const pxPerMinute = TODAY_AGENDA_TIMELINE.pxPerMinute;
-    const minH = TODAY_AGENDA_TIMELINE.minBlockHeightPx;
-    const eventCardMinHeightPx = TODAY_AGENDA_TIMELINE.eventCardHeightPx;
     const blockGapPx = TODAY_AGENDA_TIMELINE.blockGapPx;
     type Block = { item: CombinedItem; naturalTopPx: number; topPx: number; heightPx: number; actualStartMins: number; actualDurationMins: number; actualEndMins: number; laneIndex: number };
     const blocks: Block[] = [];
@@ -266,7 +264,9 @@ export function TodayAgendaView({
           continue;
         }
         const durationMins = getTaskMinutes(item.task);
-        const heightPx = Math.max(minH, Math.round(durationMins * pxPerMinute));
+        // Use duration-based height so the block never extends past its end time (prevents overlap)
+        const durationHeightPx = Math.round(durationMins * pxPerMinute);
+        const heightPx = Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
         blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins, laneIndex: 0 });
@@ -279,7 +279,9 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const heightPx = Math.max(minH, eventCardMinHeightPx, Math.round(durationMins * pxPerMinute));
+        // Use duration-based height only so the block never extends past its end time (prevents overlap with next item)
+        const durationHeightPx = Math.round(durationMins * pxPerMinute);
+        const heightPx = Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
         blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins, laneIndex: 0 });
@@ -550,8 +552,8 @@ export function TodayAgendaView({
                       style={{
                         top: topPx,
                         ...(laneCount > 1 ? { left: laneIndex * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx), width: TODAY_AGENDA_TIMELINE.laneMinWidthPx } : { left: 0, right: 0 }),
-                        height: Math.max(minBlockHeightPx, heightPx),
-                        minHeight: minBlockHeightPx,
+                        height: heightPx,
+                        minHeight: TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
                         zIndex: Z_INDEX.TIMELINE_BLOCK,
                         ...(blockStyle
                           ? {
@@ -580,8 +582,8 @@ export function TodayAgendaView({
                               onComplete={handleTaskComplete}
                               timelineBlockHeightPx={
                                 TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                                  ? Math.round((Math.max(minBlockHeightPx, heightPx)) / TASK_CARD_TIMELINE.scale.todayAgenda)
-                                  : Math.max(minBlockHeightPx, heightPx)
+                                  ? Math.round(heightPx / TASK_CARD_TIMELINE.scale.todayAgenda)
+                                  : heightPx
                               }
                             />
                           </div>
