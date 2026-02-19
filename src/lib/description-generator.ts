@@ -355,8 +355,8 @@ export interface GeneratedDescription {
   description: string;
   domain: Domain;
   confidence: number;
-  /** 'openai' when description came from server (Edge Function); 'local' when built from local terminology */
-  source?: 'openai' | 'local';
+  /** Always 'local' — descriptions use only local and shared terminology. */
+  source?: 'local';
 }
 
 /** Terms that must not appear in a description unless they appear in the task name (avoids off-topic drift). */
