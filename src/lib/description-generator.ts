@@ -221,7 +221,14 @@ const US_ENGLISH_AN_PREFIXES = new Set([
 const US_ENGLISH_A_PREFIXES = new Set([
   'used', 'university', 'uniform', 'union', 'unique', 'unit', 'united', 'user', 'usual', 'universe',
   'european', 'euro', 'one', 'once', 'one-time', 'one-off', 'one-way', 'one-year', 'one-day',
-  'ubiquitous', 'UK', 'U.S.', 'USA', 'under',
+  'ubiquitous', 'UK', 'U.S.', 'USA',
+]);
+
+/** Words that are prepositions or not used as standalone nouns — never use "a/an X" for these (e.g. "under 15k" → "under" must not become "an under"). */
+const PREPOSITIONS_NOT_AS_NOUNS = new Set([
+  'under', 'over', 'above', 'below', 'from', 'to', 'for', 'with', 'by', 'in', 'on', 'at',
+  'between', 'through', 'during', 'before', 'after', 'into', 'onto', 'within', 'without',
+  'since', 'until', 'till', 'up', 'down', 'off', 'out', 'past', 'per', 'via', 'amid', 'among',
 ]);
 
 function addArticleIfNeeded(noun: string, useDefinite: boolean = false): string {
@@ -229,17 +236,21 @@ function addArticleIfNeeded(noun: string, useDefinite: boolean = false): string 
 
   const trimmed = noun.trim();
   const lower = trimmed.toLowerCase();
+  const lowerNorm = lower.replace(/[.,;:!?]$/, '');
 
   // If already has an article, return as-is
   if (/^(a|an|the)\s+/i.test(trimmed)) return trimmed;
+
+  // Prepositions: never add article (e.g. "under" in "under 15k" must not become "an under")
+  if (PREPOSITIONS_NOT_AS_NOUNS.has(lowerNorm) || PREPOSITIONS_NOT_AS_NOUNS.has(lower)) return trimmed;
 
   // Plurals and uncountable: no indefinite article in this context
   if (lower.endsWith('s') && !lower.endsWith('ss') && !lower.endsWith('us') && !lower.endsWith('is')) {
     return trimmed;
   }
 
-  // Numbers and numeric-looking terms: no article
-  if (/^\d+[kKmM]?$/.test(lower) || /^\d+[-–]\d+/.test(trimmed)) return trimmed;
+  // Numbers and numeric-looking terms: no article (strip trailing punct so "15k." is treated as 15k)
+  if (/^\d+[kKmM]?$/.test(lowerNorm) || /^\d+[-–]\d+/.test(trimmed)) return trimmed;
 
   if (useDefinite) {
     return `${DESCRIPTION_GENERATION_CONFIG.articles.definite} ${trimmed}`;
@@ -3489,7 +3500,17 @@ export async function generateDescription(
   if (finalVerbs.length === 0) finalVerbs = searchExtracted.verbs;
   if (finalNouns.length === 0) finalNouns = searchExtracted.nouns;
   const finalPronouns = searchExtracted.pronouns;
-  
+
+  // Exclude prepositions and number-only terms from noun/keyword lists so we don't produce "an under and a car" or "a 15k"
+  const notStandaloneInDescription = (term: string): boolean => {
+    const t = (term || '').trim().toLowerCase().replace(/[.,;:!?]$/, '');
+    if (PREPOSITIONS_NOT_AS_NOUNS.has(t)) return true;
+    if (/^\d+[kKmM]?$/.test(t)) return true;
+    return false;
+  };
+  finalKeywords = finalKeywords.filter(t => !notStandaloneInDescription(t));
+  finalNouns = finalNouns.filter(t => !notStandaloneInDescription(t));
+
   logger.debug(`✅ Local terminology: ${finalKeywords.length} keywords, ${finalPhrases.length} phrases, ${finalVerbs.length} verbs, ${finalNouns.length} nouns`);
 
   // Use local sentence building when server AI was not used or didn't return a valid description
