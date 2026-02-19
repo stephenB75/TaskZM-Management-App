@@ -3361,73 +3361,7 @@ export async function generateDescription(
     }
   }
 
-  // PRIMARY: OpenAI (server) — try Edge Function first. FALLBACK: local processing when no token, 4xx/5xx, or timeout.
-  const serverAITimeoutMs = 10000;
-  if (!accessToken) {
-    logger.debug('OpenAI (primary) skipped: no access token; using local (fallback)');
-  }
-  if (accessToken) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), serverAITimeoutMs);
-      const res = await fetch(`${API_BASE}/ai/description`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          taskName,
-          domain: domainRef,
-          effortScore: effortScore !== undefined && effortScore >= 1 && effortScore <= 5 ? effortScore : 2.5,
-          actionPlanSteps: actionPlanSteps && actionPlanSteps.length > 0 ? actionPlanSteps : undefined,
-          existingDescription: existingDescription?.trim() || undefined,
-          terminology,
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (!res.ok) {
-        const body = await res.text();
-        logger.debug('OpenAI (primary) request failed; using local (fallback)', {
-          status: res.status,
-          statusText: res.statusText,
-          body: body.slice(0, 200),
-        });
-        if (res.status === 401) {
-          logger.warn('OpenAI (primary): Unauthorized (401). Check that you are signed in and the session token is valid.');
-        } else if (res.status === 503 || res.status === 502) {
-          logger.debug('OpenAI not configured or upstream error (503/502); using local (fallback)');
-        }
-      }
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.description && typeof data.description === 'string' && data.description.trim().length > 0) {
-          const desc = cleanText(data.description);
-          const taskNameLowerCheck = taskName.toLowerCase().trim();
-          const descLower = desc.toLowerCase().trim();
-          // Accept if not identical and (doesn't start with task name OR is substantially longer, e.g. "Fix bug: resolve login")
-          const notIdentical = descLower !== taskNameLowerCheck;
-          const notJustTaskName = !descLower.startsWith(taskNameLowerCheck) || descLower.length > taskNameLowerCheck.length + 10;
-          if (notIdentical && notJustTaskName) {
-            logger.debug('OpenAI (primary) description used');
-            return {
-              description: stripOffTopicSentences(desc, taskName),
-              domain: typeof data.domain === 'string' ? data.domain : domainRef,
-              confidence: typeof data.confidence === 'number' ? data.confidence : 0.85,
-              source: 'openai',
-            };
-          }
-          logger.debug('OpenAI description rejected (same as task name or too short); using local (fallback)', {
-            descPreview: desc.slice(0, 60),
-            taskNameLength: taskNameLowerCheck.length,
-            descLength: descLower.length,
-          });
-        }
-      }
-    } catch (err) {
-      logger.debug('OpenAI (primary) request failed (timeout or network); using local (fallback):', err);
-    }
-  }
-
-  // FALLBACK: Local processing — extract terms and build description (no server call)
+  // Use only local and shared terminology (no OpenAI). Extract terms and build description.
   let description = '';
   let confidence: number = DESCRIPTION_GENERATION_CONFIG.baseConfidence;
   let usedSearchResults = false;
@@ -3827,58 +3761,7 @@ export async function generateDescriptionOptions(
       ? effortScore 
       : 2.5;
 
-    // PRIMARY: OpenAI (server) for 3-5 options. FALLBACK: local generation below.
-    if (accessToken) {
-      try {
-        let domain: Domain;
-        let terminology: FilteredTerminology;
-        if (breakdownContext?.domain && breakdownContext?.filteredTerminology) {
-          domain = breakdownContext.domain;
-          terminology = breakdownContext.filteredTerminology;
-        } else {
-          const domainResult = detectDomain(taskName, existingDescription?.trim() || '');
-          domain = domainResult.domain;
-          const domainTerms = await getDomainTerminologyAsync(domain);
-          const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
-          terminology = filterTerminologyRelevantToTask(taskName, domain, domainTerms, maxTerms);
-        }
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        const res = await fetch(`${API_BASE}/ai/description-options`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-          body: JSON.stringify({
-            taskName,
-            domain,
-            effortScore: normalizedEffortScore,
-            actionPlanSteps: actionPlanSteps && actionPlanSteps.length > 0 ? actionPlanSteps : undefined,
-            existingDescription: existingDescription?.trim() || undefined,
-            terminology,
-          }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data = await res.json();
-          const opts = data?.options;
-          if (Array.isArray(opts) && opts.length > 0) {
-            const mapped: GeneratedDescription[] = opts
-              .filter((o: { description?: string }) => o && typeof o.description === 'string' && o.description.trim().length > 0)
-              .map((o: { description: string; domain?: string; confidence?: number }) => ({
-                description: stripOffTopicSentences((o.description as string).trim(), taskName),
-                domain: typeof o.domain === 'string' ? o.domain : DEFAULT_TASK_DOMAIN,
-                confidence: typeof o.confidence === 'number' ? o.confidence : 0.75,
-                source: 'openai' as const,
-              }));
-            if (mapped.length > 0) return mapped.sort((a, b) => b.confidence - a.confidence);
-          }
-        }
-      } catch (err) {
-        logger.debug('OpenAI (primary) description-options failed; using local (fallback):', err);
-      }
-    }
-
-    // FALLBACK: Generate 3-5 options with varying detail levels (local)
+    // Use only local and shared terminology (no OpenAI). Generate 3-5 options with varying detail levels.
     const numOptions = normalizedEffortScore <= DESCRIPTION_OPTIONS_CONFIG.LOW_EFFORT_THRESHOLD 
       ? DESCRIPTION_OPTIONS_CONFIG.MIN_OPTIONS
       : normalizedEffortScore <= DESCRIPTION_OPTIONS_CONFIG.MEDIUM_EFFORT_THRESHOLD 

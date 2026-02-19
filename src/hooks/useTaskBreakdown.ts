@@ -23,7 +23,6 @@ import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAUL
 import { createAIContext, createAIContextSync, type AIContext } from '../lib/ai-context';
 import { getDomainTerminology } from '../lib/domain-terminology';
 import { DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from '../lib/ai-config';
-import { getAIActionPlan } from '../lib/api';
 
 export interface TaskBreakdown {
   estimatedMinutes: number;
@@ -263,10 +262,10 @@ export function useTaskBreakdown(
         // Analyze description (pass shared context and effort score to avoid redundant work)
         const descriptionAnalysis = analyzeDescription(title, description, safeAIContext, verbAnalysis.effortScore);
 
-        // Generate action plan (pass shared context to avoid redundant work) — used as fallback if AI action plan is not used
-        let actionPlan = generateActionPlan(tempTask as Task, safeAIContext);
+        // Generate action plan using only local and shared terminology (rule-based; no OpenAI).
+        const actionPlan = generateActionPlan(tempTask as Task, safeAIContext);
 
-        // Task-relevant terminology for description (and action plan): filter by title only so aid set is task-name-based
+        // Task-relevant terminology for description: filter by title only so aid set is task-name-based
         const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
         const filteredTerminology = filterTerminologyRelevantToTask(
           title.trim(),
@@ -274,37 +273,6 @@ export function useTaskBreakdown(
           aiContext.domainTerms,
           maxTerms
         );
-
-        // Optionally try server AI for action plan (same context as description); use rule-based if unavailable
-        if (getAccessToken) {
-          try {
-            const token = await getAccessToken();
-            const aiSteps = await getAIActionPlan(
-              `${title} ${description}`.trim(),
-              validDomain,
-              filteredTerminology,
-              token,
-              { effortScore: verbAnalysis.effortScore, existingDescription: description.trim() || undefined }
-            );
-            if (aiSteps && aiSteps.length > 0) {
-              const totalFromAi = aiSteps.reduce((sum, s) => sum + s.estimatedMinutes, 0);
-              actionPlan = {
-                steps: aiSteps.map((s, i) => ({
-                  action: s.action,
-                  estimatedMinutes: s.estimatedMinutes,
-                  category: 'execution' as const,
-                  order: i + 1,
-                })),
-                totalEstimatedMinutes: totalFromAi,
-                suggestedSubtasks: [],
-                context: validDomain,
-                confidence: 0.85,
-              };
-            }
-          } catch {
-            // Keep rule-based action plan on any error
-          }
-        }
 
         // Determine suggested category from domain
         let suggestedCategory: 'work' | 'personal' | 'projects' | null = null;
