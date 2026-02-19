@@ -105,7 +105,7 @@ function cleanText(text: string): string {
 
 /**
  * Fix run-ons only: leave well-structured descriptions (sentence or paragraph) as-is.
- * Only trim when a single "sentence" is clearly a run-on (e.g. 40+ words or 2+ " and " in one clause).
+ * Only trim when a single "sentence" is clearly a run-on (word count > descriptionRules.runOnWordThreshold or 2+ " and " in one clause).
  */
 function trimRunOnOnly(description: string): string {
   if (!description || typeof description !== 'string') return description;
@@ -123,8 +123,9 @@ function trimRunOnOnly(description: string): string {
       result.push(sent.endsWith('.') ? sent : sent + '.');
       continue;
     }
+    const runOnThreshold = DESCRIPTION_GENERATION_CONFIG.descriptionRules?.runOnWordThreshold ?? 40;
     const andMatches = sent.match(/\s+,?\s+and\s+/gi);
-    const isRunOn = words.length > 40 || (andMatches && andMatches.length >= 2);
+    const isRunOn = words.length > runOnThreshold || (andMatches && andMatches.length >= 2);
     if (!isRunOn) {
       result.push(sent.endsWith('.') ? sent : sent + '.');
       continue;
@@ -156,12 +157,11 @@ function analyzeTaskNameStructure(
 } {
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
-  
-  // Check if task name starts with an action verb
-  const actionVerbs = ['find', 'search', 'research', 'compare', 'buy', 'purchase', 'get', 'locate', 'identify', 'shop', 'select', 'create', 'update', 'delete', 'manage', 'organize', 'plan', 'schedule', 'review', 'analyze', 'evaluate', 'implement', 'develop', 'design', 'build', 'write', 'read', 'study', 'learn', 'teach', 'prepare', 'cook', 'clean', 'repair', 'fix', 'install', 'setup', 'configure'];
+
+  const actionWordList = DESCRIPTION_GENERATION_CONFIG.actionWordList ?? [];
   const firstWord = taskWords[0];
-  const hasExplicitAction = actionVerbs.some(verb => firstWord === verb || firstWord.startsWith(verb));
-  
+  const hasExplicitAction = actionWordList.some(verb => firstWord === verb || firstWord.startsWith(verb));
+
   // Extract main action from task name or extracted verbs
   let mainAction: string | null = null;
   if (hasExplicitAction) {
@@ -171,15 +171,15 @@ function analyzeTaskNameStructure(
     const verbInTask = extractedVerbs.find(v => taskNameLower.includes(v.toLowerCase()));
     mainAction = verbInTask || extractedVerbs[0];
   }
-  
-  // Extract main object/noun from task name
+
+  // Extract main object/noun from task name (exclude stop words and action verbs)
   let mainObject: string | null = null;
-  // Look for nouns in task name (words that aren't verbs or common words)
-  const commonWords = ['the', 'a', 'an', 'for', 'to', 'of', 'in', 'on', 'at', 'by', 'with', 'from', 'and', 'or', 'but'];
-  const potentialObjects = taskWords.filter(w => 
-    !commonWords.includes(w) && 
-    !actionVerbs.some(av => w === av || w.startsWith(av)) &&
-    w.length >= 3
+  const stopWords = new Set(DESCRIPTION_GENERATION_CONFIG.stopWords ?? []);
+  const minObjLen = DESCRIPTION_GENERATION_CONFIG.minWordLengthForFiltering ?? 3;
+  const potentialObjects = taskWords.filter(w =>
+    !stopWords.has(w) &&
+    !actionWordList.some(av => w === av || w.startsWith(av)) &&
+    w.length >= minObjLen
   );
   
   if (potentialObjects.length > 0) {
@@ -985,10 +985,10 @@ export async function extractTermsFromTaskNameWithBrowserAI(
   const localTerminologyExtracted = extractTermsFromTaskName(taskName, domainTerms);
   
   logger.debug(`✅ Local Terminology extraction COMPLETE: ${localTerminologyExtracted.keywords.length} keywords, ${localTerminologyExtracted.phrases.length} phrases, ${localTerminologyExtracted.verbs.length} verbs, ${localTerminologyExtracted.nouns.length} nouns`, {
-    keywords: localTerminologyExtracted.keywords.slice(0, 10),
-    phrases: localTerminologyExtracted.phrases.slice(0, 10),
-    verbs: localTerminologyExtracted.verbs.slice(0, 10),
-    nouns: localTerminologyExtracted.nouns.slice(0, 10),
+    keywords: localTerminologyExtracted.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: localTerminologyExtracted.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: localTerminologyExtracted.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: localTerminologyExtracted.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
   });
   
   // STEP 3: Combine Browser AI API results with Local Terminology results
@@ -4136,10 +4136,10 @@ export function getSuggestivePhrases(
     
     // Return suggestive phrases, keywords, verbs, and nouns for manual writing
     return {
-      phrases: enhanced.phrases.slice(0, 10), // Top 10 phrases
-      keywords: enhanced.keywords.slice(0, 15), // Top 15 keywords
-      verbs: enhanced.verbs.slice(0, 10), // Top 10 verbs
-      nouns: enhanced.nouns.slice(0, 10), // Top 10 nouns
+      phrases: enhanced.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+      keywords: enhanced.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+      verbs: enhanced.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+      nouns: enhanced.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
       domain,
     };
   } catch (error) {

@@ -1775,11 +1775,11 @@ export function detectDomain(
     contextKeywords,
   });
 
-  // If no matches or very low scores, default to personal
+  // If no matches or very low scores, use default domain from constants
   if (maxScore === 0 || totalScore < 1) {
-    logger.debug(`⚠️ Domain Detection: No matches found (maxScore=${maxScore}, totalScore=${totalScore}), defaulting to personal`);
+    logger.debug(`⚠️ Domain Detection: No matches found (maxScore=${maxScore}, totalScore=${totalScore}), defaulting to ${DEFAULT_TASK_DOMAIN}`);
     return {
-      domain: 'personal',
+      domain: DEFAULT_TASK_DOMAIN,
       confidence: DOMAIN_DETECTION_THRESHOLDS.MIN_CONFIDENCE,
       keywords: foundKeywords,
       matchedTerms,

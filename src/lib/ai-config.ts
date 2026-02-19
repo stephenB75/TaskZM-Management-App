@@ -196,6 +196,7 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   // Description rules: accurate length (sentence or paragraph as needed), avoid run-ons only
   descriptionRules: {
     maxWordsPerSentence: 25, // Max words per sentence to avoid run-on clauses
+    runOnWordThreshold: 40, // Sentence is treated as run-on when word count exceeds this (for trimRunOnOnly)
     maxSentences: 5, // Allow short paragraph when needed for accuracy
     maxCharsTotal: 400, // Reasonable cap for full description
     noRunOnHint: 'Write clear, well-structured sentences. Use one or more sentences (or a short paragraph) as needed to accurately describe the task. Avoid run-on sentences (do not chain many clauses with "and" or commas).',
@@ -252,8 +253,8 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     shop: 'shop',
     select: 'select',
   },
-  // Action word detection list (for filtering verbs)
-  actionWordList: ['find', 'search', 'research', 'compare', 'buy', 'purchase', 'get', 'locate', 'identify', 'shop', 'select'],
+  // Action word detection list (for filtering verbs and task name structure analysis)
+  actionWordList: ['find', 'search', 'research', 'compare', 'buy', 'purchase', 'get', 'locate', 'identify', 'shop', 'select', 'create', 'update', 'delete', 'manage', 'organize', 'plan', 'schedule', 'review', 'analyze', 'evaluate', 'implement', 'develop', 'design', 'build', 'write', 'read', 'study', 'learn', 'teach', 'prepare', 'cook', 'clean', 'repair', 'fix', 'install', 'setup', 'configure', 'continue', 'resume'],
   // Context filtering stop words (words to exclude when adding context)
   contextFilterStopWords: ['a', 'an', 'the', 'our', 'for', 'auto'],
   // Preferred context words (words that add value when used as context)
