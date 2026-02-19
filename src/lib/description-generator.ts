@@ -210,36 +210,72 @@ function analyzeTaskNameStructure(
 }
 
 /**
- * Add appropriate article (a, an, the) before a noun if needed
- * Returns the noun with article if it needs one, otherwise returns the noun as-is
+ * US English: use "an" when the word starts with a vowel SOUND, "a" otherwise.
+ * Covers common exceptions (e.g. "a used car", "an hour", "a one-time", "a European").
  */
+const US_ENGLISH_AN_PREFIXES = new Set([
+  'hour', 'honor', 'honest', 'heir', 'honorable', 'honorary', 'honored',
+  'umbrella', 'umpire', 'uncle', 'urgent', 'usher', 'utter',
+  'eulogy', 'eucalyptus', 'eulogize', 'eunuch', 'eureka',
+]);
+const US_ENGLISH_A_PREFIXES = new Set([
+  'used', 'university', 'uniform', 'union', 'unique', 'unit', 'united', 'user', 'usual', 'universe',
+  'european', 'euro', 'one', 'once', 'one-time', 'one-off', 'one-way', 'one-year', 'one-day',
+  'ubiquitous', 'UK', 'U.S.', 'USA', 'under',
+]);
+
 function addArticleIfNeeded(noun: string, useDefinite: boolean = false): string {
   if (!noun || noun.trim().length === 0) return noun;
-  
+
   const trimmed = noun.trim();
   const lower = trimmed.toLowerCase();
-  
+
   // If already has an article, return as-is
   if (/^(a|an|the)\s+/i.test(trimmed)) return trimmed;
-  
-  // If it's a plural or uncountable noun, don't add article
+
+  // Plurals and uncountable: no indefinite article in this context
   if (lower.endsWith('s') && !lower.endsWith('ss') && !lower.endsWith('us') && !lower.endsWith('is')) {
-    return trimmed; // Plural nouns don't need articles in this context
+    return trimmed;
   }
-  
-  // Use definite article if requested
+
+  // Numbers and numeric-looking terms: no article
+  if (/^\d+[kKmM]?$/.test(lower) || /^\d+[-–]\d+/.test(trimmed)) return trimmed;
+
   if (useDefinite) {
     return `${DESCRIPTION_GENERATION_CONFIG.articles.definite} ${trimmed}`;
   }
-  
-  // Determine if we need "a" or "an"
+
+  // US English: "an" before vowel-sound words (including "an hour", "an honest")
+  for (const p of US_ENGLISH_AN_PREFIXES) {
+    if (lower === p || lower.startsWith(p + ' ')) {
+      return `${DESCRIPTION_GENERATION_CONFIG.articles.indefinite.an} ${trimmed}`;
+    }
+  }
+  for (const p of US_ENGLISH_A_PREFIXES) {
+    if (lower === p || lower.startsWith(p + ' ')) {
+      return `${DESCRIPTION_GENERATION_CONFIG.articles.indefinite.a} ${trimmed}`;
+    }
+  }
+
   const firstChar = lower[0];
   const vowels = ['a', 'e', 'i', 'o', 'u'];
-  const needsAn = vowels.includes(firstChar) || 
-                  (lower.startsWith('hour') && lower.length === 4) ||
-                  (lower.startsWith('honor') && lower.length === 5);
-  
+  const needsAn = vowels.includes(firstChar);
   return needsAn ? `${DESCRIPTION_GENERATION_CONFIG.articles.indefinite.an} ${trimmed}` : `${DESCRIPTION_GENERATION_CONFIG.articles.indefinite.a} ${trimmed}`;
+}
+
+/**
+ * Normalize a single sentence for US English: sentence case (first letter cap), single spaces, one trailing period.
+ * Does not lowercase the rest of the sentence so numbers (e.g. 15k) and existing caps are preserved.
+ */
+function normalizeSentenceUSEnglish(sentence: string): string {
+  if (!sentence || typeof sentence !== 'string') return sentence;
+  let s = sentence.replace(/\s+/g, ' ').trim();
+  if (s.length === 0) return s;
+  if (s.charAt(0) === s.charAt(0).toLowerCase()) {
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  if (!s.match(/[.!?]$/)) s += '.';
+  return s;
 }
 
 /**
@@ -3688,14 +3724,17 @@ export async function generateDescription(
       }
     }
     
-    const cleanedSentence = cleanedWords.join(' ').trim();
+    let cleanedSentence = cleanedWords.join(' ').replace(/\s+/g, ' ').trim();
     if (cleanedSentence.length > 0) {
-      cleanedSentences.push(cleanedSentence);
+      cleanedSentences.push(normalizeSentenceUSEnglish(cleanedSentence));
     }
   }
-  
-  // Rejoin with proper punctuation, then fix run-ons only (leave good paragraphs as-is)
+
+  // Rejoin with proper punctuation (US English: period-space between sentences)
   finalDescription = cleanedSentences.join('. ').trim();
+  if (finalDescription.length > 0 && finalDescription.charAt(0) === finalDescription.charAt(0).toLowerCase()) {
+    finalDescription = finalDescription.charAt(0).toUpperCase() + finalDescription.slice(1);
+  }
   finalDescription = trimRunOnOnly(finalDescription);
 
   // Final validation: ensure description is meaningful

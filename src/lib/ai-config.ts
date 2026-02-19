@@ -280,8 +280,8 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     browserAI: 'browser AI',
     localTerminology: 'local terminology',
   },
-  // Description connector words - Enhanced with more natural connectors for better context flow
-  // English articles for proper grammar
+  // Description connector words (US English) - natural connectors for sentence building
+  // English articles for proper grammar (a/an by sound)
   articles: {
     indefinite: {
       a: 'a',
@@ -302,6 +302,7 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     via: 'via',
     using: 'using',
     including: 'including',
+    suchAs: 'such as',
     about: 'about',
     regarding: 'regarding',
     concerning: 'concerning',
