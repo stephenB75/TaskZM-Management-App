@@ -2653,9 +2653,9 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
     authUrl.searchParams.set('scope', scopes.join(' '));
     authUrl.searchParams.set('access_type', 'offline');
     authUrl.searchParams.set('prompt', 'consent');
-    authUrl.searchParams.set('state', userId); // Pass userId in state
+    authUrl.searchParams.set('state', encodeURIComponent(userId)); // Pass userId in state (encoded for reserved chars)
 
-    console.log('Google OAuth URL generated successfully for user:', userId);
+    console.log('Google OAuth URL generated successfully for user:', userId, 'redirect_uri:', redirectUri);
     return c.json({ authUrl: authUrl.toString() });
   } catch (error) {
     console.log('Error initiating Google OAuth:', error);
@@ -2720,7 +2720,8 @@ app.post("/taskzm-database-function/calendar/google/use-supabase-tokens", async 
 app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
   try {
     const code = c.req.query('code');
-    const userId = c.req.query('state');
+    const stateParam = c.req.query('state');
+    const userId = stateParam ? decodeURIComponent(stateParam) : '';
     const error = c.req.query('error');
 
     console.log('Google OAuth callback received:', { 
@@ -2785,6 +2786,7 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
     const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
     const redirectUri = getGoogleRedirectUri();
+    console.log('Google OAuth callback token exchange redirect_uri:', redirectUri ?? 'null');
 
     if (!clientId || !clientSecret || !redirectUri) {
       const html = `<!DOCTYPE html>
