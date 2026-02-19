@@ -232,9 +232,13 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'schedule', 'scheduling', 'plan', 'planning', 'arrange', 'arranging', 'coordinate', 'coordinating',
     'prioritize', 'prioritizing', 'rank', 'ranking', 'order', 'ordering', 'sequence', 'sequencing',
     'resolve', 'resolving', 'solve', 'solving', 'fix', 'fixing', 'repair', 'repairing',
-    'troubleshoot', 'troubleshooting', 'debug', 'debugging', 'diagnose', 'diagnosing', 'investigate', 'investigating'
+    'troubleshoot', 'troubleshooting', 'debug', 'debugging', 'diagnose', 'diagnosing', 'investigate', 'investigating',
+    // Vehicle and purchase intent
+    'used car', 'used vehicle', 'pre-owned', 'secondhand', 'continue', 'continuing', 'resume', 'resuming'
   ],
   phrases: [
+    'used car search', 'search for used car', 'car under budget', 'vehicle under budget',
+    'continue search', 'continue car search', 'resume vehicle search', 'find used car',
     'quarterly review', 'client call', 'project milestone', 'stakeholder update',
     'team meeting', 'status update', 'progress report', 'budget review',
     'strategic planning', 'business development', 'market analysis', 'competitive analysis',
@@ -364,7 +368,9 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'prioritize business objectives', 'rank project importance', 'sequence task execution',
     'resolve business conflicts', 'solve technical problems', 'fix system issues',
     'troubleshoot technical issues', 'debug application errors', 'diagnose performance problems',
-    'investigate business opportunities', 'research market conditions', 'explore new technologies'
+    'investigate business opportunities', 'research market conditions', 'explore new technologies',
+    'continue searching for vehicle', 'continue car search', 'search for used car under budget',
+    'find vehicle within budget', 'research used car options', 'compare used car listings'
   ],
   verbs: [
     'present', 'negotiate', 'strategize', 'analyze', 'forecast', 'delegate', 'coordinate',
@@ -576,9 +582,15 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'home equity', 'refinance', 'home loan', 'property tax', 'homeowners association', 'hoa',
     'smart appliance', 'smart appliances', 'connected home', 'home network', 'wifi setup',
     'home office', 'remote workspace', 'ergonomic', 'standing desk', 'home gym',
-    'meal delivery', 'grocery delivery', 'online shopping', 'subscription box', 'home services'
+    'meal delivery', 'grocery delivery', 'online shopping', 'subscription box', 'home services',
+    // Vehicle and purchase (home/household)
+    'used car', 'used vehicle', 'pre-owned', 'secondhand', 'continue', 'continuing', 'resume', 'resuming',
+    'household vehicle', 'family car', 'budget car', 'affordable car', 'car shopping'
   ],
   phrases: [
+    'used car search', 'search for used car', 'car under budget', 'vehicle under budget',
+    'continue search', 'continue car search', 'resume vehicle search', 'find used car',
+    'used car under 15k', 'used car under 20k', 'find used car under budget',
     'home improvement', 'deep clean', 'meal prep', 'yard work', 'garden maintenance',
     'spring cleaning', 'holiday preparation', 'home maintenance', 'appliance repair',
     'room organization', 'closet organization', 'garage cleanup', 'attic organization',
@@ -712,7 +724,9 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'decorate living spaces', 'arrange furniture', 'create comfortable environment',
     'maintain yard and garden', 'care for plants', 'manage landscaping',
     'organize storage areas', 'manage home inventory', 'declutter living spaces',
-    'ensure home cleanliness', 'maintain organized home', 'create functional spaces'
+    'ensure home cleanliness', 'maintain organized home', 'create functional spaces',
+    'continue search for used car', 'continue looking for vehicle', 'search for used car under 15k',
+    'find used car for household', 'research used car within budget'
   ],
   verbs: [
     'clean', 'cleaning', 'organize', 'organizing', 'repair', 'maintain', 'cook', 'shop', 'decorate', 'renovate',
@@ -851,9 +865,16 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'thyroid', 'diabetes', 'blood pressure', 'cholesterol', 'heart', 'lung', 'liver',
     'kidney', 'stomach', 'intestine', 'bone', 'muscle', 'joint', 'skin', 'eye', 'ear',
     'nose', 'throat', 'dental', 'oral', 'vision', 'hearing', 'allergy', 'asthma',
-    'arthritis', 'migraine', 'headache', 'pain', 'injury', 'wound', 'infection'
+    'arthritis', 'migraine', 'headache', 'pain', 'injury', 'wound', 'infection',
+    // Vehicle and purchase (personal)
+    'used car', 'used vehicle', 'pre-owned', 'secondhand', 'continue', 'continuing', 'resume', 'resuming',
+    'personal vehicle', 'budget car', 'affordable car', 'car shopping', 'vehicle hunt'
   ],
   phrases: [
+    'used car search', 'search for used car', 'car under budget', 'vehicle under budget',
+    'continue search', 'continue car search', 'resume vehicle search', 'find used car',
+    'continue search for used car', 'continue looking for vehicle', 'used car under 15k',
+    'find used car under budget', 'research used car options', 'compare used car listings',
     'workout routine', 'personal project', 'self-care', 'skill development',
     'fitness goal', 'health checkup', 'doctor appointment', 'medical appointment',
     'appointment with doctor', 'appointment with physician', 'make appointment',
@@ -990,7 +1011,9 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'research personal purchases', 'compare product options', 'make informed decisions',
     'maintain personal vehicle', 'schedule car service', 'manage vehicle registration',
     'organize personal space', 'declutter belongings', 'create organized environment',
-    'manage personal time', 'prioritize activities', 'balance personal commitments'
+    'manage personal time', 'prioritize activities', 'balance personal commitments',
+    'continue searching for used car', 'continue car search', 'search for used car under budget',
+    'find used car within budget', 'research used car within price range'
   ],
   verbs: [
     'exercise', 'workout', 'train', 'practice', 'learn', 'study', 'read', 'write',
@@ -1151,6 +1174,8 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
     'museum', 'museums', 'gallery', 'galleries', 'beach', 'beaches', 'mountain', 'mountains'
   ],
   phrases: [
+    'search for accommodation', 'research destinations', 'compare travel options',
+    'find best flight', 'continue travel planning', 'resume trip planning',
     'travel planning', 'cultural event', 'international call', 'time zone conversion',
     'passport renewal', 'visa application', 'travel insurance', 'flight booking',
     'hotel reservation', 'car rental', 'travel itinerary', 'sightseeing', 'tour',
