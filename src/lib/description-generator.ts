@@ -1557,20 +1557,20 @@ export function extractTermsFromTaskName(
   
   // Get domain from domainTerms (it has a 'context' property that is the domain)
   const detectedDomain = domainTerms.context;
-  
+
+  // Extract verbs and nouns from task name so we can use them in descriptions even when domain terminology is empty (e.g. mixed) or doesn't match
+  const extractedFromTask = extractTermsFromText(taskName, [...DESCRIPTION_GENERATION_CONFIG.stopWords]);
+  const newVerbs = extractedFromTask.verbs.filter(verb => {
+    const verbLower = verb.toLowerCase();
+    return !foundVerbs.some(fv => fv.toLowerCase() === verbLower);
+  });
+  const newNouns = extractedFromTask.nouns.filter(noun => {
+    const nounLower = noun.toLowerCase();
+    return !foundNouns.some(fn => fn.toLowerCase() === nounLower);
+  });
+
   // Save new keywords and phrases to library
   if (newKeywords.length > 0 || newPhrases.length > 0) {
-    // Extract verbs and nouns from task name for saving
-    const extractedFromTask = extractTermsFromText(taskName, [...DESCRIPTION_GENERATION_CONFIG.stopWords]);
-    const newVerbs = extractedFromTask.verbs.filter(verb => {
-      const verbLower = verb.toLowerCase();
-      return !foundVerbs.some(fv => fv.toLowerCase() === verbLower);
-    });
-    const newNouns = extractedFromTask.nouns.filter(noun => {
-      const nounLower = noun.toLowerCase();
-      return !foundNouns.some(fn => fn.toLowerCase() === nounLower);
-    });
-    
     saveNewTerminologyToLibrary(
       detectedDomain,
       newKeywords,
@@ -1579,12 +1579,30 @@ export function extractTermsFromTaskName(
       newNouns
     );
   }
-  
+
+  // Merge domain-matched terms with task-name-derived terms so descriptions always reflect user input (e.g. "used car", "15k")
+  const dedupeByLower = <T extends string>(arr: T[], max: number): T[] => {
+    const seen = new Set<string>();
+    const out: T[] = [];
+    for (const x of arr) {
+      const lower = x.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+      out.push(x);
+      if (out.length >= max) break;
+    }
+    return out;
+  };
+  const maxK = DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords;
+  const maxP = DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases;
+  const maxV = DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs;
+  const maxN = DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns;
+
   return {
-    keywords: foundKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
-    phrases: foundPhrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
-    verbs: foundVerbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
-    nouns: foundNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+    keywords: dedupeByLower([...foundKeywords, ...newKeywords], maxK),
+    phrases: dedupeByLower([...foundPhrases, ...newPhrases], maxP),
+    verbs: dedupeByLower([...foundVerbs, ...newVerbs], maxV),
+    nouns: dedupeByLower([...foundNouns, ...newNouns], maxN),
     pronouns: foundPronouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
   };
 }
@@ -3581,8 +3599,8 @@ export async function generateDescription(
         : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
       description = `${templateOpener} ${formattedKeywords} ${connector} ${domainGuidance.toLowerCase()}.`;
     } else {
-      // Use domain guidance as base description
-      description = `${templateOpener} ${domainGuidance.toLowerCase()}.`;
+      // No task-specific terms: always include task name so description reflects user input
+      description = `${templateOpener} ${taskNameLowerForRebuild}. ${domainGuidance.toLowerCase()}`;
     }
     
     logger.debug(`Rebuilt description using domain terminology: "${description.substring(0, 50)}..."`);
