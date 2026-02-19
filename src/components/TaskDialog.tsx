@@ -2624,7 +2624,7 @@ export function TaskDialog({
                             // Defer async operation to avoid blocking click handler
                             setTimeout(async () => {
                               try {
-                                // Use session token when available so OpenAI (server) is tried first
+                                // Descriptions use only local + shared terminology (no external AI)
                                 const token = accessToken ?? await getSessionToken();
                                 logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!(accessToken ?? token), effortScore: breakdown?.effortScore });
                                 const generated = await generateDescription(
