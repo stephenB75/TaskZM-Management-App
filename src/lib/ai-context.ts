@@ -11,7 +11,7 @@
  * - Components build on each other's work
  */
 
-import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync } from './domain-terminology';
+import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, DOMAIN_TERMINOLOGIES } from './domain-terminology';
 import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName, validateAndEnhanceTermsWithDictionary } from './description-generator';
 import { DESCRIPTION_GENERATION_CONFIG, DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from './ai-config';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
@@ -103,7 +103,7 @@ export async function createAIContext(
   }
 
   // STEP 1: Detect domain once (shared across all components) with error handling
-  // Initialize domain so it is never uninitialized (avoids "Can't find variable: domain")
+  // When useAsyncTerminology is true, fetch merged (base + shared + user) terminology for all domains first, then run domain detection so the analyzer uses local and shared terminology
   let domain: Domain = DEFAULT_TASK_DOMAIN;
   let domainDetection: { domain: Domain; confidence: number; keywords: string[]; matchedTerms: { business: number; home: number; personal: number; world: number } } = {
     domain: DEFAULT_TASK_DOMAIN,
@@ -111,19 +111,50 @@ export async function createAIContext(
     keywords: [],
     matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
   };
-  try {
-    const detected = detectDomain(title, description);
-    domainDetection = detected;
-    domain = detected?.domain ?? DEFAULT_TASK_DOMAIN;
-  } catch (error) {
-    logger.error('Error detecting domain in createAIContext, defaulting to default domain:', error);
-    domain = DEFAULT_TASK_DOMAIN;
-    domainDetection = {
-      domain: DEFAULT_TASK_DOMAIN,
-      confidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
-      keywords: [],
-      matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
-    };
+  let domainTerms: Awaited<ReturnType<typeof getDomainTerminologyAsync>>;
+
+  if (useAsyncTerminology) {
+    try {
+      const [businessTerms, homeTerms, personalTerms, worldTerms] = await Promise.all([
+        getDomainTerminologyAsync('business'),
+        getDomainTerminologyAsync('home'),
+        getDomainTerminologyAsync('personal'),
+        getDomainTerminologyAsync('world'),
+      ]);
+      const terminologyByDomain: Record<Domain, ReturnType<typeof getDomainTerminology>> = {
+        business: businessTerms,
+        home: homeTerms,
+        personal: personalTerms,
+        world: worldTerms,
+        mixed: DOMAIN_TERMINOLOGIES.mixed,
+      };
+      const detected = detectDomain(title, description, terminologyByDomain);
+      domainDetection = detected;
+      domain = detected?.domain ?? DEFAULT_TASK_DOMAIN;
+      domainTerms = terminologyByDomain[domain] ?? personalTerms;
+    } catch (error) {
+      logger.error('Error in createAIContext (async terminology + domain detection), falling back to sync:', error);
+      const detected = detectDomain(title, description);
+      domainDetection = detected;
+      domain = detected?.domain ?? DEFAULT_TASK_DOMAIN;
+      domainTerms = await getDomainTerminologyAsync(domain);
+    }
+  } else {
+    try {
+      const detected = detectDomain(title, description);
+      domainDetection = detected;
+      domain = detected?.domain ?? DEFAULT_TASK_DOMAIN;
+    } catch (error) {
+      logger.error('Error detecting domain in createAIContext, defaulting to default domain:', error);
+      domain = DEFAULT_TASK_DOMAIN;
+      domainDetection = {
+        domain: DEFAULT_TASK_DOMAIN,
+        confidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+        keywords: [],
+        matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
+      };
+    }
+    domainTerms = getDomainTerminology(domain);
   }
 
   // Ensure domain is valid (fallback if somehow still undefined)
@@ -136,18 +167,19 @@ export async function createAIContext(
       keywords: [],
       matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
     };
+    if (useAsyncTerminology) {
+      domainTerms = await getDomainTerminologyAsync(domain);
+    } else {
+      domainTerms = getDomainTerminology(domain);
+    }
   }
 
   logger.debug('AI Context: Domain detected', {
     domain,
     confidence: domainDetection.confidence,
     keywords: domainDetection.keywords.length,
+    usedMergedTerminology: useAsyncTerminology,
   });
-
-  // STEP 2: Fetch terminology once (shared across all components)
-  const domainTerms = useAsyncTerminology
-    ? await getDomainTerminologyAsync(domain)
-    : getDomainTerminology(domain);
 
   // STEP 3: Extract terms once (shared across all components)
   // Extract from both title and description for comprehensive analysis

@@ -275,6 +275,22 @@ function addArticleIfNeeded(noun: string, useDefinite: boolean = false): string 
 }
 
 /**
+ * Detect descriptions that list two disjoint nouns (e.g. "a search and a car", "using a car and a search")
+ * which misrepresent the task. Return true so caller can replace with task-name-based description.
+ */
+function isPoorNounListDescription(description: string, _taskName: string): boolean {
+  if (!description) return false;
+  const d = description.toLowerCase();
+  // Pattern: "... (verb) (a|an) X and (a|an) Y." where X,Y are single words - wrong for "search for used car"
+  if (/\b(using|continuing|involving|encompassing|enables?|covers?|includes?|requires?)\s+(a|an)\s+\w+\s+and\s+(a|an)\s+\w+[\s.]/i.test(d)) return true;
+  if (/\band\s+(a|an)\s+search\s+and\s+(a|an)\s+car[\s.]/i.test(d)) return true;
+  if (/\band\s+(a|an)\s+car\s+and\s+(a|an)\s+search[\s.]/i.test(d)) return true;
+  if (/(a|an)\s+search\s+and\s+(a|an)\s+car[\s.]/i.test(d)) return true;
+  if (/(a|an)\s+car\s+and\s+(a|an)\s+search[\s.]/i.test(d)) return true;
+  return false;
+}
+
+/**
  * Normalize a single sentence for US English: sentence case (first letter cap), single spaces, one trailing period.
  * Does not lowercase the rest of the sentence so numbers (e.g. 15k) and existing caps are preserved.
  */
@@ -3515,25 +3531,31 @@ export async function generateDescription(
 
   // Use local sentence building when server AI was not used or didn't return a valid description
   if (!description || description.trim().length === 0) {
-    logger.debug(`🔧 Using local sentence building`);
-    
-    // Use effort score to adjust description detail (default to medium effort if not provided)
-    const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
-      ? effortScore 
-      : 2.5;
-    
-    description = buildContextualDescription(
-      taskName,
-      finalKeywords,
-      finalPhrases,
-      finalVerbs,
-      finalNouns,
-      finalPronouns,
-      searchContext, // Use task name as context
-      domainRef,
-      domainTerms,
-      normalizedEffortScore
-    );
+    const hasMultiWordPhrase = finalPhrases.some(p => (p || '').trim().split(/\s+/).length >= 2);
+    const onlySingleWordNouns = finalNouns.length >= 2 && finalNouns.every(n => (n || '').trim().split(/\s+/).length === 1);
+    // When we only have single-word nouns (e.g. "car", "search") and no multi-word phrase, building would produce "a car and a search". Use task name instead.
+    if (!hasMultiWordPhrase && onlySingleWordNouns && taskName.trim().length > 0) {
+      const taskNameLower = taskName.toLowerCase().trim();
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskNameLower.endsWith('.') ? taskNameLower : taskNameLower + '.'}`;
+      logger.debug('Using task-name-based description (no multi-word phrase; would produce poor noun list)');
+    } else {
+      logger.debug(`🔧 Using local sentence building`);
+      const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
+        ? effortScore 
+        : 2.5;
+      description = buildContextualDescription(
+        taskName,
+        finalKeywords,
+        finalPhrases,
+        finalVerbs,
+        finalNouns,
+        finalPronouns,
+        searchContext,
+        domainRef,
+        domainTerms,
+        normalizedEffortScore
+      );
+    }
   }
       
   logger.debug(`Description after buildContextualDescription:`, {
@@ -3542,6 +3564,14 @@ export async function generateDescription(
     hasContext: searchContext.length > 0,
     usedContext: description.length > 0 && searchContext.length > 0
   });
+
+  // Replace poor "X and Y" noun-list descriptions (e.g. "using a car and a search") with task-name-based description
+  if (description && isPoorNounListDescription(description, taskName)) {
+    const taskNameLower = taskName.toLowerCase().trim();
+    const opener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+    description = `${opener} ${taskNameLower.endsWith('.') ? taskNameLower : taskNameLower + '.'}`;
+    logger.debug('Replaced poor noun-list description with task-name-based description');
+  }
 
   // STEP 5: Check if description is too similar to task name or needs improvement
   // Use taskNameLower and descriptionLower already declared above for domain detection

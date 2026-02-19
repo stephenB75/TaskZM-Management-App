@@ -1515,10 +1515,14 @@ function matchesPhraseFuzzy(text: string, phrase: string): boolean {
  * Detect domain from text by matching keywords, phrases, and verbs
  * Returns the domain with highest confidence score
  * IMPROVED: Now includes fuzzy matching, better phrase detection, and Browser AI integration
+ * @param title - Task title
+ * @param description - Task description
+ * @param terminologyByDomain - Optional merged (base + shared + user) terminology per domain; when provided, domain detection uses it so local and shared terminology are included
  */
 export function detectDomain(
   title: string,
-  description: string
+  description: string,
+  terminologyByDomain?: Record<Domain, DomainTerminology>
 ): {
   domain: Domain;
   confidence: number;
@@ -1531,13 +1535,15 @@ export function detectDomain(
   };
 } {
   const text = `${title} ${description}`.toLowerCase().trim();
-  
+  const terminologies = terminologyByDomain ?? DOMAIN_TERMINOLOGIES;
+
   logger.debug(`🔍 Domain Detection: Analyzing text="${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`, {
     titleLength: title.length,
     descriptionLength: description.length,
     totalLength: text.length,
+    usingMergedTerminology: !!terminologyByDomain,
   });
-  
+
   if (!text || text.length === 0) {
     logger.debug('⚠️ Domain Detection: Empty text, defaulting to default domain');
     return {
@@ -1567,9 +1573,9 @@ export function detectDomain(
   // Split text into words for better matching
   const textWords = text.split(/\s+/).filter(w => w.length >= 2);
 
-  // Check each domain
-  for (const [domainKey, terminology] of Object.entries(DOMAIN_TERMINOLOGIES)) {
-    if (domainKey === 'mixed') continue;
+  // Check each domain (use merged terminology when provided so shared terms are included)
+  for (const [domainKey, terminology] of Object.entries(terminologies)) {
+    if (domainKey === 'mixed' || !terminology) continue;
 
     const domain = domainKey as Exclude<Domain, 'mixed'>;
 
