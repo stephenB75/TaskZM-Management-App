@@ -805,6 +805,10 @@ function generateSubtasks(
   const subtasks: string[] = [];
   const fullText = `${title} ${description}`.trim();
   const text = fullText.toLowerCase();
+  const titleLower = (title || '').toLowerCase().trim();
+  const titleSuggestsPresentation = titleLower.includes('presentation') || titleLower.includes('present');
+  const titleSuggestsMeeting = titleLower.includes('meeting') || titleLower.includes('call') || titleLower.includes('conference');
+  const titleSuggestsReport = titleLower.includes('report') || titleLower.includes('analysis') || titleLower.includes('review');
 
   // Use provided extracted terms or extract them (sync fallback for when async Browser AI cannot be used)
   // NOTE: If extractedTerms is provided from AIContext, it already includes Browser AI terms (from async createAIContext)
@@ -871,16 +875,14 @@ function generateSubtasks(
         }
       }
       
-      if (text.includes('meeting') || hasTerm(keywords, ['meeting']) || hasTerm(phrases, ['meeting'])) {
+      if (titleSuggestsMeeting && (text.includes('meeting') || hasTerm(keywords, ['meeting']) || hasTerm(phrases, ['meeting']))) {
         subtasks.push('Prepare agenda');
         subtasks.push('Review previous notes');
         subtasks.push('Send meeting invite');
       }
-      
-      // Report tasks - more specific based on context
-      if (text.includes('report') || text.includes('analysis') || 
-          hasTerm(keywords, ['report', 'analysis']) || hasTerm(phrases, ['report', 'analysis'])) {
-        // Check if it's a technical report
+
+      if (titleSuggestsReport && (text.includes('report') || text.includes('analysis') ||
+          hasTerm(keywords, ['report', 'analysis']) || hasTerm(phrases, ['report', 'analysis']))) {
         if (text.includes('system') || text.includes('code') || hasTerm(keywords, ['system', 'technical', 'code'])) {
           subtasks.push('Gather technical data and logs');
           subtasks.push('Analyze system performance');
@@ -891,10 +893,8 @@ function generateSubtasks(
           subtasks.push('Create summary');
         }
       }
-      
-      // Presentation tasks - more specific
-      if (text.includes('presentation') || hasTerm(keywords, ['presentation']) || hasTerm(phrases, ['presentation'])) {
-        // Check if it's a technical presentation
+
+      if (titleSuggestsPresentation && (text.includes('presentation') || hasTerm(keywords, ['presentation']) || hasTerm(phrases, ['presentation']))) {
         if (text.includes('system') || text.includes('technical') || hasTerm(keywords, ['system', 'technical'])) {
           subtasks.push('Prepare technical slides');
           subtasks.push('Create diagrams and examples');
@@ -906,7 +906,6 @@ function generateSubtasks(
         }
       }
 
-      // Marketing plan / product launch - align with action plan steps
       if (text.includes('marketing plan') || text.includes('product launch') || (text.includes('marketing') && text.includes('launch')) ||
           hasTerm(keywords, ['marketing', 'launch', 'campaign', 'strategy']) || hasTerm(phrases, ['marketing plan', 'product launch'])) {
         subtasks.push('Create PPT Deck');

@@ -426,6 +426,7 @@ export interface GeneratedDescription {
 const DESCRIPTION_OFF_TOPIC_FORBIDDEN_TERMS = [
   'milestone', 'customer', 'forecast', 'report', 'deliverable', 'proposal', 'testing',
   'workout', 'fitness', 'gym', 'exercise', 'notifications', 're-occurring',
+  'presentation', 'slides', 'contract service', // avoid business-only terms when task is e.g. "search for used car"
 ];
 
 /**
@@ -445,6 +446,10 @@ export function stripOffTopicSentences(description: string, taskName: string): s
       return wordBoundary.test(sentLower);
     });
     if (!hasForbidden) kept.push(sentence);
+  }
+  if (kept.length === 0 && taskName && taskName.trim()) {
+    const taskNameNorm = taskName.trim().toLowerCase();
+    return `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskNameNorm.endsWith('.') ? taskNameNorm : taskNameNorm + '.'}`;
   }
   if (kept.length === 0) return description.trim();
   const result = kept.join('. ').trim();
@@ -1391,38 +1396,33 @@ export function validateAndEnhanceTermsWithDictionary(
   });
   
   // ENHANCED: Local Terminology proactively provides additional keywords to assist Browser AI
-  // This ensures Browser AI has a rich set of contextual terms to work with
-  // Find domain phrases that match task name OR relate to extracted keywords
+  // Require at least one content word (non-stop-word) from the task so we don't add phrases like "for presentation and forecast" just because task has "for"
+  const stopWordsSet = new Set((DESCRIPTION_GENERATION_CONFIG.stopWords ?? []).map((w: string) => w.toLowerCase()));
+  const taskContentWords = taskWords.filter(w => !stopWordsSet.has(w.toLowerCase()));
+  const phraseMatchesTaskByContentWord = (phraseLower: string, phraseWords: string[]) =>
+    taskContentWords.length > 0 && phraseWords.some(pw => !stopWordsSet.has(pw) && taskContentWords.some(tw => pw === tw || tw.includes(pw) || pw.includes(tw)));
+  const keywordMatchesTaskByContentWord = (keywordLower: string, keywordWords: string[]) =>
+    taskContentWords.length > 0 && keywordWords.some(kw => !stopWordsSet.has(kw.toLowerCase()) && taskContentWords.some(tw => kw.toLowerCase() === tw || tw.includes(kw.toLowerCase()) || kw.toLowerCase().includes(tw)));
+
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
-    
-    // Check if phrase matches task name
-    const matchesTaskName = taskNameLower.includes(phraseLower) || 
-           taskWords.some(word => phraseLower.includes(word) || word.includes(phraseLower));
-    
-    // Check if phrase relates to extracted keywords (conceptual relationships)
+    const matchesTaskName = taskNameLower.includes(phraseLower) || phraseMatchesTaskByContentWord(phraseLower, phraseWords);
     const relatesToKeywords = extracted.keywords.some(kw => {
       const kwLower = kw.toLowerCase();
       if (phraseLower.includes(kwLower) || kwLower.includes(phraseLower)) return true;
-      // Check conceptual relationships
       return phraseWords.some(pw => areConceptsRelated(pw, kwLower) || areWordsRelated(pw, kwLower));
     });
-    
     if ((matchesTaskName || relatesToKeywords) &&
         !validatedPhrases.some(p => p.toLowerCase() === phrase.toLowerCase())) {
       validatedPhrases.push(phrase);
     }
   });
-  
-  // ENHANCED: Proactively add domain keywords that relate to task or extracted terms
+
   domainTerms.keywords.forEach(keyword => {
     const keywordLower = keyword.toLowerCase();
-    const keywordWords = keywordLower.split(/\s+/);
-    
-    // Check if keyword matches task name
-    const matchesTaskName = taskNameLower.includes(keywordLower) ||
-           taskWords.some(word => keywordLower.includes(word) || word.includes(keywordLower));
+    const keywordWords = keywordLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
+    const matchesTaskName = taskNameLower.includes(keywordLower) || keywordMatchesTaskByContentWord(keywordLower, keywordWords);
     
     // Check if keyword relates to extracted keywords (conceptual relationships)
     const relatesToExtracted = extracted.keywords.some(ekw => {
