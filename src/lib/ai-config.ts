@@ -126,6 +126,8 @@ export const DESCRIPTION_GENERATION_CONFIG = {
   maxPhraseLength: 5, // Maximum phrase length (words)
   minKeywordLength: 3, // Minimum keyword length (characters)
   maxKeywordLength: 20, // Maximum keyword length (characters)
+  /** When task name has at least this many words, prefer description that uses user input verbatim (e.g. "This task involves [task name].") so AI analysis reflects user input. */
+  minTaskNameWordsForUserInputFirst: 4,
   minWordFrequency: 2, // Minimum word frequency to be considered a keyword
   minWordLengthForFiltering: 3, // Minimum word length for filtering similar terms (to avoid matching very short words)
   stopWords: ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'which', 'who', 'where', 'when', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just', 'now'],

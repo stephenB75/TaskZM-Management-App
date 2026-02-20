@@ -275,7 +275,7 @@ function addArticleIfNeeded(noun: string, useDefinite: boolean = false): string 
 }
 
 /**
- * Detect descriptions that list two disjoint nouns (e.g. "a search and a car", "using a car and a search")
+ * Detect descriptions that list two disjoint nouns (e.g. "a search and a car", "using a car and a 15k")
  * which misrepresent the task. Return true so caller can replace with task-name-based description.
  */
 function isPoorNounListDescription(description: string, _taskName: string): boolean {
@@ -283,6 +283,8 @@ function isPoorNounListDescription(description: string, _taskName: string): bool
   const d = description.toLowerCase();
   // Pattern: "... (verb) (a|an) X and (a|an) Y." where X,Y are single words - wrong for "search for used car"
   if (/\b(using|continuing|involving|encompassing|enables?|covers?|includes?|requires?)\s+(a|an)\s+\w+\s+and\s+(a|an)\s+\w+[\s.]/i.test(d)) return true;
+  // Generic: any "(a|an) X and (a|an) Y" with single-word X and Y (catches "a car and a search", "an under and a car", etc.)
+  if (/\b(a|an)\s+\w+\s+and\s+(a|an)\s+\w+[\s.]/i.test(d)) return true;
   if (/\band\s+(a|an)\s+search\s+and\s+(a|an)\s+car[\s.]/i.test(d)) return true;
   if (/\band\s+(a|an)\s+car\s+and\s+(a|an)\s+search[\s.]/i.test(d)) return true;
   if (/(a|an)\s+search\s+and\s+(a|an)\s+car[\s.]/i.test(d)) return true;
@@ -2165,25 +2167,40 @@ function buildElaborateContextualDescription(
   // ENHANCED: Detects and handles multi-part tasks (e.g., fix + presentation + report)
   
   let description = '';
-  
+
+  // PRIORITY 0: Use multi-word phrases that appear in the task name (user input) so description reflects what the user wrote
+  const taskNamePhrases = phrases.filter(p => {
+    const t = (p || '').trim();
+    if (t.split(/\s+/).length < 2) return false;
+    return taskNameLower.includes(t.toLowerCase());
+  });
+  if (taskNamePhrases.length > 0) {
+    const deduped = Array.from(new Set(taskNamePhrases.map(p => (p || '').trim().toLowerCase())))
+      .slice(0, 3);
+    const phraseList = deduped.length === 1
+      ? deduped[0]
+      : deduped.slice(0, -1).join(', ') + ` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} ` + deduped[deduped.length - 1];
+    description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${phraseList}.`;
+  }
+
   // ENHANCED: Detect multi-part tasks by identifying distinct action groups
   // For example: "fix recurring task issue" + "presentation" + "report"
   const multiPartIndicators = ['and', 'plus', 'also', 'including', 'along with', 'as well as'];
-  const hasMultipleParts = multiPartIndicators.some(indicator => 
-    context.toLowerCase().includes(` ${indicator} `) || 
+  const hasMultipleParts = multiPartIndicators.some(indicator =>
+    context.toLowerCase().includes(` ${indicator} `) ||
     taskNameLower.includes(` ${indicator} `)
   ) || (phrases.length >= 2 && verbs.length >= 2);
-  
+
   // ENHANCED: Add variation - randomly select which priority to start with (for different results each time)
   // This ensures descriptions change each time the button is pressed
   // Use timestamp-based seed for additional variation to ensure refresh always produces different results
   const timestampSeed = Date.now() % 10000; // Use timestamp for variation
   const variationSeed = (Math.random() + timestampSeed / 10000) % 1; // Combine random and timestamp
   const useVariation = variationSeed > DESCRIPTION_GENERATION_CONFIG.variation.threshold; // 70% chance to use variation
-  
+
   // PRIORITY 1: Build complete contextual sentence using domain phrases + keywords + verbs/nouns
   // IMPROVED: Better prioritization of domain phrases and more natural sentence construction
-  if (elaboratingPhrases.length > 0) {
+  if (!description && elaboratingPhrases.length > 0) {
     // For research/comparison tasks, try to combine multiple related phrases for more elaborate descriptions
     const researchKeywords = DESCRIPTION_GENERATION_CONFIG.researchTask.keywords;
     const isResearchTask = taskKeywordsLower.some(kw => researchKeywords.some(rk => kw.includes(rk) || rk.includes(kw)));
@@ -3546,13 +3563,18 @@ export async function generateDescription(
 
   // Use local sentence building when server AI was not used or didn't return a valid description
   if (!description || description.trim().length === 0) {
+    const taskNameWordCount = taskName.trim().split(/\s+/).filter(w => w.length > 0).length;
+    const minWordsForUserInputFirst = (DESCRIPTION_GENERATION_CONFIG as { minTaskNameWordsForUserInputFirst?: number }).minTaskNameWordsForUserInputFirst ?? 4;
     const hasMultiWordPhrase = finalPhrases.some(p => (p || '').trim().split(/\s+/).length >= 2);
     const onlySingleWordNouns = finalNouns.length >= 2 && finalNouns.every(n => (n || '').trim().split(/\s+/).length === 1);
-    // When we only have single-word nouns (e.g. "car", "search") and no multi-word phrase, building would produce "a car and a search". Use task name instead.
-    if (!hasMultiWordPhrase && onlySingleWordNouns && taskName.trim().length > 0) {
-      const taskNameLower = taskName.toLowerCase().trim();
-      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskNameLower.endsWith('.') ? taskNameLower : taskNameLower + '.'}`;
-      logger.debug('Using task-name-based description (no multi-word phrase; would produce poor noun list)');
+    const preferUserInputFirst = taskName.trim().length > 0 && (
+      taskNameWordCount >= minWordsForUserInputFirst ||
+      (!hasMultiWordPhrase && onlySingleWordNouns)
+    );
+    if (preferUserInputFirst) {
+      const taskNameFragment = taskName.trim().toLowerCase().replace(/[.;:!?]+$/, '');
+      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskNameFragment.endsWith('.') ? taskNameFragment : taskNameFragment + '.'}`;
+      logger.debug('Using task-name-based description (user input first)', { taskNameWordCount, minWordsForUserInputFirst });
     } else {
       logger.debug(`🔧 Using local sentence building`);
       const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
