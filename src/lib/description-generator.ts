@@ -308,6 +308,40 @@ function normalizeSentenceUSEnglish(sentence: string): string {
 }
 
 /**
+ * Get the appropriate connector word for a description template (e.g. "involves" -> "in"/"with"/"through")
+ * Uses sentenceStructure.templateConnectors for grammatically correct preposition choice.
+ */
+function getConnectorForTemplate(selectedTemplate: string, seed: number = 0): string {
+  const structure = (DESCRIPTION_GENERATION_CONFIG as { sentenceStructure?: { templateConnectors?: Record<string, string[]> } }).sentenceStructure;
+  const templateConnectors = structure?.templateConnectors;
+  const connectors = DESCRIPTION_GENERATION_CONFIG.descriptionConnectors as Record<string, string>;
+  if (templateConnectors && selectedTemplate && Array.isArray(templateConnectors[selectedTemplate])) {
+    const options = templateConnectors[selectedTemplate];
+    const key = options[Math.floor(seed * options.length) % options.length];
+    if (key && connectors[key]) return connectors[key];
+  }
+  if (selectedTemplate === 'aims' || selectedTemplate === 'targets') return connectors.to ?? 'to';
+  if (selectedTemplate === 'focuses' || selectedTemplate === 'centers') return connectors.on ?? 'on';
+  return connectors.for ?? 'for';
+}
+
+/**
+ * Trim run-on sentences: keep first sentence or first maxWords words so structure stays clear.
+ */
+function trimRunOnDescription(description: string, maxWords: number = 25): string {
+  if (!description || typeof description !== 'string') return description;
+  const trimmed = description.replace(/\s+/g, ' ').trim();
+  const words = trimmed.split(/\s+/);
+  if (words.length <= maxWords) return trimmed;
+  const firstSentence = trimmed.split(/[.!?]+/)[0]?.trim();
+  if (firstSentence && firstSentence.split(/\s+/).length <= maxWords) {
+    return firstSentence.match(/[.!?]$/) ? firstSentence : firstSentence + '.';
+  }
+  const capped = words.slice(0, maxWords).join(' ').replace(/[.,;:!?]+$/, '');
+  return capped ? (capped.endsWith('.') ? capped : capped + '.') : trimmed;
+}
+
+/**
  * Format a list of items with proper grammar (handles singular/plural, articles, and connectors)
  */
 function formatItemList(items: string[], connector: string = DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, addArticles: boolean = false): string {
@@ -1745,7 +1779,8 @@ function buildElaborateContextualDescription(
   context: string,
   domain: Domain,
   domainTerms: ReturnType<typeof getDomainTerminology>,
-  effortScore: number = 2.5
+  effortScore: number = 2.5,
+  optionIndex?: number
 ): string {
   // Ensure domain is always in scope for nested blocks (avoids ReferenceError: domain is not defined)
   const domainForGuidance: Domain = domain ?? (domainTerms?.context ?? DEFAULT_TASK_DOMAIN);
@@ -2191,12 +2226,12 @@ function buildElaborateContextualDescription(
     taskNameLower.includes(` ${indicator} `)
   ) || (phrases.length >= 2 && verbs.length >= 2);
 
-  // ENHANCED: Add variation - randomly select which priority to start with (for different results each time)
-  // This ensures descriptions change each time the button is pressed
-  // Use timestamp-based seed for additional variation to ensure refresh always produces different results
-  const timestampSeed = Date.now() % 10000; // Use timestamp for variation
-  const variationSeed = (Math.random() + timestampSeed / 10000) % 1; // Combine random and timestamp
-  const useVariation = variationSeed > DESCRIPTION_GENERATION_CONFIG.variation.threshold; // 70% chance to use variation
+  // When optionIndex is provided, use it so each option gets a different template and structure (variety)
+  const timestampSeed = Date.now() % 10000;
+  const variationSeed = optionIndex != null
+    ? (optionIndex * 0.21 + timestampSeed / 10000) % 1
+    : (Math.random() + timestampSeed / 10000) % 1;
+  const useVariation = variationSeed > DESCRIPTION_GENERATION_CONFIG.variation.threshold;
 
   // PRIORITY 1: Build complete contextual sentence using domain phrases + keywords + verbs/nouns
   // IMPROVED: Better prioritization of domain phrases and more natural sentence construction
@@ -2405,31 +2440,32 @@ function buildElaborateContextualDescription(
       const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
       let selectedTemplate: string;
       let templateOpener: string;
-      
+
       if (templateKeys.length === 0) {
         selectedTemplate = 'involves';
         templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+      } else if (optionIndex != null) {
+        // Variety: cycle through templates per option so each suggestion uses a different opener
+        selectedTemplate = templateKeys[optionIndex % templateKeys.length];
+        templateOpener = (DESCRIPTION_GENERATION_CONFIG.descriptionTemplates as Record<string, string>)[selectedTemplate] ?? DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
       } else {
         // ENHANCED: Select template based on task name structure for better context
         if (taskNameAnalysis.hasExplicitAction && taskNameAnalysis.mainAction) {
-          // Action-oriented tasks: use dynamic templates
           const actionTemplates = ['requires', 'entails', 'involves', 'includes', 'focuses'];
           const availableActionTemplates = actionTemplates.filter(t => templateKeys.includes(t));
           selectedTemplate = availableActionTemplates.length > 0
             ? availableActionTemplates[Math.floor(variationSeed * availableActionTemplates.length)]
             : templateKeys[Math.floor(variationSeed * templateKeys.length)];
         } else if (taskNameAnalysis.taskType === 'noun' && taskNameAnalysis.mainObject) {
-          // Noun-based tasks: use descriptive templates
           const descriptiveTemplates = ['involves', 'concerns', 'relates', 'covers', 'addresses'];
           const availableDescriptiveTemplates = descriptiveTemplates.filter(t => templateKeys.includes(t));
           selectedTemplate = availableDescriptiveTemplates.length > 0
             ? availableDescriptiveTemplates[Math.floor(variationSeed * availableDescriptiveTemplates.length)]
             : templateKeys[Math.floor(variationSeed * templateKeys.length)];
         } else {
-          // Mixed/phrase tasks: use varied templates
           selectedTemplate = templateKeys[Math.floor(variationSeed * templateKeys.length)];
         }
-        templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+        templateOpener = (DESCRIPTION_GENERATION_CONFIG.descriptionTemplates as Record<string, string>)[selectedTemplate] ?? DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
       }
       
       // IMPROVED: Build complete, grammatically correct sentences with proper structure
@@ -2437,18 +2473,9 @@ function buildElaborateContextualDescription(
       const limitedNouns = contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin);
       const limitedKeywords = relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin);
       
-      // Determine appropriate connector based on template
-      let connector: string;
-      if (selectedTemplate === 'aims' || selectedTemplate === 'targets') {
-        connector = DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to;
-      } else if (selectedTemplate === 'focuses' || selectedTemplate === 'centers') {
-        connector = DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on;
-      } else if (selectedTemplate === 'requires' || selectedTemplate === 'entails') {
-        connector = DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-      } else {
-        connector = DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-      }
-      
+      // Use template-appropriate connector for better sentence structure (e.g. "involves" -> in/with/through)
+      const connector = getConnectorForTemplate(selectedTemplate, variationSeed);
+
       // ENHANCED: Build more contextual sentences that relate to task name structure
       // Use task name analysis to create sentences that feel more natural and task-specific
       if (verbForm && limitedNouns.length > 0) {
@@ -3116,15 +3143,8 @@ function buildElaborateContextualDescription(
   }
   
   description = uniqueSentences.join('. ').trim();
-  
-  if (description.length > 0) {
-    description = description.charAt(0).toUpperCase() + description.slice(1);
-    if (!DESCRIPTION_GENERATION_CONFIG.sentenceEndPattern.test(description)) {
-      description += '.';
-    }
-  }
-  
-  return description;
+
+  return normalizeSentenceUSEnglish(description || '');
 }
 
 /**
@@ -3275,6 +3295,7 @@ function buildCompleteSentences(
  * UPDATED: Now uses elaborate description builder to avoid repeating task name
  * ENHANCED: Adds variation by shuffling terms and using different sentence structures
  * ENHANCED: Now accepts effortScore parameter for better detail control
+ * ENHANCED: optionIndex forces different shuffle seeds and template selection for variety when generating multiple options
  */
 function buildContextualDescription(
   taskName: string,
@@ -3286,17 +3307,18 @@ function buildContextualDescription(
   context: string,
   domain: Domain,
   domainTerms: ReturnType<typeof getDomainTerminology>,
-  effortScore: number = 2.5
+  effortScore: number = 2.5,
+  optionIndex?: number
 ): string {
-  // ENHANCED: Add variation - shuffle terms to get different results each time
-  // Use timestamp-based seed for additional variation to ensure refresh always produces different results
-  const variationSeed = Date.now() % 1000; // Use timestamp for additional variation
+  // Use optionIndex when provided so each option gets a different shuffle and template (variety)
+  const baseSeed = Date.now() % 1000;
+  const seedOffset = optionIndex != null ? optionIndex * 1237 : 0;
+  const variationSeed = (baseSeed + seedOffset) % 10000;
   const shuffledKeywords = shuffleArray(keywords, variationSeed);
   const shuffledPhrases = shuffleArray(phrases, variationSeed + 1);
   const shuffledVerbs = shuffleArray(verbs, variationSeed + 2);
   const shuffledNouns = shuffleArray(nouns, variationSeed + 3);
-  
-  // Use the elaborate description builder with shuffled terms for variation
+
   return buildElaborateContextualDescription(
     taskName,
     shuffledKeywords,
@@ -3307,7 +3329,8 @@ function buildContextualDescription(
     context,
     domain,
     domainTerms,
-    effortScore
+    effortScore,
+    optionIndex
   );
 }
 
@@ -3387,14 +3410,16 @@ export function filterTerminologyRelevantToTask(
  * @param effortScore - Optional effort score (1-5) to adjust description detail level
  * @param actionPlanSteps - Optional action plan step titles to weave into descriptions
  * @param breakdownContext - Optional domain + filtered terminology from breakdown (use same context as action plan)
+ * @param optionIndex - Optional index when generating multiple options (0, 1, 2, ...) to force different templates and ordering for variety
  */
 export async function generateDescription(
-  taskName: string, 
+  taskName: string,
   accessToken?: string | null,
   existingDescription?: string | null,
   effortScore?: number,
   actionPlanSteps?: string[],
-  breakdownContext?: { domain: Domain; filteredTerminology: FilteredTerminology }
+  breakdownContext?: { domain: Domain; filteredTerminology: FilteredTerminology },
+  optionIndex?: number
 ): Promise<GeneratedDescription> {
   try {
   if (!taskName || taskName.trim().length === 0) {
@@ -3573,8 +3598,13 @@ export async function generateDescription(
     );
     if (preferUserInputFirst) {
       const taskNameFragment = taskName.trim().toLowerCase().replace(/[.;:!?]+$/, '');
-      description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskNameFragment.endsWith('.') ? taskNameFragment : taskNameFragment + '.'}`;
-      logger.debug('Using task-name-based description (user input first)', { taskNameWordCount, minWordsForUserInputFirst });
+      const fragmentWithPeriod = taskNameFragment.endsWith('.') ? taskNameFragment : taskNameFragment + '.';
+      const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
+      const opener = optionIndex != null && templateKeys.length > 0
+        ? (DESCRIPTION_GENERATION_CONFIG.descriptionTemplates as Record<string, string>)[templateKeys[optionIndex % templateKeys.length]] ?? DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves
+        : DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+      description = normalizeSentenceUSEnglish(`${opener} ${fragmentWithPeriod}`);
+      logger.debug('Using task-name-based description (user input first)', { taskNameWordCount, minWordsForUserInputFirst, optionIndex });
     } else {
       logger.debug(`🔧 Using local sentence building`);
       const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
@@ -3590,7 +3620,8 @@ export async function generateDescription(
         searchContext,
         domainRef,
         domainTerms,
-        normalizedEffortScore
+        normalizedEffortScore,
+        optionIndex
       );
     }
   }
@@ -3606,7 +3637,7 @@ export async function generateDescription(
   if (description && isPoorNounListDescription(description, taskName)) {
     const taskNameLower = taskName.toLowerCase().trim();
     const opener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
-    description = `${opener} ${taskNameLower.endsWith('.') ? taskNameLower : taskNameLower + '.'}`;
+    description = normalizeSentenceUSEnglish(`${opener} ${taskNameLower.endsWith('.') ? taskNameLower : taskNameLower + '.'}`);
     logger.debug('Replaced poor noun-list description with task-name-based description');
   }
 
@@ -3855,8 +3886,13 @@ export async function generateDescription(
       logger.warn(`WARNING: Browser AI extraction produced fallback description for "${taskName}". This indicates extraction from task name wasn't sufficient.`);
     }
 
+  const maxWords = (DESCRIPTION_GENERATION_CONFIG as { descriptionRules?: { maxWordsPerSentence?: number } }).descriptionRules?.maxWordsPerSentence ?? 25;
+  const stripped = stripOffTopicSentences(finalDescription, taskName);
+  const trimmed = trimRunOnDescription(stripped, maxWords);
+  const normalized = normalizeSentenceUSEnglish(trimmed);
+
   return {
-    description: stripOffTopicSentences(finalDescription, taskName),
+    description: normalized,
     domain: domainRef,
     confidence,
     source: 'local',
@@ -3869,8 +3905,10 @@ export async function generateDescription(
     const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain];
     const fallbackDescription = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskName.toLowerCase()}. ${domainGuidance}`;
     
+    const fallbackStripped = stripOffTopicSentences(fallbackDescription, taskName);
+    const fallbackNormalized = normalizeSentenceUSEnglish(trimRunOnDescription(fallbackStripped, (DESCRIPTION_GENERATION_CONFIG as { descriptionRules?: { maxWordsPerSentence?: number } }).descriptionRules?.maxWordsPerSentence ?? 25));
     return {
-      description: stripOffTopicSentences(fallbackDescription, taskName),
+      description: fallbackNormalized,
       domain,
       confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
       source: 'local',
@@ -3928,7 +3966,8 @@ export async function generateDescriptionOptions(
               existingDescription,
               variantEffortScore,
               actionPlanSteps,
-              breakdownContext
+              breakdownContext,
+              index
             );
 
             // Only add if description is not empty and not duplicate
