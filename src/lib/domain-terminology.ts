@@ -70,7 +70,7 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
   keywords: [
     // Context-specific keywords (unique to business)
     'work', 'office', 'professional', 'corporate', 'workplace', 'colleague', 'coworker',
-    'workplace', 'business', 'company', 'organization', 'enterprise', 'firm',
+    'business', 'company', 'organization', 'enterprise', 'firm',
     'meeting', 'presentation', 'report', 'deadline', 'client', 'stakeholder', 'budget',
     'revenue', 'roi', 'kpi', 'quarterly', 'annual', 'project', 'milestone', 'deliverable',
     'strategy', 'analysis', 'forecast', 'proposal', 'contract', 'negotiation', 'deal',
@@ -246,6 +246,8 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'continue search', 'continue car search', 'resume vehicle search', 'find used car',
     'quarterly review', 'client call', 'project milestone', 'stakeholder update',
     'team meeting', 'status update', 'progress report', 'budget review',
+    'send email', 'schedule meeting', 'submit report', 'log hours', 'tech support', 'check email', 'reply to email',
+    'schedule call', 'book meeting', 'confirm appointment', 'client meeting', 'customer call',
     'strategic planning', 'business development', 'market analysis', 'competitive analysis',
     'product launch', 'go-to-market', 'sales pipeline', 'customer acquisition',
     'performance review', 'one-on-one', 'stand-up meeting', 'sprint planning',
@@ -390,6 +392,7 @@ export const BUSINESS_TERMINOLOGY: DomainTerminology = {
     'conduct', 'conducting', 'perform', 'performing', 'run', 'running', 'execute', 'executing',
     // SaaS and subscription verbs
     'subscribe', 'subscribing', 'renew', 'renewing', 'cancel', 'canceling', 'upgrade', 'upgrading',
+    'call', 'calling', 'email', 'emailing', 'submit', 'submitting', 'log', 'logging', 'schedule', 'scheduling', 'book', 'booking', 'confirm', 'confirming',
     'downgrade', 'downgrading', 'billing', 'charging', 'invoice', 'invoicing', 'process', 'processing',
     'track', 'tracking', 'monitor', 'monitoring', 'analyze', 'analyzing', 'measure', 'measuring',
     'scale', 'scaling', 'expand', 'expanding', 'grow', 'growing', 'retain', 'retaining',
@@ -550,10 +553,12 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'device', 'gadget', 'setup', 'install', 'configure', 'troubleshoot', 'repair',
     // Medical and health (home/personal)
     'medical', 'health', 'healthcare', 'doctor', 'physician', 'nurse', 'patient',
-    'appointment', 'checkup', 'examination', 'diagnosis', 'treatment', 'therapy',
+    'appointment', 'appt', 'checkup', 'examination', 'diagnosis', 'treatment', 'therapy',
     'medication', 'prescription', 'pharmacy', 'hospital', 'clinic', 'emergency',
     'wellness', 'fitness', 'exercise', 'workout', 'diet', 'nutrition', 'vitamin',
     'supplement', 'mental health', 'insurance', 'health insurance', 'medical insurance',
+    'cancel', 'reschedule', 'call', 'phone', 'benefits', 'certify', 'recertify', 're-certify',
+    'government benefits', 'social services', 'snap', 'snap benefits', 'degree', 'degree plan', 'school', 'wgu',
     // Automobiles (home/personal) - ENHANCED with research and purchase keywords
     'car', 'automobile', 'vehicle', 'truck', 'suv', 'sedan', 'coupe', 'convertible', 'motorcycle', 'bike', 'bicycle',
     'maintenance', 'service', 'oil change', 'tire', 'brake', 'engine', 'battery', 'transmission', 'alternator', 'radiator',
@@ -603,6 +608,8 @@ export const HOME_TERMINOLOGY: DomainTerminology = {
     'light fixture installation', 'plumbing repair', 'electrical work', 'painting project',
     'flooring installation', 'window replacement', 'door repair', 'roof inspection',
     'gutter cleaning', 'driveway repair', 'fence maintenance', 'shed organization',
+    'call to cancel', 'cancel appointment', 'reschedule appointment', 'cancel appt', 'reschedule appt',
+    'call doctor', 'call office', 'phone call', 'schedule appointment', 'book appointment',
     'pet litter', 'auto pet litter', 'automatic pet litter', 'pet litter box',
     'automatic litter box', 'self cleaning litter box', 'pet care products',
     'pet supplies shopping', 'find pet products', 'research pet products',
@@ -866,6 +873,8 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'surgery', 'procedure', 'test', 'lab', 'laboratory', 'xray', 'mri', 'ct scan',
     'vaccination', 'immunization', 'diet', 'nutrition', 'vitamin', 'supplement',
     'mental health', 'insurance', 'health insurance', 'medical insurance', 'claim', 'coverage',
+    'cancel', 'reschedule', 'call', 'phone', 'benefits', 'certify', 'recertify', 're-certify',
+    'government benefits', 'social services', 'snap', 'snap benefits', 'degree', 'degree plan', 'school', 'wgu', 'ocps',
     // Medical conditions and body parts (for better matching)
     'thyroid', 'diabetes', 'blood pressure', 'cholesterol', 'heart', 'lung', 'liver',
     'kidney', 'stomach', 'intestine', 'bone', 'muscle', 'joint', 'skin', 'eye', 'ear',
@@ -884,6 +893,9 @@ export const PERSONAL_TERMINOLOGY: DomainTerminology = {
     'fitness goal', 'health checkup', 'doctor appointment', 'medical appointment',
     'appointment with doctor', 'appointment with physician', 'make appointment',
     'schedule appointment', 'book appointment', 'health examination', 'medical examination',
+    'call to cancel', 'cancel appointment', 'reschedule appointment', 'cancel appt', 'reschedule appt',
+    'call doctor', 'call office', 'phone call', 're-certify for benefits', 'recertify for benefits',
+    'snap benefits', 'government benefits', 'mom snap benefits', 'degree plan', 'wgu degree', 'wgu email', 'check wgu',
     'thyroid check', 'thyroid examination', 'thyroid test', 'medical checkup',
     'dental cleaning', 'dental appointment', 'dental checkup', 'eye exam', 'vision test',
     'hearing test', 'lab test', 'medical test', 'blood test', 'health screening',
@@ -1181,6 +1193,7 @@ export const WORLD_TERMINOLOGY: DomainTerminology = {
   phrases: [
     'search for accommodation', 'research destinations', 'compare travel options',
     'find best flight', 'continue travel planning', 'resume trip planning',
+    'cancel booking', 'cancel reservation', 'cancel subscription', 'reschedule flight', 'reschedule trip',
     'travel planning', 'cultural event', 'international call', 'time zone conversion',
     'passport renewal', 'visa application', 'travel insurance', 'flight booking',
     'hotel reservation', 'car rental', 'travel itinerary', 'sightseeing', 'tour',
