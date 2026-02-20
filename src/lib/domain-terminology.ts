@@ -1536,6 +1536,13 @@ export function detectDomain(
 } {
   const text = `${title} ${description}`.toLowerCase().trim();
   const terminologies = terminologyByDomain ?? DOMAIN_TERMINOLOGIES;
+  // Normalize common abbreviations so we recognize context (e.g. "appt" → "appointment")
+  const normalizedTextForMatching = text
+    .replace(/\bappt\.?\b/gi, 'appointment')
+    .replace(/\bdr\.?\b/gi, 'doctor')
+    .replace(/\bphys\.?\b/gi, 'physician');
+  const textWords = text.split(/\s+/).filter(w => w.length >= 2);
+  const normalizedTextWords = normalizedTextForMatching.split(/\s+/).filter(w => w.length >= 2);
 
   logger.debug(`🔍 Domain Detection: Analyzing text="${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`, {
     titleLength: title.length,
@@ -1569,9 +1576,6 @@ export function detectDomain(
     world: [],
     mixed: [],
   };
-
-  // Split text into words for better matching
-  const textWords = text.split(/\s+/).filter(w => w.length >= 2);
 
   // Check each domain (use merged terminology when provided so shared terms are included)
   for (const [domainKey, terminology] of Object.entries(terminologies)) {
@@ -1622,12 +1626,11 @@ export function detectDomain(
     }
     if (hasNegativeKeyword) continue;
 
-    // IMPROVED: Check context-specific keywords with fuzzy matching
+    // IMPROVED: Check context-specific keywords with fuzzy matching (use normalized text so "appt" matches "appointment")
     const contextKws = CONTEXT_KEYWORDS[domain];
     for (const keyword of contextKws) {
-      // Exact word boundary match
-      const exactRegex = new RegExp(`\\b${keyword}\\b`, 'i');
-      if (exactRegex.test(text)) {
+      const exactRegex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      if (exactRegex.test(normalizedTextForMatching)) {
         const weight = DOMAIN_SCORING_WEIGHTS.CONTEXT_KEYWORD;
         matchedTerms[domain] += weight;
         contextKeywords[domain].push(keyword);
@@ -1636,8 +1639,7 @@ export function detectDomain(
         }
         logger.debug(`✅ Domain Detection: Context keyword "${keyword}" matched for ${domain} (+${weight} points)`);
       } else {
-        // Try fuzzy matching for context keywords
-        const fuzzyMatch = textWords.some(tw => areWordsRelated(tw, keyword));
+        const fuzzyMatch = normalizedTextWords.some(tw => areWordsRelated(tw, keyword));
         if (fuzzyMatch) {
           const weight = DOMAIN_SCORING_WEIGHTS.CONTEXT_KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_CONTEXT_KEYWORD_MULTIPLIER;
           matchedTerms[domain] += weight;
@@ -1650,30 +1652,26 @@ export function detectDomain(
       }
     }
 
-    // IMPROVED: Check regular keywords with fuzzy matching
+    // IMPROVED: Check regular keywords with fuzzy matching (use normalized text for context recognition)
     for (const keyword of terminology.keywords) {
-      // Skip if already matched as context keyword
       if (contextKeywords[domain].includes(keyword)) continue;
-      
-      // Exact word boundary match
-      const exactRegex = new RegExp(`\\b${keyword}\\b`, 'i');
-      if (exactRegex.test(text)) {
+      const kwEscaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const exactRegex = new RegExp(keyword.split(/\s+/).length > 1 ? kwEscaped : `\\b${kwEscaped}\\b`, 'i');
+      if (exactRegex.test(normalizedTextForMatching)) {
         matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD;
         if (!foundKeywords.includes(keyword)) {
           foundKeywords.push(keyword);
         }
       } else {
-        // Try fuzzy matching for compound keywords (e.g., "social media")
         if (keyword.split(/\s+/).length > 1) {
-          if (matchesPhraseFuzzy(text, keyword)) {
+          if (matchesPhraseFuzzy(normalizedTextForMatching, keyword)) {
             matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_PHRASE_MULTIPLIER;
             if (!foundKeywords.includes(keyword)) {
               foundKeywords.push(keyword);
             }
           }
         } else {
-          // Single word fuzzy match
-          const fuzzyMatch = textWords.some(tw => areWordsRelated(tw, keyword));
+          const fuzzyMatch = normalizedTextWords.some(tw => areWordsRelated(tw, keyword));
           if (fuzzyMatch) {
             matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_KEYWORD_MULTIPLIER;
             if (!foundKeywords.includes(keyword)) {
@@ -1684,11 +1682,10 @@ export function detectDomain(
       }
     }
 
-    // IMPROVED: Check phrases with fuzzy matching
+    // IMPROVED: Check phrases with fuzzy matching (use normalized text so "cancel appt" matches "cancel appointment")
     for (const phrase of terminology.phrases) {
-      // Try exact match first
       const exactRegex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      if (exactRegex.test(text)) {
+      if (exactRegex.test(normalizedTextForMatching)) {
         // Check if phrase contains context keywords
         const hasContextKeyword = contextKeywords[domain].some(ck => phrase.toLowerCase().includes(ck.toLowerCase()));
         const weight = hasContextKeyword ? DOMAIN_SCORING_WEIGHTS.CONTEXT_PHRASE : DOMAIN_SCORING_WEIGHTS.PHRASE;
@@ -1713,19 +1710,17 @@ export function detectDomain(
       }
     }
 
-    // IMPROVED: Check verbs with fuzzy matching and stem variations
+    // IMPROVED: Check verbs with fuzzy matching and stem variations (use normalized text)
     for (const verb of terminology.verbs) {
-      // Try exact match with word boundary
-      const exactRegex = new RegExp(`\\b${verb}\\w*\\b`, 'i');
-      if (exactRegex.test(text)) {
+      const exactRegex = new RegExp(`\\b${verb.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\w*\\b`, 'i');
+      if (exactRegex.test(normalizedTextForMatching)) {
         matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.VERB;
         if (!foundKeywords.includes(verb)) {
           foundKeywords.push(verb);
         }
       } else {
-        // Try fuzzy matching with stem variations
         const verbBase = verb.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-        const fuzzyMatch = textWords.some(tw => {
+        const fuzzyMatch = normalizedTextWords.some(tw => {
           const twBase = tw.replace(/(ing|ed|s|es|er|est|ly)$/, '');
           return areWordsRelated(tw, verb) || areWordsRelated(twBase, verbBase);
         });
@@ -1738,9 +1733,9 @@ export function detectDomain(
       }
     }
     
-    // Apply context bonus for keywords that appear near each other
+    // Apply context bonus for keywords that appear near each other (use normalized text)
     if (contextKeywords[domain].length > 1) {
-      const contextBonus = calculateContextBonus(text, contextKeywords[domain]);
+      const contextBonus = calculateContextBonus(normalizedTextForMatching, contextKeywords[domain]);
       if (contextBonus > 0) {
         matchedTerms[domain] += contextBonus;
         logger.debug(`🎯 Domain Detection: Context bonus for ${domain}: +${contextBonus.toFixed(2)} (keywords appear near each other)`);

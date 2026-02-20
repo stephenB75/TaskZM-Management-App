@@ -427,6 +427,7 @@ const DESCRIPTION_OFF_TOPIC_FORBIDDEN_TERMS = [
   'milestone', 'customer', 'forecast', 'report', 'deliverable', 'proposal', 'testing',
   'workout', 'fitness', 'gym', 'exercise', 'notifications', 're-occurring',
   'presentation', 'slides', 'contract service', // avoid business-only terms when task is e.g. "search for used car"
+  'wgu', 'degree plan', // avoid education terms when task is e.g. "call shays cancel appt"
 ];
 
 /**
@@ -1501,19 +1502,19 @@ export function extractTermsFromTaskName(
   
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/).filter(w => w.length > DESCRIPTION_GENERATION_CONFIG.minWordLength);
-  
-  // Find matching phrases from domain terminology (check first as they're most specific)
-  // ENHANCED: Require word boundary matching to prevent false matches (e.g., "part" matching "partnership")
+  const taskNameNormalizedForMatch = taskNameLower
+    .replace(/\bappt\.?\b/gi, 'appointment')
+    .replace(/\bdr\.?\b/gi, 'doctor')
+    .replace(/\bphys\.?\b/gi, 'physician');
+
+  // Find matching phrases from domain terminology (use normalized name so "appt" matches "appointment")
   domainTerms.phrases.forEach(phrase => {
     const phraseLower = phrase.toLowerCase();
     const phraseWords = phraseLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
-    
-    // Require exact phrase match OR all phrase words appear in task name with word boundaries
-    const exactMatch = taskNameLower.includes(phraseLower);
+    const exactMatch = taskNameNormalizedForMatch.includes(phraseLower);
     const allWordsMatch = phraseWords.length > 0 && phraseWords.every(pw => {
-      // Use word boundary regex for accurate matching
       const wordBoundaryRegex = new RegExp(`\\b${pw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-      return wordBoundaryRegex.test(taskNameLower);
+      return wordBoundaryRegex.test(taskNameNormalizedForMatch);
     });
     
     if (exactMatch || allWordsMatch) {
@@ -1531,23 +1532,17 @@ export function extractTermsFromTaskName(
     const verbRegex = new RegExp(`\\b${verbBase}\\w*\\b`, 'i');
     const verbBaseRegex = new RegExp(`\\b${verbBase}\\b`, 'i');
     
-    // Check for verb in various forms with word boundaries
-    if (verbRegex.test(taskNameLower) || verbBaseRegex.test(taskNameLower)) {
+    if (verbRegex.test(taskNameNormalizedForMatch) || verbBaseRegex.test(taskNameNormalizedForMatch)) {
       foundVerbs.push(verb);
     }
   });
-  
-  // Find matching nouns from domain terminology
-  // ENHANCED: Require word boundary matching to prevent false matches
+
   domainTerms.nouns.forEach(noun => {
     const nounLower = noun.toLowerCase();
     const nounBase = nounLower.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
-    
-    // Use word boundary regex for accurate matching
     const nounRegex = new RegExp(`\\b${nounBase}\\w*\\b`, 'i');
     const nounBaseRegex = new RegExp(`\\b${nounBase}\\b`, 'i');
-    
-    if (nounRegex.test(taskNameLower) || nounBaseRegex.test(taskNameLower)) {
+    if (nounRegex.test(taskNameNormalizedForMatch) || nounBaseRegex.test(taskNameNormalizedForMatch)) {
       foundNouns.push(noun);
     }
   });
@@ -1562,23 +1557,18 @@ export function extractTermsFromTaskName(
     }
   });
   
-  // Find matching keywords from domain terminology
-  // ENHANCED: Require word boundary matching to prevent false matches (e.g., "part" matching "partnership")
   domainTerms.keywords.forEach(keyword => {
     const keywordLower = keyword.toLowerCase();
     const keywordWords = keywordLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
-    
-    // For single-word keywords, use word boundary regex
     if (keywordWords.length === 1) {
       const keywordRegex = new RegExp(`\\b${keywordWords[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-      if (keywordRegex.test(taskNameLower)) {
+      if (keywordRegex.test(taskNameNormalizedForMatch)) {
         foundKeywords.push(keyword);
       }
     } else {
-      // For multi-word keywords, require all words to match with word boundaries
       const allWordsMatch = keywordWords.every(kw => {
         const wordRegex = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-        return wordRegex.test(taskNameLower);
+        return wordRegex.test(taskNameNormalizedForMatch);
       });
       if (allWordsMatch) {
         foundKeywords.push(keyword);
@@ -1782,7 +1772,12 @@ function buildElaborateContextualDescription(
                     DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns * 2;
   const taskNameLower = taskName.toLowerCase();
   const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
-  
+  const taskNameNormalized = taskNameLower.replace(/\bappt\.?\b/gi, 'appointment').replace(/\bdr\.?\b/gi, 'doctor');
+  const stopWordsSetForElaboration = new Set(((DESCRIPTION_GENERATION_CONFIG.stopWords ?? []) as readonly string[]).map((w: string) => w.toLowerCase()));
+  const taskContentWordsSet = new Set(
+    taskNameNormalized.split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength && !stopWordsSetForElaboration.has(w))
+  );
+
   // ENHANCED: Analyze task name structure to inform sentence building
   // Extract the main action and object from task name for better contextual sentences
   const taskNameAnalysis = analyzeTaskNameStructure(taskName, verbs, nouns);
@@ -2047,7 +2042,13 @@ function buildElaborateContextualDescription(
         }
         return b.length - a.length;
       });
-      
+  const filteredElaboratingPhrases = elaboratingPhrases.filter(phrase => {
+    const words = phrase.toLowerCase().split(/\s+/).filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength && !stopWordsSetForElaboration.has(w));
+    return words.some(w => taskContentWordsSet.has(w));
+  });
+  elaboratingPhrases.length = 0;
+  elaboratingPhrases.push(...filteredElaboratingPhrases);
+
   // STEP 2: Find domain verbs that elaborate on actions
   // IMPROVED: Uses fuzzy matching for better verb detection
   const elaboratingVerbs: string[] = [];
@@ -2095,7 +2096,14 @@ function buildElaborateContextualDescription(
       elaboratingVerbs.push(verb);
     }
   });
-  
+  const filteredElaboratingVerbs = elaboratingVerbs.filter(verb => {
+    const v = verb.toLowerCase();
+    const base = v.replace(/(ing|ed|s|es|er|est|ly)$/, '');
+    return taskContentWordsSet.has(v) || taskContentWordsSet.has(base) || taskNameNormalized.includes(v) || taskNameNormalized.includes(base);
+  });
+  elaboratingVerbs.length = 0;
+  elaboratingVerbs.push(...filteredElaboratingVerbs);
+
   // STEP 3: Find domain nouns that add context
   // IMPROVED: Uses fuzzy matching for better noun detection
   const elaboratingNouns: string[] = [];
@@ -2142,7 +2150,14 @@ function buildElaborateContextualDescription(
       elaboratingNouns.push(noun);
     }
   });
-  
+  const filteredElaboratingNouns = elaboratingNouns.filter(noun => {
+    const n = noun.toLowerCase();
+    const base = n.replace(/s$|es$|ies$/, '').replace(/y$/, 'i');
+    return taskContentWordsSet.has(n) || taskContentWordsSet.has(base) || taskNameNormalized.includes(n) || taskNameNormalized.includes(base);
+  });
+  elaboratingNouns.length = 0;
+  elaboratingNouns.push(...filteredElaboratingNouns);
+
   // STEP 4: Build elaborate description using extracted terms and domain terminology
   // Priority: Use domain phrases > domain verbs+nouns > extracted phrases > extracted verbs+nouns > keywords
   // Goal: Build complete contextual sentences that explain what the task involves
