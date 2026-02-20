@@ -704,6 +704,8 @@ export function TaskDialog({
   const [tagInput, setTagInput] = useState("");
   const [selectedTagValue, setSelectedTagValue] = useState<string>("");
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [editingSubtaskValue, setEditingSubtaskValue] = useState("");
   const [selectedAssigneeValue, setSelectedAssigneeValue] = useState<string>("");
   const [selectedDependencyValue, setSelectedDependencyValue] = useState<string>("");
   const [subtaskInput, setSubtaskInput] = useState("");
@@ -2225,6 +2227,28 @@ export function TaskDialog({
 
   const removeSubtask = (subtaskId: string) => {
     setSubtasks(subtasks.filter((st) => st.id !== subtaskId));
+    if (editingSubtaskId === subtaskId) {
+      setEditingSubtaskId(null);
+      setEditingSubtaskValue("");
+    }
+  };
+
+  const startEditingSubtask = (subtask: Subtask) => {
+    setEditingSubtaskId(subtask.id);
+    setEditingSubtaskValue(subtask.title);
+  };
+
+  const saveSubtaskEdit = (subtaskId: string) => {
+    const trimmed = editingSubtaskValue.trim();
+    if (trimmed) {
+      setSubtasks(
+        subtasks.map((st) =>
+          st.id === subtaskId ? { ...st, title: trimmed } : st
+        )
+      );
+    }
+    setEditingSubtaskId(null);
+    setEditingSubtaskValue("");
   };
 
   const handlePomodoroTimeUpdate = async (minutes: number) => {
@@ -2829,7 +2853,17 @@ export function TaskDialog({
                           {breakdown.actionPlan && breakdown.actionPlan.suggestedSubtasks.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 min-w-0">
                               {breakdown.actionPlan.suggestedSubtasks.slice(0, 3).map((subtask, idx) => (
-                                <Badge key={idx} variant="secondary" className="cursor-pointer hover:bg-primary/10 text-xs max-w-full min-w-0 truncate" onClick={() => { const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() }; setSubtasks([...subtasks, newSubtask]); toast.success(TASK_DIALOG_UI_TEXT.addedAsSubtask, { description: subtask }); }} title={subtask}>
+                                <Badge
+                                  key={idx}
+                                  variant="secondary"
+                                  className="cursor-pointer hover:bg-primary/10 text-xs max-w-full min-w-0 truncate"
+                                  onClick={() => {
+                                    const newSubtask: Subtask = { id: `subtask-${Date.now()}-${idx}`, title: subtask, completed: false, createdAt: new Date().toISOString() };
+                                    setSubtasks((prev) => [...prev, newSubtask]);
+                                    toast.success(TASK_DIALOG_UI_TEXT.addedAsSubtask, { description: subtask });
+                                  }}
+                                  title={subtask}
+                                >
                                   <span className="truncate block">+ {subtask}</span>
                                 </Badge>
                               ))}
@@ -3562,14 +3596,35 @@ export function TaskDialog({
                               }}
                             />
                             <div className="flex-1 min-w-0">
-                              <span
-                                className={cn(
-                                  "text-sm block",
-                                  subtask.completed && "line-through text-muted-foreground",
-                                )}
-                              >
-                                {subtask.title}
-                              </span>
+                              {editingSubtaskId === subtask.id ? (
+                                <Input
+                                  value={editingSubtaskValue}
+                                  onChange={(e) => setEditingSubtaskValue(e.target.value)}
+                                  onBlur={() => saveSubtaskEdit(subtask.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") saveSubtaskEdit(subtask.id);
+                                    if (e.key === "Escape") {
+                                      setEditingSubtaskId(null);
+                                      setEditingSubtaskValue("");
+                                    }
+                                  }}
+                                  className="h-8 text-sm"
+                                  autoFocus
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && startEditingSubtask(subtask)}
+                                  disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
+                                  className={cn(
+                                    "text-sm block text-left w-full rounded px-1 -mx-1 hover:bg-primary/10",
+                                    subtask.completed && "line-through text-muted-foreground",
+                                  )}
+                                >
+                                  {subtask.title}
+                                </button>
+                              )}
                             </div>
                             <Button
                               type="button"
@@ -3577,6 +3632,7 @@ export function TaskDialog({
                               size="sm"
                               onClick={() => removeSubtask(subtask.id)}
                               className="h-7 w-7 p-0 flex-shrink-0"
+                              aria-label="Remove subtask"
                             >
                               <Icon name="x" size={ICON_SIZE_MD} />
                             </Button>

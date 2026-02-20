@@ -1,8 +1,11 @@
 /**
  * Action Plan Generator
- * 
+ *
  * Generates structured action plans from task descriptions using context-aware
- * analysis to break down complex tasks into logical steps.
+ * analysis. Uses local and shared domain terminology (from AIContext) to form
+ * steps and suggested subtasks: AIContext.domainTerms includes base + shared
+ * (API) + user terminology; filterTerminologyRelevantToTask narrows to task-relevant
+ * terms so the action plan and description share one vocabulary.
  */
 
 import type { Task } from '../types';
@@ -32,11 +35,13 @@ export interface ActionPlan {
 }
 
 /**
- * Generate action plan from task description
- * ENHANCED: Now uses effort score from AIContext to adjust step complexity and detail
- * 
+ * Generate action plan from task description.
+ * Uses local and shared terminology: when aiContext is provided, domainTerms (local + shared)
+ * are filtered with filterTerminologyRelevantToTask and used for steps and suggested subtasks.
+ * ENHANCED: Uses effort score from AIContext to adjust step complexity and detail.
+ *
  * @param task - Task to generate action plan for
- * @param aiContext - Optional shared AI context (if provided, uses it instead of re-detecting/re-extracting)
+ * @param aiContext - Optional shared AI context (domain, domainTerms, extractedTerms, enhancedTerms); uses it instead of re-detecting/re-extracting
  */
 export function generateActionPlan(
   task: Task | Partial<Task>,
