@@ -11,7 +11,7 @@
  * - Components build on each other's work
  */
 
-import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, DOMAIN_TERMINOLOGIES } from './domain-terminology';
+import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, getBatchSharedTerminologyAsync, DOMAIN_TERMINOLOGIES } from './domain-terminology';
 import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName, validateAndEnhanceTermsWithDictionary } from './description-generator';
 import { DESCRIPTION_GENERATION_CONFIG, DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from './ai-config';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
@@ -115,23 +115,18 @@ export async function createAIContext(
 
   if (useAsyncTerminology) {
     try {
-      const [businessTerms, homeTerms, personalTerms, worldTerms] = await Promise.all([
-        getDomainTerminologyAsync('business'),
-        getDomainTerminologyAsync('home'),
-        getDomainTerminologyAsync('personal'),
-        getDomainTerminologyAsync('world'),
-      ]);
+      const batch = await getBatchSharedTerminologyAsync();
       const terminologyByDomain: Record<Domain, ReturnType<typeof getDomainTerminology>> = {
-        business: businessTerms,
-        home: homeTerms,
-        personal: personalTerms,
-        world: worldTerms,
+        business: batch.business,
+        home: batch.home,
+        personal: batch.personal,
+        world: batch.world,
         mixed: DOMAIN_TERMINOLOGIES.mixed,
       };
       const detected = detectDomain(title, description, terminologyByDomain);
       domainDetection = detected;
       domain = detected?.domain ?? DEFAULT_TASK_DOMAIN;
-      domainTerms = terminologyByDomain[domain] ?? personalTerms;
+      domainTerms = terminologyByDomain[domain] ?? batch.personal;
     } catch (error) {
       logger.error('Error in createAIContext (async terminology + domain detection), falling back to sync:', error);
       const detected = detectDomain(title, description);

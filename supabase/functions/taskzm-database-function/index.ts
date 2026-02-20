@@ -117,67 +117,82 @@ const TERMINOLOGY_CONFIG = {
   validTermTypes: ['keyword', 'phrase', 'verb', 'noun'] as const,
 } as const;
 
-// Get shared terminology for a domain
+// Helper: group raw terminology rows into { keywords, phrases, verbs, nouns }
+function groupTerminologyByType(terminology: { term_type: string; term: string }[] | null): {
+  keywords: string[];
+  phrases: string[];
+  verbs: string[];
+  nouns: string[];
+} {
+  const grouped = { keywords: [] as string[], phrases: [] as string[], verbs: [] as string[], nouns: [] as string[] };
+  terminology?.forEach(item => {
+    if (item.term_type === 'keyword') grouped.keywords.push(item.term);
+    else if (item.term_type === 'phrase') grouped.phrases.push(item.term);
+    else if (item.term_type === 'verb') grouped.verbs.push(item.term);
+    else if (item.term_type === 'noun') grouped.nouns.push(item.term);
+  });
+  return grouped;
+}
+
+// Get shared terminology for ALL domains in one call (reduces Edge invocations from 4 to 1 per cold breakdown)
+app.get("/taskzm-database-function/shared-terminology", async (c) => {
+  try {
+    const supabase = getSupabaseClient();
+    const empty = { keywords: [] as string[], phrases: [] as string[], verbs: [] as string[], nouns: [] as string[] };
+
+    const results = await Promise.all(
+      TERMINOLOGY_CONFIG.validDomains.map(async (domain) => {
+        const { data: terminology, error } = await supabase
+          .from('shared_terminology')
+          .select('term_type, term, usage_count')
+          .eq('domain', domain)
+          .order('usage_count', { ascending: false })
+          .limit(TERMINOLOGY_CONFIG.maxTermsPerDomain);
+
+        if (error) {
+          if (error.code === '42P01' || error.message?.includes('does not exist')) return { domain, terminology: empty };
+          console.error(`Error fetching shared terminology for ${domain}:`, error);
+          return { domain, terminology: empty };
+        }
+        return { domain, terminology: groupTerminologyByType(terminology) };
+      })
+    );
+
+    const body: Record<string, { keywords: string[]; phrases: string[]; verbs: string[]; nouns: string[] }> = {};
+    results.forEach(({ domain, terminology }) => { body[domain] = terminology; });
+    return c.json(body);
+  } catch (error) {
+    console.error('Error in shared-terminology (all) GET:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Get shared terminology for a single domain (kept for backward compatibility)
 app.get("/taskzm-database-function/shared-terminology/:domain", async (c) => {
   try {
     const domain = c.req.param('domain');
-    
-    // Validate domain
+
     if (!TERMINOLOGY_CONFIG.validDomains.includes(domain as any)) {
       return c.json({ error: 'Invalid domain' }, 400);
     }
 
     const supabase = getSupabaseClient();
-    
-    // Get all shared terminology for this domain, ordered by usage count (most used first)
     const { data: terminology, error } = await supabase
       .from('shared_terminology')
       .select('term_type, term, usage_count')
       .eq('domain', domain)
       .order('usage_count', { ascending: false })
       .limit(TERMINOLOGY_CONFIG.maxTermsPerDomain);
-    
+
     if (error) {
-      // If table doesn't exist, return empty results instead of error
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        console.warn('shared_terminology table does not exist, returning empty results');
-        return c.json({
-          keywords: [],
-          phrases: [],
-          verbs: [],
-          nouns: [],
-        });
+        return c.json({ terminology: groupTerminologyByType(null) });
       }
       console.error('Error fetching shared terminology:', error);
       return c.json({ error: getErrorMessage(error) }, 500);
     }
 
-    // Group by term type
-    const grouped: {
-      keywords: string[];
-      phrases: string[];
-      verbs: string[];
-      nouns: string[];
-    } = {
-      keywords: [],
-      phrases: [],
-      verbs: [],
-      nouns: [],
-    };
-
-    terminology?.forEach(item => {
-      if (item.term_type === 'keyword') {
-        grouped.keywords.push(item.term);
-      } else if (item.term_type === 'phrase') {
-        grouped.phrases.push(item.term);
-      } else if (item.term_type === 'verb') {
-        grouped.verbs.push(item.term);
-      } else if (item.term_type === 'noun') {
-        grouped.nouns.push(item.term);
-      }
-    });
-
-    return c.json({ terminology: grouped });
+    return c.json({ terminology: groupTerminologyByType(terminology) });
   } catch (error) {
     console.error('Error in shared-terminology GET:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
@@ -427,364 +442,14 @@ app.get("/taskzm-database-function/ai/status", (c) => {
   return c.json({ configured });
 });
 
-// POST /taskzm-database-function/ai/description — generate a single task description
-app.post("/taskzm-database-function/ai/description", async (c) => {
-  try {
-    const { userId, error: authError } = await verifyUser(c.req.raw);
-    if (authError || !userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
+// POST /taskzm-database-function/ai/description — DEPRECATED: descriptions are generated locally; endpoint kept for compatibility
+app.post("/taskzm-database-function/ai/description", (c) => c.json({ error: 'Deprecated: descriptions are generated locally. This endpoint is no longer used.' }, 410));
 
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey || apiKey.trim().length === 0) {
-      return c.json({ error: 'Server AI not configured' }, 503);
-    }
+// POST /taskzm-database-function/ai/description-options — DEPRECATED: description options are generated locally
+app.post("/taskzm-database-function/ai/description-options", (c) => c.json({ error: 'Deprecated: description options are generated locally. This endpoint is no longer used.' }, 410));
 
-    const body = await c.req.json().catch(() => ({}));
-    const taskName = typeof body.taskName === 'string' ? body.taskName.trim() : '';
-    const domain = typeof body.domain === 'string' ? body.domain : 'business';
-    const effortScore = typeof body.effortScore === 'number' ? body.effortScore : 2.5;
-    const actionPlanSteps = Array.isArray(body.actionPlanSteps) ? body.actionPlanSteps.filter((s: unknown) => typeof s === 'string') : [];
-    const existingDescription = typeof body.existingDescription === 'string' ? body.existingDescription.trim() : '';
-    const terminology = body.terminology && typeof body.terminology === 'object'
-      ? {
-          keywords: Array.isArray(body.terminology.keywords) ? body.terminology.keywords.filter((x: unknown) => typeof x === 'string') : [],
-          phrases: Array.isArray(body.terminology.phrases) ? body.terminology.phrases.filter((x: unknown) => typeof x === 'string') : [],
-          verbs: Array.isArray(body.terminology.verbs) ? body.terminology.verbs.filter((x: unknown) => typeof x === 'string') : [],
-          nouns: Array.isArray(body.terminology.nouns) ? body.terminology.nouns.filter((x: unknown) => typeof x === 'string') : [],
-        }
-      : { keywords: [] as string[], phrases: [] as string[], verbs: [] as string[], nouns: [] as string[] };
-
-    if (!taskName) {
-      return c.json({ error: 'taskName is required' }, 400);
-    }
-
-    const cacheKeyRaw = `ai:desc:${taskName}:${domain}:${effortScore}`;
-    const cacheKey = `ai:desc:${await sha256Hex(cacheKeyRaw)}`;
-    try {
-      const cached = await kv.get(cacheKey);
-      if (cached && typeof cached === 'object' && (cached as { exp?: number }).exp && (cached as { exp: number }).exp > Date.now()) {
-        const v = (cached as { v: { description: string; domain: string; confidence: number } }).v;
-        if (v) return c.json(v);
-      }
-    } catch (_) { /* ignore cache errors */ }
-
-    const situationLine = buildSituationLine(taskName, actionPlanSteps);
-    const filteredTerminology = filterTerminologyToTask(taskName, terminology);
-    const hasTerms = filteredTerminology.keywords.length > 0 || filteredTerminology.phrases.length > 0 || filteredTerminology.verbs.length > 0 || filteredTerminology.nouns.length > 0;
-    const allowedVocabulary = hasTerms
-      ? `\n\nAllowed vocabulary (use only where they fit this situation; do not use any term that does not apply):\nKeywords: ${filteredTerminology.keywords.slice(0, 25).join(', ')}\nPhrases: ${filteredTerminology.phrases.slice(0, 15).join('; ')}\nVerbs: ${filteredTerminology.verbs.slice(0, 15).join(', ')}\nNouns: ${filteredTerminology.nouns.slice(0, 15).join(', ')}`
-      : '';
-    const doNotUseList = (DO_NOT_USE_TERMS[domain] || DO_NOT_USE_TERMS.mixed || []).slice(0, 12);
-    const doNotUseBlock = doNotUseList.length > 0
-      ? `\n\nDo not use any of these words (they refer to different contexts): ${doNotUseList.join(', ')}.`
-      : '';
-    const additionalContextBlock = existingDescription
-      ? `\n\nOptional current description (use only to refine the same task; do NOT copy any topic or phrase from here that is not in the task name above): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
-      : '';
-
-    const systemMessage = `You write 1-3 short, contextual sentences that explain what the task involves. The task name is the only source of content: every idea in your description must come from or be clearly implied by the task name. You may use the allowed vocabulary (from local and shared terminology) only as an aid—to rephrase, elaborate, or add domain-appropriate wording for concepts that are already in the task name. Do not use any term to introduce a topic or concept that is not in the task name. Use natural, flowing prose. Do not repeat the task name verbatim. Use standard English only.`;
-    const fewShotExamples = `
-Examples (task name → description; use allowed vocabulary only to rephrase or elaborate on what the task name refers to):
-- Task name: "Fix login bug on mobile" → "This task involves debugging and resolving authentication issues affecting the mobile login flow."
-- Task name: "Draft Q3 marketing plan" → "This task involves creating a marketing plan for the third quarter, including channels, budget, and goals."
-- Task name: "Test PRD - Test Side Panel" → "This task involves testing the side panel described in the PRD and verifying it meets requirements."
-`;
-    const prompt = `${situationLine}${additionalContextBlock}${allowedVocabulary}${doNotUseBlock}
-${fewShotExamples}
-
-Using the task name above, generate a clear description in 1-3 full sentences. The description must reflect the task name and nothing else.
-- Allowed vocabulary is an aid: use it only to rephrase or elaborate on what the task name already refers to. Do not use any term to introduce a topic not in the task name.
-- Do not use these words unless they appear in the task name: ${DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK.join(', ')}.
-
-Use complete, grammatical sentences. Keep to 1-3 sentences (about 15-50 words). Do not repeat the task name verbatim.
-
-Generate the description now:`;
-
-    const openaiRes = await fetch(OPENAI_CHAT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: OPENAI_DESC_MAX_TOKENS,
-        temperature: OPENAI_DESC_TEMPERATURE,
-      }),
-    });
-
-    if (!openaiRes.ok) {
-      const errText = await openaiRes.text();
-      console.error('OpenAI API error:', openaiRes.status, errText);
-      return c.json({ error: 'AI service error' }, 502);
-    }
-
-    const openaiData = await openaiRes.json();
-    const content = openaiData?.choices?.[0]?.message?.content;
-    if (typeof content !== 'string' || content.trim().length === 0) {
-      return c.json({ error: 'Empty AI response' }, 502);
-    }
-
-    const description = content.trim().replace(/^["']|["']$/g, '');
-    const result = { description, domain, confidence: AI_DESC_CONFIDENCE_DEFAULT };
-
-    try {
-      await kv.set(cacheKey, { v: result, exp: Date.now() + AI_CACHE_TTL_MS });
-    } catch (_) { /* ignore */ }
-
-    return c.json(result);
-  } catch (error) {
-    console.error('Error in ai/description:', error);
-    return c.json({ error: getErrorMessage(error) }, 500);
-  }
-});
-
-// POST /taskzm-database-function/ai/description-options — generate 3-5 description options
-app.post("/taskzm-database-function/ai/description-options", async (c) => {
-  try {
-    const { userId, error: authError } = await verifyUser(c.req.raw);
-    if (authError || !userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey || apiKey.trim().length === 0) {
-      return c.json({ error: 'Server AI not configured' }, 503);
-    }
-
-    const body = await c.req.json().catch(() => ({}));
-    const taskName = typeof body.taskName === 'string' ? body.taskName.trim() : '';
-    const domain = typeof body.domain === 'string' ? body.domain : 'business';
-    const effortScore = typeof body.effortScore === 'number' ? body.effortScore : 2.5;
-    const actionPlanSteps = Array.isArray(body.actionPlanSteps) ? body.actionPlanSteps.filter((s: unknown) => typeof s === 'string') : [];
-    const existingDescription = typeof body.existingDescription === 'string' ? body.existingDescription.trim() : '';
-    const terminology = body.terminology && typeof body.terminology === 'object'
-      ? {
-          keywords: Array.isArray(body.terminology.keywords) ? body.terminology.keywords.filter((x: unknown) => typeof x === 'string') : [],
-          phrases: Array.isArray(body.terminology.phrases) ? body.terminology.phrases.filter((x: unknown) => typeof x === 'string') : [],
-          verbs: Array.isArray(body.terminology.verbs) ? body.terminology.verbs.filter((x: unknown) => typeof x === 'string') : [],
-          nouns: Array.isArray(body.terminology.nouns) ? body.terminology.nouns.filter((x: unknown) => typeof x === 'string') : [],
-        }
-      : { keywords: [] as string[], phrases: [] as string[], verbs: [] as string[], nouns: [] as string[] };
-
-    if (!taskName) {
-      return c.json({ error: 'taskName is required' }, 400);
-    }
-
-    const cacheKeyRaw = `ai:opts:${taskName}:${domain}:${effortScore}`;
-    const cacheKey = `ai:opts:${await sha256Hex(cacheKeyRaw)}`;
-    try {
-      const cached = await kv.get(cacheKey);
-      if (cached && typeof cached === 'object' && (cached as { exp?: number }).exp && (cached as { exp: number }).exp > Date.now()) {
-        const v = (cached as { v: { options: Array<{ description: string; domain?: string; confidence?: number }> } }).v;
-        if (v?.options?.length) return c.json(v);
-      }
-    } catch (_) { /* ignore */ }
-
-    const situationLine = buildSituationLine(taskName, actionPlanSteps);
-    const filteredTerminologyOpts = filterTerminologyToTask(taskName, terminology);
-    const hasTerms = filteredTerminologyOpts.keywords.length > 0 || filteredTerminologyOpts.phrases.length > 0 || filteredTerminologyOpts.verbs.length > 0 || filteredTerminologyOpts.nouns.length > 0;
-    const allowedVocabulary = hasTerms
-      ? `\n\nAllowed vocabulary (use only where they fit this situation):\nKeywords: ${filteredTerminologyOpts.keywords.slice(0, 25).join(', ')}\nPhrases: ${filteredTerminologyOpts.phrases.slice(0, 15).join('; ')}\nVerbs: ${filteredTerminologyOpts.verbs.slice(0, 15).join(', ')}\nNouns: ${filteredTerminologyOpts.nouns.slice(0, 15).join(', ')}`
-      : '';
-    const doNotUseList = (DO_NOT_USE_TERMS[domain] || DO_NOT_USE_TERMS.mixed || []).slice(0, 12);
-    const doNotUseBlock = doNotUseList.length > 0
-      ? `\n\nDo not use any of these words (different contexts): ${doNotUseList.join(', ')}.`
-      : '';
-
-    const systemMessageOpts = `You generate 3-5 short description options. The task name is the only source of content; every idea in each option must come from or be clearly implied by the task name. You may use the allowed vocabulary (from local and shared terminology) only as an aid—to rephrase, elaborate, or add domain-appropriate wording for concepts already in the task name. Do not use any term to introduce a topic not in the task name. Use natural, flowing prose.`;
-    const prompt = `${situationLine}${allowedVocabulary}${doNotUseBlock}
-
-Do not use these words in any description unless they appear in the task name: ${DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK.join(', ')}.
-
-Allowed vocabulary is an aid: use it only to rephrase or elaborate on what the task name already refers to.
-
-Generate exactly 3-5 description options. Each option must reflect ONLY the task name above; do not add topics from the allowed vocabulary that are not in the task name. Each option: 1-3 full, contextual sentences (about 15-50 words). Each sentence should refer clearly to the task and flow naturally; avoid phrases that could apply to any task. Describe ONLY what the task name refers to. Vary options by wording, detail level, or angle. Use correct English.
-
-Return ONLY a valid JSON array of objects, each with keys: "description" (string), "domain" (string, e.g. "business"), "confidence" (number 0-1). No other text.
-
-Example format:
-[{"description":"First option...","domain":"business","confidence":0.8},{"description":"Second option...","domain":"business","confidence":0.75}]
-
-JSON array:`;
-
-    const openaiRes = await fetch(OPENAI_CHAT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          { role: 'system', content: systemMessageOpts },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: OPENAI_OPTS_MAX_TOKENS,
-        temperature: OPENAI_OPTS_TEMPERATURE,
-      }),
-    });
-
-    if (!openaiRes.ok) {
-      const errText = await openaiRes.text();
-      console.error('OpenAI API error:', openaiRes.status, errText);
-      return c.json({ error: 'AI service error' }, 502);
-    }
-
-    const openaiData = await openaiRes.json();
-    const content = openaiData?.choices?.[0]?.message?.content;
-    if (typeof content !== 'string' || content.trim().length === 0) {
-      return c.json({ error: 'Empty AI response' }, 502);
-    }
-
-    let jsonText = content.trim();
-    const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
-    if (jsonMatch) jsonText = jsonMatch[0];
-    let options: Array<{ description: string; domain?: string; confidence?: number }>;
-    try {
-      options = JSON.parse(jsonText);
-      if (!Array.isArray(options)) options = [];
-    } catch {
-      return c.json({ error: 'Invalid AI response format' }, 502);
-    }
-
-    const normalized = options
-      .filter((o) => o && typeof o.description === 'string' && o.description.trim().length > 0)
-      .slice(0, 5)
-      .map((o) => ({
-        description: (o.description as string).trim().replace(/^["']|["']$/g, ''),
-        domain: typeof o.domain === 'string' ? o.domain : 'business',
-        confidence: typeof o.confidence === 'number' ? o.confidence : AI_OPTS_CONFIDENCE_DEFAULT,
-      }));
-
-    const result = { options: normalized };
-    try {
-      await kv.set(cacheKey, { v: result, exp: Date.now() + AI_CACHE_TTL_MS });
-    } catch (_) { /* ignore */ }
-
-    return c.json(result);
-  } catch (error) {
-    console.error('Error in ai/description-options:', error);
-    return c.json({ error: getErrorMessage(error) }, 500);
-  }
-});
-
-// POST /taskzm-database-function/ai/action-plan — generate action plan steps with OpenAI (same context as description)
-app.post("/taskzm-database-function/ai/action-plan", async (c) => {
-  try {
-    const { userId, error: authError } = await verifyUser(c.req.raw);
-    if (authError || !userId) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey || apiKey.trim().length === 0) {
-      return c.json({ error: 'Server AI not configured' }, 503);
-    }
-
-    const body = await c.req.json().catch(() => ({}));
-    const taskName = typeof body.taskName === 'string' ? body.taskName.trim() : '';
-    const domain = typeof body.domain === 'string' ? body.domain : 'business';
-    const effortScore = typeof body.effortScore === 'number' ? body.effortScore : 2.5;
-    const existingDescription = typeof body.existingDescription === 'string' ? body.existingDescription.trim() : '';
-    const terminology = body.terminology && typeof body.terminology === 'object'
-      ? {
-          keywords: Array.isArray(body.terminology.keywords) ? body.terminology.keywords.filter((x: unknown) => typeof x === 'string') : [],
-          phrases: Array.isArray(body.terminology.phrases) ? body.terminology.phrases.filter((x: unknown) => typeof x === 'string') : [],
-          verbs: Array.isArray(body.terminology.verbs) ? body.terminology.verbs.filter((x: unknown) => typeof x === 'string') : [],
-          nouns: Array.isArray(body.terminology.nouns) ? body.terminology.nouns.filter((x: unknown) => typeof x === 'string') : [],
-        }
-      : { keywords: [] as string[], phrases: [] as string[], verbs: [] as string[], nouns: [] as string[] };
-
-    if (!taskName) {
-      return c.json({ error: 'taskName is required' }, 400);
-    }
-
-    const situationLine = buildSituationLine(taskName, []);
-    const taskContextForFilter = `${taskName} ${existingDescription}`.trim();
-    const filteredTerminologyPlan = filterTerminologyToTask(taskContextForFilter, terminology);
-    const hasTerms = filteredTerminologyPlan.keywords.length > 0 || filteredTerminologyPlan.phrases.length > 0 || filteredTerminologyPlan.verbs.length > 0 || filteredTerminologyPlan.nouns.length > 0;
-    const allowedTerms = hasTerms
-      ? `\nAllowed vocabulary (use only where they fit): Keywords: ${filteredTerminologyPlan.keywords.slice(0, 15).join(', ')}. Phrases: ${filteredTerminologyPlan.phrases.slice(0, 8).join('; ')}. Verbs: ${filteredTerminologyPlan.verbs.slice(0, 10).join(', ')}. Nouns: ${filteredTerminologyPlan.nouns.slice(0, 10).join(', ')}.`
-      : '';
-    const descriptionBlock = existingDescription
-      ? `\nDescription (if any): ${existingDescription.slice(0, 400)}${existingDescription.length > 400 ? '...' : ''}`
-      : '';
-
-    const systemMessage = `You produce 3-5 ordered action steps for the user's task. Each step must be contextual: use the same subject, object, and goal as the task name and description (e.g. for "Write help articles for the website", steps should be about writing, articles, and the website—not generic "Create report" or "Forecast demand"). Use short, concrete action phrases (verb + object from the task). Do not add generic business steps unless the task explicitly mentions them. Use allowed vocabulary only where it fits the task.`;
-    const prompt = `${situationLine}${descriptionBlock}${allowedTerms}
-
-Do not use these words in any step unless they appear in the task name or description: ${DESC_AND_PLAN_FORBIDDEN_UNLESS_IN_TASK.join(', ')}.
-
-Using the task name and description above, produce 3-5 ordered action steps for this ${domain} task. Each step must be contextual to this task:
-- Use the same nouns, goals, and domain as the task (e.g. for "Write help articles for the website" use steps like "Draft outline for help articles", "Write first article", "Review and publish to website"—not "Create report" or "Send to customer").
-- Short action phrase (few words) + estimated minutes (integer). Every step must be clearly implied by the task name or description.
-
-Return ONLY a valid JSON object with a single key "steps", an array of objects each with "action" (string) and "estimatedMinutes" (number). No other text.
-Example: {"steps":[{"action":"Draft outline for help articles","estimatedMinutes":10},{"action":"Write and edit first article","estimatedMinutes":30}]}
-
-JSON:`;
-
-    const openaiRes = await fetch(OPENAI_CHAT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: OPENAI_ACTION_PLAN_MAX_TOKENS,
-        temperature: OPENAI_ACTION_PLAN_TEMPERATURE,
-      }),
-    });
-
-    if (!openaiRes.ok) {
-      const errText = await openaiRes.text();
-      console.error('OpenAI API error (action-plan):', openaiRes.status, errText);
-      return c.json({ error: 'AI service error' }, 502);
-    }
-
-    const openaiData = await openaiRes.json();
-    const content = openaiData?.choices?.[0]?.message?.content;
-    if (typeof content !== 'string' || content.trim().length === 0) {
-      return c.json({ error: 'Empty AI response' }, 502);
-    }
-
-    let jsonText = content.trim();
-    const objMatch = jsonText.match(/\{[\s\S]*\}/);
-    if (objMatch) jsonText = objMatch[0];
-    let parsed: { steps?: Array<{ action?: string; estimatedMinutes?: number }> };
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch {
-      return c.json({ error: 'Invalid AI response format' }, 502);
-    }
-
-    const steps = Array.isArray(parsed.steps)
-      ? parsed.steps
-          .filter((s) => s && typeof (s as { action?: string }).action === 'string')
-          .slice(0, 8)
-          .map((s, i) => ({
-            action: String((s as { action: string }).action).trim().slice(0, 120),
-            estimatedMinutes: typeof (s as { estimatedMinutes?: number }).estimatedMinutes === 'number' ? Math.max(1, Math.round((s as { estimatedMinutes: number }).estimatedMinutes)) : 15,
-          }))
-      : [];
-
-    return c.json({ steps });
-  } catch (error) {
-    console.error('Error in ai/action-plan:', error);
-    return c.json({ error: getErrorMessage(error) }, 500);
-  }
-});
+// POST /taskzm-database-function/ai/action-plan — DEPRECATED: action plans are generated locally
+app.post("/taskzm-database-function/ai/action-plan", (c) => c.json({ error: 'Deprecated: action plans are generated locally. This endpoint is no longer used.' }, 410));
 
 // Verify admin user from access token
 const verifyAdmin = async (request: Request) => {
@@ -971,7 +636,7 @@ app.post("/taskzm-database-function/signup", async (c) => {
   }
 });
 
-// Get all tasks for a workspace
+// Get all tasks for a workspace (supports ifModifiedSince query for 304 Not Modified)
 app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
@@ -980,24 +645,43 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
     }
 
     const workspaceId = c.req.param('workspaceId');
-    
-    // Verify workspace exists
+    const ifModifiedSince = c.req.query('ifModifiedSince');
+
     const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
     if (!workspaceOwner) {
       return c.json({ error: 'Workspace not found' }, 404);
     }
-    
-    // Verify user has access to this workspace
+
     const members = await getWorkspaceMembers(workspaceId);
     if (!members.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
 
-    // Get all tasks for this workspace
+    if (ifModifiedSince) {
+      const lastModified = await kv.get(`workspace_${workspaceId}_tasks_modified`);
+      if (lastModified && String(lastModified) === String(ifModifiedSince)) {
+        return new Response(null, { status: 304, headers: { 'Last-Modified': String(lastModified) } });
+      }
+    }
+
     const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
     const tasks = tasksData.map(item => item.value);
-
-    return c.json({ tasks });
+    let lastModified = await kv.get(`workspace_${workspaceId}_tasks_modified`);
+    if (!lastModified && tasks.length > 0) {
+      const maxUpdated = tasks.reduce((max, t) => {
+        const u = (t as { updatedAt?: string | number })?.updatedAt;
+        if (!u) return max;
+        const ms = typeof u === 'number' ? u : new Date(u).getTime();
+        return Number.isFinite(ms) && ms > max ? ms : max;
+      }, 0);
+      if (maxUpdated > 0) {
+        lastModified = new Date(maxUpdated).toISOString();
+        await kv.set(`workspace_${workspaceId}_tasks_modified`, lastModified);
+      }
+    }
+    const headers: Record<string, string> = {};
+    if (lastModified) headers['Last-Modified'] = String(lastModified);
+    return c.json({ tasks }, 200, { headers });
   } catch (error) {
     console.log('Error fetching tasks:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
@@ -1029,6 +713,8 @@ app.post("/taskzm-database-function/tasks/:workspaceId", async (c) => {
 
     // Save task
     await kv.set(`workspace_${workspaceId}_task_${task.id}`, task);
+    const now = new Date().toISOString();
+    await kv.set(`workspace_${workspaceId}_tasks_modified`, now);
 
     // Update activity log
     const activity = {
@@ -1074,6 +760,7 @@ app.delete("/taskzm-database-function/tasks/:workspaceId/:taskId", async (c) => 
 
     // Delete task
     await kv.del(`workspace_${workspaceId}_task_${taskId}`);
+    await kv.set(`workspace_${workspaceId}_tasks_modified`, new Date().toISOString());
 
     // Update activity log
     const activity = {

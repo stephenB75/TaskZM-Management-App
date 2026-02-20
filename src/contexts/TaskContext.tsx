@@ -30,6 +30,7 @@ import {
   WORKSPACE_NETWORK_ERROR_BACKOFF_MAX_MS,
 } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { getBatchSharedTerminologyAsync } from '../lib/domain-terminology';
 import {
   TOAST_DURATION_MEDIUM_MS,
   TOAST_DURATION_LONG_MS,
@@ -296,6 +297,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       isMounted = false;
     };
   }, [workspaceId, accessToken, user]); // Removed 'tasks' from dependencies to prevent infinite loop
+
+  // Preload shared terminology once per session so first task breakdown has warm cache (1 Edge call instead of cold)
+  useEffect(() => {
+    if (!workspaceId || !accessToken) return;
+    getBatchSharedTerminologyAsync().catch(() => {});
+  }, [workspaceId, accessToken]);
 
   // Refetch tasks when tab becomes visible so user sees fresh data after switching tabs (avoids stale cache)
   const prevVisibilityRef = useRef(typeof document !== 'undefined' ? document.visibilityState : 'visible');

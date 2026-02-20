@@ -1258,6 +1258,46 @@ export interface SharedTerminology {
   nouns: string[];
 }
 
+const EMPTY_TERMINOLOGY: SharedTerminology = { keywords: [], phrases: [], verbs: [], nouns: [] };
+
+/**
+ * Fetch shared terminology for all domains in one request (reduces Edge invocations from 4 to 1).
+ * Returns { business, home, personal, world }.
+ */
+export async function getAllSharedTerminology(): Promise<Record<Exclude<Domain, 'mixed'>, SharedTerminology>> {
+  try {
+    const response = await fetch(`${API_BASE}/shared-terminology`, {
+      method: 'GET',
+      headers: getHeaders(),
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      logger.warn('Failed to fetch all shared terminology:', response.status);
+      return {
+        business: { ...EMPTY_TERMINOLOGY },
+        home: { ...EMPTY_TERMINOLOGY },
+        personal: { ...EMPTY_TERMINOLOGY },
+        world: { ...EMPTY_TERMINOLOGY },
+      };
+    }
+    const data = await response.json();
+    return {
+      business: data.business || EMPTY_TERMINOLOGY,
+      home: data.home || EMPTY_TERMINOLOGY,
+      personal: data.personal || EMPTY_TERMINOLOGY,
+      world: data.world || EMPTY_TERMINOLOGY,
+    };
+  } catch (error) {
+    logger.warn('Error fetching all shared terminology:', error);
+    return {
+      business: { ...EMPTY_TERMINOLOGY },
+      home: { ...EMPTY_TERMINOLOGY },
+      personal: { ...EMPTY_TERMINOLOGY },
+      world: { ...EMPTY_TERMINOLOGY },
+    };
+  }
+}
+
 /**
  * Fetch shared terminology for a domain from the database
  * This includes all user-learned terms that have been shared

@@ -24,6 +24,11 @@ async function getSharedTerminologyFromApi(domain: Domain) {
   const api = await import('./api');
   return api.getSharedTerminology(domain);
 }
+/** Fetch all domains' shared terminology in one request (reduces Edge invocations from 4 to 1). */
+async function getAllSharedTerminologyFromApi() {
+  const api = await import('./api');
+  return api.getAllSharedTerminology();
+}
 async function saveSharedTerminologyToApi(
   domain: Domain,
   keywords: string[],
@@ -43,7 +48,7 @@ const TERMINOLOGY_CONFIG = {
   minPhraseLength: 3, // Minimum length for phrases
   minVerbLength: 2, // Minimum length for verbs
   minNounLength: 2, // Minimum length for nouns
-  sharedTerminologyCacheTTL: MILLISECONDS_PER_HOUR, // 1 hour cache TTL in milliseconds
+  sharedTerminologyCacheTTL: 2 * MILLISECONDS_PER_HOUR, // 2 hours - reduces refetches and Edge invocations
   maxSharedTermsPerDomain: 1000, // Maximum number of shared terms to fetch per domain
 } as const;
 
@@ -2039,6 +2044,8 @@ const sharedTerminologyCache = new Map<Domain, {
   timestamp: number 
 }>();
 
+const DOMAINS_FOR_BATCH: (Exclude<Domain, 'mixed'>)[] = ['business', 'home', 'personal', 'world'];
+
 /**
  * Get domain-specific terminology (synchronous version, uses cached shared terms)
  * Merges base terminology with user-learned terminology from localStorage and cached shared terms.
@@ -2058,6 +2065,44 @@ export function getDomainTerminology(domain: Domain): DomainTerminology {
     pronouns: baseTerminology.pronouns,
     context: baseTerminology.context,
     effortMultiplier: baseTerminology.effortMultiplier,
+  };
+}
+
+/**
+ * Fetch shared terminology for all domains in one Edge call, populate per-domain cache, and return full DomainTerminology per domain.
+ * Used by createAIContext so one breakdown = 1 invocation instead of 4 when cache is cold.
+ */
+export async function getBatchSharedTerminologyAsync(): Promise<Record<Exclude<Domain, 'mixed'>, DomainTerminology>> {
+  const now = Date.now();
+  const ttl = TERMINOLOGY_CONFIG.sharedTerminologyCacheTTL;
+  const allCached = DOMAINS_FOR_BATCH.every(d => {
+    const entry = sharedTerminologyCache.get(d);
+    return entry && now - entry.timestamp < ttl;
+  });
+  if (allCached) {
+    logger.debug('Using cached shared terminology for all domains (batch)');
+    return {
+      business: getDomainTerminology('business'),
+      home: getDomainTerminology('home'),
+      personal: getDomainTerminology('personal'),
+      world: getDomainTerminology('world'),
+    };
+  }
+  try {
+    const data = await getAllSharedTerminologyFromApi();
+    DOMAINS_FOR_BATCH.forEach(domain => {
+      const terminology = data[domain] || { keywords: [], phrases: [], verbs: [], nouns: [] };
+      sharedTerminologyCache.set(domain, { terminology, timestamp: Date.now() });
+    });
+    logger.debug('Fetched and cached shared terminology for all domains (single batch request)');
+  } catch (error) {
+    logger.warn('Failed to fetch batch shared terminology, using only local:', error);
+  }
+  return {
+    business: getDomainTerminology('business'),
+    home: getDomainTerminology('home'),
+    personal: getDomainTerminology('personal'),
+    world: getDomainTerminology('world'),
   };
 }
 
