@@ -268,16 +268,22 @@ export async function extractTermsWithBrowserAI(
   }
 
   try {
-    const prompt = `You are analyzing a ${domain} task. Extract key information from this task: "${text}"
+    const prompt = `You are analyzing a ${domain} task. The FULL TASK TEXT is the only source of context. Every keyword and phrase must be interpreted ONLY within this task.
 
-IMPORTANT: Extract terms that are SPECIFIC to this task, not generic terms.
+FULL TASK: "${text}"
+
+CONTEXT RULES:
+- Interpret every term in the context of the full task above (e.g. "login" in "Fix login bug" means the login feature, not the action of logging in).
+- Prefer PHRASES that preserve context over single ambiguous words (e.g. include "login bug" and "authentication system", not just "login", "bug", "system").
+- Keywords should be specific to THIS task—avoid generic words like "task", "work", "do".
+- The summary must describe what THIS task involves, so downstream use has clear context.
 
 Return ONLY a valid JSON object with:
-- keywords: array of 3-8 important, specific keywords from the task (avoid generic words like "task", "work", "do")
-- phrases: array of 2-5 key phrases (${BROWSER_AI_CONFIG.PROMPT.PHRASE_LENGTH_RANGE}) that capture the task's essence
-- verbs: array of 2-5 action verbs that describe what needs to be done
-- nouns: array of 3-8 important nouns that identify the objects/subjects involved
-- summary: a brief, contextual summary (${BROWSER_AI_CONFIG.PROMPT.SUMMARY_LENGTH}) explaining what this task involves
+- keywords: array of 3-8 important, context-specific keywords from the task
+- phrases: array of 2-5 key phrases (${BROWSER_AI_CONFIG.PROMPT.PHRASE_LENGTH_RANGE}) that capture the task's essence and preserve context
+- verbs: array of 2-5 action verbs that describe what needs to be done in this task
+- nouns: array of 3-8 important nouns (objects/subjects) as they appear in this task
+- summary: a brief, contextual summary (${BROWSER_AI_CONFIG.PROMPT.SUMMARY_LENGTH}) that explains what this task involves and how the terms relate to it
 
 Example for "Fix login bug in authentication system":
 {
@@ -363,6 +369,8 @@ export async function generateDescriptionWithBrowserAI(
     phrases: string[];
     verbs: string[];
     nouns: string[];
+    /** Optional context summary (e.g. from extractTermsWithBrowserAI) so the model interprets terms in the right context. */
+    contextSummary?: string;
   },
   actionPlanSteps?: string[]
 ): Promise<string | null> {
@@ -373,6 +381,10 @@ export async function generateDescriptionWithBrowserAI(
   try {
     const actionPlanContext = actionPlanSteps && actionPlanSteps.length > 0
       ? `\n\nAction plan steps (weave these into the description): ${actionPlanSteps.join('; ')}. Include research, strategy, timeline/schedule as appropriate.`
+      : '';
+
+    const contextSummaryBlock = extractedTerms?.contextSummary?.trim()
+      ? `\n\nContext summary (interpret keywords/phrases in this light): ${extractedTerms.contextSummary}`
       : '';
 
     const termsContext = extractedTerms && (
@@ -390,17 +402,18 @@ export async function generateDescriptionWithBrowserAI(
 
     const prompt = `Generate a clear, contextual description for this ${domain} task.
 
-Task Name: "${taskName}"${termsContext}${actionPlanContext || ''}
+Task Name (full context — interpret all terms below within this): "${taskName}"${contextSummaryBlock}${termsContext}${actionPlanContext || ''}
 
 Requirements:
-- The task name is the user's exact input and the only source of truth. The description must reflect ONLY the task name; do not use any word or concept that is not stated or clearly implied by the task name.
+- The task name above is the ONLY source of truth and the ONLY context. Interpret every keyword and phrase strictly in that context (e.g. "login" in "Fix login bug" means the login feature, not "to log in").
+- The description must reflect ONLY the task name; do not use any word or concept that is not stated or clearly implied by the task name.
 - Write 1-3 full, contextual sentences that explain what the task involves. Use natural, flowing prose. Do not introduce topics (e.g. workout, fitness, notifications, re-occurring) that are not in the task name or action plan.
-- Be SPECIFIC and CONTEXTUAL - use only extracted keywords and phrases that appear in or are clearly implied by the task name.
+- Be SPECIFIC and CONTEXTUAL — use extracted terms only as they apply in the task name (e.g. prefer "login bug" over generic "bug" when the task is about a login bug).
 - DO NOT repeat the task name verbatim. Use correct English: complete sentences, proper grammar, no redundant phrases (e.g. "X enables X"), no sentence fragments.
 - Use professional, clear language appropriate for ${domain} tasks.
 - ${BROWSER_AI_CONFIG.PROMPT.ACCURATE_LENGTH}
 - Avoid run-on sentences: do not chain many clauses with "and", "but", or commas; use separate sentences when you have multiple points.
-- Use only extracted keywords/phrases/verbs/nouns that are relevant to the task name to build an accurate description (sentence or paragraph as needed).
+- Use only extracted keywords/phrases/verbs/nouns that are relevant in the context of the task name to build an accurate description (sentence or paragraph as needed).
 
 Example (marketing plan):
 Task: "Create a marketing plan that explain the new product launch."

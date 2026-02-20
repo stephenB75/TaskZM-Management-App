@@ -1505,12 +1505,17 @@ export function validateAndEnhanceTermsWithDictionary(
       }
     });
   }
+
+  // Prefer terms that appear in the task text so context is preserved when consumers use top N terms
+  const appearsInTask = (term: string) => taskNameLower.includes(term.toLowerCase());
+  const sortByContextRelevance = <T>(arr: T[], toStr: (t: T) => string): T[] =>
+    [...arr].sort((a, b) => (appearsInTask(toStr(b)) ? 1 : 0) - (appearsInTask(toStr(a)) ? 1 : 0));
   
   return {
-    keywords: Array.from(new Set(validatedKeywords)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
-    phrases: Array.from(new Set(validatedPhrases)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
-    verbs: Array.from(new Set(validatedVerbs)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
-    nouns: Array.from(new Set(validatedNouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
+    keywords: sortByContextRelevance(Array.from(new Set(validatedKeywords)), k => k).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
+    phrases: sortByContextRelevance(Array.from(new Set(validatedPhrases)), p => p).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
+    verbs: sortByContextRelevance(Array.from(new Set(validatedVerbs)), v => v).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
+    nouns: sortByContextRelevance(Array.from(new Set(validatedNouns)), n => n).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
     pronouns: Array.from(new Set(validatedPronouns)).slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns),
   };
 }
@@ -3470,13 +3475,21 @@ export async function generateDescription(
       }, 0);
     });
 
-    const maxTerms = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer;
-    // Terminology for server: filter by task name only so the aid set is task-relevant (description used only for domain detection above)
-    terminology = filterTerminologyRelevantToTask(taskName, domainRef, domainTerms, maxTerms);
-    logger.debug('📝 Description Generation: Using domain detection with description; terminology filtered to task name only', {
+    // Use full library so the correct/proper response is crafted from all domain terminology
+    terminology = {
+      keywords: domainTerms.keywords || [],
+      phrases: domainTerms.phrases || [],
+      verbs: domainTerms.verbs || [],
+      nouns: domainTerms.nouns || [],
+    };
+    logger.debug('📝 Description Generation: Using full domain terminology (full library scan)', {
       taskName,
       detectedDomain: domainRef,
       confidence: domainResult.confidence,
+      keywordsCount: terminology.keywords.length,
+      phrasesCount: terminology.phrases.length,
+      verbsCount: terminology.verbs.length,
+      nounsCount: terminology.nouns.length,
     });
   }
 

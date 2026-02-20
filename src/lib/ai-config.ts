@@ -824,6 +824,14 @@ export const AI_USAGE_STORAGE_KEY = 'ai_scheduler_usage';
  * Debounce delay for real-time task breakdown analysis (milliseconds)
  */
 export const TASK_BREAKDOWN_DEBOUNCE_MS = 300;
+
+/**
+ * Expected timing for "scan library and provide response" (for reference):
+ * - Debounce: TASK_BREAKDOWN_DEBOUNCE_MS (300ms) after user stops typing.
+ * - Library scan (in-memory): ~50–150ms (domain detection + term extraction + validation + action plan); depends on device.
+ * - Network (if shared terminology cache cold): ~200ms–2s for getBatchSharedTerminologyAsync().
+ * - Typical total with warm cache: ~400–600ms. With cold cache: ~0.5–2.5s.
+ */
 export const DESCRIPTION_OPTIONS_DEBOUNCE_MS = 500; // Debounce delay for generating description options after breakdown is ready
 
 /**
