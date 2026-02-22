@@ -489,7 +489,7 @@ export function TodayAgendaView({
                 </div>
               )}
               {timelineLabels.map(({ minutesFromStart, label }) => {
-                const topPx = minutesFromStart * pxPerMinute;
+                const topPx = Math.round(minutesFromStart * pxPerMinute);
                 return (
                   <div
                     key={minutesFromStart}
@@ -505,7 +505,7 @@ export function TodayAgendaView({
             {/* Right: horizontal line from dot to tab, then task/event blocks aren’t cut off */}
             <div className="flex-1 min-w-0 relative" style={{ marginLeft: columnGapPx, paddingLeft: blocksColumnPaddingLeftPx, paddingRight: cardPaddingRightPx, height: timelineLayoutHeightPx, overflowX: laneCount > 1 ? 'auto' : 'visible', overflowY: 'hidden', ...(laneCount > 1 ? { minWidth: laneCount * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx) - TODAY_AGENDA_TIMELINE.laneGapPx } : {}) }}>
               {timelineLabels.map(({ minutesFromStart }) => {
-                const topPx = minutesFromStart * pxPerMinute;
+                const topPx = Math.round(minutesFromStart * pxPerMinute);
                 return (
                   <div
                     key={`line-${minutesFromStart}`}
@@ -514,7 +514,6 @@ export function TodayAgendaView({
                       left: -(columnGapPx + dotSizePx),
                       right: 0,
                       top: topPx,
-                      transform: 'translateY(-50%)',
                       zIndex: Z_INDEX.TIMELINE_STAMP_LINE,
                     }}
                     aria-hidden
