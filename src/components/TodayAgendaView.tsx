@@ -242,7 +242,7 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents]);
 
-  /** Timeline blocks (7AM–12AM). Stacked layout: calendar and task blocks in one column; overlapping blocks stack vertically (one below the other). Timeline height extends to fit all blocks. */
+  /** Timeline blocks (7AM–12AM). Overlapping blocks are stacked vertically (no overlap); each block shows its correct time on the card. Timeline height grows to fit all blocks. */
   const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, laneCount } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
@@ -264,7 +264,6 @@ export function TodayAgendaView({
           continue;
         }
         const durationMins = getTaskMinutes(item.task);
-        // Use duration-based height so the block never extends past its end time (prevents overlap)
         const durationHeightPx = Math.round(durationMins * pxPerMinute);
         const heightPx = Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
@@ -279,7 +278,6 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        // Use duration-based height only so the block never extends past its end time (prevents overlap with next item)
         const durationHeightPx = Math.round(durationMins * pxPerMinute);
         const heightPx = Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
@@ -293,11 +291,10 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Stack overlapping blocks vertically (calendar and task in one column) instead of side-by-side lanes
+    // Stack overlapping blocks vertically so they don't overlap; each keeps its correct time (shown on the card). First block at natural time; next overlapping one goes below.
     let columnBottomPx = 0;
     for (const block of blocks) {
-      const naturalTopPx = block.naturalTopPx;
-      block.topPx = Math.max(naturalTopPx, columnBottomPx);
+      block.topPx = Math.max(block.naturalTopPx, columnBottomPx);
       block.laneIndex = 0;
       columnBottomPx = block.topPx + block.heightPx + blockGapPx;
     }
@@ -331,7 +328,7 @@ export function TodayAgendaView({
     return () => cancelAnimationFrame(id);
   }, [currentTimeTopPx, combinedItems.length]);
 
-  // Overlapping tasks and calendar events are stacked vertically in one column; new tasks avoid slots occupied by calendar events (findNextAvailableSlot in DragDropContext).
+  // Overlapping items are stacked vertically (no overlap); each card shows its correct scheduled time. Timeline height grows to fit all blocks. New tasks avoid slots occupied by calendar events (findNextAvailableSlot in DragDropContext).
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
@@ -357,7 +354,7 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks, currentTime]);
 
-  // Overlap is resolved by vertical stacking (one column); task times are never changed by this view or by drop-for-overlap.
+  // Overlapping blocks stack vertically so they don't overlap; each card displays its correct time. Timeline grows to fit all blocks. Task times are never changed by this view or by drop-for-overlap.
 
   // LAYER 1: Basic vertical scroll - ScrollArea handles scrolling automatically
   // LAYER 2: Next up badge is implemented via nextUpTaskId and isNextUp prop (see below)
@@ -473,7 +470,7 @@ export function TodayAgendaView({
 
       return (
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
-          {/* Timeline: blocks stacked in one column (overlapping items placed one below the other) */}
+          {/* Timeline: overlapping blocks stacked vertically (no overlap); each shows correct time on card; height grows with blocks */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}>
             {/* Left: time label + dot; NEXT UP badge — higher z-index so never hidden by blocks */}
             <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx, zIndex: Z_INDEX.TIMELINE_LABELS_AND_NEXT_UP }}>
