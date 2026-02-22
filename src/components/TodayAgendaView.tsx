@@ -263,7 +263,11 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const durationMins = getTaskMinutes(item.task);
+        // Use task.estimatedTime when set so block height matches the duration shown on the card (e.g. "3h")
+        const durationMins =
+          typeof item.task.estimatedTime === 'number' && item.task.estimatedTime > 0
+            ? item.task.estimatedTime
+            : getTaskMinutes(item.task);
         const durationHeightPx = Math.round(durationMins * pxPerMinute);
         const heightPx = Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
