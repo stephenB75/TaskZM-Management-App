@@ -55,7 +55,7 @@ export function checkTimeConflict(
     
     const existingTaskStart = existingTaskScheduledDate.getTime();
     // Use at least MIN_TASK_DURATION_MINUTES so we never treat a scheduled block as zero-length (prevents overlaps)
-    const existingTaskDuration = Math.max(getTaskMinutes(existingTask), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
+    const existingTaskDuration = Math.max(getTaskMinutes(existingTask, { useCachedAIAnalysis: true }), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
 
     // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
@@ -316,8 +316,11 @@ export function findNextAvailableSlot(
           }
           continue; // Retry with new candidate time
         } else {
-          // Task end exceeds category hours, no slot available today
-          return requestedTime;
+          // Task end exceeds category hours—no slot today. Return clear "no slot" time (24:00)
+          // so callers don't use an overlapping requestedTime and misalign the timeline.
+          const noSlotTime = new Date(requestedTime);
+          noSlotTime.setHours(HOURS_PER_DAY, 0, 0, 0);
+          return noSlotTime;
         }
       }
     }
@@ -460,7 +463,7 @@ export function reorganizeAllTasksForDate(
       }
       
       const start = scheduledDate.getTime();
-      const duration = Math.max(getTaskMinutes(task), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
+      const duration = Math.max(getTaskMinutes(task, { useCachedAIAnalysis: true }), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
       const end = start + duration;
       
       return { task, start, end };
@@ -516,7 +519,7 @@ export function reorganizeAllTasksForDate(
   // Reorganize: move a task only if it truly overlaps the previous one (start < previous end). Back-to-back (start === previous end) is not overlap.
   for (const taskInfo of sortedTasks) {
     const task = taskInfo.task;
-    const taskDuration = getTaskMinutes(task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+    const taskDuration = getTaskMinutes(task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE; // Use AI estimator
 
     if (taskInfo.start < lastScheduledEnd) {
       // Task needs to be moved
@@ -538,7 +541,7 @@ export function reorganizeAllTasksForDate(
       const newTime = findNextAvailableSlot(
         task.id,
         candidateTime,
-        getTaskMinutes(task), // Use AI estimator
+        getTaskMinutes(task, { useCachedAIAnalysis: true }), // Use AI estimator
         allTasks,
         options
       );
@@ -607,7 +610,7 @@ export function reorganizeConflictingTasks(
       : new Date(task.scheduledDate);
     
     const existingTaskStart = existingTaskScheduledDate.getTime();
-    const existingTaskDuration = Math.max(getTaskMinutes(task), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
+    const existingTaskDuration = Math.max(getTaskMinutes(task, { useCachedAIAnalysis: true }), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
     
     // Check for overlap
@@ -647,7 +650,7 @@ export function reorganizeConflictingTasks(
     const newTime = findNextAvailableSlot(
       conflicting.task.id,
       candidateTime,
-      getTaskMinutes(conflicting.task), // Use AI estimator
+      getTaskMinutes(conflicting.task, { useCachedAIAnalysis: true }), // Use AI estimator
       allTasks,
       options
     );
@@ -660,7 +663,7 @@ export function reorganizeConflictingTasks(
       });
       
       // Update last scheduled end for next iteration
-      const conflictingTaskDuration = getTaskMinutes(conflicting.task) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+      const conflictingTaskDuration = getTaskMinutes(conflicting.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE; // Use AI estimator
       lastScheduledEnd = newTime.getTime() + conflictingTaskDuration;
     }
   }

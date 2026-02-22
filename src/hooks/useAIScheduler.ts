@@ -1883,9 +1883,18 @@ export function useAIScheduler() {
           });
         }
         
-        // Combine existing tasks with tasks in the current plan for this day
-        // This ensures getCategoryTimeSlot can see all tasks scheduled for this day
-        const allTasksForDay = [...existingTasksForDay, ...tasksInPlanSameDay];
+        // Combine existing tasks with tasks in the current plan for this day.
+        // CRITICAL: Dedupe by task id with plan winning—so we only have one block per task at its plan time.
+        // Otherwise the same task would appear twice (existing + plan) and the scheduler could place another task
+        // in the "gap" between old and new time, causing overlap and timeline misalignment.
+        const taskMapForDay = new Map<string, Task>();
+        existingTasksForDay.forEach(t => {
+          if (t.id) taskMapForDay.set(t.id, t);
+        });
+        tasksInPlanSameDay.forEach(t => {
+          if (t.id) taskMapForDay.set(t.id, t);
+        });
+        const allTasksForDay = Array.from(taskMapForDay.values());
         
         // CRITICAL: Count ALL tasks (recurring and regular, across all categories) for time slot distribution
         // This ensures recurring tasks see regular tasks and vice versa when calculating time slots

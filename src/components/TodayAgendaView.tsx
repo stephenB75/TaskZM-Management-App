@@ -263,11 +263,12 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        // Use task.estimatedTime when set so block height matches the duration shown on the card (e.g. "3h")
+        // Use task.estimatedTime when set so block height matches the duration shown on the card (e.g. "3h").
+        // When not set, use getTaskMinutes with cache so long AI-estimated blocks (e.g. 3h) get correct height and don't get a short block with the next task overlapping in time.
         const durationMins =
           typeof item.task.estimatedTime === 'number' && item.task.estimatedTime > 0
             ? item.task.estimatedTime
-            : getTaskMinutes(item.task);
+            : getTaskMinutes(item.task, { useCachedAIAnalysis: true });
         const durationHeightPx = Math.round(durationMins * pxPerMinute);
         const heightPx = Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
