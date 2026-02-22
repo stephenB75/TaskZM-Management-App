@@ -242,7 +242,7 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents]);
 
-  /** Timeline blocks (7AM–12AM). Each block is placed at its natural time (topPx = naturalTopPx) so the vertical timeline aligns with task and calendar event times. Timeline height grows to fit all blocks. */
+  /** Timeline blocks (7AM–12AM). Gaps between items; when a block is pushed down to make room it gets a dashed connector from its time on the timeline so the timeline stays aligned with task/event times. Timeline height grows to fit all blocks. */
   const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, laneCount } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
@@ -291,14 +291,16 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Place every block at its natural time so the vertical timeline aligns with task/event times (no stacking).
+    // Stack with gap so items don't touch; blocks that are pushed down get a connector from their time on the timeline so alignment is clear.
+    let columnBottomPx = 0;
     for (const block of blocks) {
-      block.topPx = block.naturalTopPx;
+      block.topPx = Math.max(block.naturalTopPx, columnBottomPx);
       block.laneIndex = 0;
+      columnBottomPx = block.topPx + block.heightPx + blockGapPx;
     }
     const laneCount = 1;
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
-    const maxBlockBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.naturalTopPx + b.heightPx)) : 0;
+    const maxBlockBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.topPx + b.heightPx)) : 0;
     const timelineLayoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
     return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx, laneCount };
   }, [combinedItems, getTaskMinutes]);
@@ -326,7 +328,7 @@ export function TodayAgendaView({
     return () => cancelAnimationFrame(id);
   }, [currentTimeTopPx, combinedItems.length]);
 
-  // Each block is at its natural time so the vertical timeline aligns with task/event times; timeline height grows to fit all blocks. New tasks avoid slots occupied by calendar events (findNextAvailableSlot in DragDropContext).
+  // Gaps between items; stacked blocks use a connector from their time on the timeline so alignment is clear. Timeline height grows to fit all blocks. New tasks avoid slots occupied by calendar events (findNextAvailableSlot in DragDropContext).
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
@@ -352,7 +354,7 @@ export function TodayAgendaView({
     return uncompletedTasks[0]?.id || null;
   }, [todayTasks, currentTime]);
 
-  // Blocks are placed at their scheduled time so the vertical timeline aligns; timeline grows to fit all blocks. Task times are never changed by this view or by drop-for-overlap.
+  // Gaps between blocks; connector line from timeline to block when stacked so time stays aligned. Task times are never changed by this view or by drop-for-overlap.
 
   // LAYER 1: Basic vertical scroll - ScrollArea handles scrolling automatically
   // LAYER 2: Next up badge is implemented via nextUpTaskId and isNextUp prop (see below)
@@ -468,7 +470,7 @@ export function TodayAgendaView({
 
       return (
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
-          {/* Timeline: blocks at natural time so labels/lines align with task and calendar event times; height grows with blocks */}
+          {/* Timeline: gaps between items; connector from time axis to block when stacked so timeline aligns with task/event times; height grows with blocks */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}>
             {/* Left: time label + dot; NEXT UP badge — higher z-index so never hidden by blocks */}
             <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx, zIndex: Z_INDEX.TIMELINE_LABELS_AND_NEXT_UP }}>
@@ -527,7 +529,7 @@ export function TodayAgendaView({
                   aria-hidden
                 />
               )}
-              {timelineBlocks.map(({ item, topPx, heightPx, laneIndex, actualDurationMins }) => {
+              {timelineBlocks.map(({ item, topPx, heightPx, laneIndex, actualDurationMins, naturalTopPx }) => {
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
                 const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
                 const isTask = item.type === 'task' && item.task;
@@ -535,8 +537,23 @@ export function TodayAgendaView({
                 const blockStyle = isTask
                   ? getTodayAgendaBlockColors(item.task!.priority, TODAY_AGENDA_TIMELINE.blockTintOpacity)
                   : null;
+                const needsConnector = topPx > naturalTopPx;
+                const connectorHeightPx = topPx - naturalTopPx;
                 return (
                   <React.Fragment key={key}>
+                    {needsConnector && (
+                      <div
+                        className="absolute left-0 border-l-2 border-dashed border-primary/50 pointer-events-none"
+                        style={{
+                          top: naturalTopPx,
+                          height: connectorHeightPx,
+                          left: -(columnGapPx + dotSizePx),
+                          width: blocksColumnPaddingLeftPx + (columnGapPx + dotSizePx),
+                          zIndex: Z_INDEX.TIMELINE_STAMP_LINE - 1,
+                        }}
+                        aria-hidden
+                      />
+                    )}
                     <div
                       className="absolute overflow-hidden rounded-r"
                       style={{
