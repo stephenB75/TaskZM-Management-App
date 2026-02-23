@@ -754,6 +754,8 @@ export function TaskDialog({
   const isSeriesOccurrence = Boolean(task?.id && getSeriesBaseId(task.id));
   const seriesBaseId = task?.id ? getSeriesBaseId(task.id) : null;
   const seriesTotalMinutes = seriesBaseId ? calculateRecurringTaskSeriesTotalTime(seriesBaseId, tasks) : 0;
+  /** True when editing the recurring series base (recurrence pattern); changes apply to all occurrences. */
+  const isEditingSeriesBase = Boolean(task?.recurrence?.type && task.recurrence.type !== 'none' && task?.id && !isSeriesOccurrence);
 
   // AI Task Breakdown - Real-time analysis
   const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
@@ -2492,6 +2494,11 @@ export function TaskDialog({
           }}
           className="flex-1 overflow-hidden flex flex-col min-h-0"
         >
+          {isEditingSeriesBase && (
+            <p className="text-xs text-muted-foreground px-1 pb-2" role="status">
+              Editing recurring series. Changes here apply to all occurrences.
+            </p>
+          )}
           {/* Tabbed Interface - single column (reference: no right menu) */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 flex overflow-hidden flex-col">
@@ -4212,15 +4219,23 @@ export function TaskDialog({
 
           {/* Apply to series: when editing a series occurrence, optionally apply shared fields to all in series */}
           {isSeriesOccurrence && task && (
-            <div className="flex items-center gap-2 py-2">
-              <Checkbox
-                id="apply-to-series"
-                checked={applyToSeries}
-                onCheckedChange={(checked) => setApplyToSeries(checked === true)}
-              />
-              <label htmlFor="apply-to-series" className="text-sm text-muted-foreground cursor-pointer">
-                Apply title, description, priority, and other details to all tasks in this series
-              </label>
+            <div className="space-y-1.5 py-2">
+              <p className="text-xs text-muted-foreground" role="status">
+                Editing this occurrence. Use the checkbox below to apply changes to the whole series.
+              </p>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="apply-to-series"
+                  checked={applyToSeries}
+                  onCheckedChange={(checked) => setApplyToSeries(checked === true)}
+                />
+                <label htmlFor="apply-to-series" className="text-sm text-muted-foreground cursor-pointer">
+                  Apply title, description, priority, and other details to all tasks in this series
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                By default, only this occurrence&apos;s time and subtasks are updated. Check to apply title, description, priority, and schedule to the whole series.
+              </p>
             </div>
           )}
         </form>

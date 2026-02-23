@@ -633,8 +633,10 @@ export function MonthCalendarView({
           try {
             // Check if task matches this date (either exact match or recurrence pattern)
             if (!isDateInRecurrence(task, date)) return false;
-            // Avoid duplicate: when a series has an occurrence for this day (baseId__date), show only the occurrence and hide the base
+            // Show base only when no occurrence for this day; hide base when an occurrence exists (no duplicate).
             if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
+            // Second line of defense: if this task's id is a base (no __) and an occurrence exists for this day, hide it. Catches base when recurrence was stripped after load/sync.
+            if (!task.id.includes('__') && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
             return true;
           } catch (error) {
             console.error('Error checking date in recurrence:', error, task);

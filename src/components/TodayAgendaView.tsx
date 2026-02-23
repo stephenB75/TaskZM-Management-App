@@ -113,8 +113,10 @@ export function TodayAgendaView({
       }
       // Check if task matches today (either exact match or recurrence pattern)
       if (!isDateInRecurrence(task, today)) return false;
-      // When a series has pre-created occurrences (baseId__date), show only the occurrence for today and hide the base to avoid duplicates
+      // Show base only when no occurrence for today; hide base when an occurrence exists (no duplicate).
       if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, todayDateString)) return false;
+      // Second line of defense: if this task's id is a base (no __) and an occurrence exists for today, hide it. Catches base when recurrence was stripped after load/sync.
+      if (!task.id.includes('__') && hasSeriesOccurrenceForDate(tasks, task.id, todayDateString)) return false;
       // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for today, show only the completed occurrence
       if (task.recurrence && task.recurrence.type !== 'none') {
         const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${todayDateString}`;
