@@ -177,16 +177,35 @@ export function isSeriesBaseTask(task: { id?: string; recurrence?: { type?: stri
 }
 
 /**
+ * Normalize an occurrence id suffix (date part after __) to YYYY-MM-DD for comparison.
+ * Handles both "YYYY-MM-DD" and ISO datetime "YYYY-MM-DDTHH:mm:ss..." from APIs.
+ */
+function occurrenceSuffixToDateString(suffix: string): string | null {
+  const trimmed = (suffix || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return null;
+  return getDateString(d);
+}
+
+/**
  * True when there is a series occurrence task (baseId__dateStr) for the given date.
  * Used so day views show the occurrence and hide the base to avoid duplicates.
+ * Matches exact id (baseId__YYYY-MM-DD) and also occurrence ids whose date part
+ * normalizes to dateString (e.g. from API as baseId__YYYY-MM-DDTHH:mm:ssZ).
  */
 export function hasSeriesOccurrenceForDate(
   tasks: Array<{ id: string }>,
   baseId: string,
   dateString: string
 ): boolean {
-  const occurrenceId = `${baseId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}${dateString}`;
-  return tasks.some((t) => t.id === occurrenceId);
+  const prefix = `${baseId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}`;
+  return tasks.some((t) => {
+    if (!t.id || !t.id.startsWith(prefix)) return false;
+    const suffix = t.id.slice(prefix.length);
+    const normalized = occurrenceSuffixToDateString(suffix);
+    return normalized === dateString;
+  });
 }
 
 export function isOverdue(dueDate: string | null): boolean {

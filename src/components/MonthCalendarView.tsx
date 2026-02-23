@@ -25,7 +25,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { cn, prepareTaskForDialog, parseCalendarEventTime } from "../lib/utils";
+import { cn, prepareTaskForDialog, parseCalendarEventTime, getDateString, isSeriesBaseTask, hasSeriesOccurrenceForDate } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
@@ -623,6 +623,7 @@ export function MonthCalendarView({
         return [];
       }
 
+      const dateString = getDateString(date);
       return tasks
         .filter((task) => {
           // Defensive check: ensure task is valid
@@ -631,7 +632,10 @@ export function MonthCalendarView({
           }
           try {
             // Check if task matches this date (either exact match or recurrence pattern)
-            return isDateInRecurrence(task, date);
+            if (!isDateInRecurrence(task, date)) return false;
+            // Avoid duplicate: when a series has an occurrence for this day (baseId__date), show only the occurrence and hide the base
+            if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
+            return true;
           } catch (error) {
             console.error('Error checking date in recurrence:', error, task);
             return false;
