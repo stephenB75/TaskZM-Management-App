@@ -1779,7 +1779,9 @@ export function TaskDialog({
           }
         );
         
-        if (alternativeTime.getHours() < HOURS_PER_DAY) {
+        // findNextAvailableSlot returns next-day 00:00 (12 AM) when no slot found; detect by calendar day
+        const hasSlotToday = getDateString(alternativeTime) === getDateString(scheduledDateTime) && alternativeTime.getHours() < HOURS_PER_DAY;
+        if (hasSlotToday) {
           setPendingTaskData({
             taskData,
             requestedTime: scheduledDateTime,
@@ -1790,7 +1792,7 @@ export function TaskDialog({
         } else {
           const maxHours = aiSettings.maxHoursPerDay ?? 5;
           toast.error('No available time slots', {
-            description: `No available slots after current time within category hours and ${maxHours}-hour limit.`,
+            description: `No available slots after current time within category hours and ${maxHours}-hour limit. Try a later time or another day.`,
           });
           return;
         }
@@ -1820,7 +1822,9 @@ export function TaskDialog({
         );
 
         if (alternativeTime.getTime() !== scheduledDateTime.getTime()) {
-          if (alternativeTime.getHours() < HOURS_PER_DAY) {
+          // findNextAvailableSlot returns next-day 00:00 (12 AM) when no slot found; detect by calendar day
+          const hasSlotOnSelectedDay = getDateString(alternativeTime) === getDateString(scheduledDateTime) && alternativeTime.getHours() < HOURS_PER_DAY;
+          if (hasSlotOnSelectedDay) {
             setPendingTaskData({
               taskData,
               requestedTime: scheduledDateTime,
@@ -1831,7 +1835,7 @@ export function TaskDialog({
           }
           const reason = isToday && scheduledDateTime.getTime() < now.getTime()
             ? 'Selected time is in the past. Please choose a time after the current time.'
-            : 'Time slot is already taken by another task or a calendar event. Please choose a different time slot.';
+            : 'Time slot is already taken by another task or a calendar event. No other slot on this day—try another day or free up time.';
           toast.error('Time slot unavailable', {
             description: reason,
           });

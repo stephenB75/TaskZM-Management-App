@@ -630,11 +630,16 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         }
       );
       
-      // Check if a valid slot was found
-      if (finalTime.getHours() >= HOURS_PER_DAY) {
+      // Check if a valid slot was found on the requested day
+      // findNextAvailableSlot signals "no slot" by returning 24:00, which rolls over to next day 00:00 (12 AM)
+      // so getHours() is 0, not 24. Detect by comparing calendar day.
+      const requestedDateString = getDateString(requestedTime);
+      const finalDateString = getDateString(finalTime);
+      const noSlotOnRequestedDay = finalDateString !== requestedDateString || finalTime.getHours() >= HOURS_PER_DAY;
+      if (noSlotOnRequestedDay) {
         const maxHours = aiSettings.maxHoursPerDay ?? 5;
         toast.error('No available time slots', {
-          description: `No available slots after current time within category hours and ${maxHours}-hour limit.`,
+          description: `No available slots on this day after current time within category hours and ${maxHours}-hour limit. Try another day or free up time.`,
         });
         return;
       }
