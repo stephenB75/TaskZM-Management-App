@@ -13,6 +13,7 @@ import {
   TWO_WEEKS_DAYS,
   DAYS_IN_WEEK,
   RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED,
+  RECURRENCE_SERIES_OCCURRENCE_SEPARATOR,
 } from "../lib/business-constants";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from "../lib/utils";
@@ -924,7 +925,7 @@ export function DashboardView({
         // Show base only when no occurrence for this day; hide base when an occurrence exists (no duplicate).
         if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
         // Second line of defense: if this task's id is a base (no __) and an occurrence exists for this day, hide it. Catches base when recurrence was stripped after load/sync.
-        if (!task.id.includes('__') && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
+        if (!task.id.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
         // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence
         if (task.recurrence && task.recurrence.type !== 'none') {
           const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${dateString}`;

@@ -65,6 +65,7 @@ import {
   RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS,
   RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED,
   RECURRENCE_NONE_CONFIG,
+  RECURRENCE_SERIES_OCCURRENCE_SEPARATOR,
 } from '../lib/business-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
@@ -2039,7 +2040,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     const seriesBase = getSeriesBaseId(taskId);
     const baseTaskId = isOccurrenceSubtaskId
       ? taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)[0]
-      : seriesBase ?? (taskId.includes('__') ? taskId.split('__')[0] : taskId);
+      : seriesBase ?? (taskId.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR) ? taskId.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)[0] : taskId);
 
     try {
     // Permission check removed to break circular dependency with TeamContext

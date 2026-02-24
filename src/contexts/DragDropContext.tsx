@@ -14,7 +14,7 @@ import { TASK_CARD_LAYOUT_METRICS, TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIO
 import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, TODAY_AGENDA_TIMELINE } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
-import { MINUTES_PER_HOUR, HOURS_PER_DAY, MILLISECONDS_PER_MINUTE } from '../lib/business-constants';
+import { MINUTES_PER_HOUR, HOURS_PER_DAY, MILLISECONDS_PER_MINUTE, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { toast } from '../lib/toast-wrapper';
 import {
   AlertDialog,
@@ -85,8 +85,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
 
   // Helper function to extract original task ID from sortable ID (handles recurring task format: taskId__dateString)
   const extractTaskId = (sortableId: string): string => {
-    if (sortableId.includes('__')) {
-      const parts = sortableId.split('__');
+    if (sortableId.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)) {
+      const parts = sortableId.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR);
       return parts[0]; // Return the original task ID
     }
     return sortableId;
@@ -715,8 +715,8 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     let targetDateString = over.id as string;
 
     // Check if the drop target is a sortable ID (recurring task format: taskId__dateString)
-    if (targetDateString.includes('__')) {
-      const parts = targetDateString.split('__');
+    if (targetDateString.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)) {
+      const parts = targetDateString.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR);
       if (parts.length === 2 && /^\d{4}-\d{2}-\d{2}$/.test(parts[1])) {
         // Use the date from the sortable ID
         targetDateString = parts[1];
