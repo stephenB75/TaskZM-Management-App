@@ -1085,6 +1085,7 @@ export function InboxView() {
                           provider={event.provider}
                           calendarColor={event.calendarColor}
                           isRecurring={event.isRecurring}
+                          variant="inbox"
                         />
                       ))}
                     </div>
@@ -1419,6 +1420,7 @@ export function InboxView() {
                           provider={event.provider}
                           calendarColor={event.calendarColor}
                           isRecurring={event.isRecurring}
+                          variant="inbox"
                         />
                       ))}
                     </div>

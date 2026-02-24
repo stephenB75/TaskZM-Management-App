@@ -42,7 +42,8 @@ interface CalendarEventCardProps {
   isRecurring?: boolean; // Flag indicating if this is a recurring event
   /** When 'kanban', uses light gray background, square left corners, rounded right; background starts at vertical line. */
   /** When 'timelineCompact', single-row layout for short events on Today Agenda timeline. */
-  variant?: 'default' | 'kanban' | 'timelineCompact';
+  /** When 'inbox', 2-line layout: meta + time on line 1, headline + location on line 2. */
+  variant?: 'default' | 'kanban' | 'timelineCompact' | 'inbox';
 }
 
 // Calculate duration in minutes between two ISO date strings (uses parseCalendarEventTime for correct timezone)
@@ -441,6 +442,63 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
               <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Inbox: 2-line layout (meta + time on line 1, headline + location on line 2)
+  if (variant === 'inbox') {
+    return (
+      <div
+        className={cn(
+          "flex w-full max-w-full flex-shrink-0 overflow-hidden transition-all duration-200 cursor-default select-none rounded-lg relative box-border flex-col",
+          isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
+        )}
+        style={{ minHeight: `${calculatedHeight}px`, width: '100%', minWidth: '100%', maxWidth: '100%' }}
+      >
+        <div
+          className={cn('absolute top-0 bottom-0 rounded-full', colors.accent)}
+          style={{
+            left: `${isMobile ? CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.mobile : CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.desktop}px`,
+            width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width,
+          }}
+        />
+        <div className="flex-1 py-2 flex flex-col gap-1.5" style={{ paddingLeft: `${contentPaddingLeft}px` }}>
+          {/* Line 1: icon, source, recurring, time, duration */}
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
+            <span className={cn('font-medium uppercase tracking-wide flex-shrink-0', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
+              {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]}
+              {CALENDAR_EVENT_UI_TEXT.calendarLabelSuffix}
+            </span>
+            {isRecurring && (
+              <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
+            )}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
+              <span className={cn('whitespace-nowrap', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>
+                {allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`}
+              </span>
+            </div>
+            <span className={cn('font-medium px-1.5 py-0.5 rounded-full flex-shrink-0', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
+              {formatDuration(durationMinutes)}
+            </span>
+          </div>
+          {/* Line 2: headline + location */}
+          <div className="flex items-center gap-2 min-w-0">
+            <h4 className={cn('font-semibold leading-tight truncate flex-1 min-w-0', colors.text)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.title }} title={title}>
+              {title}
+            </h4>
+            {location && (
+              <div className="flex items-center gap-1.5 flex-shrink-0 min-w-0 max-w-[50%]">
+                <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
+                <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }} title={location}>
+                  {location}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
