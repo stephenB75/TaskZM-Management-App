@@ -426,9 +426,10 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         {/* Body (same border as task card body): calendar icon + provider label so user can identify which calendar the event belongs to */}
         <div className={cn('flex flex-col flex-1 min-w-0 rounded-b-lg px-2 pt-2 pb-2', TASK_CARD_BORDERS.cardBody)}>
           <div className={cn('flex items-center gap-2', isMobile ? 'pb-0.5' : 'pb-1')}>
-            <Icon name="calendar" size={isMobile ? 18 : 20} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
+            <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
             <span className={cn('font-medium uppercase tracking-wide flex-shrink-0', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
-              {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]} Calendar
+              {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]}
+              {CALENDAR_EVENT_UI_TEXT.calendarLabelSuffix}
             </span>
           </div>
           <h3 className={cn('text-foreground dark:text-gray-100 leading-tight flex-1 font-semibold min-w-0 pt-0.5', TASK_CARD_LINE_CLAMP.title, isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop)}>
@@ -465,7 +466,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         <div className="flex items-center gap-2">
           <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
           <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
-            {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]} Calendar
+            {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]}
+            {CALENDAR_EVENT_UI_TEXT.calendarLabelSuffix}
           </span>
           {isRecurring && (
             <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />

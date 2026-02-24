@@ -9,6 +9,8 @@ export const CALENDAR_EVENT_UI_TEXT = {
   allDay: 'All day',
   /** Kanban week view: label in the event card tab bar (task-like layout). */
   kanbanTabLabel: 'Event',
+  /** Suffix after provider name to form full calendar label (e.g. "iCloud" + this = "iCloud Calendar"). */
+  calendarLabelSuffix: ' Calendar',
 } as const;
 
 // Font Sizes (+20% for larger container contents)
