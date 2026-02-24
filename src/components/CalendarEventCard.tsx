@@ -7,12 +7,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from './ui/tooltip';
-import { cn, parseCalendarEventTime } from '../lib/utils';
+import { cn, parseCalendarEventTime, getTimeAndPeriod } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR, MINUTES_PER_DAY } from '../lib/business-constants';
 import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS, CALENDAR_EVENT_UI_TEXT } from '../lib/calendar-event-constants';
 import { CALENDAR_PROVIDER_EVENT_SOURCE_LABELS, type CalendarProviderId } from '../lib/calendar-integration-constants';
-import { TASK_CARD_SPACING } from '../lib/task-card-constants';
+import {
+  TASK_CARD_SPACING,
+  TASK_CARD_TAB_HEIGHT,
+  TASK_CARD_TAB_SPACING,
+  TASK_CARD_BORDERS,
+  TASK_CARD_FONT_SIZES,
+  TASK_CARD_LINE_CLAMP,
+  TASK_CARD_ICON_SIZES,
+  TASK_CARD_BADGE_SIZES,
+  TASK_CARD_KANBAN_TIME_PERIOD_AM,
+  TASK_CARD_KANBAN_TIME_PERIOD_PM,
+  TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX,
+  TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS,
+  TASK_CARD_KANBAN_TIME_PERIOD_ICON_AM,
+  TASK_CARD_KANBAN_TIME_PERIOD_ICON_PM,
+  TASK_CARD_KANBAN_TIME_ROW_GAP_CLASS,
+} from '../lib/task-card-constants';
 import { TODAY_AGENDA_TIMELINE } from '../lib/layout-constants';
 import { useIsMobile } from './ui/use-mobile';
 
@@ -340,13 +356,16 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     );
   }
 
-  // Kanban week view: light gray background, square left, rounded right, background starts at vertical line; same width as task cards
+  // Kanban week view: task-like layout (top tab bar + bordered body) so events match task cards
   if (variant === 'kanban') {
-    const kanbanPadLeft = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.left.desktop;
-    const kanbanPadRight = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.right.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.kanban.right.desktop;
+    const timeAndPeriod = !allDay ? getTimeAndPeriod(start) : null;
+    const tabHeight = isMobile ? TASK_CARD_TAB_HEIGHT.mobile : TASK_CARD_TAB_HEIGHT.desktop;
+    const tabMarginTop = isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop;
+    const tabPaddingV = isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop;
+    const clockSize = isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop;
     return (
       <div
-        className="flex w-full max-w-full overflow-hidden transition-all duration-200 cursor-default select-none box-border flex-shrink-0"
+        className="flex flex-col w-full max-w-full overflow-hidden transition-all duration-200 cursor-default select-none box-border flex-shrink-0"
         style={{
           minHeight: `${calculatedHeight}px`,
           flex: '0 0 100%',
@@ -356,52 +375,69 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           boxSizing: 'border-box',
         }}
       >
-        {/* Vertical line at left edge (square corners) - background starts from here */}
+        {/* Tab row (same structure as task card tab) */}
         <div
-          className={cn('flex-shrink-0 rounded-none', colors.accent)}
+          className={cn('relative z-10 flex items-center gap-2 rounded-t-lg rounded-b flex-shrink-0 w-full min-w-max px-3 shadow-sm', colors.accent)}
           style={{
-            width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width,
-            minHeight: `${calculatedHeight}px`,
-          }}
-        />
-        <div
-          className={cn(
-            'flex-1 min-h-full flex flex-col gap-2 py-2 rounded-r-lg min-w-0 overflow-hidden border-0 border-l-0',
-            colors.bg,
-          )}
-          style={{
-            flex: '1 1 0%',
-            paddingLeft: kanbanPadLeft,
-            paddingRight: kanbanPadRight,
-            minHeight: `${calculatedHeight}px`,
-            minWidth: 0,
-            boxSizing: 'border-box',
+            marginTop: tabMarginTop,
+            marginBottom: -1,
+            minHeight: `${tabHeight}px`,
+            paddingTop: tabPaddingV,
+            paddingBottom: tabPaddingV,
+            minWidth: 'max-content',
           }}
         >
-          {/* Header with calendar icon */}
-          <div className="flex items-center gap-2">
-            <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
-            <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
+          <Icon name="clock" size={clockSize} className="flex-shrink-0 text-white" weight="fill" />
+          {allDay ? (
+            <span className={cn('text-white font-normal whitespace-nowrap', isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+              {CALENDAR_EVENT_UI_TEXT.allDay}
+            </span>
+          ) : timeAndPeriod ? (
+            <span className={cn('text-white font-normal whitespace-nowrap flex items-center', TASK_CARD_KANBAN_TIME_ROW_GAP_CLASS, isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+              {timeAndPeriod.timePart}
+              <span className={timeAndPeriod.period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_AM : TASK_CARD_KANBAN_TIME_PERIOD_PM}>{timeAndPeriod.period}</span>
+              <Icon
+                name={timeAndPeriod.period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_ICON_AM : TASK_CARD_KANBAN_TIME_PERIOD_ICON_PM}
+                size={TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX}
+                className={TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS}
+              />
+            </span>
+          ) : (
+            <span className={cn('text-white font-normal whitespace-nowrap', isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
+              {startTime}
+              {endTime && ` – ${endTime}`}
+            </span>
+          )}
+          <span
+            className={cn(
+              'rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white dark:bg-card whitespace-nowrap text-foreground',
+              isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
+            )}
+          >
+            {CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
+          </span>
+          <span className={cn('text-white font-semibold flex-shrink-0 whitespace-nowrap', isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
+            {formatDuration(durationMinutes)}
+          </span>
+          {isRecurring && (
+            <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className="flex-shrink-0 ml-auto text-white" weight="duotone" />
+          )}
+        </div>
+        {/* Body (same border as task card body): calendar icon + provider label so user can identify which calendar the event belongs to */}
+        <div className={cn('flex flex-col flex-1 min-w-0 rounded-b-lg px-2 pt-2 pb-2', TASK_CARD_BORDERS.cardBody)}>
+          <div className={cn('flex items-center gap-2', isMobile ? 'pb-0.5' : 'pb-1')}>
+            <Icon name="calendar" size={isMobile ? 18 : 20} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
+            <span className={cn('font-medium uppercase tracking-wide flex-shrink-0', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
               {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]} Calendar
             </span>
-            {isRecurring && (
-              <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />
-            )}
           </div>
-          <h4 className={cn('font-semibold leading-tight line-clamp-2', colors.text)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.title }}>{title}</h4>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1">
-              <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
-              <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`}</span>
-            </div>
-            <span className={cn('font-medium px-1.5 py-0.5 rounded-full', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
-              {formatDuration(durationMinutes)}
-            </span>
-          </div>
+          <h3 className={cn('text-foreground dark:text-gray-100 leading-tight flex-1 font-semibold min-w-0 pt-0.5', TASK_CARD_LINE_CLAMP.title, isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop)}>
+            {title}
+          </h3>
           {location && (
             <div className="flex items-center gap-1.5 mt-0.5">
               <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
-              <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
+              <span className={cn('truncate text-sm', colors.mutedText)}>{location}</span>
             </div>
           )}
         </div>

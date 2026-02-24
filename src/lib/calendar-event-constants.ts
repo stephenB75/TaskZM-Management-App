@@ -7,6 +7,8 @@
 // UI copy for calendar events
 export const CALENDAR_EVENT_UI_TEXT = {
   allDay: 'All day',
+  /** Kanban week view: label in the event card tab bar (task-like layout). */
+  kanbanTabLabel: 'Event',
 } as const;
 
 // Font Sizes (+20% for larger container contents)
