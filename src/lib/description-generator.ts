@@ -3475,14 +3475,10 @@ export async function generateDescription(
       }, 0);
     });
 
-    // Use full library so the correct/proper response is crafted from all domain terminology
-    terminology = {
-      keywords: domainTerms.keywords || [],
-      phrases: domainTerms.phrases || [],
-      verbs: domainTerms.verbs || [],
-      nouns: domainTerms.nouns || [],
-    };
-    logger.debug('📝 Description Generation: Using full domain terminology (full library scan)', {
+    // Use task-relevant terminology only (avoids off-topic phrases when no breakdown context)
+    const maxPerCategory = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer ?? 15;
+    terminology = filterTerminologyRelevantToTask(taskName, domainRef, domainTerms, maxPerCategory);
+    logger.debug('📝 Description Generation: Using task-relevant filtered terminology (no breakdown context)', {
       taskName,
       detectedDomain: domainRef,
       confidence: domainResult.confidence,
@@ -3902,7 +3898,12 @@ export async function generateDescription(
   const maxWords = (DESCRIPTION_GENERATION_CONFIG as { descriptionRules?: { maxWordsPerSentence?: number } }).descriptionRules?.maxWordsPerSentence ?? 25;
   const stripped = stripOffTopicSentences(finalDescription, taskName);
   const trimmed = trimRunOnDescription(stripped, maxWords);
-  const normalized = normalizeSentenceUSEnglish(trimmed);
+  let normalized = normalizeSentenceUSEnglish(trimmed);
+  // Fallback if stripping/trimming left description empty or too short
+  if (!normalized || normalized.trim().length < 10) {
+    const taskNameNorm = taskName.trim().toLowerCase();
+    normalized = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${taskNameNorm.endsWith('.') ? taskNameNorm : taskNameNorm + '.'}`;
+  }
 
   return {
     description: normalized,

@@ -16,8 +16,9 @@ import { MINUTES_PER_HOUR, DEFAULT_PROJECT_ID } from '../lib/business-constants'
 import {
   TASK_BREAKDOWN_DEBOUNCE_MS,
   TASK_BREAKDOWN_CACHE_SIZE,
+  DESCRIPTION_GENERATION_CONFIG,
 } from '../lib/ai-config';
-import { type FilteredTerminology } from '../lib/description-generator';
+import { type FilteredTerminology, filterTerminologyRelevantToTask } from '../lib/description-generator';
 import { DEFAULT_TASK_STATUS, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_DOMAIN, DEFAULT_CREATED_BY, TEMP_TASK_ID } from '../lib/task-constants';
 import { createAIContext, createAIContextSync, type AIContext } from '../lib/ai-context';
 import { getDomainTerminology } from '../lib/domain-terminology';
@@ -33,7 +34,7 @@ export interface TaskBreakdown {
   descriptionAnalysis: DescriptionAnalysis | null;
   domain: Domain;
   confidence: number;
-  /** Full domain terminology (full library) for use when calling generateDescription so the correct response is crafted from the entire library. */
+  /** Task-relevant filtered terminology for use when calling generateDescription and for consistent vocabulary with the action plan. */
   filteredTerminology?: FilteredTerminology;
 }
 
@@ -251,27 +252,31 @@ export function useTaskBreakdown(
           ? aiContext.domain
           : DEFAULT_TASK_DOMAIN;
         
-        // Ensure aiContext has valid domain before passing to other functions
+        // Task-relevant terminology only (avoids off-topic phrases e.g. "search for used car" for SNAP recertification)
+        const fullTerminology = aiContext.domainTerms;
+        const maxPerCategory = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer ?? 15;
+        const filteredTerminology = filterTerminologyRelevantToTask(title, validDomain, fullTerminology, maxPerCategory);
+        // Merge with pronouns/context/effortMultiplier so domainTerms remains compatible with action plan and description-analyzer
+        const taskRelevantDomainTerms = {
+          ...filteredTerminology,
+          pronouns: fullTerminology.pronouns ?? [],
+          context: fullTerminology.context ?? validDomain,
+          effortMultiplier: fullTerminology.effortMultiplier ?? 1,
+        };
+
+        // Ensure aiContext has valid domain and task-relevant terminology for action plan and description
         const safeAIContext = {
           ...aiContext,
           domain: validDomain,
           domainConfidence: aiContext.domainConfidence ?? DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+          domainTerms: taskRelevantDomainTerms,
         };
-        
+
         // Analyze description (pass shared context and effort score to avoid redundant work)
         const descriptionAnalysis = analyzeDescription(title, description, safeAIContext, verbAnalysis.effortScore);
 
         // Generate action plan using only local and shared terminology (rule-based; no OpenAI).
         const actionPlan = generateActionPlan(tempTask as Task, safeAIContext);
-
-        // Use full library for description so the correct/proper response is crafted from all domain terminology
-        const fullTerminology = aiContext.domainTerms;
-        const filteredTerminology: FilteredTerminology = {
-          keywords: fullTerminology.keywords || [],
-          phrases: fullTerminology.phrases || [],
-          verbs: fullTerminology.verbs || [],
-          nouns: fullTerminology.nouns || [],
-        };
 
         // Determine suggested category from domain
         let suggestedCategory: 'work' | 'personal' | 'projects' | null = null;
