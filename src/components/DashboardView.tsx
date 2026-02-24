@@ -1584,7 +1584,6 @@ export function DashboardView({
                     const isSelected = index === mobileDayIndex;
                     const dayTasks = getTasksForDay(column.dateString);
                     const dayEventCount = calendarEventsByDate[column.dateString] || 0;
-                    const totalItems = dayTasks.length + dayEventCount;
                     
                     // Debug: Log tasks and events for this day in development
                     if (import.meta.env.DEV) {
@@ -1627,56 +1626,40 @@ export function DashboardView({
                         >
                           {column.date.getDate()}
                         </span>
-                        {/* Show dots for tasks and events - always visible, not just when selected */}
+                        {/* Show dots for all tasks and events - one dot per item; wrap to next line when many */}
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
-                          <div className="flex items-center justify-center gap-0.5 mt-1.5 min-h-[10px] flex-shrink-0">
-                            {/* Task dots (primary color) - show for all tasks including done */}
-                            {/* CRITICAL: Always render task dots if tasks exist, independent of events */}
-                            {dayTasks.length > 0 && dayTasks.slice(0, 3).map((task, taskIndex) => {
-                              if (!task) return null; // Safety check
+                          <div className="flex flex-wrap items-center justify-center gap-0.5 mt-1 min-h-[6px] flex-shrink-0 max-w-full">
+                            {/* Task dots (primary) - one per task */}
+                            {dayTasks.map((task, taskIndex) => {
+                              if (!task) return null;
                               const isDone = task.status === 'done';
                               return (
                                 <div
                                   key={`task-${task.id}-${taskIndex}`}
                                   className={cn(
-                                    "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0",
-                                    // Ensure dots are always visible with sufficient opacity
+                                    "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
                                     isSelected
                                       ? isDone ? "bg-primary/70" : "bg-primary"
                                       : isDone ? "bg-primary/60" : "bg-primary/80",
                                   )}
-                                  style={{
-                                    // Force visibility
-                                    display: 'block',
-                                    opacity: isDone ? 0.6 : 1,
-                                  }}
+                                  style={{ display: 'block', opacity: isDone ? 0.6 : 1 }}
                                   aria-label={`Task: ${task.title || 'Untitled task'}`}
                                   title={task.title || 'Untitled task'}
                                 />
                               );
                             })}
-                            {/* Event dots (blue color to differentiate from tasks) */}
-                            {/* CRITICAL: Always render event dots if events exist, independent of tasks */}
-                            {dayEventCount > 0 && Array.from({
-                              length: Math.min(dayEventCount, 3),
-                            }).map((_, eventIndex) => (
+                            {/* Event dots (blue) - one per calendar event */}
+                            {dayEventCount > 0 && Array.from({ length: dayEventCount }).map((_, eventIndex) => (
                               <div
                                 key={`event-${column.dateString}-${eventIndex}`}
                                 className={cn(
-                                  "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0",
-                                  isSelected
-                                    ? "bg-blue-500"
-                                    : "bg-blue-500/70",
+                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
+                                  isSelected ? "bg-blue-500" : "bg-blue-500/70",
                                 )}
                                 aria-label={`Calendar event ${eventIndex + 1}`}
                                 title={`${dayEventCount} calendar event${dayEventCount !== 1 ? 's' : ''}`}
                               />
                             ))}
-                            {totalItems > 6 && (
-                              <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5 flex-shrink-0 font-medium">
-                                +{totalItems - 6}
-                              </span>
-                            )}
                           </div>
                         )}
                       </button>
