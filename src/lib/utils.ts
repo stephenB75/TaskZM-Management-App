@@ -208,7 +208,7 @@ export function getSeriesKeyForTask(
   dateString: string
 ): { baseId: string; dateStr: string } | null {
   if (!task?.id) return null;
-  const baseId = getSeriesBaseId(task.id);
+  let baseId = getSeriesBaseId(task.id);
   if (baseId !== null) {
     const dateStr = getOccurrenceDateString(task.id);
     if (dateStr) return { baseId, dateStr };
@@ -218,6 +218,15 @@ export function getSeriesKeyForTask(
       if (normalized) return { baseId, dateStr: normalized };
     }
     return { baseId, dateStr: dateString };
+  }
+  // Occurrence with non-strict id (e.g. baseId__2025-02-26T00:00:00Z from API) – getSeriesBaseId returns null; still group with base for dedupe
+  if (task.id.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)) {
+    const parts = task.id.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR);
+    if (parts.length === 2 && parts[0]) {
+      const baseIdFromSplit = parts[0];
+      const dateStrFromSuffix = getOccurrenceDateString(task.id);
+      if (dateStrFromSuffix) return { baseId: baseIdFromSplit, dateStr: dateStrFromSuffix };
+    }
   }
   if (isSeriesBaseTask(task)) return { baseId: task.id, dateStr: dateString };
   return null;
@@ -248,8 +257,8 @@ export function dedupeTasksForDay(tasks: Task[], dateString: string): Task[] {
       continue;
     }
     list.sort((a, b) => {
-      const aOcc = getSeriesBaseId(a.id ?? '') != null ? 1 : 0;
-      const bOcc = getSeriesBaseId(b.id ?? '') != null ? 1 : 0;
+      const aOcc = (a.id ?? '').includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR) ? 1 : 0;
+      const bOcc = (b.id ?? '').includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR) ? 1 : 0;
       if (aOcc !== bOcc) return bOcc - aOcc;
       const aUp = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
       const bUp = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
