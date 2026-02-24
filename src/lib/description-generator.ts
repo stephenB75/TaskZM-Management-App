@@ -3475,10 +3475,14 @@ export async function generateDescription(
       }, 0);
     });
 
-    // Use task-relevant terminology only (avoids off-topic phrases when no breakdown context)
-    const maxPerCategory = DESCRIPTION_GENERATION_CONFIG.maxTerminologyTermsForServer ?? 15;
-    terminology = filterTerminologyRelevantToTask(taskName, domainRef, domainTerms, maxPerCategory);
-    logger.debug('📝 Description Generation: Using task-relevant filtered terminology (no breakdown context)', {
+    // Use full local and shared terminology library so the correct response is crafted from entire domain terminology
+    terminology = {
+      keywords: domainTerms.keywords || [],
+      phrases: domainTerms.phrases || [],
+      verbs: domainTerms.verbs || [],
+      nouns: domainTerms.nouns || [],
+    };
+    logger.debug('📝 Description Generation: Using full domain terminology (full library)', {
       taskName,
       detectedDomain: domainRef,
       confidence: domainResult.confidence,
