@@ -438,7 +438,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           {location && (
             <div className="flex items-center gap-1.5 mt-0.5">
               <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
-              <span className={cn('truncate text-sm', colors.mutedText)}>{location}</span>
+              <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
             </div>
           )}
         </div>
