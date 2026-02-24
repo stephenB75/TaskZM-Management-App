@@ -14,7 +14,7 @@ import { Button } from "./ui/button";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
-import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate } from "../lib/utils";
+import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "../lib/toast-wrapper";
 import { playTaskCompleteSound } from "../lib/toast-sound";
@@ -101,7 +101,7 @@ export function TodayAgendaView({
   }, [todayDateString]);
   
   const todayString = todayDateString;
-  const allTodayTasks = Array.isArray(tasks) ? tasks.filter((task) => {
+  const filteredToday = Array.isArray(tasks) ? tasks.filter((task) => {
     // Defensive check: ensure task is valid
     if (!task || typeof task !== 'object') {
       return false;
@@ -128,6 +128,7 @@ export function TodayAgendaView({
       return false;
     }
   }) : [];
+  const allTodayTasks = dedupeTasksForDay(filteredToday, todayDateString);
 
   // Show all tasks including completed ones (they will be grayed out)
   // Completed tasks remain visible but grayed out like recurring tasks

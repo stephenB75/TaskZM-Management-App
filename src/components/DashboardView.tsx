@@ -15,7 +15,7 @@ import {
   RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED,
 } from "../lib/business-constants";
 import { isDateInRecurrence } from "../lib/recurrence";
-import { isSeriesBaseTask, hasSeriesOccurrenceForDate } from "../lib/utils";
+import { isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
@@ -953,7 +953,7 @@ export function DashboardView({
       }
     }
     
-    return matchingTasks;
+    return dedupeTasksForDay(matchingTasks, dateString);
   };
 
   const handleScheduleUnscheduledTasks = async () => {

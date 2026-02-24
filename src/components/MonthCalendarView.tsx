@@ -25,7 +25,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { cn, prepareTaskForDialog, parseCalendarEventTime, getDateString, isSeriesBaseTask, hasSeriesOccurrenceForDate } from "../lib/utils";
+import { cn, prepareTaskForDialog, parseCalendarEventTime, getDateString, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
@@ -624,7 +624,7 @@ export function MonthCalendarView({
       }
 
       const dateString = getDateString(date);
-      return tasks
+      const sorted = tasks
         .filter((task) => {
           // Defensive check: ensure task is valid
           if (!task || typeof task !== 'object') {
@@ -664,6 +664,7 @@ export function MonthCalendarView({
             return 0;
           }
         });
+      return dedupeTasksForDay(sorted, dateString);
     } catch (error) {
       console.error('Error in getTasksForDate:', error);
       return [];

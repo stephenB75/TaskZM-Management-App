@@ -189,6 +189,78 @@ function occurrenceSuffixToDateString(suffix: string): string | null {
 }
 
 /**
+ * For a series occurrence task id (baseId__suffix), return the normalized YYYY-MM-DD.
+ * Returns null if taskId is not a series occurrence id. Handles API-style suffixes (ISO datetime).
+ */
+export function getOccurrenceDateString(taskId: string): string | null {
+  if (!taskId || !taskId.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)) return null;
+  const parts = taskId.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR);
+  if (parts.length !== 2) return null;
+  return occurrenceSuffixToDateString(parts[1]);
+}
+
+/**
+ * Series key for dedupe: (baseId, dateStr). Null for non-series tasks.
+ * Used so we show at most one task per (baseId, date) per day.
+ */
+export function getSeriesKeyForTask(
+  task: { id?: string; recurrence?: { type?: string } },
+  dateString: string
+): { baseId: string; dateStr: string } | null {
+  if (!task?.id) return null;
+  const baseId = getSeriesBaseId(task.id);
+  if (baseId !== null) {
+    const dateStr = getOccurrenceDateString(task.id);
+    if (dateStr) return { baseId, dateStr };
+    const fallback = task.id.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)[1];
+    if (fallback) {
+      const normalized = occurrenceSuffixToDateString(fallback);
+      if (normalized) return { baseId, dateStr: normalized };
+    }
+    return { baseId, dateStr: dateString };
+  }
+  if (isSeriesBaseTask(task)) return { baseId: task.id, dateStr: dateString };
+  return null;
+}
+
+/**
+ * Dedupe tasks so at most one task per (baseId, date) is shown. Prefer occurrence over base; then by updatedAt desc.
+ * Call with the already-filtered list for the day (dateString is that day).
+ */
+export function dedupeTasksForDay(tasks: Task[], dateString: string): Task[] {
+  const keyToTasks = new Map<string, Task[]>();
+  for (const task of tasks) {
+    const key = getSeriesKeyForTask(task, dateString);
+    if (!key) {
+      const id = task.id ?? `no-id-${Math.random()}`;
+      keyToTasks.set(id, [task]);
+      continue;
+    }
+    const groupKey = `${key.baseId}\0${key.dateStr}`;
+    const list = keyToTasks.get(groupKey) ?? [];
+    list.push(task);
+    keyToTasks.set(groupKey, list);
+  }
+  const result: Task[] = [];
+  for (const list of keyToTasks.values()) {
+    if (list.length === 1) {
+      result.push(list[0]);
+      continue;
+    }
+    list.sort((a, b) => {
+      const aOcc = getSeriesBaseId(a.id ?? '') != null ? 1 : 0;
+      const bOcc = getSeriesBaseId(b.id ?? '') != null ? 1 : 0;
+      if (aOcc !== bOcc) return bOcc - aOcc;
+      const aUp = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const bUp = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return bUp - aUp;
+    });
+    result.push(list[0]);
+  }
+  return result;
+}
+
+/**
  * True when there is a series occurrence task (baseId__dateStr) for the given date.
  * Used so day views show the occurrence and hide the base to avoid duplicates.
  * Matches exact id (baseId__YYYY-MM-DD) and also occurrence ids whose date part

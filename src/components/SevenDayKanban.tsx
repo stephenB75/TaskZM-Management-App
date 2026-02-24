@@ -15,7 +15,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate } from '../lib/utils';
+import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
@@ -599,7 +599,7 @@ export function SevenDayKanban({
         return [];
       }
 
-      return tasks
+      const sorted = tasks
         .filter(task => {
           // Defensive check: ensure task is valid
           if (!task || typeof task !== 'object') {
@@ -686,6 +686,7 @@ export function SevenDayKanban({
             return 0;
           }
         });
+      return dedupeTasksForDay(sorted, dateString);
     } catch (error) {
       logger.error('Error in getTasksForDay:', error);
       return [];

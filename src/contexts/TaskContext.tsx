@@ -9,6 +9,7 @@ import { useDemoActivity } from '../hooks/useDemoActivity';
 import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage, getDateString, getSeriesBaseId } from '../lib/utils';
 import { migrateOrphanRecurringSeries } from '../lib/migrate-recurring-series';
+import { migrateRecurringOccurrenceIds } from '../lib/migrate-recurring-occurrence-ids';
 import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
@@ -105,6 +106,16 @@ interface TaskContextType {
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 // Constants moved to business-constants.ts
+
+const RECURRING_OCCURRENCE_IDS_MIGRATION_KEY = 'recurring_occurrence_ids_migration_v1';
+
+/** One-time migration: align occurrence ids with scheduledDate and dedupe by (baseId, date). */
+function applyRecurringOccurrenceIdsMigrationIfNeeded(taskList: Task[]): Task[] {
+  if (typeof localStorage === 'undefined' || localStorage.getItem(RECURRING_OCCURRENCE_IDS_MIGRATION_KEY)) return taskList;
+  const { tasks: next } = migrateRecurringOccurrenceIds(taskList);
+  localStorage.setItem(RECURRING_OCCURRENCE_IDS_MIGRATION_KEY, '1');
+  return next;
+}
 
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
@@ -678,8 +689,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
       if (savedTasks.length > 0) {
         const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
-        setTasks(migratedTasks);
-        return migratedTasks;
+        const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+        setTasks(final);
+        return final;
       }
       return [];
     }
@@ -701,8 +713,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // Don't fall back to localStorage for auth errors
           const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
-          setTasks(migratedTasks);
-          return migratedTasks;
+          const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+          setTasks(final);
+          return final;
         }
         
         // For other errors, fall back to localStorage if available
@@ -710,12 +723,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         if (savedTasks.length > 0) {
           logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
-          setTasks(migratedTasks);
-          saveToLocalStorage('tasks', migratedTasks, user?.id);
+          const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+          setTasks(final);
+          saveToLocalStorage('tasks', final, user?.id);
           toast.error('Failed to load tasks from server, using offline data', {
             description: error.message || 'Please check your internet connection',
           });
-          return migratedTasks;
+          return final;
         } else {
           // No local data, show error but don't set empty array yet
           toast.error('Failed to load tasks', {
@@ -752,9 +766,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           });
         }
         logger.info(`Loaded ${serverTasks.length} tasks from server${deduplicatedTasks.length !== serverTasks.length ? ` (deduplicated to ${deduplicatedTasks.length})` : ''}${newBases.length > 0 ? `, migrated ${newBases.length} recurring series` : ''}`);
-        setTasks(migratedTasks);
+        const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+        setTasks(final);
         // Always update localStorage with migrated server data (overwrite any stale local data)
-        saveToLocalStorage('tasks', migratedTasks, user?.id);
+        saveToLocalStorage('tasks', final, user?.id);
         setLastSync(new Date());
         
         // Store sync timestamp and ETag for next delta sync
@@ -766,16 +781,19 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Clear any sync flags to ensure fresh sync on next load
         const syncFlagKey = `synced_local_data_${wsId}`;
         localStorage.removeItem(syncFlagKey);
-        return migratedTasks;
+        return final;
       } else {
         // No server data - this is valid (workspace exists but has no tasks)
         logger.info('No tasks found on server (workspace may be empty)');
         const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
         if (savedTasks.length > 0) {
           logger.info(`Found ${savedTasks.length} tasks in localStorage, syncing to server`);
-          setTasks(savedTasks);
+          const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
+          const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+          setTasks(final);
+          saveToLocalStorage('tasks', final, user?.id);
           // Try to sync local tasks to server
-          for (const task of savedTasks) {
+          for (const task of final) {
             try {
               await api.saveTask(wsId, task);
               logger.debug(`Synced local task ${task.id} to server`);
@@ -798,9 +816,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                 }
               }
             }
-            setTasks(migratedTasks);
-            saveToLocalStorage('tasks', migratedTasks, user?.id);
-            return migratedTasks;
+            const finalRefresh = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+            setTasks(finalRefresh);
+            saveToLocalStorage('tasks', finalRefresh, user?.id);
+            return finalRefresh;
           }
         }
         // No tasks in server or localStorage - this is valid for a new workspace
@@ -816,12 +835,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       if (savedTasks.length > 0) {
         logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
         const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
-        setTasks(migratedTasks);
-        saveToLocalStorage('tasks', migratedTasks, user?.id);
+        const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+        setTasks(final);
+        saveToLocalStorage('tasks', final, user?.id);
         toast.error('Failed to load tasks from server, using offline data', {
           description: 'Please check your internet connection',
         });
-        return migratedTasks;
+        return final;
       } else {
         setTasks([]);
         return [];
@@ -1374,8 +1394,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         let tasksToSet = tasksChanged ? mergePreservingTodayTimes(serverTasks) : serverTasks;
         // Migrate existing recurring series (occurrence-only) to new model
         const { tasks: migratedTasks, newBases } = migrateOrphanRecurringSeries(tasksToSet);
+        tasksToSet = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
         if (newBases.length > 0) {
-          tasksToSet = migratedTasks;
           for (const base of newBases) {
             try {
               await api.saveTask(targetWorkspaceId, base);

@@ -46,6 +46,7 @@ import {
   formatDate,
   getDateString,
   getSeriesBaseId,
+  getOccurrenceDateString,
   generateId,
   validateDependencies,
   getIncompleteDependencies,
@@ -1957,20 +1958,48 @@ export function TaskDialog({
           await updateTask(task.id, { scheduledDate: null });
         }
         // Update the series occurrence task (baseId__date) so the card on Kanban/Today reflects title, description, scheduledDate, etc.
+        // If the user changed the calendar day, move the occurrence (create baseId__newDate, delete old) so id and scheduledDate stay in sync.
         if (task.id !== baseTaskId) {
-          const occurrenceUpdates: Partial<Task> = {
-            title: taskData.title,
-            description: taskData.description,
-            priority: taskData.priority,
-            dueDate: taskData.dueDate,
-            estimatedTime: taskData.estimatedTime,
-            tags: taskData.tags,
-            assignedTo: taskData.assignedTo,
-            folderId: taskData.folderId ?? null,
-            notes: taskData.notes ?? '',
-            scheduledDate: finalScheduledDate ?? null,
-          };
-          await updateTask(task.id, occurrenceUpdates);
+          const newDateStr = finalScheduledDate ? getDateString(new Date(finalScheduledDate)) : null;
+          const idDateStr = getOccurrenceDateString(task.id ?? '');
+          const occurrenceMoved = newDateStr && idDateStr && idDateStr !== newDateStr;
+          if (occurrenceMoved && seriesBaseId) {
+            const newId = `${seriesBaseId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}${newDateStr}`;
+            const nowIso = new Date().toISOString();
+            const newTask: Task = {
+              ...task,
+              id: newId,
+              title: taskData.title ?? task.title,
+              description: taskData.description ?? task.description,
+              priority: (taskData.priority as Task['priority']) ?? task.priority,
+              dueDate: taskData.dueDate ?? task.dueDate,
+              estimatedTime: taskData.estimatedTime ?? task.estimatedTime,
+              tags: taskData.tags ?? task.tags,
+              assignedTo: taskData.assignedTo ?? task.assignedTo,
+              folderId: taskData.folderId ?? task.folderId ?? null,
+              notes: taskData.notes ?? task.notes ?? '',
+              scheduledDate: finalScheduledDate ?? null,
+              recurrence: RECURRENCE_NONE_CONFIG,
+              subtasks: subtasks ?? task.subtasks ?? [],
+              updatedAt: nowIso,
+            } as Task;
+            await addTask(newTask);
+            await deleteTask(task.id!);
+          } else {
+            const occurrenceUpdates: Partial<Task> = {
+              title: taskData.title,
+              description: taskData.description,
+              priority: taskData.priority,
+              dueDate: taskData.dueDate,
+              estimatedTime: taskData.estimatedTime,
+              tags: taskData.tags,
+              assignedTo: taskData.assignedTo,
+              folderId: taskData.folderId ?? null,
+              notes: taskData.notes ?? '',
+              scheduledDate: finalScheduledDate ?? null,
+            };
+            await updateTask(task.id, occurrenceUpdates);
+          }
         }
         // Apply to series: update all other occurrences (and base) with shared fields when user checked "Apply to all in series"
         if (applyToSeries && seriesBaseId) {
@@ -1978,7 +2007,7 @@ export function TaskDialog({
             .filter((t) => getSeriesBaseId(t.id) === seriesBaseId || t.id === seriesBaseId)
             .map((t) => t.id)
             .filter((id) => id !== task.id);
-          const seriesUpdates = {
+          const seriesUpdates: Partial<Task> = {
             title: taskData.title,
             description: taskData.description,
             priority: taskData.priority,
@@ -1988,6 +2017,9 @@ export function TaskDialog({
             assignedTo: taskData.assignedTo,
             folderId: taskData.folderId ?? null,
           };
+          if (finalScheduledDate) {
+            seriesUpdates.scheduledDate = finalScheduledDate;
+          }
           for (const id of seriesIds) {
             await updateTask(id, seriesUpdates);
           }
@@ -2010,7 +2042,7 @@ export function TaskDialog({
             .filter((t) => getSeriesBaseId(t.id) === seriesBaseId || t.id === seriesBaseId)
             .map((t) => t.id)
             .filter((id) => id !== task.id);
-          const seriesUpdates = {
+          const seriesUpdates: Partial<Task> = {
             title: taskData.title,
             description: taskData.description,
             priority: taskData.priority,
@@ -2020,6 +2052,9 @@ export function TaskDialog({
             assignedTo: taskData.assignedTo,
             folderId: taskData.folderId ?? null,
           };
+          if (finalScheduledDate) {
+            seriesUpdates.scheduledDate = finalScheduledDate;
+          }
           for (const id of seriesIds) {
             await updateTask(id, seriesUpdates);
           }
