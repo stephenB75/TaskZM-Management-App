@@ -63,13 +63,14 @@ import { usePermissions } from "../hooks/usePermissions";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useAI } from "../contexts/AIContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useCalendarEvents } from "../hooks/useCalendarEvents";
 import * as api from "../lib/api";
 import { toast } from "sonner";
 import { playSubtaskCompleteSound } from "../lib/toast-sound";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_MEDIUM_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
-import { checkTimeConflict, findNextAvailableSlot, formatTime } from "../lib/time-conflict";
+import { findNextAvailableSlot, formatTime } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../lib/daily-hours-utils";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
@@ -758,6 +759,30 @@ export function TaskDialog({
   /** True when editing the recurring series base (recurrence pattern); changes apply to all occurrences. */
   const isEditingSeriesBase = Boolean(task?.recurrence?.type && task.recurrence.type !== 'none' && task?.id && !isSeriesOccurrence);
 
+  // Calendar events for the scheduled day (for conflict check: prevent task and event in same timeslot)
+  const scheduledDayRange = React.useMemo(() => {
+    let day: Date;
+    if (scheduledDate && !Number.isNaN(scheduledDate.getTime())) {
+      day = scheduledDate;
+    } else if (scheduledMonth && scheduledDay && scheduledYear) {
+      const month = parseInt(scheduledMonth, 10) - 1;
+      const dayNum = parseInt(scheduledDay, 10);
+      const year = parseInt(scheduledYear, 10);
+      if (!Number.isNaN(month) && !Number.isNaN(dayNum) && !Number.isNaN(year)) {
+        day = new Date(year, month, dayNum);
+        if (Number.isNaN(day.getTime())) day = new Date();
+      } else {
+        day = new Date();
+      }
+    } else {
+      day = new Date();
+    }
+    const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0);
+    const end = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999);
+    return { start, end };
+  }, [scheduledDate, scheduledMonth, scheduledDay, scheduledYear]);
+  const { events: scheduledDayCalendarEvents } = useCalendarEvents(scheduledDayRange.start, scheduledDayRange.end, { enabled: open });
+
   // AI Task Breakdown - Real-time analysis
   const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
     title,
@@ -1294,6 +1319,7 @@ export function TaskDialog({
       if (isNaN(dateWithTime.getTime())) {
         // Silently handle invalid date
       } else {
+        const defaultSlotCalendarEvents = scheduledDayCalendarEvents.map((e) => ({ start: e.start, end: e.end, title: e.title }));
         // Use scheduledHours and scheduledMinutes if available, otherwise fall back to scheduledTime
         if (scheduledHours && scheduledMinutes) {
           let hours = parseInt(scheduledHours);
@@ -1312,9 +1338,9 @@ export function TaskDialog({
           if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < HOURS_PER_DAY && minutes >= 0 && minutes < MINUTES_PER_HOUR) {
             dateWithTime.setHours(hours, minutes, 0, 0);
           } else {
-            // Invalid or missing time: use next available slot so tasks are not assigned the same default time
+            // Invalid or missing time: use next available slot so tasks/events are not assigned the same default time
             dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
+            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
             dateWithTime.setTime(slot.getTime());
           }
         } else if (scheduledTime) {
@@ -1327,18 +1353,18 @@ export function TaskDialog({
             dateWithTime.setHours(hours, minutes, 0, 0);
           } else {
             dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
+            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
             dateWithTime.setTime(slot.getTime());
           }
         } else {
-          // No time set: use next available slot for both recurring and non-recurring so tasks are not assigned the same time
+          // No time set: use next available slot so tasks are not assigned the same time as another task or calendar event
           dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-          const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
+          const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
           dateWithTime.setTime(slot.getTime());
         }
 
-        // Always resolve to next available slot so we never save a time that conflicts with another task (guidelines)
-        const conflictFreeSlot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? []);
+        // Always resolve to next available slot so we never save a time that conflicts with another task or calendar event
+        const conflictFreeSlot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
         dateWithTime.setTime(conflictFreeSlot.getTime());
 
         // Final validation before converting to ISO
@@ -1774,49 +1800,42 @@ export function TaskDialog({
         finalScheduledTime = scheduledDateTime;
       }
       
-      // Only check for conflicts if time has changed
-      // If time hasn't changed, the task is already at this time slot, so no conflict check needed
+      // Only check for conflicts if time has changed (tasks and calendar events must not share the same timeslot)
       if (timeHasChanged) {
-        const conflictingTask = checkTimeConflict(
+        const calendarEventsForSlot = scheduledDayCalendarEvents.map((e) => ({
+          start: e.start,
+          end: e.end,
+          title: e.title,
+        }));
+        const alternativeTime = findNextAvailableSlot(
           taskId,
           scheduledDateTime,
           taskDuration,
-          tasks
+          tasks,
+          {
+            ensureAfterCurrentTime: isToday,
+            categoryHours: categoryHours,
+            calendarEvents: calendarEventsForSlot,
+          }
         );
 
-        if (conflictingTask) {
-          // Find next available slot
-          const alternativeTime = findNextAvailableSlot(
-            taskId,
-            scheduledDateTime,
-            taskDuration,
-            tasks,
-            {
-              ensureAfterCurrentTime: isToday,
-              categoryHours: categoryHours,
-            }
-          );
-          
-          // Only show dialog if alternative time is different and valid
-          if (alternativeTime.getTime() !== scheduledDateTime.getTime() && alternativeTime.getHours() < HOURS_PER_DAY) {
-            // Store the pending task data and show dialog
+        if (alternativeTime.getTime() !== scheduledDateTime.getTime()) {
+          if (alternativeTime.getHours() < HOURS_PER_DAY) {
             setPendingTaskData({
               taskData,
               requestedTime: scheduledDateTime,
               alternativeTime,
             });
             setConflictDialogOpen(true);
-            return; // Don't submit yet
-          } else {
-            // No valid alternative found, show error
-            const reason = isToday && scheduledDateTime.getTime() < now.getTime()
-              ? 'Selected time is in the past. Please choose a time after the current time.'
-              : 'Time slot is already taken or outside category hours. Please choose a different time slot.';
-            toast.error('Time slot unavailable', {
-              description: reason,
-            });
             return;
           }
+          const reason = isToday && scheduledDateTime.getTime() < now.getTime()
+            ? 'Selected time is in the past. Please choose a time after the current time.'
+            : 'Time slot is already taken by another task or a calendar event. Please choose a different time slot.';
+          toast.error('Time slot unavailable', {
+            description: reason,
+          });
+          return;
         }
       }
       
