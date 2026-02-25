@@ -728,6 +728,26 @@ export const CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX = 36;
 export const CALENDAR_CAROUSEL_DOTS_PER_ROW = 4;
 /** Max width (px) for one row of dots so they wrap at CALENDAR_CAROUSEL_DOTS_PER_ROW. Dot 8px + gap 2px => 4*8+3*2 = 38. */
 export const CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX = 38;
+/** Min height (px) for the dots row so it reserves space when there are dots. */
+export const CALENDAR_CAROUSEL_DOTS_MIN_HEIGHT_PX = 6;
+/** Opacity for completed-task dots in the calendar carousel (0–1). */
+export const CALENDAR_CAROUSEL_DONE_DOT_OPACITY = 0.6;
+/** Dot size in px (default/small breakpoint). w-1.5 = 6px. */
+export const CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX = 6;
+/** Dot size in px (sm breakpoint). w-2 = 8px. */
+export const CALENDAR_CAROUSEL_DOT_SIZE_PX = 8;
+/** Number of days per week in the carousel grid. */
+export const CALENDAR_CAROUSEL_DAYS_PER_WEEK = 7;
+/** Number of characters to show for day abbreviations in the carousel (e.g. 3 → "SUN", "MON"). */
+export const CALENDAR_CAROUSEL_DAY_ABBREV_LENGTH = 3;
+/** Week view label used in the mobile calendar header when date range is missing. */
+export const CALENDAR_CAROUSEL_WEEK_VIEW_LABEL = 'Week View';
+/** Day names for calendar carousel headers (Sunday first to match getDay()). */
+export const CALENDAR_DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const;
+/** Nav button size (px) for prev/next week in the mobile calendar. h-8 w-8 = 32. */
+export const CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX = 32;
+/** Day header font size in the calendar carousel (text-[10px]). */
+export const CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE = '10px';
 export const DESKTOP_PADDING_TOP = '3rem'; // padding-top: 3rem for desktop views
 // Mobile scroll container padding to ensure content is not hidden by fixed header when scrolling up
 // Header height already includes safe area inset in its padding, so we match that total height

@@ -94,6 +94,16 @@ import {
   ICON_SIZE_LG,
   CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX,
   CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX,
+  CALENDAR_CAROUSEL_DOTS_MIN_HEIGHT_PX,
+  CALENDAR_CAROUSEL_DONE_DOT_OPACITY,
+  CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX,
+  CALENDAR_CAROUSEL_DOT_SIZE_PX,
+  CALENDAR_CAROUSEL_DAYS_PER_WEEK,
+  CALENDAR_CAROUSEL_DAY_ABBREV_LENGTH,
+  CALENDAR_CAROUSEL_WEEK_VIEW_LABEL,
+  CALENDAR_DAY_NAMES,
+  CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX,
+  CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE,
   MOBILE_PADDING_BOTTOM,
   TOAST_DURATION_SHORT_MS,
   TOAST_DURATION_MEDIUM_MS,
@@ -730,9 +740,7 @@ export function DashboardView({
     
     startOfWeek.setDate(startOfWeek.getDate() - weekStartOffset + weekOffset * 7);
 
-    const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
-
-    const daysToShow = 7; // Mobile Today Agenda week view should remain 7 days
+    const daysToShow = CALENDAR_CAROUSEL_DAYS_PER_WEEK;
 
     return Array.from({ length: daysToShow }, (_, i) => {
       const date = new Date(startOfWeek);
@@ -748,9 +756,9 @@ export function DashboardView({
 
       return {
         date,
-        dayName: dayNames[dow],
+        dayName: CALENDAR_DAY_NAMES[dow],
         dateString,
-        weekNumber: Math.floor(i / 7) + 1,
+        weekNumber: Math.floor(i / CALENDAR_CAROUSEL_DAYS_PER_WEEK) + 1,
         dayIndex: i,
       };
     });
@@ -1533,7 +1541,8 @@ export function DashboardView({
                 variant="ghost"
                 onClick={() => handleWeekChange("prev")}
                 disabled={mobileWeekOffset === 0}
-                className="h-8 w-8 flex-shrink-0 rounded-full"
+                className="flex-shrink-0 rounded-full"
+                style={{ width: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX, height: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX }}
               >
                 <Icon name="chevron-left" size={ICON_SIZE_MD} />
               </Button>
@@ -1542,7 +1551,7 @@ export function DashboardView({
                 <span className="text-sm font-semibold text-foreground">
                   {weekColumns[0]?.date && weekColumns[6]?.date
                     ? `${weekColumns[0].date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekColumns[6].date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: weekColumns[0].date.getFullYear() !== weekColumns[6].date.getFullYear() ? "numeric" : undefined })}`
-                    : "Week View"}
+                    : CALENDAR_CAROUSEL_WEEK_VIEW_LABEL}
                 </span>
               </div>
               
@@ -1550,7 +1559,8 @@ export function DashboardView({
                 size="icon"
                 variant="ghost"
                 onClick={() => handleWeekChange("next")}
-                className="h-8 w-8 flex-shrink-0 rounded-full"
+                className="flex-shrink-0 rounded-full"
+                style={{ width: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX, height: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX }}
               >
                 <Icon name="chevron-right" size={ICON_SIZE_MD} />
               </Button>
@@ -1559,7 +1569,7 @@ export function DashboardView({
             {/* 7-Day Calendar Grid - Swipeable Carousel */}
             <div 
               className="grid grid-cols-7 gap-1 select-none min-w-0 w-full overflow-hidden"
-              style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
+              style={{ gridTemplateColumns: `repeat(${CALENDAR_CAROUSEL_DAYS_PER_WEEK}, minmax(0, 1fr))` }}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
@@ -1568,9 +1578,10 @@ export function DashboardView({
               {weekColumns.map((column) => (
                 <div
                   key={`header-${column.dateString}`}
-                  className="text-center text-[10px] sm:text-xs font-medium text-muted-foreground py-1 min-w-0 overflow-hidden"
+                  className="text-center sm:text-xs font-medium text-muted-foreground py-1 min-w-0 overflow-hidden"
+                  style={{ fontSize: CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE }}
                 >
-                  {column.dayName.substring(0, 3)}
+                  {column.dayName.substring(0, CALENDAR_CAROUSEL_DAY_ABBREV_LENGTH)}
                 </div>
               ))}
               
@@ -1625,10 +1636,11 @@ export function DashboardView({
                         {/* Show dots for all tasks and events - one dot per item; wrap at 4 per row */}
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
                           <div 
-                            className="flex flex-wrap items-center justify-center gap-0.5 mt-1 min-h-[6px] flex-shrink-0 w-full overflow-hidden"
+                            className="flex flex-wrap items-center justify-center gap-0.5 mt-1 flex-shrink-0 w-full overflow-hidden"
                             style={{ 
                               maxHeight: `${CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX}px`,
                               maxWidth: `${CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX}px`,
+                              minHeight: `${CALENDAR_CAROUSEL_DOTS_MIN_HEIGHT_PX}px`,
                             }}
                           >
                             {/* Task dots (primary) - one per task */}
@@ -1639,12 +1651,17 @@ export function DashboardView({
                                 <div
                                   key={`task-${task.id}-${taskIndex}`}
                                   className={cn(
-                                    "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
+                                    "rounded-full flex-shrink-0",
                                     isSelected
                                       ? isDone ? "bg-primary/70" : "bg-primary"
                                       : isDone ? "bg-primary/60" : "bg-primary/80",
                                   )}
-                                  style={{ display: 'block', opacity: isDone ? 0.6 : 1 }}
+                                  style={{ 
+                                    display: 'block', 
+                                    opacity: isDone ? CALENDAR_CAROUSEL_DONE_DOT_OPACITY : 1,
+                                    width: CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX,
+                                    height: CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX,
+                                  }}
                                   aria-label={`Task: ${task.title || 'Untitled task'}`}
                                   title={task.title || 'Untitled task'}
                                 />
@@ -1655,9 +1672,13 @@ export function DashboardView({
                               <div
                                 key={`event-${column.dateString}-${eventIndex}`}
                                 className={cn(
-                                  "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0",
+                                  "rounded-full flex-shrink-0",
                                   isSelected ? "bg-blue-500" : "bg-blue-500/70",
                                 )}
+                                style={{
+                                  width: CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX,
+                                  height: CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX,
+                                }}
                                 aria-label={`Calendar event ${eventIndex + 1}`}
                                 title={`${dayEventCount} calendar event${dayEventCount !== 1 ? 's' : ''}`}
                               />
