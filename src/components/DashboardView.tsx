@@ -1525,7 +1525,7 @@ export function DashboardView({
           className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm flex-shrink-0"
           style={{ paddingTop: HEADER_GAP_LARGE }}
         >
-          <div className="px-2 pb-3 sm:px-4 sm:pb-4">
+          <div className="px-2 pb-3 sm:px-4 sm:pb-4 min-w-0 overflow-hidden">
             {/* Week Navigation Header */}
             <div className="flex items-center justify-between mb-3">
               <Button
@@ -1558,7 +1558,8 @@ export function DashboardView({
 
             {/* 7-Day Calendar Grid - Swipeable Carousel */}
             <div 
-              className="grid grid-cols-7 gap-1 select-none"
+              className="grid grid-cols-7 gap-1 select-none min-w-0 w-full overflow-hidden"
+              style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
@@ -1567,7 +1568,7 @@ export function DashboardView({
               {weekColumns.map((column) => (
                 <div
                   key={`header-${column.dateString}`}
-                  className="text-center text-[10px] sm:text-xs font-medium text-muted-foreground py-1"
+                  className="text-center text-[10px] sm:text-xs font-medium text-muted-foreground py-1 min-w-0 overflow-hidden"
                 >
                   {column.dayName.substring(0, 3)}
                 </div>
@@ -1599,8 +1600,9 @@ export function DashboardView({
                       <button
                         key={column.dateString}
                         onClick={() => setMobileDayIndex(index)}
+                        type="button"
                         className={cn(
-                      "flex flex-col items-center justify-center py-2 rounded-lg transition-all relative",
+                      "flex flex-col items-center justify-center py-2 rounded-lg transition-all relative min-w-0 w-full overflow-hidden",
                           isSelected
                             ? cn(UI_INBOX_GRADIENTS.emptyState.className, "text-primary shadow-md border-2 border-primary/30")
                         : isToday
@@ -1610,7 +1612,7 @@ export function DashboardView({
                       >
                         <span
                           className={cn(
-                            "text-sm sm:text-base font-semibold leading-none",
+                            "text-sm sm:text-base font-semibold leading-none flex-shrink-0",
                             isSelected
                           ? "text-primary"
                           : isToday
@@ -1620,10 +1622,10 @@ export function DashboardView({
                         >
                           {column.date.getDate()}
                         </span>
-                        {/* Show dots for all tasks and events - one dot per item; wrap to next line when many */}
+                        {/* Show dots for all tasks and events - one dot per item; wrap at 4 per row */}
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
                           <div 
-                            className="flex flex-wrap items-center justify-center gap-0.5 mt-1 min-h-[6px] flex-shrink-0 max-w-full overflow-hidden"
+                            className="flex flex-wrap items-center justify-center gap-0.5 mt-1 min-h-[6px] flex-shrink-0 w-full overflow-hidden"
                             style={{ 
                               maxHeight: `${CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX}px`,
                               maxWidth: `${CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX}px`,
