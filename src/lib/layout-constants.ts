@@ -329,6 +329,8 @@ export const TODAY_AGENDA_TIMELINE = {
   shortItemThresholdMinutes: 20,
   /** Target height (px) for compact single-row layout; block height remains duration-based. */
   shortItemCompactRowHeightPx: 40,
+  /** Minimum block height (px) for short-duration tasks so the compact row fits without clipping. Applied when duration < shortItemThresholdMinutes. */
+  shortTaskMinBlockHeightPx: 52,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 

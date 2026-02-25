@@ -273,7 +273,10 @@ export function TodayAgendaView({
             ? item.task.estimatedTime
             : getTaskMinutes(item.task, { useCachedAIAnalysis: true });
         const durationHeightPx = Math.round(durationMins * pxPerMinute);
-        const heightPx = Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
+        const heightPx =
+          durationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes
+            ? Math.max(durationHeightPx, TODAY_AGENDA_TIMELINE.shortTaskMinBlockHeightPx)
+            : Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
         blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins, laneIndex: 0 });

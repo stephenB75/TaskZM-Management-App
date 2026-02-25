@@ -170,25 +170,37 @@ export function findNextAvailableSlot(
 
   // Sort tasks by scheduled time in chronological order (earliest first)
   // IMPORTANT: Ensure we properly parse scheduledDate (could be ISO string or Date object)
+  // CRITICAL: For recurring tasks that apply to targetDate but have scheduledDate on another day,
+  // use target date with the same time so they block the correct slot on Today Agenda / Kanban.
   // CRITICAL: Filter out invalid dates to ensure proper sorting
   // CRITICAL: Use at least MIN_TASK_DURATION_MINUTES for each block so we never treat a scheduled task as zero-length (prevents overlaps)
   const sortedTasks = dateTasks
     .filter((task) => task.scheduledDate)
     .map((task) => {
       // Parse scheduledDate - handle both ISO strings and Date objects
-      const scheduledDate = typeof task.scheduledDate === 'string' 
+      const scheduledDate = typeof task.scheduledDate === 'string'
         ? new Date(task.scheduledDate)
         : new Date(task.scheduledDate);
-      
+
       // Validate date is not invalid
       if (isNaN(scheduledDate.getTime())) {
         return null;
       }
-      
-      const start = scheduledDate.getTime();
+
+      // Use start on target date when task is recurring and scheduledDate is a different calendar day.
+      // This ensures recurring tasks block the correct time on Today Agenda and Kanban week view.
+      const taskDayStart = new Date(scheduledDate);
+      taskDayStart.setHours(0, 0, 0, 0);
+      const isRecurringOnOtherDay = (task.recurrence && task.recurrence.type !== 'none') &&
+        taskDayStart.getTime() !== targetDate.getTime();
+      const startDateForBlock = isRecurringOnOtherDay
+        ? new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), scheduledDate.getHours(), scheduledDate.getMinutes(), scheduledDate.getSeconds(), scheduledDate.getMilliseconds())
+        : scheduledDate;
+
+      const start = startDateForBlock.getTime();
       const duration = Math.max(getTaskMinutes(task), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
       const end = start + duration;
-      
+
       return { task, start, end };
     })
     .filter((item): item is { task: Task; start: number; end: number } => item !== null) // Remove null entries from invalid dates

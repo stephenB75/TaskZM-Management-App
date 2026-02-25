@@ -154,6 +154,12 @@ export function useAIScheduler() {
     return getDateString(date);
   };
 
+  // Helper: Treat slot as valid only if it is on the requested day.
+  // findNextAvailableSlot signals "no slot" by returning 24:00, which in JS rolls to next day 00:00 (12 AM).
+  // So we must check calendar day: if the slot rolled to the next day, do not use it.
+  const isSlotOnRequestedDay = (slot: Date, requestedDay: Date): boolean =>
+    getDateString(slot) === getDateString(requestedDay);
+
   // Helper: Calculate the first occurrence date for a recurring task
   // This ensures recurring tasks are scheduled to a date that matches their recurrence pattern
   // IMPORTANT: Always returns a date in the future (after fromDate), never today or in the past
@@ -1716,6 +1722,8 @@ export function useAIScheduler() {
         // Each category (work, personal, projects) has defined hours for weekdays/weekends
         // Tasks must be scheduled within their category's allowed hours
         // See: src/guidelines/AI_SCHEDULING_GUIDELINES.md Section 4
+        // Search for an available slot within the two-week span; never default to next-day 12 AM
+        while (scheduleDate <= endDate) {
         const dateKey = getDateKey(scheduleDate);
         // GUIDELINE 2: FIND AVAILABLE TIME - Get all tasks for the target date
         // Must include: existing tasks + tasks in current plan + recurring tasks that apply to this date
@@ -2454,7 +2462,7 @@ export function useAIScheduler() {
           // ALWAYS use findNextAvailableSlot result, even if it's different from proposed time
           // This ensures we never schedule at the same time as existing tasks
           // CRITICAL: For recurring tasks, we MUST use the conflict-free slot, never the proposed time
-          if (availableSlot.getHours() < HOURS_PER_DAY) {
+          if (isSlotOnRequestedDay(availableSlot, scheduleDate)) {
             scheduleDate.setTime(availableSlot.getTime());
             // Check if the slot was moved from the proposed time (indicates conflict was detected)
             const proposedTimeMs = proposedTime.getTime();
@@ -2510,7 +2518,7 @@ export function useAIScheduler() {
               }
             );
             
-            if (fallbackSlot.getHours() < HOURS_PER_DAY) {
+            if (isSlotOnRequestedDay(fallbackSlot, scheduleDate)) {
               scheduleDate.setTime(fallbackSlot.getTime());
               reason = `${effectiveCategoryTime.reason} - moved to available slot (conflict avoided)`;
               // Log for recurring tasks to help debug
@@ -2555,18 +2563,29 @@ export function useAIScheduler() {
                 }
               );
               
-              if (lastResortSlot.getHours() < HOURS_PER_DAY) {
+              if (isSlotOnRequestedDay(lastResortSlot, scheduleDate)) {
                 scheduleDate.setTime(lastResortSlot.getTime());
                 reason = `${effectiveCategoryTime.reason} - moved to available slot (last resort)`;
               } else {
-                // Absolute last resort - use proposed time but log the error
-                logger.error('ABSOLUTE LAST RESORT: Using proposed time despite potential conflicts', {
-                  taskId: task.id,
-                  taskTitle: task.title,
-                  proposedTime: proposedTime.toISOString(),
-                });
-                scheduleDate.setHours(effectiveCategoryTime.hours, effectiveCategoryTime.minutes, 0, 0);
-                reason = effectiveCategoryTime.reason;
+                // No slot on this day - try next day within the two-week span instead of defaulting to 12 AM
+                if (isRecurringTask) {
+                  scheduleDate.setDate(scheduleDate.getDate() + 1);
+                  scheduleDate.setHours(0, 0, 0, 0);
+                  while (scheduleDate <= endDate && !isDateInRecurrence(task, scheduleDate)) {
+                    scheduleDate.setDate(scheduleDate.getDate() + 1);
+                    scheduleDate.setHours(0, 0, 0, 0);
+                  }
+                } else {
+                  scheduleDate.setDate(scheduleDate.getDate() + 1);
+                  scheduleDate.setHours(0, 0, 0, 0);
+                }
+                if (scheduleDate > endDate) {
+                  logger.warn('No available slot found within two-week span, skipping day iteration', {
+                    taskId: task.id,
+                    taskTitle: task.title,
+                  });
+                }
+                continue;
               }
             }
           }
@@ -3014,8 +3033,8 @@ export function useAIScheduler() {
             }
           );
           
-          // If a valid slot was found (not 24:00 or later), use it
-          if (finalSlot.getHours() < HOURS_PER_DAY) {
+          // If a valid slot was found (on the requested day, not next-day 12 AM), use it
+          if (isSlotOnRequestedDay(finalSlot, scheduleDate)) {
             scheduleDate.setTime(finalSlot.getTime());
           } else {
             // Fall back to availableSlot if findNextAvailableSlot couldn't find a slot
@@ -3070,7 +3089,7 @@ export function useAIScheduler() {
           
           // ALWAYS use the conflict-free slot from findNextAvailableSlot
           // This ensures we never schedule at the same time as existing tasks
-          if (finalConflictCheck.getHours() < HOURS_PER_DAY) {
+          if (isSlotOnRequestedDay(finalConflictCheck, scheduleDate)) {
             const originalTime = scheduleDate.getTime();
             const conflictFreeTime = finalConflictCheck.getTime();
             const timeDifference = Math.abs(conflictFreeTime - originalTime);
@@ -3300,8 +3319,8 @@ export function useAIScheduler() {
           }
         );
         
-        // ALWAYS use the final safeguard slot if it's valid
-        if (finalSafeguardSlot.getHours() < HOURS_PER_DAY) {
+        // ALWAYS use the final safeguard slot if it's on the requested day
+        if (isSlotOnRequestedDay(finalSafeguardSlot, scheduleDate)) {
           const originalTime = scheduleDate.getTime();
           const safeguardTime = finalSafeguardSlot.getTime();
           const timeDifference = Math.abs(safeguardTime - originalTime);
@@ -3661,7 +3680,12 @@ export function useAIScheduler() {
             });
           }
         }
-        
+        break;
+        } // end while (scheduleDate <= endDate)
+        if (scheduleDate > endDate) {
+          logger.warn('No available slot in two-week span', { taskId: task.id, taskTitle: task.title });
+          return;
+        }
         const taskWithScheduledDate = {
           ...task,
           scheduledDate: scheduleDate.toISOString()
@@ -3748,7 +3772,7 @@ export function useAIScheduler() {
             othersForDay,
             { ensureAfterCurrentTime: false, categoryHours: categoryHours ?? undefined, calendarEvents: dayCalendarEventsForOverlap }
           );
-          if (slot.getHours() < HOURS_PER_DAY && slot.getTime() !== itemStart) {
+          if (isSlotOnRequestedDay(slot, targetDate) && slot.getTime() !== itemStart) {
             const newDate = new Date(slot.getTime());
             item.scheduledDate = newDate;
             item.task = { ...item.task, scheduledDate: newDate.toISOString() };
