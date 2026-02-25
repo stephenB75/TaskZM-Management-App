@@ -93,6 +93,7 @@ import {
   ICON_SIZE_MD,
   ICON_SIZE_LG,
   CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX,
+  CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX,
   MOBILE_PADDING_BOTTOM,
   TOAST_DURATION_SHORT_MS,
   TOAST_DURATION_MEDIUM_MS,
@@ -604,11 +605,7 @@ export function DashboardView({
 
   const buttonScale = getButtonScale();
   
-  // Calendar events state for showing dots on mobile week view
-  const [calendarEventsByDate, setCalendarEventsByDate] = useState<Record<string, number>>({});
-
   // Confetti when marking a task complete (week view / today agenda in dashboard)
-  // Single state so origin and trigger update together — confetti appears on the task card
   const [confetti, setConfetti] = useState<{ show: boolean; origin: { x: number; y: number } | null }>({
     show: false,
     origin: null,
@@ -797,11 +794,6 @@ export function DashboardView({
       debounceMs: 300,
     }
   );
-
-  // Update state when event counts change
-  useEffect(() => {
-    setCalendarEventsByDate(calendarEventsByDateData);
-  }, [calendarEventsByDateData]);
 
   // Update day index to tomorrow when returning to current week
   useEffect(() => {
@@ -1585,7 +1577,7 @@ export function DashboardView({
                   {weekColumns.map((column, index) => {
                     const isSelected = index === mobileDayIndex;
                     const dayTasks = getTasksForDay(column.dateString);
-                    const dayEventCount = calendarEventsByDate[column.dateString] || 0;
+                    const dayEventCount = calendarEventsByDateData[column.dateString] ?? 0;
                     
                     // Debug: Log tasks and events for this day in development
                     if (import.meta.env.DEV) {
@@ -1632,7 +1624,10 @@ export function DashboardView({
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
                           <div 
                             className="flex flex-wrap items-center justify-center gap-0.5 mt-1 min-h-[6px] flex-shrink-0 max-w-full overflow-hidden"
-                            style={{ maxHeight: `${CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX}px` }}
+                            style={{ 
+                              maxHeight: `${CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX}px`,
+                              maxWidth: `${CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX}px`,
+                            }}
                           >
                             {/* Task dots (primary) - one per task */}
                             {dayTasks.map((task, taskIndex) => {

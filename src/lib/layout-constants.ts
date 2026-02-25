@@ -724,6 +724,10 @@ export const SETTINGS_PANEL_POSITION_STATIC = 'static'; // position: static
 export const MOBILE_PADDING_BOTTOM = '2rem'; // padding-bottom: 2rem for mobile views
 /** Max height (px) for the dots row in the dashboard calendar carousel so the row does not extend beyond the viewport on small screens when a day has many events/tasks. */
 export const CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX = 36;
+/** Max dots per row before wrapping in the calendar carousel (wrap at 4). */
+export const CALENDAR_CAROUSEL_DOTS_PER_ROW = 4;
+/** Max width (px) for one row of dots so they wrap at CALENDAR_CAROUSEL_DOTS_PER_ROW. Dot 8px + gap 2px => 4*8+3*2 = 38. */
+export const CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX = 38;
 export const DESKTOP_PADDING_TOP = '3rem'; // padding-top: 3rem for desktop views
 // Mobile scroll container padding to ensure content is not hidden by fixed header when scrolling up
 // Header height already includes safe area inset in its padding, so we match that total height
