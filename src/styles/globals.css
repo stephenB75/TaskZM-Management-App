@@ -236,6 +236,18 @@ img[alt="TaskZM Logo"] {
     -webkit-touch-callout: none;
   }
 
+  /* Calendar carousel: responsive day header font at sm (640px+) */
+  @media (min-width: 640px) {
+    .calendar-carousel-grid .calendar-carousel-header-cell {
+      font-size: var(--carousel-header-font-sm, 12px);
+    }
+    .calendar-carousel-inner {
+      padding-left: max(var(--carousel-padding-x-sm, 1rem), env(safe-area-inset-left));
+      padding-right: max(var(--carousel-padding-x-sm, 1rem), env(safe-area-inset-right));
+      padding-bottom: var(--carousel-padding-b-sm, 1rem);
+    }
+  }
+
   /* Ensure touch-friendly tap targets (44px minimum per WCAG / Apple HIG) */
   button, a {
     min-height: 44px;

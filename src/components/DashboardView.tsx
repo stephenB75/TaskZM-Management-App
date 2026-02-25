@@ -104,7 +104,14 @@ import {
   CALENDAR_DAY_NAMES,
   CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX,
   CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE,
+  CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE_SM,
   CALENDAR_CAROUSEL_GRID_GAP,
+  CALENDAR_CAROUSEL_MAX_WIDTH_VIEWPORT,
+  CALENDAR_CAROUSEL_PADDING_X,
+  CALENDAR_CAROUSEL_PADDING_X_SM,
+  CALENDAR_CAROUSEL_LAYOUT_FULL,
+  CALENDAR_CAROUSEL_PADDING_B,
+  CALENDAR_CAROUSEL_PADDING_B_SM,
   MOBILE_PADDING_BOTTOM,
   TOAST_DURATION_SHORT_MS,
   TOAST_DURATION_MEDIUM_MS,
@@ -1531,10 +1538,20 @@ export function DashboardView({
       {/* Mobile/Tablet 7-Day Calendar - Only show on mobile/tablet when viewing week */}
       {mobileView === "week" && shouldUseMobileLayout && (
         <div 
-          className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm flex-shrink-0 w-full max-w-full overflow-hidden"
-          style={{ paddingTop: HEADER_GAP_LARGE }}
+          className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm flex-shrink-0 min-w-0 w-full max-w-full overflow-x-hidden overflow-y-visible"
+          style={{ paddingTop: HEADER_GAP_LARGE, maxWidth: CALENDAR_CAROUSEL_MAX_WIDTH_VIEWPORT }}
         >
-          <div className="px-2 pb-3 sm:px-4 sm:pb-4 min-w-0 w-full max-w-full overflow-hidden box-border">
+          <div
+            className="calendar-carousel-inner min-w-0 w-full max-w-full overflow-hidden box-border"
+            style={{
+              ['--carousel-padding-x-sm' as string]: CALENDAR_CAROUSEL_PADDING_X_SM,
+              ['--carousel-padding-b-sm' as string]: CALENDAR_CAROUSEL_PADDING_B_SM,
+              paddingLeft: `max(${CALENDAR_CAROUSEL_PADDING_X}, env(safe-area-inset-left))`,
+              paddingRight: `max(${CALENDAR_CAROUSEL_PADDING_X}, env(safe-area-inset-right))`,
+              paddingBottom: CALENDAR_CAROUSEL_PADDING_B,
+              maxWidth: CALENDAR_CAROUSEL_LAYOUT_FULL,
+            }}
+          >
             {/* Week Navigation Header */}
             <div className="flex items-center justify-between mb-3">
               <Button
@@ -1569,10 +1586,13 @@ export function DashboardView({
 
             {/* 7-Day Calendar Grid - Swipeable Carousel */}
             <div 
-              className="grid select-none min-w-0 w-full max-w-full overflow-hidden box-border"
+              className="grid select-none min-w-0 w-full max-w-full overflow-hidden box-border calendar-carousel-grid"
               style={{ 
                 gridTemplateColumns: `repeat(${CALENDAR_CAROUSEL_DAYS_PER_WEEK}, minmax(0, 1fr))`,
                 gap: CALENDAR_CAROUSEL_GRID_GAP,
+                width: CALENDAR_CAROUSEL_LAYOUT_FULL,
+                maxWidth: CALENDAR_CAROUSEL_LAYOUT_FULL,
+                ['--carousel-header-font-sm' as string]: CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE_SM,
               }}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -1582,7 +1602,7 @@ export function DashboardView({
               {weekColumns.map((column) => (
                 <div
                   key={`header-${column.dateString}`}
-                  className="text-center sm:text-xs font-medium text-muted-foreground py-1 min-w-0 overflow-hidden"
+                  className="text-center sm:text-xs font-medium text-muted-foreground py-1 min-w-0 overflow-hidden calendar-carousel-header-cell"
                   style={{ fontSize: CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE }}
                 >
                   {column.dayName.substring(0, CALENDAR_CAROUSEL_DAY_ABBREV_LENGTH)}
@@ -1640,12 +1660,12 @@ export function DashboardView({
                         {/* Show dots for all tasks and events - one dot per item; wrap at 4 per row, never exceed cell width */}
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
                           <div 
-                            className="flex flex-wrap items-center justify-center gap-0.5 mt-1 flex-shrink-0 overflow-hidden box-border"
+                            className="flex flex-wrap items-center justify-center content-center gap-0.5 mt-1 flex-shrink-0 overflow-hidden box-border max-w-full"
                             style={{ 
                               maxHeight: `${CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX}px`,
                               minHeight: `${CALENDAR_CAROUSEL_DOTS_MIN_HEIGHT_PX}px`,
-                              width: '100%',
-                              maxWidth: `min(100%, ${CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX}px)`,
+                              width: CALENDAR_CAROUSEL_LAYOUT_FULL,
+                              maxWidth: `min(${CALENDAR_CAROUSEL_LAYOUT_FULL}, ${CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX}px)`,
                               minWidth: 0,
                             }}
                           >

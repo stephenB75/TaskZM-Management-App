@@ -748,8 +748,22 @@ export const CALENDAR_DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SA
 export const CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX = 32;
 /** Day header font size in the calendar carousel (text-[10px]). */
 export const CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE = '10px';
+/** Day header font size at sm breakpoint (640px+) for better readability on larger mobile/tablet. */
+export const CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE_SM = '12px';
 /** Gap between columns/rows in the calendar carousel grid (gap-1 = 0.25rem). */
 export const CALENDAR_CAROUSEL_GRID_GAP = '0.25rem';
+/** Max width of the carousel so it never exceeds the viewport (containment). */
+export const CALENDAR_CAROUSEL_MAX_WIDTH_VIEWPORT = '100vw';
+/** Horizontal padding (and min before safe-area) for the carousel inner content. px-2 = 0.5rem. */
+export const CALENDAR_CAROUSEL_PADDING_X = '0.5rem';
+/** Horizontal padding at sm breakpoint (640px+). sm:px-4 = 1rem. */
+export const CALENDAR_CAROUSEL_PADDING_X_SM = '1rem';
+/** Full width/layout fill (100%) for grid and dots containment. */
+export const CALENDAR_CAROUSEL_LAYOUT_FULL = '100%';
+/** Bottom padding for the carousel inner content. pb-3 = 0.75rem. */
+export const CALENDAR_CAROUSEL_PADDING_B = '0.75rem';
+/** Bottom padding at sm breakpoint. sm:pb-4 = 1rem. */
+export const CALENDAR_CAROUSEL_PADDING_B_SM = '1rem';
 export const DESKTOP_PADDING_TOP = '3rem'; // padding-top: 3rem for desktop views
 // Mobile scroll container padding to ensure content is not hidden by fixed header when scrolling up
 // Header height already includes safe area inset in its padding, so we match that total height
