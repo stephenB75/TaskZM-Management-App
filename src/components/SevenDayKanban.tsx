@@ -841,7 +841,7 @@ export function SevenDayKanban({
 
         {/* Mobile Single Column - No nested scroll, parent container handles scrolling */}
         <div 
-          className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4" 
+          className="flex-1 px-4 pt-2 sm:px-6 sm:pt-4 w-full max-w-full min-w-0 box-border" 
           style={{ 
             // Remove transparent background override to allow parent gradient to show through
             // Add minimum height to fill space between header and nav bar when no tasks
@@ -963,7 +963,7 @@ export function SevenDayKanban({
                           
                           return (
                     <div
-                      className="w-full flex flex-col items-center" 
+                      className="w-full max-w-full flex flex-col items-center min-w-0" 
                       style={{ 
                         minHeight: 0, 
                         height: '100%',
@@ -1017,7 +1017,7 @@ export function SevenDayKanban({
                         </motion.div>
                       ) : (
                           <div
-                            className="flex flex-col w-full"
+                            className="flex flex-col w-full min-w-0"
                             style={{
                               gap: KANBAN_COLUMN_DIMENSIONS.cardsGapPx,
                               padding: 0,
@@ -1025,10 +1025,12 @@ export function SevenDayKanban({
                               minHeight: 0,
                               height: 'auto',
                               width: '100%',
-                              maxWidth: shouldUseMobileLayout 
-                                ? KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.mobile
+                              maxWidth: shouldUseMobileLayout
+                                ? '100%'
                                 : KANBAN_COLUMN_DIMENSIONS.cardsContainerMaxWidth.desktop,
-                              margin: KANBAN_COLUMN_DIMENSIONS.cardsContainerMargin as React.CSSProperties['margin'],
+                              margin: shouldUseMobileLayout
+                                ? 0
+                                : (KANBAN_COLUMN_DIMENSIONS.cardsContainerMargin as React.CSSProperties['margin']),
                               boxSizing: 'border-box',
                               // On mobile/tablet, make background transparent to show parent gradient
                               // On desktop, use the gradient background

@@ -791,10 +791,10 @@ export function TodayAgendaView({
       {/* On desktop (when hideHeader is true), use ScrollArea for standalone scrolling */}
       {hideHeader ? (
         shouldUseMobileLayout ? (
-          <div className="w-full relative flex-1 min-h-0">
+          <div className="w-full max-w-full min-w-0 overflow-x-hidden relative flex-1 min-h-0">
             <div 
               ref={timelineContainerRef}
-              className="px-5 w-full relative"
+              className="px-5 w-full max-w-full min-w-0 relative box-border"
               style={{
                 paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop 
                   ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing

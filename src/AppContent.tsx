@@ -780,9 +780,9 @@ export default function AppContent() {
         />
         <main className="flex-1 overflow-hidden relative flex">
           {shouldUseMobileLayout && (
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 w-full max-w-full min-w-0">
             <div 
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 relative min-w-0"
+              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 relative min-w-0 w-full max-w-full"
               style={{
                 scrollBehavior: 'smooth',
                 WebkitOverflowScrolling: 'touch',
@@ -806,6 +806,9 @@ export default function AppContent() {
                   : 'auto',
                 backgroundRepeat: 'repeat-y',
                 backgroundAttachment: 'scroll',
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
               } as React.CSSProperties}
             >
               <Suspense fallback={<ViewFallback />}>
