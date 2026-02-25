@@ -92,6 +92,8 @@ import {
   ICON_SIZE_SM,
   ICON_SIZE_MD,
   ICON_SIZE_LG,
+  CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX,
+  MOBILE_PADDING_BOTTOM,
   TOAST_DURATION_SHORT_MS,
   TOAST_DURATION_MEDIUM_MS,
 } from "../lib/layout-constants";
@@ -1528,7 +1530,7 @@ export function DashboardView({
       {/* Mobile/Tablet 7-Day Calendar - Only show on mobile/tablet when viewing week */}
       {mobileView === "week" && shouldUseMobileLayout && (
         <div 
-          className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm"
+          className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm flex-shrink-0"
           style={{ paddingTop: HEADER_GAP_LARGE }}
         >
           <div className="px-2 pb-3 sm:px-4 sm:pb-4">
@@ -1628,7 +1630,10 @@ export function DashboardView({
                         </span>
                         {/* Show dots for all tasks and events - one dot per item; wrap to next line when many */}
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
-                          <div className="flex flex-wrap items-center justify-center gap-0.5 mt-1 min-h-[6px] flex-shrink-0 max-w-full">
+                          <div 
+                            className="flex flex-wrap items-center justify-center gap-0.5 mt-1 min-h-[6px] flex-shrink-0 max-w-full overflow-hidden"
+                            style={{ maxHeight: `${CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX}px` }}
+                          >
                             {/* Task dots (primary) - one per task */}
                             {dayTasks.map((task, taskIndex) => {
                               if (!task) return null;
@@ -1671,7 +1676,7 @@ export function DashboardView({
       )}
 
       {/* Main Layout */}
-      <div className={cn("flex-1 flex", shouldUseMobileLayout ? "" : "overflow-hidden")}>
+      <div className={cn("flex-1 flex min-h-0", shouldUseMobileLayout ? "" : "overflow-hidden")}>
         {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false (hidden on tablets to save space) */}
         {/* xl breakpoint (1280px) ensures it only shows on true desktop, not tablets */}
         {!hideAgenda && (
