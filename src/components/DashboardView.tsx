@@ -1311,7 +1311,7 @@ export function DashboardView({
           }, CONFETTI_RESET_DELAY_MS);
         }}
       />
-      <div className={cn("h-full flex flex-col", UI_GRADIENT_COLORS.dialog.className, "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950")}>
+      <div className={cn("h-full flex flex-col min-w-0 w-full max-w-full overflow-x-hidden", UI_GRADIENT_COLORS.dialog.className, "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950")}>
       {/* Header - Using AppHeader for consistency */}
       <AppHeader
         title="Dashboard"
@@ -1720,7 +1720,7 @@ export function DashboardView({
       )}
 
       {/* Main Layout */}
-      <div className={cn("flex-1 flex min-h-0", shouldUseMobileLayout ? "" : "overflow-hidden")}>
+      <div className={cn("flex-1 flex min-h-0 min-w-0", shouldUseMobileLayout ? "overflow-x-hidden" : "overflow-hidden")}>
         {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false (hidden on tablets to save space) */}
         {/* xl breakpoint (1280px) ensures it only shows on true desktop, not tablets */}
         {!hideAgenda && (
@@ -1737,7 +1737,7 @@ export function DashboardView({
 
         {/* Mobile: Tabbed View | Desktop: Kanban/Calendar */}
         <motion.div
-          className={cn("flex-1", shouldUseMobileLayout ? "" : "overflow-hidden")}
+          className={cn("flex-1 min-w-0", shouldUseMobileLayout ? "overflow-x-hidden w-full max-w-full" : "overflow-hidden")}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -1762,7 +1762,7 @@ export function DashboardView({
 
           {/* Mobile/Tablet: Tabbed Content (one-column layout) */}
           {shouldUseMobileLayout && (
-            <div className={cn("", shouldUseMobileLayout ? "" : "min-h-full")} style={{ backgroundColor: 'transparent' }}>
+            <div className={cn("w-full max-w-full min-w-0 overflow-x-hidden", shouldUseMobileLayout ? "" : "min-h-full")} style={{ backgroundColor: 'transparent' }}>
               {mobileView === "today" ? (
                 <TodayAgendaView hideHeader={true} />
               ) : viewMode === "week" ? (
