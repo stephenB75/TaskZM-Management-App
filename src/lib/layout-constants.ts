@@ -748,6 +748,8 @@ export const CALENDAR_DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SA
 export const CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX = 32;
 /** Day header font size in the calendar carousel (text-[10px]). */
 export const CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE = '10px';
+/** Gap between columns/rows in the calendar carousel grid (gap-1 = 0.25rem). */
+export const CALENDAR_CAROUSEL_GRID_GAP = '0.25rem';
 export const DESKTOP_PADDING_TOP = '3rem'; // padding-top: 3rem for desktop views
 // Mobile scroll container padding to ensure content is not hidden by fixed header when scrolling up
 // Header height already includes safe area inset in its padding, so we match that total height

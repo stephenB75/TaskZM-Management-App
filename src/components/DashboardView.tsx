@@ -104,6 +104,7 @@ import {
   CALENDAR_DAY_NAMES,
   CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX,
   CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE,
+  CALENDAR_CAROUSEL_GRID_GAP,
   MOBILE_PADDING_BOTTOM,
   TOAST_DURATION_SHORT_MS,
   TOAST_DURATION_MEDIUM_MS,
@@ -882,7 +883,7 @@ export function DashboardView({
     setTouchEnd(null);
   };
 
-  const getTasksForDay = (dateString: string) => {
+  const getTasksForDay = useCallback((dateString: string) => {
     // Parse the date string to a Date object for recurring task check
     // dateString is in format "YYYY-MM-DD", parse it to local midnight
     const [year, month, day] = dateString.split('-').map(Number);
@@ -957,7 +958,7 @@ export function DashboardView({
     }
     
     return dedupeTasksForDay(matchingTasks, dateString);
-  };
+  }, [tasks]);
 
   const handleScheduleUnscheduledTasks = async () => {
     if (!safeHasFeature('aiScheduler')) {
@@ -1530,10 +1531,10 @@ export function DashboardView({
       {/* Mobile/Tablet 7-Day Calendar - Only show on mobile/tablet when viewing week */}
       {mobileView === "week" && shouldUseMobileLayout && (
         <div 
-          className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm flex-shrink-0"
+          className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm flex-shrink-0 w-full max-w-full overflow-hidden"
           style={{ paddingTop: HEADER_GAP_LARGE }}
         >
-          <div className="px-2 pb-3 sm:px-4 sm:pb-4 min-w-0 overflow-hidden">
+          <div className="px-2 pb-3 sm:px-4 sm:pb-4 min-w-0 w-full max-w-full overflow-hidden box-border">
             {/* Week Navigation Header */}
             <div className="flex items-center justify-between mb-3">
               <Button
@@ -1568,8 +1569,11 @@ export function DashboardView({
 
             {/* 7-Day Calendar Grid - Swipeable Carousel */}
             <div 
-              className="grid grid-cols-7 gap-1 select-none min-w-0 w-full overflow-hidden"
-              style={{ gridTemplateColumns: `repeat(${CALENDAR_CAROUSEL_DAYS_PER_WEEK}, minmax(0, 1fr))` }}
+              className="grid select-none min-w-0 w-full max-w-full overflow-hidden box-border"
+              style={{ 
+                gridTemplateColumns: `repeat(${CALENDAR_CAROUSEL_DAYS_PER_WEEK}, minmax(0, 1fr))`,
+                gap: CALENDAR_CAROUSEL_GRID_GAP,
+              }}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
@@ -1633,14 +1637,16 @@ export function DashboardView({
                         >
                           {column.date.getDate()}
                         </span>
-                        {/* Show dots for all tasks and events - one dot per item; wrap at 4 per row */}
+                        {/* Show dots for all tasks and events - one dot per item; wrap at 4 per row, never exceed cell width */}
                         {(dayTasks.length > 0 || dayEventCount > 0) && (
                           <div 
-                            className="flex flex-wrap items-center justify-center gap-0.5 mt-1 flex-shrink-0 w-full overflow-hidden"
+                            className="flex flex-wrap items-center justify-center gap-0.5 mt-1 flex-shrink-0 overflow-hidden box-border"
                             style={{ 
                               maxHeight: `${CALENDAR_CAROUSEL_DOTS_MAX_HEIGHT_PX}px`,
-                              maxWidth: `${CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX}px`,
                               minHeight: `${CALENDAR_CAROUSEL_DOTS_MIN_HEIGHT_PX}px`,
+                              width: '100%',
+                              maxWidth: `min(100%, ${CALENDAR_CAROUSEL_DOTS_ROW_MAX_WIDTH_PX}px)`,
+                              minWidth: 0,
                             }}
                           >
                             {/* Task dots (primary) - one per task */}
