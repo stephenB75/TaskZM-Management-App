@@ -245,7 +245,7 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents]);
 
-  /** Timeline blocks (7AM–12AM). Gaps between items; when a block is pushed down to make room it gets a dashed connector from its time on the timeline so the timeline stays aligned with task/event times. Timeline height grows to fit all blocks. */
+  /** Timeline blocks (7AM–12AM). Single column: blocks stacked in time order; when one would overlap the previous, it is placed below it and the timeline extends vertically. Connector line from timeline to block shows actual time. */
   const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, laneCount } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
@@ -302,7 +302,7 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Stack with gap so items don't touch; blocks that are pushed down get a connector from their time on the timeline so alignment is clear.
+    // Single column: stack in time order; each block at max(its time, bottom of previous + gap). Timeline extends vertically to fit.
     let columnBottomPx = 0;
     for (const block of blocks) {
       block.topPx = Math.max(block.naturalTopPx, columnBottomPx);
@@ -339,7 +339,7 @@ export function TodayAgendaView({
     return () => cancelAnimationFrame(id);
   }, [currentTimeTopPx, combinedItems.length]);
 
-  // Gaps between items; stacked blocks use a connector from their time on the timeline so alignment is clear. Timeline height grows to fit all blocks. New tasks avoid slots occupied by calendar events (findNextAvailableSlot in DragDropContext).
+  // Single column; timeline extends vertically to fit stacked blocks. When scheduling a task, use findNextAvailableSlot (e.g. in DragDropContext or TaskDialog) so the assigned time does not overlap.
 
   // Find the next uncompleted task after current time (next up)
   const nextUpTaskId = useMemo(() => {
