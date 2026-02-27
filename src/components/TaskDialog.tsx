@@ -1363,9 +1363,30 @@ export function TaskDialog({
           dateWithTime.setTime(slot.getTime());
         }
 
-        // Always resolve to next available slot so we never save a time that conflicts with another task or calendar event
-        const conflictFreeSlot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
-        dateWithTime.setTime(conflictFreeSlot.getTime());
+        // When editing an existing task, if the user did not change the scheduled date/time, preserve it
+        // so the task is not moved to a new slot (e.g. due to calendar events being treated as conflicts).
+        // Only run conflict resolution for new tasks or when the user explicitly changed the date or time.
+        const isEditingWithoutTimeChange = Boolean(
+          task?.id &&
+          task?.scheduledDate &&
+          (() => {
+            const existing = new Date(task.scheduledDate);
+            if (isNaN(existing.getTime())) return false;
+            return (
+              dateWithTime.getFullYear() === existing.getFullYear() &&
+              dateWithTime.getMonth() === existing.getMonth() &&
+              dateWithTime.getDate() === existing.getDate() &&
+              dateWithTime.getHours() === existing.getHours() &&
+              dateWithTime.getMinutes() === existing.getMinutes()
+            );
+          })()
+        );
+
+        if (!isEditingWithoutTimeChange) {
+          // Resolve to next available slot so we never save a time that conflicts with another task or calendar event
+          const conflictFreeSlot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
+          dateWithTime.setTime(conflictFreeSlot.getTime());
+        }
 
         // Final validation before converting to ISO
         if (!isNaN(dateWithTime.getTime())) {
