@@ -4,8 +4,6 @@ import { logger } from '../lib/logger';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import {
   POMODORO_WORK_DURATION,
-  POMODORO_SHORT_BREAK_DURATION,
-  POMODORO_LONG_BREAK_DURATION,
   POMODORO_MIN_WORK_MINUTES,
   POMODORO_MAX_WORK_MINUTES,
   STORAGE_KEY_POMODORO,
@@ -16,7 +14,8 @@ import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES } from '../lib/notification-
 import { useTasks } from './TaskContext';
 import { createDefaultPomodoroContext } from '../lib/context-defaults';
 
-type TimerMode = 'work' | 'shortBreak' | 'longBreak';
+/** Focus-only timer (no break mode). */
+type TimerMode = 'work';
 
 interface TimerState {
   mode: TimerMode;
@@ -49,8 +48,6 @@ const PomodoroContext = createContext<PomodoroContextType | null>(null);
 
 const DURATIONS = {
   work: POMODORO_WORK_DURATION,
-  shortBreak: POMODORO_SHORT_BREAK_DURATION,
-  longBreak: POMODORO_LONG_BREAK_DURATION,
 };
 
 const DEFAULT_TIMER_STATE: TimerState = {
@@ -76,22 +73,24 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   const { updateTask } = useTasks();
   const [timers, setTimers] = useState<Record<string, TimerState>>({});
   const [timerTick, setTimerTick] = useState(0);
-  const intervalsRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const globalIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onTimeUpdateCallbacksRef = useRef<Record<string, (minutes: number) => void | Promise<void>>>({});
   const taskTitlesRef = useRef<Record<string, string>>({});
-  const lastUpdateTimeRef = useRef<Record<string, number>>({}); // Track last update time for periodic saves
-  const sessionStartTimeRef = useRef<Record<string, number>>({}); // Track when work session started
-  const elapsedSecondsRef = useRef<Record<string, number>>({}); // Track elapsed seconds in current work session
-  const baseTimeTrackedRef = useRef<Record<string, number>>({}); // Track base time that's been saved to server (prevents double counting)
+  const lastUpdateTimeRef = useRef<Record<string, number>>({});
+  const sessionStartTimeRef = useRef<Record<string, number>>({});
+  const elapsedSecondsRef = useRef<Record<string, number>>({});
+  const baseTimeTrackedRef = useRef<Record<string, number>>({});
   const timersRef = useRef<Record<string, TimerState>>({});
-  const workDurationsRef = useRef<Record<string, number>>({}); // Custom work durations per task (in seconds)
+  const workDurationsRef = useRef<Record<string, number>>({});
+  const handleTimerCompleteRef = useRef<(taskId: string) => void>(() => {});
 
-  // Cleanup intervals on unmount
+  // Cleanup global interval on unmount
   useEffect(() => {
     return () => {
-      Object.values(intervalsRef.current).forEach(interval => {
-        if (interval) clearInterval(interval);
-      });
+      if (globalIntervalRef.current) {
+        clearInterval(globalIntervalRef.current);
+        globalIntervalRef.current = null;
+      }
     };
   }, []);
 
@@ -191,7 +190,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         [taskId]: {
           ...current,
-          timeLeft: current.mode === 'work' ? workDuration : current.timeLeft,
+          timeLeft: workDuration,
           isRunning: true,
         }
       };
@@ -206,7 +205,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       Notification.requestPermission();
     }
 
-    runTimer(taskId, { resetElapsed: true });
+    runGlobalTick(taskId, true);
   };
 
   const resumeTimer = (taskId: string) => {
@@ -229,7 +228,103 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       logger.error('Failed to update task status to in-progress:', err);
     });
 
-    runTimer(taskId, { resetElapsed: false });
+    runGlobalTick(taskId, false);
+  };
+
+  const globalTickCallback = useCallback(() => {
+    const currentTimers = timersRef.current;
+    const completionQueue: string[] = [];
+    let hasUpdates = false;
+    const updates: Record<string, TimerState> = {};
+
+    Object.entries(currentTimers).forEach(([taskId, current]) => {
+      if (!current.isRunning) return;
+
+      const sessionStart = sessionStartTimeRef.current[taskId];
+      const workDuration = getWorkDuration(taskId);
+
+      if (!sessionStart) return;
+
+      const elapsedSeconds = Math.floor((Date.now() - sessionStart) / MILLISECONDS_PER_SECOND);
+      elapsedSecondsRef.current[taskId] = elapsedSeconds;
+      const timeLeft = Math.max(0, workDuration - elapsedSeconds);
+
+      if (timeLeft <= 0) {
+        completionQueue.push(taskId);
+        return;
+      }
+
+      hasUpdates = true;
+      updates[taskId] = { ...current, timeLeft };
+
+      const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
+      const lastUpdate = lastUpdateTimeRef.current[taskId] || 0;
+      if (elapsedMinutes > lastUpdate && elapsedMinutes > 0) {
+        lastUpdateTimeRef.current[taskId] = elapsedMinutes;
+        const callback = onTimeUpdateCallbacksRef.current[taskId];
+        if (callback) {
+          const baseTime = baseTimeTrackedRef.current[taskId] || 0;
+          const totalMinutes = baseTime + elapsedMinutes;
+          callback(totalMinutes)
+            .then(() => {
+              baseTimeTrackedRef.current[taskId] = totalMinutes;
+              const remainingSeconds = elapsedSeconds % SECONDS_PER_MINUTE;
+              elapsedSecondsRef.current[taskId] = remainingSeconds;
+              sessionStartTimeRef.current[taskId] = Date.now() - remainingSeconds * MILLISECONDS_PER_SECOND;
+              lastUpdateTimeRef.current[taskId] = 0;
+              setTimers(prevTimers => ({
+                ...prevTimers,
+                [taskId]: {
+                  ...(prevTimers[taskId] || DEFAULT_TIMER_STATE),
+                  totalTimeTracked: totalMinutes,
+                }
+              }));
+            })
+            .catch(err => logger.error('Time update callback error:', err));
+        }
+      }
+    });
+
+    if (hasUpdates) {
+      setTimers(prev => {
+        let next = prev;
+        Object.entries(updates).forEach(([id, state]) => {
+          next = { ...next, [id]: state };
+        });
+        return next;
+      });
+    }
+
+    setTimerTick(t => t + 1);
+
+    completionQueue.forEach(taskId => {
+      handleTimerCompleteRef.current(taskId);
+    });
+
+    const stillRunning = Object.entries(timersRef.current).some(
+      ([id, t]) => !completionQueue.includes(id) && t.isRunning
+    );
+    if (!stillRunning && globalIntervalRef.current) {
+      clearInterval(globalIntervalRef.current);
+      globalIntervalRef.current = null;
+    }
+  }, []);
+
+  const ensureGlobalTickRunning = useCallback(() => {
+    if (globalIntervalRef.current) return;
+    globalIntervalRef.current = setInterval(globalTickCallback, MILLISECONDS_PER_SECOND);
+  }, [globalTickCallback]);
+
+  const runGlobalTick = (taskId: string, resetElapsed: boolean) => {
+    const now = Date.now();
+    if (resetElapsed) {
+      sessionStartTimeRef.current[taskId] = now;
+      elapsedSecondsRef.current[taskId] = 0;
+      lastUpdateTimeRef.current[taskId] = 0;
+    } else if (!sessionStartTimeRef.current[taskId]) {
+      sessionStartTimeRef.current[taskId] = now;
+    }
+    ensureGlobalTickRunning();
   };
 
   useEffect(() => {
@@ -254,6 +349,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       let newState: TimerState = {
         ...DEFAULT_TIMER_STATE,
         ...state,
+        mode: 'work',
       };
 
       let totalElapsed = savedElapsed;
@@ -263,10 +359,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         const elapsedSinceSaved = Math.max(0, Math.floor((Date.now() - savedAt) / MILLISECONDS_PER_SECOND));
         totalElapsed += elapsedSinceSaved;
 
-        // Use custom work duration if available, otherwise use default
-        const duration = state.mode === 'work' 
-          ? (workDurationsRef.current[taskId] || DURATIONS.work)
-          : DURATIONS[state.mode];
+        const duration = workDurationsRef.current[taskId] || DURATIONS.work;
 
         if (totalElapsed >= duration) {
           newState = {
@@ -291,6 +384,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           resumeQueue.push(taskId);
         }
       } else {
+        newState.timeLeft = workDurationsRef.current[taskId] || DURATIONS.work;
         elapsedSecondsRef.current[taskId] = savedElapsed;
         lastUpdateTimeRef.current[taskId] = savedLastUpdate;
         sessionStartTimeRef.current[taskId] = savedSessionStart;
@@ -356,9 +450,10 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       }
     }));
 
-    if (intervalsRef.current[taskId]) {
-      clearInterval(intervalsRef.current[taskId]);
-      delete intervalsRef.current[taskId];
+    const anyOtherRunning = Object.entries(timersRef.current).some(([id, t]) => id !== taskId && t.isRunning);
+    if (!anyOtherRunning && globalIntervalRef.current) {
+      clearInterval(globalIntervalRef.current);
+      globalIntervalRef.current = null;
     }
   };
 
@@ -405,14 +500,15 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       [taskId]: {
         ...(prev[taskId] || DEFAULT_TIMER_STATE),
         mode: 'work',
-        timeLeft: workDuration, // Use custom duration
+        timeLeft: workDuration,
         isRunning: false,
       }
     }));
 
-    if (intervalsRef.current[taskId]) {
-      clearInterval(intervalsRef.current[taskId]);
-      delete intervalsRef.current[taskId];
+    const anyOtherRunning = Object.entries(timersRef.current).some(([id, t]) => id !== taskId && t.isRunning);
+    if (!anyOtherRunning && globalIntervalRef.current) {
+      clearInterval(globalIntervalRef.current);
+      globalIntervalRef.current = null;
     }
   };
 
@@ -420,35 +516,22 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     const current = timersRef.current[taskId];
     if (!current) return;
 
-    // Stop the timer
-    if (intervalsRef.current[taskId]) {
-      clearInterval(intervalsRef.current[taskId]);
-      delete intervalsRef.current[taskId];
-    }
-
     const taskTitle = taskTitlesRef.current[taskId] || NOTIFICATION_MESSAGES.defaultTaskTitle;
 
     if (current.mode === 'work') {
-      // Calculate total time: existing tracked time + elapsed time in this session
-      // Use elapsedSecondsRef to get accurate time (handles pause/resume cases)
       const elapsedSeconds = elapsedSecondsRef.current[taskId] || 0;
       const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
-      // Ensure we account for at least the full work duration if timer completed
       const workDurationMinutes = Math.floor(getWorkDuration(taskId) / SECONDS_PER_MINUTE);
       const sessionMinutes = Math.max(elapsedMinutes, workDurationMinutes);
       const newSessions = current.sessionsCompleted + 1;
-      // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
       const baseTime = baseTimeTrackedRef.current[taskId] || 0;
       const newTotal = baseTime + sessionMinutes;
 
-      // Update tracked time via callback (persists to task.actualTime → Analytics time-tracking & Pomodoro/Award reports)
       const callback = onTimeUpdateCallbacksRef.current[taskId];
       if (callback) {
         try {
           await callback(newTotal);
-          // Update base time ref to reflect what was saved
           baseTimeTrackedRef.current[taskId] = newTotal;
-          // Update state to reflect saved time
           setTimers(prev => ({
             ...prev,
             [taskId]: {
@@ -461,12 +544,10 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Reset elapsed time tracking for next session
       elapsedSecondsRef.current[taskId] = 0;
       lastUpdateTimeRef.current[taskId] = 0;
       sessionStartTimeRef.current[taskId] = 0;
 
-      // Show notification
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(NOTIFICATION_TITLES.pomodoroComplete, {
           body: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
@@ -474,7 +555,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      // Prompt user when tracking time is met
       toast.success(NOTIFICATION_TITLES.pomodoroComplete, {
         description: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
         duration: 10_000,
@@ -489,148 +569,30 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         },
       });
 
-      // Auto-switch to break
-      // After every 4 completed work sessions, take a long break
-      // Otherwise, take a short break
-      const nextMode = newSessions % 4 === 0 ? 'longBreak' : 'shortBreak';
-      setTimers(prev => ({
-        ...prev,
-        [taskId]: {
-          ...current,
-          mode: nextMode,
-          timeLeft: DURATIONS[nextMode],
-          sessionsCompleted: newSessions,
-          totalTimeTracked: newTotal,
-          isRunning: false,
-        }
-      }));
-    } else {
-      // Break finished, switch back to work
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(NOTIFICATION_TITLES.pomodoroBreak, {
-          body: NOTIFICATION_MESSAGES.pomodoroBreakOver(taskTitle),
-          icon: '/favicon.ico',
-        });
-      }
-
-      // Reset elapsed time tracking for next work session
-      elapsedSecondsRef.current[taskId] = 0;
-      lastUpdateTimeRef.current[taskId] = 0;
-      sessionStartTimeRef.current[taskId] = 0;
-
       const workDuration = getWorkDuration(taskId);
       setTimers(prev => ({
         ...prev,
         [taskId]: {
           ...current,
           mode: 'work',
-          timeLeft: workDuration, // Use custom duration
+          timeLeft: workDuration,
+          sessionsCompleted: newSessions,
+          totalTimeTracked: newTotal,
           isRunning: false,
         }
       }));
+
+      const anyOtherRunning = Object.entries(timersRef.current).some(([id, t]) => id !== taskId && t.isRunning);
+      if (!anyOtherRunning && globalIntervalRef.current) {
+        clearInterval(globalIntervalRef.current);
+        globalIntervalRef.current = null;
+      }
     }
   }
 
-  const runTimer = (taskId: string, { resetElapsed }: { resetElapsed: boolean }) => {
-    if (intervalsRef.current[taskId]) {
-      clearInterval(intervalsRef.current[taskId]);
-    }
-
-    const now = Date.now();
-    const currentState = timersRef.current[taskId] || DEFAULT_TIMER_STATE;
-
-    if (resetElapsed && currentState.mode === 'work') {
-      sessionStartTimeRef.current[taskId] = now;
-      elapsedSecondsRef.current[taskId] = 0;
-      lastUpdateTimeRef.current[taskId] = 0;
-    } else if (!resetElapsed && currentState.mode === 'work' && !sessionStartTimeRef.current[taskId]) {
-      sessionStartTimeRef.current[taskId] = now;
-    }
-
-    const tick = () => {
-      setTimers(prev => {
-        const current = prev[taskId];
-        if (!current || !current.isRunning) {
-          return prev;
-        }
-
-        let sessionStart = sessionStartTimeRef.current[taskId];
-        const workDuration = getWorkDuration(taskId);
-
-        if (current.mode === 'work') {
-          if (!sessionStart) {
-            sessionStart = Date.now() - (elapsedSecondsRef.current[taskId] || 0) * MILLISECONDS_PER_SECOND;
-            sessionStartTimeRef.current[taskId] = sessionStart;
-          }
-        }
-
-        if (current.mode === 'work' && sessionStart > 0) {
-          const elapsedSeconds = Math.floor((Date.now() - sessionStart) / MILLISECONDS_PER_SECOND);
-          elapsedSecondsRef.current[taskId] = elapsedSeconds;
-          const timeLeft = Math.max(0, workDuration - elapsedSeconds);
-
-          if (timeLeft <= 0) {
-            handleTimerComplete(taskId);
-            return prev;
-          }
-
-          const updated = {
-            ...prev,
-            [taskId]: {
-              ...current,
-              timeLeft,
-            }
-          };
-
-          const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
-          const lastUpdate = lastUpdateTimeRef.current[taskId] || 0;
-          if (elapsedMinutes > lastUpdate && elapsedMinutes > 0) {
-            lastUpdateTimeRef.current[taskId] = elapsedMinutes;
-            const callback = onTimeUpdateCallbacksRef.current[taskId];
-            if (callback) {
-              const baseTime = baseTimeTrackedRef.current[taskId] || 0;
-              const totalMinutes = baseTime + elapsedMinutes;
-              callback(totalMinutes)
-                .then(() => {
-                  baseTimeTrackedRef.current[taskId] = totalMinutes;
-                  const remainingSeconds = elapsedSeconds % SECONDS_PER_MINUTE;
-                  elapsedSecondsRef.current[taskId] = remainingSeconds;
-                  sessionStartTimeRef.current[taskId] = Date.now() - remainingSeconds * MILLISECONDS_PER_SECOND;
-                  lastUpdateTimeRef.current[taskId] = 0;
-                  setTimers(prevTimers => ({
-                    ...prevTimers,
-                    [taskId]: {
-                      ...(prevTimers[taskId] || DEFAULT_TIMER_STATE),
-                      totalTimeTracked: totalMinutes,
-                    }
-                  }));
-                })
-                .catch(err => {
-                  logger.error('Time update callback error:', err);
-                });
-            }
-          }
-          return updated;
-        }
-
-        if (current.timeLeft <= 1) {
-          handleTimerComplete(taskId);
-          return prev;
-        }
-        return {
-          ...prev,
-          [taskId]: {
-            ...current,
-            timeLeft: current.timeLeft - 1,
-          }
-        };
-      });
-      setTimerTick(t => t + 1);
-    };
-
-    tick();
-    intervalsRef.current[taskId] = setInterval(tick, MILLISECONDS_PER_SECOND);
-  };
+  useEffect(() => {
+    handleTimerCompleteRef.current = handleTimerComplete;
+  });
 
   // Persist timers to local storage for refresh resilience
   useEffect(() => {

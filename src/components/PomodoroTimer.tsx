@@ -10,14 +10,12 @@ import { usePomodoro } from "../contexts/PomodoroContext";
 import { useTheme } from "../contexts/ThemeContext";
 import {
   POMODORO_WORK_DURATION,
-  POMODORO_SHORT_BREAK_DURATION,
-  POMODORO_LONG_BREAK_DURATION,
   SECONDS_PER_MINUTE,
   MINUTES_PER_HOUR,
   PERCENTAGE_MULTIPLIER,
 } from "../lib/business-constants";
 
-type TimerMode = "work" | "shortBreak" | "longBreak";
+type TimerMode = "work";
 
 interface PomodoroTimerProps {
   taskId: string;
@@ -30,9 +28,7 @@ interface PomodoroTimerProps {
 }
 
 const DURATIONS = {
-  work: POMODORO_WORK_DURATION, // 25 minutes
-  shortBreak: POMODORO_SHORT_BREAK_DURATION, // 5 minutes
-  longBreak: POMODORO_LONG_BREAK_DURATION, // 15 minutes
+  work: POMODORO_WORK_DURATION,
 };
 
 export function PomodoroTimer({
@@ -93,11 +89,7 @@ export function PomodoroTimer({
   };
 
   const getTotalDurationSeconds = () =>
-    timerState.mode === 'work'
-      ? (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)
-      : timerState.mode === 'shortBreak'
-        ? DURATIONS.shortBreak
-        : DURATIONS.longBreak;
+    estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work;
 
   const getProgress = () => {
     const initialDuration = getTotalDurationSeconds();
@@ -105,39 +97,11 @@ export function PomodoroTimer({
     return Math.min(PERCENTAGE_MULTIPLIER, Math.max(0, (elapsed / initialDuration) * PERCENTAGE_MULTIPLIER));
   };
 
-  const getModeColor = () => {
-    switch (timerState.mode) {
-      case "work":
-        return "bg-primary";
-      case "shortBreak":
-        return "bg-green-500";
-      case "longBreak":
-        return "bg-blue-500";
-    }
-  };
+  const getModeColor = () => "bg-primary";
 
-  const getModeIcon = () => {
-    const iconSize = isMobile ? "w-1.5 h-1.5" : "w-3.5 h-3.5";
-    switch (timerState.mode) {
-      case "work":
-        return <Icon name="timer" size={ICON_SIZE_SM} />;
-      case "shortBreak":
-        return <Icon name="coffee" size={ICON_SIZE_SM} />;
-      case "longBreak":
-        return <Icon name="coffee" size={ICON_SIZE_SM} />;
-    }
-  };
+  const getModeIcon = () => <Icon name="timer" size={ICON_SIZE_SM} />;
 
-  const getModeLabel = () => {
-    switch (timerState.mode) {
-      case "work":
-        return "Focus";
-      case "shortBreak":
-        return "Short Break";
-      case "longBreak":
-        return "Long Break";
-    }
-  };
+  const getModeLabel = () => "Focus";
 
   if (compact) {
     return (
@@ -287,19 +251,12 @@ export function PomodoroTimer({
           ) : (
             <>
               <Icon name="play" size={ICON_SIZE_XS} className="mr-1" />
-              {timerState.mode === "work"
-                ? "Start Focus"
-                : "Start Break"}
+              Start Focus
             </>
           )}
         </Button>
         {(timerState.isRunning ||
-          timerState.timeLeft !==
-            (timerState.mode === 'work' 
-              ? (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)
-              : timerState.mode === 'shortBreak' 
-                ? DURATIONS.shortBreak 
-                : DURATIONS.longBreak)) && (
+          timerState.timeLeft !== (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)) && (
           <Button
             size="sm"
             variant="outline"
