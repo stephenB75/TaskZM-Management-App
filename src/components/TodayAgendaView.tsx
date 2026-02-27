@@ -620,7 +620,7 @@ export function TodayAgendaView({
                                 : {}),
                             }}
                           >
-                            <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} variant={compactTimeline ? 'timelineCompact' : 'default'} />
+                            <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} variant="timelineCompact" />
                           </div>
                         </div>
                       ) : null}

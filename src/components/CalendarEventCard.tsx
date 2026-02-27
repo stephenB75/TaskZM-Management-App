@@ -41,7 +41,7 @@ interface CalendarEventCardProps {
   calendarColor?: string;
   isRecurring?: boolean; // Flag indicating if this is a recurring event
   /** When 'kanban', uses light gray background, square left corners, rounded right; background starts at vertical line. */
-  /** When 'timelineCompact', single-row layout for short events on Today Agenda timeline. */
+  /** When 'timelineCompact', two-line layout on Today Agenda timeline: line 1 = meta (calendar, time, duration), line 2 = headline only. */
   /** When 'inbox', 2-line layout: meta + time on line 1, headline + location on line 2. */
   variant?: 'default' | 'kanban' | 'timelineCompact' | 'inbox';
 }
@@ -312,7 +312,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
 
   const contentPaddingLeft = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.left.desktop;
 
-  // Today Agenda timeline (short events): single-row compact layout with tooltip
+  // Today Agenda timeline: two-line layout — line 1: meta (calendar, time, duration); line 2: headline only
   if (variant === 'timelineCompact') {
     const timeRange = allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime}–${endTime}`;
     const providerLabel = CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider];
@@ -322,7 +322,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           <TooltipTrigger asChild>
             <div
               className={cn(
-                'flex items-center w-full h-full min-w-0 rounded-lg gap-1.5 py-1 pr-2',
+                'flex flex-col justify-center w-full h-full min-w-0 rounded-lg gap-0.5 py-1 pr-2',
                 colors.bg,
               )}
               style={{
@@ -330,17 +330,21 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
                 minHeight: TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx,
               }}
             >
-              <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.timelineCompactCalendar} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
-              <span className={cn('flex-shrink-0 font-medium', colors.mutedText)} style={{ fontSize: 11 }}>
-                {providerLabel}
-              </span>
-              <span className={cn('flex-shrink-0', colors.mutedText)} style={{ fontSize: 11 }}>
-                {timeRange}
-              </span>
-              <span className={cn('font-medium px-1 py-0 rounded-full flex-shrink-0', colors.iconBg, colors.mutedText)} style={{ fontSize: 10 }}>
-                {formatDuration(durationMinutes)}
-              </span>
-              <span className={cn('flex-1 min-w-0 truncate font-semibold', colors.text)} style={{ fontSize: 12 }} title={title}>
+              {/* Line 1: calendar, provider, time, duration */}
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.timelineCompactCalendar} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
+                <span className={cn('flex-shrink-0 font-medium', colors.mutedText)} style={{ fontSize: 11 }}>
+                  {providerLabel}
+                </span>
+                <span className={cn('flex-shrink-0', colors.mutedText)} style={{ fontSize: 11 }}>
+                  {timeRange}
+                </span>
+                <span className={cn('font-medium px-1 py-0 rounded-full flex-shrink-0', colors.iconBg, colors.mutedText)} style={{ fontSize: 10 }}>
+                  {formatDuration(durationMinutes)}
+                </span>
+              </div>
+              {/* Line 2: headline only */}
+              <span className={cn('font-semibold min-w-0 truncate', colors.text)} style={{ fontSize: 12 }} title={title}>
                 {title}
               </span>
             </div>
