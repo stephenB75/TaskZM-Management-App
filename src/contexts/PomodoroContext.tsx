@@ -413,6 +413,9 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     // Save elapsed time when pausing a work session
     if (current.mode === 'work' && elapsedSecondsRef.current[taskId] > 0) {
       const elapsedSeconds = elapsedSecondsRef.current[taskId];
+      // So resume continues from the same point (task card or dialog)
+      sessionStartTimeRef.current[taskId] = Date.now() - elapsedSeconds * MILLISECONDS_PER_SECOND;
+
       const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
       if (elapsedMinutes > 0) {
         // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
