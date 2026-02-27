@@ -1,0 +1,21 @@
+# Guideline Index
+
+When changing code in the listed files, preserve these behaviors and check the linked guidelines. Do not introduce hardcoded values; use constants from the referenced source files (e.g. `timing-constants.ts`, `business-constants.ts`, `ai-config.ts`, `layout-constants.ts`).
+
+| Behavior | Primary file(s) | Reference |
+|----------|-----------------|-----------|
+| Daily work hour limit: user-configurable; enforced in scheduling and UI. Uses `ai-config` and `daily-hours-utils`. | `src/lib/ai-config.ts`, `src/lib/daily-hours-utils.ts`, TaskContext, DragDropContext, TaskDialog, DashboardView, AIRecommendationPanel, useAIScheduler | [APP_GUIDELINES_COMPLIANCE §1](APP_GUIDELINES_COMPLIANCE.md#1-daily-work-hour-limit) |
+| Rollover: only non-recurring, incomplete, past-due tasks; clear `scheduledDate`; gated by `hasFeature('taskRollover')`. Uses `rolloverSettings` and `TIMING_CONSTANTS.delays.rolloverCheck`. | `src/contexts/TaskContext.tsx` | [APP_GUIDELINES_COMPLIANCE §2](APP_GUIDELINES_COMPLIANCE.md#2-rollover-tasks) |
+| AI Scheduler: schedule unscheduled tasks respecting daily limits, category hours, calendar events, conflict detection. Uses `findNextAvailableSlot`, `getCategoryHoursForTask`, `hoursSettings`, constants from `business-constants` and `ai-config`. | `src/hooks/useAIScheduler.ts`, `src/lib/time-conflict.ts` | [APP_GUIDELINES_COMPLIANCE §3](APP_GUIDELINES_COMPLIANCE.md#3-ai-scheduler), [AI_SCHEDULING_GUIDELINES](../src/guidelines/AI_SCHEDULING_GUIDELINES.md) |
+| AI Re-Scheduler: same rules as AI Scheduler for day/week/month. Uses `DEFAULT_WEEK_RESCHEDULE_DAYS` and timing constants. | `src/hooks/useAIScheduler.ts` | [APP_GUIDELINES_COMPLIANCE §4](APP_GUIDELINES_COMPLIANCE.md#4-ai-re-scheduler) |
+| Task category hours: Work / Personal / Projects; configurable weekday/weekend windows. Uses `getTaskCategory`, `getCategoryHoursForTask` from `category-hours-utils`; defaults from `business-constants` and `context-defaults`. | `src/lib/category-hours-utils.ts`, useAIScheduler, DragDropContext, TaskContext | [APP_GUIDELINES_COMPLIANCE §5](APP_GUIDELINES_COMPLIANCE.md#5-task-category-hours) |
+| Calendar integrations: Google / Apple / Outlook; OAuth and sync; redirect URI from env. Uses `getGoogleRedirectUri`, env vars. | CalendarContext, `useCalendarEvents`; Supabase Edge functions | [APP_GUIDELINES_COMPLIANCE §6](APP_GUIDELINES_COMPLIANCE.md#6-calendar-integrations) |
+| Notifications: due-date reminders, overdue alerts, badge; configurable. Uses `notification-constants`, `TIMING_CONSTANTS`, `business-constants`. | `src/contexts/NotificationContext.tsx`, `src/lib/notification-constants.ts` | [APP_GUIDELINES_COMPLIANCE §7](APP_GUIDELINES_COMPLIANCE.md#7-notifications) |
+| Tag management: user-managed tags; reserved/protected tags in one place. Uses `business-constants` (`DEFAULT_TAGS`, `PROTECTED_TAGS`, `RESERVED_TAG_URGENT`). | `src/contexts/TaskContext.tsx`, `src/lib/business-constants.ts` | [APP_GUIDELINES_COMPLIANCE §8](APP_GUIDELINES_COMPLIANCE.md#8-tag-management) |
+| Time conflict and slot finding: `checkTimeConflict`, `findNextAvailableSlot`; tasks and calendar events; category hours; rounding from `ai-config`. | `src/lib/time-conflict.ts` | [AI_SCHEDULING_GUIDELINES](../src/guidelines/AI_SCHEDULING_GUIDELINES.md), [CONFLICTS_ANALYSIS](../src/guidelines/CONFLICTS_ANALYSIS.md) |
+| Recurrence: `isDateInRecurrence`, `getOccurrenceDates`; used by scheduler and series. | `src/lib/recurrence.ts` | [RECURRING_TASKS_SERIES](RECURRING_TASKS_SERIES.md) |
+| Drag-drop: conflict check (time-conflict + calendar events), category hours, conflict dialog. Uses same constants as scheduler. | `src/contexts/DragDropContext.tsx` | [AI_SCHEDULING_GUIDELINES](../src/guidelines/AI_SCHEDULING_GUIDELINES.md) |
+| Feature gates: tier and feature matrix; `hasFeature()` used across views and contexts. | `src/contexts/SubscriptionContext.tsx`, `src/lib/feature-gates.ts`, `src/types/index.ts` | — |
+| Demo account: session limit and inactivity cleanup use `auth-constants` and `timing-constants`. | `src/contexts/AuthContext.tsx`, `src/hooks/useDemoActivity.ts` | [Guidelines](../src/guidelines/Guidelines.md) |
+
+All values (delays, limits, intervals, labels) must come from the referenced constants or user settings; do not add new magic numbers or literals in business logic.

@@ -1,0 +1,13 @@
+---
+description: Before changing behavior in src/, check the Guideline Index and preserve locked behaviors; use constants from the codebase, never hardcode.
+alwaysApply: true
+---
+
+# Locked behaviors and Guideline Index
+
+Before changing behavior in files under `src/`, check the **Guideline Index** and preserve the described behaviors for any affected area.
+
+- **Guideline Index:** `docs/GUIDELINE_INDEX.md` (or the compliance audit at `docs/APP_GUIDELINES_COMPLIANCE.md`).
+- For each locked behavior listed there, preserve the behavior and follow the linked guideline doc. Do not remove or alter the intended behavior (e.g. rollover excludes recurring tasks; scheduler respects category hours and calendar events).
+- **No hardcoding:** When editing code, use constants from `timing-constants.ts`, `business-constants.ts`, `layout-constants.ts`, `ai-config.ts`, `notification-constants.ts`, and `context-defaults.ts`. Do not introduce magic numbers or literal business values in source files.
+- Reference the Guideline Index and specific guideline docs by path when in doubt; do not inline numeric rules or thresholds in prompts or comments that duplicate constants.

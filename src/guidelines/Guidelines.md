@@ -1,5 +1,9 @@
 **Add your own guidelines here**
 
+# Guideline index and Cursor Rules
+
+Locked app behaviors are listed in the **Guideline Index** (`docs/GUIDELINE_INDEX.md`). When changing code, preserve those behaviors and use constants from the codebase (no hardcoding). Cursor Rules in `.cursor/rules/` ensure the index and guideline docs are considered when editing relevant files.
+
 # Demo account
 
 - Demo user has a **yearly** (Pro) license for the duration of the demo.

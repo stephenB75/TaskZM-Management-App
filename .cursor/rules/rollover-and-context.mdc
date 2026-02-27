@@ -1,0 +1,16 @@
+---
+description: When editing TaskContext, preserve rollover behavior per Guideline Index; only non-recurring, incomplete, past-due tasks; clear scheduledDate; use rolloverSettings and TIMING_CONSTANTS.
+globs: src/contexts/TaskContext.tsx
+alwaysApply: false
+---
+
+# TaskContext and rollover
+
+When editing `src/contexts/TaskContext.tsx`, preserve rollover behavior as described in the Guideline Index and `docs/APP_GUIDELINES_COMPLIANCE.md` (Rollover section).
+
+- Rollover applies only to **non-recurring** tasks; exclude any task with `recurrence.type !== 'none'` in both the candidate filter and the performRollover safety filter.
+- Only incomplete (not done), past-due tasks (scheduled or due date strictly before today) are rolled over; clear `scheduledDate` to move to inbox.
+- Gate rollover with `hasFeature('taskRollover')`; use `rolloverSettings.autoRollover` and `askBeforeRolling` from context.
+- Use `TIMING_CONSTANTS.delays.rolloverCheck` for the check delay; do not hardcode delays. Use `getDateString` and existing date comparison logic for "today" and "before today."
+
+Reference `docs/GUIDELINE_INDEX.md` and `docs/APP_GUIDELINES_COMPLIANCE.md` for the full behavior; use constants from `timing-constants.ts` and the existing rolloverSettings shape.

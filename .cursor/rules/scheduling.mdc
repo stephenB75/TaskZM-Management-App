@@ -1,0 +1,18 @@
+---
+description: When editing scheduling or conflict logic, follow AI_SCHEDULING_GUIDELINES and the Guideline Index; preserve two-week window, no next-day midnight slot, calendar conflict checks, category hours, daily task limit.
+globs: src/hooks/useAIScheduler.ts src/lib/time-conflict.ts src/lib/category-hours-utils.ts
+alwaysApply: false
+---
+
+# Scheduling and conflict logic
+
+When editing scheduling or conflict logic in these files, follow `src/guidelines/AI_SCHEDULING_GUIDELINES.md` and the Guideline Index (`docs/GUIDELINE_INDEX.md`).
+
+Preserve these behaviors (details and constants are in the guideline docs and code):
+
+- Scheduling window: two-week span; do not assign tasks to a slot that rolls to the next calendar day (e.g. "next day 12 AM" is invalid).
+- Conflict detection: include calendar events; use `findNextAvailableSlot` with the options defined in the codebase.
+- Category hours: respect work/personal/projects windows from settings and `category-hours-utils`; use `getCategoryHoursForTask`, `getCategoryTimeSlot` as documented.
+- Daily task-hour limit: use values from user settings and `ai-config` / `daily-hours-utils`; do not hardcode limits or durations.
+
+Use constants from `business-constants.ts`, `ai-config.ts`, `timing-constants.ts`, and `category-hours-utils.ts`; do not introduce new magic numbers.
