@@ -11,6 +11,7 @@ import {
   MILLISECONDS_PER_SECOND,
 } from '../lib/business-constants';
 import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES } from '../lib/notification-constants';
+import { TOAST_DURATION_EXTRA_LONG_MS } from '../lib/layout-constants';
 import { useTasks } from './TaskContext';
 import { createDefaultPomodoroContext } from '../lib/context-defaults';
 
@@ -183,14 +184,17 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       setWorkDuration(taskId, options.durationMinutes);
     }
 
+    const current = timersRef.current[taskId];
+    const isResume = current && !current.isRunning && (sessionStartTimeRef.current[taskId] ?? 0) > 0;
+
     setTimers(prev => {
-      const current = prev[taskId] || DEFAULT_TIMER_STATE;
+      const cur = prev[taskId] || DEFAULT_TIMER_STATE;
       const workDuration = getWorkDuration(taskId);
       return {
         ...prev,
         [taskId]: {
-          ...current,
-          timeLeft: workDuration,
+          ...cur,
+          timeLeft: isResume ? cur.timeLeft : workDuration,
           isRunning: true,
         }
       };
@@ -205,7 +209,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       Notification.requestPermission();
     }
 
-    runGlobalTick(taskId, true);
+    runGlobalTick(taskId, !isResume);
   };
 
   const resumeTimer = (taskId: string) => {
@@ -560,7 +564,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
 
       toast.success(NOTIFICATION_TITLES.pomodoroComplete, {
         description: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
-        duration: 10_000,
+        duration: TOAST_DURATION_EXTRA_LONG_MS,
         action: {
           label: 'Mark task complete',
           onClick: () => {
