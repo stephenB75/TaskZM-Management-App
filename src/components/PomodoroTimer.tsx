@@ -93,6 +93,10 @@ export function PomodoroTimer({
   const getTotalDurationSeconds = () =>
     estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work;
 
+  const fullDurationSeconds = getTotalDurationSeconds();
+  const isPaused =
+    !timerState.isRunning && timerState.timeLeft > 0 && timerState.timeLeft < fullDurationSeconds;
+
   const getProgress = () => {
     const initialDuration = getTotalDurationSeconds();
     const elapsed = initialDuration - timerState.timeLeft;
@@ -139,6 +143,52 @@ export function PomodoroTimer({
                 }}
               >
                 <Icon name="pause" size={isMobile ? TASK_CARD_ICON_SIZES.pomodoroCompact.mobile : TASK_CARD_ICON_SIZES.pomodoroCompact.desktop} />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={cn(
+                  isMobile ? "h-4 w-4 bg-transparent hover:bg-transparent border-0" : "h-6 w-6"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStopTimer();
+                }}
+              >
+                <Icon name="square" size={isMobile ? TASK_CARD_ICON_SIZES.pomodoroCompact.mobile : TASK_CARD_ICON_SIZES.pomodoroCompact.desktop} />
+              </Button>
+            </motion.div>
+          ) : isPaused ? (
+            <motion.div
+              key="paused"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className={cn("flex items-center", isMobile ? "gap-0.5" : "gap-1")}
+            >
+              <div
+                className={cn(
+                  "flex items-center rounded-full font-medium border border-amber-500/50 dark:border-amber-400/50 bg-amber-500/10 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300",
+                  isMobile ? "gap-0.5 px-0.5 py-0.5 text-[7px]" : "gap-1 px-2 py-0.5 text-[10px]",
+                )}
+              >
+                <Icon name="pause" size={isMobile ? TASK_CARD_ICON_SIZES.pomodoroCompact.mobile : TASK_CARD_ICON_SIZES.pomodoroCompact.desktop} />
+                <span>{formatTime(timerState.timeLeft)}</span>
+                <span className="opacity-90">{NOTIFICATION_POMODORO_UI.pausedLabel}</span>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={cn(
+                  "rounded-full text-primary",
+                  isMobile ? "h-4 w-4 bg-transparent hover:bg-transparent border-0" : "h-6 w-6 border-primary/30 dark:border-primary/40 hover:bg-primary/10 dark:hover:bg-primary/20",
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleTimer();
+                }}
+              >
+                <Icon name="play" size={isMobile ? TASK_CARD_ICON_SIZES.pomodoroCompact.mobile : TASK_CARD_ICON_SIZES.pomodoroCompact.desktop} />
               </Button>
               <Button
                 size="icon"
@@ -201,12 +251,17 @@ export function PomodoroTimer({
       <div className="flex items-center justify-between">
         <div
           className={cn(
-            "flex items-center gap-1.5 px-2 py-1 rounded-full text-white text-xs font-medium",
-            getModeColor(),
+            "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
+            isPaused
+              ? "border border-amber-500/50 dark:border-amber-400/50 bg-amber-500/10 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300"
+              : "text-white bg-primary",
           )}
         >
           {getModeIcon()}
           <span>{getModeLabel()}</span>
+          {isPaused && (
+            <span className="opacity-90"> · {NOTIFICATION_POMODORO_UI.pausedLabel}</span>
+          )}
         </div>
         {timerState.sessionsCompleted > 0 && (
           <div className="flex items-center gap-1 text-xs text-green-500 dark:text-green-400">
@@ -217,12 +272,18 @@ export function PomodoroTimer({
       </div>
 
       {/* Timer Display - countdown and total duration */}
-      <div className="text-center">
-        <div className="text-3xl font-mono font-bold text-foreground tabular-nums">
+      <div className={cn("text-center", isPaused && "opacity-90")}>
+        <div
+          className={cn(
+            "text-3xl font-mono font-bold tabular-nums",
+            isPaused ? "text-amber-700 dark:text-amber-300" : "text-foreground",
+          )}
+        >
           {formatTime(timerState.timeLeft)}
         </div>
         <div className="text-xs text-muted-foreground mt-0.5">
           {NOTIFICATION_POMODORO_UI.durationOf(formatTime(getTotalDurationSeconds()))}
+          {isPaused && ` · ${NOTIFICATION_POMODORO_UI.pausedLabel}`}
         </div>
       </div>
 
@@ -250,6 +311,11 @@ export function PomodoroTimer({
               <Icon name="pause" size={ICON_SIZE_XS} className="mr-1" />
               {NOTIFICATION_POMODORO_UI.pause}
             </>
+          ) : isPaused ? (
+            <>
+              <Icon name="play" size={ICON_SIZE_XS} className="mr-1" />
+              {NOTIFICATION_POMODORO_UI.resumeLabel}
+            </>
           ) : (
             <>
               <Icon name="play" size={ICON_SIZE_XS} className="mr-1" />
@@ -258,6 +324,7 @@ export function PomodoroTimer({
           )}
         </Button>
         {(timerState.isRunning ||
+          isPaused ||
           timerState.timeLeft !== (estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work)) && (
           <Button
             size="sm"

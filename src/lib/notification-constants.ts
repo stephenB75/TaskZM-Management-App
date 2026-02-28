@@ -158,6 +158,8 @@ export const NOTIFICATION_POMODORO_TOAST = {
 export const NOTIFICATION_POMODORO_UI = {
   modeLabel: 'Focus',
   pause: 'Pause',
+  pausedLabel: 'Paused',
+  resumeLabel: 'Resume',
   startFocus: 'Start Focus',
   reset: 'Reset',
   totalTracked: 'Total tracked:',
