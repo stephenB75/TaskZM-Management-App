@@ -15,6 +15,7 @@ import {
   MINUTES_PER_HOUR,
   PERCENTAGE_MULTIPLIER,
 } from "../lib/business-constants";
+import { NOTIFICATION_POMODORO_UI } from "../lib/notification-constants";
 
 type TimerMode = "work";
 
@@ -102,7 +103,7 @@ export function PomodoroTimer({
 
   const getModeIcon = () => <Icon name="timer" size={ICON_SIZE_SM} />;
 
-  const getModeLabel = () => "Focus";
+  const getModeLabel = () => NOTIFICATION_POMODORO_UI.modeLabel;
 
   if (compact) {
     return (
@@ -221,7 +222,7 @@ export function PomodoroTimer({
           {formatTime(timerState.timeLeft)}
         </div>
         <div className="text-xs text-muted-foreground mt-0.5">
-          of {formatTime(getTotalDurationSeconds())} duration
+          {NOTIFICATION_POMODORO_UI.durationOf(formatTime(getTotalDurationSeconds()))}
         </div>
       </div>
 
@@ -247,12 +248,12 @@ export function PomodoroTimer({
           {timerState.isRunning ? (
             <>
               <Icon name="pause" size={ICON_SIZE_XS} className="mr-1" />
-              Pause
+              {NOTIFICATION_POMODORO_UI.pause}
             </>
           ) : (
             <>
               <Icon name="play" size={ICON_SIZE_XS} className="mr-1" />
-              Start Focus
+              {NOTIFICATION_POMODORO_UI.startFocus}
             </>
           )}
         </Button>
@@ -265,7 +266,7 @@ export function PomodoroTimer({
             onClick={handleStopTimer}
           >
             <Icon name="square" size={ICON_SIZE_XS} className="mr-1" />
-            Reset
+            {NOTIFICATION_POMODORO_UI.reset}
           </Button>
         )}
       </div>
@@ -273,7 +274,7 @@ export function PomodoroTimer({
       {/* Stats */}
       {timerState.totalTimeTracked > 0 && (
         <div className="text-center text-xs text-muted-foreground">
-          Total tracked:{" "}
+          {NOTIFICATION_POMODORO_UI.totalTracked}{" "}
           {Math.floor(timerState.totalTimeTracked / MINUTES_PER_HOUR)}h{" "}
           {timerState.totalTimeTracked % MINUTES_PER_HOUR}m
         </div>

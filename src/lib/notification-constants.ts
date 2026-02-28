@@ -148,3 +148,19 @@ export const NOTIFICATION_ERRORS = {
   contextError: 'useNotifications must be used within a NotificationProvider',
 } as const;
 
+// Pomodoro toast action and error labels (used in PomodoroContext)
+export const NOTIFICATION_POMODORO_TOAST = {
+  markTaskCompleteLabel: 'Mark task complete',
+  markTaskCompleteError: 'Could not mark task complete',
+} as const;
+
+// Pomodoro timer UI labels (used in PomodoroTimer)
+export const NOTIFICATION_POMODORO_UI = {
+  modeLabel: 'Focus',
+  pause: 'Pause',
+  startFocus: 'Start Focus',
+  reset: 'Reset',
+  totalTracked: 'Total tracked:',
+  durationOf: (durationText: string) => `of ${durationText} duration`,
+} as const;
+

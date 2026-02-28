@@ -10,7 +10,7 @@ import {
   SECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
 } from '../lib/business-constants';
-import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES } from '../lib/notification-constants';
+import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES, NOTIFICATION_POMODORO_TOAST } from '../lib/notification-constants';
 import { TOAST_DURATION_EXTRA_LONG_MS } from '../lib/layout-constants';
 import { useTasks } from './TaskContext';
 import { createDefaultPomodoroContext } from '../lib/context-defaults';
@@ -554,6 +554,21 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
           logger.error('Failed to save time on completion:', err);
         }
+      } else {
+        // No UI registered (e.g. dialog closed); persist time to task so it is not lost
+        try {
+          await updateTask(taskId, { actualTime: newTotal });
+          baseTimeTrackedRef.current[taskId] = newTotal;
+          setTimers(prev => ({
+            ...prev,
+            [taskId]: {
+              ...current,
+              totalTimeTracked: newTotal,
+            }
+          }));
+        } catch (err) {
+          logger.error('Failed to save time on completion (no callback):', err);
+        }
       }
 
       elapsedSecondsRef.current[taskId] = 0;
@@ -571,11 +586,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         description: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
         duration: TOAST_DURATION_EXTRA_LONG_MS,
         action: {
-          label: 'Mark task complete',
+          label: NOTIFICATION_POMODORO_TOAST.markTaskCompleteLabel,
           onClick: () => {
             updateTask(taskId, { status: 'done', completedAt: new Date().toISOString() }).catch(err => {
               logger.error('Failed to mark task complete after Pomodoro:', err);
-              toast.error('Could not mark task complete');
+              toast.error(NOTIFICATION_POMODORO_TOAST.markTaskCompleteError);
             });
           },
         },
@@ -632,37 +647,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     taskTitlesRef.current[taskId] = taskTitle;
   };
 
-  // Public method to unregister callbacks
+  // Public method to unregister callbacks. When a PomodoroTimer unmounts (e.g. task dialog closes),
+  // we only remove the callback and task title so the timer keeps running. We do not pause, save, or clear refs.
   const unregisterCallback = async (taskId: string) => {
-    // Save any remaining time before unregistering
-    const current = timers[taskId];
-    if (current && current.mode === 'work' && elapsedSecondsRef.current[taskId] > 0) {
-      const elapsedSeconds = elapsedSecondsRef.current[taskId];
-      const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
-      if (elapsedMinutes > 0) {
-        // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
-        const baseTime = baseTimeTrackedRef.current[taskId] || 0;
-        const newTotal = baseTime + elapsedMinutes;
-        const callback = onTimeUpdateCallbacksRef.current[taskId];
-        if (callback) {
-          try {
-            await callback(newTotal);
-            // Update base time ref to reflect what was saved
-            baseTimeTrackedRef.current[taskId] = newTotal;
-          } catch (err) {
-            logger.error('Failed to save time on unregister:', err);
-          }
-        }
-      }
-    }
-
     delete onTimeUpdateCallbacksRef.current[taskId];
     delete taskTitlesRef.current[taskId];
-    delete elapsedSecondsRef.current[taskId];
-    delete lastUpdateTimeRef.current[taskId];
-    delete sessionStartTimeRef.current[taskId];
-    delete baseTimeTrackedRef.current[taskId];
-    delete workDurationsRef.current[taskId];
   };
 
   const value: PomodoroContextType = {
