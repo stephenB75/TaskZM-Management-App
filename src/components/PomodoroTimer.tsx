@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, SETTINGS_PANEL_ICON_SIZE_SMALL } from "../lib/layout-constants";
+import { TASK_CARD_ICON_SIZES } from "../lib/task-card-constants";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
 import { cn } from "../lib/utils";
@@ -136,7 +137,7 @@ export function PomodoroTimer({
                   toggleTimer();
                 }}
               >
-                <Icon name="pause" size={isMobile ? 10 : 18} />
+                <Icon name="pause" size={isMobile ? TASK_CARD_ICON_SIZES.pomodoroCompact.mobile : TASK_CARD_ICON_SIZES.pomodoroCompact.desktop} />
               </Button>
               <Button
                 size="icon"
@@ -149,7 +150,7 @@ export function PomodoroTimer({
                   handleStopTimer();
                 }}
               >
-                <Icon name="square" size={isMobile ? 10 : 18} />
+                <Icon name="square" size={isMobile ? TASK_CARD_ICON_SIZES.pomodoroCompact.mobile : TASK_CARD_ICON_SIZES.pomodoroCompact.desktop} />
               </Button>
             </motion.div>
           ) : (
@@ -176,7 +177,7 @@ export function PomodoroTimer({
                   toggleTimer();
                 }}
               >
-                <Icon name="play" size={isMobile ? 10 : 18} />
+                <Icon name="play" size={isMobile ? TASK_CARD_ICON_SIZES.pomodoroCompact.mobile : TASK_CARD_ICON_SIZES.pomodoroCompact.desktop} />
               </Button>
               {timerState.sessionsCompleted > 0 && (
                 <span className={cn(
@@ -207,7 +208,7 @@ export function PomodoroTimer({
           <span>{getModeLabel()}</span>
         </div>
         {timerState.sessionsCompleted > 0 && (
-          <div className="flex items-center gap-1 text-xs text-[#50C878] dark:text-[#5AC888]">
+          <div className="flex items-center gap-1 text-xs text-green-500 dark:text-green-400">
             <Icon name="check-circle" size={SETTINGS_PANEL_ICON_SIZE_SMALL} />
             <span>{timerState.sessionsCompleted} 🍅</span>
           </div>

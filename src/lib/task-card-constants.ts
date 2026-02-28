@@ -259,6 +259,11 @@ export const TASK_CARD_ICON_SIZES = {
     mobile: 18, // Increased for visibility
     desktop: 20, // Increased for visibility
   },
+  /** PomodoroTimer compact mode (dialog/card inline): smaller icons. */
+  pomodoroCompact: {
+    mobile: 10,
+    desktop: 18,
+  },
   timerInline: {
     mobile: 18, // Increased for visibility (tracked time icon)
     desktop: 20, // Increased for visibility

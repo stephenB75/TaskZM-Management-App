@@ -333,18 +333,18 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
               {/* Line 1: calendar, provider, time, duration */}
               <div className="flex items-center gap-1.5 min-w-0">
                 <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.timelineCompactCalendar} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
-                <span className={cn('flex-shrink-0 font-medium', colors.mutedText)} style={{ fontSize: 11 }}>
+                <span className={cn('flex-shrink-0 font-medium', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.timelineCompact.providerTime }}>
                   {providerLabel}
                 </span>
-                <span className={cn('flex-shrink-0', colors.mutedText)} style={{ fontSize: 11 }}>
+                <span className={cn('flex-shrink-0', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.timelineCompact.providerTime }}>
                   {timeRange}
                 </span>
-                <span className={cn('font-medium px-1 py-0 rounded-full flex-shrink-0', colors.iconBg, colors.mutedText)} style={{ fontSize: 10 }}>
+                <span className={cn('font-medium px-1 py-0 rounded-full flex-shrink-0', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.timelineCompact.duration }}>
                   {formatDuration(durationMinutes)}
                 </span>
               </div>
               {/* Line 2: headline only */}
-              <span className={cn('font-semibold min-w-0 truncate', colors.text)} style={{ fontSize: 12 }} title={title}>
+              <span className={cn('font-semibold min-w-0 truncate', colors.text)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.timelineCompact.title }} title={title}>
                 {title}
               </span>
             </div>

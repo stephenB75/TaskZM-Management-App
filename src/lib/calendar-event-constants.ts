@@ -20,6 +20,12 @@ export const CALENDAR_EVENT_FONT_SIZES = {
   duration: '0.825rem',      // ~13.2px (was 11px)
   location: '0.9rem',        // ~14.4px
   title: '1.2rem',           // 19.2px (was 16px)
+  /** timelineCompact variant (Today Agenda / Inbox): compact line heights. */
+  timelineCompact: {
+    providerTime: 11,
+    duration: 10,
+    title: 12,
+  },
 } as const;
 
 // Component Dimensions (+20% for larger container and contents)
