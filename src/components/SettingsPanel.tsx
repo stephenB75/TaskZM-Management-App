@@ -55,6 +55,7 @@ import taskzmLogoBlack from '../assets/Taskzm_Logo_BLK-removebg.png';  // Black 
 import { UI_SETTINGS_PANEL_GRADIENTS, UI_SETTINGS_BADGE_COLORS, UI_TAG_COLORS, UI_AWARD_BADGE_COLORS, UI_AWARD_STAT_GRADIENTS } from '../lib/ui-colors';
 import { SETTINGS_PANEL_TEXT_SIZES, SETTINGS_PANEL_TEXT_SIZE_BASE, SETTINGS_PANEL_TEXT_SIZE_LARGE } from '../lib/text-size-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { TASK_CARD_PRIORITY_COLORS } from '../lib/task-card-constants';
 import {
   SETTINGS_PANEL_MOBILE_HEADER_SPACER,
   SETTINGS_PANEL_BOTTOM_PADDING_MOBILE,
@@ -1908,25 +1909,25 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             </p>
             <ul className="space-y-3 text-sm">
               <li className="flex gap-2">
-                <Badge variant="secondary" className="bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-200 border border-red-200 dark:border-red-800 flex-shrink-0 w-16 justify-center">
+                <Badge variant="secondary" className={`${TASK_CARD_PRIORITY_COLORS.urgent.badge} flex-shrink-0 w-16 justify-center border`}>
                   {SETTINGS_PANEL_UI_TEXT.priorityLevels.urgent.label}
                 </Badge>
                 <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.urgent.description}</span>
               </li>
               <li className="flex gap-2">
-                <Badge variant="secondary" className="bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-200 border border-orange-200 dark:border-orange-800 flex-shrink-0 w-16 justify-center">
+                <Badge variant="secondary" className={`${TASK_CARD_PRIORITY_COLORS.high.badge} flex-shrink-0 w-16 justify-center border`}>
                   {SETTINGS_PANEL_UI_TEXT.priorityLevels.high.label}
                 </Badge>
                 <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.high.description}</span>
               </li>
               <li className="flex gap-2">
-                <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-800 flex-shrink-0 w-16 justify-center">
+                <Badge variant="secondary" className={`${TASK_CARD_PRIORITY_COLORS.medium.badge} flex-shrink-0 w-16 justify-center border`}>
                   {SETTINGS_PANEL_UI_TEXT.priorityLevels.medium.label}
                 </Badge>
                 <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.medium.description}</span>
               </li>
               <li className="flex gap-2">
-                <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 flex-shrink-0 w-16 justify-center">
+                <Badge variant="secondary" className={`${TASK_CARD_PRIORITY_COLORS.low.badge} flex-shrink-0 w-16 justify-center border`}>
                   {SETTINGS_PANEL_UI_TEXT.priorityLevels.low.label}
                 </Badge>
                 <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.low.description}</span>
