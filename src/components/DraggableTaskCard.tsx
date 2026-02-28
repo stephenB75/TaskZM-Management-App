@@ -24,6 +24,7 @@ import { useSubscription } from "../contexts/SubscriptionContext";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePomodoro } from "../contexts/PomodoroContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { NOTIFICATION_POMODORO_UI } from "../lib/notification-constants";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { useIsMobile } from "./ui/use-mobile";
 import { useMobileLayout } from "../hooks/useMobileLayout";
@@ -1173,6 +1174,37 @@ export const DraggableTaskCard = React.forwardRef<
                         <Icon name="stop" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
                       </button>
                     </>
+                  ) : timerState.isPaused ? (
+                    <>
+                      <span
+                        className={cn(
+                          "text-sm font-mono font-medium min-w-[3rem] rounded px-1.5 py-0.5 border border-amber-500/50 dark:border-amber-400/50 bg-amber-500/10 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300"
+                        )}
+                        aria-label="Paused - time remaining"
+                      >
+                        {formatPomodoroCountdown(timerState.timeLeft)} {NOTIFICATION_POMODORO_UI.pausedLabel}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startTimer(pomodoroTimerId, getTaskMinutes(task) > 0 ? { durationMinutes: getTaskMinutes(task) } : undefined);
+                        }}
+                        className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        aria-label="Resume timer"
+                      >
+                        <Icon name="play" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await stopTimer(pomodoroTimerId);
+                        }}
+                        className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        aria-label="Stop timer"
+                      >
+                        <Icon name="stop" size={isMobile ? TASK_CARD_ICON_SIZES.playPauseStop.mobile : TASK_CARD_ICON_SIZES.playPauseStop.desktop} className={TASK_CARD_ICON_COLORS.pomodoro} weight="fill" />
+                      </button>
+                    </>
                   ) : (
                     <button
                       onClick={(e) => {
@@ -1187,8 +1219,8 @@ export const DraggableTaskCard = React.forwardRef<
                   )}
                 </div>
               )}
-              {/* Tracked Time - Inline with play button */}
-              {!pomodoroIsRunning && (() => {
+              {/* Tracked Time - Inline with play button (hide when paused; paused state shows remaining time above) */}
+              {!pomodoroIsRunning && !timerState.isPaused && (() => {
                 // task is already merged with getTaskWithOccurrenceSubtasks so task.actualTime is this occurrence's time for recurring tasks
                 const occurrenceTime = task.actualTime || 0;
                 if (occurrenceTime > 0) {
