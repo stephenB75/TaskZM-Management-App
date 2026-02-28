@@ -93,9 +93,7 @@ export function PomodoroTimer({
   const getTotalDurationSeconds = () =>
     estimatedTime ? estimatedTime * SECONDS_PER_MINUTE : DURATIONS.work;
 
-  const fullDurationSeconds = getTotalDurationSeconds();
-  const isPaused =
-    !timerState.isRunning && timerState.timeLeft > 0 && timerState.timeLeft < fullDurationSeconds;
+  const isPaused = timerState.isPaused;
 
   const getProgress = () => {
     const initialDuration = getTotalDurationSeconds();

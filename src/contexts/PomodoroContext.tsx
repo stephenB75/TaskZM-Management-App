@@ -26,13 +26,18 @@ interface TimerState {
   totalTimeTracked: number;
 }
 
+/** Return type of getTimerState; includes isPaused derived from context (session started then paused). */
+export interface TimerStateWithPaused extends TimerState {
+  isPaused: boolean;
+}
+
 export interface StartTimerOptions {
   /** When starting from a card that doesn't mount PomodoroTimer, pass the task's duration so the timer runs for the exact task time. */
   durationMinutes?: number;
 }
 
 interface PomodoroContextType {
-  getTimerState: (taskId: string) => TimerState;
+  getTimerState: (taskId: string) => TimerStateWithPaused;
   startTimer: (taskId: string, options?: StartTimerOptions) => void;
   pauseTimer: (taskId: string) => Promise<void>;
   stopTimer: (taskId: string) => Promise<void>;
@@ -99,10 +104,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     timersRef.current = timers;
   }, [timers]);
 
-  const getTimerState = (taskId: string): TimerState => {
-    // Read from state (not ref) to ensure components re-render when timer state changes
-    // This ensures timer sync across all components
-    return timers[taskId] || DEFAULT_TIMER_STATE;
+  const getTimerState = (taskId: string): TimerStateWithPaused => {
+    const state = timers[taskId] || DEFAULT_TIMER_STATE;
+    const isPaused =
+      !state.isRunning && (sessionStartTimeRef.current[taskId] ?? 0) > 0;
+    return { ...state, isPaused };
   };
 
   const getWorkDuration = (taskId: string): number => {

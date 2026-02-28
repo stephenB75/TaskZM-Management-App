@@ -359,6 +359,7 @@ export function createDefaultPomodoroContext() {
       isRunning: false,
       sessionsCompleted: 0,
       totalTimeTracked: 0,
+      isPaused: false,
     }),
     startTimer: () => {},
     pauseTimer: async () => {},
