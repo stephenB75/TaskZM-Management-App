@@ -5735,8 +5735,8 @@ app.delete("/taskzm-database-function/teams/:teamId", async (c) => {
     }
 
     // Delete team data
-    await kv.delete(`team_${teamId}`);
-    await kv.delete(`team_${teamId}_members`);
+    await kv.del(`team_${teamId}`);
+    await kv.del(`team_${teamId}_members`);
 
     // Remove from workspace teams list
     const teamsData = await kv.get(`workspace_${workspaceId}_teams`);
