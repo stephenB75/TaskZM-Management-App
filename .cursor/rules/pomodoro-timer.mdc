@@ -1,0 +1,18 @@
+---
+description: When editing Pomodoro timer, preserve single global tick, work-only (no breaks), pause/resume from card or dialog; use constants from business-constants, notification-constants, layout-constants.
+globs: src/contexts/PomodoroContext.tsx src/components/PomodoroTimer.tsx
+alwaysApply: false
+---
+
+# Pomodoro (focus) timer
+
+When editing Pomodoro timer code, follow the Guideline Index (`docs/GUIDELINE_INDEX.md`) entry for the Pomodoro timer.
+
+Preserve these behaviors:
+
+- **Single global tick:** One `setInterval` updates all running timers; start it when the first timer starts, clear it when the last pauses/stops/completes.
+- **Work-only:** No break mode; on work completion reset to work (same duration) and optionally prompt "Mark task complete". Do not switch to short/long break.
+- **Pause / resume:** On pause, set `sessionStartTimeRef[taskId] = Date.now() - elapsedSeconds * MILLISECONDS_PER_SECOND` so resume continues from the same remaining time. Clear the global interval before updating `isRunning: false` so no tick overwrites the pause. On play after pause, treat as resume when `sessionStartTimeRef` is set: keep `timeLeft`, call `runGlobalTick(taskId, false)` so the ref is not reset.
+- **Same timer from card or dialog:** Task card and TaskDialog use the same timer id (task id or occurrence id); state is shared so pause on one and resume on the other works.
+
+Use constants from `business-constants.ts` (POMODORO_*, SECONDS_PER_MINUTE, MILLISECONDS_PER_SECOND, STORAGE_KEY_POMODORO), `notification-constants.ts`, and `layout-constants.ts` (e.g. TOAST_DURATION_EXTRA_LONG_MS). Do not hardcode numeric or string business values.

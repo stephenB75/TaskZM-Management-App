@@ -420,7 +420,14 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       sessionStartTimeRef.current[taskId] = Date.now() - elapsedSeconds * MILLISECONDS_PER_SECOND;
     }
 
-    // Update UI immediately so timer shows as paused before save completes
+    // Stop the global tick before updating state so no tick can overwrite isRunning (ref is still stale)
+    const anyOtherRunning = Object.entries(timersRef.current).some(([id, t]) => id !== taskId && t.isRunning);
+    if (!anyOtherRunning && globalIntervalRef.current) {
+      clearInterval(globalIntervalRef.current);
+      globalIntervalRef.current = null;
+    }
+
+    // Update UI so timer shows as paused
     setTimers(prev => ({
       ...prev,
       [taskId]: {
@@ -428,12 +435,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         isRunning: false,
       }
     }));
-
-    const anyOtherRunning = Object.entries(timersRef.current).some(([id, t]) => id !== taskId && t.isRunning);
-    if (!anyOtherRunning && globalIntervalRef.current) {
-      clearInterval(globalIntervalRef.current);
-      globalIntervalRef.current = null;
-    }
 
     // Save elapsed time when pausing a work session (persist full minutes to task)
     if (current.mode === 'work' && elapsedSecondsRef.current[taskId] > 0) {

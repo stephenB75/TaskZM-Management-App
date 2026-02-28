@@ -16,6 +16,7 @@ When changing code in the listed files, preserve these behaviors and check the l
 | Recurrence: `isDateInRecurrence`, `getOccurrenceDates`; used by scheduler and series. | `src/lib/recurrence.ts` | [RECURRING_TASKS_SERIES](RECURRING_TASKS_SERIES.md) |
 | Drag-drop: conflict check (time-conflict + calendar events), category hours, conflict dialog. Uses same constants as scheduler. | `src/contexts/DragDropContext.tsx` | [AI_SCHEDULING_GUIDELINES](../src/guidelines/AI_SCHEDULING_GUIDELINES.md) |
 | Feature gates: tier and feature matrix; `hasFeature()` used across views and contexts. | `src/contexts/SubscriptionContext.tsx`, `src/lib/feature-gates.ts`, `src/types/index.ts` | — |
+| Pomodoro (focus) timer: single global tick, work-only (no breaks); pause/resume from task card or dialog; time tracked to `task.actualTime`. Uses `business-constants` (POMODORO_*), `notification-constants`, `layout-constants` (TOAST_DURATION_*). | `src/contexts/PomodoroContext.tsx`, `src/components/PomodoroTimer.tsx`, DraggableTaskCard, DraggableTodayAgendaTask, TaskDialog | — |
 | Demo account: session limit and inactivity cleanup use `auth-constants` and `timing-constants`. | `src/contexts/AuthContext.tsx`, `src/hooks/useDemoActivity.ts` | [Guidelines](../src/guidelines/Guidelines.md) |
 
 All values (delays, limits, intervals, labels) must come from the referenced constants or user settings; do not add new magic numbers or literals in business logic.
