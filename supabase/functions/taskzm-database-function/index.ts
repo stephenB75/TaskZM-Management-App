@@ -5971,33 +5971,10 @@ app.post("/taskzm-database-function/teams/:teamId/invite", async (c) => {
       });
     }
 
-    // Otherwise create invitation (similar to workspace invitation)
-    const invitationToken = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    const invitation = {
-      token: invitationToken,
-      workspaceId,
-      teamId,
-      email: email.toLowerCase(),
-      name,
-      role: role || 'member',
-      avatar,
-      invitedBy: userId,
-      createdAt: new Date().toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      status: 'pending',
-    };
-
-    await kv.set(`invitation_${invitationToken}`, JSON.stringify(invitation));
-    
-    return c.json({ 
-      success: true,
-      token: invitationToken,
-      expiresAt: expiresAt.toISOString(),
-      message: 'Invitation created' 
-    });
+    // Only allow adding users who already have a TaskZm account
+    return c.json({
+      error: 'This person must have a TaskZm account to be added to a team. They can sign up at taskzm.com first.',
+    }, 400);
   } catch (error) {
     console.error('Error inviting team member:', error);
     return c.json({ error: getErrorMessage(error) }, 500);

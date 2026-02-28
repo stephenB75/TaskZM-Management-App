@@ -27,9 +27,9 @@ interface TeamContextType {
   currentTeamId: string | null;
   currentTeamMembers: User[];
   isLoadingTeams: boolean;
-  createTeam: (name: string, description?: string) => Promise<void>;
-  updateTeam: (teamId: string, name: string, description?: string) => Promise<void>;
-  deleteTeam: (teamId: string) => Promise<void>;
+  createTeam: (name: string, description?: string, overrideWorkspaceId?: string) => Promise<void>;
+  updateTeam: (teamId: string, name: string, description?: string, overrideWorkspaceId?: string) => Promise<void>;
+  deleteTeam: (teamId: string, overrideWorkspaceId?: string) => Promise<void>;
   selectTeam: (teamId: string | null) => void;
   syncTeams: (workspaceId: string) => Promise<void>;
   addTeamMemberToTeam: (teamId: string, member: Omit<User, 'id'>, avatar?: string) => Promise<void>;
@@ -121,13 +121,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const addTeamMember = useCallback(async (member: Omit<User, 'id'>, wsId: string) => {
     if (!accessToken || !wsId) {
-      toast.error('Cannot invite: No workspace access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotInviteNoWorkspaceAccess);
       return;
     }
 
     // Validate workspace ID format
     if (!wsId || typeof wsId !== 'string' || wsId.trim() === '' || wsId.includes(':')) {
-      toast.error('Invalid workspace ID. Please refresh the page.');
+      toast.error(TEAM_PANEL_UI_TEXT.invalidWorkspaceId);
       return;
     }
 
@@ -140,7 +140,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       console.log('Invitation response:', invitation);
       
       if (!invitation || !invitation.token) {
-        throw new Error('Invalid invitation response from server');
+        throw new Error(TEAM_PANEL_UI_TEXT.invalidInvitationResponse);
       }
       
       // Add to local state as pending
@@ -162,17 +162,17 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       // Sync to refresh the list with server data
       await syncTeamMembers(wsId);
       
-      toast.success(`Invitation sent to ${member.email}`, {
-        description: 'They will receive an email with instructions to join',
+      toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email), {
+        description: TEAM_PANEL_UI_TEXT.invitationSentDescription,
       });
     } catch (error) {
       console.error('Failed to send invitation:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send invitation';
+      const errorMessage = error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToSendInvitation;
       
       // Provide more helpful error messages
       if (errorMessage.includes('Workspace not found') || errorMessage.includes('404')) {
-        toast.error('Workspace not found', {
-          description: 'Please refresh the page to reload your workspace.',
+        toast.error(TEAM_PANEL_UI_TEXT.workspaceNotFound, {
+          description: TEAM_PANEL_UI_TEXT.workspaceNotFoundDescription,
         });
       } else {
         toast.error(errorMessage);
@@ -184,7 +184,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const removeTeamMember = useCallback(async (memberId: string, wsId: string) => {
     if (!accessToken || !wsId) {
-      toast.error('Cannot remove: No workspace access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotRemoveNoWorkspaceAccess);
       return;
     }
 
@@ -195,19 +195,19 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       // Remove from local state
       setTeamMembers(prev => prev.filter(m => m.id !== memberId));
       
-      toast.success('Team member removed');
+      toast.success(TEAM_PANEL_UI_TEXT.teamMemberRemoved);
       
       // Sync to get updated list
       await syncTeamMembers(wsId);
     } catch (error) {
       console.error('Failed to remove team member:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to remove team member');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToRemoveTeamMember);
     }
   }, [accessToken, syncTeamMembers]);
 
   const updateTeamMember = useCallback(async (memberId: string, updates: Partial<User>, wsId: string) => {
     if (!accessToken || !wsId) {
-      toast.error('Cannot update: No workspace access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotUpdateNoWorkspaceAccess);
       return;
     }
 
@@ -222,10 +222,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         prev.map(m => (m.id === memberId ? { ...m, ...updates } : m))
       );
       
-      toast.success('Team member updated');
+      toast.success(TEAM_PANEL_UI_TEXT.teamMemberUpdated);
     } catch (error) {
       console.error('Failed to update team member:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update team member');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToUpdateTeamMember);
     }
   }, [accessToken]);
 
@@ -265,13 +265,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const resendInvitation = useCallback(async (memberId: string, wsId: string) => {
     if (!accessToken || !wsId) {
-      toast.error('Cannot resend: No workspace access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotResendNoWorkspaceAccess);
       return;
     }
 
     const member = teamMembers.find(m => m.id === memberId);
     if (!member || !member.invitationToken) {
-      toast.error('Invitation token not found');
+      toast.error(TEAM_PANEL_UI_TEXT.invitationTokenNotFound);
       return;
     }
 
@@ -294,23 +294,23 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         )
       );
       
-      toast.success(`Invitation resent to ${member.email}`);
+      toast.success(TEAM_PANEL_UI_TEXT.invitationResentTo(member.email));
       await syncTeamMembers(wsId);
     } catch (error) {
       console.error('Failed to resend invitation:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to resend invitation');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToResendInvitation);
     }
   }, [accessToken, teamMembers, syncTeamMembers]);
 
   const declineInvitation = useCallback(async (memberId: string, wsId: string) => {
     if (!accessToken || !wsId) {
-      toast.error('Cannot decline: No workspace access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotDeclineNoWorkspaceAccess);
       return;
     }
 
     const member = teamMembers.find(m => m.id === memberId);
     if (!member || !member.invitationToken) {
-      toast.error('Invitation token not found');
+      toast.error(TEAM_PANEL_UI_TEXT.invitationTokenNotFound);
       return;
     }
 
@@ -320,11 +320,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       // Remove from local state
       setTeamMembers(prev => prev.filter(m => m.id !== memberId));
       
-      toast.success('Invitation declined');
+      toast.success(TEAM_PANEL_UI_TEXT.invitationDeclined);
       await syncTeamMembers(wsId);
     } catch (error) {
       console.error('Failed to decline invitation:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to decline invitation');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToDeclineInvitation);
     }
   }, [accessToken, teamMembers, syncTeamMembers]);
 
@@ -360,8 +360,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   }, [accessToken, currentTeamId]);
 
-  const createTeam = useCallback(async (name: string, description?: string) => {
-    if (!accessToken || !workspaceId || !user) {
+  const createTeam = useCallback(async (name: string, description?: string, overrideWorkspaceId?: string) => {
+    const wsId = overrideWorkspaceId ?? workspaceId;
+    if (!accessToken || !wsId || !user) {
       toast.error(TEAM_PANEL_UI_TEXT.cannotCreateTeamNoAccess);
       return;
     }
@@ -378,10 +379,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const newTeam = await api.createTeam(workspaceId, name, description);
+      const newTeam = await api.createTeam(wsId, name, description);
       // Sync teams from server to get the complete list with all metadata
       // Preserve selection to prevent auto-selection from overriding our new team selection
-      await syncTeams(workspaceId, true);
+      await syncTeams(wsId, true);
       // Select the newly created team after sync
       setCurrentTeamId(newTeam.id);
       toast.success(TEAM_PANEL_UI_TEXT.teamCreatedSuccessfully(name));
@@ -391,8 +392,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   }, [accessToken, workspaceId, user, teamMembers, syncTeams]);
 
-  const updateTeam = useCallback(async (teamId: string, name: string, description?: string) => {
-    if (!accessToken || !workspaceId) {
+  const updateTeam = useCallback(async (teamId: string, name: string, description?: string, overrideWorkspaceId?: string) => {
+    const wsId = overrideWorkspaceId ?? workspaceId;
+    if (!accessToken || !wsId) {
       toast.error(TEAM_PANEL_UI_TEXT.cannotUpdateTeamNoAccess);
       return;
     }
@@ -405,16 +407,17 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     try {
       await api.updateTeam(teamId, name, description);
       // Sync teams to refresh the list
-      await syncTeams(workspaceId);
+      await syncTeams(wsId);
       toast.success(TEAM_PANEL_UI_TEXT.teamUpdatedSuccessfully(name));
     } catch (error) {
       console.error('Failed to update team:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update team');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToUpdateTeam);
     }
   }, [accessToken, workspaceId, syncTeams]);
 
-  const deleteTeam = useCallback(async (teamId: string) => {
-    if (!accessToken || !workspaceId) {
+  const deleteTeam = useCallback(async (teamId: string, overrideWorkspaceId?: string) => {
+    const wsId = overrideWorkspaceId ?? workspaceId;
+    if (!accessToken || !wsId) {
       toast.error(TEAM_PANEL_UI_TEXT.cannotDeleteTeamNoAccess);
       return;
     }
@@ -429,11 +432,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       }
       
       // Sync teams to refresh the list, preserve selection (workspace team is already selected)
-      await syncTeams(workspaceId, true);
+      await syncTeams(wsId, true);
       toast.success(TEAM_PANEL_UI_TEXT.teamDeletedSuccessfully);
     } catch (error) {
       console.error('Failed to delete team:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete team');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToDeleteTeam);
     }
   }, [accessToken, workspaceId, currentTeamId, syncTeams]);
 
@@ -470,32 +473,34 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const addTeamMemberToTeam = useCallback(async (teamId: string, member: Omit<User, 'id'>, avatar?: string) => {
     if (!accessToken || !teamId) {
-      toast.error('Cannot invite: No team access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotInviteNoTeamAccess);
       return;
     }
 
     // Check team member limit
     const team = teams.find(t => t.id === teamId);
     if (team && team.memberCount >= TEAM_MAX_MEMBERS) {
-      toast.error(`Maximum of ${TEAM_MAX_MEMBERS} members per team`);
+      toast.error(TEAM_PANEL_UI_TEXT.maxMembersLimit(TEAM_MAX_MEMBERS));
       return;
     }
 
     try {
       await api.inviteTeamMemberToTeam(teamId, member.email, member.name, member.role || 'member', avatar);
-      toast.success(`Invitation sent to ${member.email}`);
+      toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email));
       await selectTeam(teamId); // Refresh team members
       // Preserve selection since we're already on this team
       await syncTeams(workspaceId || '', true);
     } catch (error) {
       console.error('Failed to invite team member:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to invite team member');
+      const errorMessage = error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToInviteTeamMember;
+      const isMustHaveAccount = errorMessage.toLowerCase().includes('taskzm account') || errorMessage.toLowerCase().includes('must have');
+      toast.error(isMustHaveAccount ? TEAM_PANEL_UI_TEXT.teamMemberMustHaveAccount : errorMessage);
     }
   }, [accessToken, teams, workspaceId, selectTeam, syncTeams]);
 
   const removeTeamMemberFromTeam = useCallback(async (teamId: string, memberId: string) => {
     if (!accessToken || !teamId) {
-      toast.error('Cannot remove: No team access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotRemoveNoTeamAccess);
       return;
     }
 
@@ -503,18 +508,18 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       // TODO: Add API endpoint for removing team member from team
       // await api.removeTeamMemberFromTeam(teamId, memberId);
       setCurrentTeamMembers(prev => prev.filter(m => m.id !== memberId));
-      toast.success('Team member removed');
+      toast.success(TEAM_PANEL_UI_TEXT.teamMemberRemoved);
       // Preserve selection since we're already on this team
       await syncTeams(workspaceId || '', true);
     } catch (error) {
       console.error('Failed to remove team member:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to remove team member');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToRemoveTeamMember);
     }
   }, [accessToken, workspaceId, syncTeams]);
 
   const updateTeamMemberInTeam = useCallback(async (teamId: string, memberId: string, updates: Partial<User>) => {
     if (!accessToken || !teamId) {
-      toast.error('Cannot update: No team access');
+      toast.error(TEAM_PANEL_UI_TEXT.cannotUpdateNoTeamAccess);
       return;
     }
 
@@ -523,10 +528,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       setCurrentTeamMembers(prev =>
         prev.map(m => (m.id === memberId ? { ...m, ...updates } : m))
       );
-      toast.success('Team member updated');
+      toast.success(TEAM_PANEL_UI_TEXT.teamMemberUpdated);
     } catch (error) {
       console.error('Failed to update team member:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to update team member');
+      toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToUpdateTeamMember);
     }
   }, [accessToken]);
 

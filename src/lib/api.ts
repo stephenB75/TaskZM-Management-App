@@ -5,6 +5,7 @@ import type { Domain } from './domain-types';
 import { supabase } from './supabase-client';
 
 import { API_BASE } from './api-base';
+import { TEAM_PANEL_UI_TEXT } from './team-panel-constants';
 
 /**
  * Terminology validation constants
@@ -1051,8 +1052,14 @@ export async function createTeam(workspaceId: string, name: string, description?
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create team');
+    let message = TEAM_PANEL_UI_TEXT.failedToCreateTeam;
+    try {
+      const body = await response.json();
+      message = body?.error ?? body?.message ?? message;
+    } catch {
+      message = response.statusText || message;
+    }
+    throw new Error(message);
   }
 
   return response.json();
@@ -1066,8 +1073,14 @@ export async function updateTeam(teamId: string, name: string, description?: str
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to update team');
+    let message = TEAM_PANEL_UI_TEXT.failedToUpdateTeam;
+    try {
+      const body = await response.json();
+      message = body?.error ?? body?.message ?? message;
+    } catch {
+      message = response.statusText || message;
+    }
+    throw new Error(message);
   }
 
   return response.json();
@@ -1080,8 +1093,14 @@ export async function deleteTeam(teamId: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to delete team');
+    let message = TEAM_PANEL_UI_TEXT.failedToDeleteTeam;
+    try {
+      const body = await response.json();
+      message = body?.error ?? body?.message ?? message;
+    } catch {
+      message = response.statusText || message;
+    }
+    throw new Error(message);
   }
 
   return response.json();
@@ -1152,8 +1171,14 @@ export async function inviteTeamMemberToTeam(teamId: string, email: string, name
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to invite team member');
+    let message = TEAM_PANEL_UI_TEXT.failedToInviteTeamMember;
+    try {
+      const body = await response.json();
+      message = body?.error ?? body?.message ?? message;
+    } catch {
+      message = response.statusText || message;
+    }
+    throw new Error(message);
   }
 
   return response.json();

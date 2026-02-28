@@ -224,14 +224,14 @@ export function TeamPanel() {
 
   const handleAddMember = async () => {
     if (!newMemberName.trim() || !newMemberEmail.trim()) {
-      toast.error("Please fill in all fields");
+      toast.error(TEAM_PANEL_UI_TEXT.pleaseFillInAllFields);
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newMemberEmail.trim())) {
-      toast.error("Please enter a valid email address");
+      toast.error(TEAM_PANEL_UI_TEXT.pleaseEnterValidEmail);
       return;
     }
 
@@ -253,9 +253,7 @@ export function TeamPanel() {
           newMemberEmail.toLowerCase(),
       )
     ) {
-      toast.error(
-        "A team member with this email already exists",
-      );
+      toast.error(TEAM_PANEL_UI_TEXT.teamMemberWithEmailExists);
       return;
     }
 
@@ -268,13 +266,13 @@ export function TeamPanel() {
         // This will check for existing workspace first, only creates if truly missing
         currentWorkspaceId = await ensureWorkspace();
         if (!currentWorkspaceId) {
-          toast.error("Workspace is not available. Please try again or refresh the page.");
+          toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
           setIsCreatingWorkspace(false);
           return;
         }
       } catch (error) {
         console.error('Error ensuring workspace:', error);
-        toast.error("Workspace is not available. Please try again or refresh the page.");
+        toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
         setIsCreatingWorkspace(false);
         return;
       } finally {
@@ -319,7 +317,7 @@ export function TeamPanel() {
 
   const handleRemoveMember = async (member: User) => {
     if (member.id === currentUser?.id) {
-      toast.error("You cannot remove yourself from the team");
+      toast.error(TEAM_PANEL_UI_TEXT.cannotRemoveYourself);
       return;
     }
 
@@ -328,8 +326,8 @@ export function TeamPanel() {
       t.assignedTo.includes(member.id),
     );
     if (assignedTasks.length > 0) {
-      toast.error("Cannot remove member", {
-        description: `${member.name} has ${assignedTasks.length} assigned task${assignedTasks.length === 1 ? "" : "s"}. Reassign them first.`,
+      toast.error(TEAM_PANEL_UI_TEXT.cannotRemoveMember, {
+        description: TEAM_PANEL_UI_TEXT.memberHasAssignedTasksReassign(member.name, assignedTasks.length),
       });
       return;
     }
@@ -341,12 +339,12 @@ export function TeamPanel() {
       try {
         currentWorkspaceId = await ensureWorkspace();
         if (!currentWorkspaceId) {
-          toast.error("Workspace is not available. Please try again.");
+          toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
           setIsCreatingWorkspace(false);
           return;
         }
       } catch (error) {
-        toast.error("Failed to create workspace. Please try again.");
+        toast.error(TEAM_PANEL_UI_TEXT.failedToCreateWorkspaceTryAgain);
         setIsCreatingWorkspace(false);
         return;
       } finally {
@@ -373,7 +371,7 @@ export function TeamPanel() {
     newRole: "admin" | "member" | "viewer",
   ) => {
     if (member.id === currentUser?.id && newRole !== "admin") {
-      toast.error("You cannot change your own role");
+      toast.error(TEAM_PANEL_UI_TEXT.youCannotChangeOwnRole);
       return;
     }
 
@@ -384,12 +382,12 @@ export function TeamPanel() {
       try {
         currentWorkspaceId = await ensureWorkspace();
         if (!currentWorkspaceId) {
-          toast.error("Workspace is not available. Please try again.");
+          toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
           setIsCreatingWorkspace(false);
           return;
         }
       } catch (error) {
-        toast.error("Failed to create workspace. Please try again.");
+        toast.error(TEAM_PANEL_UI_TEXT.failedToCreateWorkspaceTryAgain);
         setIsCreatingWorkspace(false);
         return;
       } finally {
@@ -399,7 +397,7 @@ export function TeamPanel() {
 
     // Can't update role for pending invitations
     if (member.id.startsWith('pending_')) {
-      toast.error("Cannot update role for pending invitations");
+      toast.error(TEAM_PANEL_UI_TEXT.cannotUpdateRolePendingInvitations);
       return;
     }
 
@@ -464,14 +462,29 @@ export function TeamPanel() {
       return;
     }
 
-    if (!workspaceId) {
-      toast.error(TEAM_PANEL_UI_TEXT.noWorkspaceAvailable);
-      return;
+    let effectiveWorkspaceId = workspaceId;
+    if (!effectiveWorkspaceId) {
+      setIsCreatingWorkspace(true);
+      try {
+        effectiveWorkspaceId = await ensureWorkspace();
+        if (!effectiveWorkspaceId) {
+          toast.error(TEAM_PANEL_UI_TEXT.selectOrCreateWorkspaceFirst);
+          setIsCreatingWorkspace(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error ensuring workspace:', error);
+        toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
+        setIsCreatingWorkspace(false);
+        return;
+      } finally {
+        setIsCreatingWorkspace(false);
+      }
     }
 
     setIsCreatingTeam(true);
     try {
-      await createTeam(newTeamName.trim(), newTeamDescription.trim() || undefined);
+      await createTeam(newTeamName.trim(), newTeamDescription.trim() || undefined, effectiveWorkspaceId ?? undefined);
       setNewTeamName("");
       setNewTeamDescription("");
       setShowCreateTeam(false);
@@ -499,9 +512,23 @@ export function TeamPanel() {
       return;
     }
 
+    let wsId: string | undefined = workspaceId ?? undefined;
+    if (!wsId) {
+      try {
+        wsId = await ensureWorkspace() ?? undefined;
+        if (!wsId) {
+          toast.error(TEAM_PANEL_UI_TEXT.selectOrCreateWorkspaceFirst);
+          return;
+        }
+      } catch {
+        toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
+        return;
+      }
+    }
+
     setIsUpdatingTeam(true);
     try {
-      await updateTeam(editingTeam.id, editTeamName.trim(), editTeamDescription.trim() || undefined);
+      await updateTeam(editingTeam.id, editTeamName.trim(), editTeamDescription.trim() || undefined, wsId);
       setShowEditTeam(false);
       setEditingTeam(null);
       setEditTeamName("");
@@ -523,9 +550,23 @@ export function TeamPanel() {
       return;
     }
 
+    let wsId: string | undefined = workspaceId ?? undefined;
+    if (!wsId) {
+      try {
+        wsId = await ensureWorkspace() ?? undefined;
+        if (!wsId) {
+          toast.error(TEAM_PANEL_UI_TEXT.selectOrCreateWorkspaceFirst);
+          return;
+        }
+      } catch {
+        toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
+        return;
+      }
+    }
+
     setIsDeletingTeam(true);
     try {
-      await deleteTeam(teamToDelete.id);
+      await deleteTeam(teamToDelete.id, wsId);
       setShowDeleteTeamConfirm(false);
       setTeamToDelete(null);
     } catch (error) {
@@ -641,12 +682,12 @@ export function TeamPanel() {
       try {
         currentWorkspaceId = await ensureWorkspace();
         if (!currentWorkspaceId) {
-          toast.error("Workspace is not available. Please try again.");
+          toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
           setIsCreatingWorkspace(false);
           return;
         }
       } catch (error) {
-        toast.error("Failed to create workspace. Please try again.");
+        toast.error(TEAM_PANEL_UI_TEXT.failedToCreateWorkspaceTryAgain);
         setIsCreatingWorkspace(false);
         return;
       } finally {
@@ -668,12 +709,12 @@ export function TeamPanel() {
       try {
         currentWorkspaceId = await ensureWorkspace();
         if (!currentWorkspaceId) {
-          toast.error("Workspace is not available. Please try again.");
+          toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
           setIsCreatingWorkspace(false);
           return;
         }
       } catch (error) {
-        toast.error("Failed to create workspace. Please try again.");
+        toast.error(TEAM_PANEL_UI_TEXT.failedToCreateWorkspaceTryAgain);
         setIsCreatingWorkspace(false);
         return;
       } finally {
@@ -1114,7 +1155,7 @@ export function TeamPanel() {
 
   const handleBulkInvite = async () => {
     if (!bulkInvites.trim()) {
-      toast.error("Please enter email addresses");
+      toast.error(TEAM_PANEL_UI_TEXT.pleaseEnterEmailAddresses);
       return;
     }
 
@@ -1125,12 +1166,12 @@ export function TeamPanel() {
       try {
         currentWorkspaceId = await ensureWorkspace();
         if (!currentWorkspaceId) {
-          toast.error("Workspace is not available. Please try again.");
+          toast.error(TEAM_PANEL_UI_TEXT.workspaceNotAvailableTryAgain);
           setIsCreatingWorkspace(false);
           return;
         }
       } catch (error) {
-        toast.error("Failed to create workspace. Please try again.");
+        toast.error(TEAM_PANEL_UI_TEXT.failedToCreateWorkspaceTryAgain);
         setIsCreatingWorkspace(false);
         return;
       } finally {
@@ -1145,7 +1186,7 @@ export function TeamPanel() {
       .filter(email => email.length > 0);
 
     if (emails.length === 0) {
-      toast.error("Please enter at least one email address");
+      toast.error(TEAM_PANEL_UI_TEXT.pleaseEnterAtLeastOneEmail);
       return;
     }
 
@@ -1336,7 +1377,7 @@ export function TeamPanel() {
 
       {/* Teams Tabs - Always show if teams exist, or show workspace team if no teams */}
       <div 
-        className="border-b border-primary/10"
+        className="border-b border-primary/10 min-w-0"
         style={{ 
           paddingLeft: PANEL_PADDING,
           paddingRight: PANEL_PADDING,
@@ -1351,12 +1392,12 @@ export function TeamPanel() {
             selectTeam(value === "workspace" ? null : value);
           }}
         >
-          <TabsList className="w-full justify-start overflow-x-auto" style={{ height: TEAM_PANEL_TAB_HEIGHT }}>
-            <TabsTrigger value="workspace">
+          <TabsList className="w-full justify-start overflow-x-auto min-w-0" style={{ height: TEAM_PANEL_TAB_HEIGHT }}>
+            <TabsTrigger value="workspace" className="flex-shrink-0 min-w-[theme(spacing.20)]">
               {TEAM_PANEL_UI_TEXT.workspaceTeam}
             </TabsTrigger>
               {isLoadingTeams ? (
-              <TabsTrigger value="loading" disabled>
+              <TabsTrigger value="loading" disabled className="flex-shrink-0 min-w-[theme(spacing.20)]">
                 {TEAM_PANEL_UI_TEXT.loadingTeams}
               </TabsTrigger>
             ) : (
@@ -1364,7 +1405,7 @@ export function TeamPanel() {
                 teams.map((team) => {
                   const memberCount = team.memberCount ?? (team.id === currentTeamId ? currentTeamMembers.length : 0);
                   return (
-                    <TabsTrigger key={team.id} value={team.id}>
+                    <TabsTrigger key={team.id} value={team.id} className="flex-shrink-0 min-w-[theme(spacing.20)]">
                       {team.name}
                       {memberCount > 0 && (
                         <Badge variant="secondary" className="ml-1" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
