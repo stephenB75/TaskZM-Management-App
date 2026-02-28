@@ -15,7 +15,7 @@ import {
   MINUTES_PER_HOUR,
   PERCENTAGE_MULTIPLIER,
 } from "../lib/business-constants";
-import { NOTIFICATION_POMODORO_UI } from "../lib/notification-constants";
+import { NOTIFICATION_POMODORO_UI, NOTIFICATION_POMODORO_ARIA } from "../lib/notification-constants";
 
 type TimerMode = "work";
 

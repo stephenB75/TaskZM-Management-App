@@ -10,7 +10,7 @@ import {
   SECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
 } from '../lib/business-constants';
-import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES, NOTIFICATION_POMODORO_TOAST } from '../lib/notification-constants';
+import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES, NOTIFICATION_POMODORO_TOAST, NOTIFICATION_ICONS } from '../lib/notification-constants';
 import { TOAST_DURATION_EXTRA_LONG_MS } from '../lib/layout-constants';
 import { useTasks } from './TaskContext';
 import { createDefaultPomodoroContext } from '../lib/context-defaults';
@@ -424,7 +424,12 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     if (!current) return;
 
     const workDuration = getWorkDuration(taskId);
-    const elapsedSeconds = elapsedSecondsRef.current[taskId] ?? 0;
+    // Compute elapsed at pause from session start so we never show full duration (elapsedSecondsRef can be 0 or stale between ticks)
+    const sessionStart = sessionStartTimeRef.current[taskId];
+    const elapsedSeconds =
+      sessionStart > 0
+        ? Math.floor((Date.now() - sessionStart) / MILLISECONDS_PER_SECOND)
+        : (elapsedSecondsRef.current[taskId] ?? 0);
     const timeLeftAtPause = Math.max(0, workDuration - elapsedSeconds);
 
     // Always set session start so resume continues from the same point (task card or dialog)
@@ -439,7 +444,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       globalIntervalRef.current = null;
     }
 
-    // Update UI with paused state and current time left (from refs) so it never flashes back to full duration
+    // Update UI with paused state and current time left (computed from clock above) so it never flashes full duration
     setTimers(prev => ({
       ...prev,
       [taskId]: {
@@ -450,8 +455,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     }));
 
     // Save elapsed time when pausing a work session (persist full minutes to task)
-    if (current.mode === 'work' && elapsedSecondsRef.current[taskId] > 0) {
-      const elapsedSeconds = elapsedSecondsRef.current[taskId];
+    if (current.mode === 'work' && elapsedSeconds > 0) {
       const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
       if (elapsedMinutes > 0) {
         // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
@@ -591,7 +595,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(NOTIFICATION_TITLES.pomodoroComplete, {
           body: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
-          icon: '/favicon.ico',
+          icon: NOTIFICATION_ICONS.pomodoroBrowser,
         });
       }
 

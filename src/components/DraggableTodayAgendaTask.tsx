@@ -15,7 +15,7 @@ import { useTeam } from "../contexts/TeamContext";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePomodoro } from "../contexts/PomodoroContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { NOTIFICATION_POMODORO_UI } from "../lib/notification-constants";
+import { NOTIFICATION_POMODORO_UI, NOTIFICATION_POMODORO_ARIA } from "../lib/notification-constants";
 import {
   Tooltip,
   TooltipContent,
@@ -383,7 +383,7 @@ export function DraggableTodayAgendaTask({
                     type="button"
                     onClick={(e) => { e.stopPropagation(); pauseTimer(pomodoroTimerId); }}
                     className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-                    aria-label="Pause timer"
+                    aria-label={NOTIFICATION_POMODORO_ARIA.pauseTimer}
                   >
                     <Icon name="pause" size={ICON_SIZE_XS} weight="fill" className="text-white" />
                   </button>
@@ -391,7 +391,7 @@ export function DraggableTodayAgendaTask({
                     type="button"
                     onClick={(e) => { e.stopPropagation(); stopTimer(pomodoroTimerId); }}
                     className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-                    aria-label="Stop timer"
+                    aria-label={NOTIFICATION_POMODORO_ARIA.stopTimer}
                   >
                     <Icon name="stop" size={ICON_SIZE_XS} weight="fill" className="text-white" />
                   </button>
@@ -399,14 +399,14 @@ export function DraggableTodayAgendaTask({
               )}
               {canUsePomodoro && timerState.isPaused && (
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0 ml-auto rounded px-1.5 py-0.5 border border-amber-400/60 dark:border-amber-300/60 bg-amber-500/20 dark:bg-amber-400/20">
-                  <span className="text-xs font-mono font-medium tabular-nums text-amber-800 dark:text-amber-200" aria-label="Paused - time remaining">
+                  <span className="text-xs font-mono font-medium tabular-nums text-amber-800 dark:text-amber-200" aria-label={NOTIFICATION_POMODORO_ARIA.pausedTimeRemaining}>
                     {formatPomodoroCountdown(timerState.timeLeft)} {NOTIFICATION_POMODORO_UI.pausedLabel}
                   </span>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); startTimer(pomodoroTimerId); }}
                     className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-                    aria-label="Resume timer"
+                    aria-label={NOTIFICATION_POMODORO_ARIA.resumeTimer}
                   >
                     <Icon name="play" size={ICON_SIZE_XS} weight="fill" className="text-amber-800 dark:text-amber-200" />
                   </button>
@@ -414,7 +414,7 @@ export function DraggableTodayAgendaTask({
                     type="button"
                     onClick={(e) => { e.stopPropagation(); stopTimer(pomodoroTimerId); }}
                     className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-                    aria-label="Stop timer"
+                    aria-label={NOTIFICATION_POMODORO_ARIA.stopTimer}
                   >
                     <Icon name="stop" size={ICON_SIZE_XS} weight="fill" className="text-amber-800 dark:text-amber-200" />
                   </button>

@@ -37,6 +37,8 @@ export const NOTIFICATION_STORAGE_KEYS = {
 export const NOTIFICATION_ICONS = {
   default: '/icon-192.png',
   badge: '/icon-192.png',
+  /** Browser notification icon for Pomodoro completion (small, tab-friendly) */
+  pomodoroBrowser: '/favicon.ico',
 } as const;
 
 // Toast messages
@@ -164,5 +166,14 @@ export const NOTIFICATION_POMODORO_UI = {
   reset: 'Reset',
   totalTracked: 'Total tracked:',
   durationOf: (durationText: string) => `of ${durationText} duration`,
+} as const;
+
+/** Aria labels for Pomodoro timer (task card, agenda, dialog) */
+export const NOTIFICATION_POMODORO_ARIA = {
+  pauseTimer: 'Pause timer',
+  resumeTimer: 'Resume timer',
+  stopTimer: 'Stop timer',
+  timeRemaining: 'Time remaining',
+  pausedTimeRemaining: 'Paused - time remaining',
 } as const;
 
