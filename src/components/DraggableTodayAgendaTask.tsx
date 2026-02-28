@@ -376,7 +376,7 @@ export function DraggableTodayAgendaTask({
               ) : null}
               {canUsePomodoro && timerState.isRunning && (
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0 ml-auto">
-                  <span className="text-xs font-mono font-medium tabular-nums" aria-label="Time remaining">
+                  <span className="text-xs font-mono font-medium tabular-nums" aria-label={NOTIFICATION_POMODORO_ARIA.timeRemaining}>
                     {formatPomodoroCountdown(timerState.timeLeft)}
                   </span>
                   <button

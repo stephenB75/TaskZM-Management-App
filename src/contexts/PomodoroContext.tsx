@@ -121,13 +121,14 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     const durationSeconds = clampedMinutes * SECONDS_PER_MINUTE;
     workDurationsRef.current[taskId] = durationSeconds;
 
-    // Update timer state if it exists and is in work mode
+    // Update timer state if it exists and is in work mode (do not overwrite when paused - keep displayed pause time)
     setTimers(prev => {
       const current = prev[taskId];
       if (!current) return prev;
 
-      // If timer is in work mode and not running, update timeLeft
       if (current.mode === 'work' && !current.isRunning) {
+        const isPausedState = current.timeLeft > 0 && current.timeLeft < durationSeconds;
+        if (isPausedState) return prev; // Keep paused timeLeft so dialog/card show actual pause time
         return {
           ...prev,
           [taskId]: {
@@ -445,14 +446,19 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Update UI with paused state and current time left (computed from clock above) so it never flashes full duration
-    setTimers(prev => ({
-      ...prev,
-      [taskId]: {
-        ...(prev[taskId] || DEFAULT_TIMER_STATE),
-        timeLeft: timeLeftAtPause,
-        isRunning: false,
-      }
-    }));
+    // When timer was running, freeze the last displayed timeLeft so dialog/card never show full time on release
+    setTimers(prev => {
+      const cur = prev[taskId] || DEFAULT_TIMER_STATE;
+      const frozenTimeLeft = cur.isRunning ? (cur.timeLeft ?? timeLeftAtPause) : timeLeftAtPause;
+      return {
+        ...prev,
+        [taskId]: {
+          ...cur,
+          timeLeft: frozenTimeLeft,
+          isRunning: false,
+        }
+      };
+    });
 
     // Save elapsed time when pausing a work session (persist full minutes to task)
     if (current.mode === 'work' && elapsedSeconds > 0) {
