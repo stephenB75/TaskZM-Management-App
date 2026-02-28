@@ -157,17 +157,20 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
           }
         };
       }
-      // If timer exists and is not running, sync with task's actualTime
-      // This ensures the timer state stays in sync with the task after server reload
+      // If timer exists and is not running, sync with task's actualTime when idle (not paused)
+      // When paused, timeLeft is in (0, workDuration); do not overwrite or it flashes back to full duration
       if (!current.isRunning) {
-        // Update base time ref to match the task's actualTime
+        const isPausedState = current.timeLeft > 0 && current.timeLeft < workDuration;
+        if (isPausedState) {
+          return prev; // Keep paused timeLeft as-is
+        }
         baseTimeTrackedRef.current[taskId] = initialTime;
         if (current.totalTimeTracked !== initialTime || current.timeLeft !== workDuration) {
           return {
             ...prev,
             [taskId]: {
               ...current,
-              timeLeft: workDuration, // Update to custom duration
+              timeLeft: workDuration,
               totalTimeTracked: initialTime,
             }
           };
@@ -414,9 +417,12 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     const current = timersRef.current[taskId];
     if (!current) return;
 
+    const workDuration = getWorkDuration(taskId);
+    const elapsedSeconds = elapsedSecondsRef.current[taskId] ?? 0;
+    const timeLeftAtPause = Math.max(0, workDuration - elapsedSeconds);
+
     // Always set session start so resume continues from the same point (task card or dialog)
     if (current.mode === 'work') {
-      const elapsedSeconds = elapsedSecondsRef.current[taskId] ?? 0;
       sessionStartTimeRef.current[taskId] = Date.now() - elapsedSeconds * MILLISECONDS_PER_SECOND;
     }
 
@@ -427,11 +433,12 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       globalIntervalRef.current = null;
     }
 
-    // Update UI so timer shows as paused
+    // Update UI with paused state and current time left (from refs) so it never flashes back to full duration
     setTimers(prev => ({
       ...prev,
       [taskId]: {
         ...(prev[taskId] || DEFAULT_TIMER_STATE),
+        timeLeft: timeLeftAtPause,
         isRunning: false,
       }
     }));
