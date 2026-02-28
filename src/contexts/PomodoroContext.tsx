@@ -414,12 +414,30 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     const current = timersRef.current[taskId];
     if (!current) return;
 
-    // Save elapsed time when pausing a work session
+    // Always set session start so resume continues from the same point (task card or dialog)
+    if (current.mode === 'work') {
+      const elapsedSeconds = elapsedSecondsRef.current[taskId] ?? 0;
+      sessionStartTimeRef.current[taskId] = Date.now() - elapsedSeconds * MILLISECONDS_PER_SECOND;
+    }
+
+    // Update UI immediately so timer shows as paused before save completes
+    setTimers(prev => ({
+      ...prev,
+      [taskId]: {
+        ...(prev[taskId] || DEFAULT_TIMER_STATE),
+        isRunning: false,
+      }
+    }));
+
+    const anyOtherRunning = Object.entries(timersRef.current).some(([id, t]) => id !== taskId && t.isRunning);
+    if (!anyOtherRunning && globalIntervalRef.current) {
+      clearInterval(globalIntervalRef.current);
+      globalIntervalRef.current = null;
+    }
+
+    // Save elapsed time when pausing a work session (persist full minutes to task)
     if (current.mode === 'work' && elapsedSecondsRef.current[taskId] > 0) {
       const elapsedSeconds = elapsedSecondsRef.current[taskId];
-      // So resume continues from the same point (task card or dialog)
-      sessionStartTimeRef.current[taskId] = Date.now() - elapsedSeconds * MILLISECONDS_PER_SECOND;
-
       const elapsedMinutes = Math.floor(elapsedSeconds / SECONDS_PER_MINUTE);
       if (elapsedMinutes > 0) {
         // Use baseTimeTrackedRef to get the actual saved time (prevents double counting)
@@ -447,20 +465,6 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         elapsedSecondsRef.current[taskId] = 0;
         lastUpdateTimeRef.current[taskId] = 0;
       }
-    }
-
-    setTimers(prev => ({
-      ...prev,
-      [taskId]: {
-        ...(prev[taskId] || DEFAULT_TIMER_STATE),
-        isRunning: false,
-      }
-    }));
-
-    const anyOtherRunning = Object.entries(timersRef.current).some(([id, t]) => id !== taskId && t.isRunning);
-    if (!anyOtherRunning && globalIntervalRef.current) {
-      clearInterval(globalIntervalRef.current);
-      globalIntervalRef.current = null;
     }
   };
 
