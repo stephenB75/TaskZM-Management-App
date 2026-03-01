@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.20';
-export const VERSION_NAME = 'Calendar Event Time & Kanban Timezone';
-export const VERSION_DATE = 'February 2, 2026';
-export const BUILD_NUMBER = '20260202-2';
+export const APP_VERSION = '1.0.21';
+export const VERSION_NAME = 'Task changes persist after refresh';
+export const VERSION_DATE = 'February 20, 2026';
+export const BUILD_NUMBER = '20260220-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,16 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.21',
+    date: 'February 20, 2026',
+    name: 'Task changes persist after refresh',
+    changes: [
+      'loadTasksFromServer: merge with localStorage by updatedAt so newer local edits are kept after refresh; include local-only tasks',
+      'Persist current tasks to localStorage on pagehide/beforeunload so in-memory state survives refresh',
+      'No new hardcode: reuses existing tasks key and createdBy === local pattern',
+    ],
+  },
   {
     version: '1.0.20',
     date: 'February 2, 2026',
