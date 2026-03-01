@@ -110,6 +110,13 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 const RECURRING_OCCURRENCE_IDS_MIGRATION_KEY = 'recurring_occurrence_ids_migration_v1';
 
+/** Ensure value is a Task[] so migration/dedupe never see non-iterable data (avoids "v is not iterable"). */
+function ensureTaskArray(value: unknown): Task[] {
+  if (Array.isArray(value)) return value;
+  logger.warn('Tasks data was not an array, using empty array', { type: typeof value });
+  return [];
+}
+
 /** One-time migration: align occurrence ids with scheduledDate and dedupe by (baseId, date). */
 function applyRecurringOccurrenceIdsMigrationIfNeeded(taskList: Task[]): Task[] {
   if (typeof localStorage === 'undefined' || localStorage.getItem(RECURRING_OCCURRENCE_IDS_MIGRATION_KEY)) return taskList;
@@ -170,7 +177,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Start with idle interval (2 minutes)
+  const [syncInterval, setSyncInterval] = useState(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Start with idle interval (5 minutes)
   const syncLockRef = useRef<boolean>(false); // Prevent concurrent sync operations
   const consecutiveNoChangeSyncsRef = useRef<number>(0); // Track backoff when no changes detected
   const consecutiveNetworkErrorsRef = useRef<number>(0); // Track consecutive network errors for backoff
@@ -211,7 +218,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user || !accessToken) {
       // Not authenticated - use localStorage as fallback only (no userId check needed)
-      const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+      const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', []));
       const savedProjects = getFromLocalStorage<Project[]>('projects', []);
       setTasks(savedTasks);
       if (savedProjects.length > 0) {
@@ -229,7 +236,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
     // Authenticated - OPTIMISTIC LOADING: Load from localStorage immediately for instant UI
     // Then sync with server in background to get latest data
-    const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user.id);
+    const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user.id));
     const savedProjects = getFromLocalStorage<Project[]>('projects', [], user.id);
     const savedFolders = getFromLocalStorage<Folder[]>('folders', [], user.id);
     const savedTags = getFromLocalStorage<string[]>('availableTags', DEFAULT_TAGS, user.id);
@@ -264,7 +271,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       if (!isMounted) return;
 
       // After loading from server, check for any local-only tasks
-      const localTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
+      const localTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
       // Use serverTasks directly instead of tasks state to avoid stale closure
       const serverTaskIds = new Set((serverTasks || []).map(t => t.id));
       
@@ -414,7 +421,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     });
     
     // Fallback to localStorage if server fails
-    const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+    const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', []));
     const savedProjects = getFromLocalStorage<Project[]>('projects', []);
     const savedFolders = getFromLocalStorage<Folder[]>('folders', []);
     setTasks(savedTasks);
@@ -687,7 +694,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Validate workspace ID
     if (!wsId || typeof wsId !== 'string' || wsId.trim() === '') {
       logger.warn('Invalid workspace ID for loadTasksFromServer:', wsId);
-      const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
+      const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
       if (savedTasks.length > 0) {
         const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
         const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
@@ -712,7 +719,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             description: 'Please sign in again to continue.',
           });
           // Don't fall back to localStorage for auth errors
-          const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+          const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', []));
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
           const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
           setTasks(final);
@@ -720,7 +727,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
         
         // For other errors, fall back to localStorage if available
-        const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+        const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', []));
         if (savedTasks.length > 0) {
           logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
@@ -728,7 +735,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           setTasks(final);
           saveToLocalStorage('tasks', final, user?.id);
           toast.error('Failed to load tasks from server, using offline data', {
-            description: error.message || 'Please check your internet connection',
+            description: /not iterable|is not iterable/i.test(String(error?.message))
+              ? 'Please check your internet connection.'
+              : (error?.message || 'Please check your internet connection'),
           });
           return final;
         } else {
@@ -742,9 +751,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
       
       // No error - process the tasks
-      if (serverTasks && serverTasks.length > 0) {
+      if (serverTasks && Array.isArray(serverTasks) && serverTasks.length > 0) {
         // Deduplicate recurring task occurrences before using server data
-        const deduplicatedTasks = deduplicateRecurringTasks(serverTasks);
+        const deduplicatedTasks = deduplicateRecurringTasks(ensureTaskArray(serverTasks));
         
         // Migrate existing recurring series (occurrence-only) to new model: add base task per series
         const { tasks: migratedTasks, newBases } = migrateOrphanRecurringSeries(deduplicatedTasks);
@@ -786,7 +795,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       } else {
         // No server data - this is valid (workspace exists but has no tasks)
         logger.info('No tasks found on server (workspace may be empty)');
-        const savedTasks = getFromLocalStorage<Task[]>('tasks', [], user?.id);
+        const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
         if (savedTasks.length > 0) {
           logger.info(`Found ${savedTasks.length} tasks in localStorage, syncing to server`);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
@@ -804,9 +813,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           }
           // After syncing, reload from server to get authoritative data
           const refreshedResult = await api.getTasks(wsId);
-          if (!refreshedResult.error && refreshedResult.tasks && refreshedResult.tasks.length > 0) {
+          if (!refreshedResult.error && refreshedResult.tasks && Array.isArray(refreshedResult.tasks) && refreshedResult.tasks.length > 0) {
             // Deduplicate recurring task occurrences and migrate orphan series
-            const deduplicatedTasks = deduplicateRecurringTasks(refreshedResult.tasks);
+            const deduplicatedTasks = deduplicateRecurringTasks(ensureTaskArray(refreshedResult.tasks));
             const { tasks: migratedTasks, newBases } = migrateOrphanRecurringSeries(deduplicatedTasks);
             if (newBases.length > 0) {
               for (const base of newBases) {
@@ -832,7 +841,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       // Unexpected error (shouldn't happen with new error handling, but keep as safety net)
       logger.error('Unexpected error loading tasks from server:', error);
-      const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+      const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', []));
       if (savedTasks.length > 0) {
         logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
         const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
@@ -840,7 +849,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         setTasks(final);
         saveToLocalStorage('tasks', final, user?.id);
         toast.error('Failed to load tasks from server, using offline data', {
-          description: 'Please check your internet connection',
+          description: /not iterable|is not iterable/i.test(String(error instanceof Error ? error.message : ''))
+            ? 'Please check your internet connection.'
+            : (error instanceof Error ? error.message : 'Please check your internet connection'),
         });
         return final;
       } else {
@@ -1489,7 +1500,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           // Only update state if interval actually needs to change (prevents unnecessary re-renders)
           if (syncIntervalRef.current !== WORKSPACE_SYNC_INTERVAL_ACTIVE_MS) {
             setSyncInterval(WORKSPACE_SYNC_INTERVAL_ACTIVE_MS);
-            logger.debug('User activity detected, switching to active sync interval (30 sec)');
+            logger.debug('User activity detected, switching to active sync interval (2 min)');
           }
         }
       }, THROTTLE_MS);
@@ -1514,7 +1525,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Only update state if interval actually needs to change (prevents unnecessary re-renders)
         if (syncIntervalRef.current !== WORKSPACE_SYNC_INTERVAL_IDLE_MS) {
           setSyncInterval(WORKSPACE_SYNC_INTERVAL_IDLE_MS);
-          logger.debug('User inactive, switching to idle sync interval (2 min)');
+          logger.debug('User inactive, switching to idle sync interval (5 min)');
         }
       }
     }, TIMING_CONSTANTS.intervals.activityCheck); // Check every minute
@@ -1565,20 +1576,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         await syncWithServerRef.current(workspaceId, true);
       } // Silent sync
         
-        // Sync folders more frequently (every interval) for better cross-device sync
-        // Projects and settings change less frequently, so sync them every N intervals based on activity
+        // Sync folders, projects, and settings only every N intervals to reduce Edge invocations
         const syncCount = Math.floor(Date.now() / syncInterval);
         const syncMultiplier = isActiveRef.current 
           ? WORKSPACE_SYNC_ACTIVE_MULTIPLIER 
           : WORKSPACE_SYNC_IDLE_MULTIPLIER;
         const shouldSyncOtherResources = syncCount % syncMultiplier === 0;
         
-        // Always sync folders (they change more frequently than projects/settings)
-        await syncFoldersFromServer(workspaceId, true);
-        
-        // Sync projects and settings less frequently
         if (shouldSyncOtherResources) {
           await Promise.all([
+            syncFoldersFromServer(workspaceId, true),
             syncProjectsFromServer(workspaceId),
             syncSettingsFromServer(workspaceId),
           ]);

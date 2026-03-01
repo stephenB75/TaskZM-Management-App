@@ -60,8 +60,8 @@ export const PERCENTAGE_MULTIPLIER = 100; // For converting decimals to percenta
 export const SYNC_INTERVAL_30_SECONDS = 30 * MILLISECONDS_PER_SECOND; // 30 seconds in milliseconds
 
 // Workspace sync interval multipliers
-export const WORKSPACE_SYNC_ACTIVE_MULTIPLIER = 2; // Sync other resources every 2 intervals when active
-export const WORKSPACE_SYNC_IDLE_MULTIPLIER = 3; // Sync other resources every 3 intervals when idle
+export const WORKSPACE_SYNC_ACTIVE_MULTIPLIER = 4; // Sync other resources (folders, projects, settings) every 4 intervals when active (~8 min)
+export const WORKSPACE_SYNC_IDLE_MULTIPLIER = 6; // Sync other resources every 6 intervals when idle (~30 min)
 
 // Task Duration Thresholds
 export const TASK_DURATION_SHORT_THRESHOLD = 45; // Minutes - tasks under this are considered "short"
