@@ -339,6 +339,27 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [workspaceId, user?.id, accessToken]);
 
+  // Persist current tasks to localStorage on unload so changes survive refresh
+  useEffect(() => {
+    if (!user?.id) return;
+    const persistOnUnload = () => {
+      const current = tasksRef.current;
+      if (Array.isArray(current)) {
+        try {
+          saveToLocalStorage('tasks', current, user.id);
+        } catch (e) {
+          logger.debug('Persist on unload failed:', e);
+        }
+      }
+    };
+    window.addEventListener('pagehide', persistOnUnload);
+    window.addEventListener('beforeunload', persistOnUnload);
+    return () => {
+      window.removeEventListener('pagehide', persistOnUnload);
+      window.removeEventListener('beforeunload', persistOnUnload);
+    };
+  }, [user?.id]);
+
   async function loadWorkspace() {
     if (!user || !accessToken) {
       logger.warn('Cannot load workspace: user or accessToken missing', { 
@@ -776,9 +797,29 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           });
         }
         logger.info(`Loaded ${serverTasks.length} tasks from server${deduplicatedTasks.length !== serverTasks.length ? ` (deduplicated to ${deduplicatedTasks.length})` : ''}${newBases.length > 0 ? `, migrated ${newBases.length} recurring series` : ''}`);
-        const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+        let final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+
+        // Merge with localStorage: prefer local version when it's newer so changes persist after refresh
+        const localTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
+        if (localTasks.length > 0) {
+          const serverById = new Map(final.map((t) => [t.id, t]));
+          const merged: Task[] = [];
+          for (const t of final) {
+            const local = localTasks.find((l) => l.id === t.id);
+            if (!local) {
+              merged.push(t);
+              continue;
+            }
+            const localTime = local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
+            const serverTime = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
+            merged.push(localTime > serverTime ? local : t);
+          }
+          const localOnly = localTasks.filter((l) => !serverById.has(l.id) && (l.createdBy === 'local' || !l.createdBy));
+          for (const t of localOnly) merged.push(t);
+          if (merged.length > 0) final = merged;
+        }
+
         setTasks(final);
-        // Always update localStorage with migrated server data (overwrite any stale local data)
         saveToLocalStorage('tasks', final, user?.id);
         setLastSync(new Date());
         
