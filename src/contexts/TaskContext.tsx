@@ -1265,11 +1265,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           lastModifiedSince ? { ifModifiedSince: lastModifiedSince } : undefined
         );
         const {
-          tasks: serverTasks = [],
+          tasks: rawServerTasks,
           error,
           notModified,
           lastModified,
         } = result;
+        const serverTasks = ensureTaskArray(rawServerTasks);
 
         // If there was an error, handle it
         if (error) {

@@ -285,13 +285,17 @@ export async function getTasks(
     }
 
     const data = await response.json();
-    // Validate response structure
-    if (!data || !Array.isArray(data.tasks)) {
-      const error = new Error('Invalid server response format');
-      logger.error('Invalid getTasks response format:', data);
-      return { tasks: [], error };
+    // Validate response structure - ensure we always have an array (avoids "v is not iterable")
+    const rawTasks = data?.tasks;
+    const tasksArray = Array.isArray(rawTasks)
+      ? rawTasks
+      : rawTasks != null && typeof rawTasks === 'object'
+        ? Object.values(rawTasks)
+        : [];
+    if (!Array.isArray(rawTasks) && rawTasks != null) {
+      logger.warn('getTasks: server returned tasks as non-array, normalized to array', { type: typeof rawTasks });
     }
-    return { tasks: data.tasks, lastModified: lastModifiedHeader };
+    return { tasks: tasksArray, lastModified: lastModifiedHeader };
   } catch (error) {
     // Network errors or other fetch failures
     const errorObj = error instanceof Error ? error : new Error('Network error');
