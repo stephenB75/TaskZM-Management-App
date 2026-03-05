@@ -613,7 +613,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       // The system uses isDateInRecurrence() to determine which dates each task appears on
       // We only deduplicate if the exact same task was created twice (same title + pattern + scheduledDate)
       if (task.recurrence.type !== 'none' && task.scheduledDate) {
-        const daysOfWeekKey = task.recurrence.daysOfWeek 
+        const daysOfWeekKey = Array.isArray(task.recurrence.daysOfWeek)
           ? JSON.stringify([...task.recurrence.daysOfWeek].sort())
           : '';
         const dayOfMonthKey = task.recurrence.dayOfMonth || '';
@@ -665,7 +665,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           return true;
         }
         
-        const daysOfWeekKey = task.recurrence.daysOfWeek 
+        const daysOfWeekKey = Array.isArray(task.recurrence.daysOfWeek)
           ? JSON.stringify([...task.recurrence.daysOfWeek].sort())
           : '';
         const dayOfMonthKey = task.recurrence.dayOfMonth || '';
@@ -728,7 +728,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     try {
       logger.debug(`Loading tasks from server for workspace: ${wsId}`);
       const result = await api.getTasks(wsId);
-      const { tasks: serverTasks, error } = result;
+      const serverTasks = ensureTaskArray(result.tasks);
+      const error = result.error;
       
       // If there was an error, handle it appropriately
       if (error) {
