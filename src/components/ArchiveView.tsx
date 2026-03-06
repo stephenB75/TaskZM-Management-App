@@ -68,7 +68,8 @@ export function ArchiveView() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Get completed tasks
-  const completedTasks = tasks.filter(
+  const taskList = Array.isArray(tasks) ? tasks : [];
+  const completedTasks = taskList.filter(
     (t) => t.status === "done",
   );
 

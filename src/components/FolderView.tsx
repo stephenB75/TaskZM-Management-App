@@ -43,7 +43,8 @@ export function FolderView({ folder, onBack }: FolderViewProps) {
   // Get tasks that belong to this folder (by tag - folder name)
   const folderTasks = useMemo(() => {
     if (!folder.name) return [];
-    return tasks.filter((task) => 
+    const taskList = Array.isArray(tasks) ? tasks : [];
+    return taskList.filter((task) => 
       task.tags && 
       Array.isArray(task.tags) && 
       task.tags.includes(folder.name)

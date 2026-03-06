@@ -172,7 +172,8 @@ export function InboxView() {
   // Get unscheduled tasks (or scheduled if showScheduled is true)
   // Consistent definition: unscheduled = scheduledDate === null/undefined and not done
   // This includes: regular tasks, recurring tasks, and rollover tasks
-  const unscheduledTasks = tasks.filter(
+  const taskList = Array.isArray(tasks) ? tasks : [];
+  const unscheduledTasks = taskList.filter(
     (t) => {
       if (showScheduled) {
         // Show scheduled tasks that are not done
