@@ -1167,9 +1167,10 @@ export function TodayAgendaView({
           </div>
         </div>
         )
-      ) : (
+        ) : (
         // LAYER 1: When hideHeader=false (header IS visible)
-        typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.desktop ? (
+        // Use shouldUseMobileLayout so mobile always gets the scrollable task list (not a stale window check)
+        !shouldUseMobileLayout ? (
           // Desktop: overflow-auto so tasks + timeline column are both visible (no overflow-x clip)
           <div className="flex-1 min-h-0">
             <div className="h-full w-full overflow-auto min-w-0">

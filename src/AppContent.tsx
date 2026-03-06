@@ -361,6 +361,13 @@ export default function AppContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // When switching to mobile layout (e.g. resize or rotate), show Today view so tasks are visible
+  useEffect(() => {
+    if (shouldUseMobileLayout && currentView === 'dashboard') {
+      setCurrentView('today');
+    }
+  }, [shouldUseMobileLayout, currentView]);
+
   useEffect(() => {
     if (!user || isLoading) return;
     
