@@ -102,6 +102,9 @@ export interface MigrateRecurringSeriesResult {
  * Idempotent: does not create a base if one already exists.
  */
 export function migrateOrphanRecurringSeries(tasks: Task[]): MigrateRecurringSeriesResult {
+  if (!Array.isArray(tasks)) {
+    return { tasks: [], newBases: [] };
+  }
   const taskIds = new Set(tasks.map((t) => t.id));
   const byBaseId = new Map<string, Task[]>();
 

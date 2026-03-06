@@ -237,6 +237,7 @@ export function getSeriesKeyForTask(
  * Call with the already-filtered list for the day (dateString is that day).
  */
 export function dedupeTasksForDay(tasks: Task[], dateString: string): Task[] {
+  if (!Array.isArray(tasks)) return [];
   const keyToTasks = new Map<string, Task[]>();
   for (const task of tasks) {
     const key = getSeriesKeyForTask(task, dateString);
@@ -392,6 +393,7 @@ export function filterTasks(tasks: Task[], filters: {
 }
 
 export function sortTasks(tasks: Task[], sortBy: 'dueDate' | 'priority' | 'createdAt' | 'title', order: 'asc' | 'desc' = 'asc'): Task[] {
+  if (!Array.isArray(tasks)) return [];
   const sorted = [...tasks].sort((a, b) => {
     let comparison = 0;
     

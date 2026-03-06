@@ -335,9 +335,10 @@ function DroppableDay({
     | { type: 'event'; data: CalendarEventData; sortTime: number };
   
   const combinedItems: CombinedItem[] = [];
+  const taskList = Array.isArray(dayData.tasks) ? dayData.tasks : [];
   
   // Add tasks
-  for (const task of dayData.tasks) {
+  for (const task of taskList) {
     const taskTime = task.scheduledDate || task.dueDate;
     const sortTime = taskTime ? new Date(taskTime).getTime() : 0;
     combinedItems.push({ type: 'task', data: task, sortTime });
@@ -381,12 +382,12 @@ function DroppableDay({
           </span>
           {totalItems > 0 && (
             <div className="flex items-center gap-0.5">
-              {dayData.tasks.length > 0 && (
+              {taskList.length > 0 && (
                 <Badge
                   variant="secondary"
                   className="h-3.5 md:h-4 text-[9px] md:text-[10px] px-0.5 md:px-1 bg-primary/10 text-primary dark:bg-primary/50 dark:text-primary-foreground flex-shrink-0"
                 >
-                  {dayData.tasks.length}
+                  {taskList.length}
                 </Badge>
               )}
               {calendarEvents.length > 0 && (

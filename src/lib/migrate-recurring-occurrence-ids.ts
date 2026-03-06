@@ -18,6 +18,9 @@ export interface MigrateRecurringOccurrenceIdsResult {
  * 2. Dedupe: for each (baseId, date) keep one occurrence, remove the rest.
  */
 export function migrateRecurringOccurrenceIds(tasks: Task[]): MigrateRecurringOccurrenceIdsResult {
+  if (!Array.isArray(tasks)) {
+    return { tasks: [], changes: { moved: [], deduped: [] } };
+  }
   const toRemove = new Set<string>();
   const newTasks: Task[] = [];
   const moved: string[] = [];
