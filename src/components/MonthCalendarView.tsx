@@ -750,7 +750,7 @@ export function MonthCalendarView({
   ];
 
   return (
-    <div className={`h-full flex flex-col ${MAIN_BG_GRADIENT_CLASS}`} data-month-calendar="true">
+    <div className={cn("flex flex-col", mobileMode ? "flex-1 min-h-0" : "h-full", MAIN_BG_GRADIENT_CLASS)} data-month-calendar="true">
       {/* Calendar Header - dark mode: solid dark bar with light text/icons for visibility */}
       <motion.div
         className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-gray-800/95 dark:border-gray-700 backdrop-blur-md"
@@ -808,8 +808,8 @@ export function MonthCalendarView({
       </motion.div>
 
       {/* Calendar Grid */}
-      <div className="flex-1 overflow-hidden px-1 py-2 md:p-3">
-        <div className="h-full flex flex-col w-full">
+      <div className={cn("flex-1 px-1 py-2 md:p-3", !mobileMode && "overflow-hidden")}>
+        <div className={cn("w-full flex flex-col", mobileMode ? "min-h-0" : "h-full")}>
           {/* Wrapper that includes both headers and calendar days for zoom */}
           <div 
             className={cn(

@@ -796,10 +796,10 @@ export function TodayAgendaView({
               ref={timelineContainerRef}
               className="px-5 w-full max-w-full min-w-0 relative box-border"
               style={{
-                paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop 
+                paddingTop: shouldUseMobileLayout
                   ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing
                   : DESKTOP_PADDING_TOP,
-                paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop
+                paddingBottom: shouldUseMobileLayout
                   ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer
                   : undefined,
                 // Ensure transparent background to show parent gradient
@@ -988,10 +988,10 @@ export function TodayAgendaView({
                 ref={timelineContainerRef}
                 className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative min-w-0")}
                 style={{
-                  paddingTop: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop 
+                  paddingTop: shouldUseMobileLayout
                     ? `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px` 
                     : DESKTOP_PADDING_TOP,
-                  paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.desktop
+                  paddingBottom: shouldUseMobileLayout
                     ? KANBAN_MOBILE.bottomPaddingCalc
                     : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
                 }}

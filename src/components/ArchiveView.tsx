@@ -24,6 +24,7 @@ import {
 import { TaskDialog } from "./TaskDialog";
 import { cn, prepareTaskForDialog } from "../lib/utils";
 import { useIsMobile } from "./ui/use-mobile";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner";
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
@@ -45,6 +46,7 @@ import type { Task } from "../types";
 export function ArchiveView() {
   const { tasks, updateTask, deleteTask, bulkDeleteTasks } = useTasks();
   const isMobile = useIsMobile();
+  const shouldUseMobileLayout = useMobileLayout();
   const [checkboxSizePx, setCheckboxSizePx] = useState(() => getCheckboxSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
   const [visualSizePx, setVisualSizePx] = useState(() => getCheckboxVisualSizePxForWidth(typeof window !== "undefined" ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop));
   useEffect(() => {
@@ -374,7 +376,7 @@ export function ArchiveView() {
         {/* Tasks List */}
         {/* On mobile, rely on parent scroll container in App.tsx - no overflow-y-auto */}
         <div className="flex-1 min-h-0">
-          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
+          {!shouldUseMobileLayout ? (
           <div className="h-full overflow-y-auto overscroll-contain">
             <div className="p-4 md:px-8 pb-safe md:pb-8">
                 <div className="space-y-3">

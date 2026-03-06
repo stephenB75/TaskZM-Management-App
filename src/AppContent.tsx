@@ -361,12 +361,13 @@ export default function AppContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When switching to mobile layout (e.g. resize or rotate), show Today view so tasks are visible
+  // When switching to mobile layout: only redirect dashboard→today when mobileView is 'today'
+  // (so user can tap Week and see DashboardView with Week tab; don't override that)
   useEffect(() => {
-    if (shouldUseMobileLayout && currentView === 'dashboard') {
+    if (shouldUseMobileLayout && currentView === 'dashboard' && mobileView === 'today') {
       setCurrentView('today');
     }
-  }, [shouldUseMobileLayout, currentView]);
+  }, [shouldUseMobileLayout, currentView, mobileView]);
 
   useEffect(() => {
     if (!user || isLoading) return;

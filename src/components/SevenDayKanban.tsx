@@ -830,7 +830,7 @@ export function SevenDayKanban({
 
     return (
       <div 
-        className={shouldUseMobileLayout ? "flex flex-col h-full w-full max-w-full min-w-0 overflow-x-hidden" : "min-h-full flex flex-col"}
+        className={shouldUseMobileLayout ? "flex flex-col flex-1 min-h-0 w-full max-w-full min-w-0 overflow-x-hidden" : "min-h-full flex flex-col"}
         style={{
           // Use gradient background on both mobile and desktop
           backgroundImage: isDark

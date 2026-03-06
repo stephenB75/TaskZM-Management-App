@@ -1737,7 +1737,7 @@ export function DashboardView({
 
         {/* Mobile: Tabbed View | Desktop: Kanban/Calendar */}
         <motion.div
-          className={cn("flex-1 min-w-0", shouldUseMobileLayout ? "overflow-x-hidden w-full max-w-full" : "overflow-hidden")}
+          className={cn("flex-1 min-w-0", shouldUseMobileLayout ? "min-h-0 overflow-x-hidden w-full max-w-full flex flex-col" : "overflow-hidden")}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -1762,7 +1762,7 @@ export function DashboardView({
 
           {/* Mobile/Tablet: Tabbed Content (one-column layout) */}
           {shouldUseMobileLayout && (
-            <div className={cn("w-full max-w-full min-w-0 overflow-x-hidden", shouldUseMobileLayout ? "" : "min-h-full")} style={{ backgroundColor: 'transparent' }}>
+            <div className={cn("flex-1 min-h-0 flex flex-col w-full max-w-full min-w-0 overflow-x-hidden")} style={{ backgroundColor: 'transparent' }}>
               {mobileView === "today" ? (
                 <TodayAgendaView hideHeader={true} />
               ) : viewMode === "week" ? (
