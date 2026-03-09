@@ -654,9 +654,12 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
       return c.json({ error: 'Workspace not found' }, 404);
     }
 
+    // Verify user has access (owner always allowed; else must be in members list)
     const members = await getWorkspaceMembers(workspaceId);
     const membersList = Array.isArray(members) ? members : [];
-    if (!membersList.includes(userId)) {
+    const isOwner = String(workspaceOwner) === String(userId);
+    const isMember = membersList.length > 0 && membersList.includes(userId);
+    if (!isOwner && !isMember) {
       return c.json({ error: 'Access denied' }, 403);
     }
 
@@ -726,9 +729,12 @@ app.post("/taskzm-database-function/tasks/:workspaceId", async (c) => {
       return c.json({ error: 'Workspace not found' }, 404);
     }
 
-    // Verify user has access to this workspace
+    // Verify user has access to this workspace (owner always allowed; else must be in members list)
     const members = await getWorkspaceMembers(workspaceId);
-    if (!members.includes(userId)) {
+    const membersList = Array.isArray(members) ? members : [];
+    const isOwner = String(workspaceOwner) === String(userId);
+    const isMember = membersList.length > 0 && membersList.includes(userId);
+    if (!isOwner && !isMember) {
       return c.json({ error: 'Access denied' }, 403);
     }
 
@@ -773,9 +779,12 @@ app.delete("/taskzm-database-function/tasks/:workspaceId/:taskId", async (c) => 
       return c.json({ error: 'Workspace not found' }, 404);
     }
 
-    // Verify user has access to this workspace
+    // Verify user has access to this workspace (owner always allowed; else must be in members list)
     const members = await getWorkspaceMembers(workspaceId);
-    if (!members.includes(userId)) {
+    const membersList = Array.isArray(members) ? members : [];
+    const isOwner = String(workspaceOwner) === String(userId);
+    const isMember = membersList.length > 0 && membersList.includes(userId);
+    if (!isOwner && !isMember) {
       return c.json({ error: 'Access denied' }, 403);
     }
 
