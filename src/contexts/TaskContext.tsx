@@ -2039,10 +2039,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Failed to save task to server:', error);
 
-        // Revert optimistic add by resyncing from server
-        await loadTasksFromServer(validWorkspaceId).catch(() => {});
+        // Keep the optimistic task in state (don't reload from server - it may return empty and wipe the new task)
+        // Retry save once after a short delay (handles transient 403/500 if server was just updated)
+        const retrySave = () => {
+          api.saveTask(validWorkspaceId, newTask)
+            .then(() => {
+              debouncedSync(false);
+              toast.success('Task saved');
+            })
+            .catch((retryErr) => {
+              logger.error('Retry save task failed:', retryErr);
+              toast.error('Saved locally; will sync when connection is restored.', {
+                description: 'Your task is stored on this device.',
+              });
+            });
+        };
 
-        // If workspace not found, try to ensure it exists and retry
         if (errorMessage.includes('Workspace not found') || errorMessage.includes('Workspace or endpoint not found')) {
           try {
             logger.debug('Workspace not found when saving task, ensuring workspace exists...');
@@ -2060,21 +2072,22 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               debouncedSync(false);
               toast.success('Task created', { playSound: true });
               return;
-            } else {
-              logger.error('Workspace creation failed - no workspace ID returned');
             }
           } catch (retryError) {
             logger.error('Failed to ensure workspace on retry:', retryError);
           }
         }
 
-        // Fallback: keep task in local state and cache (already reverted above; re-add for offline)
-        setTasks(prev => {
-          const updated = [...prev, newTask];
-          saveToLocalStorage('tasks', updated);
-          return updated;
-        });
-        toast.error('Task saved offline, will sync when online');
+        if (errorMessage.includes('Access denied') || errorMessage.includes('403')) {
+          toast.error('Server rejected save. Try refreshing the page.', {
+            description: 'If the problem continues, the app may need an update.',
+          });
+          setTimeout(retrySave, 2000);
+          return;
+        }
+
+        toast.warning('Saving…', { description: 'Retrying in a moment.' });
+        setTimeout(retrySave, 1500);
       }
     } else {
       // No workspace/auth - save locally only
@@ -2085,7 +2098,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       });
       toast.success('Task created (offline)', { playSound: true });
     }
-  }, [user, workspaceId, accessToken, updateActivity, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]);
+  }, [user, workspaceId, accessToken, updateActivity, ensureWorkspace, createWorkspaceIfNeeded, debouncedSync]);
 
   const addTaskSeries = useCallback(async (seriesTasks: Task[]) => {
     if (!seriesTasks.length) return;
