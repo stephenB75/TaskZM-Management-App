@@ -494,14 +494,14 @@ async function getWorkspaceMembers(workspaceId: string): Promise<string[]> {
   if (!members || !Array.isArray(members)) {
     const owner = await kv.get(`workspace_${workspaceId}_owner`);
     if (owner) {
-      members = [owner];
+      members = [String(owner)];
       await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
     } else {
       members = [];
     }
   }
-  
-  return members;
+
+  return Array.isArray(members) ? members : [];
 }
 
 /**
@@ -653,7 +653,8 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
     }
 
     const members = await getWorkspaceMembers(workspaceId);
-    if (!members.includes(userId)) {
+    const membersList = Array.isArray(members) ? members : [];
+    if (!membersList.includes(userId)) {
       return c.json({ error: 'Access denied' }, 403);
     }
 
@@ -664,9 +665,16 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
       }
     }
 
-    const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
-    const tasksList = Array.isArray(tasksData) ? tasksData : [];
-    const tasks = tasksList.map((item: { key?: string; value?: unknown }) => item && typeof item === 'object' && 'value' in item ? item.value : null).filter(Boolean);
+    let tasks: unknown[] = [];
+    try {
+      const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
+      const tasksList = Array.isArray(tasksData) ? tasksData : [];
+      tasks = tasksList.map((item: { key?: string; value?: unknown }) => item && typeof item === 'object' && 'value' in item ? item.value : null).filter(Boolean);
+    } catch (e) {
+      console.log('Error in getByPrefix or mapping tasks:', e);
+      tasks = [];
+    }
+
     let lastModified = await kv.get(`workspace_${workspaceId}_tasks_modified`);
     if (!lastModified && tasks.length > 0) {
       const maxUpdated = tasks.reduce((max, t) => {
@@ -684,6 +692,11 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
     if (lastModified) headers['Last-Modified'] = String(lastModified);
     return c.json({ tasks }, 200, { headers });
   } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    if (/is not iterable|not iterable/i.test(errMsg)) {
+      console.log('Iterable guard: returning empty tasks to avoid 500:', errMsg);
+      return c.json({ tasks: [] }, 200, {});
+    }
     console.log('Error fetching tasks:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
