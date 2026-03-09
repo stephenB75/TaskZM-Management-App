@@ -90,17 +90,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // CRITICAL: Never cache the HTML document (index.html or navigate requests).
+  // After a deploy, chunk filenames change (e.g. SettingsPanel-NewHash.js). If we cache the document,
+  // a reload can serve stale HTML that references old chunks (404) and cause "Failed to fetch dynamically imported module".
+  const isDocumentRequest = event.request.mode === 'navigate' ||
+    url.pathname === '/' ||
+    url.pathname === '' ||
+    url.pathname.endsWith('/index.html');
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Only cache successful responses with valid schemes
-        // Double-check the request URL is valid before attempting to cache
+        // Only cache successful responses; never cache the document
         if (response && response.status === 200 &&
             response.type === 'basic' &&
             (url.protocol === 'http:' || url.protocol === 'https:') &&
             event.request.url.startsWith('http') &&
             !event.request.url.includes('supabase.co') &&
-            !event.request.url.includes('/functions/')) {
+            !event.request.url.includes('/functions/') &&
+            !isDocumentRequest) {
           const responseClone = response.clone();
           caches.open(RUNTIME_CACHE).then((cache) => {
             try {
