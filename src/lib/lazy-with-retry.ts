@@ -8,7 +8,8 @@ import { lazy, type LazyExoticComponent, type ComponentType } from 'react';
 
 const RETRY_COUNT = 3;
 const RETRY_DELAY_MS = 2000;
-const CHUNK_ERROR_RELOAD_KEY = 'lazyChunkErrorReloadDone';
+const CHUNK_ERROR_RELOAD_KEY = 'lazyChunkErrorReloadTime';
+const CHUNK_ERROR_RELOAD_COOLDOWN_MS = 60_000; // Allow another reload attempt after 60s so we can recover if first reload still had stale assets
 
 function isChunkLoadError(error: unknown): boolean {
   if (error instanceof TypeError) {
@@ -31,8 +32,13 @@ function delay(ms: number): Promise<void> {
 function tryReloadOnceForChunkError(): boolean {
   try {
     if (typeof sessionStorage === 'undefined') return false;
-    if (sessionStorage.getItem(CHUNK_ERROR_RELOAD_KEY) === '1') return false;
-    sessionStorage.setItem(CHUNK_ERROR_RELOAD_KEY, '1');
+    const last = sessionStorage.getItem(CHUNK_ERROR_RELOAD_KEY);
+    const now = Date.now();
+    if (last) {
+      const elapsed = now - parseInt(last, 10);
+      if (elapsed < CHUNK_ERROR_RELOAD_COOLDOWN_MS) return false; // Already reloaded recently, don't loop
+    }
+    sessionStorage.setItem(CHUNK_ERROR_RELOAD_KEY, String(now));
     window.location.reload();
     return true;
   } catch {

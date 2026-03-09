@@ -185,6 +185,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const syncIntervalRef = useRef<number>(WORKSPACE_SYNC_INTERVAL_IDLE_MS); // Keep latest interval in ref to avoid stale closures
   const syncWithServerRef = useRef<((wsId?: string, silent?: boolean) => Promise<void>) | null>(null); // Store latest sync function to avoid dependency issues
   const lastErrorToastRef = useRef<{ message: string; timestamp: number } | null>(null); // Track last error toast to prevent duplicates
+  const lastLoadTasksOfflineToastRef = useRef<number>(0); // Cooldown for "using offline data" toast (avoid duplicate when load runs twice)
   const lastNetworkErrorLogRef = useRef<number>(0); // Track last network error log time to suppress repeated warnings
   // Lock to prevent concurrent next occurrence creation for the same recurring task
   const nextOccurrenceCreationLock = useRef<Set<string>>(new Set());
@@ -758,11 +759,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
           setTasks(ensureTaskArray(final));
           saveToLocalStorage('tasks', final, user?.id);
-          toast.error('Failed to load tasks from server, using offline data', {
-            description: /not iterable|is not iterable/i.test(String(error?.message))
-              ? 'Please check your internet connection.'
-              : (error?.message || 'Please check your internet connection'),
-          });
+          const now = Date.now();
+          const COOLDOWN_MS = 10000; // Only show this toast once per 10s so duplicate load calls don't stack
+          if (now - lastLoadTasksOfflineToastRef.current > COOLDOWN_MS) {
+            lastLoadTasksOfflineToastRef.current = now;
+            toast.error('Failed to load tasks from server, using offline data', {
+              description: /not iterable|is not iterable/i.test(String(error?.message))
+                ? 'Please check your internet connection.'
+                : (error?.message || 'Please check your internet connection'),
+            });
+          }
           return final;
         } else {
           // No local data, show error but don't set empty array yet
@@ -897,11 +903,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
         setTasks(ensureTaskArray(final));
         saveToLocalStorage('tasks', final, user?.id);
-        toast.error('Failed to load tasks from server, using offline data', {
-          description: /not iterable|is not iterable/i.test(String(error instanceof Error ? error.message : ''))
-            ? 'Please check your internet connection.'
-            : (error instanceof Error ? error.message : 'Please check your internet connection'),
-        });
+        const now = Date.now();
+        const COOLDOWN_MS = 10000;
+        if (now - lastLoadTasksOfflineToastRef.current > COOLDOWN_MS) {
+          lastLoadTasksOfflineToastRef.current = now;
+          toast.error('Failed to load tasks from server, using offline data', {
+            description: /not iterable|is not iterable/i.test(String(error instanceof Error ? error.message : ''))
+              ? 'Please check your internet connection.'
+              : (error instanceof Error ? error.message : 'Please check your internet connection'),
+          });
+        }
         return final;
       } else {
         setTasks([]);

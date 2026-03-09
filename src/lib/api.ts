@@ -37,6 +37,18 @@ function getHeaders() {
   return headers;
 }
 
+/** If the server returned HTML (e.g. Cloudflare 500 page), return a short message instead of dumping HTML into logs. */
+function sanitizeResponseError(body: string, status: number): string {
+  const trimmed = (body || '').trim();
+  if (trimmed.startsWith('<') || trimmed.toLowerCase().includes('<html')) {
+    return `Server error (${status})`;
+  }
+  if (trimmed.length > 200) {
+    return trimmed.slice(0, 200) + '…';
+  }
+  return trimmed || `Request failed (${status})`;
+}
+
 /**
  * Fetch with optional retry on 401: forces session refresh then retries once with new token.
  * Use for authenticated endpoints so expired tokens don't cause permanent 401.
@@ -990,7 +1002,7 @@ export async function getTeamMembers(workspaceId: string) {
           errorMessage = error.error || errorMessage;
         } else {
           const text = await response.text();
-          errorMessage = text || response.statusText || errorMessage;
+          errorMessage = sanitizeResponseError(text, response.status);
         }
       } catch (parseError) {
         errorMessage = response.statusText || errorMessage;
@@ -1007,8 +1019,9 @@ export async function getTeamMembers(workspaceId: string) {
     return data.members || [];
   } catch (error) {
     // Handle 404 gracefully - return empty array
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('404') || errorMessage.includes('Not found')) {
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = sanitizeResponseError(rawMessage, 0);
+    if (rawMessage.includes('404') || rawMessage.includes('Not found')) {
       logger.debug('Workspace not found, returning empty team members list');
       return [];
     }
@@ -1150,16 +1163,29 @@ export async function getTeamMembersByTeam(teamId: string) {
       if (response.status === 404) {
         return [];
       }
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch team members');
+      let errorMessage = 'Failed to fetch team members';
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } else {
+          const text = await response.text();
+          errorMessage = sanitizeResponseError(text, response.status);
+        }
+      } catch {
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
     // Backend returns array directly, not wrapped in object
     return Array.isArray(data) ? data : (data.members || []);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('404') || errorMessage.includes('Not found')) {
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = sanitizeResponseError(rawMessage, 0);
+    if (rawMessage.includes('404') || rawMessage.includes('Not found')) {
       return [];
     }
     logger.warn('Error fetching team members, using empty list:', errorMessage);
