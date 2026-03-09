@@ -731,6 +731,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       const result = await api.getTasks(wsId);
       const serverTasks = ensureTaskArray(result.tasks);
       const error = result.error;
+      const lastModifiedFromServer = result.lastModified;
       
       // If there was an error, handle it appropriately
       if (error) {
@@ -824,13 +825,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         setTasks(ensureTaskArray(final));
         saveToLocalStorage('tasks', final, user?.id);
         setLastSync(new Date());
-        
-        // Store sync timestamp and ETag for next delta sync
-        const syncTimestamp = new Date().toISOString();
+
+        // Use server's Last-Modified for delta sync so client and server agree (avoids 304 when data actually changed)
+        const syncTimestamp = lastModifiedFromServer || new Date().toISOString();
         const syncKey = `last_sync_timestamp_tasks_${wsId}`;
         localStorage.setItem(syncKey, syncTimestamp);
         lastSyncTimestampsRef.current.tasks = syncTimestamp;
-        
+
         // Clear any sync flags to ensure fresh sync on next load
         const syncFlagKey = `synced_local_data_${wsId}`;
         localStorage.removeItem(syncFlagKey);
@@ -872,6 +873,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             const finalRefresh = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
             setTasks(ensureTaskArray(finalRefresh));
             saveToLocalStorage('tasks', finalRefresh, user?.id);
+            const refreshLastModified = refreshedResult.lastModified;
+            if (refreshLastModified) {
+              lastSyncTimestampsRef.current.tasks = refreshLastModified;
+              localStorage.setItem(`last_sync_timestamp_tasks_${wsId}`, refreshLastModified);
+            }
             return finalRefresh;
           }
         }
@@ -1271,7 +1277,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           notModified,
           lastModified,
         } = result;
-        const serverTasks = ensureTaskArray(rawServerTasks);
+        let serverTasks = ensureTaskArray(rawServerTasks);
 
         // If there was an error, handle it
         if (error) {
@@ -1384,6 +1390,36 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           logger.debug('No task changes detected since last sync');
           consecutiveNoChangeSyncsRef.current += 1;
 
+          // After many consecutive 304s, force a full fetch so we don't stay stale (e.g. edge clock vs client clock)
+          const FORCE_FULL_SYNC_AFTER_NOT_MODIFIED = 6;
+          let didForceFullFetch = false;
+          if (consecutiveNoChangeSyncsRef.current >= FORCE_FULL_SYNC_AFTER_NOT_MODIFIED) {
+            logger.debug('Forcing full task fetch after consecutive 304s to ensure sync correctness');
+            lastSyncTimestampsRef.current.tasks = undefined;
+            localStorage.removeItem(`last_sync_timestamp_tasks_${targetWorkspaceId}`);
+            const fullResult = await api.getTasks(targetWorkspaceId);
+            if (fullResult.error) {
+              consecutiveNoChangeSyncsRef.current = 0;
+              if (!silent) {
+                const now = Date.now();
+                const shouldShow = !lastErrorToastRef.current || (now - lastErrorToastRef.current.timestamp) > ERROR_TOAST_COOLDOWN;
+                if (shouldShow) {
+                  toast.error('Failed to sync with server', { description: fullResult.error.message || 'Please check your internet connection.' });
+                  lastErrorToastRef.current = { message: fullResult.error.message || '', timestamp: now };
+                }
+              }
+              return;
+            }
+            const fullLastModified = fullResult.lastModified || new Date().toISOString();
+            lastSyncTimestampsRef.current.tasks = fullLastModified;
+            localStorage.setItem(`last_sync_timestamp_tasks_${targetWorkspaceId}`, fullLastModified);
+            localStorage.setItem(`last_server_sync_${targetWorkspaceId}`, String(Date.now()));
+            setLastSync(new Date());
+            consecutiveNoChangeSyncsRef.current = 0;
+            serverTasks = ensureTaskArray(fullResult.tasks);
+            didForceFullFetch = true;
+          }
+
           if (
             !isActiveRef.current &&
             consecutiveNoChangeSyncsRef.current >= WORKSPACE_SYNC_NO_CHANGE_THRESHOLD
@@ -1402,7 +1438,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
               setSyncInterval(proposedInterval);
             }
           }
-          return;
+          if (!didForceFullFetch) return;
         }
 
         // Data changed - reset backoff and align interval to activity state
