@@ -65,7 +65,7 @@ export default function AppContent() {
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { settings: aiSettings } = useAI();
   const { hasFeature, features, subscription } = useSubscription();
-  const { syncWithServer, workspaceId } = useTasks();
+  const { syncWithServer, workspaceId, tasks } = useTasks();
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
@@ -160,7 +160,6 @@ export default function AppContent() {
   }, [shouldUseMobileLayout]);
   
   const { scheduleAllTasks, unscheduledCount, isScheduling } = useAIScheduler();
-  const { tasks, workspaceId } = useTasks();
   const { settings: notificationSettings } = useNotifications();
   
   // Calculate count of overdue and due now tasks for mobile badge
