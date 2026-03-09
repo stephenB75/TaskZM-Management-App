@@ -83,5 +83,5 @@ export const getByPrefix = async (prefix: string): Promise<Array<{ key: string; 
   if (error) {
     throw new Error(error.message);
   }
-  return data ?? [];
+  return Array.isArray(data) ? data : [];
 };

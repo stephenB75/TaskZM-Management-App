@@ -665,7 +665,8 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
     }
 
     const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
-    const tasks = tasksData.map(item => item.value);
+    const tasksList = Array.isArray(tasksData) ? tasksData : [];
+    const tasks = tasksList.map((item: { key?: string; value?: unknown }) => item && typeof item === 'object' && 'value' in item ? item.value : null).filter(Boolean);
     let lastModified = await kv.get(`workspace_${workspaceId}_tasks_modified`);
     if (!lastModified && tasks.length > 0) {
       const maxUpdated = tasks.reduce((max, t) => {
