@@ -471,37 +471,39 @@ const verifyAdmin = async (request: Request) => {
 
 // Helper function to get and parse workspace members
 async function getWorkspaceMembers(workspaceId: string): Promise<string[]> {
-  let members = await kv.get(`workspace_${workspaceId}_members`);
-  
-  // Handle both array and JSON string formats
-  if (typeof members === 'string') {
-    try {
-      members = JSON.parse(members);
-    } catch (e) {
-      console.log('Error parsing members, initializing with owner:', e);
-      // If parsing fails, get owner and initialize
+  try {
+    let members = await kv.get(`workspace_${workspaceId}_members`);
+
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        console.log('Error parsing members, initializing with owner:', e);
+        const owner = await kv.get(`workspace_${workspaceId}_owner`);
+        if (owner) {
+          members = [String(owner)];
+          await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
+        } else {
+          members = [];
+        }
+      }
+    }
+
+    if (!members || !Array.isArray(members)) {
       const owner = await kv.get(`workspace_${workspaceId}_owner`);
       if (owner) {
-        members = [owner];
+        members = [String(owner)];
         await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
       } else {
         members = [];
       }
     }
-  }
-  
-  // Ensure members is an array
-  if (!members || !Array.isArray(members)) {
-    const owner = await kv.get(`workspace_${workspaceId}_owner`);
-    if (owner) {
-      members = [String(owner)];
-      await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
-    } else {
-      members = [];
-    }
-  }
 
-  return Array.isArray(members) ? members : [];
+    return Array.isArray(members) ? members : [];
+  } catch (e) {
+    console.log('getWorkspaceMembers error, returning empty list:', e);
+    return [];
+  }
 }
 
 /**
@@ -693,7 +695,12 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
     return c.json({ tasks }, 200, { headers });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    if (/is not iterable|not iterable/i.test(errMsg)) {
+    let errStr = errMsg;
+    try {
+      if (typeof error === 'object' && error !== null) errStr = JSON.stringify(error).slice(0, 200);
+    } catch (_) {}
+    const isIterableError = /is not iterable|not iterable|v is not iterable/i.test(errMsg) || /not iterable/i.test(errStr);
+    if (isIterableError) {
       console.log('Iterable guard: returning empty tasks to avoid 500:', errMsg);
       return c.json({ tasks: [] }, 200, {});
     }
