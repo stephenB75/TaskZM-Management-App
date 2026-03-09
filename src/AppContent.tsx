@@ -69,10 +69,10 @@ export default function AppContent() {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   
-  // Initialize view: 'today' on mobile, 'dashboard' on desktop
+  // Initialize view: use same breakpoint as useMobileLayout (tablet) so mobile/tablet see tasks immediately
   const getInitialView = () => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'today' : 'dashboard';
+      return window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? 'today' : 'dashboard';
     }
     return 'dashboard';
   };

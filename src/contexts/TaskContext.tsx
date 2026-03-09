@@ -1609,6 +1609,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   // Auto-sync: Poll server for changes at adaptive intervals
   // Uses requestIdleCallback when available to run syncs in background without blocking UI
+  // Same sync runs on desktop and mobile (no viewport check); both use same TaskContext and api.getTasks.
   useEffect(() => {
     if (!autoSyncEnabled || !workspaceId || !accessToken) return;
 

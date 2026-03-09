@@ -650,7 +650,7 @@ export function InboxView() {
             "flex flex-shrink-0 max-w-full",
             selectedTaskIds.size > 0 ? "flex-col items-end" : "items-center flex-wrap gap-1"
           )} style={{ 
-            gap: typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet 
+            gap: !shouldUseMobileLayout
               ? HEADER_GAP_XSMALL // Reduced gap for desktop to prevent overlap (4px)
               : HEADER_GAP_SMALL 
           }}>
@@ -1065,7 +1065,7 @@ export function InboxView() {
         {/* Task List */}
         {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
         <div className="flex-1 min-h-0">
-          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.tablet ? (
+          {!shouldUseMobileLayout ? (
             <ScrollArea className="h-full">
               <div className="p-4 md:p-8 pb-safe">
                 {/* Today's calendar events - timeline context in Inbox */}
@@ -1402,7 +1402,7 @@ export function InboxView() {
               </div>
             </ScrollArea>
             ) : (
-              <div className="p-4 md:p-8" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? MOBILE_PADDING_BOTTOM : undefined }}>
+              <div className="p-4 md:p-8" style={{ paddingBottom: shouldUseMobileLayout ? MOBILE_PADDING_BOTTOM : undefined }}>
                 {/* Today's calendar events - timeline context in Inbox */}
                 {todayCalendarEvents.length > 0 && (
                   <div className="mb-4">
