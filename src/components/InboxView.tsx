@@ -77,7 +77,7 @@ const getTwoWeekDateRange = () => {
 };
 
 export function InboxView() {
-  const { tasks, addTask, bulkDeleteTasks, updateTask } = useTasks();
+  const { tasks, addTask, bulkDeleteTasks, updateTask, isLoading } = useTasks();
   const { getTeamMember } = useTeam();
   const permissionsResult = usePermissions();
   const permissions = permissionsResult || {
@@ -1094,7 +1094,24 @@ export function InboxView() {
                 )}
                 <div className="space-y-2">
                   <AnimatePresence mode="popLayout">
-                    {sortedTasks.length === 0 ? (
+                    {isLoading && sortedTasks.length === 0 ? (
+                      <motion.div
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex flex-col items-center justify-center text-center"
+                        style={{
+                          paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+                          paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+                          paddingLeft: EMPTY_STATE_PADDING_X,
+                          paddingRight: EMPTY_STATE_PADDING_X,
+                        }}
+                      >
+                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
+                      </motion.div>
+                    ) : sortedTasks.length === 0 ? (
                       <motion.div
                         key="empty"
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -1429,7 +1446,24 @@ export function InboxView() {
                 )}
               <div className="space-y-2">
                 <AnimatePresence mode="popLayout">
-                  {sortedTasks.length === 0 ? (
+                  {isLoading && sortedTasks.length === 0 ? (
+                    <motion.div
+                      key="loading"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center text-center"
+                      style={{
+                        paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+                        paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+                        paddingLeft: EMPTY_STATE_PADDING_X,
+                        paddingRight: EMPTY_STATE_PADDING_X,
+                      }}
+                    >
+                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
+                    </motion.div>
+                  ) : sortedTasks.length === 0 ? (
                     <motion.div
                       key="empty"
                       initial={{ opacity: 0, scale: 0.95 }}

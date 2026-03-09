@@ -39,7 +39,7 @@ interface TodayAgendaViewProps {
 export function TodayAgendaView({
   hideHeader = false,
 }: TodayAgendaViewProps = {}) {
-  const { tasks } = useTasks();
+  const { tasks, isLoading } = useTasks();
   const { actualTheme } = useTheme();
   const shouldUseMobileLayout = useMobileLayout();
   const { calendarStatus } = useCalendar();
@@ -807,8 +807,23 @@ export function TodayAgendaView({
                 background: 'transparent',
               } as React.CSSProperties}
             >
-            {combinedItems.length === 0 ? (
-              <div 
+            {isLoading && combinedItems.length === 0 ? (
+              <div
+                className={cn(
+                  `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none`,
+                )}
+                style={{
+                  paddingTop: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingBottom: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingLeft: EMPTY_STATE_PADDING_X,
+                  paddingRight: EMPTY_STATE_PADDING_X,
+                }}
+              >
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
+              </div>
+            ) : combinedItems.length === 0 ? (
+              <div
                 className={cn(
                   `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
                   isOver && "scale-105"
@@ -996,8 +1011,23 @@ export function TodayAgendaView({
                     : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
                 }}
               >
-              {combinedItems.length === 0 ? (
-              <div 
+              {isLoading && combinedItems.length === 0 ? (
+                <div
+                  className={cn(
+                    `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none`,
+                  )}
+                  style={{
+                    paddingTop: PANEL_EMPTY_STATE_PADDING_Y,
+                    paddingBottom: PANEL_EMPTY_STATE_PADDING_Y,
+                    paddingLeft: EMPTY_STATE_PADDING_X,
+                    paddingRight: EMPTY_STATE_PADDING_X,
+                  }}
+                >
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
+                </div>
+              ) : combinedItems.length === 0 ? (
+              <div
                 className={cn(
                   `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
                   isOver && "scale-105"
@@ -1184,7 +1214,14 @@ export function TodayAgendaView({
                   background: 'transparent',
                 } as React.CSSProperties}
               >
-          {combinedItems.length === 0 ? (
+          {isLoading && combinedItems.length === 0 ? (
+            <div className={cn(
+              `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none`,
+            )}>
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
+            </div>
+          ) : combinedItems.length === 0 ? (
             <div className={cn(
               `flex flex-col items-center justify-center py-12 text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
               isOver && "scale-105"
@@ -1342,8 +1379,23 @@ export function TodayAgendaView({
               background: 'transparent',
             } as React.CSSProperties}
           >
-            {combinedItems.length === 0 ? (
-              <div 
+            {isLoading && combinedItems.length === 0 ? (
+              <div
+                className={cn(
+                  `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none`,
+                )}
+                style={{
+                  paddingTop: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingBottom: PANEL_EMPTY_STATE_PADDING_Y,
+                  paddingLeft: EMPTY_STATE_PADDING_X,
+                  paddingRight: EMPTY_STATE_PADDING_X,
+                }}
+              >
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
+              </div>
+            ) : combinedItems.length === 0 ? (
+              <div
                 className={cn(
                   `flex flex-col items-center justify-center text-center ${COMPONENT_DIMENSIONS.todayAgenda.emptyStateMinHeight} pointer-events-none transition-all duration-300`,
                   isOver && "scale-105"

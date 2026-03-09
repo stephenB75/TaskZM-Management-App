@@ -65,6 +65,7 @@ export default function AppContent() {
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   const { settings: aiSettings } = useAI();
   const { hasFeature, features, subscription } = useSubscription();
+  const { syncWithServer, workspaceId } = useTasks();
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
@@ -91,6 +92,19 @@ export default function AppContent() {
   const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
   const dashboardViewModeRef = useRef<'week' | 'month'>('week');
   
+  // When mobile layout is shown and user is authenticated, trigger a sync so mobile gets latest tasks from server
+  const mobileSyncDoneRef = useRef(false);
+  useEffect(() => {
+    if (!shouldUseMobileLayout) {
+      mobileSyncDoneRef.current = false;
+      return;
+    }
+    if (!user || !workspaceId) return;
+    if (mobileSyncDoneRef.current) return;
+    mobileSyncDoneRef.current = true;
+    syncWithServer().catch(() => {});
+  }, [shouldUseMobileLayout, user, workspaceId, syncWithServer]);
+
   // Update panel width based on viewport size
   useEffect(() => {
     const updatePanelWidth = () => {
