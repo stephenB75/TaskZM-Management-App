@@ -413,6 +413,100 @@ function buildCompleteSentence(
 }
 
 /**
+ * Build a description that anchors on the user's task name and enriches it with
+ * relevant domain library terms.  The result follows the pattern:
+ *   "[Template] [task-name verb phrase], [domain enrichment]."
+ *
+ * This solves the coordination problem where descriptions either ignored the
+ * domain library entirely (preferUserInputFirst) or ignored the user's input
+ * (domain-only sentence building).
+ */
+function buildTaskNameWithEnrichment(
+  taskName: string,
+  templateOpener: string,
+  domainTerms: ReturnType<typeof getDomainTerminology>,
+  domain: Domain,
+  extractedVerbs: string[],
+  extractedNouns: string[],
+): string {
+  const taskNameLower = taskName.trim().toLowerCase().replace(/[.;:!?]+$/, '');
+  const taskWords = taskNameLower.split(/\s+/).filter(w => w.length >= 2);
+  const stopWords = new Set<string>((DESCRIPTION_GENERATION_CONFIG.stopWords ?? []) as readonly string[]);
+
+  // --- Gerund-ify the leading verb if present --------------------------------
+  const actionWordList = DESCRIPTION_GENERATION_CONFIG.actionWordList ?? [];
+  const firstWord = taskWords[0] ?? '';
+  const hasLeadingVerb = actionWordList.some(v => firstWord === v || firstWord.startsWith(v));
+  let taskPhrase: string;
+  if (hasLeadingVerb) {
+    const gerund = getVerbFormForTemplate(firstWord, 'involves');
+    taskPhrase = gerund
+      ? `${gerund} ${taskWords.slice(1).join(' ')}`.trim()
+      : taskNameLower;
+  } else if (extractedVerbs.length > 0) {
+    const verb = extractedVerbs[0].toLowerCase();
+    const gerund = getVerbFormForTemplate(verb, 'involves');
+    const verbInTask = taskNameLower.includes(verb);
+    if (verbInTask && gerund) {
+      taskPhrase = taskNameLower.replace(new RegExp(`\\b${verb}\\b`, 'i'), gerund);
+    } else {
+      taskPhrase = taskNameLower;
+    }
+  } else {
+    taskPhrase = taskNameLower;
+  }
+
+  // --- Find the best domain phrase that ADDS context -------------------------
+  const bestDomainPhrase = domainTerms.phrases
+    .map(p => {
+      const pl = p.toLowerCase();
+      const pw = pl.split(/\s+/).filter(w => w.length >= 2);
+      if (taskNameLower.includes(pl) || pl.includes(taskNameLower)) return null;
+      if (pw.length > 0 && pw.every(w => taskNameLower.includes(w))) return null;
+      const overlappingWords = pw.filter(w => !stopWords.has(w) && taskWords.some(tw => tw.includes(w) || w.includes(tw)));
+      if (overlappingWords.length === 0) return null;
+      const newWords = pw.filter(w => !stopWords.has(w) && !taskWords.some(tw => tw.includes(w) || w.includes(tw)));
+      if (newWords.length === 0) return null;
+      return { phrase: p, score: overlappingWords.length * 2 + newWords.length, newWords: newWords.length };
+    })
+    .filter((x): x is { phrase: string; score: number; newWords: number } => x !== null)
+    .sort((a, b) => b.score - a.score)[0]?.phrase ?? null;
+
+  // --- Find a domain noun that adds context ----------------------------------
+  const bestDomainNoun = domainTerms.nouns
+    .filter(n => {
+      const nl = n.toLowerCase();
+      if (taskNameLower.includes(nl) || nl.length < 3) return false;
+      return taskWords.some(tw => nl.includes(tw) || tw.includes(nl));
+    })[0] ?? null;
+
+  // --- Build the enriched description ----------------------------------------
+  const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domain] ?? '';
+
+  if (bestDomainPhrase) {
+    const cleaned = cleanText(bestDomainPhrase).toLowerCase();
+    return normalizeSentenceUSEnglish(
+      `${templateOpener} ${taskPhrase}, ensuring ${cleaned}.`
+    );
+  }
+
+  if (bestDomainNoun) {
+    const cleaned = cleanText(bestDomainNoun).toLowerCase();
+    return normalizeSentenceUSEnglish(
+      `${templateOpener} ${taskPhrase} for ${addArticleIfNeeded(cleaned)}.`
+    );
+  }
+
+  if (domainGuidance) {
+    return normalizeSentenceUSEnglish(
+      `${templateOpener} ${taskPhrase}. ${domainGuidance}`
+    );
+  }
+
+  return normalizeSentenceUSEnglish(`${templateOpener} ${taskPhrase}.`);
+}
+
+/**
  * Filter out invalid keywords (price ranges, numbers, HTML fragments, etc.)
  */
 function isValidKeyword(keyword: string): boolean {
@@ -2221,6 +2315,27 @@ function buildElaborateContextualDescription(
     description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${phraseList}.`;
   }
 
+  // PRIORITY 0.5: Anchor on user input + domain enrichment when PRIORITY 0 didn't fire
+  // This ensures the user's task name is always the foundation and domain library adds context
+  if (!description && taskWords.length >= 2) {
+    const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
+    const templateKey = optionIndex != null
+      ? templateKeys[optionIndex % templateKeys.length]
+      : templateKeys[Math.floor((Date.now() % 10000) / 10000 * templateKeys.length)];
+    const opener = (DESCRIPTION_GENERATION_CONFIG.descriptionTemplates as Record<string, string>)[templateKey] ?? DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
+    const enriched = buildTaskNameWithEnrichment(
+      taskName,
+      opener,
+      domainTerms,
+      domain,
+      verbs,
+      nouns,
+    );
+    if (enriched && enriched.trim().length > 0) {
+      description = enriched;
+    }
+  }
+
   // ENHANCED: Detect multi-part tasks by identifying distinct action groups
   // For example: "fix recurring task issue" + "presentation" + "report"
   const multiPartIndicators = ['and', 'plus', 'also', 'including', 'along with', 'as well as'];
@@ -2903,21 +3018,28 @@ function buildElaborateContextualDescription(
     }
   }
   
-  // Ensure description doesn't just repeat the task name
-  // Check multiple similarity conditions to catch more cases
+  // Ensure description doesn't just repeat the task name without adding value
   const descriptionLower = description.toLowerCase().trim();
   const taskWordsForComparison = taskNameLower.split(/\s+/).filter(w => w.length >= 2);
   const descriptionWords = descriptionLower.split(/\s+/).filter(w => w.length >= 2);
   
-  // Check if description is identical or contains all task words
   const isIdentical = descriptionLower === taskNameLower.trim();
-  const containsAllTaskWords = taskWordsForComparison.length > 0 && 
+
+  // Count enrichment words: content words in description that are NOT in the task name
+  const stopWordsForCheck = new Set(((DESCRIPTION_GENERATION_CONFIG.stopWords ?? []) as readonly string[]).map((w: string) => w.toLowerCase()));
+  const enrichmentWordsInDesc = descriptionWords.filter(w =>
+    !stopWordsForCheck.has(w) && !taskWordsForComparison.includes(w)
+  );
+  const descHasEnrichment = enrichmentWordsInDesc.length >= 2;
+
+  const containsAllTaskWords = !descHasEnrichment &&
+    taskWordsForComparison.length > 0 && 
     taskWordsForComparison.every(word => descriptionLower.includes(word));
   
-  // Check if description is mostly task name words (80%+ overlap)
   const commonWords = taskWordsForComparison.filter(word => descriptionWords.includes(word));
   const wordOverlapRatio = taskWordsForComparison.length > 0 ? commonWords.length / taskWordsForComparison.length : 0;
-  const isTooSimilar = wordOverlapRatio >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.wordOverlapRatio && 
+  const isTooSimilar = !descHasEnrichment &&
+    wordOverlapRatio >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.wordOverlapRatio && 
     descriptionWords.length <= taskWordsForComparison.length + DESCRIPTION_GENERATION_CONFIG.similarityThresholds.maxWordDifference;
   
   if (isIdentical || containsAllTaskWords || isTooSimilar) {
@@ -3543,14 +3665,19 @@ export async function generateDescription(
       (!hasMultiWordPhrase && onlySingleWordNouns)
     );
     if (preferUserInputFirst) {
-      const taskNameFragment = taskName.trim().toLowerCase().replace(/[.;:!?]+$/, '');
-      const fragmentWithPeriod = taskNameFragment.endsWith('.') ? taskNameFragment : taskNameFragment + '.';
       const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
       const opener = optionIndex != null && templateKeys.length > 0
         ? (DESCRIPTION_GENERATION_CONFIG.descriptionTemplates as Record<string, string>)[templateKeys[optionIndex % templateKeys.length]] ?? DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves
         : DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
-      description = normalizeSentenceUSEnglish(`${opener} ${fragmentWithPeriod}`);
-      logger.debug('Using task-name-based description (user input first)', { taskNameWordCount, minWordsForUserInputFirst, optionIndex });
+      description = buildTaskNameWithEnrichment(
+        taskName,
+        opener,
+        domainTerms,
+        domainRef,
+        finalVerbs,
+        finalNouns,
+      );
+      logger.debug('Using task-name-based description with domain enrichment', { taskNameWordCount, minWordsForUserInputFirst, optionIndex });
     } else {
       logger.debug(`🔧 Using local sentence building`);
       const normalizedEffortScore = effortScore !== undefined && effortScore >= 1 && effortScore <= 5 
@@ -3579,122 +3706,60 @@ export async function generateDescription(
     usedContext: description.length > 0 && searchContext.length > 0
   });
 
-  // Replace poor "X and Y" noun-list descriptions (e.g. "using a car and a search") with task-name-based description
+  // Replace poor "X and Y" noun-list descriptions with user-input-anchored + domain-enriched description
   if (description && isPoorNounListDescription(description, taskName)) {
-    const taskNameLower = taskName.toLowerCase().trim();
     const opener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
-    description = normalizeSentenceUSEnglish(`${opener} ${taskNameLower.endsWith('.') ? taskNameLower : taskNameLower + '.'}`);
-    logger.debug('Replaced poor noun-list description with task-name-based description');
+    description = buildTaskNameWithEnrichment(taskName, opener, domainTerms, domainRef, finalVerbs, finalNouns);
+    logger.debug('Replaced poor noun-list description with enriched task-name-based description');
   }
 
   // STEP 5: Check if description is too similar to task name or needs improvement
-  // Use taskNameLower and descriptionLower already declared above for domain detection
   const taskNameLowerForComparison = taskName.toLowerCase().trim();
   const descriptionLowerForComparison = description ? description.toLowerCase().trim() : '';
   
-  // Check if description is identical to task name
   const isIdenticalToTaskName = descriptionLowerForComparison === taskNameLowerForComparison;
   
-  // Check if description contains all task name words (too similar)
   const taskWordsForComparison = taskNameLowerForComparison.split(/\s+/).filter(w => w.length >= 2);
   const descriptionWordsForComparison = descriptionLowerForComparison.split(/\s+/).filter(w => w.length >= 2);
-  const containsAllTaskWords = taskWordsForComparison.length > 0 && 
+  const stopWordsForComparison = new Set<string>((DESCRIPTION_GENERATION_CONFIG.stopWords ?? []) as readonly string[]);
+
+  // Count how many description content words are NOT in the task name (enrichment words)
+  const enrichmentWords = descriptionWordsForComparison.filter(w =>
+    !stopWordsForComparison.has(w) && !taskWordsForComparison.includes(w)
+  );
+  const hasEnrichmentBeyondTaskName = enrichmentWords.length >= 2;
+
+  // Only flag "contains all task words" when the description adds no enrichment
+  const containsAllTaskWords = !hasEnrichmentBeyondTaskName &&
+    taskWordsForComparison.length > 0 && 
     taskWordsForComparison.every(word => descriptionLowerForComparison.includes(word));
   
-  // Check if description is mostly task name words (80%+ overlap)
   const commonWordsForComparison = taskWordsForComparison.filter(word => descriptionWordsForComparison.includes(word));
   const wordOverlapRatio = taskWordsForComparison.length > 0 ? commonWordsForComparison.length / taskWordsForComparison.length : 0;
-  const isTooSimilarToTaskName = wordOverlapRatio >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.wordOverlapRatio && 
+  const isTooSimilarToTaskName = !hasEnrichmentBeyondTaskName &&
+    wordOverlapRatio >= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.wordOverlapRatio && 
     descriptionWordsForComparison.length <= taskWordsForComparison.length + DESCRIPTION_GENERATION_CONFIG.similarityThresholds.maxWordDifference;
   
-      const isDescriptionTooShort = description && description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.descriptionTooShortThreshold;
-  // Check if description is too generic (very short or uses common generic verbs)
+  const isDescriptionTooShort = description && description.trim().length < DESCRIPTION_GENERATION_CONFIG.sentenceLengthThresholds.descriptionTooShortThreshold;
   const genericVerbs = DESCRIPTION_GENERATION_CONFIG.genericVerbs;
-      const isDescriptionTooGeneric = description && (
+  const isDescriptionTooGeneric = description && (
     description.split(' ').length <= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.maxGenericWordCount && 
     genericVerbs.some(verb => description.toLowerCase().includes(verb))
   );
 
-  // Check if description needs improvement (too short, generic, identical to task name, or too similar)
+  // Rebuild only when description is empty, too short, too generic, or adds nothing beyond the task name
   if ((!description || description.trim().length === 0 || isDescriptionTooShort || isDescriptionTooGeneric || 
        isIdenticalToTaskName || containsAllTaskWords || isTooSimilarToTaskName)) {
-    // Rebuild description using domain terminology to ensure it's contextual
-    // Never use task name directly - always build a contextual sentence
-    logger.debug(`Description is empty/short/generic, rebuilding with domain terminology`);
+    logger.debug(`Description is empty/short/generic, rebuilding with user-input-anchored enrichment`);
     
-    // Use the already declared taskNameLower from domain detection above
-    const taskNameLowerForRebuild = taskName.toLowerCase();
-    const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainRef];
-    
-    // Get domain phrases that relate to the task name (share at least one word) so we don't insert unrelated terms like "report" or "forecast"
-    const taskWordsForRebuild = taskNameLowerForRebuild.split(/\s+/).filter(w => w.length >= 2);
-    const domainPhrases = domainTerms.phrases.filter(phrase => {
-      const phraseLower = phrase.toLowerCase();
-      if (taskNameLowerForRebuild.includes(phraseLower) || phraseLower.length <= DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minPhraseLength) return false;
-      const phraseWords = phraseLower.split(/\s+/);
-      const relatesToTask = phraseWords.some(pw => taskWordsForRebuild.some(tw => tw.includes(pw) || pw.includes(tw)));
-      return relatesToTask;
-    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
-    
-    const domainVerbs = domainTerms.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
-    const domainNounsForFallback = domainTerms.nouns.filter(noun => {
-      const n = noun.toLowerCase();
-      return taskWordsForRebuild.some(tw => tw.includes(n) || n.includes(tw));
-    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.domainTerms);
-    
-    // Get extracted terms; prefer task-relevant final terms over generic domain lists
-    const actionVerb = finalVerbs.length > 0 ? finalVerbs[0] : (domainVerbs.length > 0 ? domainVerbs[0] : '');
-    const contextNouns = finalNouns.length > 0 ? finalNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (domainNounsForFallback.length > 0 ? domainNounsForFallback.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
-    // Only use keywords that relate to the task name (share at least one word) so we don't insert "milestone", "customer", "forecast", etc.
-    const relevantKeywords = finalKeywords.filter(kw => {
-      const kwLower = kw.toLowerCase();
-      if (taskNameLowerForRebuild.includes(kwLower) || kwLower.length < DESCRIPTION_GENERATION_CONFIG.similarityThresholds.minKeywordLength) return false;
-      const kwWords = kwLower.split(/\s+/).filter(w => w.length >= 2);
-      const relatesToTask = kwWords.some(pw => taskWordsForRebuild.some(tw => tw.includes(pw) || pw.includes(tw)));
-      return relatesToTask;
-    }).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
-    
-    // Build contextual sentence using available terms - clean all inputs first
-    const cleanedActionVerb = actionVerb ? cleanText(actionVerb) : '';
-    const cleanedContextNouns = contextNouns.map(n => cleanText(n)).filter(n => n.length > 0 && isValidKeyword(n));
-    const cleanedRelevantKeywords = relevantKeywords.map(kw => cleanText(kw)).filter(kw => kw.length > 0 && isValidKeyword(kw));
-    
-    // ENHANCED: Build contextual sentence with template variation
     const templateKeys = Object.keys(DESCRIPTION_GENERATION_CONFIG.descriptionTemplates);
     const fallbackVariationSeed = Math.random();
     const selectedTemplate = templateKeys[Math.floor(fallbackVariationSeed * templateKeys.length)];
     const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates[selectedTemplate as keyof typeof DESCRIPTION_GENERATION_CONFIG.descriptionTemplates] || DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
     
-    const verbForm = cleanedActionVerb ? getVerbFormForTemplate(cleanedActionVerb, selectedTemplate) : '';
+    description = buildTaskNameWithEnrichment(taskName, templateOpener, domainTerms, domainRef, finalVerbs, finalNouns);
     
-    const rebuildConnector = getConnectorForTemplate(selectedTemplate, fallbackVariationSeed);
-    if (domainPhrases.length > 0) {
-      const bestPhrase = cleanText(domainPhrases[0]);
-      if (cleanedActionVerb) {
-        description = `${templateOpener} ${verbForm} ${bestPhrase.toLowerCase()}.`;
-      } else {
-        description = `${templateOpener} ${bestPhrase.toLowerCase()}.`;
-      }
-    } else if (cleanedActionVerb && cleanedContextNouns.length > 0) {
-      const formattedNouns = formatItemList(cleanedContextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, true);
-      description = `${templateOpener} ${verbForm} ${formattedNouns}.`;
-    } else if (cleanedActionVerb && cleanedRelevantKeywords.length > 0) {
-      const formattedKeywords = formatItemList(cleanedRelevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false);
-      description = `${templateOpener} ${verbForm} ${formattedKeywords}.`;
-    } else if (cleanedActionVerb) {
-      description = `${templateOpener} ${verbForm} ${domainGuidance.toLowerCase()}.`;
-    } else if (cleanedContextNouns.length > 0) {
-      const formattedNouns = formatItemList(cleanedContextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, true);
-      description = `${templateOpener} ${formattedNouns} ${rebuildConnector} ${domainGuidance.toLowerCase()}.`;
-    } else if (cleanedRelevantKeywords.length > 0) {
-      const formattedKeywords = formatItemList(cleanedRelevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false);
-      description = `${templateOpener} ${formattedKeywords} ${rebuildConnector} ${domainGuidance.toLowerCase()}.`;
-    } else {
-      // No task-specific terms: always include task name so description reflects user input
-      description = `${templateOpener} ${taskNameLowerForRebuild}. ${domainGuidance.toLowerCase()}`;
-    }
-    
-    logger.debug(`Rebuilt description using domain terminology: "${description.substring(0, 50)}..."`);
+    logger.debug(`Rebuilt description using enriched approach: "${description.substring(0, 50)}..."`);
   }
 
   // STEP 4: Calculate confidence based on Browser AI-extracted terms
