@@ -672,9 +672,22 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
 
     let tasks: unknown[] = [];
     try {
-      const tasksData = await kv.getByPrefix(`workspace_${workspaceId}_task_`);
+      const taskPrefix = `workspace_${workspaceId}_task_`;
+      const tasksData = await kv.getByPrefix(taskPrefix);
       const tasksList = Array.isArray(tasksData) ? tasksData : [];
-      tasks = tasksList.map((item: { key?: string; value?: unknown }) => item && typeof item === 'object' && 'value' in item ? item.value : null).filter(Boolean);
+
+      // Filter to only keys that literally start with the prefix
+      // (SQL LIKE treats _ as a single-char wildcard, so _tasks_modified can match _task_%)
+      const taskItems = tasksList.filter((item: { key?: string }) =>
+        item?.key?.startsWith(taskPrefix) && item.key.length > taskPrefix.length
+      );
+
+      tasks = taskItems
+        .map((item: { key?: string; value?: unknown }) => {
+          const v = item && typeof item === 'object' && 'value' in item ? item.value : null;
+          return v && typeof v === 'object' && 'id' in v ? v : null;
+        })
+        .filter(Boolean);
     } catch (e) {
       console.log('Error in getByPrefix or mapping tasks:', e);
       tasks = [];
@@ -695,7 +708,7 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
     }
     const headers: Record<string, string> = {};
     if (lastModified) headers['Last-Modified'] = String(lastModified);
-    return c.json({ tasks }, 200, { headers });
+    return c.json({ tasks }, 200, headers);
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     let errStr = errMsg;
@@ -705,7 +718,7 @@ app.get("/taskzm-database-function/tasks/:workspaceId", async (c) => {
     const isIterableError = /is not iterable|not iterable|v is not iterable/i.test(errMsg) || /not iterable/i.test(errStr);
     if (isIterableError) {
       console.log('Iterable guard: returning empty tasks to avoid 500:', errMsg);
-      return c.json({ tasks: [] }, 200, {});
+      return c.json({ tasks: [] }, 200);
     }
     console.log('Error fetching tasks:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
@@ -721,7 +734,14 @@ app.post("/taskzm-database-function/tasks/:workspaceId", async (c) => {
     }
 
     const workspaceId = c.req.param('workspaceId');
-    const task = await c.req.json();
+    const body = await c.req.json();
+
+    // The client sends the task directly (not wrapped), but handle both formats
+    const task = body.task || body;
+
+    if (!task || !task.id) {
+      return c.json({ error: 'Task data with id is required' }, 400);
+    }
 
     // Verify workspace exists
     const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
