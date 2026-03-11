@@ -9,19 +9,33 @@ const SIDEBAR_INDEX = { dashboard: 0, notifications: 1, todayAgenda: 2, inbox: 3
 
 /**
  * Wait until the app is past the loading screen and the main UI is interactive.
+ *
+ * The demo disclaimer dialog appears on every page load because sessionStorage
+ * (where "demo_disclaimer_seen" is stored) is not preserved by Playwright's
+ * storageState. The dialog shows after auth completes + a 1-second delay,
+ * so we must wait generously for it.
  */
 async function waitForAppReady(page: Page) {
   const sidebar = page.locator('[data-tour="sidebar"]');
   await sidebar.waitFor({ state: 'visible', timeout: 30_000 });
 
+  // Pre-set sessionStorage so the disclaimer doesn't appear at all
+  await page.evaluate(() => {
+    try { sessionStorage.setItem('demo_disclaimer_seen', 'true'); } catch {}
+  });
+
+  // If the disclaimer already appeared before we could set sessionStorage, dismiss it
   const disclaimerButton = page.getByRole('button', { name: /I Understand, Continue/i });
   try {
-    await disclaimerButton.waitFor({ state: 'visible', timeout: 3_000 });
+    await disclaimerButton.waitFor({ state: 'visible', timeout: 5_000 });
     await disclaimerButton.click();
-    await disclaimerButton.waitFor({ state: 'hidden', timeout: 3_000 });
+    await disclaimerButton.waitFor({ state: 'hidden', timeout: 5_000 });
   } catch {
-    // Not shown — already dismissed or not a demo user
+    // Already dismissed or never appeared
   }
+
+  // Brief settle time for animations / lazy-loaded content
+  await page.waitForTimeout(500);
 }
 
 /**
@@ -50,7 +64,7 @@ test.describe('App screenshots', () => {
     await waitForAppReady(page);
     await page.locator('[data-tour="kanban-board"]').waitFor({ state: 'visible', timeout: 15_000 });
 
-    // Click the Week/Month toggle switch (role="switch") inside the toggle container
+    // Click the Week/Month toggle switch inside the toggle container
     const viewToggle = page.locator('[data-tour="calendar-month-view-toggle"]').locator('..').getByRole('switch');
     await viewToggle.click();
     await page.waitForTimeout(2000);
@@ -80,7 +94,6 @@ test.describe('App screenshots', () => {
     await waitForAppReady(page);
     await page.locator('[data-tour="kanban-board"]').waitFor({ state: 'visible', timeout: 15_000 });
 
-    // There are two re-schedule buttons (desktop header + AI panel); pick the first visible one
     const rescheduleButton = page.locator('[data-tour="re-schedule"]').first();
     await rescheduleButton.waitFor({ state: 'visible', timeout: 10_000 });
     await rescheduleButton.click();
