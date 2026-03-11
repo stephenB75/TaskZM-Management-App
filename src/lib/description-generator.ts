@@ -320,8 +320,6 @@ function getConnectorForTemplate(selectedTemplate: string, seed: number = 0): st
     const key = options[Math.floor(seed * options.length) % options.length];
     if (key && connectors[key]) return connectors[key];
   }
-  if (selectedTemplate === 'aims' || selectedTemplate === 'targets') return connectors.to ?? 'to';
-  if (selectedTemplate === 'focuses' || selectedTemplate === 'centers') return connectors.on ?? 'on';
   return connectors.for ?? 'for';
 }
 
@@ -2497,9 +2495,7 @@ function buildElaborateContextualDescription(
         // Template: "This task [verb] [phrase] related to [keywords]"
         // ENHANCED: Incorporate task-specific keywords more naturally
         const formattedKeywords = formatItemList(limitedKeywords, DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false);
-        const keywordConnector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+        const keywordConnector = getConnectorForTemplate(selectedTemplate, variationSeed);
         
         // If task has main action, use it to create more contextual sentence
         if (taskNameAnalysis.mainAction && taskNameAnalysis.mainAction !== verbForm) {
@@ -2519,13 +2515,8 @@ function buildElaborateContextualDescription(
       } else if (limitedKeywords.length > 0) {
         // Template: "This task [phrase] related to [keywords]"
         const formattedKeywords = formatItemList(limitedKeywords, DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false);
-        const keywordConnector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-          : selectedTemplate === 'focuses' || selectedTemplate === 'centers'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
-          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+        const keywordConnector = getConnectorForTemplate(selectedTemplate, variationSeed);
         
-        // ENHANCED: Create more natural sentence structure
         if (taskNameAnalysis.mainObject) {
           description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject} ${keywordConnector} ${formattedKeywords}.`;
         } else {
@@ -2542,18 +2533,10 @@ function buildElaborateContextualDescription(
       } else {
         // Template: "This task [phrase]"
         // ENHANCED: Add task context for better specificity
-        const finalConnector = selectedTemplate === 'focuses' || selectedTemplate === 'centers'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
-          : '';
-        
         if (taskNameAnalysis.mainObject && !cleanedPhrase.toLowerCase().includes(taskNameAnalysis.mainObject.toLowerCase())) {
-          description = finalConnector
-            ? `${templateOpener} ${finalConnector} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject}.`
-            : `${templateOpener} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject}.`;
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${taskNameAnalysis.mainObject}.`;
         } else {
-          description = finalConnector
-            ? `${templateOpener} ${finalConnector} ${cleanedPhrase.toLowerCase()}.`
-            : `${templateOpener} ${cleanedPhrase.toLowerCase()}.`;
+          description = `${templateOpener} ${cleanedPhrase.toLowerCase()}.`;
         }
       }
     }
@@ -2604,23 +2587,16 @@ function buildElaborateContextualDescription(
       ? formatItemList(relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false)
       : '';
     
-    // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+    const contentConnector = getConnectorForTemplate(selectedTemplate, variationSeed);
     if (verbForm) {
       if (formattedKeywords) {
-        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-        description = `${templateOpener} ${verbForm} ${formattedNouns} ${connector} ${formattedKeywords}.`;
+        description = `${templateOpener} ${verbForm} ${formattedNouns} ${contentConnector} ${formattedKeywords}.`;
       } else {
         description = `${templateOpener} ${verbForm} ${formattedNouns}.`;
       }
     } else {
-      // If verb form is empty (was a noun), build sentence without verb form
       if (formattedKeywords) {
-        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-        description = `${templateOpener} ${formattedNouns} ${connector} ${formattedKeywords}.`;
+        description = `${templateOpener} ${formattedNouns} ${contentConnector} ${formattedKeywords}.`;
       } else {
         description = `${templateOpener} ${formattedNouns}.`;
       }
@@ -2689,61 +2665,36 @@ function buildElaborateContextualDescription(
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
         const verbForm = getVerbFormForTemplate(actionVerb, selectedTemplate);
         
-        // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+        const phraseConnector = getConnectorForTemplate(selectedTemplate, variationSeed);
         if (verbForm) {
           if (contextNouns.length > 0) {
-            const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-              ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
-              : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-            description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
+            description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${phraseConnector} ${contextNouns[0]}.`;
           } else if (relevantKeywords.length > 0) {
-            const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-              ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-              : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-            description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+            description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${phraseConnector} ${relevantKeywords[0]}.`;
           } else {
             description = `${templateOpener} ${verbForm} ${cleanedBestPhrase.toLowerCase()}.`;
           }
         } else {
-          // If verb form is empty (was a noun), build sentence without verb form
           if (contextNouns.length > 0) {
-            const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-              ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
-              : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-            description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${connector} ${contextNouns[0]}.`;
+            description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${phraseConnector} ${contextNouns[0]}.`;
           } else if (relevantKeywords.length > 0) {
-            const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-              ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-              : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-            description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${connector} ${relevantKeywords[0]}.`;
+            description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${phraseConnector} ${relevantKeywords[0]}.`;
           } else {
             description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()}.`;
           }
         }
       } else {
+        const elseConnector = getConnectorForTemplate(selectedTemplate, variationSeed);
         if (contextNouns.length > 0) {
           const nounsList = contextNouns.length === 1 ? contextNouns[0] : 
                            contextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-          const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-            ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
-            : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-          description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${connector} ${nounsList}.`;
+          description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${elseConnector} ${nounsList}.`;
         } else if (relevantKeywords.length > 0) {
           const keywordsList = relevantKeywords.length === 1 ? relevantKeywords[0] : 
                               relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin).join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-          const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-            ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-            : selectedTemplate === 'focuses' || selectedTemplate === 'centers'
-            ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
-            : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-          description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${connector} ${keywordsList}.`;
+          description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()} ${elseConnector} ${keywordsList}.`;
         } else {
-          const connector = selectedTemplate === 'focuses' || selectedTemplate === 'centers'
-            ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
-            : '';
-          description = connector
-            ? `${templateOpener} ${connector} ${cleanedBestPhrase.toLowerCase()}.`
-            : `${templateOpener} ${cleanedBestPhrase.toLowerCase()}.`;
+          description = `${templateOpener} ${cleanedBestPhrase.toLowerCase()}.`;
         }
       }
     }
@@ -2770,23 +2721,16 @@ function buildElaborateContextualDescription(
       ? formatItemList(relevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false)
       : '';
     
-    // Only use verb form if it's valid (not empty - meaning it's actually a verb)
+    const vnConnector = getConnectorForTemplate(selectedTemplate, variationSeed);
     if (verbForm) {
       if (formattedKeywords) {
-        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-        description = `${templateOpener} ${verbForm} ${formattedNouns} ${connector} ${formattedKeywords}.`;
+        description = `${templateOpener} ${verbForm} ${formattedNouns} ${vnConnector} ${formattedKeywords}.`;
       } else {
         description = `${templateOpener} ${verbForm} ${formattedNouns}.`;
       }
     } else {
-      // If verb form is empty (was a noun), build sentence without verb form
       if (formattedKeywords) {
-        const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-          : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-        description = `${templateOpener} ${formattedNouns} ${connector} ${formattedKeywords}.`;
+        description = `${templateOpener} ${formattedNouns} ${vnConnector} ${formattedKeywords}.`;
       } else {
         description = `${templateOpener} ${formattedNouns}.`;
       }
@@ -2870,28 +2814,17 @@ function buildElaborateContextualDescription(
     const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
     if (relevantKeywords.length > 0) {
       const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
-      const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-        ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-        : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
+      const nkConnector = getConnectorForTemplate(selectedTemplate, variationSeed);
       if (actionVerb) {
-        description = `${templateOpener} ${verbForm} ${contextNouns[0]} ${connector} ${keywordsList}.`;
+        description = `${templateOpener} ${verbForm} ${contextNouns[0]} ${nkConnector} ${keywordsList}.`;
       } else {
-        description = `${templateOpener} ${contextNouns[0]} ${connector} ${keywordsList}.`;
+        description = `${templateOpener} ${contextNouns[0]} ${nkConnector} ${keywordsList}.`;
       }
     } else {
-      const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-        ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
-        : selectedTemplate === 'focuses' || selectedTemplate === 'centers'
-        ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
-        : '';
       if (actionVerb) {
-        description = connector
-          ? `${templateOpener} ${verbForm} ${contextNouns[0]} ${connector}.`
-          : `${templateOpener} ${verbForm} ${contextNouns[0]}.`;
+        description = `${templateOpener} ${verbForm} ${contextNouns[0]}.`;
       } else {
-        description = connector
-          ? `${templateOpener} ${contextNouns[0]} ${connector}.`
-          : `${templateOpener} ${contextNouns[0]}.`;
+        description = `${templateOpener} ${contextNouns[0]}.`;
       }
     }
   }
@@ -3734,17 +3667,13 @@ export async function generateDescription(
     
     const verbForm = cleanedActionVerb ? getVerbFormForTemplate(cleanedActionVerb, selectedTemplate) : '';
     
+    const rebuildConnector = getConnectorForTemplate(selectedTemplate, fallbackVariationSeed);
     if (domainPhrases.length > 0) {
       const bestPhrase = cleanText(domainPhrases[0]);
       if (cleanedActionVerb) {
         description = `${templateOpener} ${verbForm} ${bestPhrase.toLowerCase()}.`;
       } else {
-        const connector = selectedTemplate === 'focuses' || selectedTemplate === 'centers'
-          ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.on
-          : '';
-        description = connector
-          ? `${templateOpener} ${connector} ${bestPhrase.toLowerCase()}.`
-          : `${templateOpener} ${bestPhrase.toLowerCase()}.`;
+        description = `${templateOpener} ${bestPhrase.toLowerCase()}.`;
       }
     } else if (cleanedActionVerb && cleanedContextNouns.length > 0) {
       const formattedNouns = formatItemList(cleanedContextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, true);
@@ -3756,16 +3685,10 @@ export async function generateDescription(
       description = `${templateOpener} ${verbForm} ${domainGuidance.toLowerCase()}.`;
     } else if (cleanedContextNouns.length > 0) {
       const formattedNouns = formatItemList(cleanedContextNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, true);
-      const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-        ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.to
-        : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for;
-      description = `${templateOpener} ${formattedNouns} ${connector} ${domainGuidance.toLowerCase()}.`;
+      description = `${templateOpener} ${formattedNouns} ${rebuildConnector} ${domainGuidance.toLowerCase()}.`;
     } else if (cleanedRelevantKeywords.length > 0) {
       const formattedKeywords = formatItemList(cleanedRelevantKeywords.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsMaxJoin), DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and, false);
-      const connector = selectedTemplate === 'aims' || selectedTemplate === 'targets'
-        ? DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.aimed
-        : DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.relatedTo;
-      description = `${templateOpener} ${formattedKeywords} ${connector} ${domainGuidance.toLowerCase()}.`;
+      description = `${templateOpener} ${formattedKeywords} ${rebuildConnector} ${domainGuidance.toLowerCase()}.`;
     } else {
       // No task-specific terms: always include task name so description reflects user input
       description = `${templateOpener} ${taskNameLowerForRebuild}. ${domainGuidance.toLowerCase()}`;
