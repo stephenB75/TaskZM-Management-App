@@ -10,11 +10,9 @@ import { test, type Page } from '@playwright/test';
  * demo-account disclaimer dialog if it appears.
  */
 async function waitForAppReady(page: Page) {
-  // The sidebar is rendered once auth + workspace init finishes
   const sidebar = page.locator('[data-tour="sidebar"]');
   await sidebar.waitFor({ state: 'visible', timeout: 30_000 });
 
-  // Dismiss the demo disclaimer if it pops up on this page load
   const disclaimerButton = page.getByRole('button', { name: /I Understand, Continue/i });
   try {
     await disclaimerButton.waitFor({ state: 'visible', timeout: 3_000 });
@@ -25,39 +23,70 @@ async function waitForAppReady(page: Page) {
   }
 }
 
-test.describe('App screenshots', () => {
-  test('Dashboard desktop - Kanban view', async ({ page }) => {
-    await page.goto('/');
-    await waitForAppReady(page);
-    await page.locator('[data-tour="kanban-board"]').waitFor({ state: 'visible', timeout: 15_000 });
-    // Allow lazy-loaded task cards / animations to settle
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'screenshots/dashboard-desktop.png', fullPage: true });
-  });
+/**
+ * Navigate to a view by clicking the corresponding sidebar button.
+ * The app doesn't support URL-based view routing, so we must use the sidebar.
+ */
+async function navigateToView(page: Page, viewLabel: string) {
+  const sidebarButton = page.locator('[data-tour="sidebar"]').getByRole('button', { name: viewLabel });
+  await sidebarButton.click();
+}
 
-  test('Kanban board only', async ({ page }) => {
+test.describe('App screenshots', () => {
+  test('Dashboard Week View', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
     const kanban = page.locator('[data-tour="kanban-board"]');
     await kanban.waitFor({ state: 'visible', timeout: 15_000 });
-    await page.waitForTimeout(1000);
-    await kanban.screenshot({ path: 'screenshots/kanban-board.png' });
-    console.log('Kanban screenshot saved to screenshots/kanban-board.png');
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: 'screenshots/dashboard-week-view.png', fullPage: true });
   });
 
-  test('Inbox view', async ({ page }) => {
-    await page.goto('/?view=inbox');
+  test('Dashboard Month View', async ({ page }) => {
+    await page.goto('/');
     await waitForAppReady(page);
+    await page.locator('[data-tour="kanban-board"]').waitFor({ state: 'visible', timeout: 15_000 });
+
+    // Toggle from Week to Month by clicking the "Month" label or the switch
+    const monthLabel = page.locator('text=Month').first();
+    await monthLabel.click();
+    // Wait for the month calendar to render
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: 'screenshots/dashboard-month-view.png', fullPage: true });
+  });
+
+  test('Inbox Side Panel', async ({ page }) => {
+    await page.goto('/');
+    await waitForAppReady(page);
+    await navigateToView(page, 'Inbox');
     await page.locator('[data-tour="inbox-panel"]').waitFor({ state: 'visible', timeout: 15_000 });
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: 'screenshots/inbox-desktop.png', fullPage: true });
+    await page.screenshot({ path: 'screenshots/inbox-side-panel.png', fullPage: true });
   });
 
-  test('Folders view', async ({ page }) => {
-    await page.goto('/?view=folders');
+  test('Today Agenda Side Panel', async ({ page }) => {
+    await page.goto('/');
     await waitForAppReady(page);
-    // Wait for the side panel to render (folders, today, inbox all use the same panel area)
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'screenshots/folders-desktop.png', fullPage: true });
+    await navigateToView(page, 'Today Agenda');
+    await page.locator('[data-tour="today-panel"]').waitFor({ state: 'visible', timeout: 15_000 });
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: 'screenshots/today-agenda-side-panel.png', fullPage: true });
+  });
+
+  test('AI Re-Scheduler Dialog', async ({ page }) => {
+    await page.goto('/');
+    await waitForAppReady(page);
+    await page.locator('[data-tour="kanban-board"]').waitFor({ state: 'visible', timeout: 15_000 });
+
+    // Click the Re-schedule button in the dashboard header
+    const rescheduleButton = page.locator('[data-tour="re-schedule"]');
+    await rescheduleButton.waitFor({ state: 'visible', timeout: 10_000 });
+    await rescheduleButton.click();
+
+    // Wait for the dialog to appear
+    const dialog = page.getByRole('dialog');
+    await dialog.waitFor({ state: 'visible', timeout: 10_000 });
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: 'screenshots/ai-rescheduler-dialog.png' });
   });
 });
