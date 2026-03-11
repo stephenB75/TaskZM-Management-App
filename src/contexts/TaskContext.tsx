@@ -272,14 +272,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     loadTasksFromServer(workspaceId).then((serverTasks) => {
       if (!isMounted) return;
 
-      // After loading from server, check for any local-only tasks
+      // After loading from server, check for any local-only tasks (not yet on server) and push them
       const localTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
       // Use serverTasks directly instead of tasks state to avoid stale closure
       const serverTaskIds = new Set((serverTasks || []).map(t => t.id));
-      
-      // Find tasks that exist locally but not on server
+      // Include tasks created offline (createdBy 'local') or by current user but missing from server (e.g. just added while GET was broken)
       const localOnlyTasks = localTasks.filter(task => {
-        return !serverTaskIds.has(task.id) && (task.createdBy === 'local' || !task.createdBy);
+        if (serverTaskIds.has(task.id)) return false;
+        return task.createdBy === 'local' || !task.createdBy || task.createdBy === user?.id;
       });
 
       if (localOnlyTasks.length > 0) {
@@ -738,13 +738,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       if (error) {
         logger.error('Error loading tasks from server:', error);
         
-        // Check if it's an authentication error
+        // Check it's an authentication error
         if (error.message.includes('Authentication')) {
           toast.error('Authentication failed', {
             description: 'Please sign in again to continue.',
           });
           // Don't fall back to localStorage for auth errors
-          const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', []));
+          const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
           const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
           setTasks(ensureTaskArray(final));
@@ -752,13 +752,19 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
         
         // For other errors, fall back to localStorage if available
-        const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', []));
+        const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
         if (savedTasks.length > 0) {
           logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
           const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
           setTasks(ensureTaskArray(final));
           saveToLocalStorage('tasks', final, user?.id);
+          // Try to push local tasks to server in background so they persist when GET is failing
+          Promise.all(
+            final.map((task) =>
+              api.saveTask(wsId, task).then(() => logger.debug('Pushed local task to server:', task.id)).catch((err) => logger.debug('Push local task failed:', task.id, err))
+            )
+          ).catch(() => {});
           const now = Date.now();
           const COOLDOWN_MS = 10000; // Only show this toast once per 10s so duplicate load calls don't stack
           if (now - lastLoadTasksOfflineToastRef.current > COOLDOWN_MS) {
@@ -896,13 +902,19 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       // Unexpected error (shouldn't happen with new error handling, but keep as safety net)
       logger.error('Unexpected error loading tasks from server:', error);
-      const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', []));
+      const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
       if (savedTasks.length > 0) {
         logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
         const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
         const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
         setTasks(ensureTaskArray(final));
         saveToLocalStorage('tasks', final, user?.id);
+        // Try to push local tasks to server in background
+        Promise.all(
+          final.map((task) =>
+            api.saveTask(wsId, task).then(() => logger.debug('Pushed local task to server:', task.id)).catch((err) => logger.debug('Push local task failed:', task.id, err))
+          )
+        ).catch(() => {});
         const now = Date.now();
         const COOLDOWN_MS = 10000;
         if (now - lastLoadTasksOfflineToastRef.current > COOLDOWN_MS) {
