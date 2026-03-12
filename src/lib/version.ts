@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.21';
-export const VERSION_NAME = 'Task changes persist after refresh';
+export const APP_VERSION = '1.0.22';
+export const VERSION_NAME = 'AI Description User Input Coordination';
 export const VERSION_DATE = 'February 20, 2026';
-export const BUILD_NUMBER = '20260220-1';
+export const BUILD_NUMBER = '20260220-2';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,21 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.22',
+    date: 'February 20, 2026',
+    name: 'AI Description User Input Coordination',
+    changes: [
+      'Added buildTaskNameWithEnrichment helper that anchors descriptions on the user task name and enriches with domain library phrases and nouns',
+      'preferUserInputFirst path now produces enriched descriptions instead of bare task name wrapping (e.g. "scheduling a doctor appointment, ensuring proper health management")',
+      'Added PRIORITY 0.5 in buildElaborateContextualDescription so user input is always the foundation with domain terms as context',
+      'Relaxed too-similar-to-task-name checks: descriptions containing task words plus 2+ enrichment words are no longer stripped and rebuilt',
+      'Rebuild fallback now uses buildTaskNameWithEnrichment instead of domain-only sentence building',
+      'Fixed AI description sentence structure: embedded required prepositions in descriptionTemplates (focuses on, deals with, relates to, etc.)',
+      'Adjusted templateConnectors to secondary connectors to prevent redundant phrasing',
+      'Removed ~15 ad-hoc connector insertion blocks in favor of centralized getConnectorForTemplate calls',
+    ],
+  },
   {
     version: '1.0.21',
     date: 'February 20, 2026',
