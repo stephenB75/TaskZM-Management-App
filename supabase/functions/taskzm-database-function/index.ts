@@ -2378,7 +2378,7 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
       }, 500);
     }
 
-    // Single scope: calendar.readonly covers calendar list + events. Avoid requesting extra scopes that aren't approved on the consent screen (causes "unverified app" and 100-user cap).
+    // Single scope: calendar.readonly (calendar list + events). Google classifies ALL Calendar read scopes as "sensitive," so the "sensitive info" warning appears until the app is verified. We do not request any other scopes. See docs/GOOGLE_CALENDAR_CALLBACK_FIX.md.
     const scopes = ['https://www.googleapis.com/auth/calendar.readonly'];
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
