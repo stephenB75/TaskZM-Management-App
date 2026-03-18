@@ -1,0 +1,8 @@
+# Supabase project configuration.
+# See: https://supabase.com/docs/guides/local-development/managing-config
+
+# Allow unauthenticated requests to reach taskzm-database-function.
+# Required for OAuth callbacks (Google/Outlook redirect with no Authorization header).
+# All protected routes still enforce auth via verifyUser() in handler code.
+[functions.taskzm-database-function]
+verify_jwt = false
