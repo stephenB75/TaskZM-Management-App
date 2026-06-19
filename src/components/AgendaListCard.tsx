@@ -58,6 +58,9 @@ export function AgendaListCard({
   const titleSize = compact ? AGENDA_LIST_CARD.compact.titleFontSizePx : AGENDA_LIST_CARD.titleFontSizePx;
   const timeSize = compact ? AGENDA_LIST_CARD.compact.timeFontSizePx : AGENDA_LIST_CARD.timeFontSizePx;
   const footerSize = compact ? AGENDA_LIST_CARD.compact.footerFontSizePx : AGENDA_LIST_CARD.footerFontSizePx;
+  const headerBodyGap = compact ? AGENDA_LIST_CARD.compact.headerBodyGapPx : AGENDA_LIST_CARD.headerBodyGapPx;
+  const bodyFooterGap = compact ? AGENDA_LIST_CARD.compact.bodyFooterGapPx : AGENDA_LIST_CARD.bodyFooterGapPx;
+  const accentLineMinHeight = compact ? AGENDA_LIST_CARD.compact.accentLineMinHeightPx : AGENDA_LIST_CARD.accentLineMinHeightPx;
 
   const hasTime = Boolean(allDayLabel || timePart);
 
@@ -96,7 +99,7 @@ export function AgendaListCard({
             className="flex-1 rounded-full mt-1"
             style={{
               width: AGENDA_LIST_CARD.accentLineWidthPx,
-              minHeight: compact ? 20 : AGENDA_LIST_CARD.accentLineMinHeightPx,
+              minHeight: accentLineMinHeight,
               backgroundColor: isDark ? AGENDA_LIST_CARD_COLORS.accentLineDark : AGENDA_LIST_CARD_COLORS.accentLine,
             }}
             aria-hidden
@@ -132,7 +135,7 @@ export function AgendaListCard({
                     <span
                       className="font-normal flex-shrink-0"
                       style={{
-                        fontSize: AGENDA_LIST_CARD.periodFontSizePx,
+                        fontSize: compact ? AGENDA_LIST_CARD.compact.periodFontSizePx : AGENDA_LIST_CARD.periodFontSizePx,
                         color: isDark ? AGENDA_LIST_CARD_COLORS.periodDark : AGENDA_LIST_CARD_COLORS.period,
                       }}
                     >
@@ -159,13 +162,14 @@ export function AgendaListCard({
           <div
             className="flex flex-col min-w-0"
             style={{
-              marginTop: AGENDA_LIST_CARD.headerBodyGapPx,
+              marginTop: headerBodyGap,
               gap: compact ? 2 : 4,
             }}
           >
             <h3
               className={cn(
-                'font-bold leading-snug line-clamp-2 break-words',
+                'font-bold leading-snug break-words',
+                compact ? 'line-clamp-1' : 'line-clamp-2',
                 titleDone && 'line-through opacity-60',
               )}
               style={{
@@ -190,18 +194,17 @@ export function AgendaListCard({
             )}
           </div>
 
-          {/* Footer: source · duration + badge (hidden in compact mode) */}
-          {!compact && (
+          {/* Footer: source · duration + badge */}
           <div
             className="flex items-center justify-between gap-2 mt-auto min-w-0"
-            style={{ marginTop: AGENDA_LIST_CARD.bodyFooterGapPx }}
+            style={{ marginTop: bodyFooterGap }}
           >
             <div
               className="flex items-center min-w-0 flex-1"
-              style={{ gap: 6, fontSize: footerSize, color: isDark ? AGENDA_LIST_CARD_COLORS.footerDark : AGENDA_LIST_CARD_COLORS.footer }}
+              style={{ gap: compact ? 4 : 6, fontSize: footerSize, color: isDark ? AGENDA_LIST_CARD_COLORS.footerDark : AGENDA_LIST_CARD_COLORS.footer }}
             >
               <Icon name={footerIcon} size={AGENDA_LIST_CARD.footerIconSizePx} weight="regular" className="flex-shrink-0" />
-              <span className="truncate flex-shrink-0">{footerSourceLabel}</span>
+              <span className="truncate">{footerSourceLabel}</span>
               {durationLabel && (
                 <>
                   <span
@@ -222,8 +225,8 @@ export function AgendaListCard({
               className="rounded-full font-semibold capitalize flex-shrink-0 whitespace-nowrap"
               style={{
                 fontSize: AGENDA_LIST_CARD.badgeFontSizePx,
-                paddingLeft: AGENDA_LIST_CARD.badgePaddingXPx,
-                paddingRight: AGENDA_LIST_CARD.badgePaddingXPx,
+                paddingLeft: compact ? 8 : AGENDA_LIST_CARD.badgePaddingXPx,
+                paddingRight: compact ? 8 : AGENDA_LIST_CARD.badgePaddingXPx,
                 paddingTop: AGENDA_LIST_CARD.badgePaddingYPx,
                 paddingBottom: AGENDA_LIST_CARD.badgePaddingYPx,
                 backgroundColor: badgeStyles.badgeBackground,
@@ -233,18 +236,6 @@ export function AgendaListCard({
               {badgeLabel}
             </span>
           </div>
-          )}
-          {compact && durationLabel && (
-            <span
-              className="font-medium flex-shrink-0 whitespace-nowrap mt-auto"
-              style={{
-                fontSize: footerSize,
-                color: isDark ? AGENDA_LIST_CARD_COLORS.footerDark : AGENDA_LIST_CARD_COLORS.footer,
-              }}
-            >
-              {durationLabel}
-            </span>
-          )}
         </div>
       </div>
     </div>

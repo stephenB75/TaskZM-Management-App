@@ -27,11 +27,15 @@ export const AGENDA_LIST_CARD = {
   bodyFooterGapPx: 10,
   footerDotSizePx: 3,
   compact: {
-    paddingPx: 8,
+    paddingPx: 10,
     titleFontSizePx: 13,
     timeFontSizePx: 12,
+    periodFontSizePx: 11,
     footerFontSizePx: 10,
     dotSizePx: 6,
+    accentLineMinHeightPx: 10,
+    bodyFooterGapPx: 6,
+    headerBodyGapPx: 3,
   },
 } as const;
 

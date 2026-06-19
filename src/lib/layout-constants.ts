@@ -323,11 +323,22 @@ export const TODAY_AGENDA_TIMELINE = {
   laneMinWidthPx: 200,
   /** Duration (minutes) below which timeline items use compact single-row layout so info is not clipped. */
   shortItemThresholdMinutes: 20,
+  /** Minimum block height (px) for items under shortItemThresholdMinutes — fits compact card without clipping. */
+  shortTaskComfortableBlockHeightPx: 92,
   /** Target height (px) for compact single-row layout inside a duration-sized block. */
-  shortItemCompactRowHeightPx: 48,
-  /** @deprecated Timeline blocks use duration * pxPerMinute; compact layout handles short items. */
-  shortTaskMinBlockHeightPx: 48,
+  shortItemCompactRowHeightPx: 92,
 } as const;
+
+/** Timeline block height from duration; short items get a comfortable minimum so cards are not clipped. */
+export function getTodayAgendaTimelineBlockHeightPx(durationMinutes: number): number {
+  const { pxPerMinute, minTimelineBlockHeightPx, shortItemThresholdMinutes, shortTaskComfortableBlockHeightPx } =
+    TODAY_AGENDA_TIMELINE;
+  const durationHeightPx = Math.round(durationMinutes * pxPerMinute);
+  if (durationMinutes < shortItemThresholdMinutes) {
+    return Math.max(durationHeightPx, shortTaskComfortableBlockHeightPx);
+  }
+  return Math.max(minTimelineBlockHeightPx, durationHeightPx);
+}
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 
 // Mobile Text Sizes (increased by 1 point for better readability)
