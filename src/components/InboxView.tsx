@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { useTasks } from "../contexts/TaskContext";
-import { useTeam } from "../contexts/TeamContext";
 import { usePermissions } from "../hooks/usePermissions";
 import { useAIScheduler } from "../hooks/useAIScheduler";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -19,8 +18,7 @@ import {
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Card } from "./ui/card";
-import { Badge } from "./ui/badge";
+import { InboxTaskCard } from "./InboxTaskCard";
 import { ScrollArea } from "./ui/scroll-area";
 import {
   Select,
@@ -31,11 +29,10 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, INBOX_CARD_SHADOW_MOBILE, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth } from "../lib/layout-constants";
-import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES, TASK_CARD_TEXT_COLORS } from "../lib/task-card-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { logger } from "../lib/logger";
-import { cn, getInitials, getAbbreviatedDisplayName, prepareTaskForDialog, sanitizeHTML, hasHTMLTags, getDateString, parseCalendarEventTime } from "../lib/utils";
+import { cn, prepareTaskForDialog, getDateString, parseCalendarEventTime } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
@@ -43,7 +40,6 @@ import { CalendarEventCard } from "./CalendarEventCard";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { useOrientation } from "../hooks/useOrientation";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
-import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
 import {
   Tooltip,
@@ -78,7 +74,6 @@ const getTwoWeekDateRange = () => {
 
 export function InboxView() {
   const { tasks, addTask, bulkDeleteTasks, updateTask, isLoading } = useTasks();
-  const { getTeamMember } = useTeam();
   const permissionsResult = usePermissions();
   const permissions = permissionsResult || {
     canCreateTask: true,
@@ -613,20 +608,104 @@ export function InboxView() {
     });
   }, [sortedTasks]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return "border-l-red-400 bg-red-50/50 dark:bg-red-950/10";
-      case "high":
-        return "border-l-orange-400 bg-orange-50/50 dark:bg-orange-950/10";
-      case "medium":
-        return "border-l-blue-400 bg-blue-50/50 dark:bg-blue-950/10";
-      case "low":
-        return "border-l-gray-400 bg-gray-50/50 dark:bg-muted/10";
-      default:
-        return "border-l-gray-400 bg-gray-50/50 dark:bg-muted/10";
-    }
-  };
+  const toggleTaskSelection = useCallback((taskId: string) => {
+    setSelectedTaskIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const renderInboxTaskList = () => (
+    <div className="space-y-2">
+      <AnimatePresence mode="popLayout">
+        {isLoading && sortedTasks.length === 0 ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center text-center"
+            style={{
+              paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+              paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+              paddingLeft: EMPTY_STATE_PADDING_X,
+              paddingRight: EMPTY_STATE_PADDING_X,
+            }}
+          >
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
+          </motion.div>
+        ) : sortedTasks.length === 0 ? (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="flex flex-col items-center justify-center text-center"
+            style={{
+              paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+              paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
+              paddingLeft: EMPTY_STATE_PADDING_X,
+              paddingRight: EMPTY_STATE_PADDING_X,
+            }}
+          >
+            <Icon
+              name="inbox"
+              size={ICON_SIZE_3XL}
+              weight="duotone"
+              className="text-primary"
+              style={{
+                marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
+              }}
+            />
+            <h3
+              className="text-xl"
+              style={{
+                marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
+              }}
+            >
+              Your inbox is clear!
+            </h3>
+            <p
+              className="text-muted-foreground max-w-sm"
+              style={{
+                marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
+              }}
+            >
+              {unscheduledTasks.length > 0
+                ? "No tasks match your current filters."
+                : "All tasks are scheduled. Add new tasks or adjust your filters."}
+            </p>
+          </motion.div>
+        ) : (
+          sortedTasks.map((task, index) => (
+            <motion.div
+              key={task.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -100 }}
+              transition={{ delay: index * 0.03 }}
+              layout
+            >
+              <InboxTaskCard
+                task={task}
+                selected={selectedTaskIds.has(task.id)}
+                onToggleSelect={() => toggleTaskSelection(task.id)}
+                onClick={() => handleTaskClick(task)}
+                checkboxSizePx={checkboxSizePx}
+                visualSizePx={visualSizePx}
+              />
+            </motion.div>
+          ))
+        )}
+      </AnimatePresence>
+    </div>
+  );
 
   return (
     <div
@@ -1092,330 +1171,7 @@ export function InboxView() {
                     </div>
                   </div>
                 )}
-                <div className="space-y-2">
-                  <AnimatePresence mode="popLayout">
-                    {isLoading && sortedTasks.length === 0 ? (
-                      <motion.div
-                        key="loading"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex flex-col items-center justify-center text-center"
-                        style={{
-                          paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
-                          paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
-                          paddingLeft: EMPTY_STATE_PADDING_X,
-                          paddingRight: EMPTY_STATE_PADDING_X,
-                        }}
-                      >
-                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
-                      </motion.div>
-                    ) : sortedTasks.length === 0 ? (
-                      <motion.div
-                        key="empty"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="flex flex-col items-center justify-center text-center"
-                        style={{
-                          paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
-                          paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
-                          paddingLeft: EMPTY_STATE_PADDING_X,
-                          paddingRight: EMPTY_STATE_PADDING_X,
-                        }}
-                      >
-                        <Icon 
-                          name="inbox" 
-                          size={ICON_SIZE_3XL} 
-                          weight="duotone"
-                          className="text-primary"
-                          style={{
-                            marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
-                          }}
-                        />
-                        <h3 
-                          className="text-xl"
-                          style={{
-                            marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
-                          }}
-                        >
-                          Your inbox is clear!
-                        </h3>
-                        <p 
-                          className="text-muted-foreground max-w-sm"
-                          style={{
-                            marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
-                          }}
-                        >
-                          {unscheduledTasks.length > 0
-                            ? "No tasks match your current filters."
-                            : "All tasks are scheduled. Add new tasks or adjust your filters."}
-                        </p>
-                      </motion.div>
-                    ) : (
-                      sortedTasks.map((task, index) => (
-                        <motion.div
-                          key={task.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, x: -100 }}
-                          transition={{ delay: index * 0.03 }}
-                          layout
-                        >
-                          <Card
-                            className={cn(
-                              // Responsive padding: smaller on mobile, comfortable on desktop
-                              "px-3 py-2.5 md:px-4 md:py-4",
-                              // Responsive borders: thinner on mobile, standard on desktop
-                              "border-l-2 md:border-l-4 border-gray-300/80 md:border-gray-300/90",
-                              "cursor-pointer transition-all",
-                              // Better shadow blending on mobile
-                              "shadow-lg hover:shadow-xl",
-                              "sm:shadow-lg sm:hover:shadow-xl",
-                              getPriorityColor(task.priority),
-                            )}
-                            style={{
-                              // Custom shadow for better mobile blending
-                              boxShadow: shouldUseMobileLayout 
-                                ? INBOX_CARD_SHADOW_MOBILE
-                                : undefined
-                            }}
-                            onClick={() => handleTaskClick(task)}
-                          >
-                            <div className="flex items-start gap-2 md:gap-3">
-                              <div
-                                className="mt-0.5 flex-shrink-0 flex items-center justify-center"
-                                style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Checkbox
-                                  checked={selectedTaskIds.has(task.id)}
-                                  onCheckedChange={() => {
-                                    setSelectedTaskIds(prev => {
-                                      const newSet = new Set(prev);
-                                      if (newSet.has(task.id)) {
-                                        newSet.delete(task.id);
-                                      } else {
-                                        newSet.add(task.id);
-                                      }
-                                      return newSet;
-                                    });
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex-shrink-0"
-                                  style={{ width: visualSizePx, height: visualSizePx, minWidth: visualSizePx, minHeight: visualSizePx }}
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2 mb-2">
-                                  <h4 className="font-medium text-sm leading-tight">
-                                    {task.title}
-                                  </h4>
-                                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                                    <Badge
-                                      variant="outline"
-                                      className={cn(
-                                        "text-xs",
-                                        task.priority ===
-                                          "urgent" &&
-                                          "border-red-400 text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800",
-                                        task.priority ===
-                                          "high" &&
-                                          "border-orange-400 text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/20",
-                                        task.priority ===
-                                          "medium" &&
-                                          "border-blue-400 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20",
-                                        task.priority === "low" &&
-                                          "border-gray-400 text-gray-700 dark:text-foreground bg-gray-50 dark:bg-muted/20",
-                                      )}
-                                    >
-                                      {task.priority}
-                                    </Badge>
-                                    {task.status ===
-                                      "in-progress" && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs border-green-400 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800"
-                                      >
-                                        active
-                                      </Badge>
-                                    )}
-                                    {task.status ===
-                                      "on-hold" && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs border-yellow-400 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/30 dark:text-yellow-300 dark:border-yellow-800"
-                                      >
-                                        on hold
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {task.description && (
-                                  <div 
-                                    className={cn(
-                                      "text-[10px] text-muted-foreground mb-2 line-clamp-4 break-words px-1.5",
-                                      // Rich text formatting styles - only apply if HTML is present
-                                      // Note: Rich text editor font size changes will override this base size via inline styles
-                                      hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
-                                      hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
-                                      hasHTMLTags(task.description) && "[&_u]:underline",
-                                      hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
-                                      hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
-                                      hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
-                                      hasHTMLTags(task.description) && "[&_li]:ml-1",
-                                      hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words"
-                                    )}
-                                    {...(hasHTMLTags(task.description) 
-                                      ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                                      : { children: task.description }
-                                    )}
-                                  />
-                                )}
-
-                                {/* Assignee Display */}
-                                {task.assignedTo &&
-                                  task.assignedTo.length > 0 && (
-                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                      {task.assignedTo
-                                        .slice(0, 3)
-                                        .map((userId) => {
-                                          const member =
-                                            getTeamMember(userId);
-                                          if (!member)
-                                            return null;
-
-                                          const initials =
-                                            getInitials(
-                                              member.name,
-                                            );
-
-                                          return (
-                                            <div
-                                              key={userId}
-                                              className="flex items-center gap-1.5"
-                                            >
-                                              {member.avatar ? (
-                                                <div 
-                                                  className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
-                                                  style={{
-                                                    width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
-                                                    height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
-                                                  }}
-                                                >
-                                                  <img
-                                                    src={member.avatar}
-                                                    alt={member.name}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                      const target = e.target as HTMLImageElement;
-                                                      target.style.display = 'none';
-                                                      const parent = target.parentElement;
-                                                      if (parent) {
-                                                        const fallback = document.createElement('div');
-                                                        fallback.className = `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.desktop} font-semibold`;
-                                                        fallback.style.width = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`;
-                                                        fallback.style.height = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`;
-                                                        fallback.textContent = initials;
-                                                        parent.appendChild(fallback);
-                                                      }
-                                                    }}
-                                                  />
-                                                </div>
-                                              ) : (
-                                                <div 
-                                                  className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`}
-                                                  style={{
-                                                    width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
-                                                    height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
-                                                  }}
-                                                >
-                                                  {initials}
-                                                </div>
-                                              )}
-                                              <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameStandalone.fontSize }}>
-                                                {getAbbreviatedDisplayName(member.name)}
-                                              </span>
-                                            </div>
-                                          );
-                                        })}
-                                      {task.assignedTo.length >
-                                        3 && (
-                                        <span className={`${TASK_CARD_TEXT_COLORS.assignedUserCount} text-xs`}>
-                                          {TASK_CARD_TEXT.moreAssigned(task.assignedTo.length - 3)}
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-
-                                <div className="flex items-center gap-2 text-xs flex-wrap">
-                                  {task.dueDate && (
-                                    <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                                      <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" />
-                                      <span>
-                                        Due{" "}
-                                        {new Date(
-                                          task.dueDate,
-                                        ).toLocaleDateString(
-                                          "en-US",
-                                          {
-                                            month: "short",
-                                            day: "numeric",
-                                          },
-                                        )}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {task.estimatedTime && (
-                                    <div className="flex items-center gap-1 text-muted-foreground">
-                                      {task.dueDate && (
-                                        <span>•</span>
-                                      )}
-                                      <Icon name="clock" size={ICON_SIZE_XS} />
-                                      <span>
-                                        {task.estimatedTime} min
-                                      </span>
-                                    </div>
-                                  )}
-                                  {task.recurrence && task.recurrence.type !== "none" && (
-                                    <div className="flex items-center gap-1 text-muted-foreground">
-                                      {(task.dueDate || task.estimatedTime) && (
-                                        <span>•</span>
-                                      )}
-                                      <Icon name="repeat" size={ICON_SIZE_XS} weight="duotone" className="text-muted-foreground" />
-                                    </div>
-                                  )}
-                                  {task.tags &&
-                                    task.tags.length > 0 && (
-                                      <div className="flex items-center gap-1">
-                                        {(task.dueDate ||
-                                          task.estimatedTime ||
-                                          (task.recurrence && task.recurrence.type !== "none")) && (
-                                          <span className="text-muted-foreground">
-                                            •
-                                          </span>
-                                        )}
-                                        <Icon name="tag" size={ICON_SIZE_XS} className="text-muted-foreground" />
-                                        <span className="text-muted-foreground">
-                                          {task.tags
-                                            .slice(0, 2)
-                                            .join(", ")}
-                                          {task.tags.length > 2 &&
-                                            ` +${task.tags.length - 2}`}
-                                        </span>
-                                      </div>
-                                    )}
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        </motion.div>
-                      ))
-                    )}
-                  </AnimatePresence>
-                </div>
+                {renderInboxTaskList()}
               </div>
             </ScrollArea>
             ) : (
@@ -1444,334 +1200,9 @@ export function InboxView() {
                     </div>
                   </div>
                 )}
-              <div className="space-y-2">
-                <AnimatePresence mode="popLayout">
-                  {isLoading && sortedTasks.length === 0 ? (
-                    <motion.div
-                      key="loading"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex flex-col items-center justify-center text-center"
-                      style={{
-                        paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
-                        paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
-                        paddingLeft: EMPTY_STATE_PADDING_X,
-                        paddingRight: EMPTY_STATE_PADDING_X,
-                      }}
-                    >
-                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      <p className="text-sm text-muted-foreground mt-3">Loading tasks…</p>
-                    </motion.div>
-                  ) : sortedTasks.length === 0 ? (
-                    <motion.div
-                      key="empty"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="flex flex-col items-center justify-center text-center"
-                      style={{
-                        paddingTop: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
-                        paddingBottom: PANEL_EMPTY_STATE_PADDING_Y_LARGE,
-                        paddingLeft: EMPTY_STATE_PADDING_X,
-                        paddingRight: EMPTY_STATE_PADDING_X,
-                      }}
-                    >
-                      <Icon 
-                        name="inbox" 
-                        size={ICON_SIZE_3XL} 
-                        weight="duotone"
-                        className="text-primary"
-                        style={{
-                          marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
-                        }}
-                      />
-                      <h3 
-                        className="text-xl"
-                        style={{
-                          marginBottom: EMPTY_STATE_MARGIN_BOTTOM_SMALL,
-                        }}
-                      >
-                        Your inbox is clear!
-                      </h3>
-                      <p 
-                        className="text-muted-foreground max-w-sm"
-                        style={{
-                          marginBottom: EMPTY_STATE_MARGIN_BOTTOM_LARGE,
-                        }}
-                      >
-                        {unscheduledTasks.length > 0
-                          ? "No tasks match your current filters."
-                          : "All tasks are scheduled. Add new tasks or adjust your filters."}
-                      </p>
-                    </motion.div>
-                  ) : (
-                    sortedTasks.map((task, index) => (
-                      <motion.div
-                        key={task.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: -100 }}
-                        transition={{ delay: index * 0.03 }}
-                        layout
-                      >
-                        <Card
-                          className={cn(
-                            // Responsive padding: smaller on mobile, comfortable on desktop
-                            "px-3 py-2.5 md:px-4 md:py-4",
-                            // Responsive borders: thinner on mobile, standard on desktop
-                            "border-l-2 md:border-l-4 border-gray-300/80 md:border-gray-300/90",
-                            "cursor-pointer transition-all",
-                            // Better shadow blending on mobile
-                            "shadow-lg hover:shadow-xl",
-                            "sm:shadow-lg sm:hover:shadow-xl",
-                            getPriorityColor(task.priority),
-                          )}
-                          style={{
-                            // Custom shadow for better mobile blending
-                            boxShadow: shouldUseMobileLayout 
-                              ? INBOX_CARD_SHADOW_MOBILE
-                              : undefined
-                          }}
-                          onClick={() => handleTaskClick(task)}
-                        >
-                          <div className="flex items-start gap-2 md:gap-3">
-                            <div
-                              className="mt-0.5 flex-shrink-0 flex items-center justify-center"
-                              style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Checkbox
-                                checked={selectedTaskIds.has(task.id)}
-                                onCheckedChange={() => {
-                                  setSelectedTaskIds(prev => {
-                                    const newSet = new Set(prev);
-                                    if (newSet.has(task.id)) {
-                                      newSet.delete(task.id);
-                                    } else {
-                                      newSet.add(task.id);
-                                    }
-                                    return newSet;
-                                  });
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex-shrink-0"
-                                style={{ width: visualSizePx, height: visualSizePx, minWidth: visualSizePx, minHeight: visualSizePx }}
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <h4 className="font-medium text-sm leading-tight">
-                                  {task.title}
-                                </h4>
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  <Badge
-                                    variant="outline"
-                                    className={cn(
-                                      "text-xs",
-                                      task.priority ===
-                                        "urgent" &&
-                                        "border-red-400 text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800",
-                                      task.priority ===
-                                        "high" &&
-                                        "border-orange-400 text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/20",
-                                      task.priority ===
-                                        "medium" &&
-                                        "border-blue-400 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20",
-                                      task.priority === "low" &&
-                                        "border-gray-400 text-gray-700 dark:text-foreground bg-gray-50 dark:bg-muted/20",
-                                    )}
-                                  >
-                                    {task.priority}
-                                  </Badge>
-                                  {task.status ===
-                                    "in-progress" && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs border-green-400 text-green-700 bg-green-50 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800"
-                                    >
-                                      active
-                                    </Badge>
-                                  )}
-                                  {task.status ===
-                                    "on-hold" && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs border-yellow-400 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/30 dark:text-yellow-300 dark:border-yellow-800"
-                                    >
-                                      on hold
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-
-                              {task.description && (
-                                <div 
-                                  className={cn(
-                                    "text-[10px] text-muted-foreground mb-2 line-clamp-4 break-words px-1.5",
-                                    // Rich text formatting styles - only apply if HTML is present
-                                    // Note: Rich text editor font size changes will override this base size via inline styles
-                                    hasHTMLTags(task.description) && "[&_strong]:font-bold [&_b]:font-bold",
-                                    hasHTMLTags(task.description) && "[&_em]:italic [&_i]:italic",
-                                    hasHTMLTags(task.description) && "[&_u]:underline",
-                                    hasHTMLTags(task.description) && "[&_s]:line-through [&_strike]:line-through",
-                                    hasHTMLTags(task.description) && "[&_ul]:list-disc [&_ul]:ml-3",
-                                    hasHTMLTags(task.description) && "[&_ol]:list-decimal [&_ol]:ml-3",
-                                    hasHTMLTags(task.description) && "[&_li]:ml-1",
-                                    hasHTMLTags(task.description) && "[&_p]:my-0.5 [&_p]:break-words"
-                                  )}
-                                  {...(hasHTMLTags(task.description) 
-                                    ? { dangerouslySetInnerHTML: { __html: sanitizeHTML(task.description) } }
-                                    : { children: task.description }
-                                  )}
-                                />
-                              )}
-
-                              {/* Assignee Display */}
-                              {task.assignedTo &&
-                                task.assignedTo.length > 0 && (
-                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    {task.assignedTo
-                                      .slice(0, 3)
-                                      .map((userId) => {
-                                        const member =
-                                          getTeamMember(userId);
-                                        if (!member)
-                                          return null;
-
-                                        const initials =
-                                          getInitials(
-                                            member.name,
-                                          );
-
-                                        return (
-                                          <div
-                                            key={userId}
-                                            className="flex items-center gap-1.5"
-                                          >
-                                            {member.avatar ? (
-                                              <div 
-                                                className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
-                                                style={{
-                                                  width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
-                                                  height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
-                                                }}
-                                              >
-                                                <img
-                                                  src={member.avatar}
-                                                  alt={member.name}
-                                                  className="w-full h-full object-cover"
-                                                  onError={(e) => {
-                                                    const target = e.target as HTMLImageElement;
-                                                    target.style.display = 'none';
-                                                    const parent = target.parentElement;
-                                                    if (parent) {
-                                                      const fallback = document.createElement('div');
-                                                      fallback.className = `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.text} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`;
-                                                      fallback.style.width = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`;
-                                                      fallback.style.height = `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`;
-                                                      fallback.textContent = initials;
-                                                      parent.appendChild(fallback);
-                                                    }
-                                                  }}
-                                                />
-                                              </div>
-                                            ) : (
-                                              <div 
-                                                className={`rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center ${TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserInitials.mobile} font-semibold`}
-                                                style={{
-                                                  width: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.width}px`,
-                                                  height: `${TASK_CARD_ASSIGNED_USER_COLORS.avatar.desktop.height}px`,
-                                                }}
-                                              >
-                                                {initials}
-                                              </div>
-                                            )}
-                                            <span className={`${TASK_CARD_TEXT_COLORS.assignedUserName} font-semibold`} style={{ fontSize: TASK_CARD_ADDITIONAL_FONT_SIZES.assignedUserNameStandalone.fontSize }}>
-                                              {getAbbreviatedDisplayName(member.name)}
-                                            </span>
-                                          </div>
-                                        );
-                                      })}
-                                    {task.assignedTo.length >
-                                      3 && (
-                                      <span className="text-xs text-gray-500">
-                                        +
-                                        {task.assignedTo
-                                          .length - 3}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-
-                              <div className="flex items-center gap-2 text-xs flex-wrap">
-                                {task.dueDate && (
-                                  <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                                    <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" />
-                                    <span>
-                                      Due{" "}
-                                      {new Date(
-                                        task.dueDate,
-                                      ).toLocaleDateString(
-                                        "en-US",
-                                        {
-                                          month: "short",
-                                          day: "numeric",
-                                        },
-                                      )}
-                                    </span>
-                                  </div>
-                                )}
-                                {task.estimatedTime && (
-                                  <div className="flex items-center gap-1 text-muted-foreground">
-                                    {task.dueDate && (
-                                      <span>•</span>
-                                    )}
-                                    <Icon name="clock" size={ICON_SIZE_XS} />
-                                    <span>
-                                      {task.estimatedTime} min
-                                    </span>
-                                  </div>
-                                )}
-                                {task.recurrence && task.recurrence.type !== "none" && (
-                                  <div className="flex items-center gap-1 text-muted-foreground">
-                                    {(task.dueDate || task.estimatedTime) && (
-                                      <span>•</span>
-                                    )}
-                                    <Icon name="repeat" size={ICON_SIZE_XS} weight="duotone" className="text-muted-foreground" />
-                                  </div>
-                                )}
-                                {task.tags &&
-                                  task.tags.length > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      {(task.dueDate ||
-                                        task.estimatedTime ||
-                                        (task.recurrence && task.recurrence.type !== "none")) && (
-                                        <span className="text-muted-foreground">
-                                          •
-                                        </span>
-                                      )}
-                                      <Icon name="tag" size={ICON_SIZE_XS} className="text-muted-foreground" />
-                                      <span className="text-muted-foreground">
-                                        {task.tags
-                                          .slice(0, 2)
-                                          .join(", ")}
-                                        {task.tags.length > 2 &&
-                                          ` +${task.tags.length - 2}`}
-                                      </span>
-                                    </div>
-                                  )}
-                              </div>
-                            </div>
-                          </div>
-                        </Card>
-                      </motion.div>
-                    ))
-                  )}
-                </AnimatePresence>
+                {renderInboxTaskList()}
               </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
 

@@ -59,6 +59,7 @@ export const AGENDA_LIST_CARD_COLORS = {
 export const AGENDA_LIST_CARD_UI = {
   taskSourceLabel: 'Task',
   taskBadgeLabel: 'Task',
+  inboxSourceLabel: 'Inbox',
 } as const;
 
 export function getAgendaCardBadgeStyles(accentColor: string) {
