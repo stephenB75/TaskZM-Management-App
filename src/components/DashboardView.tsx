@@ -82,6 +82,7 @@ import {
   HEADER_ICON_SIZE_BUTTON_DESKTOP,
   HEADER_ICON_MARGIN_SMALL,
   HEADER_ICON_MARGIN_DESKTOP,
+  HEADER_DESCRIPTION_SIZE,
   ICON_SIZE_XS,
   ICON_SIZE_SM,
   ICON_SIZE_MD,
@@ -780,7 +781,25 @@ export function DashboardView({
     return formatKanbanWeekGroupDateRange(start, end);
   }, [weekColumns]);
 
-  const dashboardHeaderTitle = useMemo(() => {
+  const dashboardHeaderTitle = useMemo((): string | React.ReactNode => {
+    if (
+      shouldUseMobileLayout &&
+      mobileView === "week" &&
+      viewMode === "week" &&
+      mobileWeekDateRange
+    ) {
+      return (
+        <span className="inline-flex items-baseline gap-1.5 min-w-0 max-w-full">
+          <span className="flex-shrink-0">{DASHBOARD_VIEW_HEADER_LABELS.week}</span>
+          <span
+            className="text-muted-foreground font-medium truncate normal-case tracking-normal"
+            style={{ fontSize: HEADER_DESCRIPTION_SIZE }}
+          >
+            {mobileWeekDateRange}
+          </span>
+        </span>
+      );
+    }
     if (shouldUseMobileLayout) {
       if (mobileView === "today") return DASHBOARD_VIEW_HEADER_LABELS.today;
       return viewMode === "month"
@@ -788,18 +807,6 @@ export function DashboardView({
         : DASHBOARD_VIEW_HEADER_LABELS.week;
     }
     return DASHBOARD_VIEW_HEADER_LABELS.dashboard;
-  }, [shouldUseMobileLayout, mobileView, viewMode]);
-
-  const dashboardHeaderDescription = useMemo(() => {
-    if (
-      shouldUseMobileLayout &&
-      mobileView === "week" &&
-      viewMode === "week" &&
-      mobileWeekDateRange
-    ) {
-      return mobileWeekDateRange;
-    }
-    return undefined;
   }, [shouldUseMobileLayout, mobileView, viewMode, mobileWeekDateRange]);
 
   // Compute visible date range (weekColumns is already initialized above)
@@ -1341,7 +1348,6 @@ export function DashboardView({
         title={dashboardHeaderTitle}
         panelOpen={panelOpen}
         panelKey={panelKey}
-        description={dashboardHeaderDescription}
         actions={
           <div 
             className="flex items-center min-w-0"
@@ -1799,6 +1805,7 @@ export function DashboardView({
                   mobileDayIndex={mobileDayIndex}
                   mobileWeekOffset={mobileWeekOffset}
                   onMobileWeekChange={setMobileWeekOffset}
+                  mobileAboveChromeOffsetPx={DASHBOARD_WEEK_CAROUSEL.estimatedHeightPx}
                   onTaskComplete={handleTaskComplete}
                 />
               ) : (

@@ -74,6 +74,8 @@ interface SevenDayKanbanProps {
   mobileDayIndex?: number;
   mobileWeekOffset?: number;
   onMobileWeekChange?: (offset: number) => void;
+  /** Extra fixed chrome above the kanban on mobile (e.g. week calendar carousel). */
+  mobileAboveChromeOffsetPx?: number;
   /** Called when a task is marked complete (for confetti). */
   onTaskComplete?: (originElement?: HTMLElement | null) => void;
 }
@@ -84,6 +86,7 @@ export function SevenDayKanban({
   mobileDayIndex = 0,
   mobileWeekOffset = 0,
   onMobileWeekChange,
+  mobileAboveChromeOffsetPx = 0,
   onTaskComplete,
 }: SevenDayKanbanProps) {
   const { tasks } = useTasks();
@@ -849,7 +852,7 @@ export function SevenDayKanban({
             // Remove transparent background override to allow parent gradient to show through
             // Add minimum height to fill space between header and nav bar when no tasks
             minHeight: shouldUseMobileLayout
-              ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px)`
+              ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px - ${mobileAboveChromeOffsetPx}px)`
               : 'auto',
             // Add bottom padding to ensure content is not hidden by nav bar
             // Use the same calculation as App.tsx scroll container for consistency

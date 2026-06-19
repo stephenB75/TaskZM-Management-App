@@ -191,6 +191,8 @@ export function AppHeader({
     ? undefined // Side panel headers don't need width calculation
     : getMainHeaderWidth(panelOpen); // Main header should span from left position to right edge
 
+  const compactMobileTitle = typeof title !== 'string' || Boolean(description);
+
   return (
     <>
       {/* Mobile/Tablet Header - Fixed at top (shown on mobile and tablets < 1280px) */}
@@ -250,15 +252,15 @@ export function AppHeader({
 
             {/* Title - contextual; compact when description is shown */}
             <div className="flex-1 min-w-0">
-              <h1 
+              <h1
                 className={cn(
-                  description
+                  compactMobileTitle
                     ? 'font-semibold text-foreground normal-case tracking-normal leading-tight'
                     : 'font-bold bg-clip-text text-transparent',
                 )}
                 style={{
                   fontSize: HEADER_TITLE_SIZE_MOBILE,
-                  ...(description
+                  ...(compactMobileTitle
                     ? {}
                     : {
                         backgroundImage: `linear-gradient(to right, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID}, ${COLOR_GRADIENT_END})`,

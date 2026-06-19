@@ -785,6 +785,8 @@ export const DASHBOARD_WEEK_CAROUSEL = {
   paddingTopPx: 6,
   navRowMarginBottomPx: 6,
   navButtonOpacity: 0.7,
+  /** Approximate carousel height for mobile min-height calculations (nav + grid + padding) */
+  estimatedHeightPx: 130,
 } as const;
 
 export const DESKTOP_PADDING_TOP = '3rem'; // padding-top: 3rem for desktop views
