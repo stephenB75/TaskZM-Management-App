@@ -32,6 +32,9 @@ import {
   KANBAN_DESKTOP,
   KANBAN_TEXT_SIZES,
   KANBAN_SPACING,
+  KANBAN_WEEK_GROUP_HEADER,
+  KANBAN_WEEK_GROUP_LABELS,
+  formatKanbanWeekGroupDateRange,
 } from '../lib/kanban-constants';
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
@@ -1194,29 +1197,95 @@ export function SevenDayKanban({
                 return (
                   <React.Fragment key={`week-group-${groupIndex}`}>
                     {isStartOfWeek && (
-                      <div className="flex flex-col items-center justify-center px-4 sm:px-6 mx-2 sm:mx-4">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/80 dark:bg-card/70 border border-primary/30 dark:border-primary/40 flex items-center justify-center shadow-xl mb-2">
-                          <span className="text-4xl sm:text-5xl font-light text-primary">+</span>
-                        </div>
-                        <span className="text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
-                          Transition
-                        </span>
+                      <div
+                        className="flex flex-col items-center self-stretch flex-shrink-0"
+                        style={{
+                          width: KANBAN_WEEK_GROUP_HEADER.transition.widthPx,
+                          paddingTop: KANBAN_WEEK_GROUP_HEADER.transition.verticalPaddingPx,
+                          paddingBottom: KANBAN_WEEK_GROUP_HEADER.transition.verticalPaddingPx,
+                        }}
+                        aria-hidden
+                      >
+                        <div
+                          className="w-px flex-1 bg-border dark:bg-border/60"
+                          style={{
+                            minHeight: KANBAN_WEEK_GROUP_HEADER.transition.minLineHeightPx,
+                            opacity: KANBAN_WEEK_GROUP_HEADER.transition.lineOpacity,
+                          }}
+                        />
+                        <div
+                          className="rounded-full bg-primary/35 dark:bg-primary/45 flex-shrink-0 my-1"
+                          style={{
+                            width: KANBAN_WEEK_GROUP_HEADER.transition.dotSizePx,
+                            height: KANBAN_WEEK_GROUP_HEADER.transition.dotSizePx,
+                          }}
+                        />
+                        <div
+                          className="w-px flex-1 bg-border dark:bg-border/60"
+                          style={{
+                            minHeight: KANBAN_WEEK_GROUP_HEADER.transition.minLineHeightPx,
+                            opacity: KANBAN_WEEK_GROUP_HEADER.transition.lineOpacity,
+                          }}
+                        />
                       </div>
                     )}
 
                   <div className="flex flex-col gap-2 min-w-max">
-                    <div className="flex items-center gap-3 px-2 py-2 sm:py-3">
-                      <span
-                        className={cn(
-                          'font-bold tracking-[0.5em] uppercase',
-                          groupIndex === 1 ? 'text-primary dark:text-primary/80' : 'text-muted-foreground'
-                        )}
-                        style={{ fontSize: shouldUseMobileLayout ? KANBAN_TEXT_SIZES.weekLabel.mobile : KANBAN_TEXT_SIZES.weekLabel.desktop }}
-                      >
-                        {groupIndex === 0 ? 'WEEK ONE' : 'WEEK TWO'}
-                      </span>
-                      <span className="flex-1 h-px bg-gradient-to-r from-primary/30 via-transparent to-transparent dark:from-primary/40" />
-                    </div>
+                    {(() => {
+                      const groupStart = group[0]?.date;
+                      const groupEnd = group[group.length - 1]?.date;
+                      const groupContainsToday = group.some((col) => col.isToday);
+                      const dateRangeLabel =
+                        groupStart && groupEnd
+                          ? formatKanbanWeekGroupDateRange(groupStart, groupEnd)
+                          : KANBAN_WEEK_GROUP_LABELS[groupIndex] ?? `Week ${groupIndex + 1}`;
+
+                      return (
+                        <div
+                          className="flex items-center gap-2 min-w-0"
+                          style={{
+                            paddingTop: KANBAN_WEEK_GROUP_HEADER.paddingY,
+                            paddingBottom: KANBAN_WEEK_GROUP_HEADER.paddingY,
+                            paddingLeft: KANBAN_WEEK_GROUP_HEADER.paddingX,
+                            paddingRight: KANBAN_WEEK_GROUP_HEADER.paddingX,
+                            gap: KANBAN_WEEK_GROUP_HEADER.gap,
+                          }}
+                        >
+                          <span
+                            className={cn(
+                              'uppercase font-semibold flex-shrink-0 border',
+                              groupContainsToday
+                                ? 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/15 dark:border-primary/30'
+                                : 'bg-muted/50 text-muted-foreground border-border/60 dark:bg-muted/30',
+                            )}
+                            style={{
+                              fontSize: KANBAN_WEEK_GROUP_HEADER.badge.fontSizePx,
+                              paddingLeft: KANBAN_WEEK_GROUP_HEADER.badge.paddingX,
+                              paddingRight: KANBAN_WEEK_GROUP_HEADER.badge.paddingX,
+                              paddingTop: KANBAN_WEEK_GROUP_HEADER.badge.paddingY,
+                              paddingBottom: KANBAN_WEEK_GROUP_HEADER.badge.paddingY,
+                              letterSpacing: `${KANBAN_WEEK_GROUP_HEADER.badge.letterSpacingEm}em`,
+                              borderRadius: KANBAN_WEEK_GROUP_HEADER.badge.borderRadiusPx,
+                            }}
+                          >
+                            {KANBAN_WEEK_GROUP_LABELS[groupIndex] ?? `Week ${groupIndex + 1}`}
+                          </span>
+                          <span
+                            className="text-muted-foreground truncate flex-shrink-0"
+                            style={{
+                              fontSize: KANBAN_WEEK_GROUP_HEADER.dateRange.fontSizePx,
+                              fontWeight: KANBAN_WEEK_GROUP_HEADER.dateRange.fontWeight,
+                            }}
+                          >
+                            {dateRangeLabel}
+                          </span>
+                          <span
+                            className="flex-1 min-w-[24px] bg-gradient-to-r from-border/80 via-border/30 to-transparent dark:from-border/50 dark:via-border/20"
+                            style={{ height: KANBAN_WEEK_GROUP_HEADER.hairlineHeightPx }}
+                          />
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2">
                       {group.map((column, columnIndex) => {
@@ -1232,6 +1301,12 @@ export function SevenDayKanban({
                       const globalIndex = groupIndex * KANBAN_TIME.daysPerWeek + columnIndex;
                       const isSecondWeek = groupIndex === 1;
                       const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
+                      const dayColors = getDayColors(column.dayName);
+                      const accentColor = column.isToday
+                        ? KANBAN_DAY_COLORS.today.text
+                        : hasHeader(dayColors)
+                          ? dayColors.header.from
+                          : KANBAN_DAY_COLORS.today.text;
 
                 return (
                   <div
@@ -1242,7 +1317,7 @@ export function SevenDayKanban({
                       width: `${columnWidth}px`,
                     }}
                   >
-                    {/* Horizontal line indicator above column box for current day */}
+                    {/* Subtle today marker above column */}
                     {column.isToday && (
                       <div
                         className="flex justify-center"
@@ -1251,11 +1326,12 @@ export function SevenDayKanban({
                         }}
                       >
                         <div
+                          className="rounded-full"
                           style={{
-                            width: `${KANBAN_DAY_COLORS.today.indicatorLine.widthPercent}%`,
-                            height: KANBAN_DAY_COLORS.today.indicatorLine.height,
-                            backgroundColor: KANBAN_DAY_COLORS.today.indicatorLine.color,
-                            borderRadius: KANBAN_DAY_COLORS.today.indicatorLine.borderRadius,
+                            width: `${KANBAN_DAY_COLORS.today.indicatorLine.widthPercent * KANBAN_WEEK_GROUP_HEADER.columnHeader.todayIndicator.widthScale}%`,
+                            height: KANBAN_WEEK_GROUP_HEADER.columnHeader.todayIndicator.heightPx,
+                            backgroundColor: accentColor,
+                            opacity: KANBAN_WEEK_GROUP_HEADER.columnHeader.todayIndicator.opacity,
                           }}
                         />
                       </div>
@@ -1265,9 +1341,10 @@ export function SevenDayKanban({
                       className={cn(
                         'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
                         // Only use Tailwind bg when we are not applying column-wrapper tint (weekend or no header colors)
-                        !column.isWeekend && !hasHeader(getDayColors(column.dayName)) && (isDark ? 'bg-card/80' : 'bg-transparent'),
+                        !column.isWeekend && !hasHeader(dayColors) && (isDark ? 'bg-card/80' : 'bg-transparent'),
                         column.isWeekend && isDark && 'bg-card/60',
-                        isSecondWeek && 'ring-1 ring-primary/15 dark:ring-primary/25'
+                        column.isToday && 'ring-1 ring-primary/25 dark:ring-primary/35',
+                        isSecondWeek && !column.isToday && 'ring-1 ring-primary/10 dark:ring-primary/15',
                       )}
                       style={{
                         minWidth: `${columnWidth}px`,
@@ -1276,8 +1353,7 @@ export function SevenDayKanban({
                           backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
                         }),
                         // Full-column tint so today stands out when scrolling vertically (brighter today, muted others)
-                        ...(!column.isWeekend && hasHeader(getDayColors(column.dayName)) && (() => {
-                          const dayColors = getDayColors(column.dayName);
+                        ...(!column.isWeekend && hasHeader(dayColors) && (() => {
                           const w = KANBAN_DAY_COLORS.columnWrapper;
                           const pct = column.isToday
                             ? (isDark ? w.todayDarkOpacity : w.todayOpacity)
@@ -1293,96 +1369,51 @@ export function SevenDayKanban({
                         ease: KANBAN_ANIMATION.easing
                       }}
                     >
-                    <div 
+                    <div
                       className={cn(
-                        'p-1.5 sm:p-2 border-b backdrop-blur-sm transition-all',
-                        // Enhanced styling for today - full pastel color gradient at 100% opacity, no frame/border
-                        !column.isToday && isDark && 'bg-card/50 border-border',
-                        !column.isToday && !isDark && hasHeader(getDayColors(column.dayName)) && 'bg-transparent'
+                        'border-b border-primary/8 dark:border-border/40 backdrop-blur-sm',
+                        'bg-white/90 dark:bg-card/90',
+                        column.isToday && 'bg-white dark:bg-card/95',
                       )}
-                      style={(() => {
-                        const baseStyle: React.CSSProperties = {};
-                        if (!isDark) {
-                          const dayColors = getDayColors(column.dayName);
-                          if (hasHeader(dayColors)) {
-                            // Helper function to darken hex color by a factor (creates deeper colors)
-                            const darkenColor = (hex: string, factor: number): string => {
-                              const r = Math.round(parseInt(hex.slice(1, 3), 16) * factor);
-                              const g = Math.round(parseInt(hex.slice(3, 5), 16) * factor);
-                              const b = Math.round(parseInt(hex.slice(5, 7), 16) * factor);
-                              return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-                            };
-                            
-                            // Today: full opacity so current day stands out when scrolling; non-today: reduced opacity
-                            const headerOpacity = column.isToday 
-                              ? KANBAN_DAY_COLORS.today.headerOpacity // Full opacity for today
-                              : KANBAN_DAY_COLORS.standard.nonTodayHeaderOpacity; // Reduced for non-today so today column is brighter
-                            
-                            // Use solid pastel color (from color only, no gradient)
-                            const solidColor = column.isToday 
-                              ? (KANBAN_DAY_COLORS.today.colorDarkeningFactor === 1.0 
-                                  ? dayColors.header.from 
-                                  : darkenColor(dayColors.header.from, KANBAN_DAY_COLORS.today.colorDarkeningFactor))
-                              : dayColors.header.from;
-                            
-                            // Solid color with opacity (no gradient)
-                            baseStyle.backgroundColor = `${solidColor}${Math.round(headerOpacity * 2.55).toString(16).padStart(2, '0')}`;
-                            baseStyle.backgroundImage = 'none'; // Remove gradient
-                            
-                            // For today: no border/frame, just the solid pastel color at 100% opacity
-                            if (column.isToday) {
-                              // Remove border/frame - just use the solid color
-                              baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidthNone;
-                              baseStyle.borderColor = KANBAN_DAY_COLORS.today.borderColorTransparent;
-                              // No ring or shadow - clean gradient only
-                              baseStyle.boxShadow = KANBAN_DAY_COLORS.today.boxShadowNone;
-                            } else {
-                              // Standard border for non-today days
-                              baseStyle.borderColor = `${dayColors.header.border}${Math.round(dayColors.header.borderOpacity * 2.55).toString(16).padStart(2, '0')}`;
-                            }
-                          }
-                        } else {
-                          // Dark mode: solid pastel color (no gradient)
-                          if (column.isToday) {
-                            // Get day colors for solid color even in dark mode
-                            const dayColors = getDayColors(column.dayName);
-                            if (hasHeader(dayColors)) {
-                              // Use solid pastel color at 100% opacity in dark mode
-                              const solidColor = dayColors.header.from;
-                              baseStyle.backgroundColor = `${solidColor}${Math.round(KANBAN_DAY_COLORS.today.headerOpacity * 2.55).toString(16).padStart(2, '0')}`;
-                              baseStyle.backgroundImage = 'none'; // Remove gradient
-                            }
-                            // Remove border/frame - just use the solid color
-                            baseStyle.borderBottomWidth = KANBAN_DAY_COLORS.today.borderWidthNone;
-                            baseStyle.borderColor = KANBAN_DAY_COLORS.today.borderColorTransparent;
-                            // No ring or shadow - clean solid color only
-                            baseStyle.boxShadow = KANBAN_DAY_COLORS.today.boxShadowNone;
-                          } else {
-                            // Non-today days in dark mode: reduced opacity so today column stands out when scrolling
-                            const dayColors = getDayColors(column.dayName);
-                            if (hasHeader(dayColors)) {
-                              const solidColor = dayColors.header.from;
-                              const opacity = KANBAN_DAY_COLORS.standard.nonTodayHeaderOpacity;
-                              baseStyle.backgroundColor = `${solidColor}${Math.round(opacity * 2.55).toString(16).padStart(2, '0')}`;
-                              baseStyle.backgroundImage = 'none'; // Remove gradient
-                            }
-                          }
-                        }
-                        return baseStyle;
-                      })()}
+                      style={{
+                        paddingLeft: KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingX,
+                        paddingRight: KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingX,
+                        paddingTop: KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingY,
+                        paddingBottom: KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingY,
+                      }}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 
-                            className={cn(
-                              'uppercase text-xs sm:text-sm tracking-wider mb-0.5 sm:mb-1 font-bold',
-                              !column.isToday && 'text-gray-700 dark:text-foreground'
-                            )}
-                            style={column.isToday ? { color: KANBAN_DAY_COLORS.today.text } : undefined}
-                          >
-                            {column.dayName.substring(0, 3)} {column.date.getDate()}
-                          </h3>
-                        </div>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="rounded-full flex-shrink-0 ring-2 ring-offset-1 ring-offset-background dark:ring-offset-card"
+                          style={{
+                            width: column.isToday
+                              ? KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizeTodayPx
+                              : KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizePx,
+                            height: column.isToday
+                              ? KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizeTodayPx
+                              : KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizePx,
+                            backgroundColor: accentColor,
+                            ...(column.isToday
+                              ? { boxShadow: `0 0 0 2px ${toAlphaHex(accentColor, 0.25)}` }
+                              : {}),
+                          }}
+                        />
+                        <h3
+                          className={cn(
+                            'flex-1 min-w-0 uppercase tracking-wide font-semibold truncate',
+                            column.isToday
+                              ? 'text-primary dark:text-primary'
+                              : 'text-foreground/80 dark:text-foreground/90',
+                          )}
+                          style={{
+                            fontSize: shouldUseMobileLayout
+                              ? KANBAN_WEEK_GROUP_HEADER.columnHeader.fontSizePx
+                              : KANBAN_WEEK_GROUP_HEADER.columnHeader.fontSizeSmPx,
+                          }}
+                        >
+                          {column.dayName.substring(0, 3)}{' '}
+                          <span className="font-bold">{column.date.getDate()}</span>
+                        </h3>
                         <Button
                           size="icon"
                           variant="ghost"

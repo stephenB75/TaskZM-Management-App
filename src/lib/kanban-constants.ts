@@ -379,6 +379,58 @@ export const KANBAN_TEXT_SIZES = {
   },
 } as const;
 
+/** Compact week-group strip above each 7-day block in desktop kanban */
+export const KANBAN_WEEK_GROUP_HEADER = {
+  paddingY: 6,
+  paddingX: 8,
+  gap: 8,
+  badge: {
+    fontSizePx: 10,
+    paddingX: 8,
+    paddingY: 2,
+    letterSpacingEm: 0.06,
+    borderRadiusPx: 999,
+  },
+  dateRange: {
+    fontSizePx: 11,
+    fontWeight: 500,
+  },
+  hairlineHeightPx: 1,
+  transition: {
+    widthPx: 10,
+    lineOpacity: 0.35,
+    dotSizePx: 4,
+    verticalPaddingPx: 12,
+    minLineHeightPx: 40,
+  },
+  columnHeader: {
+    dotSizePx: 8,
+    dotSizeTodayPx: 10,
+    paddingX: 10,
+    paddingY: 8,
+    fontSizePx: 12,
+    fontSizeSmPx: 13,
+    todayIndicator: {
+      heightPx: 3,
+      widthScale: 0.6,
+      opacity: 0.85,
+    },
+  },
+} as const;
+
+export const KANBAN_WEEK_GROUP_LABELS = ['Week 1', 'Week 2'] as const;
+
+/** Format a 7-day block date range for the kanban week-group header */
+export function formatKanbanWeekGroupDateRange(startDate: Date, endDate: Date): string {
+  const monthDay: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  const startStr = startDate.toLocaleDateString('en-US', monthDay);
+  const endStr = endDate.toLocaleDateString('en-US', {
+    ...monthDay,
+    ...(startDate.getFullYear() !== endDate.getFullYear() ? { year: 'numeric' as const } : {}),
+  });
+  return `${startStr} – ${endStr}`;
+}
+
 // Spacing
 export const KANBAN_SPACING = {
   taskGap: 8, // space-y-2 = 8px
