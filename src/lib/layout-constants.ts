@@ -539,11 +539,23 @@ export const TEAM_PANEL_VERTICAL_SPACING = '0.75rem'; // gap-3 = 0.75rem (12px) 
 export const TEAM_PANEL_VERTICAL_PADDING = '1.5rem'; // p-6 = 1.5rem (24px) card padding
 
 // Team Panel Grid Layout Constants
-export const TEAM_PANEL_GRID_COLUMNS = 1; // Single-column member list
-export const TEAM_PANEL_GRID_GAP = '0.625rem'; // gap-2.5 between member cards
-export const TEAM_PANEL_MEMBER_AVATAR_SIZE = '3.5rem'; // 56px — horizontal card avatar
-export const TEAM_PANEL_MEMBER_AVATAR_FONT_SIZE = '1rem'; // Initials fallback in member cards
-export const TEAM_PANEL_MEMBER_NAME_SIZE = '0.9375rem'; // 15px member name
+export const TEAM_PANEL_GRID_COLUMNS = 1; // Legacy — rolodex grid uses auto-fill minmax
+export const TEAM_PANEL_GRID_GAP = '0.5rem'; // gap-2 between rolodex cards
+export const TEAM_PANEL_ROLODEX_CARD_MIN_WIDTH = '6.75rem'; // 108px — minimum rolodex card column width
+export const TEAM_PANEL_ROLODEX_TAB_WIDTH = '1.75rem'; // Rolodex index tab width
+export const TEAM_PANEL_ROLODEX_TAB_HEIGHT = '0.3125rem'; // Rolodex index tab height
+export const TEAM_PANEL_ROLODEX_CARD_OFFSET_TOP = '0.375rem'; // Space above card for tab notch
+export const TEAM_PANEL_ROLODEX_CARD_PADDING = '0.5rem'; // Inner card padding
+export const TEAM_PANEL_ROLODEX_CARD_PADDING_TOP = '0.625rem'; // Extra top padding below tab
+export const TEAM_PANEL_ROLODEX_BORDER_RADIUS = '0.5rem'; // Card corner radius
+export const TEAM_PANEL_ROLODEX_AVATAR_SIZE = '2.25rem'; // 36px compact avatar
+export const TEAM_PANEL_ROLODEX_AVATAR_FONT_SIZE = '0.6875rem'; // Initials fallback size
+export const TEAM_PANEL_ROLODEX_NAME_SIZE = '0.6875rem'; // 11px name
+export const TEAM_PANEL_ROLODEX_STAT_SIZE = '0.625rem'; // 10px task stat line
+export const TEAM_PANEL_ROLODEX_MENU_BUTTON_SIZE = '1.25rem'; // Compact menu trigger
+export const TEAM_PANEL_MEMBER_AVATAR_SIZE = '3.5rem'; // 56px — horizontal card avatar (legacy)
+export const TEAM_PANEL_MEMBER_AVATAR_FONT_SIZE = '1rem'; // Initials fallback in member cards (legacy)
+export const TEAM_PANEL_MEMBER_NAME_SIZE = '0.9375rem'; // 15px member name (legacy)
 export const TEAM_PANEL_SURFACE_OPACITY = 0.94; // Card surface translucency on team panel
 
 // Team Management Constants
