@@ -1348,6 +1348,8 @@ export function DashboardView({
         title={dashboardHeaderTitle}
         panelOpen={panelOpen}
         panelKey={panelKey}
+        showBrandName={!shouldUseMobileLayout}
+        cleanHeader={!shouldUseMobileLayout}
         actions={
           <div 
             className="flex items-center min-w-0"

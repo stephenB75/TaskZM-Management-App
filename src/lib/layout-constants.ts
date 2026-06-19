@@ -780,6 +780,30 @@ export const DASHBOARD_VIEW_HEADER_LABELS = {
   dashboard: 'Dashboard',
 } as const;
 
+export const APP_BRAND_NAME = 'taskzm';
+export const APP_BRAND_NAME_FONT_SIZE = '1.125rem';
+
+/** Secondary week context strip below the main dashboard header (desktop week view) */
+export const DASHBOARD_WEEK_SUBHEADER = {
+  heightPx: 36,
+  backgroundLight: 'rgba(248, 250, 252, 0.98)',
+  backgroundDark: 'rgba(31, 41, 55, 0.98)',
+  borderColorLight: 'rgba(0, 0, 0, 0.06)',
+  borderColorDark: 'rgba(255, 255, 255, 0.08)',
+  pill: {
+    fontSizePx: 11,
+    paddingX: 12,
+    paddingY: 4,
+    letterSpacingEm: 0.04,
+    borderRadiusPx: 999,
+    gapPx: 20,
+  },
+} as const;
+
+export function getDashboardDesktopTopChromeHeightPx(includeWeekSubheader: boolean): number {
+  return HEADER_HEIGHT + (includeWeekSubheader ? DASHBOARD_WEEK_SUBHEADER.heightPx : 0);
+}
+
 /** Compact mobile week carousel strip below AppHeader */
 export const DASHBOARD_WEEK_CAROUSEL = {
   paddingTopPx: 6,

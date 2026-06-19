@@ -15,6 +15,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
+import { DashboardWeekSubHeader } from './DashboardWeekSubHeader';
 import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
@@ -33,8 +34,6 @@ import {
   KANBAN_TEXT_SIZES,
   KANBAN_SPACING,
   KANBAN_WEEK_GROUP_HEADER,
-  KANBAN_WEEK_GROUP_LABELS,
-  formatKanbanWeekGroupDateRange,
 } from '../lib/kanban-constants';
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
@@ -278,6 +277,17 @@ export function SevenDayKanban({
     }
     return groups;
   }, [weekColumns]);
+
+  const weekGroupSummaries = React.useMemo(
+    () =>
+      weekGroups.map((group, groupIndex) => ({
+        groupIndex,
+        startDate: group[0]?.date ?? new Date(),
+        endDate: group[group.length - 1]?.date ?? new Date(),
+        containsToday: group.some((col) => col.isToday),
+      })),
+    [weekGroups],
+  );
 
   // Compute visible date range once for the current week columns
   const visibleRange = React.useMemo(() => {
@@ -1152,7 +1162,10 @@ export function SevenDayKanban({
         backgroundImage: backgroundGradient,
       }}
     >
-      
+      {!mobileMode && viewMode === 'week' && (
+        <DashboardWeekSubHeader weekGroups={weekGroupSummaries} />
+      )}
+
       {/* Week View - Kanban Board */}
         <div className={cn(
           mobileMode ? "w-full" : "flex-1 overflow-hidden"
@@ -1234,62 +1247,6 @@ export function SevenDayKanban({
                     )}
 
                   <div className="flex flex-col gap-2 min-w-max">
-                    {(() => {
-                      const groupStart = group[0]?.date;
-                      const groupEnd = group[group.length - 1]?.date;
-                      const groupContainsToday = group.some((col) => col.isToday);
-                      const dateRangeLabel =
-                        groupStart && groupEnd
-                          ? formatKanbanWeekGroupDateRange(groupStart, groupEnd)
-                          : KANBAN_WEEK_GROUP_LABELS[groupIndex] ?? `Week ${groupIndex + 1}`;
-
-                      return (
-                        <div
-                          className="flex items-center gap-2 min-w-0"
-                          style={{
-                            paddingTop: KANBAN_WEEK_GROUP_HEADER.paddingY,
-                            paddingBottom: KANBAN_WEEK_GROUP_HEADER.paddingY,
-                            paddingLeft: KANBAN_WEEK_GROUP_HEADER.paddingX,
-                            paddingRight: KANBAN_WEEK_GROUP_HEADER.paddingX,
-                            gap: KANBAN_WEEK_GROUP_HEADER.gap,
-                          }}
-                        >
-                          <span
-                            className={cn(
-                              'uppercase font-semibold flex-shrink-0 border',
-                              groupContainsToday
-                                ? 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/15 dark:border-primary/30'
-                                : 'bg-muted/50 text-muted-foreground border-border/60 dark:bg-muted/30',
-                            )}
-                            style={{
-                              fontSize: KANBAN_WEEK_GROUP_HEADER.badge.fontSizePx,
-                              paddingLeft: KANBAN_WEEK_GROUP_HEADER.badge.paddingX,
-                              paddingRight: KANBAN_WEEK_GROUP_HEADER.badge.paddingX,
-                              paddingTop: KANBAN_WEEK_GROUP_HEADER.badge.paddingY,
-                              paddingBottom: KANBAN_WEEK_GROUP_HEADER.badge.paddingY,
-                              letterSpacing: `${KANBAN_WEEK_GROUP_HEADER.badge.letterSpacingEm}em`,
-                              borderRadius: KANBAN_WEEK_GROUP_HEADER.badge.borderRadiusPx,
-                            }}
-                          >
-                            {KANBAN_WEEK_GROUP_LABELS[groupIndex] ?? `Week ${groupIndex + 1}`}
-                          </span>
-                          <span
-                            className="text-muted-foreground truncate flex-shrink-0"
-                            style={{
-                              fontSize: KANBAN_WEEK_GROUP_HEADER.dateRange.fontSizePx,
-                              fontWeight: KANBAN_WEEK_GROUP_HEADER.dateRange.fontWeight,
-                            }}
-                          >
-                            {dateRangeLabel}
-                          </span>
-                          <span
-                            className="flex-1 min-w-[24px] bg-gradient-to-r from-border/80 via-border/30 to-transparent dark:from-border/50 dark:via-border/20"
-                            style={{ height: KANBAN_WEEK_GROUP_HEADER.hairlineHeightPx }}
-                          />
-                        </div>
-                      );
-                    })()}
-
                     <div className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2">
                       {group.map((column, columnIndex) => {
                 const dayTasks = getTasksForDay(column.dateString);

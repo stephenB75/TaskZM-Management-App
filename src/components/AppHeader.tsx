@@ -82,6 +82,8 @@ import {
   HEADER_MOBILE_SAFE_AREA_SPACER,
   VIEWPORT_BREAKPOINTS,
   getHeaderGradient,
+  APP_BRAND_NAME,
+  APP_BRAND_NAME_FONT_SIZE,
 } from "../lib/layout-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { useOrientation } from "../hooks/useOrientation";
@@ -100,6 +102,10 @@ interface AppHeaderProps {
   description?: string;
   actions?: React.ReactNode;
   hideDesktopLogo?: boolean;
+  /** Show lowercase brand name beside the logo on desktop main header */
+  showBrandName?: boolean;
+  /** Flat white bar — no horizontal gradient (dashboard week view) */
+  cleanHeader?: boolean;
   onBack?: () => void;
   panelOpen?: boolean; // Indicates if a side panel is open (for desktop layout adjustment)
   isSidePanelHeader?: boolean; // Indicates if this is a side panel header (positioned at panel start)
@@ -111,6 +117,8 @@ export function AppHeader({
   description,
   actions,
   hideDesktopLogo = false,
+  showBrandName = false,
+  cleanHeader = false,
   onBack,
   panelOpen = false,
   isSidePanelHeader = false,
@@ -436,7 +444,7 @@ export function AppHeader({
             backgroundColor: isDark 
               ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
               : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
-            backgroundImage: getHeaderGradient(isDark),
+            backgroundImage: cleanHeader ? 'none' : getHeaderGradient(isDark),
             borderColor: HEADER_BORDER_COLOR,
             // No left padding - header extends to left browser edge
             paddingLeft: '0',
@@ -527,6 +535,14 @@ export function AppHeader({
                     transition: 'none',
                   }}
                 />
+              )}
+              {showBrandName && (
+                <span
+                  className="font-bold text-foreground lowercase tracking-tight flex-shrink-0"
+                  style={{ fontSize: APP_BRAND_NAME_FONT_SIZE }}
+                >
+                  {APP_BRAND_NAME}
+                </span>
               )}
             </div>
             {/* Right side: Actions (text is now inside actions component) */}
