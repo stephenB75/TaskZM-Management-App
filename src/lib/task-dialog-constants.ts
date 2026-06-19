@@ -121,6 +121,13 @@ export const TASK_DIALOG_UI_TEXT = {
   aiGenerate: 'AI Generate',
   aiGenerateTooltip: 'Generate new description (appends to existing)',
   aiAnalysis: 'AI Analysis',
+  aiAssistUseDuration: 'Use AI duration',
+  aiAssistAddSubtasks: 'Add suggested steps',
+  aiAssistDurationApplied: 'Duration updated from AI estimate',
+  aiAssistSubtasksAdded: (count: number) =>
+    `Added ${count} suggested step${count === 1 ? '' : 's'}`,
+  aiAssistPrioritySuggested: (priority: string) =>
+    `Priority set to ${priority} based on task effort`,
   addedAsSubtask: 'Added as subtask',
   enterNewTagName: 'Enter new tag name...',
   enterSubtaskName: 'Enter subtask name...',

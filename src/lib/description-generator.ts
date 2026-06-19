@@ -4042,7 +4042,25 @@ export async function generateDescriptionOptions(
     }
 
     // Sort by confidence (highest first) and return
-    return options.sort((a, b) => b.confidence - a.confidence);
+    const sorted = options.sort((a, b) => b.confidence - a.confidence);
+
+    if (sorted.length > 0) {
+      return sorted;
+    }
+
+    // Guaranteed fallback so new-task AI Assist always offers at least one option
+    const { phrases, keywords, verbs, nouns } = getSuggestivePhrases(taskName, existingDescription);
+    const built = buildCompleteDescriptionFromPhrases(taskName, phrases, keywords, verbs, nouns);
+    if (built) {
+      return [{
+        description: built,
+        domain: breakdownContext?.domain ?? DEFAULT_TASK_DOMAIN,
+        confidence: DESCRIPTION_GENERATION_CONFIG.baseConfidence,
+        source: 'local' as const,
+      }];
+    }
+
+    return sorted;
   } catch (error) {
     logger.error(`Error generating description options for "${taskName}":`, error);
     // Return at least one fallback option (defer to avoid blocking)

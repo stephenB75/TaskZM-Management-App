@@ -77,7 +77,22 @@ import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
 import { generateDescription, generateDescriptionOptions, getSuggestivePhrases, buildCompleteDescriptionFromPhrases } from "../lib/description-generator";
-import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS, EFFORT_SCORE_THRESHOLDS, DESCRIPTION_UI_CONFIG } from "../lib/ai-config";
+import {
+  DESCRIPTION_GENERATION_CONFIG,
+  DESCRIPTION_OPTIONS_DEBOUNCE_MS,
+  TASK_BREAKDOWN_DEBOUNCE_MS,
+  TASK_BREAKDOWN_TITLE_ONLY_DEBOUNCE_MS,
+  EFFORT_SCORE_THRESHOLDS,
+  DESCRIPTION_UI_CONFIG,
+  NEW_TASK_AI_ASSIST,
+} from "../lib/ai-config";
+import {
+  canAutoApplyBreakdownDuration,
+  getBreakdownGenerationContext,
+  shouldOfferDescriptionOptions,
+  splitMinutesToDurationFields,
+  suggestPriorityFromEffort,
+} from "../lib/new-task-ai-assist";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS, getTaskDialogPriorityAccent, getTaskDialogPriorityPillStyles } from "../lib/task-dialog-constants";
@@ -754,6 +769,8 @@ export function TaskDialog({
   const [applyToSeries, setApplyToSeries] = useState(false);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const userEditedDurationRef = useRef(false);
+  const aiAssistAppliedForTitleRef = useRef<string | null>(null);
 
   /** True when editing a task that is part of a pre-created series (id = baseId__YYYY-MM-DD). */
   const isSeriesOccurrence = Boolean(task?.id && getSeriesBaseId(task.id));
@@ -791,8 +808,10 @@ export function TaskDialog({
     title,
     description,
     {
-      debounceMs: TASK_BREAKDOWN_DEBOUNCE_MS,
-      enabled: true,
+      debounceMs: description.trim()
+        ? TASK_BREAKDOWN_DEBOUNCE_MS
+        : TASK_BREAKDOWN_TITLE_ONLY_DEBOUNCE_MS,
+      enabled: open,
       getAccessToken: () => Promise.resolve(accessToken ?? null).then((t) => t ?? getSessionToken()),
     }
   );
@@ -1191,11 +1210,61 @@ export function TaskDialog({
         setRecurrenceDayOfMonth(undefined);
         setRecurrenceEndDate(undefined);
         setAssignedTo([]);
+      userEditedDurationRef.current = false;
+      aiAssistAppliedForTitleRef.current = null;
     }
     
     // Mark this task ID as initialized
     initializedTaskIdRef.current = currentTaskId;
   }, [task?.id, initialDate, open, folders]); // Use task?.id instead of task to prevent re-initialization on object reference changes
+
+  // New task: auto-apply AI duration and priority from breakdown (once per title)
+  useEffect(() => {
+    if (!open || task?.id || !breakdown || isBreakdownLoading) {
+      return;
+    }
+
+    const titleKey = title.trim();
+    if (!titleKey || aiAssistAppliedForTitleRef.current === titleKey) {
+      return;
+    }
+
+    let applied = false;
+
+    if (
+      breakdown.estimatedMinutes >= NEW_TASK_AI_ASSIST.minEstimatedMinutesToApply &&
+      canAutoApplyBreakdownDuration(
+        true,
+        estimatedHours,
+        estimatedMinutes,
+        userEditedDurationRef.current,
+      )
+    ) {
+      const { hours, minutes } = splitMinutesToDurationFields(breakdown.estimatedMinutes);
+      setEstimatedHours(hours);
+      setEstimatedMinutes(minutes);
+      applied = true;
+    }
+
+    const suggestedPriority = suggestPriorityFromEffort(breakdown.effortScore, priority);
+    if (suggestedPriority) {
+      setPriority(suggestedPriority);
+      applied = true;
+    }
+
+    if (applied) {
+      aiAssistAppliedForTitleRef.current = titleKey;
+    }
+  }, [
+    open,
+    task?.id,
+    breakdown,
+    isBreakdownLoading,
+    title,
+    estimatedHours,
+    estimatedMinutes,
+    priority,
+  ]);
 
   // Generate description options when title changes and breakdown has effort score
   // AI Flow Step 2: Uses keywords/phrases from user input (title) to analyze effort and suggest descriptions
@@ -1210,7 +1279,16 @@ export function TaskDialog({
     // 5. Not currently loading breakdown
     // 6. Not currently generating description (prevent conflicts)
     // CRITICAL: Check description first to prevent race conditions when AI generates description
-    if (!open || !title.trim() || description.trim() || !breakdown?.effortScore || isBreakdownLoading || isGeneratingDescription) {
+    if (
+      !shouldOfferDescriptionOptions(
+        title,
+        description,
+        breakdown,
+        isBreakdownLoading,
+        isGeneratingDescription,
+      ) ||
+      !open
+    ) {
       setDescriptionOptions([]);
       setIsLoadingDescriptionOptions(false);
       return;
@@ -1241,13 +1319,14 @@ export function TaskDialog({
         // generateDescriptionOptions internally uses extractKeywordsFromTaskName and 
         // extractTermsFromTaskNameWithBrowserAI to extract keywords/phrases from title
         // The effort score adjusts the detail level of descriptions (low effort = concise, high effort = detailed)
+        const breakdownContext = getBreakdownGenerationContext(breakdown);
         const options = await generateDescriptionOptions(
-          title, // Keywords/phrases are extracted from this title
-          breakdown.effortScore, // Determined from title analysis
+          title,
+          breakdown.effortScore,
           token,
           description,
           breakdown.actionPlan?.steps?.map((s) => s.action),
-          breakdown.filteredTerminology && breakdown.domain ? { domain: breakdown.domain, filteredTerminology: breakdown.filteredTerminology } : undefined
+          breakdownContext,
         );
 
         // Triple-check conditions after async operation (description might have been set during async call)
@@ -1278,7 +1357,7 @@ export function TaskDialog({
       clearTimeout(timeoutId);
       setIsLoadingDescriptionOptions(false);
     };
-  }, [open, title, description, breakdown?.effortScore, isBreakdownLoading, isGeneratingDescription, accessToken, getSessionToken]);
+  }, [open, title, description, breakdown, isBreakdownLoading, isGeneratingDescription, accessToken, getSessionToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2905,6 +2984,65 @@ export function TaskDialog({
                               </div>
                             )}
                           </div>
+                          {!task && breakdown && (
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              {breakdown.estimatedMinutes >= NEW_TASK_AI_ASSIST.minEstimatedMinutesToApply && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs rounded-full"
+                                  onClick={() => {
+                                    const { hours, minutes } = splitMinutesToDurationFields(
+                                      breakdown.estimatedMinutes,
+                                    );
+                                    setEstimatedHours(hours);
+                                    setEstimatedMinutes(minutes);
+                                    toast.success(TASK_DIALOG_UI_TEXT.aiAssistDurationApplied);
+                                  }}
+                                >
+                                  <Icon name="clock" size={ICON_SIZE_XS} className="mr-1" />
+                                  {TASK_DIALOG_UI_TEXT.aiAssistUseDuration}
+                                </Button>
+                              )}
+                              {breakdown.actionPlan?.suggestedSubtasks &&
+                                breakdown.actionPlan.suggestedSubtasks.length > 0 && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs rounded-full"
+                                    onClick={() => {
+                                      const existing = new Set(
+                                        subtasks.map((s) => s.title.trim().toLowerCase()),
+                                      );
+                                      const toAdd = breakdown.actionPlan!.suggestedSubtasks
+                                        .filter((t) => !existing.has(t.trim().toLowerCase()))
+                                        .slice(0, NEW_TASK_AI_ASSIST.maxSubtasksToAutoAdd);
+                                      if (toAdd.length === 0) {
+                                        toast.info('Steps already added');
+                                        return;
+                                      }
+                                      setSubtasks((prev) => [
+                                        ...prev,
+                                        ...toAdd.map((st, idx) => ({
+                                          id: `subtask-${Date.now()}-${idx}`,
+                                          title: st,
+                                          completed: false,
+                                          createdAt: new Date().toISOString(),
+                                        })),
+                                      ]);
+                                      toast.success(
+                                        TASK_DIALOG_UI_TEXT.aiAssistSubtasksAdded(toAdd.length),
+                                      );
+                                    }}
+                                  >
+                                    <Icon name="list-checks" size={ICON_SIZE_XS} className="mr-1" />
+                                    {TASK_DIALOG_UI_TEXT.aiAssistAddSubtasks}
+                                  </Button>
+                                )}
+                            </div>
+                          )}
                           {!description.trim() && (isLoadingDescriptionOptions || descriptionOptions.length > 0) && (
                             <div className="flex flex-col gap-2 min-w-0 overflow-hidden">
                               <span className="text-xs text-muted-foreground truncate">
@@ -3425,7 +3563,10 @@ export function TaskDialog({
                       </div>
                       <Slider
                         value={[parseInt(estimatedHours) || 0]}
-                        onValueChange={(values) => setEstimatedHours(values[0].toString())}
+                        onValueChange={(values) => {
+                          userEditedDurationRef.current = true;
+                          setEstimatedHours(values[0].toString());
+                        }}
                         min={0}
                         max={8}
                         step={1}
@@ -3442,6 +3583,7 @@ export function TaskDialog({
                       <Slider
                         value={[parseInt(estimatedMinutes) || 0]}
                         onValueChange={(values) => {
+                          userEditedDurationRef.current = true;
                           const value = values[0];
                           if (value >= 0 && value <= 59) {
                             setEstimatedMinutes(value.toString());

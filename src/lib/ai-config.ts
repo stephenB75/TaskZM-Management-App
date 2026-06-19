@@ -825,6 +825,22 @@ export const AI_USAGE_STORAGE_KEY = 'ai_scheduler_usage';
  */
 export const TASK_BREAKDOWN_DEBOUNCE_MS = 300;
 
+/** Faster debounce when only the title is present (typical new-task flow). */
+export const TASK_BREAKDOWN_TITLE_ONLY_DEBOUNCE_MS = 150;
+
+/**
+ * AI Assist behavior when creating new tasks in TaskDialog.
+ */
+export const NEW_TASK_AI_ASSIST = {
+  minTitleLengthForOptions: 2,
+  defaultPriorityForSuggestion: 'medium' as const,
+  effortUrgentThreshold: 4.5,
+  effortHighThreshold: 3.5,
+  effortLowThreshold: 1.75,
+  minEstimatedMinutesToApply: 5,
+  maxSubtasksToAutoAdd: 5,
+} as const;
+
 /**
  * Expected timing for "scan library and provide response" (for reference):
  * - Debounce: TASK_BREAKDOWN_DEBOUNCE_MS (300ms) after user stops typing.

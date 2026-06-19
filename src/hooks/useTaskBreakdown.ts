@@ -141,12 +141,15 @@ export function useTaskBreakdown(
         // Analyze verbs FIRST to get effort score
         const verbAnalysis = analyzeTaskVerbs(tempTask as Task);
         
-        // Create shared AI context once (eliminates redundant domain detection and term extraction)
-        // Use async context so both local and shared terminology are fetched and used for description and action plan
-        // CRITICAL: Add error handling to ensure domain is always defined
+        // Title-only (new task): sync context for faster AI Assist; with description: async for full library
+        const isTitleOnly = !description.trim();
         let aiContext: AIContext;
         try {
-          aiContext = await createAIContext(title, description, true);
+          if (isTitleOnly) {
+            aiContext = createAIContextSync(title, description);
+          } else {
+            aiContext = await createAIContext(title, description, true);
+          }
           
           // Validate that domain is defined
           if (!aiContext.domain || (aiContext.domain !== 'business' && aiContext.domain !== 'home' && aiContext.domain !== 'personal' && aiContext.domain !== 'world' && aiContext.domain !== 'mixed')) {
