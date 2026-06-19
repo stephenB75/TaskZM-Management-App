@@ -8,6 +8,7 @@ import { DAYS_IN_WEEK } from '../lib/business-constants';
 import { createDefaultTeamContext } from '../lib/context-defaults';
 import { TEAM_MAX_MEMBERS } from '../lib/layout-constants';
 import { TEAM_PANEL_UI_TEXT } from '../lib/team-panel-constants';
+import { pickAvatarFromPoolAuto } from '../lib/avatar-utils';
 
 interface TeamContextType {
   // Legacy workspace-based team (for backward compatibility)
@@ -70,7 +71,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
           id: user.id,
           email: user.email || '',
           name: user.name || 'You',
-          avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name || 'You'}`,
+          avatar: user.avatar || pickAvatarFromPoolAuto(user.email || user.name || user.id),
           role: 'admin' as const,
           inviteStatus: 'accepted' as const,
         });

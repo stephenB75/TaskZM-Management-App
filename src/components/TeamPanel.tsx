@@ -32,8 +32,10 @@ import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { AvatarSelection, type AvatarGender } from "./AvatarSelection";
+import { UserProfileAvatar } from "./UserProfileAvatar";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { AVATAR_UI_TEXT } from "../lib/avatar-constants";
+import { pickAvatarFromPool, pickAvatarFromPoolAuto } from "../lib/avatar-utils";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import {
   Tooltip,
@@ -44,9 +46,8 @@ import {
 import { useTeam } from "../contexts/TeamContext";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
-import { useTheme } from "../contexts/ThemeContext";
 import { toast } from "sonner";
-import { cn, getInitials, getAbbreviatedDisplayName } from "../lib/utils";
+import { cn, getAbbreviatedDisplayName } from "../lib/utils";
 import type { User } from "../types";
 import {
   PANEL_PADDING,
@@ -103,32 +104,16 @@ import {
   TEAM_PANEL_NOTIFICATION_BADGE_RIGHT,
   TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
   TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET,
-  TEAM_PANEL_CARD_BACKGROUND_HEIGHT,
-  TEAM_PANEL_PROFILE_BANNER_HEIGHT,
-  TEAM_PANEL_PROFILE_AVATAR_SIZE,
-  TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE,
-  TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
-  TEAM_PANEL_COMPACT_BANNER_HEIGHT,
-  TEAM_PANEL_COMPACT_AVATAR_SIZE,
-  TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE,
-  TEAM_PANEL_COMPACT_AVATAR_OVERLAP_OFFSET,
-  TEAM_PANEL_OTHER_MEMBERS_AVATAR_SIZE,
-  TEAM_PANEL_OTHER_MEMBERS_AVATAR_FONT_SIZE,
-  TEAM_PANEL_OTHER_MEMBERS_GAP,
-  TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE,
-  TEAM_PANEL_VERTICAL_AVATAR_SIZE,
-  TEAM_PANEL_VERTICAL_NAME_SIZE,
-  TEAM_PANEL_VERTICAL_ROLE_SIZE,
-  TEAM_PANEL_VERTICAL_EMAIL_SIZE,
-  TEAM_PANEL_VERTICAL_SOCIAL_ICON_SIZE,
-  TEAM_PANEL_HEADER_ICON_GAP,
-  TEAM_PANEL_VERTICAL_SPACING,
-  TEAM_PANEL_VERTICAL_PADDING,
   TEAM_PANEL_GRID_COLUMNS,
   TEAM_PANEL_GRID_GAP,
+  TEAM_PANEL_MEMBER_AVATAR_SIZE,
+  TEAM_PANEL_MEMBER_AVATAR_FONT_SIZE,
+  TEAM_PANEL_MEMBER_NAME_SIZE,
   TEAM_MAX_MEMBERS,
+  TEAM_PANEL_HEADER_ICON_GAP,
   TEAM_PANEL_TAB_HEIGHT,
   TEAM_PANEL_TAB_PADDING,
+  HEADER_BACKDROP_BLUR_CLASS,
   PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
   PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR,
   PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT,
@@ -145,12 +130,6 @@ import {
 import { MILLISECONDS_PER_DAY } from "../lib/business-constants";
 import { TEAM_PANEL_UI_TEXT } from "../lib/team-panel-constants";
 import {
-  COLOR_PASTEL_LAVENDER,
-  COLOR_PASTEL_LAVENDER_DARK,
-  COLOR_PASTEL_SKY,
-  COLOR_PASTEL_SKY_DARK,
-  COLOR_PASTEL_MINT,
-  COLOR_PASTEL_MINT_DARK,
   COLOR_ROLE_ADMIN,
   COLOR_ROLE_MEMBER,
   COLOR_ROLE_VIEWER,
@@ -162,7 +141,6 @@ import {
   COLOR_TASK_TODO_BLUE,
   COLOR_TEXT_BLACK,
   COLOR_BACKGROUND_TRANSPARENT,
-  getColorWithOpacity,
 } from "../lib/color-theme";
 
 export function TeamPanel() {
@@ -290,7 +268,7 @@ export function TeamPanel() {
             email: newMemberEmail.trim(),
             role: newMemberRole,
           },
-          newMemberAvatar || `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=${newMemberGender === 'male' ? '50' : '0'}`,
+          newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim(), newMemberGender),
         );
       } else {
         // Legacy workspace-based team
@@ -298,7 +276,7 @@ export function TeamPanel() {
           name: newMemberName.trim(),
           email: newMemberEmail.trim(),
           role: newMemberRole,
-          avatar: newMemberAvatar || `https://api.dicebear.com/7.x/lorelei/svg?seed=${newMemberName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=${newMemberGender === 'male' ? '50' : '0'}`,
+          avatar: newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim(), newMemberGender),
         }, currentWorkspaceId);
       }
 
@@ -733,7 +711,7 @@ export function TeamPanel() {
     member, 
     stats, 
     isCurrentUser,
-    allTeamMembers,
+    allTeamMembers: _allTeamMembers,
     onCardClick,
     onResendInvitation,
     onDeclineInvitation,
@@ -761,13 +739,7 @@ export function TeamPanel() {
     acceptInvitation: (id: string) => void;
   }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
-    
-    // Get other team members (excluding current member)
-    const otherMembers = allTeamMembers.filter(m => m.id !== member.id);
-    const visibleOtherMembers = otherMembers.slice(0, TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE);
-    const remainingCount = Math.max(0, otherMembers.length - TEAM_PANEL_OTHER_MEMBERS_MAX_VISIBLE);
 
-    // Get role display text
     const roleDisplayText = member.role === 'admin' 
       ? TEAM_PANEL_UI_TEXT.roles.admin 
       : member.role === 'member' 
@@ -775,128 +747,185 @@ export function TeamPanel() {
       : TEAM_PANEL_UI_TEXT.roles.viewer;
     
     return (
-      <div 
-        className="relative w-full bg-white dark:bg-card text-foreground dark:text-foreground rounded-lg shadow-sm border border-border/40 overflow-hidden"
+      <div
+        className={cn(
+          'group relative w-full overflow-hidden rounded-xl border border-border/40 bg-card/90 text-foreground transition-colors hover:border-primary/25 hover:bg-card',
+          HEADER_BACKDROP_BLUR_CLASS,
+          isCurrentUser && 'ring-1 ring-primary/15',
+        )}
         onClick={(e) => {
-          // Don't trigger card click if clicking on dropdown area or if dropdown is open
           const target = e.target as HTMLElement;
           if (!dropdownOpen && !target.closest(PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR) && !target.closest('a')) {
             onCardClick(member);
           }
         }}
       >
-        {/* Notification Badge */}
-        {member.hasUnreadNotification &&
-          member.inviteStatus === "accepted" && (
-            <div 
-              className="absolute" 
-              style={{ 
-                top: TEAM_PANEL_NOTIFICATION_BADGE_TOP,
-                right: TEAM_PANEL_NOTIFICATION_BADGE_RIGHT,
-                zIndex: TEAM_PANEL_NOTIFICATION_Z_INDEX 
-              }}
-            >
-              <div 
-                className="bg-primary rounded-full animate-pulse" 
-                style={{ 
-                  width: TEAM_PANEL_NOTIFICATION_BADGE_SIZE, 
-                  height: TEAM_PANEL_NOTIFICATION_BADGE_SIZE 
-                }} 
-              />
-            </div>
-          )}
-        
-        {/* Action Button (top right) */}
-        <div 
-          className="absolute top-2 right-2"
-          style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
-          onClick={(e) => e.stopPropagation()}
+        {member.hasUnreadNotification && member.inviteStatus === 'accepted' && (
+          <div
+            className="absolute bg-primary rounded-full animate-pulse"
+            style={{
+              top: TEAM_PANEL_NOTIFICATION_BADGE_TOP,
+              right: TEAM_PANEL_NOTIFICATION_BADGE_RIGHT,
+              width: TEAM_PANEL_NOTIFICATION_BADGE_SIZE,
+              height: TEAM_PANEL_NOTIFICATION_BADGE_SIZE,
+              zIndex: TEAM_PANEL_NOTIFICATION_Z_INDEX,
+            }}
+          />
+        )}
+
+        <div
+          className="flex items-center"
+          style={{
+            gap: PANEL_GAP_MEDIUM,
+            padding: TEAM_PANEL_CARD_PADDING,
+          }}
         >
-            <DropdownMenu
-              open={dropdownOpen}
-              onOpenChange={setDropdownOpen}
-              modal={false}
+          <div className="relative flex-shrink-0">
+            <UserProfileAvatar
+              src={member.avatar}
+              name={member.name}
+              size={TEAM_PANEL_MEMBER_AVATAR_SIZE}
+              fontSize={TEAM_PANEL_MEMBER_AVATAR_FONT_SIZE}
+            />
+            {member.hasUnreadNotification && member.inviteStatus === 'accepted' && (
+              <div
+                className="absolute rounded-full border-2 border-card bg-primary"
+                style={{
+                  width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                  height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
+                  bottom: TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
+                  right: TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET,
+                }}
+              />
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center" style={{ gap: PANEL_GAP_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
+              <h3
+                className="truncate font-semibold text-foreground"
+                style={{ fontSize: TEAM_PANEL_MEMBER_NAME_SIZE, maxWidth: '100%' }}
+              >
+                {getAbbreviatedDisplayName(member.name)}
+              </h3>
+              {isCurrentUser && (
+                <Badge variant="secondary" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
+                  {TEAM_PANEL_UI_TEXT.currentUser.replace(/[()]/g, '')}
+                </Badge>
+              )}
+              {getInviteStatusBadge(member)}
+            </div>
+
+            <a
+              href={`mailto:${member.email}`}
+              className="mb-1 flex min-w-0 items-center truncate text-muted-foreground transition-colors hover:text-primary"
+              style={{
+                gap: PANEL_GAP_SMALL,
+                fontSize: TEAM_PANEL_TEXT_SIZE_SMALL,
+                marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL,
+              }}
+              onClick={(e) => e.stopPropagation()}
             >
+              <Icon name="envelope-simple" size={TEAM_PANEL_ICON_SIZE_SMALL} className="flex-shrink-0" />
+              <span className="truncate">{member.email}</span>
+            </a>
+
+            <div className="flex flex-wrap items-center" style={{ gap: PANEL_GAP_SMALL }}>
+              <Badge variant={getRoleBadgeVariant(member.role)} className="capitalize" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
+                <span className="inline-flex items-center" style={{ gap: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
+                  {getRoleIcon(member.role)}
+                  {roleDisplayText}
+                </span>
+              </Badge>
+              <span className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                <span className="font-medium text-foreground">{stats.total}</span>{' '}
+                {stats.total !== 1 ? TEAM_PANEL_UI_TEXT.stats.tasks : TEAM_PANEL_UI_TEXT.stats.task}
+              </span>
+              {stats.completed > 0 && (
+                <span className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                  · <span className="font-medium" style={{ color: COLOR_TASK_COMPLETED_GREEN }}>{stats.completed}</span>{' '}
+                  {TEAM_PANEL_UI_TEXT.stats.completed}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div
+            className="flex-shrink-0"
+            style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen} modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="flex-shrink-0 hover:bg-muted"
-                  style={{ 
-                    height: TEAM_PANEL_BUTTON_SIZE_SMALL, 
-                    width: TEAM_PANEL_BUTTON_SIZE_SMALL 
+                  className="flex-shrink-0 opacity-70 transition-opacity hover:bg-muted group-hover:opacity-100"
+                  style={{
+                    height: TEAM_PANEL_BUTTON_SIZE_SMALL,
+                    width: TEAM_PANEL_BUTTON_SIZE_SMALL,
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
+                  onClick={(e) => e.stopPropagation()}
                   data-slot={PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT}
                 >
                   <Icon name="more-vertical" size={TEAM_PANEL_ICON_SIZE_SMALL} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent 
+              <DropdownMenuContent
                 align="end"
-                style={{ 
+                style={{
                   zIndex: TEAM_PANEL_DROPDOWN_Z_INDEX,
-                  width: TEAM_PANEL_DROPDOWN_WIDTH
+                  width: TEAM_PANEL_DROPDOWN_WIDTH,
                 }}
                 onCloseAutoFocus={(e) => {
                   e.preventDefault();
                 }}
               >
-                {member.inviteStatus === "pending" && (
+                {member.inviteStatus === 'pending' && (
                   <>
                     <DropdownMenuItem
                       onSelect={() => {
                         setDropdownOpen(false);
-                        setTimeout(() => {
-                          onResendInvitation(member);
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                        setTimeout(() => onResendInvitation(member), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                       }}
                       className="cursor-pointer"
                     >
                       <Icon name="paper-plane-tilt" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
                       Resend Invitation
                     </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setDropdownOpen(false);
-                    setTimeout(() => {
-                      acceptInvitation(member.id);
-                      toast.success(
-                        `${member.name} accepted the invitation!`,
-                      );
-                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <Icon name="bell" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                  Accept Invite (Demo)
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setDropdownOpen(false);
-                    setTimeout(() => {
-                      onDeclineInvitation(member);
-                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                  }}
-                  className="text-destructive focus:text-destructive cursor-pointer"
-                >
-                  <Icon name="x-circle" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                  Decline Invitation
-                </DropdownMenuItem>
-                <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setDropdownOpen(false);
+                        setTimeout(() => {
+                          acceptInvitation(member.id);
+                          toast.success(`${member.name} accepted the invitation!`);
+                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Icon name="bell" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      Accept Invite (Demo)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setDropdownOpen(false);
+                        setTimeout(() => onDeclineInvitation(member), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                      }}
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                    >
+                      <Icon name="x-circle" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      Decline Invitation
+                    </DropdownMenuItem>
+                    <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
                   </>
                 )}
                 <DropdownMenuItem
                   onSelect={() => {
                     setDropdownOpen(false);
-                    setTimeout(() => {
-                      onUpdateRole(member, "admin");
-                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                    setTimeout(() => onUpdateRole(member, 'admin'), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                   }}
-                  disabled={member.role === "admin"}
+                  disabled={member.role === 'admin'}
                   className="cursor-pointer"
                 >
                   <Icon name="shield-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
@@ -905,11 +934,9 @@ export function TeamPanel() {
                 <DropdownMenuItem
                   onSelect={() => {
                     setDropdownOpen(false);
-                    setTimeout(() => {
-                      onUpdateRole(member, "member");
-                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                    setTimeout(() => onUpdateRole(member, 'member'), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                   }}
-                  disabled={member.role === "member"}
+                  disabled={member.role === 'member'}
                   className="cursor-pointer"
                 >
                   <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
@@ -918,11 +945,9 @@ export function TeamPanel() {
                 <DropdownMenuItem
                   onSelect={() => {
                     setDropdownOpen(false);
-                    setTimeout(() => {
-                      onUpdateRole(member, "viewer");
-                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                    setTimeout(() => onUpdateRole(member, 'viewer'), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                   }}
-                  disabled={member.role === "viewer"}
+                  disabled={member.role === 'viewer'}
                   className="cursor-pointer"
                 >
                   <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
@@ -932,9 +957,7 @@ export function TeamPanel() {
                 <DropdownMenuItem
                   onSelect={() => {
                     setDropdownOpen(false);
-                    setTimeout(() => {
-                      onRemoveMember(member);
-                    }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
+                    setTimeout(() => onRemoveMember(member), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
                   }}
                   className="text-destructive focus:text-destructive cursor-pointer"
                   disabled={isCurrentUser}
@@ -944,207 +967,6 @@ export function TeamPanel() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-
-        {/* Vertical Profile Layout */}
-        <div 
-          className="flex flex-col items-center"
-          style={{ 
-            padding: TEAM_PANEL_VERTICAL_PADDING,
-            paddingTop: `calc(${TEAM_PANEL_VERTICAL_PADDING} + ${TEAM_PANEL_VERTICAL_SPACING})`
-          }}
-        >
-          {/* Circular Profile Illustration */}
-          <div className="relative flex-shrink-0 mb-3" style={{ marginBottom: TEAM_PANEL_VERTICAL_SPACING }}>
-            {member.avatar ? (
-              <div 
-                className="rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-border/40"
-                style={{
-                  width: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
-                  height: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
-                }}
-              >
-                <img
-                  src={member.avatar}
-                  alt={member.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // Fallback to initials if image fails to load
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      const fallback = document.createElement('div');
-                      fallback.className = 'rounded-full bg-muted flex items-center justify-center text-muted-foreground font-semibold border-2 border-border/40';
-                      fallback.style.width = '100%';
-                      fallback.style.height = '100%';
-                      fallback.style.fontSize = TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE;
-                      fallback.textContent = getInitials(member.name);
-                      parent.appendChild(fallback);
-                    }
-                  }}
-                />
-              </div>
-            ) : (
-              <div 
-                className="rounded-full bg-muted flex items-center justify-center text-muted-foreground font-semibold border-2 border-border/40"
-                style={{ 
-                  width: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
-                  height: TEAM_PANEL_VERTICAL_AVATAR_SIZE,
-                  fontSize: TEAM_PANEL_COMPACT_AVATAR_FONT_SIZE
-                }}
-              >
-                {getInitials(member.name)}
-              </div>
-            )}
-            {member.hasUnreadNotification &&
-              member.inviteStatus === "accepted" && (
-                <div 
-                  className="absolute bg-primary rounded-full border-2 border-white dark:border-card" 
-                  style={{ 
-                    width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                    height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                    bottom: TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
-                    right: TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET
-                  }} 
-                />
-              )}
-          </div>
-
-          {/* Name */}
-          <h3 
-            className="font-semibold text-foreground text-center mb-1 truncate"
-            style={{ 
-              fontSize: TEAM_PANEL_VERTICAL_NAME_SIZE,
-              marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              maxWidth: '100%',
-              paddingLeft: TEAM_PANEL_CARD_PADDING,
-              paddingRight: TEAM_PANEL_CARD_PADDING,
-            }}
-          >
-            {getAbbreviatedDisplayName(member.name)}
-          </h3>
-
-          {/* Role/Job Title */}
-          <p 
-            className="text-muted-foreground text-center mb-2 capitalize"
-            style={{ 
-              fontSize: TEAM_PANEL_VERTICAL_ROLE_SIZE,
-              marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
-            }}
-          >
-            <span className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
-              {member.role === 'admin' ? (
-                <Icon 
-                  name="shield-check" 
-                  size={TEAM_PANEL_ICON_SIZE_SMALL} 
-                  className="text-primary flex-shrink-0" 
-                  weight="duotone"
-                />
-              ) : (
-                <Icon 
-                  name="user-circle-check" 
-                  size={TEAM_PANEL_ICON_SIZE_SMALL} 
-                  className="text-muted-foreground flex-shrink-0" 
-                />
-              )}
-              {roleDisplayText}
-            </span>
-            {getInviteStatusBadge(member) && (
-              <span style={{ marginLeft: TEAM_PANEL_MARGIN_LEFT_MEDIUM }}>
-                {getInviteStatusBadge(member)}
-              </span>
-            )}
-          </p>
-
-          {/* Email */}
-          <div 
-            className="text-muted-foreground text-center mb-3"
-            style={{ 
-              fontSize: TEAM_PANEL_VERTICAL_EMAIL_SIZE,
-              marginBottom: TEAM_PANEL_VERTICAL_SPACING,
-              paddingLeft: TEAM_PANEL_CARD_PADDING,
-              paddingRight: TEAM_PANEL_CARD_PADDING,
-            }}
-          >
-            <a 
-              href={`mailto:${member.email}`}
-              className="hover:text-primary transition-colors flex items-center justify-center truncate"
-              style={{ 
-                gap: PANEL_GAP_SMALL,
-                maxWidth: '100%',
-                minWidth: 0,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Icon 
-                name="envelope-simple" 
-                size={TEAM_PANEL_ICON_SIZE_SMALL} 
-                className="text-muted-foreground flex-shrink-0" 
-              />
-              <span 
-                style={{ 
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '100%',
-                  minWidth: 0,
-                }}
-              >
-                {member.email}
-              </span>
-            </a>
-          </div>
-
-          {/* Task Stats and Team Info */}
-          <div 
-            className="w-full text-center"
-            style={{ 
-              display: 'flex',
-              flexDirection: 'column',
-              gap: TEAM_PANEL_MARGIN_BOTTOM_SMALL,
-              paddingTop: TEAM_PANEL_VERTICAL_SPACING,
-              borderTop: '1px solid',
-              borderColor: 'var(--border)'
-            }}
-          >
-            {/* Task Count */}
-            <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
-              <Icon name="list-checks" size={TEAM_PANEL_ICON_SIZE_SMALL} className="text-muted-foreground" />
-              <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                <span className="font-semibold">{stats.total}</span> {stats.total !== 1 ? TEAM_PANEL_UI_TEXT.stats.tasks : TEAM_PANEL_UI_TEXT.stats.task}
-              </span>
-            </div>
-
-            {/* Tasks Completed */}
-            {stats.completed > 0 && (
-              <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
-                <Icon 
-                  name="check-circle" 
-                  size={TEAM_PANEL_ICON_SIZE_SMALL} 
-                  style={{ color: COLOR_TASK_COMPLETED_GREEN }}
-                />
-                <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                  <span className="font-semibold">{stats.completed}</span> {TEAM_PANEL_UI_TEXT.stats.completed}
-                </span>
-              </div>
-            )}
-
-            {/* Team Info */}
-            {otherMembers.length > 0 && (
-              <div className="flex items-center justify-center" style={{ gap: PANEL_GAP_SMALL }}>
-                <Icon name="users" size={TEAM_PANEL_ICON_SIZE_SMALL} className="text-muted-foreground" />
-                <span className="text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                  <span className="font-semibold">{otherMembers.length}</span> {otherMembers.length !== 1 ? TEAM_PANEL_UI_TEXT.stats.teamMembers : TEAM_PANEL_UI_TEXT.stats.teamMember}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -1237,7 +1059,7 @@ export function TeamPanel() {
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" ");
 
-        const avatar = `https://api.dicebear.com/7.x/lorelei/svg?seed=${capitalizedName}&backgroundColor=e5e7eb&hairColor=000000&skinColor=fdbcb4&clothingColor=262e33&accessoriesColor=000000&facialHairColor=000000&facialHairProbability=25`;
+        const avatar = pickAvatarFromPoolAuto(email);
 
         if (currentTeamId) {
           // Add to specific team
@@ -1279,20 +1101,12 @@ export function TeamPanel() {
     }
   };
 
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === 'dark';
-  
-  // Get appropriate colors based on theme
-  const gradientColor1 = isDark ? COLOR_PASTEL_LAVENDER_DARK : COLOR_PASTEL_LAVENDER;
-  const gradientColor2 = isDark ? COLOR_PASTEL_SKY_DARK : COLOR_PASTEL_SKY;
-  const gradientColor3 = isDark ? COLOR_PASTEL_MINT_DARK : COLOR_PASTEL_MINT;
-
   return (
     <div
-      className={cn("flex flex-col", typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full')}
-      style={{
-        background: `linear-gradient(to bottom, ${getColorWithOpacity(gradientColor1, 0.35)}, ${getColorWithOpacity(gradientColor2, 0.35)}, ${getColorWithOpacity(gradientColor3, 0.35)})`,
-      } as React.CSSProperties}
+      className={cn(
+        'flex flex-col bg-background',
+        typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full',
+      )}
     >
       {/* Header */}
       <AppHeader
@@ -1377,7 +1191,7 @@ export function TeamPanel() {
 
       {/* Teams Tabs - Always show if teams exist, or show workspace team if no teams */}
       <div 
-        className="border-b border-primary/10 min-w-0"
+        className={cn('border-b border-border/40 bg-muted/20 min-w-0', HEADER_BACKDROP_BLUR_CLASS)}
         style={{ 
           paddingLeft: PANEL_PADDING,
           paddingRight: PANEL_PADDING,
@@ -1426,7 +1240,7 @@ export function TeamPanel() {
         const selectedTeam = teams.find(t => t.id === currentTeamId);
         return selectedTeam ? (
           <div 
-            className="border-b border-primary/10 bg-muted/30"
+            className={cn('border-b border-border/40 bg-muted/15', HEADER_BACKDROP_BLUR_CLASS)}
             style={{ 
               paddingLeft: PANEL_PADDING,
               paddingRight: PANEL_PADDING,
@@ -1487,7 +1301,7 @@ export function TeamPanel() {
 
       {/* Search Bar */}
       <div 
-        className="border-b border-primary/10"
+        className="border-b border-border/40"
         style={{ 
           paddingLeft: PANEL_PADDING,
           paddingRight: PANEL_PADDING,
@@ -1509,7 +1323,7 @@ export function TeamPanel() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ paddingLeft: PANEL_SEARCH_INPUT_PADDING_LEFT }}
-            className="bg-white dark:bg-card text-foreground"
+            className="bg-background/80 text-foreground border-border/50"
           />
           {searchQuery && (
             <Button
@@ -1936,7 +1750,7 @@ export function TeamPanel() {
                   setNewMemberEmail(e.target.value)
                 }
                 placeholder="john@example.com"
-                className="bg-white dark:bg-card text-foreground"
+                className="bg-background/80 text-foreground border-border/50"
               />
             </div>
 

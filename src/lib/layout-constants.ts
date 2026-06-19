@@ -539,8 +539,12 @@ export const TEAM_PANEL_VERTICAL_SPACING = '0.75rem'; // gap-3 = 0.75rem (12px) 
 export const TEAM_PANEL_VERTICAL_PADDING = '1.5rem'; // p-6 = 1.5rem (24px) card padding
 
 // Team Panel Grid Layout Constants
-export const TEAM_PANEL_GRID_COLUMNS = 2; // Number of columns for team member cards
-export const TEAM_PANEL_GRID_GAP = '0.75rem'; // gap-3 = 0.75rem (12px) between grid items
+export const TEAM_PANEL_GRID_COLUMNS = 1; // Single-column member list
+export const TEAM_PANEL_GRID_GAP = '0.625rem'; // gap-2.5 between member cards
+export const TEAM_PANEL_MEMBER_AVATAR_SIZE = '3.5rem'; // 56px — horizontal card avatar
+export const TEAM_PANEL_MEMBER_AVATAR_FONT_SIZE = '1rem'; // Initials fallback in member cards
+export const TEAM_PANEL_MEMBER_NAME_SIZE = '0.9375rem'; // 15px member name
+export const TEAM_PANEL_SURFACE_OPACITY = 0.94; // Card surface translucency on team panel
 
 // Team Management Constants
 export const TEAM_MAX_MEMBERS = 8; // Maximum team members per team

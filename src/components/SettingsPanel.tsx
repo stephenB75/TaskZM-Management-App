@@ -26,6 +26,7 @@ import { TermsOfServiceDialog } from './TermsOfServiceDialog';
 import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
 import { AvatarSelection, type AvatarGender } from './AvatarSelection';
+import { UserProfileAvatar } from './UserProfileAvatar';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import { SETTINGS_PANEL_UI_TEXT } from '../lib/settings-panel-constants';
 import { NAVIGATION_UI_TEXT } from '../lib/navigation-constants';
@@ -613,48 +614,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                   paddingRight: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
                 }}>
                   <div className="relative flex-shrink-0 inline-block">
-                    {user?.avatar ? (
-                      <div 
-                        className="rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 border-white dark:border-card shadow-lg"
-                        style={{ 
-                          width: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
-                          height: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
-                        }}
-                      >
-                        <img
-                          src={user.avatar}
-                          alt={user?.name || SETTINGS_PANEL_UI_TEXT.profile.profile}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback to initials if image fails to load
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              const fallback = document.createElement('div');
-                              fallback.className = 'rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg';
-                              // Note: Gradient classes are theme-based and don't need constants
-                              fallback.style.width = SETTINGS_PANEL_PROFILE_AVATAR_SIZE;
-                              fallback.style.height = SETTINGS_PANEL_PROFILE_AVATAR_SIZE;
-                              fallback.style.fontSize = SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE;
-                              fallback.textContent = getInitials(user?.name || '');
-                              parent.appendChild(fallback);
-                            }
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div 
-                        className="rounded-full bg-gradient-to-br from-primary/25 to-primary/5 dark:from-primary/30 dark:to-primary/10 flex items-center justify-center text-primary font-semibold border-4 border-white dark:border-card shadow-lg"
-                        style={{ 
-                          width: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
-                          height: SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
-                          fontSize: SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE
-                        }}
-                      >
-                        {getInitials(user?.name)}
-                      </div>
-                    )}
+                    <UserProfileAvatar
+                      src={user?.avatar}
+                      name={user?.name || SETTINGS_PANEL_UI_TEXT.profile.fallbackName}
+                      size={SETTINGS_PANEL_PROFILE_AVATAR_SIZE}
+                      fontSize={SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE}
+                      showRing
+                      className="border-4 border-white dark:border-card shadow-lg ring-0"
+                    />
                     <Button
                       type="button"
                       variant="outline"
