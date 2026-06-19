@@ -4,6 +4,10 @@
  * Centralized constants for TaskDialog component UI text, styling, and dimensions
  */
 
+import { AGENDA_LIST_CARD, getAgendaCardBadgeStyles } from './agenda-list-card-constants';
+import { TASK_CARD_PRIORITY_COLORS } from './task-card-constants';
+import type { TaskPriority } from '../types';
+
 // UI Text Constants
 export const TASK_DIALOG_UI_TEXT = {
   // Dialog Titles
@@ -192,32 +196,57 @@ export const TASK_DIALOG_DIMENSIONS = {
   },
 } as const;
 
-// Color Classes (for intentional design differences)
-// Reference: docs/task-dialog-reference/ (light orange-yellow dialog, purple pills, red cancel, purple create)
+// Color Classes — aligned with AgendaListCard / task card design
 export const TASK_DIALOG_COLORS = {
-  // Intentional design difference: TaskDialog uses primary color with opacity
-  // instead of purple gradient like other task cards
   assigneeFallbackGradient: 'bg-gradient-to-br from-primary/20 to-primary/40',
-  // Minimal view: warm card background (light yellow-orange inspiration)
-  minimalCardBg: 'bg-amber-50/50 dark:bg-amber-950/20',
-  // Gradient: yellow at top fading to white (overrides base dialog; responsive)
-  dialogBg: '!bg-gradient-to-b !from-[#FFEEB2] !via-amber-50/90 !to-white dark:!from-amber-950/60 dark:!via-amber-950/30 dark:!to-gray-900',
-  // Responsive width: mobile 95vw; tablet sm/md; desktop lg+ wider for comfortable fit
+  minimalCardBg: 'bg-gray-50/60 dark:bg-gray-800/30 border border-gray-200/60 dark:border-gray-600/40',
   dialogMaxWidth: 'max-w-[95vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl',
-  // Reference: selected pill = purple; unselected = text on dialog bg (no white box)
-  pillSelected: 'bg-primary text-primary-foreground',
-  pillUnselected: 'bg-transparent text-foreground hover:bg-primary/10',
-  // Reference: cancel = solid red, create = solid purple (primary)
+  dialogShell: 'bg-white dark:bg-[#3E3E52]',
+  sectionCard: 'bg-white dark:bg-[#3E3E52]/90 border border-gray-200/60 dark:border-gray-600/40',
+  pillSelected: 'bg-primary/14 text-primary font-semibold',
+  pillUnselected: 'bg-gray-100/90 dark:bg-gray-700/40 text-muted-foreground hover:bg-gray-200/80 dark:hover:bg-gray-600/50',
+  tabActive: 'bg-primary/12 text-primary font-semibold shadow-sm',
+  tabInactive: 'text-muted-foreground hover:bg-gray-100/90 dark:hover:bg-gray-700/40',
   footerCancel: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
   footerCreate: 'bg-primary text-primary-foreground hover:bg-primary/90',
-  // Text fields: distinct background so user input is easy to read on the gradient
-  inputFieldBg: '!bg-slate-50 dark:!bg-gray-800 border border-primary/25 shadow-sm placeholder:text-muted-foreground/70',
-  /** First layer: menu strip - white background, black border */
+  inputFieldBg: 'bg-gray-50/90 dark:bg-gray-800/70 border border-gray-200/80 dark:border-gray-600/50 shadow-sm placeholder:text-muted-foreground/70',
+  contentCardBg: 'bg-white dark:bg-[#3E3E52]',
   menuLayerBg: 'bg-white dark:bg-gray-900',
-  menuLayerBorder: 'border-2 border-black dark:border-gray-500',
-  /** Second layer: content card with form; yellow gradient */
-  contentCardBg: '!bg-gradient-to-b !from-[#FFEEB2] !via-amber-50/90 !to-white dark:!from-amber-950/60 dark:!via-amber-950/30 dark:!to-gray-900',
+  menuLayerBorder: 'border border-gray-200 dark:border-gray-600',
+  /** @deprecated Use contentCardBg — kept for gradual migration */
+  dialogBg: 'bg-white dark:bg-[#3E3E52]',
 } as const;
+
+/** Section layout tokens (accent dot + line, shared with agenda cards). */
+export const TASK_DIALOG_SECTION = {
+  paddingPx: AGENDA_LIST_CARD.paddingPx,
+  compactPaddingPx: AGENDA_LIST_CARD.compact.paddingPx,
+  borderRadiusPx: AGENDA_LIST_CARD.borderRadiusPx,
+  shadow: AGENDA_LIST_CARD.shadow,
+  accentColumnWidthPx: AGENDA_LIST_CARD.accentColumnWidthPx,
+  dotSizePx: AGENDA_LIST_CARD.dotSizePx,
+  accentLineWidthPx: AGENDA_LIST_CARD.accentLineWidthPx,
+  accentLineMinHeightPx: 28,
+  sectionTitleSizePx: 12,
+  sectionGapPx: 10,
+} as const;
+
+export function getTaskDialogPriorityAccent(priority: string): string {
+  const key = priority in TASK_CARD_PRIORITY_COLORS ? priority : 'default';
+  return TASK_CARD_PRIORITY_COLORS[key as keyof typeof TASK_CARD_PRIORITY_COLORS].line;
+}
+
+export function getTaskDialogPriorityPillStyles(
+  priority: TaskPriority,
+  selected: boolean,
+): { backgroundColor?: string; color?: string } {
+  if (!selected) return {};
+  const badge = getAgendaCardBadgeStyles(getTaskDialogPriorityAccent(priority));
+  return {
+    backgroundColor: badge.badgeBackground,
+    color: badge.badgeText,
+  };
+}
 
 // Menu Dimensions
 export const TASK_DIALOG_MENU_WIDTH = {
@@ -236,23 +265,20 @@ export const TASK_DIALOG_SECTION_SPACING = {
   desktop: '2rem', // space-y-8
 } as const;
 
-// Minimal view: responsive spacing so components fit on all devices
+// Minimal view: responsive compact spacing
 export const TASK_DIALOG_MINIMAL_SPACING = {
   headerGap: 'gap-1 sm:gap-2',
-  headerPaddingBottom: 'pb-2 sm:pb-3 lg:pb-4',
-  cardPadding: 'p-3 sm:p-4 lg:p-5',
-  cardSpaceY: 'space-y-2 sm:space-y-3 lg:space-y-4',
+  headerPaddingBottom: 'pb-2 sm:pb-3',
+  cardPadding: 'p-3 sm:p-3.5',
+  cardSpaceY: 'space-y-2 sm:space-y-2.5',
   fieldSpaceY: 'space-y-1 sm:space-y-1.5',
-  statusPriorityRowGap: 'gap-2 sm:gap-3',
+  statusPriorityRowGap: 'gap-1.5 sm:gap-2',
   pillGap: 'gap-1 sm:gap-1.5',
-  contentPadding: 'px-3 pb-3 sm:px-5 sm:pb-4 md:px-5 md:pb-4 lg:px-6 lg:pb-5',
+  contentPadding: 'px-0 pb-2 sm:pb-3',
   mobileTabSelectWrapper: 'px-3 pt-3 pb-2 sm:px-4 sm:pt-4 lg:px-5 lg:pt-4 lg:pb-3',
-  // Responsive: tighter on small screens, generous on desktop
-  basicContentSpaceY: 'space-y-4 sm:space-y-6 lg:space-y-6',
-  // Inner wrapper: more padding on desktop for comfortable fit
-  dialogInnerPadding: 'pt-4 px-4 pb-3 sm:pt-6 sm:px-6 sm:pb-5 md:pt-6 md:px-6 md:pb-5 lg:pt-8 lg:px-8 lg:pb-6',
-  // Tab header buttons: min height for touch targets (mobile 2.25rem, desktop 2.5rem)
-  tabButtonMinHeight: 'min-h-[2.25rem] sm:min-h-[2.5rem]',
+  basicContentSpaceY: 'space-y-3 sm:space-y-4',
+  dialogInnerPadding: 'pt-3 px-3 pb-3 sm:pt-4 sm:px-5 sm:pb-4 md:px-6 md:pb-4',
+  tabButtonMinHeight: 'min-h-[2rem] sm:min-h-[2.25rem]',
   // Schedule tab: grid and time row spacing (no hardcoded values in component)
   scheduleGridGap: 'gap-6 sm:gap-8',
   scheduleColumnSpaceY: 'space-y-4',

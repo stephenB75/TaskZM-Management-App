@@ -80,7 +80,10 @@ import { generateDescription, generateDescriptionOptions, getSuggestivePhrases, 
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_OPTIONS_DEBOUNCE_MS, TASK_BREAKDOWN_DEBOUNCE_MS, EFFORT_SCORE_THRESHOLDS, DESCRIPTION_UI_CONFIG } from "../lib/ai-config";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
-import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS } from "../lib/task-dialog-constants";
+import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS, getTaskDialogPriorityAccent, getTaskDialogPriorityPillStyles } from "../lib/task-dialog-constants";
+import { AGENDA_LIST_CARD } from "../lib/agenda-list-card-constants";
+import { TaskDialogSection } from "./task-dialog/TaskDialogSection";
+import { TaskDialogPreviewCard } from "./task-dialog/TaskDialogPreviewCard";
 import { useIsMobile } from "./ui/use-mobile";
 import type {
   Task,
@@ -224,7 +227,7 @@ function FixedMiniCalendar({
   const activeDate = activeField === "scheduled" ? scheduledDate : dueDate;
 
   return (
-    <div className={cn("w-full bg-white/70 dark:bg-gray-800/95 dark:border dark:border-gray-600 text-foreground dark:text-gray-100 rounded-lg border-0", TASK_DIALOG_MINIMAL_SPACING.cardPadding)}>
+    <div className={cn("w-full rounded-2xl border border-gray-200/70 dark:border-gray-600/50", TASK_DIALOG_COLORS.sectionCard, TASK_DIALOG_MINIMAL_SPACING.cardPadding)}>
       {/* Toggle Buttons (Scheduled / Due Date / Clear) - min-w-0 + truncate so content doesn't spill on mobile */}
       <div className={cn("flex gap-1 sm:gap-2 mb-2 min-w-0", TASK_DIALOG_MINIMAL_SPACING.statusPriorityRowGap)}>
         <Button
@@ -2510,29 +2513,33 @@ export function TaskDialog({
           "text-foreground dark:text-foreground"
         )}
       >
-        {/* Single panel: yellow gradient only (no outer white box); close on panel */}
-        <div className={cn(
-          "relative flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl shadow-xl",
-          TASK_DIALOG_COLORS.contentCardBg,
-          TASK_DIALOG_MINIMAL_SPACING.dialogInnerPadding
-        )}>
-          {/* Close button on yellow gradient panel */}
+        {/* Dialog shell — white card style matching agenda task cards */}
+        <div
+          className={cn(
+            "relative flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl",
+            TASK_DIALOG_COLORS.contentCardBg,
+            TASK_DIALOG_MINIMAL_SPACING.dialogInnerPadding,
+          )}
+          style={{ boxShadow: AGENDA_LIST_CARD.shadow }}
+        >
+          {/* Close button */}
           <button
             type="button"
             onClick={onClose}
-            className={cn(TASK_DIALOG_MINIMAL_SPACING.closeButtonPosition, "text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-colors")}
+            className={cn(TASK_DIALOG_MINIMAL_SPACING.closeButtonPosition, "text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors rounded-md")}
             aria-label="Close"
           >
             <Icon name="x" size={ICON_SIZE_MD} aria-hidden />
           </button>
-          {/* Tabs at top */}
-          <nav className={cn("flex flex-row items-center gap-1 pb-3 border-b border-border/50 mb-3", TASK_DIALOG_MINIMAL_SPACING.navPaddingRightForClose)} aria-label="Task sections">
+          {/* Section tabs */}
+          <nav className={cn("flex flex-row items-center gap-1 pb-2 border-b border-gray-200/70 dark:border-gray-600/50 mb-2", TASK_DIALOG_MINIMAL_SPACING.navPaddingRightForClose)} aria-label="Task sections">
             <button
               type="button"
               onClick={() => setActiveTab('basic')}
               className={cn(
-                "rounded-md py-2 px-3 text-xs sm:text-sm font-medium",
-                activeTab === 'basic' ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/10"
+                "rounded-full py-1.5 px-3 text-xs sm:text-sm font-medium transition-colors",
+                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                activeTab === 'basic' ? TASK_DIALOG_COLORS.tabActive : TASK_DIALOG_COLORS.tabInactive,
               )}
             >
               {TASK_DIALOG_UI_TEXT.taskInfoTitle}
@@ -2541,8 +2548,9 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('scheduling')}
               className={cn(
-                "rounded-md py-2 px-3 text-xs sm:text-sm font-medium",
-                activeTab === 'scheduling' ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/10"
+                "rounded-full py-1.5 px-3 text-xs sm:text-sm font-medium transition-colors",
+                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                activeTab === 'scheduling' ? TASK_DIALOG_COLORS.tabActive : TASK_DIALOG_COLORS.tabInactive,
               )}
             >
               {TASK_DIALOG_UI_TEXT.schedule.desktop}
@@ -2551,13 +2559,28 @@ export function TaskDialog({
               type="button"
               onClick={() => setActiveTab('organization')}
               className={cn(
-                "rounded-md py-2 px-3 text-xs sm:text-sm font-medium",
-                activeTab === 'organization' ? "bg-primary/15 text-primary" : "text-foreground hover:bg-primary/10"
+                "rounded-full py-1.5 px-3 text-xs sm:text-sm font-medium transition-colors",
+                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
+                activeTab === 'organization' ? TASK_DIALOG_COLORS.tabActive : TASK_DIALOG_COLORS.tabInactive,
               )}
             >
               {TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
             </button>
           </nav>
+          <div className="mb-3">
+            <TaskDialogPreviewCard
+              title={title}
+              description={description}
+              priority={priority}
+              status={status}
+              scheduledDate={scheduledDate}
+              scheduledTime={scheduledTime}
+              tags={tags}
+              estimatedMinutes={
+                (parseInt(estimatedHours, 10) || 0) * MINUTES_PER_HOUR + (parseInt(estimatedMinutes, 10) || 0)
+              }
+            />
+          </div>
         <DialogTitle className="sr-only">
           {activeTab === 'basic'
             ? TASK_DIALOG_UI_TEXT.taskInfoTitle
@@ -2588,7 +2611,11 @@ export function TaskDialog({
               )}>
                 {/* Basic Info Tab - Reference: warm surface only; Task Name, Description, Status, Priority with generous spacing; no inner card */}
                 <TabsContent value="basic" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
-                  {/* Task Name - reference: bold label, white rounded borderless input; emoji picker for title */}
+                  <TaskDialogSection
+                    accentColor={getTaskDialogPriorityAccent(priority)}
+                    title={TASK_DIALOG_UI_TEXT.taskInfoTitle}
+                    className={TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY}
+                  >
                   <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
                     <div className="flex items-center justify-between gap-2">
                       <Label htmlFor="title" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
@@ -2836,7 +2863,7 @@ export function TaskDialog({
                     <div className={cn(
                       cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                       TASK_DIALOG_MINIMAL_SPACING.cardPadding,
-                      "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow overflow-hidden min-w-0"
+                      "overflow-hidden min-w-0"
                     )}>
                       {isBreakdownLoading ? (
                         <div className="flex items-center gap-2 text-muted-foreground text-sm min-w-0">
@@ -2977,8 +3004,9 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
-                              isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
+                              "px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium transition-colors",
+                              !isSelected && TASK_DIALOG_COLORS.pillUnselected,
+                              isSelected && TASK_DIALOG_COLORS.pillSelected,
                             )}
                           >
                             {label}
@@ -3002,9 +3030,10 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors",
-                              isSelected ? TASK_DIALOG_COLORS.pillSelected : TASK_DIALOG_COLORS.pillUnselected
+                              "px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium transition-colors capitalize",
+                              !isSelected && TASK_DIALOG_COLORS.pillUnselected,
                             )}
+                            style={getTaskDialogPriorityPillStyles(value, isSelected)}
                           >
                             {label}
                           </button>
@@ -3013,11 +3042,15 @@ export function TaskDialog({
                     </div>
                   </div>
 
-              </TabsContent>
+                  </TaskDialogSection>
+                </TabsContent>
 
-                {/* Scheduling Tab - reference: warm surface; prominent date, Scheduled/Due/Clear, calendar, 12HR/24HR; no inner card */}
                 <TabsContent value="scheduling" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
-                  {/* Prominent date line - reference: "Wed, JAN 31, 2026" large bold, uppercase month */}
+                  <TaskDialogSection
+                    accentColor={getTaskDialogPriorityAccent(priority)}
+                    title={TASK_DIALOG_UI_TEXT.schedule.desktop}
+                    className={TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY}
+                  >
                   {(scheduledDate || dueDate) && (() => {
                     const activeDate = activeDateField === 'scheduled' ? scheduledDate : dueDate;
                     if (!activeDate) return null;
@@ -3467,16 +3500,20 @@ export function TaskDialog({
                         )}
                       </div>
                     )}
+                  </TaskDialogSection>
               </TabsContent>
 
               {/* Organization & Advanced Tab - Folder, Tags, Subtasks, etc. */}
                 <TabsContent value="organization" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.cardSpaceY)}>
-                  {/* Folder Selector */}
+                  <TaskDialogSection
+                    accentColor={getTaskDialogPriorityAccent(priority)}
+                    title={TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
+                    className={TASK_DIALOG_MINIMAL_SPACING.cardSpaceY}
+                  >
                   {folders.length > 0 && (
                     <div className={cn(
                       cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
                       cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
-                      "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow",
                       "mb-3 sm:mb-4"
                     )}>
                       <Label htmlFor="folder" className="text-sm font-semibold flex items-center gap-2 text-foreground">
@@ -3528,7 +3565,7 @@ export function TaskDialog({
                   )}
 
                   <div className={cn(
-                    "rounded-xl border border-primary/15 shadow-sm",
+                    "rounded-xl",
                     TASK_DIALOG_MINIMAL_SPACING.cardPadding,
                     TASK_DIALOG_MINIMAL_SPACING.cardSpaceY,
                     TASK_DIALOG_COLORS.minimalCardBg,
@@ -4289,6 +4326,7 @@ export function TaskDialog({
                     )}
                   </p>
                 )}
+                  </TaskDialogSection>
                 </TabsContent>
 
                 {/* Advanced Tab - Removed (merged into Organization) */}
@@ -4322,7 +4360,7 @@ export function TaskDialog({
           {/* Footer outside form so all buttons behave as regular buttons (avoids Radix form/dialog quirks) */}
           <div
             className={cn(
-              "flex flex-col gap-3 pt-5 sm:pt-6 flex-shrink-0"
+              "flex flex-col gap-2 pt-3 sm:pt-4 flex-shrink-0"
             )}
             style={{
               paddingLeft: 0,
@@ -4367,7 +4405,7 @@ export function TaskDialog({
                 onClick={onClose}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCancel,
-                  "flex-1 lg:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base min-w-0",
+                  "flex-1 lg:flex-initial font-semibold h-9 sm:h-10 rounded-xl text-sm min-w-0",
                   "px-3 lg:px-6 flex items-center justify-center"
                 )}
                 title={TASK_DIALOG_UI_TEXT.buttonTooltips.cancel}
@@ -4384,7 +4422,7 @@ export function TaskDialog({
                 }}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCreate,
-                  "flex-1 lg:flex-initial font-semibold h-10 sm:h-12 rounded-xl text-sm sm:text-base shadow-md min-w-0",
+                  "flex-1 lg:flex-initial font-semibold h-9 sm:h-10 rounded-xl text-sm shadow-md min-w-0",
                   "px-3 lg:px-6 flex items-center justify-center"
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
