@@ -784,6 +784,9 @@ export const DASHBOARD_VIEW_HEADER_LABELS = {
   month: 'Month',
   today: 'Today',
   dashboard: 'Dashboard',
+  aiSchedulerSuggestions: 'Suggestions',
+  aiSchedulerSuggestionsLong: 'AI Scheduler Suggestions',
+  reschedule: 'Re-schedule',
 } as const;
 
 /** Compact mobile week carousel strip below AppHeader */

@@ -66,7 +66,6 @@ import {
   HEADER_GAP_MEDIUM,
   HEADER_GAP_LARGE,
   HEADER_GAP_XSMALL,
-  HEADER_GAP_XLARGE,
   HEADER_CONTENT_PADDING_LEFT_MOBILE,
   HEADER_CONTENT_PADDING_LEFT_DESKTOP,
   HEADER_BUTTON_SCALE_SMALL,
@@ -78,10 +77,9 @@ import {
   HEADER_BUTTON_PILL_PADDING_X_SMALL,
   HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
   HEADER_BUTTON_BORDER_RADIUS,
+  HEADER_BUTTON_LINE_HEIGHT,
   HEADER_ICON_SIZE_BUTTON_SMALL,
   HEADER_ICON_SIZE_BUTTON_DESKTOP,
-  HEADER_ICON_MARGIN_SMALL,
-  HEADER_ICON_MARGIN_DESKTOP,
   HEADER_DESCRIPTION_SIZE,
   ICON_SIZE_XS,
   ICON_SIZE_SM,
@@ -1131,6 +1129,25 @@ export function DashboardView({
     });
   };
 
+  const handleOpenRescheduleDialog = useCallback(() => {
+    if (isRescheduling) return;
+    if (!safeHasFeature('aiScheduler')) {
+      toast.error('Re-schedule is a Pro feature', {
+        description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
+      });
+      return;
+    }
+    try {
+      setShowRescheduleDialog(true);
+    } catch (error) {
+      console.error('Error opening reschedule dialog:', error);
+      toast.error('Failed to open reschedule dialog', {
+        description: 'Please try again',
+        duration: TOAST_DURATION_SHORT_MS,
+      });
+    }
+  }, [isRescheduling, safeHasFeature]);
+
   const handleRandomReschedule = async (type: "day" | "week" | "month", selectedDate?: Date, selectedDates: Date[] = []) => {
     // Check if user has access to AI Scheduler feature
     if (!safeHasFeature('aiScheduler')) {
@@ -1434,111 +1451,70 @@ export function DashboardView({
             )}
 
             {/* AI Scheduler Buttons - Desktop Only (not mobile/tablet) */}
-            <div 
-              className={cn(
-                !shouldUseMobileLayout ? "flex items-center flex-shrink-0" : "hidden"
-              )}
-              style={{ gap: isSmallScreen ? HEADER_GAP_LARGE : HEADER_GAP_XLARGE }} // Increased spacing between AI Scheduler and Re-schedule
+            <div
+              className={cn(!shouldUseMobileLayout ? 'flex items-center flex-shrink-0' : 'hidden')}
+              style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
             >
-              <div
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleScheduleUnscheduledTasks}
-                className={cn(
-                  "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80",
-                  showActionText && "whitespace-nowrap"
-                )}
-                data-tour="ai-scheduler"
-                title={showActionText ? "AI Scheduler Suggestions" : "AI Suggestions"}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleScheduleUnscheduledTasks();
-                  }
+                className="flex-shrink-0 border-border/60 bg-background/80 text-foreground hover:bg-muted/60 dark:bg-card/80 dark:hover:bg-muted/40"
+                style={{
+                  transform: `scale(${buttonScale})`,
+                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
+                  paddingRight: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
+                  paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
+                  paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
+                  borderRadius: HEADER_BUTTON_BORDER_RADIUS,
+                  fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
+                  lineHeight: HEADER_BUTTON_LINE_HEIGHT,
+                  gap: HEADER_GAP_XSMALL,
+                  height: 'auto',
                 }}
+                data-tour="ai-scheduler"
               >
-                <Icon 
+                <Icon
                   name="head-circuit"
                   size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
-                  weight={viewMode === "week" ? "duotone" : "regular"}
+                  weight={viewMode === 'week' ? 'duotone' : 'regular'}
                   className="text-primary dark:text-primary-foreground flex-shrink-0"
-                  style={{
-                    marginRight: showActionText ? HEADER_ICON_MARGIN_SMALL : 0,
-                  }}
                 />
-                {showActionText && (
-                  <span className="text-foreground dark:text-gray-100">
-                    AI Scheduler Suggestions
-                  </span>
-                )}
-              </div>
-              <div
-                onClick={() => {
-                  if (isRescheduling) return;
-                  // Check if user has access to AI Scheduler feature
-                  if (!safeHasFeature('aiScheduler')) {
-                    toast.error('Re-schedule is a Pro feature', {
-                      description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
-                    });
-                    return;
-                  }
-                  try {
-                    setShowRescheduleDialog(true);
-                  } catch (error) {
-                    console.error('Error opening reschedule dialog:', error);
-                    toast.error('Failed to open reschedule dialog', {
-                      description: 'Please try again',
-                      duration: TOAST_DURATION_SHORT_MS,
-                    });
-                  }
+                {showActionText
+                  ? DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsLong
+                  : DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestions}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleOpenRescheduleDialog}
+                disabled={isRescheduling}
+                className="flex-shrink-0 border-border/60 bg-background/80 text-foreground hover:bg-muted/60 dark:bg-card/80 dark:hover:bg-muted/40 disabled:opacity-50"
+                style={{
+                  transform: `scale(${buttonScale})`,
+                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
+                  paddingRight: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
+                  paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
+                  paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
+                  borderRadius: HEADER_BUTTON_BORDER_RADIUS,
+                  fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
+                  lineHeight: HEADER_BUTTON_LINE_HEIGHT,
+                  gap: HEADER_GAP_XSMALL,
+                  height: 'auto',
                 }}
-                className={cn(
-                  "cursor-pointer flex items-center flex-shrink-0 transition-opacity hover:opacity-80",
-                  showActionText && "whitespace-nowrap",
-                  isRescheduling && "opacity-50 cursor-not-allowed"
-                )}
                 data-tour="re-schedule"
-                title="Re-schedule"
-                role="button"
-                tabIndex={isRescheduling ? -1 : 0}
-                onKeyDown={(e) => {
-                  if (isRescheduling) return;
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    if (!safeHasFeature('aiScheduler')) {
-                      toast.error('Re-schedule is a Pro feature', {
-                        description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
-                      });
-                      return;
-                    }
-                    try {
-                      setShowRescheduleDialog(true);
-                    } catch (error) {
-                      console.error('Error opening reschedule dialog:', error);
-                      toast.error('Failed to open reschedule dialog', {
-                        description: 'Please try again',
-                        duration: TOAST_DURATION_SHORT_MS,
-                      });
-                    }
-                  }
-                }}
               >
-                <Icon 
+                <Icon
                   name="calendar-dots"
                   size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
-                  weight={viewMode === "week" ? "duotone" : "regular"}
+                  weight={viewMode === 'week' ? 'duotone' : 'regular'}
                   className={cn(
-                    "text-primary dark:text-primary-foreground",
-                    isRescheduling && "animate-spin"
+                    'text-primary dark:text-primary-foreground flex-shrink-0',
+                    isRescheduling && 'animate-spin',
                   )}
-                  style={{
-                    marginRight: showActionText ? HEADER_ICON_MARGIN_DESKTOP : 0,
-                  }}
                 />
-                {showActionText && (
-                  <span className="text-foreground dark:text-gray-100">Re-schedule</span>
-                )}
-              </div>
+                {DASHBOARD_VIEW_HEADER_LABELS.reschedule}
+              </Button>
             </div>
           </div>
         }
