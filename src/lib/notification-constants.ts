@@ -8,6 +8,8 @@ import {
   DEFAULT_NOTIFICATION_REMINDER_TIME,
   DEFAULT_NOTIFICATION_CHECK_INTERVAL,
 } from './business-constants';
+import { TASK_CARD_PRIORITY_COLORS } from './task-card-constants';
+import { AGENDA_LIST_CARD } from './agenda-list-card-constants';
 
 // Default notification settings
 export const DEFAULT_NOTIFICATION_SETTINGS = {
@@ -175,5 +177,79 @@ export const NOTIFICATION_POMODORO_ARIA = {
   stopTimer: 'Stop timer',
   timeRemaining: 'Time remaining',
   pausedTimeRemaining: 'Paused - time remaining',
+} as const;
+
+/** Accent colors for notification cards (AgendaListCard dot + badge). */
+export const NOTIFICATION_CARD_ACCENT_COLORS = {
+  taskOverdue: TASK_CARD_PRIORITY_COLORS.urgent.line,
+  taskDueSoon: TASK_CARD_PRIORITY_COLORS.high.line,
+  pomodoroComplete: '#A855F7',
+  pomodoroBreak: '#A855F7',
+  awardEarned: '#EAB308',
+  toastSuccess: '#22C55E',
+  toastError: TASK_CARD_PRIORITY_COLORS.urgent.line,
+  toastWarning: TASK_CARD_PRIORITY_COLORS.high.line,
+  toastInfo: TASK_CARD_PRIORITY_COLORS.medium.line,
+  system: TASK_CARD_PRIORITY_COLORS.default.line,
+} as const;
+
+/** Short badge labels shown on notification cards. */
+export const NOTIFICATION_CARD_BADGE_LABELS = {
+  taskOverdue: 'Overdue',
+  taskDueSoon: 'Due soon',
+  pomodoroComplete: 'Pomodoro',
+  pomodoroBreak: 'Break',
+  awardEarned: 'Award',
+  toastSuccess: 'Success',
+  toastError: 'Error',
+  toastWarning: 'Warning',
+  toastInfo: 'Info',
+  system: 'System',
+} as const;
+
+/** Footer source labels on notification cards. */
+export const NOTIFICATION_CARD_FOOTER_LABELS = {
+  taskOverdue: 'Task alert',
+  taskDueSoon: 'Task reminder',
+  pomodoroComplete: 'Focus timer',
+  pomodoroBreak: 'Focus timer',
+  awardEarned: 'Achievement',
+  toastSuccess: 'App update',
+  toastError: 'App update',
+  toastWarning: 'App update',
+  toastInfo: 'App update',
+  system: 'System',
+} as const;
+
+/** Footer icon names (Phosphor) per notification type. */
+export const NOTIFICATION_CARD_FOOTER_ICONS = {
+  taskOverdue: 'alert-circle',
+  taskDueSoon: 'clock',
+  pomodoroComplete: 'timer',
+  pomodoroBreak: 'timer',
+  awardEarned: 'award',
+  toastSuccess: 'check-circle',
+  toastError: 'alert-circle',
+  toastWarning: 'alert-circle',
+  toastInfo: 'bell',
+  system: 'bell',
+} as const;
+
+export type NotificationCardType =
+  | 'task-overdue'
+  | 'task-due-soon'
+  | 'pomodoro-complete'
+  | 'pomodoro-break'
+  | 'award-earned'
+  | 'system'
+  | 'toast-success'
+  | 'toast-error'
+  | 'toast-info'
+  | 'toast-warning';
+
+/** Notification card layout tokens (AgendaListCard shell). */
+export const NOTIFICATION_CARD = {
+  unreadDotSizePx: AGENDA_LIST_CARD.dotSizePx,
+  dismissButtonSizePx: 24,
 } as const;
 

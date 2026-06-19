@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_2XL } from "../lib/layout-constants";
+import { ICON_SIZE_MD, ICON_SIZE_XS, ICON_SIZE_2XL, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, HEADER_GAP_SMALL, HEADER_BUTTON_SIZE, HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { usePomodoro } from "../contexts/PomodoroContext";
@@ -10,10 +10,7 @@ import { useAwards } from "../contexts/AwardContext";
 import type { Award } from "../types";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { Checkbox } from "./ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -24,7 +21,6 @@ import {
 import { cn } from "../lib/utils";
 import { UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
-import { HEADER_MOBILE_SAFE_AREA_SPACER, VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, HEADER_GAP_SMALL, HEADER_BUTTON_SIZE } from "../lib/layout-constants";
 import {
   Tooltip,
   TooltipContent,
@@ -32,7 +28,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
-import type { Task } from "../types";
+import { NotificationCard, type NotificationCardItem } from "./NotificationCard";
 import {
   NOTIFICATION_STORAGE_KEYS,
   NOTIFICATION_TITLES,
@@ -42,24 +38,12 @@ import {
   NOTIFICATION_TIME_FORMATS,
 } from "../lib/notification-constants";
 
-interface NotificationItem {
-  id: string;
-  type: 'task-overdue' | 'task-due-soon' | 'pomodoro-complete' | 'pomodoro-break' | 'award-earned' | 'system' | 'toast-success' | 'toast-error' | 'toast-info' | 'toast-warning';
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  taskId?: string;
-  priority?: Task['priority'];
-  awardId?: string;
-}
-
 export function NotificationsPanel() {
   const { tasks } = useTasks();
   const { badgeCount, settings, getToastNotifications, markToastAsRead, clearToastNotification, updateBadge } = useNotifications();
   const { getTimerState } = usePomodoro();
   const { earnedAwards, awards } = useAwards();
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationCardItem[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
   const [readNotifications, setReadNotifications] = useState<Set<string>>(
     () => new Set(JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.readNotifications) || '[]'))
@@ -68,6 +52,21 @@ export function NotificationsPanel() {
     () => new Set(JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEYS.dismissedNotifications) || '[]'))
   );
   const [selectedNotificationIds, setSelectedNotificationIds] = useState<Set<string>>(new Set());
+  const [checkboxSizePx, setCheckboxSizePx] = useState(() =>
+    getCheckboxSizePxForWidth(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop),
+  );
+  const [visualSizePx, setVisualSizePx] = useState(() =>
+    getCheckboxVisualSizePxForWidth(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop),
+  );
+
+  useEffect(() => {
+    const onResize = () => {
+      setCheckboxSizePx(getCheckboxSizePxForWidth(window.innerWidth));
+      setVisualSizePx(getCheckboxVisualSizePxForWidth(window.innerWidth));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Save read notifications to localStorage
   useEffect(() => {
@@ -102,7 +101,7 @@ export function NotificationsPanel() {
   // Generate notifications from tasks
   useEffect(() => {
     const now = new Date();
-    const newNotifications: NotificationItem[] = [];
+    const newNotifications: NotificationCardItem[] = [];
 
     // Overdue tasks (check both dueDate and scheduledDate)
     if (settings.overdueAlerts) {
@@ -143,7 +142,7 @@ export function NotificationsPanel() {
           
           newNotifications.push({
             id: notificationId,
-            type: NOTIFICATION_TYPES.taskOverdue as NotificationItem['type'],
+            type: NOTIFICATION_TYPES.taskOverdue as NotificationCardItem['type'],
             title: NOTIFICATION_TITLES.taskOverdue,
             message: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
             timestamp: new Date(dateToUse || now),
@@ -199,7 +198,7 @@ export function NotificationsPanel() {
           
           newNotifications.push({
             id: notificationId,
-            type: NOTIFICATION_TYPES.taskDueSoon as NotificationItem['type'],
+            type: NOTIFICATION_TYPES.taskDueSoon as NotificationCardItem['type'],
             title: isDueNow ? NOTIFICATION_TITLES.taskDueNow : NOTIFICATION_TITLES.taskUpcoming,
             message: isDueNow 
               ? NOTIFICATION_MESSAGES.taskDueNow(task.title)
@@ -227,7 +226,7 @@ export function NotificationsPanel() {
         if (!dismissedNotifications.has(notificationId) && !readNotifications.has(notificationId)) {
           newNotifications.push({
             id: notificationId,
-            type: NOTIFICATION_TYPES.pomodoroComplete as NotificationItem['type'],
+            type: NOTIFICATION_TYPES.pomodoroComplete as NotificationCardItem['type'],
             title: NOTIFICATION_TITLES.pomodoroComplete,
             message: NOTIFICATION_MESSAGES.pomodoroSessionsCompleted(newSessions, task.title),
             timestamp: new Date(),
@@ -243,7 +242,7 @@ export function NotificationsPanel() {
         if (!dismissedNotifications.has(notificationId) && !readNotifications.has(notificationId)) {
           newNotifications.push({
             id: notificationId,
-            type: NOTIFICATION_TYPES.pomodoroComplete as NotificationItem['type'],
+            type: NOTIFICATION_TYPES.pomodoroComplete as NotificationCardItem['type'],
             title: NOTIFICATION_TITLES.pomodoroComplete,
             message: NOTIFICATION_MESSAGES.pomodoroSessionsCompleted(timerState.sessionsCompleted, task.title),
             timestamp: new Date(),
@@ -280,7 +279,7 @@ export function NotificationsPanel() {
         
         newNotifications.push({
           id: notificationId,
-          type: NOTIFICATION_TYPES.awardEarned as NotificationItem['type'],
+          type: NOTIFICATION_TYPES.awardEarned as NotificationCardItem['type'],
           title: NOTIFICATION_TITLES.awardEarned,
           message: NOTIFICATION_MESSAGES.awardEarned(award.name),
           timestamp: new Date(userAward.earnedAt),
@@ -296,7 +295,7 @@ export function NotificationsPanel() {
       // Skip if already dismissed
       if (dismissedNotifications.has(toast.id)) return;
       
-      const notificationType = `toast-${toast.type}` as NotificationItem['type'];
+      const notificationType = `toast-${toast.type}` as NotificationCardItem['type'];
       newNotifications.push({
         id: toast.id,
         type: notificationType,
@@ -420,44 +419,47 @@ export function NotificationsPanel() {
     }
   };
 
-  const getNotificationIcon = (type: NotificationItem['type']) => {
-    switch (type) {
-      case 'task-overdue':
-        return <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-500" />;
-      case 'task-due-soon':
-        return <Icon name="clock" size={ICON_SIZE_XS} className="text-orange-500" />;
-      case 'pomodoro-complete':
-      case 'pomodoro-break':
-        return <Icon name="timer" size={ICON_SIZE_XS} className="text-purple-500" />;
-      case 'award-earned':
-        return <Icon name="award" size={ICON_SIZE_MD} className="text-yellow-500" />;
-      case 'toast-success':
-        return <Icon name="check-circle" size={ICON_SIZE_XS} className="text-green-500" />;
-      case 'toast-error':
-        return <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-red-500" />;
-      case 'toast-warning':
-        return <Icon name="alert-circle" size={ICON_SIZE_XS} className="text-orange-500" />;
-      case 'toast-info':
-        return <Icon name="bell" size={ICON_SIZE_XS} className="text-blue-500" />;
-      default:
-        return <Icon name="bell" size={ICON_SIZE_XS} className="text-primary" />;
-    }
-  };
-
-  const getPriorityColor = (priority?: Task['priority']) => {
-    switch (priority) {
-      case 'urgent':
-        return 'border-l-red-500';
-      case 'high':
-        return 'border-l-orange-500';
-      case 'medium':
-        return 'border-l-blue-500';
-      case 'low':
-        return 'border-l-gray-400';
-      default:
-        return 'border-l-gray-300';
-    }
-  };
+  const renderNotificationsList = () => (
+    filteredNotifications.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <Icon name="bell" size={ICON_SIZE_2XL} className="text-primary/40" />
+        </div>
+        <p className="text-sm text-muted-foreground mb-2">
+          {filterType === "all"
+            ? NOTIFICATION_PANEL_TEXT.emptyState.noNotifications
+            : NOTIFICATION_PANEL_TEXT.emptyState.noNotificationsOfType}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp}
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-3">
+        <AnimatePresence>
+          {filteredNotifications.map((notification) => (
+            <motion.div
+              key={notification.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <NotificationCard
+                notification={notification}
+                selected={selectedNotificationIds.has(notification.id)}
+                onToggleSelect={() => handleToggleSelect(notification.id)}
+                onMarkAsRead={() => markAsRead(notification.id)}
+                onDismiss={() => clearNotification(notification.id)}
+                checkboxSizePx={checkboxSizePx}
+                visualSizePx={visualSizePx}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    )
+  );
 
   return (
     <div 
@@ -568,186 +570,12 @@ export function NotificationsPanel() {
           {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
             <ScrollArea className="h-full">
               <div className="p-4 space-y-3 pb-safe md:pb-4">
-            {filteredNotifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Icon name="bell" size={ICON_SIZE_2XL} className="text-primary/40" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {filterType === "all"
-                    ? NOTIFICATION_PANEL_TEXT.emptyState.noNotifications
-                    : NOTIFICATION_PANEL_TEXT.emptyState.noNotificationsOfType}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp}
-                </p>
-              </div>
-            ) : (
-              <AnimatePresence>
-                {filteredNotifications.map((notification) => (
-                  <motion.div
-                    key={notification.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Card
-                      className={cn(
-                        "p-4 border-l-4 transition-all hover:shadow-md",
-                        !notification.read && "bg-primary/5 border-l-4",
-                        notification.read && "opacity-60",
-                        getPriorityColor(notification.priority)
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedNotificationIds.has(notification.id)}
-                          onCheckedChange={() => handleToggleSelect(notification.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-0.5"
-                        />
-                        <div 
-                          className="mt-0.5 flex-shrink-0 cursor-pointer"
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div 
-                          className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-sm font-semibold mb-1">
-                                {notification.title}
-                              </h3>
-                              <p className="text-xs text-muted-foreground">
-                                {notification.message}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground mt-2">
-                                {notification.timestamp.toLocaleString()}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {!notification.read && (
-                                <Badge
-                                  variant="default"
-                                  className="w-2 h-2 p-0 rounded-full bg-primary"
-                                />
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  clearNotification(notification.id);
-                                }}
-                              >
-                                <Icon name="x" size={ICON_SIZE_XS} />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            )}
+            {renderNotificationsList()}
               </div>
             </ScrollArea>
           ) : (
             <div className="p-4 space-y-3" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? MOBILE_PADDING_BOTTOM : undefined }}>
-              {filteredNotifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Icon name="bell" size={ICON_SIZE_2XL} className="text-primary/40" />
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {filterType === "all"
-                      ? NOTIFICATION_PANEL_TEXT.emptyState.noNotifications
-                      : NOTIFICATION_PANEL_TEXT.emptyState.noNotificationsOfType}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp}
-                  </p>
-                </div>
-              ) : (
-                <AnimatePresence>
-                  {filteredNotifications.map((notification) => (
-                    <motion.div
-                      key={notification.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Card
-                        className={cn(
-                          "p-4 border-l-4 transition-all hover:shadow-md",
-                          !notification.read && "bg-primary/5 border-l-4",
-                          notification.read && "opacity-60",
-                          getPriorityColor(notification.priority)
-                        )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            checked={selectedNotificationIds.has(notification.id)}
-                            onCheckedChange={() => handleToggleSelect(notification.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-0.5"
-                          />
-                          <div 
-                            className="mt-0.5 flex-shrink-0 cursor-pointer"
-                            onClick={() => markAsRead(notification.id)}
-                          >
-                            {getNotificationIcon(notification.type)}
-                          </div>
-                          <div 
-                            className="flex-1 min-w-0 cursor-pointer"
-                            onClick={() => markAsRead(notification.id)}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-sm font-semibold mb-1">
-                                  {notification.title}
-                                </h3>
-                                <p className="text-xs text-muted-foreground">
-                                  {notification.message}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground mt-2">
-                                  {notification.timestamp.toLocaleString()}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                {!notification.read && (
-                                  <Badge
-                                    variant="default"
-                                    className="w-2 h-2 p-0 rounded-full bg-primary"
-                                  />
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    clearNotification(notification.id);
-                                  }}
-                                >
-                                  <Icon name="x" size={ICON_SIZE_XS} />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              )}
+              {renderNotificationsList()}
             </div>
           )}
         </div>
