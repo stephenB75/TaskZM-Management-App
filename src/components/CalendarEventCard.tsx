@@ -31,6 +31,8 @@ import {
 } from '../lib/task-card-constants';
 import { TODAY_AGENDA_TIMELINE } from '../lib/layout-constants';
 import { useIsMobile } from './ui/use-mobile';
+import { AgendaListCard } from './AgendaListCard';
+import { AGENDA_LIST_CARD, AGENDA_LIST_CARD_COLORS } from '../lib/agenda-list-card-constants';
 
 interface CalendarEventCardProps {
   title: string;
@@ -203,6 +205,7 @@ function getColorIndexFromHex(hexColor: string): number {
 // Pastel color palette matching the app theme
 const eventColorPalette = [
   { // Sky (original)
+    dotHex: '#0EA5E9',
     accent: { light: 'bg-gradient-to-b from-sky-500 to-sky-600', dark: 'bg-gradient-to-b from-sky-400 to-sky-600' },
     bg: { light: 'bg-gradient-to-br from-sky-50 to-sky-100', dark: 'bg-sky-950/60' },
     border: { light: 'border-sky-300', dark: 'border-sky-700/60' },
@@ -212,6 +215,7 @@ const eventColorPalette = [
     stripe: { light: 'rgba(14,165,233,0.08)', dark: 'rgba(56,189,248,0.08)' },
   },
   { // Emerald/Mint
+    dotHex: '#22C55E',
     accent: { light: 'bg-gradient-to-b from-emerald-500 to-emerald-600', dark: 'bg-gradient-to-b from-emerald-400 to-emerald-600' },
     bg: { light: 'bg-gradient-to-br from-emerald-50 to-emerald-100', dark: 'bg-emerald-950/60' },
     border: { light: 'border-emerald-300', dark: 'border-emerald-700/60' },
@@ -221,6 +225,7 @@ const eventColorPalette = [
     stripe: { light: 'rgba(16,185,129,0.08)', dark: 'rgba(52,211,153,0.08)' },
   },
   { // Violet/Lavender
+    dotHex: '#8B5CF6',
     accent: { light: 'bg-gradient-to-b from-violet-500 to-violet-600', dark: 'bg-gradient-to-b from-violet-400 to-violet-600' },
     bg: { light: 'bg-gradient-to-br from-violet-50 to-violet-100', dark: 'bg-violet-950/60' },
     border: { light: 'border-violet-300', dark: 'border-violet-700/60' },
@@ -230,6 +235,7 @@ const eventColorPalette = [
     stripe: { light: 'rgba(139,92,246,0.08)', dark: 'rgba(167,139,250,0.08)' },
   },
   { // Amber/Peach
+    dotHex: '#F59E0B',
     accent: { light: 'bg-gradient-to-b from-amber-500 to-amber-600', dark: 'bg-gradient-to-b from-amber-400 to-amber-600' },
     bg: { light: 'bg-gradient-to-br from-amber-50 to-amber-100', dark: 'bg-amber-950/60' },
     border: { light: 'border-amber-300', dark: 'border-amber-700/60' },
@@ -239,6 +245,7 @@ const eventColorPalette = [
     stripe: { light: 'rgba(245,158,11,0.08)', dark: 'rgba(251,191,36,0.08)' },
   },
   { // Rose/Pink
+    dotHex: '#F43F5E',
     accent: { light: 'bg-gradient-to-b from-rose-500 to-rose-600', dark: 'bg-gradient-to-b from-rose-400 to-rose-600' },
     bg: { light: 'bg-gradient-to-br from-rose-50 to-rose-100', dark: 'bg-rose-950/60' },
     border: { light: 'border-rose-300', dark: 'border-rose-700/60' },
@@ -248,6 +255,7 @@ const eventColorPalette = [
     stripe: { light: 'rgba(244,63,94,0.08)', dark: 'rgba(251,113,133,0.08)' },
   },
   { // Teal/Sage
+    dotHex: '#14B8A6',
     accent: { light: 'bg-gradient-to-b from-teal-500 to-teal-600', dark: 'bg-gradient-to-b from-teal-400 to-teal-600' },
     bg: { light: 'bg-gradient-to-br from-teal-50 to-teal-100', dark: 'bg-teal-950/60' },
     border: { light: 'border-teal-300', dark: 'border-teal-700/60' },
@@ -257,6 +265,7 @@ const eventColorPalette = [
     stripe: { light: 'rgba(20,184,166,0.08)', dark: 'rgba(45,212,191,0.08)' },
   },
   { // Fuchsia/Lilac
+    dotHex: '#D946EF',
     accent: { light: 'bg-gradient-to-b from-fuchsia-500 to-fuchsia-600', dark: 'bg-gradient-to-b from-fuchsia-400 to-fuchsia-600' },
     bg: { light: 'bg-gradient-to-br from-fuchsia-50 to-fuchsia-100', dark: 'bg-fuchsia-950/60' },
     border: { light: 'border-fuchsia-300', dark: 'border-fuchsia-700/60' },
@@ -266,6 +275,7 @@ const eventColorPalette = [
     stripe: { light: 'rgba(217,70,239,0.08)', dark: 'rgba(232,121,249,0.08)' },
   },
   { // Orange
+    dotHex: '#F97316',
     accent: { light: 'bg-gradient-to-b from-orange-500 to-orange-600', dark: 'bg-gradient-to-b from-orange-400 to-orange-600' },
     bg: { light: 'bg-gradient-to-br from-orange-50 to-orange-100', dark: 'bg-orange-950/60' },
     border: { light: 'border-orange-300', dark: 'border-orange-700/60' },
@@ -312,62 +322,47 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
 
   const contentPaddingLeft = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.left.desktop;
 
-  // Today Agenda timeline: two-line layout — line 1: meta (calendar, time, duration); line 2: headline only
+  const providerLabel = `${CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]}${CALENDAR_EVENT_UI_TEXT.calendarLabelSuffix}`;
+  const timeAndPeriod = !allDay ? getTimeAndPeriod(start) : null;
+  const accentDotColor = palette.dotHex;
+
+  const agendaCard = (compact: boolean) => (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <AgendaListCard
+            accentColor={accentDotColor}
+            badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
+            title={title}
+            subtitle={compact ? undefined : (location || undefined)}
+            timePart={timeAndPeriod?.timePart}
+            periodPart={timeAndPeriod?.period}
+            allDayLabel={allDay ? CALENDAR_EVENT_UI_TEXT.allDay : undefined}
+            footerIcon="calendar"
+            footerSourceLabel={providerLabel}
+            durationLabel={formatDuration(durationMinutes)}
+            compact={compact}
+            style={compact ? { minHeight: TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx } : { minHeight: calculatedHeight }}
+          />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <p className="font-semibold">{title}</p>
+          <p className="text-primary-foreground/90 text-xs mt-0.5">
+            {allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`} · {formatDuration(durationMinutes)}
+            {location && ` · ${location}`}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
+  // Today Agenda timeline: compact or full agenda list card
   if (variant === 'timelineCompact') {
-    const timeRange = allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime}–${endTime}`;
-    const providerLabel = CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider];
-    return (
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              className={cn(
-                'flex flex-col justify-center w-full h-full min-w-0 rounded-lg gap-0.5 py-1 pr-2',
-                colors.bg,
-              )}
-              style={{
-                paddingLeft: contentPaddingLeft,
-                minHeight: TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx,
-              }}
-            >
-              {/* Line 1: calendar, provider, time, duration */}
-              <div className="flex items-center gap-1.5 min-w-0">
-                <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.timelineCompactCalendar} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
-                <span className={cn('flex-shrink-0 font-medium', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.timelineCompact.providerTime }}>
-                  {providerLabel}
-                </span>
-                <span className={cn('flex-shrink-0', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.timelineCompact.providerTime }}>
-                  {timeRange}
-                </span>
-                <span className={cn('font-medium px-1 py-0 rounded-full flex-shrink-0', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.timelineCompact.duration }}>
-                  {formatDuration(durationMinutes)}
-                </span>
-              </div>
-              {/* Line 2: headline only */}
-              <span className={cn('font-semibold min-w-0 truncate', colors.text)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.timelineCompact.title }} title={title}>
-                {title}
-              </span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs">
-            <p className="font-semibold">{title}</p>
-            <p className="text-primary-foreground/90 text-xs mt-0.5">
-              {allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`} · {formatDuration(durationMinutes)}
-              {location && ` · ${location}`}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
+    return agendaCard(true);
   }
 
-  // Kanban week view: task-like layout (top tab bar + bordered body) so events match task cards
+  // Kanban week view: same white agenda list card as tasks
   if (variant === 'kanban') {
-    const timeAndPeriod = !allDay ? getTimeAndPeriod(start) : null;
-    const tabHeight = isMobile ? TASK_CARD_TAB_HEIGHT.mobile : TASK_CARD_TAB_HEIGHT.desktop;
-    const tabMarginTop = isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop;
-    const tabPaddingV = isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop;
-    const clockSize = isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop;
     return (
       <div
         className="flex flex-col w-full max-w-full overflow-hidden transition-all duration-200 cursor-default select-none box-border flex-shrink-0"
@@ -378,75 +373,24 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           minWidth: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',
+          borderRadius: AGENDA_LIST_CARD.borderRadiusPx,
+          boxShadow: AGENDA_LIST_CARD.shadow,
+          backgroundColor: isDark ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark : AGENDA_LIST_CARD_COLORS.cardBackground,
         }}
       >
-        {/* Tab row (same structure as task card tab) */}
-        <div
-          className={cn('relative z-10 flex items-center gap-2 rounded-t-lg rounded-b flex-shrink-0 w-full min-w-max px-3 shadow-sm', colors.accent)}
-          style={{
-            marginTop: tabMarginTop,
-            marginBottom: -1,
-            minHeight: `${tabHeight}px`,
-            paddingTop: tabPaddingV,
-            paddingBottom: tabPaddingV,
-            minWidth: 'max-content',
-          }}
-        >
-          <Icon name="clock" size={clockSize} className="flex-shrink-0 text-white" weight="fill" />
-          {allDay ? (
-            <span className={cn('text-white font-normal whitespace-nowrap', isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-              {CALENDAR_EVENT_UI_TEXT.allDay}
-            </span>
-          ) : timeAndPeriod ? (
-            <span className={cn('text-white font-normal whitespace-nowrap flex items-center', TASK_CARD_KANBAN_TIME_ROW_GAP_CLASS, isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-              {timeAndPeriod.timePart}
-              <span className={timeAndPeriod.period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_AM : TASK_CARD_KANBAN_TIME_PERIOD_PM}>{timeAndPeriod.period}</span>
-              <Icon
-                name={timeAndPeriod.period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_ICON_AM : TASK_CARD_KANBAN_TIME_PERIOD_ICON_PM}
-                size={TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX}
-                className={TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS}
-              />
-            </span>
-          ) : (
-            <span className={cn('text-white font-normal whitespace-nowrap', isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-              {startTime}
-              {endTime && ` – ${endTime}`}
-            </span>
-          )}
-          <span
-            className={cn(
-              'rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white dark:bg-card whitespace-nowrap text-foreground',
-              isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
-            )}
-          >
-            {CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
-          </span>
-          <span className={cn('text-white font-semibold flex-shrink-0 whitespace-nowrap', isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
-            {formatDuration(durationMinutes)}
-          </span>
-          {isRecurring && (
-            <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className="flex-shrink-0 ml-auto text-white" weight="duotone" />
-          )}
-        </div>
-        {/* Body (same border as task card body): calendar icon + provider label so user can identify which calendar the event belongs to */}
-        <div className={cn('flex flex-col flex-1 min-w-0 rounded-b-lg px-2 pt-2 pb-2', TASK_CARD_BORDERS.cardBody)}>
-          <div className={cn('flex items-center gap-2', isMobile ? 'pb-0.5' : 'pb-1')}>
-            <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={cn('flex-shrink-0', colors.mutedText)} />
-            <span className={cn('font-medium uppercase tracking-wide flex-shrink-0', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
-              {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]}
-              {CALENDAR_EVENT_UI_TEXT.calendarLabelSuffix}
-            </span>
-          </div>
-          <h3 className={cn('text-foreground dark:text-gray-100 leading-tight flex-1 font-semibold min-w-0 pt-0.5', TASK_CARD_LINE_CLAMP.title, isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop)}>
-            {title}
-          </h3>
-          {location && (
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
-              <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
-            </div>
-          )}
-        </div>
+        <AgendaListCard
+          accentColor={palette.dotHex}
+          badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
+          title={title}
+          subtitle={location || undefined}
+          timePart={timeAndPeriod?.timePart}
+          periodPart={timeAndPeriod?.period}
+          allDayLabel={allDay ? CALENDAR_EVENT_UI_TEXT.allDay : undefined}
+          footerIcon="calendar"
+          footerSourceLabel={providerLabel}
+          durationLabel={formatDuration(durationMinutes)}
+          embedded
+        />
       </div>
     );
   }
@@ -508,51 +452,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     );
   }
 
-  // Default (Today Agenda, etc.): rounded card with colored vertical line inset; full width to match task cards
-  return (
-    <div
-      className={cn(
-        "flex w-full max-w-full flex-shrink-0 overflow-hidden transition-all duration-200 cursor-default select-none rounded-lg relative box-border flex-col",
-        isMobile ? TASK_CARD_SPACING.short.mobile : TASK_CARD_SPACING.short.desktop,
-      )}
-      style={{ minHeight: `${calculatedHeight}px`, width: '100%', minWidth: '100%', maxWidth: '100%' }}
-    >
-      <div 
-        className={cn('absolute top-0 bottom-0 rounded-full', colors.accent)}
-        style={{ 
-          left: `${isMobile ? CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.mobile : CALENDAR_EVENT_DIMENSIONS.verticalLine.leftOffset.desktop}px`,
-          width: CALENDAR_EVENT_DIMENSIONS.verticalLine.width, 
-        }}
-      />
-      <div className="flex-1 py-2 flex flex-col gap-2" style={{ paddingLeft: `${contentPaddingLeft}px` }}>
-        <div className="flex items-center gap-2">
-          <Icon name="calendar" size={CALENDAR_EVENT_DIMENSIONS.icon.calendar} weight="duotone" className={colors.mutedText} />
-          <span className={cn('font-medium uppercase tracking-wide', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.providerLabel }}>
-            {CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]}
-            {CALENDAR_EVENT_UI_TEXT.calendarLabelSuffix}
-          </span>
-          {isRecurring && (
-            <Icon name="repeat" size={CALENDAR_EVENT_DIMENSIONS.icon.repeat} weight="duotone" className={colors.mutedText} />
-          )}
-        </div>
-        <h4 className={cn('font-semibold leading-tight line-clamp-2', colors.text)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.title }}>{title}</h4>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <Icon name="clock" size={CALENDAR_EVENT_DIMENSIONS.icon.clock} className={colors.mutedText} />
-            <span className={colors.mutedText} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.time }}>{allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`}</span>
-          </div>
-          <span className={cn('font-medium px-1.5 py-0.5 rounded-full', colors.iconBg, colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.duration }}>
-            {formatDuration(durationMinutes)}
-          </span>
-        </div>
-        {location && (
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <Icon name="map-pin" size={CALENDAR_EVENT_DIMENSIONS.icon.mapPin} className={cn('flex-shrink-0', colors.mutedText)} />
-            <span className={cn('truncate', colors.mutedText)} style={{ fontSize: CALENDAR_EVENT_FONT_SIZES.location }}>{location}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  // Default (Today Agenda unscheduled, etc.): white agenda list card
+  return agendaCard(false);
 }
 

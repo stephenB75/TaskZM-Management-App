@@ -284,7 +284,7 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Gap (px) between consecutive agenda items when using list fallback (e.g. no time). */
   itemGapPx: 12,
   /** Estimated height (px) for calendar event cards when computing cumulative spacing (+20% for larger container). */
-  eventCardHeightPx: 106,
+  eventCardHeightPx: 120,
   /** Offset (px) from row top to card top when item shows Next Up badge (badge height + mb-2). Used so timeline time aligns with card top. */
   nextUpBadgeOffsetPx: 26,
   /** Height (px) of the Next Up badge when rendered above the block (Today Agenda). */
@@ -296,7 +296,7 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Offset (px) from card top to first content line (priority/tab row). Card padding-top + tab margin-top ≈ 14px. Applied so timeline dot aligns with card content, not card edge. */
   cardContentTopOffsetPx: 14,
   /** Compact row height (px) when agenda shows only tab + headline (list layout or min block). */
-  taskRowHeightPx: 72,
+  taskRowHeightPx: 110,
   /** Tab bar height (px) for compact agenda row. */
   tabHeightPx: 34,
   /** Horizontal padding (px) for Today Agenda card content (left). */
@@ -330,7 +330,7 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Target height (px) for compact single-row layout; block height remains duration-based. */
   shortItemCompactRowHeightPx: 40,
   /** Minimum block height (px) for short-duration tasks so the compact row fits without clipping. Applied when duration < shortItemThresholdMinutes. */
-  shortTaskMinBlockHeightPx: 52,
+  shortTaskMinBlockHeightPx: 72,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 

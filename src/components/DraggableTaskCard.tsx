@@ -85,6 +85,8 @@ import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { ACTION_PLAN_CONFIG } from "../lib/ai-config";
 import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, TODAY_AGENDA_TIMELINE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { AgendaListCard } from "./AgendaListCard";
+import { AGENDA_LIST_CARD_UI, AGENDA_LIST_CARD, AGENDA_LIST_CARD_COLORS } from "../lib/agenda-list-card-constants";
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -741,6 +743,74 @@ export const DraggableTaskCard = React.forwardRef<
       );
     };
 
+    const agendaTimeAndPeriod = getTimeAndPeriod(task.scheduledDate || task.dueDate || null);
+    const agendaAccentColor = getPriorityLineColor(task.priority);
+    const agendaTaskSubtitle = task.description
+      ? task.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      : null;
+    const agendaFooterSource = task.tags?.[0] ?? AGENDA_LIST_CARD_UI.taskSourceLabel;
+    const agendaBadgeLabel =
+      task.priority && task.priority !== 'default'
+        ? task.priority
+        : AGENDA_LIST_CARD_UI.taskBadgeLabel;
+
+    const agendaCompleteButton = (
+      <button
+        type="button"
+        onClick={handleToggleComplete}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="flex-shrink-0 hover:opacity-80 transition-opacity flex items-center justify-center"
+        style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
+        aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
+      >
+        <Icon
+          name="circle"
+          size={visualSizePx}
+          className={cn(
+            "transition-colors flex-shrink-0",
+            isDark ? "text-gray-400" : "text-gray-300",
+            task.status === "done" && "fill-primary text-primary",
+          )}
+          weight={task.status === "done" ? "fill" : "bold"}
+        />
+      </button>
+    );
+
+    const renderAgendaTaskCard = (options: {
+      compact?: boolean;
+      embedded?: boolean;
+      titleDone?: boolean;
+      style?: React.CSSProperties;
+    }) => (
+      <AgendaListCard
+        accentColor={agendaAccentColor}
+        badgeLabel={agendaBadgeLabel}
+        title={task.title}
+        titleDone={options.titleDone}
+        subtitle={options.compact ? undefined : agendaTaskSubtitle}
+        timePart={agendaTimeAndPeriod?.timePart}
+        periodPart={agendaTimeAndPeriod?.period}
+        footerIcon="list-checks"
+        footerSourceLabel={agendaFooterSource}
+        durationLabel={formatDuration(
+          options.compact
+            ? (durationMinutes ?? task.estimatedTime ?? null)
+            : (task.estimatedTime ?? null),
+        )}
+        showCommentIcon={Boolean(task.description?.trim())}
+        compact={options.compact}
+        embedded={options.embedded}
+        headerAction={agendaCompleteButton}
+        style={options.style}
+      />
+    );
+
+    const kanbanCardShellStyle: React.CSSProperties = {
+      borderRadius: AGENDA_LIST_CARD.borderRadiusPx,
+      boxShadow: AGENDA_LIST_CARD.shadow,
+      backgroundColor: isDark ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark : AGENDA_LIST_CARD_COLORS.cardBackground,
+    };
+
     return (
       <div
         ref={cardRef}
@@ -798,6 +868,7 @@ export const DraggableTaskCard = React.forwardRef<
               "overflow-visible", // Never clip tab; allow full tab content to show
               // Rounded only on Today Agenda; full card uses bordered wrapper below tab
               isTodayAgenda && "rounded-lg",
+              isKanban && "rounded-lg",
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
               TASK_CARD_SPACING.spaceY.desktop,
@@ -817,9 +888,19 @@ export const DraggableTaskCard = React.forwardRef<
                   background: 'transparent',
                   border: 'none',
                   boxShadow: 'none',
-                  paddingLeft: TODAY_AGENDA_TIMELINE.cardPaddingLeftPx,
-                  paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx,
-                  paddingBottom: TODAY_AGENDA_TIMELINE.cardPaddingBottomPx,
+                  padding: 0,
+                }
+              : isKanban
+              ? {
+                  height: isExpanded ? 'auto' : `${cardHeight}px`,
+                  minHeight: isExpanded ? 'auto' : `${cardHeight}px`,
+                  maxHeight: isExpanded ? 'none' : `${cardHeight}px`,
+                  boxSizing: 'border-box',
+                  flexShrink: 0,
+                  background: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  padding: 0,
                 }
               : {
                   height: isExpanded ? 'auto' : `${cardHeight}px`,
@@ -850,295 +931,46 @@ export const DraggableTaskCard = React.forwardRef<
           }}
         >
           {isTodayAgenda ? (
-            isTodayAgenda && compactTimeline ? (
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      className="flex items-center w-full h-full min-w-0 rounded-lg"
-                      style={{
-                        gap: 6,
-                        paddingTop: 4,
-                        paddingBottom: 4,
-                        paddingLeft: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
-                        paddingRight: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
-                        backgroundColor: getPriorityTabBackgroundColor(task.priority),
-                        minHeight: TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx,
-                      }}
-                    >
-                      <Icon
-                        name="clock"
-                        size={12}
-                        className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
-                        weight="fill"
-                      />
-                      {scheduledTimeLabel && (
-                        <span className="text-white font-normal whitespace-nowrap flex-shrink-0 text-[11px]">
-                          {scheduledTimeLabel}
-                        </span>
-                      )}
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white dark:bg-card whitespace-nowrap text-[10px] px-1.5 py-0",
-                          TASK_CARD_TIMELINE.todayAgenda.priorityBadgeClass,
-                        )}
-                        style={{
-                          color: !task.priority || task.priority === "default"
-                            ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
-                            : getPriorityLineColor(task.priority),
-                        }}
-                      >
-                        {task.priority}
-                      </Badge>
-                      <span className="flex-1 min-w-0 truncate text-white font-medium text-xs" title={task.title}>
-                        {task.title}
-                      </span>
-                      <span className="text-white font-semibold flex-shrink-0 whitespace-nowrap text-[11px]">
-                        {formatDuration(durationMinutes ?? task.estimatedTime ?? null)}
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    <p className="font-semibold">{task.title}</p>
-                    <p className="text-primary-foreground/90 text-xs mt-0.5">
-                      {scheduledTimeLabel && <span>{scheduledTimeLabel}</span>}
-                      {durationMinutes != null && (
-                        <span> · {formatDuration(durationMinutes)}</span>
-                      )}
-                      {task.priority && task.priority !== 'default' && (
-                        <span> · {task.priority}</span>
-                      )}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-            <>
-              {/* Today Agenda: full-width badge bar (extended with spaced content), then full-width headline */}
-              <div
-                className="flex flex-shrink-0 w-full"
-                style={{
-                  width: `calc(100% + ${TODAY_AGENDA_TIMELINE.cardPaddingLeftPx + TODAY_AGENDA_TIMELINE.cardPaddingRightPx}px)`,
-                  marginLeft: -TODAY_AGENDA_TIMELINE.cardPaddingLeftPx,
-                  marginRight: -TODAY_AGENDA_TIMELINE.cardPaddingRightPx,
-                }}
-              >
-                <div
-                  className="flex items-center rounded-lg w-full min-w-0"
-                  style={{
-                    gap: TASK_CARD_TIMELINE.todayAgenda.tabContentGapPx,
-                    backgroundColor: getPriorityTabBackgroundColor(task.priority),
-                    minHeight: `${TODAY_AGENDA_TIMELINE.tabHeightPx}px`,
-                    paddingTop: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
-                    paddingBottom: TODAY_AGENDA_TIMELINE.tabPaddingVerticalPx,
-                    paddingLeft: TODAY_AGENDA_TIMELINE.tabPaddingPx,
-                    paddingRight: TODAY_AGENDA_TIMELINE.tabPaddingPx,
-                    marginLeft: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
-                    marginRight: TODAY_AGENDA_TIMELINE.tabBlockInsetPx,
-                  }}
-                >
-                  <Icon
-                    name="clock"
-                    size={TASK_CARD_TIMELINE.todayAgenda.clockIconSize}
-                    className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
-                    weight="fill"
-                  />
-                  {scheduledTimeLabel && (
-                    <span className="text-white font-normal whitespace-nowrap flex-shrink-0" style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgenda.timeFontSizePx}px` }}>
-                      {scheduledTimeLabel}
-                    </span>
-                  )}
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white dark:bg-card whitespace-nowrap",
-                      TASK_CARD_TIMELINE.todayAgenda.priorityBadgeClass,
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {renderAgendaTaskCard({
+                    compact: compactTimeline,
+                    style: {
+                      minHeight: compactTimeline
+                        ? TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx
+                        : timelineBlockHeightPx ?? TODAY_AGENDA_TIMELINE.taskRowHeightPx,
+                      height: timelineBlockHeightPx ?? undefined,
+                    },
+                  })}
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-semibold">{task.title}</p>
+                  <p className="text-primary-foreground/90 text-xs mt-0.5">
+                    {scheduledTimeLabel && <span>{scheduledTimeLabel}</span>}
+                    {(durationMinutes ?? task.estimatedTime) != null && (
+                      <span> · {formatDuration(durationMinutes ?? task.estimatedTime ?? null)}</span>
                     )}
-                    style={{
-                      color: !task.priority || task.priority === "default"
-                        ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
-                        : getPriorityLineColor(task.priority),
-                    }}
-                  >
-                    {task.priority}
-                  </Badge>
-                  {task.tags && task.tags.length > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className={cn("border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white", TASK_CARD_TIMELINE.todayAgenda.tagClass)}
-                    >
-                      {task.tags[0]}
-                    </Badge>
-                  )}
-                  <div className="flex-1 min-w-2" aria-hidden />
-                  {task.estimatedTime && (
-                    <span className="text-white font-semibold flex-shrink-0 whitespace-nowrap" style={{ fontSize: `${TASK_CARD_TIMELINE.todayAgenda.durationFontSizePx}px` }}>
-                      {formatDuration(task.estimatedTime)}
-                    </span>
-                  )}
-                  {task.recurrence && task.recurrence.type !== "none" && (
-                    <Icon
-                      name="repeat"
-                      size={TASK_CARD_TIMELINE.todayAgenda.repeatIconSize}
-                      className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)}
-                      weight="duotone"
-                    />
-                  )}
-                </div>
-              </div>
-              <div
-                className="flex items-start flex-1 min-w-0 w-full"
-                style={{
-                  gap: TASK_CARD_TIMELINE.todayAgenda.titleRowGapPx,
-                  paddingTop: TASK_CARD_TIMELINE.todayAgenda.titleRowPaddingTopPx,
-                  paddingBottom: TASK_CARD_TIMELINE.todayAgenda.titleRowPaddingBottomPx,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={handleToggleComplete}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="flex-shrink-0 hover:opacity-80 transition-opacity flex items-center justify-center self-start"
-                  style={{
-                    marginTop: 0,
-                    minWidth: checkboxSizePx,
-                    minHeight: checkboxSizePx,
-                  }}
-                  aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
-                >
-                  <Icon
-                    name="circle"
-                    size={visualSizePx}
-                    className={cn(
-                      "transition-colors flex-shrink-0",
-                      isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
-                      task.status === "done" && (isDark ? TASK_CARD_ICON_COLORS.tabCheckboxFill.dark : TASK_CARD_ICON_COLORS.tabCheckboxFill.light),
+                    {task.priority && task.priority !== 'default' && (
+                      <span> · {task.priority}</span>
                     )}
-                    weight={task.status === "done" ? "fill" : "bold"}
-                  />
-                </button>
-                <h3
-                  className={cn("font-bold leading-snug flex-1 min-w-0 w-full break-words line-clamp-3", TASK_CARD_TEXT_COLORS.title)}
-                  style={{
-                    fontSize: `${TASK_CARD_TIMELINE.todayAgendaHeadlineFontSizePx}px`,
-                    overflowWrap: 'break-word',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {task.title}
-                </h3>
-              </div>
-            </>
-            )
-          ) : (
-            <>
-              {/* Full card tab: in front of body, overlaps top so top border doesn't show */}
-              <div
-                className="relative z-10 flex items-center gap-2 rounded-t-lg rounded-b flex-shrink-0 w-full min-w-max px-3 shadow-sm"
-                style={{
-                  marginTop: isMobile ? TASK_CARD_TAB_SPACING.marginTop.mobile : TASK_CARD_TAB_SPACING.marginTop.desktop,
-                  marginBottom: -1,
-                  backgroundColor: getPriorityTabBackgroundColor(task.priority),
-                  minHeight: isMobile ? `${TASK_CARD_TAB_HEIGHT.mobile}px` : `${TASK_CARD_TAB_HEIGHT.desktop}px`,
-                  paddingTop: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
-                  paddingBottom: isMobile ? TASK_CARD_TAB_SPACING.paddingVertical.mobile : TASK_CARD_TAB_SPACING.paddingVertical.desktop,
-                  minWidth: 'max-content',
-                }}
-              >
-                <Icon name="clock" size={isMobile ? TASK_CARD_ICON_SIZES.clock.mobile : TASK_CARD_ICON_SIZES.clock.desktop} className={cn("flex-shrink-0", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="fill" />
-                {scheduledTimeLabel && (
-                  (() => {
-                    const timeAndPeriod = getTimeAndPeriod(task.scheduledDate || task.dueDate || null);
-                    if (isKanban && timeAndPeriod) {
-                      const { timePart, period } = timeAndPeriod;
-                      const periodClass = period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_AM : TASK_CARD_KANBAN_TIME_PERIOD_PM;
-                      const periodIconName = period === 'AM' ? TASK_CARD_KANBAN_TIME_PERIOD_ICON_AM : TASK_CARD_KANBAN_TIME_PERIOD_ICON_PM;
-                      return (
-                        <span className={cn("text-white font-normal whitespace-nowrap flex items-center", TASK_CARD_KANBAN_TIME_ROW_GAP_CLASS, isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-                          {timePart}
-                          <span className={periodClass}>{period}</span>
-                          <Icon name={periodIconName} size={TASK_CARD_KANBAN_TIME_PERIOD_ICON_SIZE_PX} className={TASK_CARD_KANBAN_TIME_PERIOD_ICON_CLASS} />
-                        </span>
-                      );
-                    }
-                    return (
-                      <span className={cn("text-white font-normal whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.time.mobile : TASK_CARD_FONT_SIZES.time.desktop)}>
-                        {scheduledTimeLabel}
-                      </span>
-                    );
-                  })()
-                )}
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "rounded-full border-0 capitalize flex-shrink-0 font-bold bg-white dark:bg-card whitespace-nowrap",
-                    isMobile ? TASK_CARD_BADGE_SIZES.priority.mobile : TASK_CARD_BADGE_SIZES.priority.desktop,
-                  )}
-                  style={{
-                    color: !task.priority || task.priority === 'default'
-                      ? TASK_CARD_PRIORITY_TAB_BADGE_DEFAULT_TEXT_COLOR
-                      : getPriorityLineColor(task.priority),
-                  }}
-                >
-                  {task.priority}
-                </Badge>
-                {task.tags && task.tags.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "border-0 flex-shrink-0 bg-transparent whitespace-nowrap text-white",
-                      isMobile ? TASK_CARD_BADGE_SIZES.tag.mobile : TASK_CARD_BADGE_SIZES.tag.desktop,
-                    )}
-                  >
-                    {task.tags[0]}
-                  </Badge>
-                )}
-                {task.estimatedTime && (
-                  <span className={cn("text-white font-semibold flex-shrink-0 whitespace-nowrap", isMobile ? TASK_CARD_FONT_SIZES.duration.mobile : TASK_CARD_FONT_SIZES.duration.desktop)}>
-                    {formatDuration(task.estimatedTime)}
-                  </span>
-                )}
-                {task.recurrence && task.recurrence.type !== "none" && (
-                  <Icon name="repeat" size={isMobile ? TASK_CARD_ICON_SIZES.repeat.mobile : TASK_CARD_ICON_SIZES.repeat.desktop} className={cn("flex-shrink-0 ml-auto", isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light)} weight="duotone" />
-                )}
-              </div>
-
-          {/* Bordered content area: border lays behind tab, starts where tab ends (L/B/R only) */}
-          <div className={cn("flex flex-col flex-1 min-w-0", "rounded-b-lg", isExpanded && "rounded-b-none", TASK_CARD_BORDERS.cardBody)}>
-          {/* Headline (Title) - Mark complete inline with title; checkbox vertically centered with headline */}
-          <div className={cn("flex items-center gap-2 px-2 pt-2", isMobile ? "pb-1" : "pb-1.5")}>
-            <button
-              type="button"
-              onClick={handleToggleComplete}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="flex-shrink-0 hover:opacity-80 transition-opacity flex items-center justify-center"
-              style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
-              aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}
-            >
-              <Icon 
-                name="circle"
-                size={visualSizePx}
-                className={cn(
-                  "transition-colors flex-shrink-0",
-                  isDark ? TASK_CARD_ICON_COLORS.tab.dark : TASK_CARD_ICON_COLORS.tab.light,
-                  task.status === "done" && (isDark ? TASK_CARD_ICON_COLORS.tabCheckboxFill.dark : TASK_CARD_ICON_COLORS.tabCheckboxFill.light),
-                )}
-                weight={task.status === "done" ? "fill" : "bold"}
-              />
-            </button>
-            <h3
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : isKanban ? (
+            <div
               className={cn(
-                "text-foreground dark:text-gray-100 leading-tight flex-1 font-semibold min-w-0",
-                TASK_CARD_LINE_CLAMP.title,
-                task.status === "done" && "line-through text-gray-400 dark:text-gray-500",
-                isMobile ? TASK_CARD_FONT_SIZES.title.mobile : TASK_CARD_FONT_SIZES.title.desktop,
+                "flex flex-col w-full h-full overflow-hidden",
+                task.status === "done" && "opacity-60",
               )}
+              style={kanbanCardShellStyle}
             >
-              {task.title}
-            </h3>
-          </div>
-
+              {renderAgendaTaskCard({
+                embedded: true,
+                titleDone: task.status === "done",
+              })}
+              <div className={cn("flex flex-col flex-1 min-w-0", isExpanded ? "rounded-b-2xl" : "overflow-hidden")}>
           {/* AI Suggestions - Under headline for tasks 30+ mins; in expanded section for under 30 mins */}
           {!isShortTaskForAIPlacement && renderAISuggestions()}
 
@@ -1458,9 +1290,9 @@ export const DraggableTaskCard = React.forwardRef<
             </div>
           </div>
           )}
-          </div>
-            </>
-          )}
+              </div>
+            </div>
+          ) : null}
 
           </div>
         </div>
