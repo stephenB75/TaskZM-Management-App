@@ -39,6 +39,7 @@ import {
   HEADER_LOGO_HEIGHT_DESKTOP,
   HEADER_LOGO_SCALE,
   HEADER_LOGO_SPACE_RATIO,
+  HEADER_LOGO_DISPLAY_OPACITY,
   HEADER_BORDER_BOTTOM,
   HEADER_TITLE_SIZE_MOBILE,
   HEADER_TITLE_SIZE_DESKTOP,
@@ -81,18 +82,11 @@ import {
   HEADER_MAIN_TRANSITION_EASE,
   HEADER_MOBILE_SAFE_AREA_SPACER,
   VIEWPORT_BREAKPOINTS,
-  getHeaderGradient,
-  APP_BRAND_NAME,
-  APP_BRAND_NAME_FONT_SIZE,
+  HEADER_BACKDROP_BLUR_CLASS,
 } from "../lib/layout-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { useOrientation } from "../hooks/useOrientation";
-import {
-  COLOR_GRADIENT_START,
-  COLOR_GRADIENT_MID,
-  COLOR_GRADIENT_END,
-  getColorWithOpacity,
-} from "../lib/color-theme";
+import { getColorWithOpacity } from "../lib/color-theme";
 import { cn } from "../lib/utils";
 import logoImageBlack from "../assets/Taskzm_Logo_BLK-removebg.png"; // Black logo version
 import logoImageGray from "../assets/taskzm-logo-gray.png"; // Gray logo version for dark mode
@@ -102,10 +96,6 @@ interface AppHeaderProps {
   description?: string;
   actions?: React.ReactNode;
   hideDesktopLogo?: boolean;
-  /** Show lowercase brand name beside the logo on desktop main header */
-  showBrandName?: boolean;
-  /** Flat white bar — no horizontal gradient (dashboard week view) */
-  cleanHeader?: boolean;
   onBack?: () => void;
   panelOpen?: boolean; // Indicates if a side panel is open (for desktop layout adjustment)
   isSidePanelHeader?: boolean; // Indicates if this is a side panel header (positioned at panel start)
@@ -117,8 +107,6 @@ export function AppHeader({
   description,
   actions,
   hideDesktopLogo = false,
-  showBrandName = false,
-  cleanHeader = false,
   onBack,
   panelOpen = false,
   isSidePanelHeader = false,
@@ -199,14 +187,19 @@ export function AppHeader({
     ? undefined // Side panel headers don't need width calculation
     : getMainHeaderWidth(panelOpen); // Main header should span from left position to right edge
 
-  const compactMobileTitle = typeof title !== 'string' || Boolean(description);
+  const headerSurfaceStyle: React.CSSProperties = {
+    backgroundColor: isDark
+      ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
+      : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
+    borderColor: HEADER_BORDER_COLOR,
+  };
 
   return (
     <>
       {/* Mobile/Tablet Header - Fixed at top (shown on mobile and tablets < 1280px) */}
       <div 
         key={`mobile-header-${actualTheme}`}
-        className={shouldUseMobileLayout ? "fixed left-0 right-0 border-b backdrop-blur-lg shadow-sm" : "hidden"}
+        className={shouldUseMobileLayout ? cn("fixed left-0 right-0 border-b", HEADER_BACKDROP_BLUR_CLASS) : "hidden"}
         style={{
           position: 'fixed', // Explicitly set position to ensure it's fixed
           top: 0, // Start at top of viewport - no gap above
@@ -214,10 +207,7 @@ export function AppHeader({
           right: 0,
           margin: 0, // Ensure no margin creates gap above
           zIndex: HEADER_Z_INDEX,
-          backgroundColor: isDark 
-            ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
-            : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
-          borderColor: HEADER_BORDER_COLOR,
+          ...headerSurfaceStyle,
           paddingLeft: '0', // No left padding - header extends to left browser edge
           paddingRight: HEADER_PADDING_X_MOBILE, // Keep original right padding
           // Add safe area inset to top padding to account for notched devices
@@ -261,19 +251,8 @@ export function AppHeader({
             {/* Title - contextual; compact when description is shown */}
             <div className="flex-1 min-w-0">
               <h1
-                className={cn(
-                  compactMobileTitle
-                    ? 'font-semibold text-foreground normal-case tracking-normal leading-tight'
-                    : 'font-bold bg-clip-text text-transparent',
-                )}
-                style={{
-                  fontSize: HEADER_TITLE_SIZE_MOBILE,
-                  ...(compactMobileTitle
-                    ? {}
-                    : {
-                        backgroundImage: `linear-gradient(to right, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID}, ${COLOR_GRADIENT_END})`,
-                      }),
-                }}
+                className="font-semibold text-foreground normal-case tracking-normal leading-tight truncate"
+                style={{ fontSize: HEADER_TITLE_SIZE_MOBILE }}
               >
                 {typeof title === 'string' ? title : title}
               </h1>
@@ -304,7 +283,7 @@ export function AppHeader({
       {isSidePanelHeader ? (
         // Side panel header - relative positioning, slides with panel, with fade animation
         <motion.div 
-          className={shouldUseMobileLayout ? "hidden" : "relative border-b backdrop-blur-lg shadow-sm flex-shrink-0"}
+          className={shouldUseMobileLayout ? "hidden" : cn("relative border-b flex-shrink-0", HEADER_BACKDROP_BLUR_CLASS)}
           initial={{ opacity: 0, y: HEADER_SIDE_PANEL_ANIMATION_Y_OFFSET }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ 
@@ -314,10 +293,7 @@ export function AppHeader({
           }}
           style={{ 
             zIndex: HEADER_Z_INDEX,
-            backgroundColor: isDark 
-              ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
-              : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
-            borderColor: HEADER_BORDER_COLOR,
+            ...headerSurfaceStyle,
             // No horizontal padding - header extends to panel edge
             paddingLeft: '0',
             paddingRight: '0',
@@ -438,14 +414,11 @@ export function AppHeader({
         // Include panelOpen in key to ensure React unmounts/remounts when state changes
         <div 
           key={`main-header-${String(panelOpen)}-${String(panelKey || 'default')}-${actualTheme}-${headerUpdateKey}`}
-          className={shouldUseMobileLayout ? "hidden" : "fixed top-0 border-b backdrop-blur-lg shadow-sm overflow-hidden"}
+          className={shouldUseMobileLayout ? "hidden" : cn("fixed top-0 border-b overflow-hidden", HEADER_BACKDROP_BLUR_CLASS)}
           style={{ 
             zIndex: HEADER_Z_INDEX,
-            backgroundColor: isDark 
-              ? getColorWithOpacity(HEADER_BACKGROUND_DARK_COLOR, HEADER_BACKGROUND_OPACITY)
-              : getColorWithOpacity(HEADER_BACKGROUND_LIGHT_COLOR, HEADER_BACKGROUND_OPACITY),
-            backgroundImage: cleanHeader ? 'none' : getHeaderGradient(isDark),
-            borderColor: HEADER_BORDER_COLOR,
+            ...headerSurfaceStyle,
+            backgroundImage: 'none',
             // No left padding - header extends to left browser edge
             paddingLeft: '0',
             paddingRight: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_PADDING_X_DESKTOP), // Keep original right padding
@@ -472,15 +445,14 @@ export function AppHeader({
                 ? HEADER_GAP_XSMALL 
                 : (isSmallMonitor 
                   ? HEADER_GAP_SMALL 
-                  : HEADER_GAP_XLARGE),
+                  : HEADER_GAP_LARGE),
               justifyContent: 'space-between',
             }}
           >
-            {/* Left side: Back Button (if onBack provided) + Logo only - No animations */}
+            {/* Left side: logo (brand mark only — no duplicate text) */}
             <div
               className="flex items-center min-w-0"
               style={{ 
-                // Responsive gap: smaller for small monitors and landscape
                 gap: hideDesktopLogo 
                   ? (isSmallMonitor && isLandscape 
                       ? HEADER_GAP_SMALL 
@@ -489,11 +461,9 @@ export function AppHeader({
                         : HEADER_GAP_LARGE))
                   : (isSmallMonitor && isLandscape 
                       ? HEADER_GAP_SMALL 
-                      : (isSmallMonitor 
-                        ? HEADER_GAP_MEDIUM 
-                        : HEADER_GAP_XLARGE)),
-                flexShrink: 1, // Allow container to shrink
-                minWidth: 0, // Allow flex items to shrink below content size
+                      : HEADER_GAP_MEDIUM),
+                flexShrink: 0,
+                minWidth: 0,
               }}
             >
               {onBack && (
@@ -525,24 +495,17 @@ export function AppHeader({
                     // Responsive logo: tablet/laptop/small desktop use HEADER_LOGO_SCALE (shifts with header when panel open)
                     height: `calc(${HEADER_LOGO_HEIGHT_DESKTOP} * ${logoScale})`,
                     maxHeight: `calc(${HEADER_HEIGHT}px - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_PADDING_Y_DESKTOP} - ${HEADER_BORDER_BOTTOM}px)`,
-                    maxWidth: `${Math.round(180 * logoScale)}px`,
+                    maxWidth: `${Math.round(160 * logoScale)}px`,
                     width: 'auto',
                     backgroundColor: 'transparent',
                     display: 'block',
                     objectFit: 'contain',
-                    flexShrink: 1,
+                    flexShrink: 0,
                     minWidth: 0,
                     transition: 'none',
+                    opacity: HEADER_LOGO_DISPLAY_OPACITY,
                   }}
                 />
-              )}
-              {showBrandName && (
-                <span
-                  className="font-bold text-foreground lowercase tracking-tight flex-shrink-0"
-                  style={{ fontSize: APP_BRAND_NAME_FONT_SIZE }}
-                >
-                  {APP_BRAND_NAME}
-                </span>
               )}
             </div>
             {/* Right side: Actions (text is now inside actions component) */}

@@ -79,6 +79,7 @@ export const HEADER_MIN_WIDTH_SMALL = '200px'; // min-w-[200px] = 200px - minimu
 
 // Logo height calculation constants
 export const HEADER_LOGO_SPACE_RATIO = 0.8; // Use 80% of available header space for logo
+export const HEADER_LOGO_DISPLAY_OPACITY = 0.92; // Slightly soft logo on main header bar
 export const HEADER_BORDER_BOTTOM = 1; // Border bottom in pixels
 
 // Helper function to convert rem to pixels
@@ -138,10 +139,11 @@ export const HEADER_SIDE_PANEL_GAP_MAIN = '0.75rem'; // gap-3 = 0.75rem (12px) -
 export const HEADER_SIDE_PANEL_GAP_LEFT = '0.625rem'; // ~gap-2.5 = 0.625rem (10px) - reduced from 0.75rem/1rem
 export const HEADER_SIDE_PANEL_GAP_RIGHT = '0.375rem'; // gap-1.5 = 0.375rem (6px) - reduced from 0.5rem
 export const HEADER_Z_INDEX = 40; // z-40 = 40
-export const HEADER_BACKGROUND_OPACITY = 0.95; // bg-white/95 = 95% opacity
+export const HEADER_BACKGROUND_OPACITY = 0.88; // Slightly translucent bar — visible but not heavy
 export const HEADER_BACKGROUND_LIGHT_COLOR = '#FFFFFF';
-export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.95)';
-export const HEADER_BORDER_COLOR = 'rgba(148, 163, 184, 0.2)';
+export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.92)';
+export const HEADER_BORDER_COLOR = 'rgba(148, 163, 184, 0.14)';
+export const HEADER_BACKDROP_BLUR_CLASS = 'backdrop-blur-md';
 
 // Header background gradient constants
 // Dark mode gradient: gray-800 to gray-900 and back
@@ -779,9 +781,6 @@ export const DASHBOARD_VIEW_HEADER_LABELS = {
   today: 'Today',
   dashboard: 'Dashboard',
 } as const;
-
-export const APP_BRAND_NAME = 'taskzm';
-export const APP_BRAND_NAME_FONT_SIZE = '1.125rem';
 
 /** Compact mobile week carousel strip below AppHeader */
 export const DASHBOARD_WEEK_CAROUSEL = {
