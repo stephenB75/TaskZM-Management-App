@@ -273,10 +273,7 @@ export function TodayAgendaView({
             ? item.task.estimatedTime
             : getTaskMinutes(item.task, { useCachedAIAnalysis: true });
         const durationHeightPx = Math.round(durationMins * pxPerMinute);
-        const heightPx =
-          durationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes
-            ? Math.max(durationHeightPx, TODAY_AGENDA_TIMELINE.shortTaskMinBlockHeightPx)
-            : Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
+        const heightPx = Math.max(TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx, durationHeightPx);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
         blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins, laneIndex: 0 });
@@ -302,14 +299,19 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Single column: stack in time order; each block at max(its time, bottom of previous + gap). Timeline extends vertically to fit.
-    let columnBottomPx = 0;
+    // Place blocks at their scheduled time; overlapping blocks use side-by-side lanes.
+    const laneBottomPx: number[] = [];
     for (const block of blocks) {
-      block.topPx = Math.max(block.naturalTopPx, columnBottomPx);
-      block.laneIndex = 0;
-      columnBottomPx = block.topPx + block.heightPx + blockGapPx;
+      let laneIndex = laneBottomPx.findIndex((bottomPx) => bottomPx + blockGapPx <= block.naturalTopPx);
+      if (laneIndex === -1) {
+        laneIndex = laneBottomPx.length;
+        laneBottomPx.push(0);
+      }
+      block.topPx = block.naturalTopPx;
+      block.laneIndex = laneIndex;
+      laneBottomPx[laneIndex] = block.naturalTopPx + block.heightPx;
     }
-    const laneCount = 1;
+    const laneCount = Math.max(1, laneBottomPx.length);
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
     const maxBlockBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.topPx + b.heightPx)) : 0;
     const timelineLayoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
@@ -441,28 +443,15 @@ export function TodayAgendaView({
     return TODAY_AGENDA_PRIORITY_INDICATOR_BG[key as keyof typeof TODAY_AGENDA_PRIORITY_INDICATOR_BG];
   };
 
-  /** Vertical timeline: labels only for 7 AM–12 AM so the axis matches the task time scale (pxPerMinute). Stacked blocks extend below 12 AM with no extra labels so the scale stays correct. */
+  /** Vertical timeline: fixed hourly labels; block height and position follow each item's duration. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, rowGapPx, dotSizePx, columnGapPx, rowPaddingTopPx, minBlockHeightPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
-      // Time axis fixed to 7 AM–12 AM (totalMinutes); stacked overflow below has no labels so block heights match the scale
+      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, columnGapPx, rowPaddingTopPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
       const allSlotMinutes: number[] = [];
       for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
         allSlotMinutes.push(m);
       }
-      const hiddenSlotMinutes = new Set<number>();
-      const blockStartMinutes = new Set<number>();
-      for (const block of timelineBlocks) {
-        const { actualStartMins, actualDurationMins } = block;
-        const endMins = actualStartMins + actualDurationMins;
-        if (actualStartMins >= 0 && actualStartMins <= totalMinutes) blockStartMinutes.add(actualStartMins);
-        for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
-          if (m > actualStartMins && m < endMins) hiddenSlotMinutes.add(m);
-        }
-      }
-      const visibleHourly = allSlotMinutes.filter((m) => !hiddenSlotMinutes.has(m));
-      const sortedSlots = Array.from(new Set([...visibleHourly, ...blockStartMinutes])).sort((a, b) => a - b);
-      const timelineLabels: { minutesFromStart: number; label: string }[] = sortedSlots.map((m) => {
+      const timelineLabels: { minutesFromStart: number; label: string }[] = allSlotMinutes.map((m) => {
         const h = startHour + Math.floor(m / MINUTES_PER_HOUR);
         const min = m % MINUTES_PER_HOUR;
         const isMidnight = h === endHour && min === 0;
@@ -481,9 +470,8 @@ export function TodayAgendaView({
 
       return (
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
-          {/* Timeline: gaps between items; connector from time axis to block when stacked so timeline aligns with task/event times; height grows with blocks */}
           <div className="flex w-full items-stretch" style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}>
-            {/* Left: time label + dot; NEXT UP badge — higher z-index so never hidden by blocks */}
+            {/* Left: hourly time labels only (no dots or grid lines) */}
             <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx, zIndex: Z_INDEX.TIMELINE_LABELS_AND_NEXT_UP }}>
               {nextUpTopPx != null && (
                 <div
@@ -504,75 +492,42 @@ export function TodayAgendaView({
                 return (
                   <div
                     key={minutesFromStart}
-                    className="absolute left-0 flex items-center w-full"
+                    className="absolute left-0 pr-1"
                     style={{ top: topPx, transform: 'translateY(-50%)' }}
                   >
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{label}</span>
-                    <span className="rounded-full bg-primary flex-shrink-0 ml-auto" style={{ width: dotSizePx, height: dotSizePx }} aria-hidden />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">{label}</span>
                   </div>
                 );
               })}
             </div>
-            {/* Right: horizontal line from dot to tab, then task/event blocks aren’t cut off */}
+            {/* Right: duration-sized task/event blocks positioned on the time scale */}
             <div className="flex-1 min-w-0 relative" style={{ marginLeft: columnGapPx, paddingLeft: blocksColumnPaddingLeftPx, paddingRight: cardPaddingRightPx, height: timelineLayoutHeightPx, overflowX: laneCount > 1 ? 'auto' : 'visible', overflowY: 'hidden', ...(laneCount > 1 ? { minWidth: laneCount * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx) - TODAY_AGENDA_TIMELINE.laneGapPx } : {}) }}>
-              {timelineLabels.map(({ minutesFromStart }) => {
-                const topPx = Math.round(minutesFromStart * pxPerMinute);
-                return (
-                  <div
-                    key={`line-${minutesFromStart}`}
-                    className="absolute top-0 h-0 border-t-2 border-primary/70"
-                    style={{
-                      left: -(columnGapPx + dotSizePx),
-                      right: 0,
-                      top: topPx,
-                      zIndex: Z_INDEX.TIMELINE_STAMP_LINE,
-                    }}
-                    aria-hidden
-                  />
-                );
-              })}
-              {/* Current time indicator is display-only; it must never call updateTask or modify task.scheduledDate. */}
               {currentTimeTopPx != null && (
                 <div
                   ref={currentTimeIndicatorRef}
-                  className="absolute left-0 right-0 bg-primary"
+                  className="absolute left-0 right-0 rounded-full bg-primary/80"
                   style={{ top: currentTimeTopPx, height: currentTimeLineHeightPx, zIndex: Z_INDEX.TIME_INDICATOR }}
                   aria-hidden
                 />
               )}
-              {timelineBlocks.map(({ item, topPx, heightPx, laneIndex, actualDurationMins, naturalTopPx }) => {
+              {timelineBlocks.map(({ item, topPx, heightPx, laneIndex, actualDurationMins }) => {
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
                 const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
                 const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
-                const needsConnector = topPx > naturalTopPx;
-                const connectorHeightPx = topPx - naturalTopPx;
                 return (
-                  <React.Fragment key={key}>
-                    {needsConnector && (
-                      <div
-                        className="absolute left-0 border-l-2 border-dashed border-primary/50 pointer-events-none"
-                        style={{
-                          top: naturalTopPx,
-                          height: connectorHeightPx,
-                          left: -(columnGapPx + dotSizePx),
-                          width: blocksColumnPaddingLeftPx + (columnGapPx + dotSizePx),
-                          zIndex: Z_INDEX.TIMELINE_STAMP_LINE - 1,
-                        }}
-                        aria-hidden
-                      />
-                    )}
-                    <div
-                      className="absolute overflow-visible rounded-lg"
-                      style={{
-                        top: topPx,
-                        ...(laneCount > 1 ? { left: laneIndex * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx), width: TODAY_AGENDA_TIMELINE.laneMinWidthPx } : { left: 0, right: 0 }),
-                        height: heightPx,
-                        minHeight: TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
-                        zIndex: Z_INDEX.TIMELINE_BLOCK,
-                        contain: 'layout paint',
-                        isolation: 'isolate',
-                      }}
-                    >
+                  <div
+                    key={key}
+                    className="absolute overflow-hidden rounded-lg"
+                    style={{
+                      top: topPx,
+                      ...(laneCount > 1 ? { left: laneIndex * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx), width: TODAY_AGENDA_TIMELINE.laneMinWidthPx } : { left: 0, right: 0 }),
+                      height: heightPx,
+                      minHeight: TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
+                      zIndex: Z_INDEX.TIMELINE_BLOCK,
+                      contain: 'layout paint',
+                      isolation: 'isolate',
+                    }}
+                  >
                       {item.type === 'task' && item.task ? (
                         <div data-task-id={item.task.id} className="w-full h-full">
                           <div
@@ -596,7 +551,7 @@ export function TodayAgendaView({
                                   : heightPx
                               }
                               compactTimeline={compactTimeline}
-                              durationMinutes={compactTimeline ? actualDurationMins : undefined}
+                              durationMinutes={actualDurationMins}
                             />
                           </div>
                         </div>
@@ -615,7 +570,6 @@ export function TodayAgendaView({
                         </div>
                       ) : null}
                     </div>
-                  </React.Fragment>
                 );
               })}
             </div>
@@ -631,12 +585,11 @@ export function TodayAgendaView({
                 const timelinePaddingTop = TODAY_AGENDA_TIMELINE.rowPaddingTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
                 return (
                   <div key={key} className="flex w-full items-start" style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
-                    <div className="flex flex-shrink-0 flex-col" style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: timelinePaddingTop }}>
-                      <div className="flex items-center flex-shrink-0" style={{ gap: TODAY_AGENDA_TIMELINE.rowGapPx }}>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{timeLabel || '—'}</span>
-                        <span className="flex-1 border-t-2 border-primary/50 dark:border-primary/40 min-h-px" style={{ minWidth: TODAY_AGENDA_TIMELINE.lineMinWidthPx }} aria-hidden />
-                        <span className="rounded-full bg-primary flex-shrink-0" style={{ width: TODAY_AGENDA_TIMELINE.dotSizePx, height: TODAY_AGENDA_TIMELINE.dotSizePx }} aria-hidden />
-                      </div>
+                    <div
+                      className="flex-shrink-0"
+                      style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: timelinePaddingTop }}
+                    >
+                      <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">{timeLabel || '—'}</span>
                     </div>
                     <div className="flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx, paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx }}>
                       {item.type === 'task' && item.task ? (

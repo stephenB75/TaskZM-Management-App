@@ -342,7 +342,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             footerSourceLabel={providerLabel}
             durationLabel={formatDuration(durationMinutes)}
             compact={compact}
-            style={compact ? { minHeight: TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx } : { minHeight: calculatedHeight }}
+            style={compact ? { height: '100%', minHeight: '100%', maxHeight: '100%' } : { height: '100%', minHeight: '100%', maxHeight: '100%' }}
           />
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">

@@ -266,16 +266,12 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Total minutes in range: (24 - 7) * 60 = 1020. */
   totalMinutes: (24 - 7) * 60,
   /** Pixels per minute so task height = duration (e.g. 2h → 120 * pxPerMinute). */
-  pxPerMinute: 3,
-  /** Minimum task block height (px) when duration is very short. */
-  minBlockHeightPx: 48,
-  /** Minimum timeline block height (px) so short events are still visible; kept small so blocks never exceed their duration and overlap. */
-  minTimelineBlockHeightPx: 24,
-  columnWidth: '1in',
-  dotSizePx: 10,
-  lineMinWidthPx: 28,
+  pxPerMinute: 4,
+  /** Minimum timeline block height (px); kept small so block height tracks duration. */
+  minTimelineBlockHeightPx: 48,
+  columnWidth: '4.5rem',
   rowPaddingTopPx: 2,
-  columnGapPx: 8,
+  columnGapPx: 12,
   rowGapPx: 4,
   /** Minimum gap (px) between consecutive timeline blocks so they don’t touch. */
   blockGapPx: 8,
@@ -327,10 +323,10 @@ export const TODAY_AGENDA_TIMELINE = {
   laneMinWidthPx: 200,
   /** Duration (minutes) below which timeline items use compact single-row layout so info is not clipped. */
   shortItemThresholdMinutes: 20,
-  /** Target height (px) for compact single-row layout; block height remains duration-based. */
-  shortItemCompactRowHeightPx: 40,
-  /** Minimum block height (px) for short-duration tasks so the compact row fits without clipping. Applied when duration < shortItemThresholdMinutes. */
-  shortTaskMinBlockHeightPx: 72,
+  /** Target height (px) for compact single-row layout inside a duration-sized block. */
+  shortItemCompactRowHeightPx: 48,
+  /** @deprecated Timeline blocks use duration * pxPerMinute; compact layout handles short items. */
+  shortTaskMinBlockHeightPx: 48,
 } as const;
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 

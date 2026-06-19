@@ -792,11 +792,7 @@ export const DraggableTaskCard = React.forwardRef<
         periodPart={agendaTimeAndPeriod?.period}
         footerIcon="list-checks"
         footerSourceLabel={agendaFooterSource}
-        durationLabel={formatDuration(
-          options.compact
-            ? (durationMinutes ?? task.estimatedTime ?? null)
-            : (task.estimatedTime ?? null),
-        )}
+        durationLabel={formatDuration(durationMinutes ?? task.estimatedTime ?? null)}
         showCommentIcon={Boolean(task.description?.trim())}
         compact={options.compact}
         embedded={options.embedded}
@@ -880,16 +876,28 @@ export const DraggableTaskCard = React.forwardRef<
           style={{
             // Today Agenda: compact row, or fill timeline block height when timelineBlockHeightPx is set (aligns card to vertical timeline).
             ...(isTodayAgenda
-              ? {
-                  minHeight: timelineBlockHeightPx != null ? timelineBlockHeightPx : TODAY_AGENDA_TIMELINE.taskRowHeightPx,
-                  ...(timelineBlockHeightPx != null ? { height: timelineBlockHeightPx, maxHeight: timelineBlockHeightPx } : {}),
-                  boxSizing: 'border-box',
-                  flexShrink: 0,
-                  background: 'transparent',
-                  border: 'none',
-                  boxShadow: 'none',
-                  padding: 0,
-                }
+              ? timelineBlockHeightPx != null
+                ? {
+                    height: '100%',
+                    minHeight: '100%',
+                    maxHeight: '100%',
+                    boxSizing: 'border-box' as const,
+                    flexShrink: 0,
+                    background: 'transparent',
+                    border: 'none',
+                    boxShadow: 'none',
+                    padding: 0,
+                    overflow: 'hidden',
+                  }
+                : {
+                    minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx,
+                    boxSizing: 'border-box' as const,
+                    flexShrink: 0,
+                    background: 'transparent',
+                    border: 'none',
+                    boxShadow: 'none',
+                    padding: 0,
+                  }
               : isKanban
               ? {
                   height: isExpanded ? 'auto' : `${cardHeight}px`,
@@ -937,10 +945,9 @@ export const DraggableTaskCard = React.forwardRef<
                   {renderAgendaTaskCard({
                     compact: compactTimeline,
                     style: {
-                      minHeight: compactTimeline
-                        ? TODAY_AGENDA_TIMELINE.shortItemCompactRowHeightPx
-                        : timelineBlockHeightPx ?? TODAY_AGENDA_TIMELINE.taskRowHeightPx,
-                      height: timelineBlockHeightPx ?? undefined,
+                      height: '100%',
+                      minHeight: '100%',
+                      maxHeight: '100%',
                     },
                   })}
                 </TooltipTrigger>
