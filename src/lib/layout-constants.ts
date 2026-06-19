@@ -771,6 +771,22 @@ export const CALENDAR_CAROUSEL_LAYOUT_FULL = '100%';
 export const CALENDAR_CAROUSEL_PADDING_B = '0.75rem';
 /** Bottom padding at sm breakpoint. sm:pb-4 = 1rem. */
 export const CALENDAR_CAROUSEL_PADDING_B_SM = '1rem';
+
+/** Dashboard header labels for week / month / today contexts */
+export const DASHBOARD_VIEW_HEADER_LABELS = {
+  week: 'Week',
+  month: 'Month',
+  today: 'Today',
+  dashboard: 'Dashboard',
+} as const;
+
+/** Compact mobile week carousel strip below AppHeader */
+export const DASHBOARD_WEEK_CAROUSEL = {
+  paddingTopPx: 6,
+  navRowMarginBottomPx: 6,
+  navButtonOpacity: 0.7,
+} as const;
+
 export const DESKTOP_PADDING_TOP = '3rem'; // padding-top: 3rem for desktop views
 // Mobile scroll container padding to ensure content is not hidden by fixed header when scrolling up
 // Header height already includes safe area inset in its padding, so we match that total height

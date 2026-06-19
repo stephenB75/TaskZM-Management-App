@@ -77,17 +77,11 @@ import {
   HEADER_BUTTON_PADDING_Y_DESKTOP,
   HEADER_BUTTON_PILL_PADDING_X_SMALL,
   HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-  HEADER_BUTTON_LINE_HEIGHT,
   HEADER_BUTTON_BORDER_RADIUS,
   HEADER_ICON_SIZE_BUTTON_SMALL,
   HEADER_ICON_SIZE_BUTTON_DESKTOP,
   HEADER_ICON_MARGIN_SMALL,
   HEADER_ICON_MARGIN_DESKTOP,
-  HEADER_TITLE_SIZE_DESKTOP,
-  HEADER_TITLE_SIZE_SMALL_SCREEN,
-  HEADER_DESCRIPTION_SIZE,
-  HEADER_DESCRIPTION_SIZE_SMALL_SCREEN,
-  HEADER_TEXT_MARGIN_NONE,
   ICON_SIZE_XS,
   ICON_SIZE_SM,
   ICON_SIZE_MD,
@@ -100,7 +94,6 @@ import {
   CALENDAR_CAROUSEL_DOT_SIZE_PX,
   CALENDAR_CAROUSEL_DAYS_PER_WEEK,
   CALENDAR_CAROUSEL_DAY_ABBREV_LENGTH,
-  CALENDAR_CAROUSEL_WEEK_VIEW_LABEL,
   CALENDAR_DAY_NAMES,
   CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX,
   CALENDAR_CAROUSEL_DAY_HEADER_FONT_SIZE,
@@ -112,13 +105,15 @@ import {
   CALENDAR_CAROUSEL_LAYOUT_FULL,
   CALENDAR_CAROUSEL_PADDING_B,
   CALENDAR_CAROUSEL_PADDING_B_SM,
+  DASHBOARD_VIEW_HEADER_LABELS,
+  DASHBOARD_WEEK_CAROUSEL,
   MOBILE_PADDING_BOTTOM,
   TOAST_DURATION_SHORT_MS,
   TOAST_DURATION_MEDIUM_MS,
 } from "../lib/layout-constants";
 import { UI_GRADIENT_COLORS, UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { KANBAN_ANIMATION } from "../lib/kanban-constants";
+import { KANBAN_ANIMATION, KANBAN_WEEK_GROUP_HEADER, formatKanbanWeekGroupDateRange } from "../lib/kanban-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 
 interface DashboardViewProps {
@@ -778,6 +773,35 @@ export function DashboardView({
     [mobileWeekOffset]
   );
 
+  const mobileWeekDateRange = useMemo(() => {
+    const start = weekColumns[0]?.date;
+    const end = weekColumns[weekColumns.length - 1]?.date;
+    if (!start || !end) return null;
+    return formatKanbanWeekGroupDateRange(start, end);
+  }, [weekColumns]);
+
+  const dashboardHeaderTitle = useMemo(() => {
+    if (shouldUseMobileLayout) {
+      if (mobileView === "today") return DASHBOARD_VIEW_HEADER_LABELS.today;
+      return viewMode === "month"
+        ? DASHBOARD_VIEW_HEADER_LABELS.month
+        : DASHBOARD_VIEW_HEADER_LABELS.week;
+    }
+    return DASHBOARD_VIEW_HEADER_LABELS.dashboard;
+  }, [shouldUseMobileLayout, mobileView, viewMode]);
+
+  const dashboardHeaderDescription = useMemo(() => {
+    if (
+      shouldUseMobileLayout &&
+      mobileView === "week" &&
+      viewMode === "week" &&
+      mobileWeekDateRange
+    ) {
+      return mobileWeekDateRange;
+    }
+    return undefined;
+  }, [shouldUseMobileLayout, mobileView, viewMode, mobileWeekDateRange]);
+
   // Compute visible date range (weekColumns is already initialized above)
   const visibleRange = React.useMemo(() => {
     if (!weekColumns.length) return null;
@@ -1314,21 +1338,21 @@ export function DashboardView({
       <div className={cn("h-full flex flex-col min-w-0 w-full max-w-full overflow-x-hidden", UI_GRADIENT_COLORS.dialog.className, "dark:from-gray-950 dark:via-gray-900 dark:to-gray-950")}>
       {/* Header - Using AppHeader for consistency */}
       <AppHeader
-        title="Dashboard"
+        title={dashboardHeaderTitle}
         panelOpen={panelOpen}
         panelKey={panelKey}
-        description={viewMode === "week" ? "Week View" : "Month View"}
+        description={dashboardHeaderDescription}
         actions={
           <div 
             className="flex items-center min-w-0"
             style={{ 
-              gap: isSmallScreen ? HEADER_GAP_MEDIUM : HEADER_GAP_LARGE, // Increased spacing between components
-              flexShrink: 0, // Prevent actions from shrinking
-              flexBasis: 'auto', // Use natural width
-              paddingRight: isSmallScreen ? HEADER_CONTENT_PADDING_LEFT_MOBILE : HEADER_CONTENT_PADDING_LEFT_DESKTOP, // Add right padding to move Re-schedule away from browser border
+              gap: isSmallScreen ? HEADER_GAP_MEDIUM : HEADER_GAP_LARGE,
+              flexShrink: 0,
+              flexBasis: 'auto',
+              paddingRight: isSmallScreen ? HEADER_CONTENT_PADDING_LEFT_MOBILE : HEADER_CONTENT_PADDING_LEFT_DESKTOP,
             }}
           >
-            {/* View Mode Toggle with text inline - Desktop Only (not mobile/tablet) */}
+            {/* View mode toggle — desktop only */}
             {!shouldUseMobileLayout && (
               <div 
                 className="flex items-center"
@@ -1336,28 +1360,6 @@ export function DashboardView({
                   gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL,
                 }}
               >
-                {/* Dashboard text - aligned with toggle */}
-                <h2 
-                  className="font-semibold text-foreground uppercase tracking-wide"
-                  style={{ 
-                    fontSize: isSmallScreen ? HEADER_TITLE_SIZE_SMALL_SCREEN : HEADER_TITLE_SIZE_DESKTOP,
-                    lineHeight: HEADER_BUTTON_LINE_HEIGHT,
-                    margin: HEADER_TEXT_MARGIN_NONE,
-                  }}
-                >
-                  Dashboard
-                </h2>
-                <p 
-                  className="text-muted-foreground"
-                  style={{ 
-                    fontSize: isSmallScreen ? HEADER_DESCRIPTION_SIZE_SMALL_SCREEN : HEADER_DESCRIPTION_SIZE,
-                    margin: HEADER_TEXT_MARGIN_NONE,
-                    lineHeight: HEADER_BUTTON_LINE_HEIGHT,
-                  }}
-                >
-                  {viewMode === "week" ? "Week View" : "Month View"}
-                </p>
-                {/* Toggle button */}
                 <div 
                   className={cn(
                     "flex items-center rounded-full border",
@@ -1538,8 +1540,11 @@ export function DashboardView({
       {/* Mobile/Tablet 7-Day Calendar - Only show on mobile/tablet when viewing week */}
       {mobileView === "week" && shouldUseMobileLayout && (
         <div 
-          className="border-b border-primary/10 bg-white/50 dark:bg-card/50 backdrop-blur-sm flex-shrink-0 min-w-0 w-full max-w-full overflow-x-hidden overflow-y-visible"
-          style={{ paddingTop: HEADER_GAP_LARGE, maxWidth: CALENDAR_CAROUSEL_MAX_WIDTH_VIEWPORT }}
+          className="border-b border-primary/8 bg-white/40 dark:bg-card/40 backdrop-blur-sm flex-shrink-0 min-w-0 w-full max-w-full overflow-x-hidden overflow-y-visible"
+          style={{
+            paddingTop: DASHBOARD_WEEK_CAROUSEL.paddingTopPx,
+            maxWidth: CALENDAR_CAROUSEL_MAX_WIDTH_VIEWPORT,
+          }}
         >
           <div
             className="calendar-carousel-inner min-w-0 w-full max-w-full overflow-hidden box-border"
@@ -1552,33 +1557,55 @@ export function DashboardView({
               maxWidth: CALENDAR_CAROUSEL_LAYOUT_FULL,
             }}
           >
-            {/* Week Navigation Header */}
-            <div className="flex items-center justify-between mb-3">
+            {/* Week navigation — date range shown in AppHeader */}
+            <div
+              className="flex items-center justify-between"
+              style={{ marginBottom: DASHBOARD_WEEK_CAROUSEL.navRowMarginBottomPx }}
+            >
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={() => handleWeekChange("prev")}
                 disabled={mobileWeekOffset === 0}
-                className="flex-shrink-0 rounded-full"
-                style={{ width: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX, height: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX }}
+                className="flex-shrink-0 rounded-full hover:bg-muted/50"
+                style={{
+                  width: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX,
+                  height: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX,
+                  opacity: DASHBOARD_WEEK_CAROUSEL.navButtonOpacity,
+                }}
               >
                 <Icon name="chevron-left" size={ICON_SIZE_MD} />
               </Button>
 
-              <div className="flex-1 text-center">
-                <span className="text-sm font-semibold text-foreground">
-                  {weekColumns[0]?.date && weekColumns[6]?.date
-                    ? `${weekColumns[0].date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${weekColumns[6].date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: weekColumns[0].date.getFullYear() !== weekColumns[6].date.getFullYear() ? "numeric" : undefined })}`
-                    : CALENDAR_CAROUSEL_WEEK_VIEW_LABEL}
+              {mobileWeekOffset === 0 ? (
+                <span
+                  className="uppercase font-semibold border bg-primary/10 text-primary border-primary/20 dark:bg-primary/15 dark:border-primary/30"
+                  style={{
+                    fontSize: KANBAN_WEEK_GROUP_HEADER.badge.fontSizePx,
+                    paddingLeft: KANBAN_WEEK_GROUP_HEADER.badge.paddingX,
+                    paddingRight: KANBAN_WEEK_GROUP_HEADER.badge.paddingX,
+                    paddingTop: KANBAN_WEEK_GROUP_HEADER.badge.paddingY,
+                    paddingBottom: KANBAN_WEEK_GROUP_HEADER.badge.paddingY,
+                    letterSpacing: `${KANBAN_WEEK_GROUP_HEADER.badge.letterSpacingEm}em`,
+                    borderRadius: KANBAN_WEEK_GROUP_HEADER.badge.borderRadiusPx,
+                  }}
+                >
+                  This week
                 </span>
-              </div>
-              
+              ) : (
+                <span className="w-6" aria-hidden />
+              )}
+
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={() => handleWeekChange("next")}
-                className="flex-shrink-0 rounded-full"
-                style={{ width: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX, height: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX }}
+                className="flex-shrink-0 rounded-full hover:bg-muted/50"
+                style={{
+                  width: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX,
+                  height: CALENDAR_CAROUSEL_NAV_BUTTON_SIZE_PX,
+                  opacity: DASHBOARD_WEEK_CAROUSEL.navButtonOpacity,
+                }}
               >
                 <Icon name="chevron-right" size={ICON_SIZE_MD} />
               </Button>

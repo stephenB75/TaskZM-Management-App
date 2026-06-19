@@ -248,17 +248,37 @@ export function AppHeader({
               </Button>
             )}
 
-            {/* Title - Shows view title on mobile only */}
+            {/* Title - contextual; compact when description is shown */}
             <div className="flex-1 min-w-0">
               <h1 
-                className="font-bold bg-clip-text text-transparent"
+                className={cn(
+                  description
+                    ? 'font-semibold text-foreground normal-case tracking-normal leading-tight'
+                    : 'font-bold bg-clip-text text-transparent',
+                )}
                 style={{
                   fontSize: HEADER_TITLE_SIZE_MOBILE,
-                  backgroundImage: `linear-gradient(to right, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID}, ${COLOR_GRADIENT_END})`,
+                  ...(description
+                    ? {}
+                    : {
+                        backgroundImage: `linear-gradient(to right, ${COLOR_GRADIENT_START}, ${COLOR_GRADIENT_MID}, ${COLOR_GRADIENT_END})`,
+                      }),
                 }}
               >
                 {typeof title === 'string' ? title : title}
               </h1>
+              {description && (
+                <p
+                  className="text-muted-foreground truncate normal-case tracking-normal font-medium"
+                  style={{
+                    fontSize: HEADER_DESCRIPTION_SIZE_SMALL_SCREEN,
+                    marginTop: 2,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {description}
+                </p>
+              )}
             </div>
           </div>
 
