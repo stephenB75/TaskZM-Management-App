@@ -26,7 +26,6 @@ import { TermsOfServiceDialog } from './TermsOfServiceDialog';
 import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
 import { AvatarSelection, type AvatarGender } from './AvatarSelection';
-import { UserProfileAvatar } from './UserProfileAvatar';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import { SETTINGS_PANEL_UI_TEXT } from '../lib/settings-panel-constants';
 import { NAVIGATION_UI_TEXT } from '../lib/navigation-constants';
@@ -55,15 +54,14 @@ import { SettingsCategoryHeader } from './settings/SettingsCategoryHeader';
 import { SettingsToggleRow } from './settings/SettingsToggleRow';
 import { SettingsGroup } from './settings/SettingsGroup';
 import { SettingsLead } from './settings/SettingsLead';
-import { SettingsField } from './settings/SettingsField';
 import { SettingsControlGroup } from './settings/SettingsControlGroup';
 import { SettingsDivider } from './settings/SettingsDivider';
 import { SettingsStatusCard } from './settings/SettingsStatusCard';
-import { SettingsActionStack } from './settings/SettingsActionStack';
 import { SettingsProUpsell } from './settings/SettingsProUpsell';
 import { SettingsFeatureRow } from './settings/SettingsFeatureRow';
 import { SettingsInfoCallout } from './settings/SettingsInfoCallout';
 import { SettingsSubheading } from './settings/SettingsSubheading';
+import { SettingsProfileSection } from './settings/SettingsProfileSection';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS, AI_DAILY_HOUR_OPTIONS, AI_DAILY_HOUR_LABELS } from '../lib/ai-config';
 import taskzmLogoBlack from '../assets/Taskzm_Logo_BLK-removebg.png';  // Black logo for about section
@@ -591,219 +589,31 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           description={SETTINGS_PANEL_UI_TEXT.sections.userProfile.description}
         >
 
-                      <SettingsGroup>
-                        {/* Profile Card - Redesigned */}
-                        <div 
-                          className="relative w-full overflow-hidden rounded-2xl border border-border/40 bg-card text-foreground shadow-sm"
-                        >
-                          {/* Blue Header Banner */}
-                          <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: SETTINGS_PANEL_PROFILE_BANNER_HEIGHT }}>
-                          </div>
-
-                          {/* Profile Picture - Overlapping Banner */}
-                          <div className="relative" style={{ 
-                            marginTop: SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
-                            paddingLeft: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
-                            paddingRight: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
-                          }}>
-                            <div className="relative flex-shrink-0 inline-block">
-                              <UserProfileAvatar
-                                src={user?.avatar}
-                                name={user?.name || SETTINGS_PANEL_UI_TEXT.profile.fallbackName}
-                                size={SETTINGS_PANEL_PROFILE_AVATAR_SIZE}
-                                fontSize={SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE}
-                                showRing
-                                className="border-4 border-white dark:border-card shadow-lg ring-0"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="absolute bottom-0 right-0 rounded-full border-2 border-white dark:border-card bg-background hover:bg-muted"
-                                style={{
-                                  width: SETTINGS_PANEL_EDIT_BUTTON_SIZE,
-                                  height: SETTINGS_PANEL_EDIT_BUTTON_SIZE,
-                                }}
-                                onClick={() => setShowAvatarSelection(true)}
-                                title={AVATAR_UI_TEXT.changeAvatar}
-                              >
-                                <Icon name="edit" size={SETTINGS_PANEL_ICON_SIZE_SMALL} />
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Content Section */}
-                          <div style={{ 
-                            paddingLeft: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
-                            paddingRight: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_X,
-                            paddingBottom: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_BOTTOM,
-                            paddingTop: SETTINGS_PANEL_PROFILE_CONTENT_PADDING_TOP,
-                          }}>
-                            {/* Name with Verification Badge */}
-                            <div className="flex items-center" style={{ 
-                              gap: PANEL_GAP_SMALL,
-                              marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
-                            }}>
-                              <h3 className="font-bold text-foreground" style={{ fontSize: SETTINGS_PANEL_PROFILE_NAME_SIZE }}>
-                                {user?.name || SETTINGS_PANEL_UI_TEXT.profile.fallbackName}
-                              </h3>
-                              {subscription.tier === 'pro' && (
-                                <Icon 
-                                  name="sparkles" 
-                                  size={SETTINGS_PANEL_PROFILE_ICON_SIZE} 
-                                  className="text-primary flex-shrink-0" 
-                                  weight="duotone"
-                                />
-                              )}
-                            </div>
-                  
-                            {/* Username/Email */}
-                            <div className="flex items-center text-muted-foreground" style={{ 
-                              fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
-                              marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
-                            }}>
-                              <span className="truncate">@{user?.email?.split('@')[0] || SETTINGS_PANEL_UI_TEXT.profile.user}</span>
-                            </div>
-
-                            {/* Role */}
-                            {user?.role && (
-                              <div className="flex items-center text-muted-foreground capitalize" style={{ 
-                                fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
-                                marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL,
-                              }}>
-                                <span className="truncate">{user.role}</span>
-                              </div>
-                            )}
-
-                            {/* Team Information */}
-                            {(() => {
-                              // Find team by checking if user is in any team
-                              const userTeamMember = currentTeamMembers.find(m => m.id === user?.id) || teamMembers.find(m => m.id === user?.id);
-                              const teamId = userTeamMember?.teamId || user?.teamId;
-                              const team = teamId ? teams.find(t => t.id === teamId) : null;
-                              return team ? (
-                                <div className="flex items-center text-muted-foreground" style={{ 
-                                  fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
-                                  marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM,
-                                }}>
-                                  <Icon name="users" size={SETTINGS_PANEL_ICON_SIZE_SMALL} className="mr-1.5 flex-shrink-0" />
-                                  <span className="truncate">{team.name}</span>
-                                </div>
-                              ) : null;
-                            })()}
-
-                            {/* Subscription Badge */}
-                            <div className="flex items-center flex-wrap" style={{ 
-                              gap: PANEL_GAP_SMALL,
-                              marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM,
-                            }}>
-                              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap">
-                                {subscription.tier === 'pro' ? SETTINGS_PANEL_UI_TEXT.profile.proMember : SETTINGS_PANEL_UI_TEXT.profile.freeMember}
-                              </Badge>
-                              {subscription.status && (
-                                <Badge variant="outline" className="text-muted-foreground border-muted whitespace-nowrap">
-                                  {subscription.status}
-                                </Badge>
-                              )}
-                            </div>
-
-                            {/* Stats Section - Following/Followers Style */}
-                            <div className="flex items-center text-foreground border-t" style={{ 
-                              gap: SETTINGS_PANEL_GAP_LARGE,
-                              fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
-                              paddingTop: SETTINGS_PANEL_PADDING_MEDIUM,
-                              marginTop: SETTINGS_PANEL_MARGIN_TOP_MEDIUM,
-                            }}>
-                              <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                                <span className="font-bold">{subscription.tier === 'pro' ? SETTINGS_PANEL_UI_TEXT.profile.pro : SETTINGS_PANEL_UI_TEXT.profile.free}</span>
-                                <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.profile.plan}</span>
-                              </div>
-                              {subscription.tier === 'pro' && subscription.billingPeriod && (
-                                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                                  <span className="font-bold capitalize">{subscription.billingPeriod}</span>
-                                  <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.profile.billing}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Email Link */}
-                            <div className="flex items-center text-muted-foreground" style={{ 
-                              gap: PANEL_GAP_SMALL,
-                              fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
-                              marginTop: SETTINGS_PANEL_MARGIN_TOP_MEDIUM,
-                            }}>
-                              <Icon name="mail" size={SETTINGS_PANEL_PROFILE_EMAIL_ICON_SIZE} className="flex-shrink-0" />
-                              <span className="truncate">{user?.email || SETTINGS_PANEL_UI_TEXT.profile.fallbackEmail}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <SettingsActionStack>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => setShowAvatarSelection(true)}
-                            className="w-full"
-                          >
-                            <Icon name="user" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
-                            {AVATAR_UI_TEXT.changeAvatar}
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={handleUpdateProfile} 
-                            disabled={isUpdatingProfile || profileName.trim() === user?.name}
-                            className="w-full"
-                          >
-                            {isUpdatingProfile ? SETTINGS_PANEL_UI_TEXT.profile.saving : SETTINGS_PANEL_UI_TEXT.profile.saveProfile}
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            onClick={handleSignOut} 
-                            className="w-full"
-                          >
-                            <Icon name="log-out" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL, color: COLOR_TEXT_WHITE }} />
-                            Sign Out
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            onClick={() => setShowDeleteAccountDialog(true)} 
-                            className="w-full border-destructive/50"
-                          >
-                            <Icon name="trash-2" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL, color: COLOR_TEXT_WHITE }} />
-                            Delete Account
-                          </Button>
-                        </SettingsActionStack>
-
-                        <SettingsControlGroup>
-                          <div style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                            <SettingsField id="name" label="Name">
-                              <Input 
-                                id="name" 
-                                value={profileName} 
-                                onChange={(e) => setProfileName(e.target.value)}
-                                placeholder="Enter your name"
-                                style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
-                                className="w-full"
-                              />
-                            </SettingsField>
-                          </div>
-                          <div style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM }}>
-                            <SettingsField id="email" label="Email">
-                              <Input 
-                                id="email" 
-                                value={user?.email || ''} 
-                                disabled 
-                                className="w-full bg-muted/40"
-                                style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
-                              />
-                            </SettingsField>
-                          </div>
-                        </SettingsControlGroup>
-                      </SettingsGroup>
+                      <SettingsProfileSection
+                        displayName={user?.name || SETTINGS_PANEL_UI_TEXT.profile.fallbackName}
+                        email={user?.email || SETTINGS_PANEL_UI_TEXT.profile.fallbackEmail}
+                        username={user?.email?.split('@')[0] || SETTINGS_PANEL_UI_TEXT.profile.user}
+                        avatar={user?.avatar}
+                        role={user?.role}
+                        teamName={(() => {
+                          const userTeamMember =
+                            currentTeamMembers.find((m) => m.id === user?.id) ||
+                            teamMembers.find((m) => m.id === user?.id);
+                          const teamId = userTeamMember?.teamId || user?.teamId;
+                          return teamId ? teams.find((t) => t.id === teamId)?.name ?? null : null;
+                        })()}
+                        profileName={profileName}
+                        onProfileNameChange={setProfileName}
+                        isUpdatingProfile={isUpdatingProfile}
+                        canSaveProfile={profileName.trim() !== user?.name}
+                        onSaveProfile={handleUpdateProfile}
+                        onChangeAvatar={() => setShowAvatarSelection(true)}
+                        onSignOut={handleSignOut}
+                        onDeleteAccount={() => setShowDeleteAccountDialog(true)}
+                        subscriptionTier={subscription.tier === 'pro' ? 'pro' : 'free'}
+                        subscriptionStatus={subscription.status}
+                        billingPeriod={subscription.billingPeriod}
+                      />
           
         </SettingsSection>
 

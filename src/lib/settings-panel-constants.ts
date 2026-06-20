@@ -18,6 +18,9 @@ export const SETTINGS_PANEL_UI_TEXT = {
     billing: 'Billing',
     pro: 'Pro',
     free: 'Free',
+    role: 'Role',
+    team: 'Team',
+    emailLabel: 'Email',
   },
   priorityLevels: {
     sectionTitle: 'Priority Levels',

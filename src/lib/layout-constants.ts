@@ -844,6 +844,9 @@ export const SETTINGS_PANEL_PROFILE_NAME_SIZE = '1.25rem'; // text-xl = 1.25rem 
 export const SETTINGS_PANEL_PROFILE_ICON_SIZE = 20; // Icon size for sparkles badge (20px)
 export const SETTINGS_PANEL_PROFILE_EMAIL_ICON_SIZE = 14; // Icon size for email icon (14px)
 export const SETTINGS_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET = '-3.5rem'; // Negative margin to overlap avatar with banner (-mt-14)
+export const SETTINGS_PANEL_PROFILE_AVATAR_COMPACT_SIZE = '4.5rem'; // Compact avatar in settings profile header
+export const SETTINGS_PANEL_PROFILE_AVATAR_COMPACT_FONT_SIZE = '1.25rem';
+export const SETTINGS_PANEL_PROFILE_META_ROW_PADDING_Y = '0.625rem';
 
 // App Icon and Theme Colors
 export const APP_THEME_COLOR_PRIMARY = '#9B87E8'; // TaskZM purple/lavender (primary theme color)
