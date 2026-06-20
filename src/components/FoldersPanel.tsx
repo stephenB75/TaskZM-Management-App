@@ -1,22 +1,12 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL } from "../lib/layout-constants";
-import { useDroppable } from "@dnd-kit/core";
+import { ICON_SIZE_XL } from "../lib/layout-constants";
 import { AppHeader } from "./AppHeader";
 import { HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, MOBILE_PADDING_BOTTOM } from "../lib/layout-constants";
-import { useIsMobile } from "./ui/use-mobile";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Badge } from "./ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
 import {
   Dialog,
   DialogContent,
@@ -25,12 +15,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "./ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +38,7 @@ import { toast } from "sonner";
 import { cn } from "../lib/utils";
 import { logger } from "../lib/logger";
 import { FolderView } from "./FolderView";
+import { FolderCard } from "./FolderCard";
 import type { Folder as FolderType } from "../types";
 import {
   COLOR_PASTEL_LAVENDER,
@@ -65,46 +50,27 @@ import {
   FOLDER_COLOR_OPTIONS,
   getColorWithOpacity,
 } from "../lib/color-theme";
+import { FOLDER_CARD } from "../lib/folder-constants";
 import {
-  FOLDER_PANEL_MOBILE_HEADER_SPACER,
   FOLDER_PANEL_SEARCH_PADDING_TOP,
   FOLDER_PANEL_SEARCH_PADDING_BOTTOM,
   FOLDER_PANEL_CONTENT_PADDING_TOP,
   FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
   FOLDER_PANEL_EMPTY_STATE_ICON_SIZE,
   FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM,
-  FOLDER_PANEL_CARD_HEADER_PADDING_BOTTOM,
-  FOLDER_PANEL_CARD_HEADER_PADDING_TOP,
-  FOLDER_PANEL_CARD_HEADER_PADDING_LEFT,
-  FOLDER_PANEL_CARD_CONTENT_PADDING_BOTTOM,
-  FOLDER_PANEL_CARD_CONTENT_PADDING_LEFT,
-  FOLDER_PANEL_FOLDER_ICON_SIZE,
-  FOLDER_PANEL_FOLDER_ICON_INNER_SIZE,
-  FOLDER_PANEL_BUTTON_SIZE,
   FOLDER_PANEL_BUTTON_SIZE_SMALL,
-  FOLDER_PANEL_DROPDOWN_WIDTH,
-  FOLDER_PANEL_DROPDOWN_Z_INDEX,
   FOLDER_PANEL_COLOR_PICKER_SIZE,
   FOLDER_PANEL_SEARCH_ICON_LEFT,
   FOLDER_PANEL_SEARCH_INPUT_PADDING_LEFT,
   FOLDER_PANEL_SEARCH_CLEAR_BUTTON_RIGHT,
-  FOLDER_PANEL_CARD_TITLE_MARGIN_BOTTOM,
-  FOLDER_PANEL_BADGE_PADDING_X,
-  FOLDER_PANEL_BADGE_PADDING_Y,
-  FOLDER_PANEL_BADGE_TEXT_SIZE,
-  FOLDER_PANEL_TEXT_SIZE_MEDIUM,
   FOLDER_PANEL_ICON_SIZE_SMALL,
-  FOLDER_PANEL_ICON_MARGIN_RIGHT,
   FOLDER_PANEL_DIALOG_MAX_WIDTH,
+  ICON_SIZE_MD,
   FOLDER_PANEL_DIALOG_CONTENT_SPACING,
   FOLDER_PANEL_DIALOG_FIELD_SPACING,
   FOLDER_PANEL_DIALOG_PADDING_Y,
   FOLDER_PANEL_COLOR_PICKER_GAP,
-  PANEL_DROPDOWN_TIMEOUT_DELAY_MS,
-  PANEL_CONTENT_SPACING,
   PANEL_PADDING,
-  PANEL_GAP_LARGE,
-  PANEL_GAP_MEDIUM,
   PANEL_EMPTY_STATE_TEXT_SIZE,
 } from "../lib/layout-constants";
 
@@ -234,22 +200,6 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
     return projects.filter((project) => project && project.folderId === folderId).length;
   };
 
-  // Track which folders have been mounted to prevent re-animation
-  const mountedFoldersRef = useRef<Set<string>>(new Set());
-  const initializedRef = useRef(false);
-  
-  // Initialize mounted folders from current folders list (only once)
-  useEffect(() => {
-    if (!initializedRef.current && folders && folders.length > 0) {
-      folders.forEach(folder => {
-        if (folder && folder.id) {
-          mountedFoldersRef.current.add(folder.id);
-        }
-      });
-      initializedRef.current = true;
-    }
-  }, [folders]);
-
   const handleFolderClick = useCallback((folder: FolderType) => {
     if (onFolderSelect) {
       onFolderSelect(folder);
@@ -262,275 +212,53 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
     setFolderToDelete(folder);
   }, []);
 
-  // Droppable Folder Card Component
-  const DroppableFolderCard = React.memo(({ 
-    folder, 
-    taskCount, 
-    projectCount,
-    onFolderClick,
-    onEditFolder,
-    onDeleteFolder
-  }: { 
-    folder: FolderType; 
-    taskCount: number; 
-    projectCount: number;
-    onFolderClick: (folder: FolderType) => void;
-    onEditFolder: (folder: FolderType) => void;
-    onDeleteFolder: (folder: FolderType) => void;
-  }) => {
-    const isMobile = useIsMobile();
-    const { setNodeRef, isOver } = useDroppable({
-      id: `folder_${folder.id}`,
-      disabled: isMobile, // Disable drop on mobile
-    });
-
-    // Local state to control dropdown menu
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-
-    // Track initial mount per folder to avoid repeated entrance animations
-    const hasMounted = mountedFoldersRef.current.has(folder.id);
-    if (!hasMounted) {
-      mountedFoldersRef.current.add(folder.id);
+  const renderFolderList = () => {
+    if (filteredFolders.length === 0) {
+      return (
+        <div
+          className="text-center"
+          style={{
+            paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
+            paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
+          }}
+        >
+          <Icon
+            name="folder"
+            size={FOLDER_PANEL_EMPTY_STATE_ICON_SIZE}
+            className="mx-auto text-primary/50"
+            style={{
+              marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM,
+            }}
+          />
+          <p
+            className="text-muted-foreground dark:text-muted-foreground"
+            style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
+          >
+            {searchQuery ? "No folders match your search" : "No folders yet"}
+          </p>
+        </div>
+      );
     }
 
-    const wrapperClassName = cn(
-      isOver && "ring-2 ring-primary/50 ring-inset"
-    );
-
     return (
-      <div ref={setNodeRef} className={wrapperClassName}>
-        <Card 
-          data-slot="card"
-          className={cn(
-            "relative border transition-colors duration-200",
-            "bg-card",
-            !dropdownOpen && "hover:border-primary/40 hover:shadow-md",
-            isOver && "ring-2 ring-primary/30 bg-primary/5 border-primary/50"
-          )}
-        >
-          {/* Left border accent */}
-          <div 
-            className="absolute left-0 top-0 bottom-0 w-1 rounded-l-md"
-            style={{ backgroundColor: folder.color || COLOR_FOLDER_DEFAULT }}
+      <div
+        className="flex flex-col"
+        style={{ gap: FOLDER_CARD.listGapPx }}
+      >
+        {filteredFolders.map((folder) => (
+          <FolderCard
+            key={folder.id}
+            folder={folder}
+            taskCount={getFolderTaskCount(folder.id)}
+            projectCount={getFolderProjectCount(folder.id)}
+            onFolderClick={handleFolderClick}
+            onEditFolder={handleEditFolder}
+            onDeleteFolder={handleDeleteFolderClick}
           />
-          
-          <CardHeader 
-            className="flex-shrink-0"
-            style={{ 
-              paddingBottom: FOLDER_PANEL_CARD_HEADER_PADDING_BOTTOM,
-              paddingTop: FOLDER_PANEL_CARD_HEADER_PADDING_TOP,
-              paddingLeft: FOLDER_PANEL_CARD_HEADER_PADDING_LEFT
-            }}
-          >
-            <div className="flex items-start justify-between" style={{ gap: PANEL_GAP_LARGE }}>
-              <div className="flex items-start flex-1 min-w-0" style={{ gap: PANEL_GAP_LARGE }}>
-                {/* Simple folder icon */}
-                <div
-                  className="rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ 
-                    width: FOLDER_PANEL_FOLDER_ICON_SIZE,
-                    height: FOLDER_PANEL_FOLDER_ICON_SIZE,
-                    backgroundColor: getColorWithOpacity(folder.color || COLOR_FOLDER_DEFAULT, 0.08),
-                  }}
-                >
-                  <Icon
-                    name="folder"
-                    size={FOLDER_PANEL_FOLDER_ICON_INNER_SIZE}
-                    style={{
-                      height: FOLDER_PANEL_FOLDER_ICON_INNER_SIZE,
-                      color: folder.color || COLOR_FOLDER_DEFAULT
-                    }}
-                  />
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <CardTitle 
-                    className="font-semibold"
-                    style={{ 
-                      fontSize: FOLDER_PANEL_TEXT_SIZE_MEDIUM,
-                      marginBottom: FOLDER_PANEL_CARD_TITLE_MARGIN_BOTTOM
-                    }}
-                  >
-                    {folder.name || "Unnamed Folder"}
-                  </CardTitle>
-                  {folder.description && (
-                    <CardDescription 
-                      className="line-clamp-1"
-                      style={{ fontSize: FOLDER_PANEL_BADGE_TEXT_SIZE }}
-                    >
-                      {folder.description}
-                    </CardDescription>
-                  )}
-                </div>
-              </div>
-              
-              {/* Dropdown menu */}
-              <div 
-                className="relative"
-                style={{ zIndex: FOLDER_PANEL_DROPDOWN_Z_INDEX }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                }} 
-              >
-                <DropdownMenu
-                  open={dropdownOpen}
-                  onOpenChange={setDropdownOpen}
-                  modal={false}
-                >
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="flex-shrink-0 hover:bg-transparent hover:text-current"
-                      style={{ 
-                        height: FOLDER_PANEL_BUTTON_SIZE,
-                        width: FOLDER_PANEL_BUTTON_SIZE
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      aria-label="Folder options"
-                    >
-                      <Icon name="more-vertical" size={FOLDER_PANEL_ICON_SIZE_SMALL} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent 
-                    align="end"
-                    style={{ 
-                      zIndex: FOLDER_PANEL_DROPDOWN_Z_INDEX,
-                      width: FOLDER_PANEL_DROPDOWN_WIDTH
-                    }}
-                    onCloseAutoFocus={(e) => {
-                      e.preventDefault();
-                    }}
-                  >
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          onFolderClick(folder);
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <Icon name="folder" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
-                      Open Folder
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          onEditFolder(folder);
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <Icon name="edit-2" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          onDeleteFolder(folder);
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                    >
-                      <Icon name="trash-2" size={FOLDER_PANEL_ICON_SIZE_SMALL} style={{ marginRight: FOLDER_PANEL_ICON_MARGIN_RIGHT }} />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent 
-            style={{ 
-              paddingTop: 0,
-              paddingBottom: FOLDER_PANEL_CARD_CONTENT_PADDING_BOTTOM,
-              paddingLeft: FOLDER_PANEL_CARD_CONTENT_PADDING_LEFT
-            }}
-          >
-            <div className="flex items-center justify-between" style={{ gap: PANEL_GAP_MEDIUM }}>
-              {/* Stats */}
-              <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                <Badge 
-                  variant="secondary" 
-                  style={{ 
-                    fontSize: FOLDER_PANEL_BADGE_TEXT_SIZE,
-                    paddingLeft: FOLDER_PANEL_BADGE_PADDING_X,
-                    paddingRight: FOLDER_PANEL_BADGE_PADDING_X,
-                    paddingTop: FOLDER_PANEL_BADGE_PADDING_Y,
-                    paddingBottom: FOLDER_PANEL_BADGE_PADDING_Y
-                  }}
-                >
-                  {taskCount} {taskCount === 1 ? "task" : "tasks"}
-                </Badge>
-                <Badge 
-                  variant="secondary" 
-                  style={{ 
-                    fontSize: FOLDER_PANEL_BADGE_TEXT_SIZE,
-                    paddingLeft: FOLDER_PANEL_BADGE_PADDING_X,
-                    paddingRight: FOLDER_PANEL_BADGE_PADDING_X,
-                    paddingTop: FOLDER_PANEL_BADGE_PADDING_Y,
-                    paddingBottom: FOLDER_PANEL_BADGE_PADDING_Y
-                  }}
-                >
-                  {projectCount} {projectCount === 1 ? "project" : "projects"}
-                </Badge>
-              </div>
-              
-              {/* Open button */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="flex-shrink-0 hover:bg-transparent hover:text-current"
-                style={{ 
-                  height: FOLDER_PANEL_BUTTON_SIZE,
-                  width: FOLDER_PANEL_BUTTON_SIZE
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onFolderClick(folder);
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                aria-label="Open folder"
-              >
-                <Icon name="chevron-right" size={FOLDER_PANEL_ICON_SIZE_SMALL} />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        ))}
       </div>
     );
-  }, (prevProps, nextProps) => {
-    // Custom comparison to prevent unnecessary re-renders
-    return (
-      prevProps.folder.id === nextProps.folder.id &&
-      prevProps.folder.name === nextProps.folder.name &&
-      prevProps.folder.description === nextProps.folder.description &&
-      prevProps.folder.color === nextProps.folder.color &&
-      prevProps.taskCount === nextProps.taskCount &&
-      prevProps.projectCount === nextProps.projectCount &&
-      prevProps.onFolderClick === nextProps.onFolderClick &&
-      prevProps.onEditFolder === nextProps.onEditFolder &&
-      prevProps.onDeleteFolder === nextProps.onDeleteFolder
-    );
-  });
-  
-  DroppableFolderCard.displayName = 'DroppableFolderCard';
+  };
 
   // Use color options from constants
   const colorOptions = FOLDER_COLOR_OPTIONS;
@@ -660,53 +388,10 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
           style={{ 
             padding: PANEL_PADDING,
             paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
-                paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
-            gap: PANEL_CONTENT_SPACING
+            paddingBottom: NAV_BAR_BOTTOM_PADDING_MOBILE,
           }}
         >
-          {filteredFolders.length === 0 ? (
-            <div 
-              className="text-center" 
-              style={{ 
-                paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
-                paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
-              }}
-            >
-              <Icon 
-                name="folder"
-                size={FOLDER_PANEL_EMPTY_STATE_ICON_SIZE}
-                className="mx-auto text-primary/50"
-                style={{ 
-                  marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
-                }} 
-              />
-              <p 
-                className="text-muted-foreground dark:text-muted-foreground"
-                style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
-              >
-                {searchQuery
-                  ? "No folders match your search"
-                  : "No folders yet"}
-              </p>
-            </div>
-          ) : (
-            filteredFolders.map((folder) => {
-              const taskCount = getFolderTaskCount(folder.id);
-              const projectCount = getFolderProjectCount(folder.id);
-
-              return (
-                <DroppableFolderCard 
-                  key={folder.id} 
-                  folder={folder} 
-                  taskCount={taskCount} 
-                  projectCount={projectCount}
-                  onFolderClick={handleFolderClick}
-                  onEditFolder={handleEditFolder}
-                  onDeleteFolder={handleDeleteFolderClick}
-                />
-              );
-            })
-          )}
+          {renderFolderList()}
         </div>
       </ScrollArea>
         ) : (
@@ -717,52 +402,9 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 padding: PANEL_PADDING,
                 paddingTop: FOLDER_PANEL_CONTENT_PADDING_TOP,
                 paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? MOBILE_PADDING_BOTTOM : undefined,
-                gap: PANEL_CONTENT_SPACING
               }}
             >
-              {filteredFolders.length === 0 ? (
-                <div 
-                  className="text-center" 
-                  style={{ 
-                    paddingTop: FOLDER_PANEL_EMPTY_STATE_PADDING_Y,
-                    paddingBottom: FOLDER_PANEL_EMPTY_STATE_PADDING_Y
-                  }}
-                >
-                  <Icon 
-                    name="folder"
-                    size={FOLDER_PANEL_EMPTY_STATE_ICON_SIZE}
-                    className="mx-auto text-primary/50"
-                    style={{ 
-                      marginBottom: FOLDER_PANEL_EMPTY_STATE_ICON_MARGIN_BOTTOM
-                    }} 
-                  />
-                  <p 
-                    className="text-muted-foreground dark:text-muted-foreground"
-                    style={{ fontSize: PANEL_EMPTY_STATE_TEXT_SIZE }}
-                  >
-                    {searchQuery
-                      ? "No folders match your search"
-                      : "No folders yet"}
-                  </p>
-                </div>
-              ) : (
-                filteredFolders.map((folder) => {
-                  const taskCount = getFolderTaskCount(folder.id);
-                  const projectCount = getFolderProjectCount(folder.id);
-
-                  return (
-                    <DroppableFolderCard 
-                      key={folder.id} 
-                      folder={folder} 
-                      taskCount={taskCount} 
-                      projectCount={projectCount}
-                      onFolderClick={handleFolderClick}
-                      onEditFolder={handleEditFolder}
-                      onDeleteFolder={handleDeleteFolderClick}
-                    />
-                  );
-                })
-              )}
+              {renderFolderList()}
             </div>
           </div>
         )}
