@@ -53,6 +53,17 @@ import { Icon } from './Icon';
 import { SettingsSection } from './settings/SettingsSection';
 import { SettingsCategoryHeader } from './settings/SettingsCategoryHeader';
 import { SettingsToggleRow } from './settings/SettingsToggleRow';
+import { SettingsGroup } from './settings/SettingsGroup';
+import { SettingsLead } from './settings/SettingsLead';
+import { SettingsField } from './settings/SettingsField';
+import { SettingsControlGroup } from './settings/SettingsControlGroup';
+import { SettingsDivider } from './settings/SettingsDivider';
+import { SettingsStatusCard } from './settings/SettingsStatusCard';
+import { SettingsActionStack } from './settings/SettingsActionStack';
+import { SettingsProUpsell } from './settings/SettingsProUpsell';
+import { SettingsFeatureRow } from './settings/SettingsFeatureRow';
+import { SettingsInfoCallout } from './settings/SettingsInfoCallout';
+import { SettingsSubheading } from './settings/SettingsSubheading';
 import { APP_VERSION, VERSION_NAME, VERSION_DATE } from '../lib/version';
 import { AI_FUNCTION_EXPLANATION, DEFAULT_SCHEDULING_PERIOD_DAYS, AI_DAILY_HOUR_OPTIONS, AI_DAILY_HOUR_LABELS } from '../lib/ai-config';
 import taskzmLogoBlack from '../assets/Taskzm_Logo_BLK-removebg.png';  // Black logo for about section
@@ -187,6 +198,8 @@ import {
   PANEL_GAP_MEDIUM,
   PANEL_FIELD_SPACING,
   SETTINGS_PANEL_SECTION_GAP,
+  SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
+  SETTINGS_PANEL_LIST_ROW_PADDING_Y,
 } from '../lib/layout-constants';
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
@@ -578,10 +591,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           description={SETTINGS_PANEL_UI_TEXT.sections.userProfile.description}
         >
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
+                      <SettingsGroup>
                         {/* Profile Card - Redesigned */}
                         <div 
-                          className="relative w-full bg-white dark:bg-card text-foreground dark:text-foreground rounded-xl shadow-sm border border-border/40 overflow-hidden"
+                          className="relative w-full overflow-hidden rounded-2xl border border-border/40 bg-card text-foreground shadow-sm"
                         >
                           {/* Blue Header Banner */}
                           <div className="relative w-full bg-primary/80 dark:bg-primary/60" style={{ height: SETTINGS_PANEL_PROFILE_BANNER_HEIGHT }}>
@@ -726,7 +739,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-col w-full items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+                        <SettingsActionStack>
                           <Button 
                             size="sm" 
                             variant="outline"
@@ -763,33 +776,34 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             <Icon name="trash-2" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL, color: COLOR_TEXT_WHITE }} />
                             Delete Account
                           </Button>
-                        </div>
+                        </SettingsActionStack>
 
-                        {/* Input Fields - Stack format like save & sign out buttons */}
-                        <div className="flex flex-col w-full" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                          <div className="flex flex-col" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                            <Label htmlFor="name" className="text-xs text-muted-foreground">Name</Label>
-                            <Input 
-                              id="name" 
-                              value={profileName} 
-                              onChange={(e) => setProfileName(e.target.value)}
-                              placeholder="Enter your name"
-                              style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
-                              className="w-full"
-                            />
+                        <SettingsControlGroup>
+                          <div style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM }}>
+                            <SettingsField id="name" label="Name">
+                              <Input 
+                                id="name" 
+                                value={profileName} 
+                                onChange={(e) => setProfileName(e.target.value)}
+                                placeholder="Enter your name"
+                                style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
+                                className="w-full"
+                              />
+                            </SettingsField>
                           </div>
-                          <div className="flex flex-col" style={{ gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                            <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
-                            <Input 
-                              id="email" 
-                              value={user?.email || ''} 
-                              disabled 
-                              className="bg-muted/40 w-full"
-                              style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
-                            />
+                          <div style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM }}>
+                            <SettingsField id="email" label="Email">
+                              <Input 
+                                id="email" 
+                                value={user?.email || ''} 
+                                disabled 
+                                className="w-full bg-muted/40"
+                                style={{ height: SETTINGS_PANEL_INPUT_HEIGHT }}
+                              />
+                            </SettingsField>
                           </div>
-                        </div>
-                      </div>
+                        </SettingsControlGroup>
+                      </SettingsGroup>
           
         </SettingsSection>
 
@@ -1232,141 +1246,93 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         >
 
                       {!features.calendarSync ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                          <p className="text-sm text-muted-foreground">
-                            {CALENDAR_SETTINGS_UI.proUpsellTitle}
-                          </p>
-                          <div className={`border rounded-lg ${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.background.darkClassName}`} style={{ padding: SETTINGS_PANEL_PADDING_LARGE }}>
-                            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                              <Icon name="lock" size={ICON_SIZE_MD} className={`${UI_SETTINGS_BADGE_COLORS.infoBox.iconClass}`} />
-                              <span className="text-sm">Pro Feature</span>
+                        <SettingsGroup>
+                          <SettingsLead>{CALENDAR_SETTINGS_UI.proUpsellTitle}</SettingsLead>
+                          <SettingsProUpsell
+                            action={
+                              <Button 
+                                size="sm" 
+                                onClick={() => setShowPricingDialog(true)}
+                                className={`${UI_SETTINGS_BADGE_COLORS.primaryClass} ${UI_SETTINGS_BADGE_COLORS.primaryHoverClass} w-full`}
+                              >
+                                <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" className="mr-1.5" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
+                                {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
+                              </Button>
+                            }
+                          >
+                            <div className="flex items-center" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
+                              <Icon name="lock" size={ICON_SIZE_MD} className={UI_SETTINGS_BADGE_COLORS.infoBox.iconClass} />
+                              <span className="text-sm font-medium">Pro Feature</span>
                             </div>
-                          <p className="text-xs text-muted-foreground" style={{ marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                            {CALENDAR_SETTINGS_UI.proUpsellBullets.map((line) => (
-                              <React.Fragment key={line}>
-                                • {line}<br />
-                              </React.Fragment>
-                            ))}
-                          </p>
-                            <Button 
-                              size="sm" 
-                              onClick={() => setShowPricingDialog(true)}
-                              className={`${UI_SETTINGS_BADGE_COLORS.primaryClass} ${UI_SETTINGS_BADGE_COLORS.primaryHoverClass} w-full`}
-                            >
-                              <Icon name="sparkles" size={SETTINGS_PANEL_ICON_SIZE_SMALL} weight="duotone" className="mr-1.5" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_XSMALL }} />
-                              {SUBSCRIPTION_UI_TEXT.settings.upgradeToProButton}
-                            </Button>
-                          </div>
-                        </div>
+                            <p className="text-xs text-muted-foreground">
+                              {CALENDAR_SETTINGS_UI.proUpsellBullets.map((line) => (
+                                <React.Fragment key={line}>
+                                  • {line}<br />
+                                </React.Fragment>
+                              ))}
+                            </p>
+                          </SettingsProUpsell>
+                        </SettingsGroup>
                       ) : (
-                        <>
-                          <p className="text-sm text-muted-foreground">
-                            {CALENDAR_SETTINGS_UI.sectionSubtitle}
-                          </p>
-                
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_LARGE }}>
-                            {/* Google Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
-                            <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
-                              <Label htmlFor={`${CALENDAR_PROVIDERS.google}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.google}</Label>
-                              <div
-                                className="flex-shrink-0 cursor-pointer"
-                                style={{ padding: `${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px`, margin: `-${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px` }}
-                                onClick={(e) => { if (e.target === e.currentTarget) document.getElementById(`${CALENDAR_PROVIDERS.google}-cal`)?.click(); }}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById(`${CALENDAR_PROVIDERS.google}-cal`)?.click(); } }}
-                                aria-label={`Toggle ${CALENDAR_SETTINGS_LABELS.google}`}
-                              >
-                                <Switch
-                                  id={`${CALENDAR_PROVIDERS.google}-cal`}
-                                  className="flex-shrink-0"
-                                  checked={!!calendarStatus.google}
-                                  disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.google || disconnectingProvider === CALENDAR_PROVIDERS.google}
-                                  aria-label={CALENDAR_SETTINGS_LABELS.google}
-                                  onCheckedChange={async (checked) => {
-                                    try {
-                                      if (checked) await connectCalendar(CALENDAR_PROVIDERS.google);
-                                      else await disconnectCalendar(CALENDAR_PROVIDERS.google);
-                                    } catch (error) {
-                                      logger.error('Calendar toggle error:', error);
-                                      toast.error(error instanceof Error ? error.message : String(error));
-                                    }
-                                  }}
-                                />
-                              </div>
-                            </div>
-                  
-                            {/* Outlook Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
-                            <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
-                              <Label htmlFor={`${CALENDAR_PROVIDERS.outlook}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.outlook}</Label>
-                              <div
-                                className="flex-shrink-0 cursor-pointer"
-                                style={{ padding: `${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px`, margin: `-${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px` }}
-                                onClick={(e) => { if (e.target === e.currentTarget) document.getElementById(`${CALENDAR_PROVIDERS.outlook}-cal`)?.click(); }}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById(`${CALENDAR_PROVIDERS.outlook}-cal`)?.click(); } }}
-                                aria-label={`Toggle ${CALENDAR_SETTINGS_LABELS.outlook}`}
-                              >
-                                <Switch
-                                  id={`${CALENDAR_PROVIDERS.outlook}-cal`}
-                                  className="flex-shrink-0"
-                                  checked={!!calendarStatus.outlook}
-                                  disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.outlook || disconnectingProvider === CALENDAR_PROVIDERS.outlook}
-                                  aria-label={CALENDAR_SETTINGS_LABELS.outlook}
-                                  onCheckedChange={async (checked) => {
-                                    try {
-                                      if (checked) await connectCalendar(CALENDAR_PROVIDERS.outlook);
-                                      else await disconnectCalendar(CALENDAR_PROVIDERS.outlook);
-                                    } catch (error) {
-                                      logger.error('Calendar toggle error:', error);
-                                      toast.error(error instanceof Error ? error.message : String(error));
-                                    }
-                                  }}
-                                />
-                              </div>
-                            </div>
-                  
-                            {/* Apple Calendar - min height for reliable touch targets on Apple/Android (44px HIG) */}
-                            <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING_MEDIUM, paddingBottom: SETTINGS_PANEL_PADDING_MEDIUM, minHeight: MIN_TOUCH_TARGET_PX }}>
-                              <Label htmlFor={`${CALENDAR_PROVIDERS.apple}-cal`} className={`${SETTINGS_PANEL_TEXT_SIZES.label} cursor-pointer`}>{CALENDAR_SETTINGS_LABELS.apple}</Label>
-                              <div
-                                className="flex-shrink-0 cursor-pointer"
-                                style={{ padding: `${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px`, margin: `-${Math.max(0, (MIN_TOUCH_TARGET_PX - 20) / 2)}px` }}
-                                onClick={(e) => { if (e.target === e.currentTarget) document.getElementById(`${CALENDAR_PROVIDERS.apple}-cal`)?.click(); }}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById(`${CALENDAR_PROVIDERS.apple}-cal`)?.click(); } }}
-                                aria-label={`Toggle ${CALENDAR_SETTINGS_LABELS.apple}`}
-                              >
-                                <Switch
-                                  id={`${CALENDAR_PROVIDERS.apple}-cal`}
-                                  className="flex-shrink-0"
-                                  checked={!!calendarStatus.apple}
-                                  disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.apple || disconnectingProvider === CALENDAR_PROVIDERS.apple}
-                                  aria-label={CALENDAR_SETTINGS_LABELS.apple}
-                                  onCheckedChange={async (checked) => {
-                                    try {
-                                      if (checked) await connectCalendar(CALENDAR_PROVIDERS.apple);
-                                      else await disconnectCalendar(CALENDAR_PROVIDERS.apple);
-                                    } catch (error) {
-                                      logger.error('Calendar toggle error:', error);
-                                      toast.error(error instanceof Error ? error.message : String(error));
-                                    }
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </>
+                        <SettingsGroup>
+                          <SettingsLead>{CALENDAR_SETTINGS_UI.sectionSubtitle}</SettingsLead>
+                          <SettingsControlGroup>
+                            <SettingsToggleRow
+                              id={`${CALENDAR_PROVIDERS.google}-cal`}
+                              label={CALENDAR_SETTINGS_LABELS.google}
+                              checked={!!calendarStatus.google}
+                              touchTarget
+                              disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.google || disconnectingProvider === CALENDAR_PROVIDERS.google}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  if (checked) await connectCalendar(CALENDAR_PROVIDERS.google);
+                                  else await disconnectCalendar(CALENDAR_PROVIDERS.google);
+                                } catch (error) {
+                                  logger.error('Calendar toggle error:', error);
+                                  toast.error(error instanceof Error ? error.message : String(error));
+                                }
+                              }}
+                            />
+                            <SettingsToggleRow
+                              id={`${CALENDAR_PROVIDERS.outlook}-cal`}
+                              label={CALENDAR_SETTINGS_LABELS.outlook}
+                              checked={!!calendarStatus.outlook}
+                              touchTarget
+                              disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.outlook || disconnectingProvider === CALENDAR_PROVIDERS.outlook}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  if (checked) await connectCalendar(CALENDAR_PROVIDERS.outlook);
+                                  else await disconnectCalendar(CALENDAR_PROVIDERS.outlook);
+                                } catch (error) {
+                                  logger.error('Calendar toggle error:', error);
+                                  toast.error(error instanceof Error ? error.message : String(error));
+                                }
+                              }}
+                            />
+                            <SettingsToggleRow
+                              id={`${CALENDAR_PROVIDERS.apple}-cal`}
+                              label={CALENDAR_SETTINGS_LABELS.apple}
+                              checked={!!calendarStatus.apple}
+                              touchTarget
+                              disabled={!!isCalendarSyncing || connectingProvider === CALENDAR_PROVIDERS.apple || disconnectingProvider === CALENDAR_PROVIDERS.apple}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  if (checked) await connectCalendar(CALENDAR_PROVIDERS.apple);
+                                  else await disconnectCalendar(CALENDAR_PROVIDERS.apple);
+                                } catch (error) {
+                                  logger.error('Calendar toggle error:', error);
+                                  toast.error(error instanceof Error ? error.message : String(error));
+                                }
+                              }}
+                            />
+                          </SettingsControlGroup>
+                        </SettingsGroup>
                       )}
 
-                      <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
+                      <SettingsDivider />
 
                       {(calendarStatus.google || calendarStatus.outlook) && (
-                        <p className="text-sm text-muted-foreground">
-                          {CALENDAR_SETTINGS_UI.viewOnlyMessage}
-                        </p>
+                        <SettingsLead>{CALENDAR_SETTINGS_UI.viewOnlyMessage}</SettingsLead>
                       )}
 
                       <div className="space-y-2">
@@ -1404,255 +1370,204 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           ) : undefined}
         >
 
-                      <p className="text-xs md:text-sm text-muted-foreground">
-                        Manage notifications for due and overdue tasks
-                      </p>
+                      <SettingsGroup>
+                        <SettingsLead>Manage notifications for due and overdue tasks</SettingsLead>
 
-                      {/* Permission Status */}
-                      <div className="rounded-lg border bg-muted/50" style={{ padding: SETTINGS_PANEL_PADDING_SMALL }}>
-                        <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
-                          <span className="text-xs md:text-sm font-medium flex-1 min-w-0">Notification Permission</span>
-                          <Badge 
-                            variant={permission === 'granted' ? 'default' : permission === 'denied' ? 'destructive' : 'secondary'}
-                            className="text-xs flex-shrink-0"
-                          >
-                            {permission === 'granted' ? NOTIFICATION_PANEL_TEXT.permission.granted : permission === 'denied' ? NOTIFICATION_PANEL_TEXT.permission.denied : NOTIFICATION_PANEL_TEXT.permission.notSet}
-                          </Badge>
-                        </div>
-                        {permission !== 'granted' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full text-xs md:text-sm"
-                            style={{ marginTop: SETTINGS_PANEL_SPACING_SMALL }}
-                            onClick={() => {
-                              // Defer async operation to avoid blocking click handler
-                              requestAnimationFrame(() => {
-                                requestPermission().then((granted) => {
-                                  if (!granted && permission === 'default') {
-                                    // Permission was just denied, show instructions
-                                    toast.info(NOTIFICATION_TOAST_MESSAGES.permissionDeniedInfo, {
-                                      description: NOTIFICATION_TOAST_MESSAGES.permissionDeniedDescription,
-                                      duration: SETTINGS_PANEL_TOAST_DURATION_MS,
-                                    });
-                                  }
+                        <SettingsStatusCard>
+                          <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, marginBottom: permission !== 'granted' ? SETTINGS_PANEL_MARGIN_BOTTOM_SMALL : 0 }}>
+                            <span className="flex-1 min-w-0 font-medium" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}>Notification Permission</span>
+                            <Badge 
+                              variant={permission === 'granted' ? 'default' : permission === 'denied' ? 'destructive' : 'secondary'}
+                              className="flex-shrink-0 text-xs"
+                            >
+                              {permission === 'granted' ? NOTIFICATION_PANEL_TEXT.permission.granted : permission === 'denied' ? NOTIFICATION_PANEL_TEXT.permission.denied : NOTIFICATION_PANEL_TEXT.permission.notSet}
+                            </Badge>
+                          </div>
+                          {permission !== 'granted' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full text-xs md:text-sm"
+                              style={{ marginTop: SETTINGS_PANEL_SPACING_SMALL }}
+                              onClick={() => {
+                                requestAnimationFrame(() => {
+                                  requestPermission().then((granted) => {
+                                    if (!granted && permission === 'default') {
+                                      toast.info(NOTIFICATION_TOAST_MESSAGES.permissionDeniedInfo, {
+                                        description: NOTIFICATION_TOAST_MESSAGES.permissionDeniedDescription,
+                                        duration: SETTINGS_PANEL_TOAST_DURATION_MS,
+                                      });
+                                    }
+                                  });
                                 });
-                              });
-                            }}
-                            disabled={permission === 'denied'}
-                          >
-                            <Icon name="bell" size={ICON_SIZE_SM} className="mr-1.5 md:mr-2" />
-                            <span className="truncate">
-                              {permission === 'denied' 
-                                ? NOTIFICATION_PANEL_TEXT.permission.blocked
-                                : NOTIFICATION_PANEL_TEXT.permission.enable}
-                            </span>
-                          </Button>
-                        )}
-                        {permission === 'denied' && (
-                          <div style={{ marginTop: SETTINGS_PANEL_SPACING_MEDIUM, display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                            <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground font-medium`}>
-                              Notifications are blocked. Follow these steps to enable them:
-                            </p>
-                            <div className="bg-background/50 border border-border rounded-md" style={{ padding: SETTINGS_PANEL_PADDING_SMALL, display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
-                              {(() => {
-                                const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-                                const isFirefox = /Firefox/.test(navigator.userAgent);
-                                const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-                                const isEdge = /Edg/.test(navigator.userAgent);
-                      
-                                if (isChrome || isEdge) {
-                                  return (
-                                    <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
-                                      <p className="font-medium text-foreground">Chrome/Edge:</p>
-                                      <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
-                                        <li>Click the lock icon (🔒) or info icon (i) in the address bar</li>
-                                        <li>Find "Notifications" in the dropdown menu</li>
-                                        <li>Change from "Block" to "Allow"</li>
-                                        <li>Refresh this page</li>
-                                      </ol>
-                                      <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
-                                        Or: Settings → Privacy and security → Site settings → Notifications → Add this site to "Allowed"
-                                      </p>
-                                    </div>
-                                  );
-                                } else if (isFirefox) {
-                                  return (
-                                    <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
-                                      <p className="font-medium text-foreground">Firefox:</p>
-                                      <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
-                                        <li>Click the lock icon (🔒) in the address bar</li>
-                                        <li>Click "More Information"</li>
-                                        <li>Go to the "Permissions" tab</li>
-                                        <li>Find "Notifications" and change from "Block" to "Allow"</li>
-                                        <li>Refresh this page</li>
-                                      </ol>
-                                      <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
-                                        Or: Settings → Privacy & Security → Permissions → Notifications → Allow for this site
-                                      </p>
-                                    </div>
-                                  );
-                                } else if (isSafari) {
-                                  return (
-                                    <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
-                                      <p className="font-medium text-foreground">Safari:</p>
-                                      <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
-                                        <li>Safari menu → Settings (Preferences)</li>
-                                        <li>Go to "Websites" tab</li>
-                                        <li>Select "Notifications" in the left sidebar</li>
-                                        <li>Find this website and change to "Allow"</li>
-                                        <li>Refresh this page</li>
-                                      </ol>
-                                      <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
-                                        Note: Safari requires you to enable notifications in Safari settings, not from the browser prompt.
-                                      </p>
-                                    </div>
-                                  );
-                                } else {
-                                  return (
-                                    <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
-                                      <p className="font-medium text-foreground">General Instructions:</p>
-                                      <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
-                                        <li>Look for a lock icon (🔒) or info icon (i) in your browser's address bar</li>
-                                        <li>Click it to open site permissions</li>
-                                        <li>Find "Notifications" and change to "Allow"</li>
-                                        <li>Refresh this page</li>
-                                      </ol>
-                                      <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
-                                        Or check your browser settings under Privacy/Security → Site Permissions → Notifications
-                                      </p>
-                                    </div>
-                                  );
-                                }
-                              })()}
+                              }}
+                              disabled={permission === 'denied'}
+                            >
+                              <Icon name="bell" size={ICON_SIZE_SM} className="mr-1.5 md:mr-2" />
+                              <span className="truncate">
+                                {permission === 'denied' 
+                                  ? NOTIFICATION_PANEL_TEXT.permission.blocked
+                                  : NOTIFICATION_PANEL_TEXT.permission.enable}
+                              </span>
+                            </Button>
+                          )}
+                          {permission === 'denied' && (
+                            <div style={{ marginTop: SETTINGS_PANEL_SPACING_MEDIUM, display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                              <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} font-medium text-muted-foreground`}>
+                                Notifications are blocked. Follow these steps to enable them:
+                              </p>
+                              <div className="rounded-lg border border-border/50 bg-background/60" style={{ padding: SETTINGS_PANEL_PADDING_SMALL, display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL }}>
+                                {(() => {
+                                  const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+                                  const isFirefox = /Firefox/.test(navigator.userAgent);
+                                  const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+                                  const isEdge = /Edg/.test(navigator.userAgent);
+                        
+                                  if (isChrome || isEdge) {
+                                    return (
+                                      <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
+                                        <p className="font-medium text-foreground">Chrome/Edge:</p>
+                                        <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
+                                          <li>Click the lock icon (🔒) or info icon (i) in the address bar</li>
+                                          <li>Find "Notifications" in the dropdown menu</li>
+                                          <li>Change from "Block" to "Allow"</li>
+                                          <li>Refresh this page</li>
+                                        </ol>
+                                        <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
+                                          Or: Settings → Privacy and security → Site settings → Notifications → Add this site to "Allowed"
+                                        </p>
+                                      </div>
+                                    );
+                                  } else if (isFirefox) {
+                                    return (
+                                      <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
+                                        <p className="font-medium text-foreground">Firefox:</p>
+                                        <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
+                                          <li>Click the lock icon (🔒) in the address bar</li>
+                                          <li>Click "More Information"</li>
+                                          <li>Go to the "Permissions" tab</li>
+                                          <li>Find "Notifications" and change from "Block" to "Allow"</li>
+                                          <li>Refresh this page</li>
+                                        </ol>
+                                        <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
+                                          Or: Settings → Privacy & Security → Permissions → Notifications → Allow for this site
+                                        </p>
+                                      </div>
+                                    );
+                                  } else if (isSafari) {
+                                    return (
+                                      <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
+                                        <p className="font-medium text-foreground">Safari:</p>
+                                        <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
+                                          <li>Safari menu → Settings (Preferences)</li>
+                                          <li>Go to "Websites" tab</li>
+                                          <li>Select "Notifications" in the left sidebar</li>
+                                          <li>Find this website and change to "Allow"</li>
+                                          <li>Refresh this page</li>
+                                        </ol>
+                                        <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
+                                          Note: Safari requires you to enable notifications in Safari settings, not from the browser prompt.
+                                        </p>
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <div className={SETTINGS_PANEL_TEXT_SIZES.helper} style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_EXTRA_SMALL, color: 'inherit' }}>
+                                        <p className="font-medium text-foreground">General Instructions:</p>
+                                        <ol className="list-decimal list-inside" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_XSMALL }}>
+                                          <li>Look for a lock icon (🔒) or info icon (i) in your browser's address bar</li>
+                                          <li>Click it to open site permissions</li>
+                                          <li>Find "Notifications" and change to "Allow"</li>
+                                          <li>Refresh this page</li>
+                                        </ol>
+                                        <p className="border-t border-border/50" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, paddingTop: SETTINGS_PANEL_PADDING_TOP_EXTRA_SMALL }}>
+                                          Or check your browser settings under Privacy/Security → Site Permissions → Notifications
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+                                })()}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {permission === 'default' && (
-                          <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground leading-relaxed`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_MEDIUM_SMALL }}>
-                            Click "Enable Notifications" above to receive alerts for due and overdue tasks. A browser dialog will appear asking for permission.
-                          </p>
-                        )}
-                      </div>
+                          )}
+                          {permission === 'default' && (
+                            <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground leading-relaxed`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_MEDIUM_SMALL }}>
+                              Click "Enable Notifications" above to receive alerts for due and overdue tasks. A browser dialog will appear asking for permission.
+                            </p>
+                          )}
+                        </SettingsStatusCard>
 
-                      <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
-
-                      {/* Notification Settings */}
-                      <div className="min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                        <div className="flex items-start justify-between min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
-                          <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
-                            <Label htmlFor="notifications-enabled" className="text-xs md:text-sm cursor-pointer">Enable Notifications</Label>
-                            <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Turn on all notification features</p>
-                          </div>
-                          <Switch 
-                            id="notifications-enabled" 
+                        <SettingsControlGroup>
+                          <SettingsToggleRow
+                            id="notifications-enabled"
+                            label="Enable Notifications"
+                            description="Turn on all notification features"
                             checked={notificationSettings.enabled}
+                            disabled={permission === 'denied'}
                             onCheckedChange={async (checked) => {
                               updateNotificationSettings({ enabled: checked });
-                              // If enabling and permission not granted, request it
                               if (checked && permission === 'default') {
-                                // Small delay to let the switch update first
                                 setTimeout(async () => {
                                   await requestPermission();
                                 }, SETTINGS_PANEL_TIMEOUT_DELAY_MS);
                               }
                             }}
-                            disabled={permission === 'denied'}
-                            className="flex-shrink-0 mt-0.5"
                           />
-                        </div>
-
-                        <div className="flex items-start justify-between min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                          <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
-                            <Label htmlFor="notifications-badge" className="text-xs md:text-sm cursor-pointer">{NOTIFICATION_PANEL_TEXT.badge.showAppIconBadge}</Label>
-                            <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>{NOTIFICATION_PANEL_TEXT.badge.displayTaskCount}</p>
-                          </div>
-                          <Switch 
-                            id="notifications-badge" 
+                          <SettingsToggleRow
+                            id="notifications-badge"
+                            label={NOTIFICATION_PANEL_TEXT.badge.showAppIconBadge}
+                            description={NOTIFICATION_PANEL_TEXT.badge.displayTaskCount}
                             checked={notificationSettings.showBadge}
+                            disabled={!notificationSettings.enabled || permission !== 'granted'}
                             onCheckedChange={(checked) => updateNotificationSettings({ showBadge: checked })}
-                            disabled={!notificationSettings.enabled || permission !== 'granted'}
-                            className="flex-shrink-0 mt-0.5"
                           />
-                        </div>
-
-                        <div className="flex items-start justify-between min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                          <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
-                            <Label htmlFor="notifications-overdue" className="text-xs md:text-sm cursor-pointer">Overdue Alerts</Label>
-                            <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify when tasks become overdue</p>
-                          </div>
-                          <Switch 
-                            id="notifications-overdue" 
+                          <SettingsToggleRow
+                            id="notifications-overdue"
+                            label="Overdue Alerts"
+                            description="Notify when tasks become overdue"
                             checked={notificationSettings.overdueAlerts}
+                            disabled={!notificationSettings.enabled || permission !== 'granted'}
                             onCheckedChange={(checked) => updateNotificationSettings({ overdueAlerts: checked })}
-                            disabled={!notificationSettings.enabled || permission !== 'granted'}
-                            className="flex-shrink-0 mt-0.5"
                           />
-                        </div>
-
-                        <div className="flex items-start justify-between min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                          <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
-                            <Label htmlFor="notifications-reminders" className="text-xs md:text-sm cursor-pointer">Due Date Reminders</Label>
-                            <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Notify 1 hour before tasks are due</p>
-                          </div>
-                          <Switch 
-                            id="notifications-reminders" 
+                          <SettingsToggleRow
+                            id="notifications-reminders"
+                            label="Due Date Reminders"
+                            description="Notify 1 hour before tasks are due"
                             checked={notificationSettings.dueDateReminders}
-                            onCheckedChange={(checked) => updateNotificationSettings({ dueDateReminders: checked })}
                             disabled={!notificationSettings.enabled || permission !== 'granted'}
-                            className="flex-shrink-0 mt-0.5"
+                            onCheckedChange={(checked) => updateNotificationSettings({ dueDateReminders: checked })}
                           />
-                        </div>
+                          <SettingsToggleRow
+                            id="push-notif"
+                            label="Push Notifications"
+                            description="Desktop and mobile alerts"
+                            checked={notificationSettings.enabled && permission === 'granted'}
+                            disabled={!notificationSettings.enabled || permission !== 'granted'}
+                            onCheckedChange={() => {}}
+                          />
+                          <SettingsToggleRow
+                            id="email-notif"
+                            label="Email Notifications"
+                            description="Daily task summary emails"
+                            checked={false}
+                            disabled={!notificationSettings.enabled || permission !== 'granted'}
+                            onCheckedChange={() => {}}
+                          />
+                          <SettingsToggleRow
+                            id="sound-notif"
+                            label="Sound"
+                            description="Play sound for notifications"
+                            checked
+                            disabled={!notificationSettings.enabled || permission !== 'granted'}
+                            onCheckedChange={() => {}}
+                          />
+                        </SettingsControlGroup>
+                      </SettingsGroup>
 
-                        <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
-
-                        {/* Additional Notification Options */}
-                        <div className="min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
-                          <div className="flex items-start justify-between min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                            <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
-                              <Label htmlFor="push-notif" className="text-xs md:text-sm cursor-pointer">Push Notifications</Label>
-                              <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Desktop and mobile alerts</p>
-                            </div>
-                            <Switch 
-                              id="push-notif" 
-                              checked={notificationSettings.enabled && permission === 'granted'}
-                              disabled={!notificationSettings.enabled || permission !== 'granted'}
-                              className="flex-shrink-0 mt-0.5" 
-                            />
-                          </div>
-                
-                          <div className="flex items-start justify-between min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                            <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
-                              <Label htmlFor="email-notif" className="text-xs md:text-sm cursor-pointer">Email Notifications</Label>
-                              <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Daily task summary emails</p>
-                            </div>
-                            <Switch 
-                              id="email-notif" 
-                              className="flex-shrink-0 mt-0.5"
-                              disabled={!notificationSettings.enabled || permission !== 'granted'}
-                            />
-                          </div>
-
-                          <div className="flex items-start justify-between min-w-0" style={{ gap: SETTINGS_PANEL_GAP_SMALL, paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                            <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, paddingRight: SETTINGS_PANEL_GAP_SMALL }}>
-                              <Label htmlFor="sound-notif" className="text-xs md:text-sm cursor-pointer">Sound</Label>
-                              <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`}>Play sound for notifications</p>
-                            </div>
-                            <Switch 
-                              id="sound-notif" 
-                              defaultChecked
-                              disabled={!notificationSettings.enabled || permission !== 'granted'}
-                              className="flex-shrink-0 mt-0.5" 
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Current Badge Count */}
                       {notificationSettings.showBadge && badgeCount > 0 && (
-                        <div className="rounded-lg border bg-primary/5" style={{ marginTop: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM, padding: SETTINGS_PANEL_PADDING_SMALL }}>
+                        <SettingsStatusCard tone="primary">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs md:text-sm font-medium">{NOTIFICATION_PANEL_TEXT.badge.currentBadgeCount}</span>
+                            <span className="font-medium" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}>{NOTIFICATION_PANEL_TEXT.badge.currentBadgeCount}</span>
                             <Badge variant="destructive" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_BASE, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL }}>
                               {badgeCount}
                             </Badge>
@@ -1660,7 +1575,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
                             {badgeCount === 1 ? NOTIFICATION_PANEL_TEXT.badge.taskNeedsAttention : NOTIFICATION_PANEL_TEXT.badge.tasksNeedAttention}
                           </p>
-                        </div>
+                        </SettingsStatusCard>
                       )}
           
         </SettingsSection>
@@ -1673,38 +1588,23 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           description={SETTINGS_PANEL_UI_TEXT.sections.tags.description}
         >
 
-                      <p 
-                        className="text-sm text-muted-foreground"
-                        style={{ 
-                          marginBottom: SETTINGS_PANEL_SPACING_MEDIUM,
-                        }}
-                      >
-                        Create and manage custom tags for organizing tasks
-                      </p>
-            
-                      <div 
-                        className="flex"
-                        style={{ 
-                          gap: SETTINGS_PANEL_GAP_SMALL,
-                          marginBottom: SETTINGS_PANEL_SPACING_MEDIUM,
-                        }}
-                      >
-                        <Input 
-                          placeholder="New tag name..." 
-                          className="h-9" 
-                          value={newTagInput}
-                          onChange={(e) => setNewTagInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                        />
-                        <Button type="button" size="sm" onClick={handleAddTag}>Add</Button>
-                      </div>
+                      <SettingsGroup>
+                        <SettingsLead>Create and manage custom tags for organizing tasks</SettingsLead>
 
-                      <div 
-                        className="flex flex-wrap"
-                        style={{ 
-                          gap: SETTINGS_PANEL_GAP_SMALL,
-                        }}
-                      >
+                        <SettingsControlGroup>
+                          <div className="flex items-center gap-2" style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM }}>
+                            <Input 
+                              placeholder="New tag name..." 
+                              className="h-9 flex-1" 
+                              value={newTagInput}
+                              onChange={(e) => setNewTagInput(e.target.value)}
+                              onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                            />
+                            <Button type="button" size="sm" onClick={handleAddTag}>Add</Button>
+                          </div>
+                        </SettingsControlGroup>
+
+                        <div className="flex flex-wrap rounded-xl border border-border/40 bg-muted/10 p-3" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
                         {availableTags
                           .filter((tag) => tag.toLowerCase() !== 'urgent')
                           .map((tag, index) => {
@@ -1738,13 +1638,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                               </Badge>
                             );
                           })}
-                      </div>
+                        </div>
             
-                      {availableTags.filter((tag) => tag.toLowerCase() !== 'urgent').length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
-                          No tags yet. Add your first tag above!
-                        </p>
-                      )}
+                        {availableTags.filter((tag) => tag.toLowerCase() !== 'urgent').length === 0 && (
+                          <p className="text-center text-sm text-muted-foreground" style={{ paddingTop: SETTINGS_PANEL_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_ROW_PADDING_Y }}>
+                            No tags yet. Add your first tag above!
+                          </p>
+                        )}
+                      </SettingsGroup>
           
         </SettingsSection>
 
@@ -1755,38 +1656,35 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           description={SETTINGS_PANEL_UI_TEXT.sections.priorityLevels.description}
         >
 
-                      <p 
-                        className="text-sm text-muted-foreground"
-                        style={{ marginBottom: SETTINGS_PANEL_SPACING_MEDIUM }}
-                      >
-                        {SETTINGS_PANEL_UI_TEXT.priorityLevels.intro}
-                      </p>
-                      <ul className="space-y-3 text-sm">
-                        <li className="flex gap-2">
-                          <Badge variant="secondary" className={`${TASK_CARD_PRIORITY_COLORS.urgent.badge} flex-shrink-0 w-16 justify-center border`}>
-                            {SETTINGS_PANEL_UI_TEXT.priorityLevels.urgent.label}
-                          </Badge>
-                          <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.urgent.description}</span>
-                        </li>
-                        <li className="flex gap-2">
-                          <Badge variant="secondary" className={`${TASK_CARD_PRIORITY_COLORS.high.badge} flex-shrink-0 w-16 justify-center border`}>
-                            {SETTINGS_PANEL_UI_TEXT.priorityLevels.high.label}
-                          </Badge>
-                          <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.high.description}</span>
-                        </li>
-                        <li className="flex gap-2">
-                          <Badge variant="secondary" className={`${TASK_CARD_PRIORITY_COLORS.medium.badge} flex-shrink-0 w-16 justify-center border`}>
-                            {SETTINGS_PANEL_UI_TEXT.priorityLevels.medium.label}
-                          </Badge>
-                          <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.medium.description}</span>
-                        </li>
-                        <li className="flex gap-2">
-                          <Badge variant="secondary" className={`${TASK_CARD_PRIORITY_COLORS.low.badge} flex-shrink-0 w-16 justify-center border`}>
-                            {SETTINGS_PANEL_UI_TEXT.priorityLevels.low.label}
-                          </Badge>
-                          <span className="text-muted-foreground">{SETTINGS_PANEL_UI_TEXT.priorityLevels.low.description}</span>
-                        </li>
-                      </ul>
+                      <SettingsGroup>
+                        <SettingsLead>{SETTINGS_PANEL_UI_TEXT.priorityLevels.intro}</SettingsLead>
+                        <SettingsControlGroup>
+                          {[
+                            { key: 'urgent', label: SETTINGS_PANEL_UI_TEXT.priorityLevels.urgent.label, description: SETTINGS_PANEL_UI_TEXT.priorityLevels.urgent.description, badgeClass: TASK_CARD_PRIORITY_COLORS.urgent.badge },
+                            { key: 'high', label: SETTINGS_PANEL_UI_TEXT.priorityLevels.high.label, description: SETTINGS_PANEL_UI_TEXT.priorityLevels.high.description, badgeClass: TASK_CARD_PRIORITY_COLORS.high.badge },
+                            { key: 'medium', label: SETTINGS_PANEL_UI_TEXT.priorityLevels.medium.label, description: SETTINGS_PANEL_UI_TEXT.priorityLevels.medium.description, badgeClass: TASK_CARD_PRIORITY_COLORS.medium.badge },
+                            { key: 'low', label: SETTINGS_PANEL_UI_TEXT.priorityLevels.low.label, description: SETTINGS_PANEL_UI_TEXT.priorityLevels.low.description, badgeClass: TASK_CARD_PRIORITY_COLORS.low.badge },
+                          ].map((item) => (
+                            <div
+                              key={item.key}
+                              className="flex items-start gap-3"
+                              style={{
+                                paddingTop: SETTINGS_PANEL_LIST_ROW_PADDING_Y,
+                                paddingBottom: SETTINGS_PANEL_LIST_ROW_PADDING_Y,
+                                paddingLeft: SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
+                                paddingRight: SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
+                              }}
+                            >
+                              <Badge variant="secondary" className={`${item.badgeClass} w-16 flex-shrink-0 justify-center border`}>
+                                {item.label}
+                              </Badge>
+                              <span className="text-muted-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM, lineHeight: 1.45 }}>
+                                {item.description}
+                              </span>
+                            </div>
+                          ))}
+                        </SettingsControlGroup>
+                      </SettingsGroup>
           
         </SettingsSection>
 
@@ -1840,6 +1738,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           </p>
             
                       <div className="space-y-3">
+                        <SettingsControlGroup>
                         <SettingsToggleRow
                           id="ai-auto-scheduling"
                           label="Enable AI Auto-Scheduling"
@@ -1863,126 +1762,45 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           onCheckedChange={toggleScheduleUnscheduledTasks}
                           disabled={!aiSettings.autoSchedulingEnabled}
                         />
+                        </SettingsControlGroup>
 
-                        <div className="space-y-2 pt-2 border-t border-primary/10">
-                          <Label 
-                            className="font-semibold cursor-pointer"
-                            style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
-                          >
-                            Daily Work Hour Limit
-                          </Label>
-                          <div className="space-y-2">
+                        <SettingsSubheading title="Daily Work Hour Limit" />
+                        <SettingsControlGroup>
                             {Object.entries(AI_DAILY_HOUR_OPTIONS).map(([key, hours]) => {
                               const hourOption = hours as typeof AI_DAILY_HOUR_OPTIONS[keyof typeof AI_DAILY_HOUR_OPTIONS];
                               const labels = AI_DAILY_HOUR_LABELS[hourOption];
                               return (
-                                <div key={key} className="flex items-center justify-between" style={{ gap: TOGGLE_SWITCH_SPACING.container.padding.horizontal, paddingTop: TOGGLE_SWITCH_SPACING.container.padding.vertical, paddingBottom: TOGGLE_SWITCH_SPACING.container.padding.vertical }}>
-                                  <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
-                                    <Label 
-                                      htmlFor={`ai-hours-${hourOption}`}
-                                      className="cursor-pointer"
-                                      style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
-                                    >
-                                      {labels.label}
-                                    </Label>
-                                    <p 
-                                      className="text-muted-foreground"
-                                      style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}
-                                    >
-                                      {labels.description}
-                                    </p>
-                                  </div>
-                                  <Switch 
-                                    id={`ai-hours-${hourOption}`}
-                                    checked={aiSettings.maxHoursPerDay === hourOption}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        updateSettings({ maxHoursPerDay: hourOption });
-                                      }
-                                    }}
-                                    disabled={!aiSettings.autoSchedulingEnabled}
-                                    className="flex-shrink-0"
-                                    style={{
-                                      width: TOGGLE_SWITCH_DIMENSIONS.container.width,
-                                      height: TOGGLE_SWITCH_DIMENSIONS.container.height,
-                                    }}
-                                  />
-                                </div>
+                                <SettingsToggleRow
+                                  key={key}
+                                  id={`ai-hours-${hourOption}`}
+                                  label={labels.label}
+                                  description={labels.description}
+                                  checked={aiSettings.maxHoursPerDay === hourOption}
+                                  disabled={!aiSettings.autoSchedulingEnabled}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      updateSettings({ maxHoursPerDay: hourOption });
+                                    }
+                                  }}
+                                />
                               );
                             })}
-                          </div>
-                        </div>
+                        </SettingsControlGroup>
                       </div>
 
-                      <div 
-                        className="bg-primary/5 rounded-lg border border-primary/10 flex flex-col"
-                        style={{ 
-                          marginTop: SETTINGS_PANEL_SPACING_LARGE,
-                          marginLeft: SETTINGS_PANEL_MARGIN_LEFT_NONE,
-                          marginRight: SETTINGS_PANEL_MARGIN_RIGHT_NONE,
-                          paddingLeft: SETTINGS_PANEL_PADDING_LEFT_AI_SECTION,
-                          paddingRight: SETTINGS_PANEL_PADDING_RIGHT_AI_SECTION,
-                          paddingTop: SETTINGS_PANEL_PADDING_LARGE,
-                          paddingBottom: SETTINGS_PANEL_PADDING_LARGE,
-                          gap: SETTINGS_PANEL_GAP_NONE,
-                          position: SETTINGS_PANEL_POSITION_STATIC,
-                        }}
-                      >
-                        <div 
-                          className="flex items-start"
-                          style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }} // Increased from SMALL to MEDIUM
-                        >
-                          <Icon 
-                            name="info"
-                            size={SETTINGS_PANEL_ICON_SIZE_MEDIUM}
-                            className="text-primary flex-shrink-0" 
-                            style={{ 
-                              marginTop: SETTINGS_PANEL_MARGIN_TOP_EXTRA_SMALL, // Increased from XSMALL to EXTRA_SMALL
-                            }}
-                          />
-                          <div 
-                            className="flex flex-col flex-1"
-                            style={{ 
-                              fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, // Reduced from SMALL to XSMALL
-                              gap: SETTINGS_PANEL_SPACING_MEDIUM, // Increased from SMALL to MEDIUM
-                              minWidth: 0, // Allow flex shrinking
-                            }}
-                          >
-                            <div>
-                              <p 
-                                className="font-semibold text-foreground"
-                                style={{ 
-                                  fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, // Reduced from MEDIUM to SMALL
-                                  marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM, // Increased from SMALL to MEDIUM
-                                }}
-                              >
-                                {AI_FUNCTION_EXPLANATION.TITLE}
-                              </p>
-                              <p 
-                                className="text-muted-foreground"
-                                style={{ 
-                                  lineHeight: SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION,
-                                  fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, // Explicitly set smaller font size
-                                }}
-                              >
-                                {AI_FUNCTION_EXPLANATION.getDescription(aiSettings.maxHoursPerDay, DEFAULT_SCHEDULING_PERIOD_DAYS)}
-                              </p>
-                            </div>
-
-                            <div 
-                              className="border-t border-primary/10"
-                              style={{ paddingTop: SETTINGS_PANEL_PADDING_MEDIUM }} // Increased from Y_SMALL to MEDIUM
-                            >
-                              <p 
-                                className="italic"
-                                style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL }}
-                              >
-                                💡 Tip: Enable "Priority-Based Scheduling" to automatically prioritize urgent and high-priority tasks first.
-                              </p>
-                            </div>
-                          </div>
+                      <SettingsInfoCallout className="mt-0">
+                        <p className="font-semibold text-foreground" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
+                          {AI_FUNCTION_EXPLANATION.TITLE}
+                        </p>
+                        <p style={{ lineHeight: SETTINGS_PANEL_LINE_HEIGHT_AI_DESCRIPTION, fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL }}>
+                          {AI_FUNCTION_EXPLANATION.getDescription(aiSettings.maxHoursPerDay, DEFAULT_SCHEDULING_PERIOD_DAYS)}
+                        </p>
+                        <div className="border-t border-primary/10" style={{ paddingTop: SETTINGS_PANEL_PADDING_MEDIUM }}>
+                          <p className="italic" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL }}>
+                            💡 Tip: Enable "Priority-Based Scheduling" to automatically prioritize urgent and high-priority tasks first.
+                          </p>
                         </div>
-                      </div>
+                      </SettingsInfoCallout>
                         </>
                       )}
           
@@ -2026,40 +1844,24 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         </div>
                       ) : (
                         <>
-                          <p className="text-sm text-muted-foreground">
-                            Automatically move incomplete tasks to the next day
-                          </p>
-                
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="space-y-0.5">
-                                <Label htmlFor="auto-rollover" className="text-sm">Auto Rollover</Label>
-                                <p className="text-xs text-muted-foreground">Move tasks at midnight</p>
-                              </div>
-                              <Switch 
-                                id="auto-rollover" 
-                                checked={rolloverSettings.autoRollover}
-                                onCheckedChange={(checked) => 
-                                  updateRolloverSettings({ autoRollover: checked })
-                                }
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <div className="space-y-0.5">
-                                <Label htmlFor="ask-rollover" className="text-sm">Ask Before Rolling</Label>
-                                <p className="text-xs text-muted-foreground">Confirm before moving tasks</p>
-                              </div>
-                              <Switch 
-                                id="ask-rollover" 
-                                checked={rolloverSettings.askBeforeRolling}
-                                onCheckedChange={(checked) => 
-                                  updateRolloverSettings({ askBeforeRolling: checked })
-                                }
-                                disabled={!rolloverSettings.autoRollover}
-                              />
-                            </div>
-                          </div>
+                          <SettingsLead>Automatically move incomplete tasks to the next day</SettingsLead>
+                          <SettingsControlGroup>
+                            <SettingsToggleRow
+                              id="auto-rollover"
+                              label="Auto Rollover"
+                              description="Move tasks at midnight"
+                              checked={rolloverSettings.autoRollover}
+                              onCheckedChange={(checked) => updateRolloverSettings({ autoRollover: checked })}
+                            />
+                            <SettingsToggleRow
+                              id="ask-rollover"
+                              label="Ask Before Rolling"
+                              description="Confirm before moving tasks"
+                              checked={rolloverSettings.askBeforeRolling}
+                              disabled={!rolloverSettings.autoRollover}
+                              onCheckedChange={(checked) => updateRolloverSettings({ askBeforeRolling: checked })}
+                            />
+                          </SettingsControlGroup>
                         </>
                       )}
           
@@ -2373,32 +2175,25 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
                         <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
 
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-0.5 flex-1">
-                            <Label htmlFor="respect-hours" className="text-sm cursor-pointer">Respect Category Hours</Label>
-                            <p className="text-xs text-muted-foreground">AI scheduling will use these time windows for each task category</p>
-                          </div>
-                          <Switch 
-                            id="respect-hours" 
-                            checked={hoursSettings.respectHours}
-                            onCheckedChange={(checked) => updateHoursSettings({ respectHours: checked })}
-                            className="flex-shrink-0 mt-0.5"
-                          />
-                        </div>
+                        <SettingsToggleRow
+                          id="respect-hours"
+                          label="Respect Category Hours"
+                          description="AI scheduling will use these time windows for each task category"
+                          checked={hoursSettings.respectHours}
+                          onCheckedChange={(checked) => updateHoursSettings({ respectHours: checked })}
+                          variant="standalone"
+                        />
 
-                        <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/10">
-                          <div className="flex items-start gap-2">
-                            <Icon name="info" size={ICON_SIZE_MD} className="text-primary mt-0.5 flex-shrink-0" />
-                            <div className="text-xs text-muted-foreground">
-                              <p className="mb-1">
-                                <strong className="text-foreground">How it works:</strong>
-                              </p>
-                              <p>
-                                When AI scheduling is enabled, tasks will be scheduled within the time windows you set for each category. 
-                                You can set different hours for weekdays (Mon-Fri) and weekends (Sat-Sun) to maintain work-life balance and optimize your schedule.
-                              </p>
-                            </div>
-                          </div>
+                        <div className="mt-3">
+                          <SettingsInfoCallout>
+                            <p className="mb-1">
+                              <strong className="text-foreground">How it works:</strong>
+                            </p>
+                            <p>
+                              When AI scheduling is enabled, tasks will be scheduled within the time windows you set for each category. 
+                              You can set different hours for weekdays (Mon-Fri) and weekends (Sat-Sun) to maintain work-life balance and optimize your schedule.
+                            </p>
+                          </SettingsInfoCallout>
                         </div>
                       </div>
                         </>

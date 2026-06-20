@@ -5,11 +5,10 @@ import { cn } from '../../lib/utils';
 import { COLOR_PRIMARY } from '../../lib/color-theme';
 import {
   SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,
-  SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y,
   SETTINGS_PANEL_ACCORDION_ICON_SIZE,
+  SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y,
   SETTINGS_PANEL_ICON_TILE_SIZE,
   SETTINGS_PANEL_MARGIN_TOP_XSMALL,
-  SETTINGS_PANEL_SECTION_CONTENT_PADDING,
   SETTINGS_PANEL_SECTION_TRIGGER_PADDING_X,
   SETTINGS_PANEL_TEXT_SIZE_SMALL,
 } from '../../lib/layout-constants';
@@ -41,10 +40,13 @@ export function SettingsSection({
     <AccordionItem
       value={value}
       data-tour={dataTour}
-      className={cn('mb-3 overflow-hidden rounded-xl border border-border/50 bg-card/90 shadow-sm last:mb-0', className)}
+      className={cn(
+        'mb-2 overflow-hidden rounded-2xl border border-border/40 bg-card/95 shadow-sm last:mb-0',
+        className,
+      )}
     >
       <AccordionTrigger
-        className="hover:no-underline px-0 [&>svg:last-child]:mr-4 [&>svg:last-child]:text-muted-foreground"
+        className="hover:no-underline px-0 [&>svg:last-child]:mr-4 [&>svg:last-child]:text-muted-foreground/70"
         style={{
           paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y,
           paddingBottom: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y,
@@ -54,7 +56,7 @@ export function SettingsSection({
       >
         <div className="flex min-w-0 flex-1 items-start gap-3 pr-2 text-left">
           <div
-            className="flex shrink-0 items-center justify-center rounded-lg bg-primary/10"
+            className="flex shrink-0 items-center justify-center rounded-xl bg-primary/10"
             style={{
               width: SETTINGS_PANEL_ICON_TILE_SIZE,
               height: SETTINGS_PANEL_ICON_TILE_SIZE,
@@ -79,7 +81,7 @@ export function SettingsSection({
                 style={{
                   fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL,
                   marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL,
-                  lineHeight: 1.4,
+                  lineHeight: 1.45,
                 }}
               >
                 {description}
@@ -88,11 +90,10 @@ export function SettingsSection({
           </div>
         </div>
       </AccordionTrigger>
-      <AccordionContent className="pb-0">
+      <AccordionContent className="pb-0 pt-0">
         <div
-          className="mx-4 mb-4 rounded-lg border border-border/30 bg-muted/10"
+          className="px-4 pb-4"
           style={{
-            padding: SETTINGS_PANEL_SECTION_CONTENT_PADDING,
             display: 'flex',
             flexDirection: 'column',
             gap: SETTINGS_PANEL_ACCORDION_CONTENT_SPACING,

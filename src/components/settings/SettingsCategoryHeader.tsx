@@ -1,8 +1,8 @@
 import React from 'react';
 import {
   SETTINGS_PANEL_ACCORDION_ITEM_PADDING_X,
+  SETTINGS_PANEL_CATEGORY_ACCENT_WIDTH,
   SETTINGS_PANEL_CATEGORY_HEADER_FONT_SIZE,
-  SETTINGS_PANEL_CATEGORY_HEADER_LETTER_SPACING_EM,
   SETTINGS_PANEL_CATEGORY_HEADER_PADDING_BOTTOM,
   SETTINGS_PANEL_CATEGORY_HEADER_PADDING_TOP,
 } from '../../lib/layout-constants';
@@ -22,15 +22,22 @@ export function SettingsCategoryHeader({ title }: SettingsCategoryHeaderProps) {
         paddingBottom: SETTINGS_PANEL_CATEGORY_HEADER_PADDING_BOTTOM,
       }}
     >
-      <p
-        className="font-semibold uppercase tracking-wider text-muted-foreground"
-        style={{
-          fontSize: SETTINGS_PANEL_CATEGORY_HEADER_FONT_SIZE,
-          letterSpacing: `${SETTINGS_PANEL_CATEGORY_HEADER_LETTER_SPACING_EM}em`,
-        }}
-      >
-        {title}
-      </p>
+      <div className="flex items-center gap-2">
+        <span
+          className="rounded-full bg-primary/70"
+          style={{
+            width: SETTINGS_PANEL_CATEGORY_ACCENT_WIDTH,
+            height: '0.875rem',
+          }}
+          aria-hidden
+        />
+        <p
+          className="font-semibold text-muted-foreground"
+          style={{ fontSize: SETTINGS_PANEL_CATEGORY_HEADER_FONT_SIZE }}
+        >
+          {title}
+        </p>
+      </div>
     </div>
   );
 }

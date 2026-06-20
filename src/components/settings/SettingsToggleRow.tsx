@@ -1,7 +1,11 @@
 import React from 'react';
 import { Label } from '../ui/label';
 import { CheckboxSwitch as Switch } from '../ui/checkbox-switch';
+import { cn } from '../../lib/utils';
 import {
+  MIN_TOUCH_TARGET_PX,
+  SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
+  SETTINGS_PANEL_LIST_ROW_PADDING_Y,
   SETTINGS_PANEL_SPACING_XSMALL,
   SETTINGS_PANEL_TEXT_SIZE_MEDIUM,
   SETTINGS_PANEL_TEXT_SIZE_SMALL,
@@ -15,6 +19,10 @@ interface SettingsToggleRowProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
+  variant?: 'standalone' | 'grouped';
+  /** Expands row height for reliable mobile touch targets. */
+  touchTarget?: boolean;
+  className?: string;
 }
 
 export function SettingsToggleRow({
@@ -24,14 +32,38 @@ export function SettingsToggleRow({
   checked,
   onCheckedChange,
   disabled = false,
+  variant = 'grouped',
+  touchTarget = false,
+  className,
 }: SettingsToggleRowProps) {
+  const isGrouped = variant === 'grouped';
+
   return (
     <div
-      className="flex items-start justify-between gap-3 rounded-lg border border-border/30 bg-background/60 px-3"
-      style={{ paddingTop: SETTINGS_PANEL_TOGGLE_ROW_PADDING_Y, paddingBottom: SETTINGS_PANEL_TOGGLE_ROW_PADDING_Y }}
+      className={cn(
+        'flex items-start justify-between gap-3',
+        isGrouped
+          ? 'bg-transparent'
+          : 'rounded-xl border border-border/40 bg-background/80 px-3 shadow-sm',
+        className,
+      )}
+      style={{
+        paddingTop: isGrouped ? SETTINGS_PANEL_LIST_ROW_PADDING_Y : SETTINGS_PANEL_TOGGLE_ROW_PADDING_Y,
+        paddingBottom: isGrouped ? SETTINGS_PANEL_LIST_ROW_PADDING_Y : SETTINGS_PANEL_TOGGLE_ROW_PADDING_Y,
+        paddingLeft: isGrouped ? SETTINGS_PANEL_CONTROL_GROUP_PADDING_X : undefined,
+        paddingRight: isGrouped ? SETTINGS_PANEL_CONTROL_GROUP_PADDING_X : undefined,
+        minHeight: touchTarget ? MIN_TOUCH_TARGET_PX : undefined,
+      }}
     >
-      <div className="min-w-0 flex-1" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
-        <Label htmlFor={id} className="cursor-pointer font-medium" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}>
+      <div
+        className="min-w-0 flex-1"
+        style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}
+      >
+        <Label
+          htmlFor={id}
+          className="cursor-pointer font-medium text-foreground"
+          style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}
+        >
           {label}
         </Label>
         {description ? (
@@ -46,6 +78,7 @@ export function SettingsToggleRow({
         onCheckedChange={onCheckedChange}
         disabled={disabled}
         className="mt-0.5 flex-shrink-0"
+        aria-label={label}
       />
     </div>
   );

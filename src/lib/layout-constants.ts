@@ -700,6 +700,9 @@ export const SETTINGS_PANEL_CATEGORY_HEADER_FONT_SIZE = '0.6875rem'; // 11px cat
 export const SETTINGS_PANEL_CATEGORY_HEADER_LETTER_SPACING_EM = 0.08;
 export const SETTINGS_PANEL_CATEGORY_HEADER_PADDING_TOP = '1.25rem';
 export const SETTINGS_PANEL_CATEGORY_HEADER_PADDING_BOTTOM = '0.5rem';
+export const SETTINGS_PANEL_CONTROL_GROUP_PADDING_X = '1rem';
+export const SETTINGS_PANEL_LIST_ROW_PADDING_Y = '0.875rem';
+export const SETTINGS_PANEL_CATEGORY_ACCENT_WIDTH = '3px';
 export const SETTINGS_PANEL_EDIT_BUTTON_SIZE = '2rem'; // w-8 h-8 = 2rem (32px) - size for edit avatar button
 export const SETTINGS_PANEL_START_TOUR_ICON_SIZE = '0.8rem'; // 20% smaller than standard medium icon
 export const SETTINGS_PANEL_AVATAR_SIZE = '4rem'; // w-16 h-16 = 4rem
