@@ -14,7 +14,11 @@ interface TeamContextType {
   // Legacy workspace-based team (for backward compatibility)
   teamMembers: User[];
   isLoading: boolean;
-  addTeamMember: (member: Omit<User, 'id'>, workspaceId: string) => Promise<void>;
+  addTeamMember: (
+    member: Omit<User, 'id'>,
+    workspaceId: string,
+    options?: { silent?: boolean; avatar?: string; skipRefresh?: boolean; batchInviteIndex?: number },
+  ) => Promise<void>;
   removeTeamMember: (memberId: string, workspaceId: string) => Promise<void>;
   updateTeamMember: (memberId: string, updates: Partial<User>, workspaceId: string) => Promise<void>;
   getTeamMember: (memberId: string) => User | undefined;
@@ -33,7 +37,12 @@ interface TeamContextType {
   deleteTeam: (teamId: string, overrideWorkspaceId?: string) => Promise<void>;
   selectTeam: (teamId: string | null) => void;
   syncTeams: (workspaceId: string) => Promise<void>;
-  addTeamMemberToTeam: (teamId: string, member: Omit<User, 'id'>, avatar?: string) => Promise<void>;
+  addTeamMemberToTeam: (
+    teamId: string,
+    member: Omit<User, 'id'>,
+    avatar?: string,
+    options?: { silent?: boolean; skipRefresh?: boolean; batchInviteIndex?: number },
+  ) => Promise<void>;
   removeTeamMemberFromTeam: (teamId: string, memberId: string) => Promise<void>;
   updateTeamMemberInTeam: (teamId: string, memberId: string, updates: Partial<User>) => Promise<void>;
 }
@@ -119,69 +128,6 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       syncTeamMembers(workspaceId);
     }
   }, [user, accessToken, workspaceId, syncTeamMembers]);
-
-  const addTeamMember = useCallback(async (member: Omit<User, 'id'>, wsId: string) => {
-    if (!accessToken || !wsId) {
-      toast.error(TEAM_PANEL_UI_TEXT.cannotInviteNoWorkspaceAccess);
-      return;
-    }
-
-    // Validate workspace ID format
-    if (!wsId || typeof wsId !== 'string' || wsId.trim() === '' || wsId.includes(':')) {
-      toast.error(TEAM_PANEL_UI_TEXT.invalidWorkspaceId);
-      return;
-    }
-
-    try {
-      console.log('Inviting team member:', { email: member.email, name: member.name, role: member.role, workspaceId: wsId });
-      
-      // Send invitation via API
-      const invitation = await api.inviteTeamMember(wsId, member.email, member.name, member.role);
-      
-      console.log('Invitation response:', invitation);
-      
-      if (!invitation || !invitation.token) {
-        throw new Error(TEAM_PANEL_UI_TEXT.invalidInvitationResponse);
-      }
-      
-      // Add to local state as pending
-      const now = new Date().toISOString();
-      const newMember: User = {
-        ...member,
-        id: `pending_${invitation.token}`,
-        inviteStatus: 'pending',
-        hasUnreadNotification: false,
-        lastViewedAt: null,
-        invitedAt: now,
-        acceptedAt: null,
-        expiresAt: invitation.expiresAt,
-        invitationToken: invitation.token,
-      };
-      
-      setTeamMembers(prev => [...prev, newMember]);
-      
-      // Sync to refresh the list with server data
-      await syncTeamMembers(wsId);
-      
-      toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email), {
-        description: TEAM_PANEL_UI_TEXT.invitationSentDescription,
-      });
-    } catch (error) {
-      console.error('Failed to send invitation:', error);
-      const errorMessage = error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToSendInvitation;
-      
-      // Provide more helpful error messages
-      if (errorMessage.includes('Workspace not found') || errorMessage.includes('404')) {
-        toast.error(TEAM_PANEL_UI_TEXT.workspaceNotFound, {
-          description: TEAM_PANEL_UI_TEXT.workspaceNotFoundDescription,
-        });
-      } else {
-        toast.error(errorMessage);
-      }
-      
-      throw error; // Re-throw to let the UI handle it
-    }
-  }, [accessToken, syncTeamMembers]);
 
   const removeTeamMember = useCallback(async (memberId: string, wsId: string) => {
     if (!accessToken || !wsId) {
@@ -472,24 +418,46 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaceId, accessToken, syncTeamMembers, isLoading]);
 
-  const addTeamMemberToTeam = useCallback(async (teamId: string, member: Omit<User, 'id'>, avatar?: string) => {
-    if (!accessToken || !teamId) {
-      toast.error(TEAM_PANEL_UI_TEXT.cannotInviteNoTeamAccess);
-      return;
+  const sendEmailInvitation = useCallback(async (
+    wsId: string,
+    member: Omit<User, 'id'>,
+    options?: {
+      teamId?: string;
+      avatar?: string;
+      silent?: boolean;
+      skipRefresh?: boolean;
+      batchInviteIndex?: number;
+    },
+  ) => {
+    if (!accessToken) {
+      throw new Error(TEAM_PANEL_UI_TEXT.cannotInviteNoWorkspaceAccess);
+    }
+    if (!wsId || typeof wsId !== 'string' || wsId.trim() === '' || wsId.includes(':')) {
+      throw new Error(TEAM_PANEL_UI_TEXT.invalidWorkspaceId);
     }
 
-    const wsId = workspaceId;
-    if (!wsId) {
-      toast.error(TEAM_PANEL_UI_TEXT.cannotInviteNoWorkspaceAccess);
-      return;
+    const teamId = options?.teamId;
+    const avatar = options?.avatar ?? member.avatar;
+    const silent = options?.silent ?? false;
+    const skipRefresh = options?.skipRefresh ?? false;
+    const batchInviteIndex = options?.batchInviteIndex ?? 0;
+
+    if (teamId) {
+      const team = teams.find((t) => t.id === teamId);
+      const memberCount =
+        Math.max(team?.memberCount ?? 0, currentTeamMembers.length) + batchInviteIndex;
+      if (memberCount >= TEAM_MAX_MEMBERS) {
+        throw new Error(TEAM_PANEL_UI_TEXT.maxMembersLimit(TEAM_MAX_MEMBERS));
+      }
     }
 
-    // Check team member limit
-    const team = teams.find(t => t.id === teamId);
-    if (team && team.memberCount >= TEAM_MAX_MEMBERS) {
-      toast.error(TEAM_PANEL_UI_TEXT.maxMembersLimit(TEAM_MAX_MEMBERS));
-      return;
-    }
+    const notifySuccess = () => {
+      if (!silent) {
+        toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email), {
+          description: TEAM_PANEL_UI_TEXT.invitationSentDescription,
+        });
+      }
+    };
 
     const applyPendingInvitation = (invitation: { token: string; expiresAt?: string }) => {
       const now = new Date().toISOString();
@@ -506,69 +474,167 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         teamId,
         avatar: avatar || member.avatar,
       };
-      setCurrentTeamMembers(prev => {
-        const withoutDuplicate = prev.filter(
-          (m) => m.email.toLowerCase() !== member.email.toLowerCase(),
-        );
-        return [...withoutDuplicate, pendingMember];
-      });
-      toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email), {
-        description: TEAM_PANEL_UI_TEXT.invitationSentDescription,
-      });
+
+      if (teamId) {
+        setCurrentTeamMembers((prev) => {
+          const withoutDuplicate = prev.filter(
+            (m) => m.email.toLowerCase() !== member.email.toLowerCase(),
+          );
+          return [...withoutDuplicate, pendingMember];
+        });
+      } else {
+        setTeamMembers((prev) => {
+          const withoutDuplicate = prev.filter(
+            (m) => m.email.toLowerCase() !== member.email.toLowerCase(),
+          );
+          return [...withoutDuplicate, pendingMember];
+        });
+      }
+    };
+
+    const refreshAfterInvite = async () => {
+      if (teamId) {
+        await selectTeam(teamId);
+        await syncTeams(wsId, true);
+      } else {
+        await syncTeamMembers(wsId);
+      }
+    };
+
+    const handleInviteResponse = async (
+      result: { member?: User; invitation?: { token: string; expiresAt?: string } },
+    ) => {
+      if (result.member) {
+        notifySuccess();
+        if (!skipRefresh) {
+          await refreshAfterInvite();
+        }
+        return;
+      }
+      const invitation = result.invitation;
+      if (invitation?.token) {
+        applyPendingInvitation(invitation);
+        notifySuccess();
+        if (!skipRefresh) {
+          await refreshAfterInvite();
+        }
+        return;
+      }
+      throw new Error(TEAM_PANEL_UI_TEXT.invalidInvitationResponse);
     };
 
     try {
-      let result: {
-        invitation?: { token: string; expiresAt?: string };
-        token?: string;
-        expiresAt?: string;
-        member?: User;
-      };
+      const result = await api.inviteTeamMember(
+        wsId,
+        member.email,
+        member.name,
+        member.role || 'member',
+        { teamId, avatar },
+      );
+      await handleInviteResponse(result);
+      return;
+    } catch (workspaceError) {
+      const workspaceMessage = workspaceError instanceof Error ? workspaceError.message : '';
+      const alreadyInWorkspace = workspaceMessage.toLowerCase().includes('already a member');
 
-      try {
-        result = await api.inviteTeamMemberToTeam(
-          teamId,
-          member.email,
-          member.name,
-          member.role || 'member',
-          avatar,
-        );
-      } catch (teamError) {
-        const errorMessage = teamError instanceof Error ? teamError.message : '';
-        const needsEmailInvite =
-          errorMessage.toLowerCase().includes('taskzm account') ||
-          errorMessage.toLowerCase().includes('must have');
-        if (!needsEmailInvite) {
-          throw teamError;
+      if (teamId && (alreadyInWorkspace || workspaceMessage.toLowerCase().includes('must have'))) {
+        try {
+          const teamResult = await api.inviteTeamMemberToTeam(
+            teamId,
+            member.email,
+            member.name,
+            member.role || 'member',
+            avatar,
+          );
+          await handleInviteResponse({
+            member: teamResult.member,
+            invitation: teamResult.invitation ?? (teamResult.token ? teamResult : undefined),
+          });
+          return;
+        } catch (teamError) {
+          const teamMessage = teamError instanceof Error ? teamError.message : '';
+          const needsEmailInvite =
+            teamMessage.toLowerCase().includes('taskzm account') ||
+            teamMessage.toLowerCase().includes('must have');
+          if (!needsEmailInvite) {
+            throw teamError;
+          }
         }
-        result = await api.inviteTeamMember(
-          wsId,
-          member.email,
-          member.name,
-          member.role || 'member',
-          { teamId, avatar },
-        );
       }
 
-      const invitation = result?.invitation ?? (result?.token ? result : null);
-      if (invitation?.token) {
-        applyPendingInvitation(invitation);
-        await selectTeam(teamId);
-      } else if (result?.member) {
-        toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email));
-        await selectTeam(teamId);
-      } else {
-        throw new Error(TEAM_PANEL_UI_TEXT.invalidInvitationResponse);
-      }
+      throw workspaceError;
+    }
+  }, [
+    accessToken,
+    teams,
+    currentTeamMembers.length,
+    selectTeam,
+    syncTeams,
+    syncTeamMembers,
+  ]);
 
-      await syncTeams(wsId, true);
+  const addTeamMember = useCallback(async (
+    member: Omit<User, 'id'>,
+    wsId: string,
+    options?: { silent?: boolean; avatar?: string; skipRefresh?: boolean; batchInviteIndex?: number },
+  ) => {
+    try {
+      await sendEmailInvitation(wsId, member, {
+        avatar: options?.avatar ?? member.avatar,
+        silent: options?.silent,
+        skipRefresh: options?.skipRefresh,
+        batchInviteIndex: options?.batchInviteIndex,
+      });
     } catch (error) {
-      console.error('Failed to invite team member:', error);
-      const errorMessage = error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToInviteTeamMember;
-      toast.error(errorMessage);
+      console.error('Failed to send invitation:', error);
+      const errorMessage = error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToSendInvitation;
+
+      if (errorMessage.includes('Workspace not found') || errorMessage.includes('404')) {
+        if (!options?.silent) {
+          toast.error(TEAM_PANEL_UI_TEXT.workspaceNotFound, {
+            description: TEAM_PANEL_UI_TEXT.workspaceNotFoundDescription,
+          });
+        }
+      } else if (!options?.silent) {
+        toast.error(errorMessage);
+      }
+
       throw error;
     }
-  }, [accessToken, teams, workspaceId, selectTeam, syncTeams]);
+  }, [sendEmailInvitation]);
+
+  const addTeamMemberToTeam = useCallback(async (
+    teamId: string,
+    member: Omit<User, 'id'>,
+    avatar?: string,
+    options?: { silent?: boolean; skipRefresh?: boolean; batchInviteIndex?: number },
+  ) => {
+    if (!accessToken || !teamId) {
+      throw new Error(TEAM_PANEL_UI_TEXT.cannotInviteNoTeamAccess);
+    }
+
+    const wsId = workspaceId;
+    if (!wsId) {
+      throw new Error(TEAM_PANEL_UI_TEXT.cannotInviteNoWorkspaceAccess);
+    }
+
+    try {
+      await sendEmailInvitation(wsId, member, {
+        teamId,
+        avatar,
+        silent: options?.silent,
+        skipRefresh: options?.skipRefresh,
+        batchInviteIndex: options?.batchInviteIndex,
+      });
+    } catch (error) {
+      console.error('Failed to invite team member:', error);
+      if (!options?.silent) {
+        const errorMessage = error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToInviteTeamMember;
+        toast.error(errorMessage);
+      }
+      throw error;
+    }
+  }, [accessToken, workspaceId, sendEmailInvitation]);
 
   const removeTeamMemberFromTeam = useCallback(async (teamId: string, memberId: string) => {
     if (!accessToken || !teamId) {

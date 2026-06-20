@@ -675,6 +675,69 @@ async function sendWorkspaceInvitation(options: {
   };
 }
 
+async function addExistingUserToTeamDirect(options: {
+  workspaceId: string;
+  teamId: string;
+  existingUser: {
+    id: string;
+    email?: string | null;
+    user_metadata?: { name?: string; avatar?: string };
+  };
+  name: string;
+  role: string;
+  avatar?: string;
+}): Promise<{ member: Record<string, unknown> } | { error: string; status: number }> {
+  const { workspaceId, teamId, existingUser, name, role, avatar } = options;
+
+  const teamData = await kv.get(`team_${teamId}`);
+  if (!teamData) {
+    return { error: 'Team not found', status: 404 };
+  }
+  const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+  if (team.workspaceId !== workspaceId) {
+    return { error: 'Team does not belong to this workspace', status: 400 };
+  }
+
+  const teamMembersData = await kv.get(`team_${teamId}_members`);
+  const teamMemberIds: string[] = teamMembersData ? JSON.parse(teamMembersData) : [];
+
+  if (teamMemberIds.includes(existingUser.id)) {
+    return { error: 'User is already a team member', status: 400 };
+  }
+  if (teamMemberIds.length >= team.maxMembers) {
+    return { error: `Maximum of ${team.maxMembers} members per team`, status: 400 };
+  }
+
+  let workspaceMembers = await getWorkspaceMembers(workspaceId);
+  if (!workspaceMembers.includes(existingUser.id)) {
+    workspaceMembers.push(existingUser.id);
+    await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(workspaceMembers));
+    await kv.set(`workspace_${workspaceId}_member_${existingUser.id}_role`, role || 'member');
+  }
+
+  teamMemberIds.push(existingUser.id);
+  await kv.set(`team_${teamId}_members`, JSON.stringify(teamMemberIds));
+
+  team.memberCount = teamMemberIds.length;
+  await kv.set(`team_${teamId}`, JSON.stringify(team));
+
+  await kv.set(`workspace_${workspaceId}_member_${existingUser.id}`, JSON.stringify({
+    role: role || 'member',
+    teamId,
+  }));
+
+  return {
+    member: {
+      id: existingUser.id,
+      email: existingUser.email || '',
+      name: existingUser.user_metadata?.name || name,
+      avatar: avatar || existingUser.user_metadata?.avatar,
+      role: role || 'member',
+      teamId,
+    },
+  };
+}
+
 /**
  * Ensure user has a workspace; create one if missing (used by calendar sync and others).
  */
@@ -5175,6 +5238,24 @@ app.post("/taskzm-database-function/team/:workspaceId/invite", async (c) => {
     if (existingUser) {
       const members = await getWorkspaceMembers(workspaceId);
       if (members.includes(existingUser.id)) {
+        if (teamId) {
+          const directAdd = await addExistingUserToTeamDirect({
+            workspaceId,
+            teamId,
+            existingUser,
+            name,
+            role: role || 'member',
+            avatar,
+          });
+          if ('error' in directAdd) {
+            return c.json({ error: directAdd.error }, directAdd.status);
+          }
+          return c.json({
+            success: true,
+            message: 'Team member added',
+            member: directAdd.member,
+          });
+        }
         return c.json({ error: 'User is already a member of this workspace' }, 400);
       }
     }
@@ -6143,35 +6224,21 @@ app.post("/taskzm-database-function/teams/:teamId/invite", async (c) => {
 
     // If user exists, add them directly to workspace (if needed) and team
     if (existingMember) {
-      let workspaceMembers = await getWorkspaceMembers(workspaceId);
-      if (!workspaceMembers.includes(existingMember.id)) {
-        workspaceMembers.push(existingMember.id);
-        await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(workspaceMembers));
-        await kv.set(`workspace_${workspaceId}_member_${existingMember.id}_role`, role || 'member');
-      }
-
-      teamMemberIds.push(existingMember.id);
-      await kv.set(`team_${teamId}_members`, JSON.stringify(teamMemberIds));
-      
-      team.memberCount = teamMemberIds.length;
-      await kv.set(`team_${teamId}`, JSON.stringify(team));
-
-      await kv.set(`workspace_${workspaceId}_member_${existingMember.id}`, JSON.stringify({
+      const directAdd = await addExistingUserToTeamDirect({
+        workspaceId,
+        teamId,
+        existingUser: existingMember,
+        name,
         role: role || 'member',
-        teamId: teamId,
-      }));
-
-      return c.json({ 
-        success: true, 
+        avatar,
+      });
+      if ('error' in directAdd) {
+        return c.json({ error: directAdd.error }, directAdd.status);
+      }
+      return c.json({
+        success: true,
         message: 'Team member added',
-        member: {
-          id: existingMember.id,
-          email: existingMember.email,
-          name: existingMember.user_metadata?.name || name,
-          avatar: avatar || existingMember.user_metadata?.avatar,
-          role: role || 'member',
-          teamId: teamId,
-        }
+        member: directAdd.member,
       });
     }
 

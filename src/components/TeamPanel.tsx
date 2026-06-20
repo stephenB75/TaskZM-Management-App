@@ -177,6 +177,7 @@ export function TeamPanel() {
     deleteTeam,
     selectTeam,
     syncTeams,
+    syncTeamMembers,
     addTeamMemberToTeam,
     removeTeamMemberFromTeam,
     updateTeamMemberInTeam,
@@ -228,7 +229,8 @@ export function TeamPanel() {
     // Check team member limit (8 max) if adding to a team
     if (currentTeamId) {
       const team = teams.find(t => t.id === currentTeamId);
-      if (team && team.memberCount >= TEAM_MAX_MEMBERS) {
+      const memberCount = Math.max(team?.memberCount ?? 0, currentTeamMembers.length);
+      if (memberCount >= TEAM_MAX_MEMBERS) {
         toast.error(TEAM_PANEL_UI_TEXT.maxMembersReached);
         return;
       }
@@ -1109,8 +1111,9 @@ export function TeamPanel() {
     // Check team member limit if adding to a team
     if (currentTeamId) {
       const team = teams.find(t => t.id === currentTeamId);
-      if (team && team.memberCount + emails.length > TEAM_MAX_MEMBERS) {
-        toast.error(`Cannot add ${emails.length} members. Team would exceed maximum of ${TEAM_MAX_MEMBERS} members.`);
+      const baseCount = Math.max(team?.memberCount ?? 0, currentTeamMembers.length);
+      if (baseCount + emails.length > TEAM_MAX_MEMBERS) {
+        toast.error(TEAM_PANEL_UI_TEXT.maxMembersLimit(TEAM_MAX_MEMBERS));
         return;
       }
     }
@@ -1120,6 +1123,15 @@ export function TeamPanel() {
     let errorCount = 0;
 
     for (const email of emails) {
+      if (currentTeamId) {
+        const team = teams.find(t => t.id === currentTeamId);
+        const baseCount = Math.max(team?.memberCount ?? 0, currentTeamMembers.length);
+        if (baseCount + successCount >= TEAM_MAX_MEMBERS) {
+          errorCount++;
+          continue;
+        }
+      }
+
       try {
         // Extract name from email (before @)
         const name = email.split("@")[0].replace(/[._-]/g, " ");
@@ -1129,9 +1141,13 @@ export function TeamPanel() {
           .join(" ");
 
         const avatar = pickAvatarFromPoolAuto(email);
+        const inviteOptions = {
+          silent: true,
+          skipRefresh: true,
+          batchInviteIndex: successCount,
+        };
 
         if (currentTeamId) {
-          // Add to specific team
           await addTeamMemberToTeam(
             currentTeamId,
             {
@@ -1139,21 +1155,38 @@ export function TeamPanel() {
               email,
               role: newMemberRole,
             },
-            avatar
+            avatar,
+            inviteOptions,
           );
         } else {
-          // Legacy workspace-based team
-          await addTeamMember({
-            name: capitalizedName,
-            email,
-            role: newMemberRole,
-            avatar,
-          }, currentWorkspaceId);
+          await addTeamMember(
+            {
+              name: capitalizedName,
+              email,
+              role: newMemberRole,
+              avatar,
+            },
+            currentWorkspaceId,
+            inviteOptions,
+          );
         }
         successCount++;
       } catch (error) {
         errorCount++;
         console.error(`Failed to invite ${email}:`, error);
+      }
+    }
+
+    if (successCount > 0) {
+      try {
+        if (currentTeamId) {
+          await selectTeam(currentTeamId);
+          await syncTeams(currentWorkspaceId, true);
+        } else {
+          await syncTeamMembers(currentWorkspaceId);
+        }
+      } catch (refreshError) {
+        console.error('Failed to refresh members after bulk invite:', refreshError);
       }
     }
 

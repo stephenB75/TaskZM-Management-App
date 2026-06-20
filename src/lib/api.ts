@@ -954,15 +954,16 @@ export async function inviteTeamMember(
     const data = await response.json();
     logger.debug('Invite API response:', data);
     
-    // Handle both response formats: { invitation: {...} } or just the invitation object
-    if (data.invitation) {
-      return data.invitation;
-    } else if (data.token) {
-      // If response is the invitation object directly
-      return data;
-    } else {
-      throw new Error('Invalid response format from invitation API');
+    if (data.member) {
+      return { member: data.member };
     }
+    if (data.invitation) {
+      return { invitation: data.invitation };
+    }
+    if (data.token) {
+      return { invitation: data };
+    }
+    throw new Error('Invalid response format from invitation API');
   } catch (error) {
     logger.error('Error in inviteTeamMember:', error);
     // Re-throw with better error message if it's not already an Error
