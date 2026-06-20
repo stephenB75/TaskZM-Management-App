@@ -9,6 +9,7 @@
 
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, saveNewTerminologyToLibrary, DOMAIN_TERMINOLOGIES } from './domain-terminology';
 import { DESCRIPTION_GENERATION_CONFIG, DESCRIPTION_DEDUPLICATION_CONFIG, DESCRIPTION_OPTIONS_CONFIG, DOMAIN_EXCLUSION_TERMS } from './ai-config';
+import { buildUserKeywordContext, identifyUserKeywords } from './user-keyword-context';
 import { logger } from './logger';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
 import { API_BASE } from './api-base';
@@ -862,106 +863,10 @@ function extractTermsFromText(
 
 /**
  * Extract keywords from task name (user input)
- * ENHANCED: Better identification of compound terms, numbers, research keywords, and phrases
+ * Delegates to user-keyword-context for consistent user-origin identification.
  */
 function extractKeywordsFromTaskName(taskName: string): string[] {
-  const keywords: string[] = [];
-  
-  // Step 1: Extract compound terms and phrases first (before splitting)
-  // Look for common patterns: "10K-15K", "SUV or car", "best X", "within X", etc.
-  const compoundPatterns = [
-    // Price ranges: "10K-15K", "$10K-$15K", "10K to 15K", "10-15K"
-    /\b(\d+[Kk]?\s*[-–—]\s*\d+[Kk]?)\b/g,
-    // Research patterns: "best X", "top X", "find best X", "research best X"
-    /\b(best|top|find|research|compare|evaluate|review)\s+(\w+(?:\s+\w+){0,3})\b/gi,
-      // Vehicle types: "SUV or car", "truck and SUV", etc.
-      /\b(suv|car|truck|vehicle|automobile|sedan|coupe|convertible|motorcycle|bike)\s*(or|and|\/)\s*(suv|car|truck|vehicle|automobile|sedan|coupe|convertible|motorcycle|bike)\b/gi,
-    // Within/under/over patterns: "within 10K", "under $15K", "over 10K"
-    /\b(within|under|over|below|above|up to|less than|more than)\s+(\d+[Kk]?|\$\d+[Kk]?)\b/gi,
-  ];
-  
-  compoundPatterns.forEach(pattern => {
-    const matches = taskName.matchAll(pattern);
-    for (const match of matches) {
-      if (match[0]) {
-        const compoundTerm = match[0].toLowerCase().trim();
-        if (compoundTerm.length >= DESCRIPTION_GENERATION_CONFIG.minKeywordLength) {
-          keywords.push(compoundTerm);
-        }
-      }
-    }
-  });
-  
-  // Step 2: Extract individual words (enhanced)
-  const normalizedText = taskName
-    .replace(/[^\w\s\-–—/]/g, ' ') // Keep hyphens, en-dash, em-dash, slashes
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  const taskWords = normalizedText.toLowerCase()
-    .split(/\s+/)
-    .filter(w => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength)
-    .filter(w => !(DESCRIPTION_GENERATION_CONFIG.stopWords as readonly string[]).includes(w));
-  
-  // Step 3: Extract numbers with units (10K, $15K, etc.)
-  const numberPattern = /\b(\d+[KkMm]?|\$\d+[KkMm]?)\b/g;
-  const numberMatches = taskName.matchAll(numberPattern);
-  for (const match of numberMatches) {
-    if (match[0]) {
-      const numberTerm = match[0].toLowerCase().trim();
-      keywords.push(numberTerm);
-    }
-  }
-  
-  // Step 4: Prioritize words by frequency and length
-  const wordFreq = new Map<string, number>();
-  taskWords.forEach(word => {
-    // Skip if already captured as part of compound term
-    const isPartOfCompound = keywords.some(kw => kw.includes(word) && kw !== word);
-    if (!isPartOfCompound) {
-      wordFreq.set(word, (wordFreq.get(word) || 0) + 1);
-    }
-  });
-  
-  // Step 5: Add research/action keywords with higher priority
-  const researchKeywords = ['research', 'find', 'search', 'compare', 'evaluate', 'review', 'analyze', 'study', 'investigate', 'explore', 'examine', 'assess', 'purchase', 'buy', 'shop', 'select', 'choose', 'decide'];
-  researchKeywords.forEach(rk => {
-    if (taskWords.includes(rk)) {
-      wordFreq.set(rk, (wordFreq.get(rk) || 0) + 2); // Boost research keywords
-    }
-  });
-  
-  // Step 6: Add vehicle/automobile keywords with higher priority
-  const vehicleKeywords = ['suv', 'car', 'truck', 'vehicle', 'automobile', 'sedan', 'coupe', 'convertible', 'motorcycle', 'bike', 'bicycle'];
-  vehicleKeywords.forEach(vk => {
-    if (taskWords.includes(vk)) {
-      wordFreq.set(vk, (wordFreq.get(vk) || 0) + 2); // Boost vehicle keywords
-    }
-  });
-  
-  // Step 7: Sort by: 1) frequency, 2) length (longer = more specific), 3) research/vehicle keywords first
-  const sortedKeywords = Array.from(wordFreq.entries())
-    .sort((a, b) => {
-      // Research/vehicle keywords get priority
-      const aIsPriority = researchKeywords.includes(a[0]) || vehicleKeywords.includes(a[0]);
-      const bIsPriority = researchKeywords.includes(b[0]) || vehicleKeywords.includes(b[0]);
-      if (aIsPriority && !bIsPriority) return -1;
-      if (!aIsPriority && bIsPriority) return 1;
-      
-      // Then by frequency
-      if (b[1] !== a[1]) {
-        return b[1] - a[1];
-      }
-      // Then by length
-      return b[0].length - a[0].length;
-    })
-    .map(([word]) => word);
-  
-  // Step 8: Combine compound terms, numbers, and sorted words
-  const allKeywords = [...keywords, ...sortedKeywords];
-  
-  // Remove duplicates and return (prioritize compound terms and numbers first)
-  return Array.from(new Set(allKeywords));
+  return identifyUserKeywords(taskName).keywords;
 }
 
 /**
@@ -1269,14 +1174,26 @@ export async function extractTermsFromTaskNameWithBrowserAI(
       newNouns
     );
   }
-  
+
+  const keywordContext = buildUserKeywordContext({
+    taskText: taskName,
+    allKeywords: finalKeywords,
+    allPhrases: finalPhrases,
+    verbs: finalVerbs,
+    nouns: finalNouns,
+    libraryKeywords: localTerminologyExtracted.keywords,
+    libraryPhrases: localTerminologyExtracted.phrases,
+    externalSummary: browserAITerms?.summary,
+    domain,
+  });
+
   return {
     keywords: finalKeywords,
     phrases: finalPhrases,
     verbs: finalVerbs,
     nouns: finalNouns,
     pronouns: finalPronouns,
-    context: browserAITerms?.summary || taskName, // Use Browser AI summary if available, otherwise task name
+    context: keywordContext.contextSummary || taskName,
   };
 }
 
@@ -3602,7 +3519,18 @@ export async function generateDescription(
   const combinedVerbs = taskNameExtracted.verbs;
   const combinedNouns = taskNameExtracted.nouns;
   const combinedPronouns = taskNameExtracted.pronouns;
-  const combinedContext = taskName.trim();
+
+  const keywordContext = buildUserKeywordContext({
+    taskText: taskName,
+    allKeywords: combinedKeywords,
+    allPhrases: combinedPhrases,
+    verbs: combinedVerbs,
+    nouns: combinedNouns,
+    libraryKeywords: domainTerms.keywords,
+    libraryPhrases: domainTerms.phrases,
+    domain: domainRef,
+  });
+  const combinedContext = keywordContext.contextSummary || taskName.trim();
   
   searchExtracted = {
     keywords: combinedKeywords,

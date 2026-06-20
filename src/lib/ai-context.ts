@@ -14,6 +14,7 @@
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, getBatchSharedTerminologyAsync, DOMAIN_TERMINOLOGIES } from './domain-terminology';
 import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName, validateAndEnhanceTermsWithDictionary } from './description-generator';
 import { DESCRIPTION_GENERATION_CONFIG, DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from './ai-config';
+import { buildUserKeywordContext } from './user-keyword-context';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
 import { logger } from './logger';
 
@@ -238,12 +239,27 @@ export async function createAIContext(
     ? domain
     : DEFAULT_TASK_DOMAIN;
 
+  const keywordContext = buildUserKeywordContext({
+    taskText: fullText,
+    allKeywords: uniqueKeywords,
+    allPhrases: uniquePhrases,
+    verbs: uniqueVerbs,
+    nouns: uniqueNouns,
+    libraryKeywords: domainTerms.keywords,
+    libraryPhrases: domainTerms.phrases,
+    externalSummary: combinedExtracted.context,
+    domain: finalDomain,
+  });
+
   return {
     domain: finalDomain,
     domainConfidence: domainDetection?.confidence || DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
     domainKeywords: domainDetection?.keywords || [],
     domainTerms,
-    extractedTerms: combinedExtracted,
+    extractedTerms: {
+      ...combinedExtracted,
+      context: keywordContext.contextSummary,
+    },
     enhancedTerms: {
       keywords: uniqueKeywords,
       phrases: uniquePhrases,
@@ -409,12 +425,27 @@ export function createAIContextSync(
     ? domainVal
     : DEFAULT_TASK_DOMAIN;
 
+  const keywordContext = buildUserKeywordContext({
+    taskText: fullText,
+    allKeywords: uniqueKeywords,
+    allPhrases: uniquePhrases,
+    verbs: uniqueVerbs,
+    nouns: uniqueNouns,
+    libraryKeywords: domainTerms.keywords,
+    libraryPhrases: domainTerms.phrases,
+    externalSummary: combinedExtracted.context,
+    domain: finalDomain,
+  });
+
   return {
     domain: finalDomain,
     domainConfidence: domainDetection?.confidence || DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
     domainKeywords: domainDetection?.keywords || [],
     domainTerms,
-    extractedTerms: combinedExtracted,
+    extractedTerms: {
+      ...combinedExtracted,
+      context: keywordContext.contextSummary,
+    },
     enhancedTerms: {
       keywords: uniqueKeywords,
       phrases: uniquePhrases,

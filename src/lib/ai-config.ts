@@ -532,6 +532,46 @@ export const DESCRIPTION_GENERATION_CONFIG = {
 } as const;
 
 /**
+ * User keyword identification and context sentence generation.
+ * Separates terms the user typed from library-suggested terms.
+ */
+export const USER_KEYWORD_CONTEXT = {
+  maxUserKeywords: 8,
+  maxUserPhrases: 5,
+  maxContextSentences: 2,
+  maxSummaryLength: 500,
+  minKeywordLength: DESCRIPTION_GENERATION_CONFIG.minKeywordLength,
+  minPhraseLength: DESCRIPTION_GENERATION_CONFIG.minPhraseLength,
+  maxPhraseLength: DESCRIPTION_GENERATION_CONFIG.maxPhraseLength,
+  minWordLength: DESCRIPTION_GENERATION_CONFIG.minWordLength,
+  researchKeywordBoost: 2,
+  vehicleKeywordBoost: 2,
+  /** Compound patterns for user-input keyword extraction */
+  compoundPatterns: {
+    priceRange: /\b(\d+[Kk]?\s*[-–—]\s*\d+[Kk]?)\b/g,
+    researchWithObject: /\b(best|top|find|research|compare|evaluate|review)\s+(\w+(?:\s+\w+){0,3})\b/gi,
+    vehicleOr: /\b(suv|car|truck|vehicle|automobile|sedan|coupe|convertible|motorcycle|bike)\s*(or|and|\/)\s*(suv|car|truck|vehicle|automobile|sedan|coupe|convertible|motorcycle|bike)\b/gi,
+    budgetBound: /\b(within|under|over|below|above|up to|less than|more than)\s+(\d+[Kk]?|\$\d+[Kk]?)\b/gi,
+    numberWithUnit: /\b(\d+[KkMm]?|\$\d+[KkMm]?)\b/g,
+  },
+  researchKeywords: [
+    'research', 'find', 'search', 'compare', 'evaluate', 'review', 'analyze', 'study',
+    'investigate', 'explore', 'examine', 'assess', 'purchase', 'buy', 'shop', 'select', 'choose', 'decide',
+  ] as const,
+  vehicleKeywords: [
+    'suv', 'car', 'truck', 'vehicle', 'automobile', 'sedan', 'coupe', 'convertible', 'motorcycle', 'bike', 'bicycle',
+  ] as const,
+  genericKeywords: ['task', 'work', 'todo', 'item', 'thing', 'stuff', 'do', 'make', 'get'] as const,
+  contextOpeners: [
+    'involves',
+    'focuses',
+    'requires',
+    'addresses',
+    'relates',
+  ] as const,
+} as const;
+
+/**
  * AI function explanation text
  */
 export const AI_FUNCTION_EXPLANATION = {
