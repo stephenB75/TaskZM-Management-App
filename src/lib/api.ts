@@ -890,7 +890,13 @@ export async function saveSubscription(subscription: any) {
 }
 
 // Team/Invitation API
-export async function inviteTeamMember(workspaceId: string, email: string, name: string, role: 'admin' | 'member' | 'viewer' = 'member') {
+export async function inviteTeamMember(
+  workspaceId: string,
+  email: string,
+  name: string,
+  role: 'admin' | 'member' | 'viewer' = 'member',
+  options?: { teamId?: string; avatar?: string },
+) {
   try {
     // Validate workspace ID format
     if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
@@ -900,7 +906,13 @@ export async function inviteTeamMember(workspaceId: string, email: string, name:
     const response = await fetch(`${API_BASE}/team/${workspaceId}/invite`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ email, name, role }),
+      body: JSON.stringify({
+        email,
+        name,
+        role,
+        teamId: options?.teamId,
+        avatar: options?.avatar,
+      }),
     });
 
     if (!response.ok) {

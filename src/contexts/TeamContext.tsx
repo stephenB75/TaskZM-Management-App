@@ -478,6 +478,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const wsId = workspaceId;
+    if (!wsId) {
+      toast.error(TEAM_PANEL_UI_TEXT.cannotInviteNoWorkspaceAccess);
+      return;
+    }
+
     // Check team member limit
     const team = teams.find(t => t.id === teamId);
     if (team && team.memberCount >= TEAM_MAX_MEMBERS) {
@@ -485,46 +491,81 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    try {
-      const result = await api.inviteTeamMemberToTeam(
+    const applyPendingInvitation = (invitation: { token: string; expiresAt?: string }) => {
+      const now = new Date().toISOString();
+      const pendingMember: User = {
+        ...member,
+        id: `pending_${invitation.token}`,
+        inviteStatus: 'pending',
+        hasUnreadNotification: false,
+        lastViewedAt: null,
+        invitedAt: now,
+        acceptedAt: null,
+        expiresAt: invitation.expiresAt,
+        invitationToken: invitation.token,
         teamId,
-        member.email,
-        member.name,
-        member.role || 'member',
-        avatar,
-      );
+        avatar: avatar || member.avatar,
+      };
+      setCurrentTeamMembers(prev => {
+        const withoutDuplicate = prev.filter(
+          (m) => m.email.toLowerCase() !== member.email.toLowerCase(),
+        );
+        return [...withoutDuplicate, pendingMember];
+      });
+      toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email), {
+        description: TEAM_PANEL_UI_TEXT.invitationSentDescription,
+      });
+    };
 
-      if (result?.invitation?.token) {
-        const invitation = result.invitation;
-        const now = new Date().toISOString();
-        const pendingMember: User = {
-          ...member,
-          id: `pending_${invitation.token}`,
-          inviteStatus: 'pending',
-          hasUnreadNotification: false,
-          lastViewedAt: null,
-          invitedAt: now,
-          acceptedAt: null,
-          expiresAt: invitation.expiresAt,
-          invitationToken: invitation.token,
+    try {
+      let result: {
+        invitation?: { token: string; expiresAt?: string };
+        token?: string;
+        expiresAt?: string;
+        member?: User;
+      };
+
+      try {
+        result = await api.inviteTeamMemberToTeam(
           teamId,
-          avatar: avatar || member.avatar,
-        };
-        setCurrentTeamMembers(prev => [...prev, pendingMember]);
-        toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email), {
-          description: TEAM_PANEL_UI_TEXT.invitationSentDescription,
-        });
-      } else {
-        toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email));
-        await selectTeam(teamId);
+          member.email,
+          member.name,
+          member.role || 'member',
+          avatar,
+        );
+      } catch (teamError) {
+        const errorMessage = teamError instanceof Error ? teamError.message : '';
+        const needsEmailInvite =
+          errorMessage.toLowerCase().includes('taskzm account') ||
+          errorMessage.toLowerCase().includes('must have');
+        if (!needsEmailInvite) {
+          throw teamError;
+        }
+        result = await api.inviteTeamMember(
+          wsId,
+          member.email,
+          member.name,
+          member.role || 'member',
+          { teamId, avatar },
+        );
       }
 
-      await syncTeams(workspaceId || '', true);
+      const invitation = result?.invitation ?? (result?.token ? result : null);
+      if (invitation?.token) {
+        applyPendingInvitation(invitation);
+        await selectTeam(teamId);
+      } else if (result?.member) {
+        toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email));
+        await selectTeam(teamId);
+      } else {
+        throw new Error(TEAM_PANEL_UI_TEXT.invalidInvitationResponse);
+      }
+
+      await syncTeams(wsId, true);
     } catch (error) {
       console.error('Failed to invite team member:', error);
       const errorMessage = error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToInviteTeamMember;
-      const isMustHaveAccount = errorMessage.toLowerCase().includes('taskzm account') || errorMessage.toLowerCase().includes('must have');
-      toast.error(isMustHaveAccount ? TEAM_PANEL_UI_TEXT.teamMemberMustHaveAccount : errorMessage);
+      toast.error(errorMessage);
       throw error;
     }
   }, [accessToken, teams, workspaceId, selectTeam, syncTeams]);

@@ -506,6 +506,175 @@ async function getWorkspaceMembers(workspaceId: string): Promise<string[]> {
   }
 }
 
+const INVITATION_EXPIRY_DAYS = 7;
+
+async function findUserByEmail(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  email: string,
+) {
+  const normalized = email.toLowerCase().trim();
+  let page = 1;
+  const perPage = 1000;
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) {
+      console.log('findUserByEmail listUsers error:', error);
+      return null;
+    }
+    const found = data?.users?.find((u) => u.email?.toLowerCase() === normalized);
+    if (found) return found;
+    if (!data?.users?.length || data.users.length < perPage) break;
+    page++;
+  }
+  return null;
+}
+
+async function assertWorkspaceMemberOrOwner(
+  workspaceId: string,
+  userId: string,
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+  if (!workspaceOwner) {
+    return { ok: false, status: 404, error: 'Workspace not found' };
+  }
+  const members = await getWorkspaceMembers(workspaceId);
+  if (members.includes(userId) || workspaceOwner === userId) {
+    return { ok: true };
+  }
+  return { ok: false, status: 403, error: 'Unauthorized: Not a workspace member' };
+}
+
+async function findPendingInvitationForEmail(
+  workspaceId: string,
+  email: string,
+  teamId?: string,
+) {
+  const invitationTokensStr = await kv.get(`workspace_${workspaceId}_invitations`);
+  if (!invitationTokensStr) return null;
+  try {
+    const tokens = JSON.parse(invitationTokensStr);
+    const normalizedEmail = email.toLowerCase().trim();
+    for (const token of tokens) {
+      const invitationData = await kv.get(`invitation_${token}`);
+      if (!invitationData) continue;
+      const invitation = JSON.parse(invitationData);
+      const teamMatches = teamId ? invitation.teamId === teamId : !invitation.teamId;
+      if (
+        invitation.status === 'pending' &&
+        invitation.email?.toLowerCase() === normalizedEmail &&
+        teamMatches &&
+        new Date(invitation.expiresAt) > new Date()
+      ) {
+        return { token, invitation };
+      }
+    }
+  } catch (e) {
+    console.log('findPendingInvitationForEmail error:', e);
+  }
+  return null;
+}
+
+async function sendWorkspaceInvitation(options: {
+  workspaceId: string;
+  email: string;
+  name: string;
+  role: string;
+  invitedBy: string;
+  teamId?: string;
+  avatar?: string;
+  emailSubjectName?: string;
+}) {
+  const {
+    workspaceId,
+    email,
+    name,
+    role,
+    invitedBy,
+    teamId,
+    avatar,
+    emailSubjectName,
+  } = options;
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const existingPending = await findPendingInvitationForEmail(workspaceId, normalizedEmail, teamId);
+  if (existingPending) {
+    return {
+      invitation: {
+        ...existingPending.invitation,
+        token: existingPending.token,
+      },
+      inviteLink: `https://taskzm.com/invite?token=${existingPending.token}`,
+      alreadyPending: true,
+    };
+  }
+
+  const invitationToken = crypto.randomUUID();
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + INVITATION_EXPIRY_DAYS);
+
+  const invitation = {
+    token: invitationToken,
+    workspaceId,
+    ...(teamId ? { teamId } : {}),
+    email: normalizedEmail,
+    name,
+    role: role || 'member',
+    ...(avatar ? { avatar } : {}),
+    invitedBy,
+    createdAt: new Date().toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    status: 'pending',
+  };
+
+  await kv.set(`invitation_${invitationToken}`, JSON.stringify(invitation));
+
+  const existingInvitations = await kv.get(`workspace_${workspaceId}_invitations`);
+  const invitations = existingInvitations ? JSON.parse(existingInvitations) : [];
+  if (!invitations.includes(invitationToken)) {
+    invitations.push(invitationToken);
+    await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(invitations));
+  }
+
+  const supabase = getSupabaseClient();
+  let inviterName = 'Someone';
+  try {
+    const { data: inviterUser } = await supabase.auth.admin.getUserById(invitedBy);
+    if (inviterUser?.user) {
+      inviterName = inviterUser.user.user_metadata?.name || inviterUser.user.email?.split('@')[0] || 'Someone';
+    }
+  } catch (err) {
+    console.log('Could not fetch inviter name:', err);
+  }
+
+  const workspaceName = emailSubjectName || (await kv.get(`workspace_${workspaceId}_name`));
+  const inviteLink = `https://taskzm.com/invite?token=${invitationToken}`;
+  const emailResult = await emailService.sendInvitationEmail({
+    to: normalizedEmail,
+    inviterName,
+    inviteeName: name,
+    workspaceName,
+    role: role || 'member',
+    inviteLink,
+    expiresInDays: INVITATION_EXPIRY_DAYS,
+  });
+
+  if (emailResult.success) {
+    console.log(`✅ Invitation email sent to ${normalizedEmail} for workspace ${workspaceId}${teamId ? ` team ${teamId}` : ''}`);
+  } else {
+    console.warn(`⚠️ Failed to send invitation email to ${normalizedEmail}:`, emailResult.error);
+  }
+
+  return {
+    invitation: {
+      ...invitation,
+      token: invitationToken,
+      expiresAt: invitation.expiresAt,
+    },
+    inviteLink,
+    alreadyPending: false,
+  };
+}
+
 /**
  * Ensure user has a workspace; create one if missing (used by calendar sync and others).
  */
@@ -4979,113 +5148,51 @@ app.post("/taskzm-database-function/team/:workspaceId/invite", async (c) => {
     }
 
     const workspaceId = c.req.param('workspaceId');
-    const { email, name, role } = await c.req.json();
+    const { email, name, role, teamId, avatar } = await c.req.json();
 
     if (!email || !name) {
       return c.json({ error: 'Email and name are required' }, 400);
     }
 
-    // Verify workspace exists
-    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
-    if (!workspaceOwner) {
-      return c.json({ error: 'Workspace not found' }, 404);
+    const access = await assertWorkspaceMemberOrOwner(workspaceId, userId);
+    if (!access.ok) {
+      return c.json({ error: access.error }, access.status);
     }
 
-    // Verify workspace ownership or membership
-    let members = await kv.get(`workspace_${workspaceId}_members`);
-    
-    // Handle both array and JSON string formats
-    if (typeof members === 'string') {
-      try {
-        members = JSON.parse(members);
-      } catch (e) {
-        console.log('Error parsing members:', e);
-        // If parsing fails, try to initialize with owner
-        members = [workspaceOwner];
-        await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
+    if (teamId) {
+      const teamData = await kv.get(`team_${teamId}`);
+      if (!teamData) {
+        return c.json({ error: 'Team not found' }, 404);
+      }
+      const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+      if (team.workspaceId !== workspaceId) {
+        return c.json({ error: 'Team does not belong to this workspace' }, 400);
       }
     }
-    
-    // Ensure members is an array
-    if (!members || !Array.isArray(members)) {
-      // Initialize with owner if missing
-      members = [workspaceOwner];
-      await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(members));
-    }
-    
-    if (!members.includes(userId)) {
-      return c.json({ error: 'Unauthorized: Not a workspace member' }, 403);
+
+    const supabase = getSupabaseClient();
+    const existingUser = await findUserByEmail(supabase, email);
+    if (existingUser) {
+      const members = await getWorkspaceMembers(workspaceId);
+      if (members.includes(existingUser.id)) {
+        return c.json({ error: 'User is already a member of this workspace' }, 400);
+      }
     }
 
-    // Generate invitation token
-    const invitationToken = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // Valid for 7 days
-
-    // Store invitation
-    const invitation = {
-      token: invitationToken,
+    const inviteResult = await sendWorkspaceInvitation({
       workspaceId,
-      email: email.toLowerCase(),
+      email,
       name,
       role: role || 'member',
       invitedBy: userId,
-      createdAt: new Date().toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      status: 'pending',
-    };
-
-    await kv.set(`invitation_${invitationToken}`, JSON.stringify(invitation));
-    
-    // Track invitations for workspace
-    const existingInvitations = await kv.get(`workspace_${workspaceId}_invitations`);
-    const invitations = existingInvitations ? JSON.parse(existingInvitations) : [];
-    if (!invitations.includes(invitationToken)) {
-      invitations.push(invitationToken);
-      await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(invitations));
-    }
-
-    // Get inviter's name for email
-    const supabase = getSupabaseClient();
-    let inviterName = 'Someone';
-    try {
-      const { data: inviterUser } = await supabase.auth.admin.getUserById(userId);
-      if (inviterUser?.user) {
-        inviterName = inviterUser.user.user_metadata?.name || inviterUser.user.email?.split('@')[0] || 'Someone';
-      }
-    } catch (err) {
-      console.log('Could not fetch inviter name:', err);
-    }
-
-    // Get workspace name if available
-    const workspaceName = await kv.get(`workspace_${workspaceId}_name`);
-
-    // Send invitation email
-    const inviteLink = `https://taskzm.com/invite?token=${invitationToken}`;
-    const emailResult = await emailService.sendInvitationEmail({
-      to: email.toLowerCase(),
-      inviterName,
-      inviteeName: name,
-      workspaceName,
-      role: role || 'member',
-      inviteLink,
-      expiresInDays: 7,
+      teamId,
+      avatar,
     });
 
-    if (emailResult.success) {
-      console.log(`✅ Invitation email sent to ${email} for workspace ${workspaceId}`);
-    } else {
-      console.warn(`⚠️ Failed to send invitation email to ${email}:`, emailResult.error);
-      // Don't fail the invitation if email fails - still return success
-    }
-
     return c.json({
-      invitation: {
-        ...invitation,
-        token: invitationToken,
-        expiresAt: invitation.expiresAt,
-      },
-      inviteLink: `https://taskzm.com/invite?token=${invitationToken}`,
+      invitation: inviteResult.invitation,
+      inviteLink: inviteResult.inviteLink,
+      alreadyPending: inviteResult.alreadyPending,
     });
   } catch (error) {
     console.log('Error sending invitation:', error);
@@ -6015,6 +6122,11 @@ app.post("/taskzm-database-function/teams/:teamId/invite", async (c) => {
     const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
     const workspaceId = team.workspaceId;
 
+    const access = await assertWorkspaceMemberOrOwner(workspaceId, userId);
+    if (!access.ok) {
+      return c.json({ error: access.error }, access.status);
+    }
+
     // Check team member limit
     const teamMembersData = await kv.get(`team_${teamId}_members`);
     const teamMemberIds = teamMembersData ? JSON.parse(teamMembersData) : [];
@@ -6022,40 +6134,28 @@ app.post("/taskzm-database-function/teams/:teamId/invite", async (c) => {
       return c.json({ error: `Maximum of ${team.maxMembers} members per team` }, 400);
     }
 
-    // Verify user has access
-    const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
-    let members = await kv.get(`workspace_${workspaceId}_members`);
-    if (typeof members === 'string') {
-      try {
-        members = JSON.parse(members);
-      } catch (e) {
-        members = [workspaceOwner];
-      }
-    }
-    
-    if (!members.includes(userId) && workspaceOwner !== userId) {
-      return c.json({ error: 'Unauthorized' }, 403);
-    }
-
-    // Check if already a member
     const supabase = getSupabaseClient();
-    const { data: existingUser } = await supabase.auth.admin.listUsers();
-    const existingMember = existingUser?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const existingMember = await findUserByEmail(supabase, email);
     
     if (existingMember && teamMemberIds.includes(existingMember.id)) {
       return c.json({ error: 'User is already a team member' }, 400);
     }
 
-    // If user exists, add them directly
+    // If user exists, add them directly to workspace (if needed) and team
     if (existingMember) {
+      let workspaceMembers = await getWorkspaceMembers(workspaceId);
+      if (!workspaceMembers.includes(existingMember.id)) {
+        workspaceMembers.push(existingMember.id);
+        await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(workspaceMembers));
+        await kv.set(`workspace_${workspaceId}_member_${existingMember.id}_role`, role || 'member');
+      }
+
       teamMemberIds.push(existingMember.id);
       await kv.set(`team_${teamId}_members`, JSON.stringify(teamMemberIds));
       
-      // Update member count
       team.memberCount = teamMemberIds.length;
       await kv.set(`team_${teamId}`, JSON.stringify(team));
 
-      // Store member info with teamId
       await kv.set(`workspace_${workspaceId}_member_${existingMember.id}`, JSON.stringify({
         role: role || 'member',
         teamId: teamId,
@@ -6075,69 +6175,21 @@ app.post("/taskzm-database-function/teams/:teamId/invite", async (c) => {
       });
     }
 
-    // No TaskZm account yet — send email invitation (workspace + team on accept)
-    const invitationToken = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    const invitation = {
-      token: invitationToken,
+    const inviteResult = await sendWorkspaceInvitation({
       workspaceId,
-      teamId,
-      email: email.toLowerCase(),
+      email,
       name,
       role: role || 'member',
-      avatar: avatar || undefined,
       invitedBy: userId,
-      createdAt: new Date().toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      status: 'pending',
-    };
-
-    await kv.set(`invitation_${invitationToken}`, JSON.stringify(invitation));
-
-    const existingInvitations = await kv.get(`workspace_${workspaceId}_invitations`);
-    const invitations = existingInvitations ? JSON.parse(existingInvitations) : [];
-    if (!invitations.includes(invitationToken)) {
-      invitations.push(invitationToken);
-      await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(invitations));
-    }
-
-    let inviterName = 'Someone';
-    try {
-      const { data: inviterUser } = await supabase.auth.admin.getUserById(userId);
-      if (inviterUser?.user) {
-        inviterName = inviterUser.user.user_metadata?.name || inviterUser.user.email?.split('@')[0] || 'Someone';
-      }
-    } catch (err) {
-      console.log('Could not fetch inviter name:', err);
-    }
-
-    const workspaceName = await kv.get(`workspace_${workspaceId}_name`);
-    const inviteLink = `https://taskzm.com/invite?token=${invitationToken}`;
-    const emailResult = await emailService.sendInvitationEmail({
-      to: email.toLowerCase(),
-      inviterName,
-      inviteeName: name,
-      workspaceName: team.name || workspaceName,
-      role: role || 'member',
-      inviteLink,
-      expiresInDays: 7,
+      teamId,
+      avatar,
+      emailSubjectName: team.name,
     });
 
-    if (emailResult.success) {
-      console.log(`✅ Team invitation email sent to ${email} for team ${teamId}`);
-    } else {
-      console.warn(`⚠️ Failed to send team invitation email to ${email}:`, emailResult.error);
-    }
-
     return c.json({
-      invitation: {
-        ...invitation,
-        token: invitationToken,
-        expiresAt: invitation.expiresAt,
-      },
-      inviteLink,
+      invitation: inviteResult.invitation,
+      inviteLink: inviteResult.inviteLink,
+      alreadyPending: inviteResult.alreadyPending,
     });
   } catch (error) {
     console.error('Error inviting team member:', error);
