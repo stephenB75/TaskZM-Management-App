@@ -41,6 +41,7 @@ import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
 import { AIRecommendationPanel } from "./AIRecommendationPanel";
 import { AppHeader } from "./AppHeader";
+import { DashboardSchedulerActionButton } from "./DashboardSchedulerActionButton";
 import { useTasks } from "../contexts/TaskContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -70,16 +71,6 @@ import {
   HEADER_CONTENT_PADDING_LEFT_DESKTOP,
   HEADER_BUTTON_SCALE_SMALL,
   HEADER_BUTTON_SCALE_DESKTOP,
-  HEADER_BUTTON_TEXT_SIZE_SMALL,
-  HEADER_BUTTON_TEXT_SIZE_DESKTOP,
-  HEADER_BUTTON_PADDING_Y_SMALL,
-  HEADER_BUTTON_PADDING_Y_DESKTOP,
-  HEADER_BUTTON_PILL_PADDING_X_SMALL,
-  HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-  HEADER_BUTTON_BORDER_RADIUS,
-  HEADER_BUTTON_LINE_HEIGHT,
-  HEADER_ICON_SIZE_BUTTON_SMALL,
-  HEADER_ICON_SIZE_BUTTON_DESKTOP,
   HEADER_DESCRIPTION_SIZE,
   ICON_SIZE_XS,
   ICON_SIZE_SM,
@@ -1455,66 +1446,30 @@ export function DashboardView({
               className={cn(!shouldUseMobileLayout ? 'flex items-center flex-shrink-0' : 'hidden')}
               style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
             >
-              <Button
-                type="button"
-                variant="outline"
+              <DashboardSchedulerActionButton
+                label={
+                  showActionText
+                    ? DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsLong
+                    : DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestions
+                }
+                icon="head-circuit"
+                accent="ai"
                 onClick={handleScheduleUnscheduledTasks}
-                className="flex-shrink-0 border-border/60 bg-background/80 text-foreground hover:bg-muted/60 dark:bg-card/80 dark:hover:bg-muted/40"
-                style={{
-                  transform: `scale(${buttonScale})`,
-                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-                  paddingRight: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-                  paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
-                  paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
-                  borderRadius: HEADER_BUTTON_BORDER_RADIUS,
-                  fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
-                  lineHeight: HEADER_BUTTON_LINE_HEIGHT,
-                  gap: HEADER_GAP_XSMALL,
-                  height: 'auto',
-                }}
+                isSmallScreen={isSmallScreen}
+                scale={buttonScale}
                 data-tour="ai-scheduler"
-              >
-                <Icon
-                  name="head-circuit"
-                  size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
-                  weight={viewMode === 'week' ? 'duotone' : 'regular'}
-                  className="text-primary dark:text-primary-foreground flex-shrink-0"
-                />
-                {showActionText
-                  ? DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsLong
-                  : DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestions}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
+              />
+              <DashboardSchedulerActionButton
+                label={DASHBOARD_VIEW_HEADER_LABELS.reschedule}
+                icon="calendar-dots"
+                accent="reschedule"
                 onClick={handleOpenRescheduleDialog}
                 disabled={isRescheduling}
-                className="flex-shrink-0 border-border/60 bg-background/80 text-foreground hover:bg-muted/60 dark:bg-card/80 dark:hover:bg-muted/40 disabled:opacity-50"
-                style={{
-                  transform: `scale(${buttonScale})`,
-                  paddingLeft: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-                  paddingRight: isSmallScreen ? HEADER_BUTTON_PILL_PADDING_X_SMALL : HEADER_BUTTON_PILL_PADDING_X_DESKTOP,
-                  paddingTop: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
-                  paddingBottom: isSmallScreen ? HEADER_BUTTON_PADDING_Y_SMALL : HEADER_BUTTON_PADDING_Y_DESKTOP,
-                  borderRadius: HEADER_BUTTON_BORDER_RADIUS,
-                  fontSize: isSmallScreen ? HEADER_BUTTON_TEXT_SIZE_SMALL : HEADER_BUTTON_TEXT_SIZE_DESKTOP,
-                  lineHeight: HEADER_BUTTON_LINE_HEIGHT,
-                  gap: HEADER_GAP_XSMALL,
-                  height: 'auto',
-                }}
+                iconSpinning={isRescheduling}
+                isSmallScreen={isSmallScreen}
+                scale={buttonScale}
                 data-tour="re-schedule"
-              >
-                <Icon
-                  name="calendar-dots"
-                  size={isSmallScreen ? HEADER_ICON_SIZE_BUTTON_SMALL : HEADER_ICON_SIZE_BUTTON_DESKTOP}
-                  weight={viewMode === 'week' ? 'duotone' : 'regular'}
-                  className={cn(
-                    'text-primary dark:text-primary-foreground flex-shrink-0',
-                    isRescheduling && 'animate-spin',
-                  )}
-                />
-                {DASHBOARD_VIEW_HEADER_LABELS.reschedule}
-              </Button>
+              />
             </div>
           </div>
         }
