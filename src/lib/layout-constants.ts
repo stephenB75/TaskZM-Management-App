@@ -691,6 +691,15 @@ export const SETTINGS_PANEL_ICON_SIZE_LARGE = '1.25rem'; // w-5 h-5 = 1.25rem
 export const SETTINGS_PANEL_ICON_SIZE_XLARGE = '2rem'; // w-8 h-8 = 2rem
 export const SETTINGS_PANEL_ICON_SIZE_EXTRA_SMALL = '0.875rem'; // w-3.5 h-3.5 = 0.875rem
 export const SETTINGS_PANEL_ACCORDION_ICON_SIZE = '1.75rem'; // Larger icon size for accordion triggers
+export const SETTINGS_PANEL_ICON_TILE_SIZE = '2.25rem'; // Icon container in settings section headers
+export const SETTINGS_PANEL_SECTION_TRIGGER_PADDING_X = '1rem'; // Horizontal padding for section triggers
+export const SETTINGS_PANEL_SECTION_CONTENT_PADDING = '1rem'; // Inner content padding for section bodies
+export const SETTINGS_PANEL_SECTION_GAP = '0.75rem'; // Gap between stacked settings sections
+export const SETTINGS_PANEL_TOGGLE_ROW_PADDING_Y = '0.625rem'; // Vertical padding for toggle rows
+export const SETTINGS_PANEL_CATEGORY_HEADER_FONT_SIZE = '0.6875rem'; // 11px category labels
+export const SETTINGS_PANEL_CATEGORY_HEADER_LETTER_SPACING_EM = 0.08;
+export const SETTINGS_PANEL_CATEGORY_HEADER_PADDING_TOP = '1.25rem';
+export const SETTINGS_PANEL_CATEGORY_HEADER_PADDING_BOTTOM = '0.5rem';
 export const SETTINGS_PANEL_EDIT_BUTTON_SIZE = '2rem'; // w-8 h-8 = 2rem (32px) - size for edit avatar button
 export const SETTINGS_PANEL_START_TOUR_ICON_SIZE = '0.8rem'; // 20% smaller than standard medium icon
 export const SETTINGS_PANEL_AVATAR_SIZE = '4rem'; // w-16 h-16 = 4rem
