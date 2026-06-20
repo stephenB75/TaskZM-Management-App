@@ -108,7 +108,15 @@ export const TEAM_PANEL_UI_TEXT = {
     task: 'task',
     tasks: 'tasks',
     completed: 'completed',
+    inProgress: 'in progress',
+    todo: 'to do',
     teamMember: 'team member',
     teamMembers: 'team members',
+  },
+  memberProfile: {
+    title: 'Member Profile',
+    tasksAssigned: 'Tasks assigned',
+    emailMember: 'Send email',
+    close: 'Close',
   },
 } as const;

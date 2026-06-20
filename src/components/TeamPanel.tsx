@@ -117,6 +117,10 @@ import {
   TEAM_PANEL_ROLODEX_NAME_SIZE,
   TEAM_PANEL_ROLODEX_STAT_SIZE,
   TEAM_PANEL_ROLODEX_MENU_BUTTON_SIZE,
+  TEAM_PANEL_PROFILE_BANNER_HEIGHT,
+  TEAM_PANEL_PROFILE_AVATAR_SIZE,
+  TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE,
+  TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
   TEAM_MAX_MEMBERS,
   TEAM_PANEL_HEADER_ICON_GAP,
   TEAM_PANEL_TAB_HEIGHT,
@@ -585,14 +589,26 @@ export function TeamPanel() {
   };
 
   const handleCardClick = (member: User) => {
-    // Mark member as viewed to clear notification
     if (
       member.hasUnreadNotification &&
       member.inviteStatus === "accepted"
     ) {
       markMemberAsViewed(member.id);
     }
+    setEditingMember(member);
   };
+
+  const profileMemberStats = useMemo(() => {
+    if (!editingMember) return null;
+    return getTaskStats(editingMember.id);
+  }, [editingMember, tasks]);
+
+  const profileTeamName = useMemo(() => {
+    if (!editingMember) return null;
+    const teamId = editingMember.teamId || currentTeamId;
+    if (!teamId) return TEAM_PANEL_UI_TEXT.workspaceTeam;
+    return teams.find((t) => t.id === teamId)?.name ?? null;
+  }, [editingMember, currentTeamId, teams]);
 
   // Use current team members if a team is selected, otherwise use legacy workspace team
   const activeMembers = currentTeamId ? currentTeamMembers : teamMembers;
@@ -780,7 +796,10 @@ export function TeamPanel() {
 
         <div
           className={cn(
-            'group relative flex min-w-0 cursor-pointer flex-col items-center overflow-hidden border border-border/50 bg-card/95 text-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md',
+            'group relative flex min-w-0 cursor-pointer flex-col items-center overflow-hidden border border-border/50 bg-card/95 text-foreground shadow-sm transition-all',
+            'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/30 hover:shadow-md',
+            'active:scale-[0.97] active:shadow-sm',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2',
             HEADER_BACKDROP_BLUR_CLASS,
             isCurrentUser && 'ring-1 ring-primary/20',
           )}
@@ -789,9 +808,19 @@ export function TeamPanel() {
             padding: TEAM_PANEL_ROLODEX_CARD_PADDING,
             paddingTop: TEAM_PANEL_ROLODEX_CARD_PADDING_TOP,
           }}
+          role="button"
+          tabIndex={0}
+          aria-label={`View profile for ${member.name}`}
           onClick={(e) => {
             const target = e.target as HTMLElement;
             if (!dropdownOpen && !target.closest(PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR)) {
+              onCardClick(member);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (dropdownOpen) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
               onCardClick(member);
             }
           }}
@@ -810,9 +839,8 @@ export function TeamPanel() {
           )}
 
           <div
-            className="absolute top-0 right-0"
+            className="pointer-events-none absolute top-0 right-0"
             style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
-            onClick={(e) => e.stopPropagation()}
           >
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen} modal={false}>
               <DropdownMenuTrigger asChild>
@@ -820,7 +848,7 @@ export function TeamPanel() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-auto w-auto flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted/80 focus:opacity-100 data-[state=open]:opacity-100"
+                  className="pointer-events-auto h-auto w-auto flex-shrink-0 opacity-50 transition-opacity hover:bg-muted/80 hover:opacity-100 focus:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
                   style={{
                     height: TEAM_PANEL_ROLODEX_MENU_BUTTON_SIZE,
                     width: TEAM_PANEL_ROLODEX_MENU_BUTTON_SIZE,
@@ -1751,6 +1779,147 @@ export function TeamPanel() {
               {isDeletingTeam ? TEAM_PANEL_UI_TEXT.deletingTeam : TEAM_PANEL_UI_TEXT.deleteTeam}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Member Profile Dialog */}
+      <Dialog
+        open={editingMember !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingMember(null);
+        }}
+      >
+        <DialogContent className="overflow-hidden p-0 sm:max-w-md">
+          {editingMember && profileMemberStats && (
+            <>
+              <div
+                className="relative w-full bg-primary/80 dark:bg-primary/60"
+                style={{ height: TEAM_PANEL_PROFILE_BANNER_HEIGHT }}
+              />
+              <div
+                style={{
+                  marginTop: TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
+                  paddingLeft: PANEL_PADDING,
+                  paddingRight: PANEL_PADDING,
+                }}
+              >
+                <UserProfileAvatar
+                  src={editingMember.avatar}
+                  name={editingMember.name}
+                  size={TEAM_PANEL_PROFILE_AVATAR_SIZE}
+                  fontSize={TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE}
+                  className="border-4 border-background shadow-lg ring-0"
+                />
+              </div>
+              <div style={{ padding: PANEL_PADDING, paddingTop: PANEL_GAP_MEDIUM }}>
+                <DialogHeader className="space-y-0 text-left">
+                  <DialogTitle className="flex flex-wrap items-center gap-2 pr-6">
+                    <span>{editingMember.name}</span>
+                    {editingMember.id === currentUser?.id && (
+                      <Badge variant="secondary" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
+                        {TEAM_PANEL_UI_TEXT.currentUser.replace(/[()]/g, '')}
+                      </Badge>
+                    )}
+                  </DialogTitle>
+                  <DialogDescription asChild>
+                    <div className="space-y-3 pt-2">
+                      <a
+                        href={`mailto:${editingMember.email}`}
+                        className="flex items-center text-foreground transition-colors hover:text-primary"
+                        style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}
+                      >
+                        <Icon name="envelope-simple" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                        {editingMember.email}
+                      </a>
+                      <div className="flex flex-wrap items-center" style={{ gap: PANEL_GAP_SMALL }}>
+                        <Badge variant={getRoleBadgeVariant(editingMember.role)} className="capitalize">
+                          <span className="inline-flex items-center" style={{ gap: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
+                            {getRoleIcon(editingMember.role)}
+                            {editingMember.role === 'admin'
+                              ? TEAM_PANEL_UI_TEXT.roles.admin
+                              : editingMember.role === 'member'
+                                ? TEAM_PANEL_UI_TEXT.roles.member
+                                : TEAM_PANEL_UI_TEXT.roles.viewer}
+                          </span>
+                        </Badge>
+                        {getInviteStatusBadge(editingMember)}
+                        {profileTeamName && (
+                          <Badge variant="outline" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
+                            <Icon name="users" size={TEAM_PANEL_ICON_SIZE_SMALL} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
+                            {profileTeamName}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div
+                  className="rounded-lg border border-border/50 bg-muted/20"
+                  style={{
+                    marginTop: PANEL_GAP_LARGE,
+                    padding: PANEL_GAP_MEDIUM,
+                  }}
+                >
+                  <p
+                    className="font-medium text-foreground"
+                    style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}
+                  >
+                    {TEAM_PANEL_UI_TEXT.memberProfile.tasksAssigned}
+                  </p>
+                  <div
+                    className="grid grid-cols-2"
+                    style={{ gap: PANEL_GAP_MEDIUM }}
+                  >
+                    <div>
+                      <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                        {TEAM_PANEL_UI_TEXT.stats.tasks}
+                      </p>
+                      <p className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}>
+                        {profileMemberStats.total}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                        {TEAM_PANEL_UI_TEXT.stats.completed}
+                      </p>
+                      <p className="font-semibold" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, color: COLOR_TASK_COMPLETED_GREEN }}>
+                        {profileMemberStats.completed}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                        {TEAM_PANEL_UI_TEXT.stats.inProgress}
+                      </p>
+                      <p className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, color: COLOR_TASK_IN_PROGRESS_AMBER }}>
+                        {profileMemberStats.inProgress}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
+                        {TEAM_PANEL_UI_TEXT.stats.todo}
+                      </p>
+                      <p className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, color: COLOR_TASK_TODO_BLUE }}>
+                        {profileMemberStats.todo}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end" style={{ gap: PANEL_GAP_MEDIUM, marginTop: PANEL_GAP_LARGE }}>
+                  <Button variant="outline" asChild>
+                    <a href={`mailto:${editingMember.email}`}>
+                      <Icon name="paper-plane-tilt" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
+                      {TEAM_PANEL_UI_TEXT.memberProfile.emailMember}
+                    </a>
+                  </Button>
+                  <Button onClick={() => setEditingMember(null)}>
+                    {TEAM_PANEL_UI_TEXT.memberProfile.close}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
