@@ -2049,7 +2049,6 @@ export function TeamPanel() {
               <AvatarSelection
                 selectedAvatar={newMemberAvatar}
                 onAvatarSelect={setNewMemberAvatar}
-                previewInitials={newMemberName.trim() || 'TM'}
               />
             </div>
           </div>

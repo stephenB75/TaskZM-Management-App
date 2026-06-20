@@ -1,37 +1,35 @@
 /**
- * Avatar Selection — pastel preset swatches matching TaskZM brand colors.
+ * Avatar Selection — user portrait icons on pastel rings.
  */
 
 import React from 'react';
 import { cn } from '../lib/utils';
-import { useTheme } from '../contexts/ThemeContext';
 import {
-  AVATAR_PRESETS,
+  AVATAR_ICONS,
   AVATAR_SELECTION_SIZE,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
+  AVATAR_ICON,
   USER_PROFILE_AVATAR_RING_CLASS,
-  getAvatarPresetStyles,
+  getAvatarRingStyle,
 } from '../lib/avatar-constants';
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 
 interface AvatarSelectionProps {
   selectedAvatar?: string;
-  onAvatarSelect: (avatarId: string) => void;
-  previewInitials?: string;
+  onAvatarSelect: (avatarPath: string) => void;
   className?: string;
 }
 
 export function AvatarSelection({
   selectedAvatar,
   onAvatarSelect,
-  previewInitials = 'TM',
   className,
 }: AvatarSelectionProps) {
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === 'dark';
+  const selectionSizePx = parseFloat(AVATAR_SELECTION_SIZE);
+  const insetPx = (selectionSizePx * AVATAR_ICON.imageInsetPercent) / 100;
 
   return (
     <div className={cn('w-full', className)}>
@@ -42,14 +40,14 @@ export function AvatarSelection({
           gap: AVATAR_SELECTION_GAP,
         }}
       >
-        {AVATAR_PRESETS.map((preset) => {
-          const isSelected = selectedAvatar === preset.id;
-          const styles = getAvatarPresetStyles(preset, isDark);
+        {AVATAR_ICONS.map((icon, index) => {
+          const isSelected = selectedAvatar === icon.path || selectedAvatar === icon.id;
+          const ringStyle = getAvatarRingStyle(index);
           return (
             <button
-              key={preset.id}
+              key={icon.id}
               type="button"
-              onClick={() => onAvatarSelect(preset.id)}
+              onClick={() => onAvatarSelect(icon.path)}
               className={cn(
                 'relative cursor-pointer overflow-hidden rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
                 isSelected
@@ -60,17 +58,27 @@ export function AvatarSelection({
               style={{
                 width: AVATAR_SELECTION_SIZE,
                 height: AVATAR_SELECTION_SIZE,
-                background: `linear-gradient(135deg, ${styles.gradientFrom} 0%, ${styles.gradientTo} 100%)`,
+                background: `linear-gradient(145deg, ${ringStyle.gradientFrom} 0%, ${ringStyle.gradientTo} 100%)`,
               }}
-              aria-label={preset.label}
-              title={preset.label}
+              aria-label={icon.label}
+              title={icon.label}
             >
-              <span
-                className="relative flex h-full w-full items-center justify-center text-sm font-semibold"
-                style={{ color: styles.textColor }}
+              <div
+                className="flex h-full w-full items-end justify-center overflow-hidden"
+                style={{ padding: insetPx }}
               >
-                {previewInitials.slice(0, 2).toUpperCase()}
-              </span>
+                <img
+                  src={icon.path}
+                  alt=""
+                  className="max-h-full max-w-full object-contain object-bottom pointer-events-none select-none"
+                  style={{
+                    transform: `scale(${AVATAR_ICON.imageScale})`,
+                    transformOrigin: 'bottom center',
+                  }}
+                  loading="lazy"
+                  draggable={false}
+                />
+              </div>
               {isSelected && (
                 <div className="absolute inset-0 flex items-center justify-center bg-primary/15">
                   <div

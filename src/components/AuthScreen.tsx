@@ -984,7 +984,6 @@ export function AuthScreen() {
                         <AvatarSelection
                           selectedAvatar={signUpAvatar}
                           onAvatarSelect={setSignUpAvatar}
-                          previewInitials={signUpName.trim() || 'TM'}
                         />
                       </div>
 
