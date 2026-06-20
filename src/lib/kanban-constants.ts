@@ -404,12 +404,17 @@ export const KANBAN_WEEK_GROUP_HEADER = {
     minLineHeightPx: 40,
   },
   columnHeader: {
-    dotSizePx: 8,
     dotSizeTodayPx: 10,
     paddingX: 10,
-    paddingY: 8,
-    fontSizePx: 12,
-    fontSizeSmPx: 13,
+    paddingY: 10,
+    fontSizePx: 14,
+    fontSizeSmPx: 15,
+    dateFontSizePx: 17,
+    dateFontSizeSmPx: 18,
+    headerGradient: {
+      viaOpacityScale: 0.92,
+      toOpacityScale: 0.85,
+    },
     todayIndicator: {
       heightPx: 3,
       widthScale: 0.6,

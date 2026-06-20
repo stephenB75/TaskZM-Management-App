@@ -191,6 +191,31 @@ export function SevenDayKanban({
     return `linear-gradient(180deg, ${whiteWithOpacity(0)} 0%, ${COLOR_BACKGROUND_WHITE} 100%)`;
   };
 
+  const getColumnHeaderGradient = (
+    dayName: string,
+    isToday: boolean,
+    isDarkMode: boolean,
+  ): string | undefined => {
+    const dayColors = getDayColors(dayName);
+    if (!hasHeader(dayColors)) return undefined;
+
+    const { from, via, to } = dayColors.header;
+    const { viaOpacityScale, toOpacityScale } = KANBAN_WEEK_GROUP_HEADER.columnHeader.headerGradient;
+
+    const baseOpacity = isToday
+      ? isDarkMode
+        ? Math.round(KANBAN_DAY_COLORS.today.darkModeBackgroundOpacity * 100)
+        : KANBAN_DAY_COLORS.today.headerOpacity
+      : isDarkMode
+        ? KANBAN_DAY_COLORS.standard.nonTodayHeaderOpacity
+        : dayColors.header.opacity;
+
+    const fromHex = toAlphaHex(from, baseOpacity);
+    const viaHex = toAlphaHex(via, Math.round(baseOpacity * viaOpacityScale));
+    const toHex = toAlphaHex(to, Math.round(baseOpacity * toOpacityScale));
+    return `linear-gradient(to bottom, ${fromHex} 0%, ${viaHex} 50%, ${toHex} 100%)`;
+  };
+
   // Get week start setting
   const weekStart = getWeekStart();
   
@@ -1372,40 +1397,33 @@ export function SevenDayKanban({
                       }}
                     >
                     <div
-                      className={cn(
-                        'border-b border-primary/8 dark:border-border/40 backdrop-blur-sm',
-                        'bg-white/90 dark:bg-card/90',
-                        column.isToday && 'bg-white dark:bg-card/95',
-                      )}
+                      className="border-b border-primary/8 dark:border-border/40 backdrop-blur-sm"
                       style={{
                         paddingLeft: KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingX,
                         paddingRight: KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingX,
                         paddingTop: KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingY,
                         paddingBottom: KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingY,
+                        backgroundImage: getColumnHeaderGradient(column.dayName, column.isToday, isDark),
                       }}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="rounded-full flex-shrink-0 ring-2 ring-offset-1 ring-offset-background dark:ring-offset-card"
-                          style={{
-                            width: column.isToday
-                              ? KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizeTodayPx
-                              : KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizePx,
-                            height: column.isToday
-                              ? KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizeTodayPx
-                              : KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizePx,
-                            backgroundColor: accentColor,
-                            ...(column.isToday
-                              ? { boxShadow: `0 0 0 2px ${toAlphaHex(accentColor, 0.25)}` }
-                              : {}),
-                          }}
-                        />
+                        {column.isToday && (
+                          <span
+                            className="rounded-full flex-shrink-0 ring-2 ring-offset-1 ring-offset-background dark:ring-offset-card"
+                            style={{
+                              width: KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizeTodayPx,
+                              height: KANBAN_WEEK_GROUP_HEADER.columnHeader.dotSizeTodayPx,
+                              backgroundColor: accentColor,
+                              boxShadow: `0 0 0 2px ${toAlphaHex(accentColor, 0.25)}`,
+                            }}
+                          />
+                        )}
                         <h3
                           className={cn(
                             'flex-1 min-w-0 uppercase tracking-wide font-semibold truncate',
                             column.isToday
                               ? 'text-primary dark:text-primary'
-                              : 'text-foreground/80 dark:text-foreground/90',
+                              : 'text-foreground/90 dark:text-foreground/95',
                           )}
                           style={{
                             fontSize: shouldUseMobileLayout
@@ -1414,7 +1432,16 @@ export function SevenDayKanban({
                           }}
                         >
                           {column.dayName.substring(0, 3)}{' '}
-                          <span className="font-bold">{column.date.getDate()}</span>
+                          <span
+                            className="font-bold"
+                            style={{
+                              fontSize: shouldUseMobileLayout
+                                ? KANBAN_WEEK_GROUP_HEADER.columnHeader.dateFontSizePx
+                                : KANBAN_WEEK_GROUP_HEADER.columnHeader.dateFontSizeSmPx,
+                            }}
+                          >
+                            {column.date.getDate()}
+                          </span>
                         </h3>
                         <Button
                           size="icon"
