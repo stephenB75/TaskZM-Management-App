@@ -2724,6 +2724,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               <AvatarSelection
                 selectedAvatar={profileAvatar}
                 onAvatarSelect={setProfileAvatar}
+                previewSeed={profileName.trim() || user?.name || user?.email || 'User'}
               />
             </div>
           </div>

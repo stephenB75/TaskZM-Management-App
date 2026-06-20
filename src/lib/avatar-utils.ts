@@ -1,12 +1,11 @@
 import {
   AVATAR_ICON_PREFIX,
-  AVATAR_ICONS,
   AVATAR_PRESET_PREFIX,
+  AVATAR_PRESETS,
   DEFAULT_AVATAR,
-  getAvatarIconById,
-  getAvatarIconByPath,
+  getAvatarPresetById,
   type AvatarGender,
-  type AvatarIconOption,
+  type AvatarPreset,
 } from './avatar-constants';
 
 function hashString(value: string): number {
@@ -21,51 +20,48 @@ function hashString(value: string): number {
 export function isLegacyAvatarUrl(avatar?: string): boolean {
   if (!avatar) return false;
   return (
+    avatar.includes('/avatars/') ||
     avatar.includes('api.dicebear.com') ||
     avatar.includes('user_profiles') ||
-    avatar.startsWith(AVATAR_PRESET_PREFIX)
+    avatar.startsWith(AVATAR_ICON_PREFIX)
   );
 }
 
-export function isAvatarIconPath(avatar?: string): boolean {
-  if (!avatar) return false;
-  return avatar.startsWith('/avatars/') || avatar.startsWith(AVATAR_ICON_PREFIX);
+export function parseAvatarPresetId(avatar?: string): string | null {
+  if (!avatar) return null;
+  if (!avatar.startsWith(AVATAR_PRESET_PREFIX)) return null;
+  return getAvatarPresetById(avatar) ? avatar : null;
 }
 
-export function resolveAvatarIcon(avatar: string | undefined, seed: string): AvatarIconOption {
-  if (avatar) {
-    const byId = avatar.startsWith(AVATAR_ICON_PREFIX) ? getAvatarIconById(avatar) : undefined;
-    if (byId) return byId;
-
-    const byPath = getAvatarIconByPath(avatar);
-    if (byPath) return byPath;
-
-    if (avatar.includes('/avatars/')) {
-      const normalized = avatar.startsWith('/') ? avatar : `/${avatar.replace(/^\//, '')}`;
-      const match = getAvatarIconByPath(normalized);
-      if (match) return match;
-    }
+export function resolveAvatarPresetIndex(avatar: string | undefined, seed: string): number {
+  const presetId = parseAvatarPresetId(avatar);
+  if (presetId) {
+    const index = AVATAR_PRESETS.findIndex((preset) => preset.id === presetId);
+    if (index >= 0) return index;
   }
-
-  const index = hashString(seed.toLowerCase()) % AVATAR_ICONS.length;
-  return AVATAR_ICONS[index];
+  const migrationSeed = avatar && isLegacyAvatarUrl(avatar) ? avatar : seed;
+  return hashString(migrationSeed.toLowerCase()) % AVATAR_PRESETS.length;
 }
 
-export function resolveAvatarIconIndex(avatar: string | undefined, seed: string): number {
-  const icon = resolveAvatarIcon(avatar, seed);
-  const index = AVATAR_ICONS.findIndex((entry) => entry.id === icon.id);
-  return index >= 0 ? index : hashString(seed.toLowerCase()) % AVATAR_ICONS.length;
+export function resolveAvatarPreset(avatar: string | undefined, seed: string): AvatarPreset {
+  return AVATAR_PRESETS[resolveAvatarPresetIndex(avatar, seed)];
+}
+
+export function encodeAvatarPreset(index: number): string {
+  const safeIndex =
+    ((index % AVATAR_PRESETS.length) + AVATAR_PRESETS.length) % AVATAR_PRESETS.length;
+  return AVATAR_PRESETS[safeIndex].id;
 }
 
 export function pickAvatarFromPool(seed: string, _gender?: AvatarGender): string {
-  return resolveAvatarIcon(undefined, seed).path;
+  return encodeAvatarPreset(hashString(seed.toLowerCase()) % AVATAR_PRESETS.length);
 }
 
 export function pickAvatarFromPoolAuto(seed: string): string {
   return pickAvatarFromPool(seed);
 }
 
-/** @deprecated Use resolveAvatarIcon + UserProfileAvatar instead */
+/** @deprecated Use resolveAvatarPreset + UserProfileAvatar instead */
 export function getDiceBearAvatarUrl(seed: string, _gender?: AvatarGender): string {
   return pickAvatarFromPool(seed);
 }
@@ -75,10 +71,10 @@ export function resolveUserAvatar(
   seed: string,
   _gender?: AvatarGender,
 ): string {
-  if (avatar && isAvatarIconPath(avatar) && !isLegacyAvatarUrl(avatar)) {
-    return resolveAvatarIcon(avatar, seed).path;
-  }
-  return resolveAvatarIcon(avatar, seed).path;
+  const presetId = parseAvatarPresetId(avatar);
+  if (presetId && getAvatarPresetById(presetId)) return presetId;
+  if (avatar && !isLegacyAvatarUrl(avatar)) return avatar;
+  return encodeAvatarPreset(hashString(seed.toLowerCase()) % AVATAR_PRESETS.length);
 }
 
 export function isDiceBearAvatar(avatar?: string): boolean {
@@ -89,21 +85,12 @@ export function getAvatarFallback(_avatar?: string): string {
   return DEFAULT_AVATAR;
 }
 
-/** @deprecated Use resolveAvatarIconIndex */
-export function resolveAvatarPresetIndex(avatar: string | undefined, seed: string): number {
-  return resolveAvatarIconIndex(avatar, seed);
+/** @deprecated Use resolveAvatarPreset */
+export function resolveAvatarIcon(avatar: string | undefined, seed: string): AvatarPreset {
+  return resolveAvatarPreset(avatar, seed);
 }
 
-/** @deprecated */
-export function encodeAvatarPreset(index: number): string {
-  const safeIndex = ((index % AVATAR_ICONS.length) + AVATAR_ICONS.length) % AVATAR_ICONS.length;
-  return AVATAR_ICONS[safeIndex].path;
-}
-
-/** @deprecated */
-export function parseAvatarPresetId(avatar?: string): string | null {
-  if (!avatar) return null;
-  if (avatar.startsWith(AVATAR_ICON_PREFIX)) return avatar;
-  if (avatar.startsWith('/avatars/')) return avatar;
-  return null;
+/** @deprecated Use resolveAvatarPresetIndex */
+export function resolveAvatarIconIndex(avatar: string | undefined, seed: string): number {
+  return resolveAvatarPresetIndex(avatar, seed);
 }
