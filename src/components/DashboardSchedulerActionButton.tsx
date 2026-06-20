@@ -2,56 +2,17 @@ import React from 'react';
 import { cn } from '../lib/utils';
 import { Icon } from './Icon';
 import {
-  COLOR_PASTEL_LAVENDER,
-  COLOR_PASTEL_MINT,
-  COLOR_PASTEL_SKY,
-  COLOR_PASTEL_SKY_DARK,
-  COLOR_PRIMARY,
-  COLOR_PRIMARY_DARK,
-  COLOR_PRIMARY_LIGHT,
-  getColorWithOpacity,
-} from '../lib/color-theme';
-import {
   DASHBOARD_SCHEDULER_ACTION_BUTTON,
   HEADER_BUTTON_SCALE_DESKTOP,
   HEADER_BUTTON_SCALE_SMALL,
 } from '../lib/layout-constants';
 
-export type DashboardSchedulerActionAccent = 'ai' | 'reschedule';
-
-const ACCENT_STYLES: Record<
-  DashboardSchedulerActionAccent,
-  {
-    gradientFrom: string;
-    gradientTo: string;
-    iconBackground: string;
-    iconColor: string;
-    borderColor: string;
-    hoverShadow: string;
-  }
-> = {
-  ai: {
-    gradientFrom: COLOR_PASTEL_LAVENDER,
-    gradientTo: COLOR_PRIMARY_LIGHT,
-    iconBackground: getColorWithOpacity(COLOR_PRIMARY, 0.16),
-    iconColor: COLOR_PRIMARY_DARK,
-    borderColor: getColorWithOpacity(COLOR_PRIMARY, 0.22),
-    hoverShadow: '0 4px 14px rgba(155,135,232,0.22), 0 2px 6px rgba(0,0,0,0.08)',
-  },
-  reschedule: {
-    gradientFrom: COLOR_PASTEL_SKY,
-    gradientTo: COLOR_PASTEL_MINT,
-    iconBackground: getColorWithOpacity(COLOR_PASTEL_SKY_DARK, 0.14),
-    iconColor: COLOR_PASTEL_SKY_DARK,
-    borderColor: getColorWithOpacity(COLOR_PASTEL_SKY_DARK, 0.28),
-    hoverShadow: '0 4px 14px rgba(106,138,170,0.2), 0 2px 6px rgba(0,0,0,0.08)',
-  },
-};
+export type DashboardSchedulerActionVariant = 'primary' | 'secondary';
 
 export interface DashboardSchedulerActionButtonProps {
   label: string;
   icon: string;
-  accent: DashboardSchedulerActionAccent;
+  variant?: DashboardSchedulerActionVariant;
   onClick: () => void;
   disabled?: boolean;
   iconSpinning?: boolean;
@@ -64,7 +25,7 @@ export interface DashboardSchedulerActionButtonProps {
 export function DashboardSchedulerActionButton({
   label,
   icon,
-  accent,
+  variant = 'secondary',
   onClick,
   disabled = false,
   iconSpinning = false,
@@ -73,14 +34,14 @@ export function DashboardSchedulerActionButton({
   className,
   'data-tour': dataTour,
 }: DashboardSchedulerActionButtonProps) {
-  const styles = ACCENT_STYLES[accent];
   const buttonScale = scale ?? (isSmallScreen ? HEADER_BUTTON_SCALE_SMALL : HEADER_BUTTON_SCALE_DESKTOP);
-  const iconBadgeSize = isSmallScreen
-    ? DASHBOARD_SCHEDULER_ACTION_BUTTON.iconBadgeSizeSmallPx
-    : DASHBOARD_SCHEDULER_ACTION_BUTTON.iconBadgeSizeDesktopPx;
   const iconSize = isSmallScreen
-    ? DASHBOARD_SCHEDULER_ACTION_BUTTON.iconInnerSizeSmallPx
-    : DASHBOARD_SCHEDULER_ACTION_BUTTON.iconInnerSizeDesktopPx;
+    ? DASHBOARD_SCHEDULER_ACTION_BUTTON.iconSizeSmallPx
+    : DASHBOARD_SCHEDULER_ACTION_BUTTON.iconSizeDesktopPx;
+  const height = isSmallScreen
+    ? DASHBOARD_SCHEDULER_ACTION_BUTTON.heightSmallPx
+    : DASHBOARD_SCHEDULER_ACTION_BUTTON.heightDesktopPx;
+  const isPrimary = variant === 'primary';
 
   return (
     <button
@@ -89,68 +50,53 @@ export function DashboardSchedulerActionButton({
       disabled={disabled}
       data-tour={dataTour}
       className={cn(
-        'group inline-flex items-center flex-shrink-0 cursor-pointer',
-        'border transition-all duration-200',
-        'hover:scale-[1.02] active:scale-[0.98]',
+        'inline-flex items-center flex-shrink-0 cursor-pointer whitespace-nowrap',
+        'rounded-full border transition-all duration-200',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2',
-        'disabled:opacity-50 disabled:pointer-events-none disabled:scale-100',
+        'disabled:opacity-50 disabled:pointer-events-none',
+        isPrimary
+          ? cn(
+              'border-transparent text-white shadow-md',
+              'bg-gradient-to-r from-primary to-primary/85',
+              'hover:from-primary/95 hover:to-primary/75 hover:shadow-lg',
+              'active:brightness-95',
+            )
+          : cn(
+              'border-border/55 bg-card/90 text-foreground/90',
+              'hover:border-primary/30 hover:bg-muted/50 hover:text-foreground',
+              'active:bg-muted/60',
+              'dark:bg-card/70 dark:hover:bg-muted/30',
+            ),
         className,
       )}
       style={{
         transform: `scale(${buttonScale})`,
         transformOrigin: 'center right',
         gap: DASHBOARD_SCHEDULER_ACTION_BUTTON.gapPx,
+        height,
         paddingLeft: isSmallScreen
           ? DASHBOARD_SCHEDULER_ACTION_BUTTON.paddingXSmallPx
           : DASHBOARD_SCHEDULER_ACTION_BUTTON.paddingXDesktopPx,
         paddingRight: isSmallScreen
           ? DASHBOARD_SCHEDULER_ACTION_BUTTON.paddingXSmallPx
           : DASHBOARD_SCHEDULER_ACTION_BUTTON.paddingXDesktopPx,
-        paddingTop: isSmallScreen
-          ? DASHBOARD_SCHEDULER_ACTION_BUTTON.paddingYSmallPx
-          : DASHBOARD_SCHEDULER_ACTION_BUTTON.paddingYDesktopPx,
-        paddingBottom: isSmallScreen
-          ? DASHBOARD_SCHEDULER_ACTION_BUTTON.paddingYSmallPx
-          : DASHBOARD_SCHEDULER_ACTION_BUTTON.paddingYDesktopPx,
-        borderRadius: DASHBOARD_SCHEDULER_ACTION_BUTTON.borderRadiusPx,
-        background: `linear-gradient(135deg, ${styles.gradientFrom} 0%, ${styles.gradientTo} 100%)`,
-        borderColor: styles.borderColor,
-        boxShadow: DASHBOARD_SCHEDULER_ACTION_BUTTON.shadow,
         fontSize: isSmallScreen
           ? DASHBOARD_SCHEDULER_ACTION_BUTTON.fontSizeSmallPx
           : DASHBOARD_SCHEDULER_ACTION_BUTTON.fontSizeDesktopPx,
         fontWeight: DASHBOARD_SCHEDULER_ACTION_BUTTON.fontWeight,
-        letterSpacing: `${DASHBOARD_SCHEDULER_ACTION_BUTTON.letterSpacingEm}em`,
-      }}
-      onMouseEnter={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.boxShadow = styles.hoverShadow;
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = DASHBOARD_SCHEDULER_ACTION_BUTTON.shadow;
       }}
     >
-      <span
-        className="flex items-center justify-center flex-shrink-0 rounded-xl transition-transform group-hover:scale-105"
-        style={{
-          width: iconBadgeSize,
-          height: iconBadgeSize,
-          backgroundColor: styles.iconBackground,
-        }}
-        aria-hidden
-      >
-        <Icon
-          name={icon}
-          size={iconSize}
-          weight="duotone"
-          className={cn(iconSpinning && 'animate-spin')}
-          style={{ color: styles.iconColor }}
-        />
-      </span>
-      <span className="whitespace-nowrap text-foreground/90 dark:text-foreground">
-        {label}
-      </span>
+      <Icon
+        name={icon}
+        size={iconSize}
+        weight={isPrimary ? 'duotone' : 'regular'}
+        className={cn(
+          'flex-shrink-0',
+          iconSpinning && 'animate-spin',
+          isPrimary ? 'text-white' : 'text-primary',
+        )}
+      />
+      <span>{label}</span>
     </button>
   );
 }

@@ -815,22 +815,16 @@ export const DASHBOARD_VIEW_HEADER_LABELS = {
 
 /** Dashboard AI scheduler / re-schedule header action buttons */
 export const DASHBOARD_SCHEDULER_ACTION_BUTTON = {
-  iconBadgeSizeSmallPx: 28,
-  iconBadgeSizeDesktopPx: 32,
-  iconInnerSizeSmallPx: 16,
-  iconInnerSizeDesktopPx: 18,
-  paddingXSmallPx: 10,
+  heightSmallPx: 30,
+  heightDesktopPx: 34,
+  iconSizeSmallPx: 14,
+  iconSizeDesktopPx: 16,
+  paddingXSmallPx: 12,
   paddingXDesktopPx: 14,
-  paddingYSmallPx: 6,
-  paddingYDesktopPx: 8,
-  gapPx: 8,
-  borderRadiusPx: 9999,
-  shadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)',
-  hoverShadow: '0 4px 14px rgba(155,135,232,0.18), 0 2px 6px rgba(0,0,0,0.08)',
+  gapPx: 6,
   fontSizeSmallPx: 11,
   fontSizeDesktopPx: 12,
   fontWeight: 600,
-  letterSpacingEm: 0.01,
 } as const;
 
 /** Compact mobile week carousel strip below AppHeader */

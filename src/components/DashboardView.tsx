@@ -1453,7 +1453,7 @@ export function DashboardView({
                     : DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestions
                 }
                 icon="head-circuit"
-                accent="ai"
+                variant="primary"
                 onClick={handleScheduleUnscheduledTasks}
                 isSmallScreen={isSmallScreen}
                 scale={buttonScale}
@@ -1462,7 +1462,7 @@ export function DashboardView({
               <DashboardSchedulerActionButton
                 label={DASHBOARD_VIEW_HEADER_LABELS.reschedule}
                 icon="calendar-dots"
-                accent="reschedule"
+                variant="secondary"
                 onClick={handleOpenRescheduleDialog}
                 disabled={isRescheduling}
                 iconSpinning={isRescheduling}
