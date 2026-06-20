@@ -486,16 +486,46 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      await api.inviteTeamMemberToTeam(teamId, member.email, member.name, member.role || 'member', avatar);
-      toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email));
-      await selectTeam(teamId); // Refresh team members
-      // Preserve selection since we're already on this team
+      const result = await api.inviteTeamMemberToTeam(
+        teamId,
+        member.email,
+        member.name,
+        member.role || 'member',
+        avatar,
+      );
+
+      if (result?.invitation?.token) {
+        const invitation = result.invitation;
+        const now = new Date().toISOString();
+        const pendingMember: User = {
+          ...member,
+          id: `pending_${invitation.token}`,
+          inviteStatus: 'pending',
+          hasUnreadNotification: false,
+          lastViewedAt: null,
+          invitedAt: now,
+          acceptedAt: null,
+          expiresAt: invitation.expiresAt,
+          invitationToken: invitation.token,
+          teamId,
+          avatar: avatar || member.avatar,
+        };
+        setCurrentTeamMembers(prev => [...prev, pendingMember]);
+        toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email), {
+          description: TEAM_PANEL_UI_TEXT.invitationSentDescription,
+        });
+      } else {
+        toast.success(TEAM_PANEL_UI_TEXT.invitationSentTo(member.email));
+        await selectTeam(teamId);
+      }
+
       await syncTeams(workspaceId || '', true);
     } catch (error) {
       console.error('Failed to invite team member:', error);
       const errorMessage = error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToInviteTeamMember;
       const isMustHaveAccount = errorMessage.toLowerCase().includes('taskzm account') || errorMessage.toLowerCase().includes('must have');
       toast.error(isMustHaveAccount ? TEAM_PANEL_UI_TEXT.teamMemberMustHaveAccount : errorMessage);
+      throw error;
     }
   }, [accessToken, teams, workspaceId, selectTeam, syncTeams]);
 

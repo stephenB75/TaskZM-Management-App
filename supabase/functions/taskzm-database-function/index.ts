@@ -5161,7 +5161,7 @@ app.get("/taskzm-database-function/team/:workspaceId/members", async (c) => {
           const invitationData = await kv.get(`invitation_${token}`);
           if (invitationData) {
             const invitation = JSON.parse(invitationData);
-            if (invitation.status === 'pending') {
+            if (invitation.status === 'pending' && !invitation.teamId) {
               // Check if invitation is expired
               if (new Date(invitation.expiresAt) > new Date()) {
                 teamMembers.push({
@@ -5427,6 +5427,29 @@ app.post("/taskzm-database-function/team/invitations/accept", async (c) => {
 
     // Set member role
     await kv.set(`workspace_${workspaceId}_member_${userId}_role`, invitation.role);
+
+    // Add to specific team when invitation was team-scoped
+    if (invitation.teamId) {
+      const invitedTeamId = invitation.teamId;
+      const teamMembersData = await kv.get(`team_${invitedTeamId}_members`);
+      const teamMemberIds = teamMembersData ? JSON.parse(teamMembersData) : [];
+      if (!teamMemberIds.includes(userId)) {
+        teamMemberIds.push(userId);
+        await kv.set(`team_${invitedTeamId}_members`, JSON.stringify(teamMemberIds));
+      }
+
+      const invitedTeamData = await kv.get(`team_${invitedTeamId}`);
+      if (invitedTeamData) {
+        const invitedTeam = typeof invitedTeamData === 'string' ? JSON.parse(invitedTeamData) : invitedTeamData;
+        invitedTeam.memberCount = teamMemberIds.length;
+        await kv.set(`team_${invitedTeamId}`, JSON.stringify(invitedTeam));
+      }
+
+      await kv.set(`workspace_${workspaceId}_member_${userId}`, JSON.stringify({
+        role: invitation.role,
+        teamId: invitedTeamId,
+      }));
+    }
 
     // Mark invitation as accepted
     invitation.status = 'accepted';
@@ -5928,6 +5951,39 @@ app.get("/taskzm-database-function/teams/:teamId/members", async (c) => {
       }
     }
 
+    // Include pending email invitations scoped to this team
+    const invitationTokensStr = await kv.get(`workspace_${workspaceId}_invitations`);
+    if (invitationTokensStr) {
+      try {
+        const tokens = JSON.parse(invitationTokensStr);
+        for (const token of tokens) {
+          const invitationData = await kv.get(`invitation_${token}`);
+          if (!invitationData) continue;
+          const invitation = JSON.parse(invitationData);
+          if (
+            invitation.status === 'pending' &&
+            invitation.teamId === teamId &&
+            new Date(invitation.expiresAt) > new Date()
+          ) {
+            teamMembers.push({
+              id: `pending_${token}`,
+              email: invitation.email,
+              name: invitation.name,
+              role: invitation.role,
+              avatar: invitation.avatar,
+              inviteStatus: 'pending',
+              invitedAt: invitation.createdAt,
+              expiresAt: invitation.expiresAt,
+              invitationToken: token,
+              teamId,
+            });
+          }
+        }
+      } catch (e) {
+        console.log('Error parsing team invitations:', e);
+      }
+    }
+
     return c.json(teamMembers);
   } catch (error) {
     console.error('Error fetching team members:', error);
@@ -6019,10 +6075,70 @@ app.post("/taskzm-database-function/teams/:teamId/invite", async (c) => {
       });
     }
 
-    // Only allow adding users who already have a TaskZm account
+    // No TaskZm account yet — send email invitation (workspace + team on accept)
+    const invitationToken = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const invitation = {
+      token: invitationToken,
+      workspaceId,
+      teamId,
+      email: email.toLowerCase(),
+      name,
+      role: role || 'member',
+      avatar: avatar || undefined,
+      invitedBy: userId,
+      createdAt: new Date().toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      status: 'pending',
+    };
+
+    await kv.set(`invitation_${invitationToken}`, JSON.stringify(invitation));
+
+    const existingInvitations = await kv.get(`workspace_${workspaceId}_invitations`);
+    const invitations = existingInvitations ? JSON.parse(existingInvitations) : [];
+    if (!invitations.includes(invitationToken)) {
+      invitations.push(invitationToken);
+      await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(invitations));
+    }
+
+    let inviterName = 'Someone';
+    try {
+      const { data: inviterUser } = await supabase.auth.admin.getUserById(userId);
+      if (inviterUser?.user) {
+        inviterName = inviterUser.user.user_metadata?.name || inviterUser.user.email?.split('@')[0] || 'Someone';
+      }
+    } catch (err) {
+      console.log('Could not fetch inviter name:', err);
+    }
+
+    const workspaceName = await kv.get(`workspace_${workspaceId}_name`);
+    const inviteLink = `https://taskzm.com/invite?token=${invitationToken}`;
+    const emailResult = await emailService.sendInvitationEmail({
+      to: email.toLowerCase(),
+      inviterName,
+      inviteeName: name,
+      workspaceName: team.name || workspaceName,
+      role: role || 'member',
+      inviteLink,
+      expiresInDays: 7,
+    });
+
+    if (emailResult.success) {
+      console.log(`✅ Team invitation email sent to ${email} for team ${teamId}`);
+    } else {
+      console.warn(`⚠️ Failed to send team invitation email to ${email}:`, emailResult.error);
+    }
+
     return c.json({
-      error: 'This person must have a TaskZm account to be added to a team. They can sign up at taskzm.com first.',
-    }, 400);
+      invitation: {
+        ...invitation,
+        token: invitationToken,
+        expiresAt: invitation.expiresAt,
+      },
+      inviteLink,
+    });
   } catch (error) {
     console.error('Error inviting team member:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
