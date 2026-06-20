@@ -10,6 +10,8 @@ import {
 
 export interface AgendaListCardProps {
   accentColor: string;
+  /** When set, renders a tinted icon badge instead of the colored dot. */
+  accentIcon?: string;
   badgeLabel: string;
   title: string;
   subtitle?: string | null;
@@ -32,6 +34,7 @@ export interface AgendaListCardProps {
 
 export function AgendaListCard({
   accentColor,
+  accentIcon,
   badgeLabel,
   title,
   subtitle,
@@ -55,6 +58,10 @@ export function AgendaListCard({
 
   const padding = compact ? AGENDA_LIST_CARD.compact.paddingPx : AGENDA_LIST_CARD.paddingPx;
   const dotSize = compact ? AGENDA_LIST_CARD.compact.dotSizePx : AGENDA_LIST_CARD.dotSizePx;
+  const accentIconSize = compact ? 22 : AGENDA_LIST_CARD.accentIconSizePx;
+  const accentColumnWidth = accentIcon
+    ? AGENDA_LIST_CARD.accentIconColumnWidthPx
+    : AGENDA_LIST_CARD.accentColumnWidthPx;
   const titleSize = compact ? AGENDA_LIST_CARD.compact.titleFontSizePx : AGENDA_LIST_CARD.titleFontSizePx;
   const timeSize = compact ? AGENDA_LIST_CARD.compact.timeFontSizePx : AGENDA_LIST_CARD.timeFontSizePx;
   const footerSize = compact ? AGENDA_LIST_CARD.compact.footerFontSizePx : AGENDA_LIST_CARD.footerFontSizePx;
@@ -83,18 +90,36 @@ export function AgendaListCard({
         ...style,
       }}
     >
-      <div className="flex flex-1 min-h-0 w-full" style={{ gap: AGENDA_LIST_CARD.accentColumnWidthPx - dotSize }}>
-        {/* Colored dot + vertical accent line */}
-        <div className="flex flex-col items-center flex-shrink-0" style={{ width: AGENDA_LIST_CARD.accentColumnWidthPx }}>
-          <span
-            className="rounded-full flex-shrink-0"
-            style={{
-              width: dotSize,
-              height: dotSize,
-              backgroundColor: badgeStyles.dotColor,
-            }}
-            aria-hidden
-          />
+      <div className="flex flex-1 min-h-0 w-full" style={{ gap: accentColumnWidth - (accentIcon ? accentIconSize : dotSize) }}>
+        {/* Colored dot or icon + vertical accent line */}
+        <div className="flex flex-col items-center flex-shrink-0" style={{ width: accentColumnWidth }}>
+          {accentIcon ? (
+            <div
+              className="flex items-center justify-center flex-shrink-0 rounded-xl"
+              style={{
+                width: accentIconSize,
+                height: accentIconSize,
+                backgroundColor: badgeStyles.badgeBackground,
+              }}
+            >
+              <Icon
+                name={accentIcon}
+                size={compact ? 12 : AGENDA_LIST_CARD.headerCommentIconSizePx}
+                weight="duotone"
+                style={{ color: badgeStyles.dotColor }}
+              />
+            </div>
+          ) : (
+            <span
+              className="rounded-full flex-shrink-0"
+              style={{
+                width: dotSize,
+                height: dotSize,
+                backgroundColor: badgeStyles.dotColor,
+              }}
+              aria-hidden
+            />
+          )}
           <span
             className="flex-1 rounded-full mt-1"
             style={{

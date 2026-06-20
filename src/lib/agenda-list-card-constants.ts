@@ -13,6 +13,8 @@ export const AGENDA_LIST_CARD = {
   accentLineWidthPx: 2,
   accentLineMinHeightPx: 48,
   accentColumnWidthPx: 12,
+  accentIconSizePx: 28,
+  accentIconColumnWidthPx: 32,
   headerCommentIconSizePx: 16,
   timeFontSizePx: 15,
   periodFontSizePx: 12,

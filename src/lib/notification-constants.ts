@@ -5,11 +5,19 @@
 
 import {
   MILLISECONDS_PER_MINUTE,
+  MILLISECONDS_PER_HOUR,
+  MILLISECONDS_PER_DAY,
   DEFAULT_NOTIFICATION_REMINDER_TIME,
   DEFAULT_NOTIFICATION_CHECK_INTERVAL,
 } from './business-constants';
 import { TASK_CARD_PRIORITY_COLORS } from './task-card-constants';
 import { AGENDA_LIST_CARD } from './agenda-list-card-constants';
+import {
+  COLOR_PRIMARY,
+  COLOR_AWARD_RARE,
+  COLOR_SUCCESS,
+  COLOR_PASTEL_LAVENDER,
+} from './color-theme';
 
 // Default notification settings
 export const DEFAULT_NOTIFICATION_SETTINGS = {
@@ -93,14 +101,22 @@ export const NOTIFICATION_PANEL_TEXT = {
     allCaughtUp: "You're all caught up!",
   },
   filters: {
-    all: 'All Notifications',
-    overdue: 'Overdue Tasks',
+    all: 'All',
+    overdue: 'Overdue',
     dueSoon: 'Due Soon',
-    pomodoro: 'Pomodoro',
-    award: 'Achievements',
-    toast: 'App Notifications',
+    pomodoro: 'Focus',
+    award: 'Awards',
+    toast: 'Updates',
     placeholder: 'Filter',
   },
+  groups: {
+    today: 'Today',
+    yesterday: 'Yesterday',
+    earlier: 'Earlier',
+  },
+  selectAll: 'Select All',
+  deselectAll: 'Deselect All',
+  clearSelected: 'Clear',
   permission: {
     granted: 'Granted',
     denied: 'Denied',
@@ -179,18 +195,18 @@ export const NOTIFICATION_POMODORO_ARIA = {
   pausedTimeRemaining: 'Paused - time remaining',
 } as const;
 
-/** Accent colors for notification cards (AgendaListCard dot + badge). */
+/** Accent colors for notification cards — brand-aligned pastels where possible. */
 export const NOTIFICATION_CARD_ACCENT_COLORS = {
   taskOverdue: TASK_CARD_PRIORITY_COLORS.urgent.line,
   taskDueSoon: TASK_CARD_PRIORITY_COLORS.high.line,
-  pomodoroComplete: '#A855F7',
-  pomodoroBreak: '#A855F7',
-  awardEarned: '#EAB308',
-  toastSuccess: '#22C55E',
+  pomodoroComplete: COLOR_PRIMARY,
+  pomodoroBreak: COLOR_PRIMARY,
+  awardEarned: COLOR_AWARD_RARE,
+  toastSuccess: COLOR_SUCCESS,
   toastError: TASK_CARD_PRIORITY_COLORS.urgent.line,
   toastWarning: TASK_CARD_PRIORITY_COLORS.high.line,
   toastInfo: TASK_CARD_PRIORITY_COLORS.medium.line,
-  system: TASK_CARD_PRIORITY_COLORS.default.line,
+  system: COLOR_PASTEL_LAVENDER,
 } as const;
 
 /** Short badge labels shown on notification cards. */
@@ -247,9 +263,86 @@ export type NotificationCardType =
   | 'toast-info'
   | 'toast-warning';
 
+/** Notification panel layout tokens. */
+export const NOTIFICATION_PANEL = {
+  sectionGapPx: 20,
+  listGapPx: 10,
+  sectionTitleFontSizePx: 11,
+  sectionTitleLetterSpacingEm: 0.06,
+  filterChipGapPx: 8,
+  filterChipHeightPx: 32,
+} as const;
+
+export const NOTIFICATION_FILTER_OPTIONS = [
+  { id: 'all', label: NOTIFICATION_PANEL_TEXT.filters.all, icon: 'bell' },
+  { id: NOTIFICATION_TYPES.taskOverdue, label: NOTIFICATION_PANEL_TEXT.filters.overdue, icon: 'alert-circle' },
+  { id: NOTIFICATION_TYPES.taskDueSoon, label: NOTIFICATION_PANEL_TEXT.filters.dueSoon, icon: 'clock' },
+  { id: NOTIFICATION_TYPES.pomodoroComplete, label: NOTIFICATION_PANEL_TEXT.filters.pomodoro, icon: 'timer' },
+  { id: NOTIFICATION_TYPES.awardEarned, label: NOTIFICATION_PANEL_TEXT.filters.award, icon: 'award' },
+  { id: 'toast', label: NOTIFICATION_PANEL_TEXT.filters.toast, icon: 'sparkle' },
+] as const;
+
 /** Notification card layout tokens (AgendaListCard shell). */
 export const NOTIFICATION_CARD = {
   unreadDotSizePx: AGENDA_LIST_CARD.dotSizePx,
-  dismissButtonSizePx: 24,
+  dismissButtonSizePx: 28,
+  unreadRingClass: 'ring-1 ring-primary/25 shadow-sm',
 } as const;
 
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+export function formatNotificationRelativeTime(timestamp: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - timestamp.getTime();
+  const diffMins = Math.floor(diffMs / MILLISECONDS_PER_MINUTE);
+  const diffHours = Math.floor(diffMs / MILLISECONDS_PER_HOUR);
+  const diffDays = Math.floor(diffMs / MILLISECONDS_PER_DAY);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export function getNotificationGroupKey(timestamp: Date): string {
+  const now = startOfDay(new Date());
+  const target = startOfDay(timestamp);
+  const diffDays = Math.floor((now.getTime() - target.getTime()) / MILLISECONDS_PER_DAY);
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  return 'earlier';
+}
+
+export function formatNotificationGroupLabel(groupKey: string): string {
+  if (groupKey === 'today') return NOTIFICATION_PANEL_TEXT.groups.today;
+  if (groupKey === 'yesterday') return NOTIFICATION_PANEL_TEXT.groups.yesterday;
+  return NOTIFICATION_PANEL_TEXT.groups.earlier;
+}
+
+export interface NotificationGroup<T extends { timestamp: Date }> {
+  key: string;
+  label: string;
+  items: T[];
+}
+
+export function groupNotificationsByDate<T extends { timestamp: Date }>(items: T[]): NotificationGroup<T>[] {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const key = getNotificationGroupKey(item.timestamp);
+    const existing = groups.get(key);
+    if (existing) existing.push(item);
+    else groups.set(key, [item]);
+  }
+  const order = ['today', 'yesterday', 'earlier'];
+  return order
+    .filter((key) => groups.has(key))
+    .map((key) => ({
+      key,
+      label: formatNotificationGroupLabel(key),
+      items: groups.get(key) ?? [],
+    }));
+}

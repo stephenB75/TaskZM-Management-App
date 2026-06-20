@@ -1,8 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-// Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_MD, ICON_SIZE_XS, ICON_SIZE_2XL, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, HEADER_GAP_SMALL, HEADER_BUTTON_SIZE, HEADER_MOBILE_SAFE_AREA_SPACER } from "../lib/layout-constants";
+import {
+  ICON_SIZE_MD,
+  ICON_SIZE_XS,
+  EMPTY_STATE_ICON_SIZE_LARGE,
+  getCheckboxSizePxForWidth,
+  getCheckboxVisualSizePxForWidth,
+  VIEWPORT_BREAKPOINTS,
+  MOBILE_PADDING_BOTTOM,
+} from "../lib/layout-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useNotifications } from "../contexts/NotificationContext";
 import { usePomodoro } from "../contexts/PomodoroContext";
@@ -10,23 +17,9 @@ import { useAwards } from "../contexts/AwardContext";
 import type { Award } from "../types";
 import { AppHeader } from "./AppHeader";
 import { Button } from "./ui/button";
-import { ScrollArea } from "./ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { cn } from "../lib/utils";
-import { UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
-import { COLOR_TEXT_WHITE } from "../lib/color-theme";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+import { UI_INBOX_GRADIENTS, UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-colors";
+import { useMobileLayout } from "../hooks/useMobileLayout";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { NotificationCard, type NotificationCardItem } from "./NotificationCard";
 import {
@@ -36,13 +29,17 @@ import {
   NOTIFICATION_TYPES,
   NOTIFICATION_PANEL_TEXT,
   NOTIFICATION_TIME_FORMATS,
+  NOTIFICATION_FILTER_OPTIONS,
+  NOTIFICATION_PANEL,
+  groupNotificationsByDate,
 } from "../lib/notification-constants";
 
 export function NotificationsPanel() {
   const { tasks } = useTasks();
-  const { badgeCount, settings, getToastNotifications, markToastAsRead, clearToastNotification, updateBadge } = useNotifications();
+  const { settings, getToastNotifications, markToastAsRead, clearToastNotification, updateBadge } = useNotifications();
   const { getTimerState } = usePomodoro();
   const { earnedAwards, awards } = useAwards();
+  const shouldUseMobileLayout = useMobileLayout();
   const [notifications, setNotifications] = useState<NotificationCardItem[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
   const [readNotifications, setReadNotifications] = useState<Set<string>>(
@@ -324,16 +321,16 @@ export function NotificationsPanel() {
     setNotifications(newNotifications);
   }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions, getToastNotifications, earnedAwards, awards, lastSeenAwards]);
 
-  const filteredNotifications = notifications.filter(notif => {
+  const filteredNotifications = notifications.filter((notif) => {
     if (filterType === "all") return true;
-    if (filterType === "toast") {
-      return notif.type.startsWith('toast-');
-    }
-    if (filterType === "award") {
-      return notif.type === NOTIFICATION_TYPES.awardEarned;
-    }
+    if (filterType === "toast") return notif.type.startsWith('toast-');
     return notif.type === filterType;
   });
+
+  const groupedNotifications = useMemo(
+    () => groupNotificationsByDate(filteredNotifications),
+    [filteredNotifications],
+  );
 
   // Clear selection when notifications change (e.g., after deletion or filter change)
   useEffect(() => {
@@ -420,118 +417,153 @@ export function NotificationsPanel() {
   };
 
   const renderNotificationsList = () => (
-    filteredNotifications.length === 0 ? (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-          <Icon name="bell" size={ICON_SIZE_2XL} className="text-primary/40" />
-        </div>
-        <p className="text-sm text-muted-foreground mb-2">
-          {filterType === "all"
-            ? NOTIFICATION_PANEL_TEXT.emptyState.noNotifications
-            : NOTIFICATION_PANEL_TEXT.emptyState.noNotificationsOfType}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp}
-        </p>
-      </div>
-    ) : (
-      <div className="space-y-3">
-        <AnimatePresence>
-          {filteredNotifications.map((notification) => (
-            <motion.div
-              key={notification.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: NOTIFICATION_PANEL.sectionGapPx }}>
+      {filteredNotifications.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-16 text-center"
+        >
+          <div
+            className={cn(
+              'w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg',
+              UI_INBOX_GRADIENTS.emptyState.className,
+            )}
+          >
+            <Icon name="bell" size={EMPTY_STATE_ICON_SIZE_LARGE} weight="duotone" className="text-primary" />
+          </div>
+          <h3 className="text-xl mb-2">
+            {filterType === "all"
+              ? NOTIFICATION_PANEL_TEXT.emptyState.noNotifications
+              : NOTIFICATION_PANEL_TEXT.emptyState.noNotificationsOfType}
+          </h3>
+          <p className="text-muted-foreground max-w-sm text-sm">
+            {NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp}
+          </p>
+        </motion.div>
+      ) : (
+        groupedNotifications.map((group) => (
+          <motion.section
+            key={group.key}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            layout
+          >
+            <div
+              className="flex items-baseline text-muted-foreground"
+              style={{
+                gap: NOTIFICATION_PANEL.sectionTitleFontSizePx - 5,
+                marginBottom: NOTIFICATION_PANEL.listGapPx,
+              }}
             >
-              <NotificationCard
-                notification={notification}
-                selected={selectedNotificationIds.has(notification.id)}
-                onToggleSelect={() => handleToggleSelect(notification.id)}
-                onMarkAsRead={() => markAsRead(notification.id)}
-                onDismiss={() => clearNotification(notification.id)}
-                checkboxSizePx={checkboxSizePx}
-                visualSizePx={visualSizePx}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-    )
+              <span
+                className="font-semibold uppercase tracking-wider"
+                style={{
+                  fontSize: NOTIFICATION_PANEL.sectionTitleFontSizePx,
+                  letterSpacing: `${NOTIFICATION_PANEL.sectionTitleLetterSpacingEm}em`,
+                }}
+              >
+                {group.label}
+              </span>
+              <span
+                className="font-medium tabular-nums"
+                style={{ fontSize: NOTIFICATION_PANEL.sectionTitleFontSizePx }}
+              >
+                {group.items.length}
+              </span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: NOTIFICATION_PANEL.listGapPx,
+              }}
+            >
+              <AnimatePresence mode="popLayout">
+                {group.items.map((notification, index) => (
+                  <motion.div
+                    key={notification.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -16 }}
+                    transition={{ delay: index * 0.02 }}
+                    layout
+                  >
+                    <NotificationCard
+                      notification={notification}
+                      selected={selectedNotificationIds.has(notification.id)}
+                      onToggleSelect={() => handleToggleSelect(notification.id)}
+                      onMarkAsRead={() => markAsRead(notification.id)}
+                      onDismiss={() => clearNotification(notification.id)}
+                      checkboxSizePx={checkboxSizePx}
+                      visualSizePx={visualSizePx}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.section>
+        ))
+      )}
+    </div>
   );
 
   return (
-    <div 
-      className={cn(`flex flex-col ${UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className} dark:from-gray-950 dark:via-gray-900 dark:to-gray-900`, typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full')}
+    <div
+      className={cn(
+        'flex flex-col',
+        UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className,
+        'dark:from-gray-950 dark:via-gray-900 dark:to-gray-900',
+        shouldUseMobileLayout ? 'min-h-full' : 'h-full',
+      )}
     >
       <AppHeader
         title={NOTIFICATION_PANEL_TEXT.title}
         panelOpen={true}
         isSidePanelHeader={true}
-        description={NOTIFICATION_MESSAGES.unreadCount(unreadCount)}
+        description={
+          unreadCount > 0
+            ? NOTIFICATION_MESSAGES.unreadCount(unreadCount)
+            : NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp
+        }
         hideDesktopLogo
         actions={
           selectedNotificationIds.size > 0 ? (
-            <div className="flex items-center" style={{ gap: HEADER_GAP_SMALL }}>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleSelectAll}
-                      variant="outline"
-                      size="icon"
-                      className="flex-shrink-0"
-                      style={{ 
-                        height: HEADER_BUTTON_SIZE, 
-                        width: HEADER_BUTTON_SIZE 
-                      }}
-                    >
-                      <Icon 
-                        name="check-square"
-                        size={ICON_SIZE_MD}
-                        className="text-primary dark:text-primary-foreground flex-shrink-0"
-                      />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{selectedNotificationIds.size === filteredNotifications.length ? "Deselect All" : "Select All"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={clearSelectedNotifications}
-                      variant="destructive"
-                      size="icon"
-                      className="flex-shrink-0"
-                      style={{ 
-                        height: HEADER_BUTTON_SIZE, 
-                        width: HEADER_BUTTON_SIZE 
-                      }}
-                    >
-                      <Icon 
-                        name="trash-2" 
-                        size={ICON_SIZE_MD} 
-                        className="flex-shrink-0"
-                        style={{ color: COLOR_TEXT_WHITE }}
-                      />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Clear ({selectedNotificationIds.size})</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            <div className="flex items-center gap-1.5">
+              <Button
+                onClick={handleSelectAll}
+                variant="outline"
+                className="rounded-full px-2.5 sm:px-3"
+                size="sm"
+              >
+                <span className="hidden sm:inline">
+                  {selectedNotificationIds.size === filteredNotifications.length
+                    ? NOTIFICATION_PANEL_TEXT.deselectAll
+                    : NOTIFICATION_PANEL_TEXT.selectAll}
+                </span>
+                <span className="sm:hidden">
+                  {selectedNotificationIds.size === filteredNotifications.length ? 'Deselect' : 'All'}
+                </span>
+              </Button>
+              <Button
+                onClick={clearSelectedNotifications}
+                variant="destructive"
+                className="rounded-full px-2.5 sm:px-3"
+                size="sm"
+              >
+                <Icon name="trash-2" size={ICON_SIZE_MD} className="sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {NOTIFICATION_PANEL_TEXT.clearSelected} ({selectedNotificationIds.size})
+                </span>
+                <span className="sm:hidden">{selectedNotificationIds.size}</span>
+              </Button>
             </div>
           ) : (
             <Button
               variant="outline"
               size="sm"
               onClick={markAllAsRead}
-              className="flex"
+              className="rounded-full px-3"
               disabled={unreadCount === 0}
             >
               <Icon name="check-circle" size={ICON_SIZE_XS} className="mr-2" />
@@ -541,40 +573,68 @@ export function NotificationsPanel() {
           )
         }
       />
-      {/* Spacer for fixed header on mobile */}
 
       <div className="flex-1 flex flex-col min-h-0">
-        {/* Filters */}
-        <div className="px-4 md:px-8 py-4 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-[180px] h-10 bg-white dark:bg-card">
-                <Icon name="filter" size={ICON_SIZE_MD} className="mr-2" />
-                <SelectValue placeholder={NOTIFICATION_PANEL_TEXT.filters.placeholder} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{NOTIFICATION_PANEL_TEXT.filters.all}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.taskOverdue}>{NOTIFICATION_PANEL_TEXT.filters.overdue}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.taskDueSoon}>{NOTIFICATION_PANEL_TEXT.filters.dueSoon}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.pomodoroComplete}>{NOTIFICATION_PANEL_TEXT.filters.pomodoro}</SelectItem>
-                <SelectItem value={NOTIFICATION_TYPES.awardEarned}>{NOTIFICATION_PANEL_TEXT.filters.award}</SelectItem>
-                <SelectItem value="toast">{NOTIFICATION_PANEL_TEXT.filters.toast}</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="px-4 md:px-8 py-4 md:py-5 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
+          <div
+            className="flex gap-2 overflow-x-auto pb-1 scrollbar-none"
+            style={{ gap: NOTIFICATION_PANEL.filterChipGapPx }}
+          >
+            {NOTIFICATION_FILTER_OPTIONS.map((option) => {
+              const isActive = filterType === option.id;
+              const count =
+                option.id === 'all'
+                  ? notifications.length
+                  : option.id === 'toast'
+                    ? notifications.filter((n) => n.type.startsWith('toast-')).length
+                    : notifications.filter((n) => n.type === option.id).length;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setFilterType(option.id)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full border px-3 text-sm font-medium whitespace-nowrap transition-all flex-shrink-0',
+                    isActive
+                      ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+                      : 'border-border/60 bg-card/80 text-muted-foreground hover:border-primary/25 hover:text-foreground',
+                  )}
+                  style={{ height: NOTIFICATION_PANEL.filterChipHeightPx }}
+                >
+                  <Icon name={option.icon} size={ICON_SIZE_XS} weight={isActive ? 'duotone' : 'regular'} />
+                  {option.label}
+                  {count > 0 && (
+                    <span
+                      className={cn(
+                        'rounded-full px-1.5 text-[10px] font-semibold tabular-nums',
+                        isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Notifications List */}
-        {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
         <div className="flex-1 min-h-0">
-          {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-            <ScrollArea className="h-full">
-              <div className="p-4 space-y-3 pb-safe md:pb-4">
-            {renderNotificationsList()}
-              </div>
-            </ScrollArea>
+          {!shouldUseMobileLayout ? (
+            <div className="h-full overflow-y-auto overscroll-contain">
+              <div className="p-4 md:px-8 pb-safe md:pb-8">{renderNotificationsList()}</div>
+            </div>
           ) : (
-            <div className="p-4 space-y-3" style={{ paddingBottom: typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? MOBILE_PADDING_BOTTOM : undefined }}>
+            <div
+              className="p-4 md:px-8"
+              style={{
+                paddingBottom:
+                  typeof window !== 'undefined' &&
+                  window.innerWidth < VIEWPORT_BREAKPOINTS.tablet
+                    ? MOBILE_PADDING_BOTTOM
+                    : undefined,
+              }}
+            >
               {renderNotificationsList()}
             </div>
           )}

@@ -4,6 +4,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { Toaster as Sonner, ToasterProps } from "sonner";
 import { useEffect, useState } from "react";
 import { TOAST_DURATION_DEFAULT_MS, VIEWPORT_BREAKPOINTS, Z_INDEX } from "../../lib/layout-constants";
+import { AGENDA_LIST_CARD } from "../../lib/agenda-list-card-constants";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { actualTheme } = useTheme();
@@ -11,27 +12,21 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const [position, setPosition] = useState<ToasterProps["position"]>("bottom-right");
 
   useEffect(() => {
-    // Ensure window is available (client-side only)
     if (typeof window === 'undefined') return;
-    
+
     const checkMobile = () => {
       try {
-        // Check if mobile (screen width < mobile breakpoint)
         if (window.innerWidth < VIEWPORT_BREAKPOINTS.mobile) {
           setPosition("top-center");
         } else {
           setPosition("bottom-right");
         }
       } catch (error) {
-        // Fallback to default position if check fails
         console.error('Error checking mobile size:', error);
       }
     };
 
-    // Check on mount
     checkMobile();
-
-    // Listen for resize events
     window.addEventListener("resize", checkMobile);
     return () => {
       if (typeof window !== 'undefined') {
@@ -48,14 +43,34 @@ const Toaster = ({ ...props }: ToasterProps) => {
       visibleToasts={3}
       expand={true}
       position={position}
-      richColors={true}
+      richColors={false}
       closeButton={true}
       toastOptions={{
-        // Ensure consistent styling and behavior
+        classNames: {
+          toast:
+            'group toast group-[.toaster]:rounded-2xl group-[.toaster]:border group-[.toaster]:border-border/50 group-[.toaster]:shadow-lg group-[.toaster]:backdrop-blur-sm',
+          title: 'group-[.toast]:font-semibold group-[.toast]:text-foreground',
+          description: 'group-[.toast]:text-muted-foreground',
+          actionButton:
+            'group-[.toast]:rounded-full group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
+          cancelButton:
+            'group-[.toast]:rounded-full group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+          closeButton:
+            'group-[.toast]:rounded-full group-[.toast]:border-border/50 group-[.toast]:bg-card/90',
+          success:
+            'group-[.toast]:border-emerald-200/60 group-[.toast]:bg-emerald-50/90 dark:group-[.toast]:border-emerald-900/40 dark:group-[.toast]:bg-emerald-950/80',
+          error:
+            'group-[.toast]:border-red-200/60 group-[.toast]:bg-red-50/90 dark:group-[.toast]:border-red-900/40 dark:group-[.toast]:bg-red-950/80',
+          warning:
+            'group-[.toast]:border-amber-200/60 group-[.toast]:bg-amber-50/90 dark:group-[.toast]:border-amber-900/40 dark:group-[.toast]:bg-amber-950/80',
+          info:
+            'group-[.toast]:border-primary/20 group-[.toast]:bg-primary/5 dark:group-[.toast]:border-primary/30 dark:group-[.toast]:bg-primary/10',
+        },
         style: {
           background: 'var(--popover)',
           color: 'var(--popover-foreground)',
           border: '1px solid var(--border)',
+          boxShadow: AGENDA_LIST_CARD.shadow,
         },
       }}
       style={
@@ -63,7 +78,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          zIndex: Z_INDEX.TOAST, // Above dialogs and in-dialog dropdowns so in-app notifications are visible
+          zIndex: Z_INDEX.TOAST,
         } as React.CSSProperties
       }
       {...props}
