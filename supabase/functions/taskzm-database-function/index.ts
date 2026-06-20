@@ -9,6 +9,12 @@ import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
 import * as appleCaldavSync from "./apple-caldav-sync.tsx";
 import * as googleCalendarSync from "./google-calendar-sync.tsx";
+import {
+  getGoogleOAuthConfig,
+  getGoogleOAuthConfigDiagnostics,
+  getGoogleRedirectUri,
+  mapGoogleTokenExchangeError,
+} from "./google-oauth-config.ts";
 
 // ============================================================================
 // APP INITIALIZATION
@@ -2557,29 +2563,22 @@ async function cleanupDemoUser(userId: string): Promise<{
 // CALENDAR INTEGRATION ENDPOINTS
 // ========================================
 
-/** Canonical path for Google OAuth callback (no leading slash for URL constructor). */
-const GOOGLE_CALLBACK_PATH = 'functions/v1/taskzm-database-function/calendar/google/callback';
-
-/**
- * Resolve redirect URI for Google Calendar OAuth. Uses GOOGLE_REDIRECT_URI if set and valid;
- * otherwise builds from SUPABASE_URL so it always matches the actual callback URL.
- */
-function getGoogleRedirectUri(): string | null {
-  let uri = Deno.env.get('GOOGLE_REDIRECT_URI');
-  if (uri) {
-    uri = uri.trim().split('?')[0].split('#')[0].replace(/\/+$/, '');
-    try {
-      const url = new URL(uri);
-      if (url.protocol === 'https:') return uri;
-    } catch {
-      // fall through to built
+// Initiate Google Calendar OAuth flow
+app.get("/taskzm-database-function/calendar/google/config", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
     }
+    const diagnostics = getGoogleOAuthConfigDiagnostics();
+    return c.json({
+      configured: diagnostics.hasClientId && diagnostics.hasClientSecret && diagnostics.hasRedirectUri,
+      ...diagnostics,
+    });
+  } catch (error) {
+    return c.json({ error: getErrorMessage(error) }, 500);
   }
-  const base = Deno.env.get('SUPABASE_URL');
-  if (!base) return null;
-  const built = new URL('/' + GOOGLE_CALLBACK_PATH, base.replace(/\/+$/, '') + '/').href.replace(/\/+$/, '');
-  return built;
-}
+});
 
 // Initiate Google Calendar OAuth flow
 app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
@@ -2589,24 +2588,18 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
-    const redirectUri = getGoogleRedirectUri();
+    const oauthConfig = getGoogleOAuthConfig();
 
     console.log('Google OAuth config check:', {
-      hasClientId: !!clientId,
-      hasRedirectUri: !!redirectUri,
-      redirectUri,
-      clientIdPrefix: clientId ? `${clientId.substring(0, 20)}...` : 'missing',
+      ...getGoogleOAuthConfigDiagnostics(),
+      clientIdPrefix: oauthConfig?.clientId ? `${oauthConfig.clientId.substring(0, 20)}...` : 'missing',
     });
 
-    if (!clientId || !redirectUri) {
+    if (!oauthConfig) {
       console.log('Google OAuth not configured - missing env vars');
       return c.json({ 
-        error: 'Google OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI (or rely on SUPABASE_URL).',
-        details: {
-          hasClientId: !!clientId,
-          hasRedirectUri: !!redirectUri,
-        }
+        error: 'Google OAuth not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI in Supabase Edge Function secrets.',
+        details: getGoogleOAuthConfigDiagnostics(),
       }, 500);
     }
 
@@ -2614,15 +2607,15 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
     const scopes = ['https://www.googleapis.com/auth/calendar.readonly'];
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    authUrl.searchParams.set('client_id', clientId);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('client_id', oauthConfig.clientId);
+    authUrl.searchParams.set('redirect_uri', oauthConfig.redirectUri);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', scopes.join(' '));
     authUrl.searchParams.set('access_type', 'offline');
     authUrl.searchParams.set('prompt', 'consent');
     authUrl.searchParams.set('state', encodeURIComponent(userId)); // Pass userId in state (encoded for reserved chars)
 
-    console.log('Google OAuth URL generated successfully for user:', userId, 'redirect_uri:', redirectUri);
+    console.log('Google OAuth URL generated successfully for user:', userId, 'redirect_uri:', oauthConfig.redirectUri);
     return c.json({ authUrl: authUrl.toString() });
   } catch (error) {
     console.log('Error initiating Google OAuth:', error);
@@ -2750,12 +2743,10 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
       return c.html(html);
     }
 
-    const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
-    const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
-    const redirectUri = getGoogleRedirectUri();
-    console.log('Google OAuth callback token exchange redirect_uri:', redirectUri ?? 'null');
+    const oauthConfig = getGoogleOAuthConfig();
+    console.log('Google OAuth callback token exchange redirect_uri:', oauthConfig?.redirectUri ?? 'null');
 
-    if (!clientId || !clientSecret || !redirectUri) {
+    if (!oauthConfig) {
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -2786,32 +2777,21 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
+        client_id: oauthConfig.clientId,
+        client_secret: oauthConfig.clientSecret,
+        redirect_uri: oauthConfig.redirectUri,
         grant_type: 'authorization_code',
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      let userMessage = 'Failed to exchange authorization code';
-      try {
-        const errJson = JSON.parse(errorText);
-        const code = errJson.error;
-        const msg = errJson.error_description || errJson.error;
-        if (code === 'redirect_uri_mismatch') {
-          userMessage = 'Redirect URI mismatch: the redirect URL in Google Cloud Console must exactly match GOOGLE_REDIRECT_URI (no trailing slash).';
-        } else if (msg) {
-          userMessage = typeof msg === 'string' ? msg : userMessage;
-        }
-      } catch {
-        // use default userMessage
-      }
+      const userMessage = mapGoogleTokenExchangeError(errorText);
       console.log('Google token exchange failed:', {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
+        diagnostics: getGoogleOAuthConfigDiagnostics(),
       });
       const escapedMessage = userMessage.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const bodyEscaped = userMessage.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

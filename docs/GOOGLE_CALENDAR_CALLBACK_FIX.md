@@ -36,6 +36,27 @@ The function builds the auth URL using the env var `GOOGLE_REDIRECT_URI`. It mus
 
 Redeploy the Edge Function if needed so it picks up the new secret.
 
+## "The provided client secret is invalid"
+
+Google returns this after you approve access, when the Edge Function exchanges the auth code for tokens. The **Client ID** is usually fine; **`GOOGLE_CLIENT_SECRET` in Supabase is wrong, expired, or does not match that Client ID**.
+
+### Fix
+
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → **OAuth 2.0 Client ID** (Web application) used for TaskZM.
+2. Confirm **Authorized redirect URIs** includes the callback URL above.
+3. Under **Client secrets**, create a **new secret** (or copy the current one).
+4. Update Supabase Edge Function secrets (Dashboard → Edge Functions → Secrets, or locally):
+
+```bash
+cp supabase/google-oauth.env.example supabase/google-oauth.env
+# Edit supabase/google-oauth.env — paste Client ID + new Client secret
+npm run setup:google-calendar
+```
+
+5. Try connecting Google Calendar again (no redeploy needed for secret-only changes).
+
+Secrets must come from the **same** Web OAuth client. Do not mix Client ID from one client with a secret from another.
+
 ## Verify
 
 - The **only** redirect URI you use for this app should be the one above (with `taskzm-database-function`).

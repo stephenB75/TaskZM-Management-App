@@ -6,6 +6,7 @@
 
 import * as kv from "./kv_store.tsx";
 import * as caldav from "./caldav-client.tsx";
+import { getGoogleOAuthConfig } from "./google-oauth-config.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Constants
@@ -160,10 +161,9 @@ export async function refreshAccessToken(
  * Refresh Google Calendar access token
  */
 async function refreshGoogleToken(tokens: CalendarTokens): Promise<CalendarTokens> {
-  const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
-  const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
+  const oauthConfig = getGoogleOAuthConfig();
 
-  if (!clientId || !clientSecret) {
+  if (!oauthConfig) {
     throw new Error('Google OAuth credentials not configured');
   }
 
@@ -175,8 +175,8 @@ async function refreshGoogleToken(tokens: CalendarTokens): Promise<CalendarToken
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
+      client_id: oauthConfig.clientId,
+      client_secret: oauthConfig.clientSecret,
       refresh_token: tokens.refreshToken,
       grant_type: 'refresh_token',
     }),
