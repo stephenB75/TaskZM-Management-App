@@ -25,7 +25,7 @@ import { PrivacyPolicyDialog } from './PrivacyPolicyDialog';
 import { TermsOfServiceDialog } from './TermsOfServiceDialog';
 import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
-import { AvatarSelection, type AvatarGender } from './AvatarSelection';
+import { AvatarSelection } from './AvatarSelection';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import { SETTINGS_PANEL_UI_TEXT } from '../lib/settings-panel-constants';
 import { NAVIGATION_UI_TEXT } from '../lib/navigation-constants';
@@ -232,7 +232,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [hasSeenTour, setHasSeenTour] = useState(false);
-  const [profileGender, setProfileGender] = useState<"male" | "female">(AVATAR_UI_TEXT.defaultGender);
   const [profileAvatar, setProfileAvatar] = useState<string | undefined>(user?.avatar);
   const [showAvatarSelection, setShowAvatarSelection] = useState(false);
   const [serverAIConfigured, setServerAIConfigured] = useState<boolean | null>(null);
@@ -2720,39 +2719,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           </DialogHeader>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING, paddingBottom: SETTINGS_PANEL_PADDING }}>
-            {/* Gender Selection */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
-              <Label>{AVATAR_UI_TEXT.gender}</Label>
-              <RadioGroup
-                value={profileGender}
-                onValueChange={(value) => {
-                  setProfileGender(value as "male" | "female");
-                  setProfileAvatar(undefined); // Reset avatar when gender changes
-                }}
-                style={{ display: 'flex', gap: PANEL_GAP_MEDIUM }}
-              >
-                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                  <RadioGroupItem value="male" id="profile-gender-male" />
-                  <Label htmlFor="profile-gender-male" className="cursor-pointer">
-                    {AVATAR_UI_TEXT.male}
-                  </Label>
-                </div>
-                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                  <RadioGroupItem value="female" id="profile-gender-female" />
-                  <Label htmlFor="profile-gender-female" className="cursor-pointer">
-                    {AVATAR_UI_TEXT.female}
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Avatar Selection */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label>{AVATAR_UI_TEXT.chooseAvatar}</Label>
               <AvatarSelection
                 selectedAvatar={profileAvatar}
-                gender={profileGender}
                 onAvatarSelect={setProfileAvatar}
+                previewInitials={profileName.trim() || user?.name || 'TM'}
               />
             </div>
           </div>
@@ -2763,7 +2735,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               onClick={() => {
                 setShowAvatarSelection(false);
                 setProfileAvatar(user?.avatar);
-                setProfileGender(AVATAR_UI_TEXT.defaultGender);
               }}
             >
               {AVATAR_UI_TEXT.cancel}

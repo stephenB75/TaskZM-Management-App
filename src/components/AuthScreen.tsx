@@ -50,9 +50,9 @@ import {
 import { getUserFriendlyErrorMessage } from '../lib/error-utils';
 import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS, PANEL_GAP_MEDIUM, PANEL_GAP_SMALL, PANEL_FIELD_SPACING } from '../lib/layout-constants';
 import { useIsMobile } from './ui/use-mobile';
-import { AvatarSelection, type AvatarGender } from './AvatarSelection';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { AvatarSelection } from './AvatarSelection';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
+import { pickAvatarFromPool } from '../lib/avatar-utils';
 
 // Password strength calculation
 function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 'strong'; score: number; feedback: string[] } {
@@ -136,7 +136,6 @@ export function AuthScreen() {
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [signUpGender, setSignUpGender] = useState<"male" | "female">(AVATAR_UI_TEXT.defaultGender);
   const [signUpAvatar, setSignUpAvatar] = useState<string | undefined>(undefined);
 
   // Prevent concurrent sign-in (double submit / multiple clicks)
@@ -313,7 +312,9 @@ export function AuthScreen() {
     setIsLoading(true);
 
     try {
-      await signUp(signUpEmail, signUpPassword, signUpName, false, signUpAvatar);
+      const avatar =
+        signUpAvatar || pickAvatarFromPool(signUpName.trim() || signUpEmail.trim());
+      await signUp(signUpEmail, signUpPassword, signUpName, false, avatar);
       toast.success(
         AUTH_UI_TEXT.signUp.successMessage,
         {
@@ -977,39 +978,13 @@ export function AuthScreen() {
                         )}
                       </div>
 
-                      {/* Gender Selection */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
-                        <Label className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300">{AVATAR_UI_TEXT.selectGender}</Label>
-                        <RadioGroup
-                          value={signUpGender}
-                          onValueChange={(value) => {
-                            setSignUpGender(value as "male" | "female");
-                            setSignUpAvatar(undefined); // Reset avatar when gender changes
-                          }}
-                          style={{ display: 'flex', gap: PANEL_GAP_MEDIUM }}
-                        >
-                          <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                            <RadioGroupItem value="male" id="gender-male" />
-                            <Label htmlFor="gender-male" className="text-[11px] sm:text-xs cursor-pointer">
-                              {AVATAR_UI_TEXT.male}
-                            </Label>
-                          </div>
-                          <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                            <RadioGroupItem value="female" id="gender-female" />
-                            <Label htmlFor="gender-female" className="text-[11px] sm:text-xs cursor-pointer">
-                              {AVATAR_UI_TEXT.female}
-                            </Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-
                       {/* Avatar Selection */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
                         <Label className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300">{AVATAR_UI_TEXT.chooseYourAvatar}</Label>
                         <AvatarSelection
                           selectedAvatar={signUpAvatar}
-                          gender={signUpGender}
                           onAvatarSelect={setSignUpAvatar}
+                          previewInitials={signUpName.trim() || 'TM'}
                         />
                       </div>
 

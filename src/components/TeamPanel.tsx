@@ -31,7 +31,7 @@ import {
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { AvatarSelection, type AvatarGender } from "./AvatarSelection";
+import { AvatarSelection } from "./AvatarSelection";
 import { UserProfileAvatar } from "./UserProfileAvatar";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { AVATAR_UI_TEXT } from "../lib/avatar-constants";
@@ -194,7 +194,6 @@ export function TeamPanel() {
   const [newMemberRole, setNewMemberRole] = useState<
     "admin" | "member" | "viewer"
   >("member");
-  const [newMemberGender, setNewMemberGender] = useState<"male" | "female">(AVATAR_UI_TEXT.defaultGender);
   const [newMemberAvatar, setNewMemberAvatar] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [bulkInvites, setBulkInvites] = useState<string>("");
@@ -282,7 +281,7 @@ export function TeamPanel() {
             email: newMemberEmail.trim(),
             role: newMemberRole,
           },
-          newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim(), newMemberGender),
+          newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim()),
         );
       } else {
         // Legacy workspace-based team
@@ -290,7 +289,7 @@ export function TeamPanel() {
           name: newMemberName.trim(),
           email: newMemberEmail.trim(),
           role: newMemberRole,
-          avatar: newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim(), newMemberGender),
+          avatar: newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim()),
         }, currentWorkspaceId);
       }
 
@@ -298,7 +297,6 @@ export function TeamPanel() {
       setNewMemberName("");
       setNewMemberEmail("");
       setNewMemberRole("member");
-      setNewMemberGender(AVATAR_UI_TEXT.defaultGender);
       setNewMemberAvatar(undefined);
       setShowAddMember(false);
     } catch (error) {
@@ -2047,36 +2045,11 @@ export function TeamPanel() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
-              <Label>{AVATAR_UI_TEXT.gender}</Label>
-              <RadioGroup
-                value={newMemberGender}
-                onValueChange={(value) => {
-                  setNewMemberGender(value as "male" | "female");
-                  setNewMemberAvatar(undefined); // Reset avatar when gender changes
-                }}
-                style={{ display: 'flex', gap: PANEL_GAP_MEDIUM }}
-              >
-                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                  <RadioGroupItem value="male" id="new-member-gender-male" />
-                  <Label htmlFor="new-member-gender-male" className="cursor-pointer">
-                    {AVATAR_UI_TEXT.male}
-                  </Label>
-                </div>
-                <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                  <RadioGroupItem value="female" id="new-member-gender-female" />
-                  <Label htmlFor="new-member-gender-female" className="cursor-pointer">
-                    {AVATAR_UI_TEXT.female}
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label>{AVATAR_UI_TEXT.chooseAvatar}</Label>
               <AvatarSelection
                 selectedAvatar={newMemberAvatar}
-                gender={newMemberGender}
                 onAvatarSelect={setNewMemberAvatar}
+                previewInitials={newMemberName.trim() || 'TM'}
               />
             </div>
           </div>

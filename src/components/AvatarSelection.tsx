@@ -1,42 +1,40 @@
 /**
- * Avatar Selection Component
- * Allows users to select an avatar from a grid of illustrations
+ * Avatar Selection — pastel preset swatches matching TaskZM brand colors.
  */
 
 import React from 'react';
 import { cn } from '../lib/utils';
+import { useTheme } from '../contexts/ThemeContext';
 import {
-  AVATAR_PATHS,
-  DEFAULT_AVATAR,
+  AVATAR_PRESETS,
   AVATAR_SELECTION_SIZE,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
-  USER_PROFILE_AVATAR_BG_CLASS,
-  type AvatarGender,
+  USER_PROFILE_AVATAR_RING_CLASS,
+  getAvatarPresetStyles,
 } from '../lib/avatar-constants';
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 
-export type { AvatarGender };
-
 interface AvatarSelectionProps {
   selectedAvatar?: string;
-  gender: AvatarGender;
-  onAvatarSelect: (avatarPath: string) => void;
+  onAvatarSelect: (avatarId: string) => void;
+  previewInitials?: string;
   className?: string;
 }
 
 export function AvatarSelection({
   selectedAvatar,
-  gender,
   onAvatarSelect,
+  previewInitials = 'TM',
   className,
 }: AvatarSelectionProps) {
-  const avatars = AVATAR_PATHS[gender];
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
 
   return (
-    <div className={cn('w-full', className)} key={`avatar-selection-${gender}`}>
+    <div className={cn('w-full', className)}>
       <div
         className="grid rounded-xl border border-border/40 bg-muted/20 p-3"
         style={{
@@ -44,41 +42,39 @@ export function AvatarSelection({
           gap: AVATAR_SELECTION_GAP,
         }}
       >
-        {avatars.map((avatarPath, index) => {
-          const isSelected = selectedAvatar === avatarPath;
+        {AVATAR_PRESETS.map((preset) => {
+          const isSelected = selectedAvatar === preset.id;
+          const styles = getAvatarPresetStyles(preset, isDark);
           return (
             <button
-              key={`${gender}-${avatarPath}`}
+              key={preset.id}
               type="button"
-              onClick={() => onAvatarSelect(avatarPath)}
+              onClick={() => onAvatarSelect(preset.id)}
               className={cn(
                 'relative cursor-pointer overflow-hidden rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
-                USER_PROFILE_AVATAR_BG_CLASS,
                 isSelected
                   ? 'border-primary ring-2 ring-primary ring-offset-2'
-                  : 'border-border/60 hover:border-primary/40',
+                  : 'border-border/50 hover:border-primary/40',
+                USER_PROFILE_AVATAR_RING_CLASS,
               )}
               style={{
                 width: AVATAR_SELECTION_SIZE,
                 height: AVATAR_SELECTION_SIZE,
+                background: `linear-gradient(135deg, ${styles.gradientFrom} 0%, ${styles.gradientTo} 100%)`,
               }}
+              aria-label={preset.label}
+              title={preset.label}
             >
-              <img
-                src={avatarPath}
-                alt={`${gender} avatar ${index + 1}`}
-                className="h-full w-full object-cover object-top"
-                loading="lazy"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  if (target.src !== DEFAULT_AVATAR && !target.src.includes(DEFAULT_AVATAR)) {
-                    target.src = DEFAULT_AVATAR;
-                  }
-                }}
-              />
+              <span
+                className="relative flex h-full w-full items-center justify-center text-sm font-semibold"
+                style={{ color: styles.textColor }}
+              >
+                {previewInitials.slice(0, 2).toUpperCase()}
+              </span>
               {isSelected && (
-                <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
+                <div className="absolute inset-0 flex items-center justify-center bg-primary/15">
                   <div
-                    className="flex items-center justify-center rounded-full bg-primary"
+                    className="flex items-center justify-center rounded-full bg-primary shadow-sm"
                     style={{
                       width: AVATAR_CHECKMARK_SIZE,
                       height: AVATAR_CHECKMARK_SIZE,
@@ -93,6 +89,7 @@ export function AvatarSelection({
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      aria-hidden
                     >
                       <path
                         strokeLinecap="round"
@@ -111,3 +108,6 @@ export function AvatarSelection({
     </div>
   );
 }
+
+/** @deprecated Gender is no longer used for avatar selection */
+export type AvatarGender = 'male' | 'female';

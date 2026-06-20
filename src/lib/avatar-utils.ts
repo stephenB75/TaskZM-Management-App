@@ -1,9 +1,10 @@
 import {
-  AVATAR_PATHS,
+  AVATAR_PRESET_PREFIX,
+  AVATAR_PRESETS,
   DEFAULT_AVATAR,
-  DICEBEAR_STYLE,
-  DICEBEAR_BACKGROUND_COLORS,
+  getAvatarPresetById,
   type AvatarGender,
+  type AvatarPreset,
 } from './avatar-constants';
 
 function hashString(value: string): number {
@@ -15,46 +16,67 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
-export function getDiceBearAvatarUrl(seed: string, gender?: AvatarGender): string {
-  const params = new URLSearchParams({
-    seed,
-    backgroundColor: DICEBEAR_BACKGROUND_COLORS.join(','),
-  });
-
-  if (gender === 'male') {
-    params.set('facialHairProbability', '40');
-  } else if (gender === 'female') {
-    params.set('facialHairProbability', '0');
-  }
-
-  return `https://api.dicebear.com/7.x/${DICEBEAR_STYLE}/svg?${params.toString()}`;
+export function isLegacyAvatarUrl(avatar?: string): boolean {
+  if (!avatar) return false;
+  return (
+    avatar.includes('/avatars/') ||
+    avatar.includes('api.dicebear.com') ||
+    avatar.includes('user_profiles')
+  );
 }
 
-export function pickAvatarFromPool(seed: string, gender: AvatarGender = 'male'): string {
-  const avatars = AVATAR_PATHS[gender];
-  const index = hashString(seed.toLowerCase()) % avatars.length;
-  return avatars[index];
+export function parseAvatarPresetId(avatar?: string): string | null {
+  if (!avatar) return null;
+  if (avatar.startsWith(AVATAR_PRESET_PREFIX)) return avatar;
+  return null;
+}
+
+export function resolveAvatarPresetIndex(avatar: string | undefined, seed: string): number {
+  const presetId = parseAvatarPresetId(avatar);
+  if (presetId) {
+    const index = AVATAR_PRESETS.findIndex((preset) => preset.id === presetId);
+    if (index >= 0) return index;
+  }
+  return hashString(seed.toLowerCase()) % AVATAR_PRESETS.length;
+}
+
+export function resolveAvatarPreset(avatar: string | undefined, seed: string): AvatarPreset {
+  return AVATAR_PRESETS[resolveAvatarPresetIndex(avatar, seed)];
+}
+
+export function encodeAvatarPreset(index: number): string {
+  const safeIndex = ((index % AVATAR_PRESETS.length) + AVATAR_PRESETS.length) % AVATAR_PRESETS.length;
+  return AVATAR_PRESETS[safeIndex].id;
+}
+
+export function pickAvatarFromPool(seed: string, _gender?: AvatarGender): string {
+  return encodeAvatarPreset(hashString(seed.toLowerCase()));
 }
 
 export function pickAvatarFromPoolAuto(seed: string): string {
-  const gender: AvatarGender = hashString(seed.toLowerCase()) % 2 === 0 ? 'male' : 'female';
-  return pickAvatarFromPool(seed, gender);
+  return pickAvatarFromPool(seed);
+}
+
+/** @deprecated Use resolveAvatarPreset + UserProfileAvatar instead */
+export function getDiceBearAvatarUrl(seed: string, _gender?: AvatarGender): string {
+  return encodeAvatarPreset(hashString(seed.toLowerCase()));
 }
 
 export function resolveUserAvatar(
   avatar: string | undefined,
   seed: string,
-  gender?: AvatarGender,
+  _gender?: AvatarGender,
 ): string {
-  if (avatar) return avatar;
-  if (gender) return pickAvatarFromPool(seed, gender);
-  return getDiceBearAvatarUrl(seed);
+  const presetId = parseAvatarPresetId(avatar);
+  if (presetId && getAvatarPresetById(presetId)) return presetId;
+  if (avatar && !isLegacyAvatarUrl(avatar)) return avatar;
+  return encodeAvatarPreset(hashString(seed.toLowerCase()));
 }
 
 export function isDiceBearAvatar(avatar?: string): boolean {
   return Boolean(avatar?.includes('api.dicebear.com'));
 }
 
-export function getAvatarFallback(avatar?: string): string {
-  return avatar || DEFAULT_AVATAR;
+export function getAvatarFallback(_avatar?: string): string {
+  return DEFAULT_AVATAR;
 }

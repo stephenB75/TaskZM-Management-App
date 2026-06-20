@@ -86,6 +86,7 @@ import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
 import { ACTION_PLAN_CONFIG } from "../lib/ai-config";
 import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, TODAY_AGENDA_TIMELINE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { AgendaListCard } from "./AgendaListCard";
+import { UserProfileAvatar } from "./UserProfileAvatar";
 import { AGENDA_LIST_CARD_UI, AGENDA_LIST_CARD, AGENDA_LIST_CARD_COLORS } from "../lib/agenda-list-card-constants";
 
 interface DraggableTaskCardProps {
@@ -1217,7 +1218,6 @@ export const DraggableTaskCard = React.forwardRef<
                   {task.assignedTo.slice(0, 1).map((userId) => {
                     const member = getTeamMember(userId);
                     if (!member) return null;
-                    const initials = getInitials(member.name);
                     const avatarSize = TASK_CARD_EXPANDABLE.avatarSize;
                     return (
                       <TooltipProvider key={userId}>
@@ -1234,48 +1234,13 @@ export const DraggableTaskCard = React.forwardRef<
                                   ) : null;
                                 })()}
                               </div>
-                              {member.avatar ? (
-                                <div 
-                                  className="rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0"
-                                  style={{
-                                    width: `${avatarSize}px`,
-                                    height: `${avatarSize}px`,
-                                  }}
-                                >
-                                  <img
-                                    src={member.avatar}
-                                    alt={member.name}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                      const parent = target.parentElement;
-                                      if (parent) {
-                                        const fallback = document.createElement('div');
-                                        fallback.className = cn(
-                                          `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center font-semibold text-sm`
-                                        );
-                                        fallback.style.width = `${avatarSize}px`;
-                                        fallback.style.height = `${avatarSize}px`;
-                                        fallback.textContent = initials;
-                                        parent.appendChild(fallback);
-                                      }
-                                    }}
-                                  />
-                                </div>
-                              ) : (
-                                <div 
-                                  className={cn(
-                                    `rounded-full ${TASK_CARD_ASSIGNED_USER_COLORS.gradient} ${TASK_CARD_ASSIGNED_USER_COLORS.gradientDark} ${TASK_CARD_ASSIGNED_USER_COLORS.text} ${TASK_CARD_ASSIGNED_USER_COLORS.textDark} flex items-center justify-center font-semibold text-sm flex-shrink-0`
-                                  )}
-                                  style={{
-                                    width: `${avatarSize}px`,
-                                    height: `${avatarSize}px`,
-                                  }}
-                                >
-                                  {initials}
-                                </div>
-                              )}
+                              <UserProfileAvatar
+                                src={member.avatar}
+                                name={member.name}
+                                size={`${avatarSize}px`}
+                                fontSize="0.75rem"
+                                showRing={false}
+                              />
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
