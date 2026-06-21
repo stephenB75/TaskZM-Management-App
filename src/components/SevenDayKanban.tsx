@@ -34,11 +34,12 @@ import {
   KANBAN_SPACING,
   KANBAN_WEEK_GROUP_HEADER,
   KANBAN_WEEK_GROUP_LABELS,
+  KANBAN_COLUMN_HEIGHT,
   formatKanbanWeekGroupDateRange,
 } from '../lib/kanban-constants';
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
-import { VIEWPORT_BREAKPOINTS, MOBILE_SPACING, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
+import { VIEWPORT_BREAKPOINTS, DROPPABLE_COLUMN_MIN_HEIGHT_PX, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
@@ -153,6 +154,13 @@ export function SevenDayKanban({
   // Auto-zoom state for desktop view
   const columnsContainerRef = React.useRef<HTMLDivElement>(null);
   const [zoomScale, setZoomScale] = useState(1);
+  const [columnBlockMinHeightPx, setColumnBlockMinHeightPx] = useState(
+    DROPPABLE_COLUMN_MIN_HEIGHT_PX + KANBAN_COLUMN_HEIGHT.columnHeaderFallbackPx,
+  );
+  const columnBodyMinHeightPx = Math.max(
+    KANBAN_COLUMN_HEIGHT.minBodyHeightPx,
+    columnBlockMinHeightPx - KANBAN_COLUMN_HEIGHT.columnHeaderFallbackPx,
+  );
   
   // Track if we've scrolled to next day on mount (only once)
   const hasScrolledToNextDayRef = React.useRef(false);
@@ -402,29 +410,30 @@ export function SevenDayKanban({
         
         // Defer heavy DOM measurements to idle callback to avoid blocking animation frame
         const processMeasurements = () => {
-          // Find the tallest column by checking all child divs (the motion.div column elements)
+          const weekHeaderEl = columns.querySelector('[data-kanban-week-group-header]');
+          const weekHeaderHeight =
+            weekHeaderEl instanceof HTMLElement
+              ? weekHeaderEl.getBoundingClientRect().height
+              : KANBAN_COLUMN_HEIGHT.weekGroupHeaderFallbackPx;
+          const containerPadding = KANBAN_COLUMN_DIMENSIONS.padding.desktop * 2;
+          const availableColumnBlock = Math.max(
+            DROPPABLE_COLUMN_MIN_HEIGHT_PX + KANBAN_COLUMN_HEIGHT.columnHeaderFallbackPx,
+            viewportHeight
+              - containerPadding
+              - weekHeaderHeight
+              - KANBAN_COLUMN_HEIGHT.weekHeaderToColumnsGapPx
+              - KANBAN_ZOOM.padding,
+          );
+          setColumnBlockMinHeightPx(Math.floor(availableColumnBlock));
+
+          // Find the tallest day column (equal-height rows stretch to match)
           let maxColumnHeight = 0;
-          const columnElements = columns.children;
-          
-          // OPTIMIZED: Limit the number of columns checked and batch reads efficiently
-          const maxColumnsToCheck = KANBAN_TIME.daysInWeek;
-          const columnsToCheck = Array.from(columnElements).slice(0, maxColumnsToCheck);
-          
-          // OPTIMIZED: Batch all layout reads in a single pass to minimize forced reflows
-          // Read all layout properties first, then process
-          const measurements: Array<{ height: number; scrollHeight: number }> = [];
-          
-          // Single batch read - all getBoundingClientRect calls happen together
-          const rects = columnsToCheck
-            .filter((col): col is HTMLElement => col instanceof HTMLElement)
-            .map(col => ({
-              rect: col.getBoundingClientRect(),
-              scrollHeight: col.scrollHeight,
-            }));
-          
-          // Process measurements after all reads are complete
-          for (const { rect, scrollHeight } of rects) {
-            const columnHeight = Math.max(rect.height, scrollHeight);
+          const dayColumnElements = columns.querySelectorAll('[data-kanban-day-column]');
+
+          for (const col of dayColumnElements) {
+            if (!(col instanceof HTMLElement)) continue;
+            const rect = col.getBoundingClientRect();
+            const columnHeight = Math.max(rect.height, col.scrollHeight);
             maxColumnHeight = Math.max(maxColumnHeight, columnHeight);
           }
           
@@ -490,7 +499,7 @@ export function SevenDayKanban({
       if (timeoutId) clearTimeout(timeoutId);
       if (resizeTimeoutId) clearTimeout(resizeTimeoutId);
     };
-  }, [tasks, mobileMode, viewMode, weekOffset]);
+  }, [tasks, mobileMode, viewMode, weekOffset, calendarEventsByDate]);
 
   // Scroll to next day (tomorrow) on mount for desktop view
   // Positions tomorrow at the left edge to hide previous days, but allows horizontal scroll
@@ -1200,13 +1209,16 @@ export function SevenDayKanban({
             <div 
               ref={columnsContainerRef}
               data-kanban-zoom-scale={zoomScale}
-              className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3 min-w-max"
+              className={cn(
+                "flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3 min-w-max",
+                !mobileMode && "h-full items-stretch",
+              )}
               style={{
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
                 transformOrigin: 'top left',
                 transition: KANBAN_ANIMATION.transformTransition,
                 // No paddingBottom - nav bar clearance handled by spacer in App.tsx
-                minHeight: mobileMode ? '100%' : undefined,
+                minHeight: mobileMode ? '100%' : '100%',
                 backgroundImage: mobileMode ? (isDark
                   ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
                   : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`)
@@ -1257,7 +1269,7 @@ export function SevenDayKanban({
                       </div>
                     )}
 
-                  <div className="flex flex-col gap-2 min-w-max">
+                  <div className="flex flex-col gap-2 min-w-max flex-1 self-stretch h-full">
                     {(() => {
                       const groupStart = group[0]?.date;
                       const groupEnd = group[group.length - 1]?.date;
@@ -1269,7 +1281,8 @@ export function SevenDayKanban({
 
                       return (
                         <div
-                          className="flex items-center gap-2 min-w-0"
+                          data-kanban-week-group-header
+                          className="flex items-center gap-2 min-w-0 flex-shrink-0"
                           style={{
                             paddingTop: KANBAN_WEEK_GROUP_HEADER.paddingY,
                             paddingBottom: KANBAN_WEEK_GROUP_HEADER.paddingY,
@@ -1314,7 +1327,7 @@ export function SevenDayKanban({
                       );
                     })()}
 
-                    <div className="flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2">
+                    <div className="flex flex-1 items-stretch gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 min-h-0">
                       {group.map((column, columnIndex) => {
                 const dayTasks = getTasksForDay(column.dateString);
                 // For recurring tasks, use unique ID per date occurrence to maintain chronological order
@@ -1338,7 +1351,7 @@ export function SevenDayKanban({
                 return (
                   <div
                     key={column.dateString}
-                    className="flex flex-col"
+                    className="flex flex-col self-stretch h-full flex-1"
                     style={{
                       minWidth: `${columnWidth}px`,
                       width: `${columnWidth}px`,
@@ -1365,8 +1378,9 @@ export function SevenDayKanban({
                     )}
                     <motion.div
                       data-column-date={column.dateString}
+                      data-kanban-day-column
                       className={cn(
-                        'flex flex-col rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
+                        'flex flex-col flex-1 h-full min-h-0 rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
                         // Only use Tailwind bg when we are not applying column-wrapper tint (weekend or no header colors)
                         !column.isWeekend && !hasHeader(dayColors) && (isDark ? 'bg-card/80' : 'bg-transparent'),
                         column.isWeekend && isDark && 'bg-card/60',
@@ -1376,6 +1390,7 @@ export function SevenDayKanban({
                       style={{
                         minWidth: `${columnWidth}px`,
                         width: `${columnWidth}px`,
+                        minHeight: `${columnBlockMinHeightPx}px`,
                         ...(column.isWeekend && !isDark && {
                           backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
                         }),
@@ -1455,7 +1470,12 @@ export function SevenDayKanban({
                       </div>
                     </div>
 
-                    <DroppableColumn id={column.dateString} className="flex-1 min-h-0">
+                    <DroppableColumn
+                      id={column.dateString}
+                      fillHeight
+                      bodyMinHeightPx={columnBodyMinHeightPx}
+                      className="flex-1 min-h-0"
+                    >
                       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                         {(() => {
                           // Get calendar events for this day
@@ -1528,14 +1548,13 @@ export function SevenDayKanban({
                           return (
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 flex flex-col items-stretch h-full min-h-full',
+                            'p-2 sm:p-3 flex flex-col flex-1 min-h-0 items-stretch h-full',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
                             backgroundImage: isDark
                               ? getColumnBgGradient(column.dayName, isDark, column.isToday)
                               : getColumnBgGradient(column.dayName, false, column.isToday),
-                                  minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px`,
                           }}
                         >
                           <AnimatePresence mode="popLayout">
@@ -1544,8 +1563,7 @@ export function SevenDayKanban({
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                      className="flex flex-col items-center justify-center py-12 text-center pointer-events-none"
-                                      style={{ minHeight: `${MOBILE_SPACING.emptyStateMinHeight}px` }}
+                                      className="flex flex-1 flex-col items-center justify-center py-12 text-center pointer-events-none min-h-0"
                               >
                                       <p className="text-sm text-muted-foreground pointer-events-none">No tasks</p>
                               </motion.div>

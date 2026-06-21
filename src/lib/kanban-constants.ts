@@ -4,7 +4,7 @@
  */
 
 import { DEFAULT_WEEKDAY_WORK_START } from './business-constants';
-import { NAV_BAR_BOTTOM_PADDING_MOBILE } from './layout-constants';
+import { DROPPABLE_COLUMN_MIN_HEIGHT_PX, NAV_BAR_BOTTOM_PADDING_MOBILE } from './layout-constants';
 import { 
   COLOR_PASTEL_MINT,
   COLOR_PASTEL_SKY,
@@ -421,6 +421,22 @@ export const KANBAN_WEEK_GROUP_HEADER = {
       opacity: 0.85,
     },
   },
+} as const;
+
+/** Desktop kanban column block height (equal columns, viewport-aware) */
+export const KANBAN_COLUMN_HEIGHT = {
+  /** Fallback week-group header height when not yet measured */
+  weekGroupHeaderFallbackPx: 42,
+  /** gap-2 between week label row and day columns */
+  weekHeaderToColumnsGapPx: 8,
+  /** Today indicator strip above a column (margin + line) */
+  todayIndicatorChromePx: 12,
+  /** Day column card header row (padding + label) */
+  columnHeaderFallbackPx:
+    KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingY * 2 + 28,
+  /** Minimum body height inside a day column */
+  minBodyHeightPx: DROPPABLE_COLUMN_MIN_HEIGHT_PX,
+  measureDebounceMs: 100,
 } as const;
 
 export const KANBAN_WEEK_GROUP_LABELS = ['Week 1', 'Week 2'] as const;

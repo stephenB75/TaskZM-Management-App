@@ -8,12 +8,18 @@ interface DroppableColumnProps {
   id: string;
   children: React.ReactNode;
   className?: string;
+  /** When true, column body fills remaining height in a flex column layout */
+  fillHeight?: boolean;
+  /** Override default desktop min-height (px) for equal-height kanban columns */
+  bodyMinHeightPx?: number;
 }
 
 export function DroppableColumn({
   id,
   children,
   className,
+  fillHeight = false,
+  bodyMinHeightPx,
 }: DroppableColumnProps) {
   const isMobile = useIsMobile();
   const { setNodeRef, isOver } = useDroppable({
@@ -27,7 +33,11 @@ export function DroppableColumn({
       data-droppable-id={id}
       className={cn(
         "select-none transition-all duration-300",
-        isMobile ? "min-h-0 [background:transparent!important] [background-color:transparent!important]" : "min-h-[200px]", // No min-height on mobile; desktop uses DROPPABLE_COLUMN_MIN_HEIGHT_PX in style below
+        isMobile
+          ? "min-h-0 [background:transparent!important] [background-color:transparent!important]"
+          : fillHeight
+            ? "min-h-0 flex flex-col flex-1 h-full"
+            : "min-h-[200px]",
         className,
         !isMobile &&
           isOver &&
@@ -37,7 +47,12 @@ export function DroppableColumn({
         // Ensure drop zone is always accessible, even when empty (inline minHeight overrides parent min-h-0)
         position: 'relative',
         zIndex: isOver ? 100 : 'auto',
-        ...(isMobile ? {} : { minHeight: DROPPABLE_COLUMN_MIN_HEIGHT_PX }),
+        ...(isMobile
+          ? {}
+          : {
+              minHeight:
+                bodyMinHeightPx ?? DROPPABLE_COLUMN_MIN_HEIGHT_PX,
+            }),
         backgroundColor: isMobile ? 'transparent' : undefined, // Transparent background on mobile to prevent white box
         background: isMobile ? 'transparent' : undefined,
       }}
