@@ -25,7 +25,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { cn, prepareTaskForDialog, parseCalendarEventTime, getDateString, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from "../lib/utils";
+import { cn, prepareTaskForDialog, parseCalendarEventTime, getDateString, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, dateStringToLocalDate, getTaskSortTimeOnDay, getCalendarEventSortTimeOnDay, compareChronologicalItemsOnDay } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
@@ -336,22 +336,29 @@ function DroppableDay({
   
   const combinedItems: CombinedItem[] = [];
   const taskList = Array.isArray(dayData.tasks) ? dayData.tasks : [];
+  const referenceDay = dateStringToLocalDate(dateString);
   
-  // Add tasks
+  // Add tasks (normalize to column day so recurring tasks sort by time-of-day)
   for (const task of taskList) {
-    const taskTime = task.scheduledDate || task.dueDate;
-    const sortTime = taskTime ? new Date(taskTime).getTime() : 0;
-    combinedItems.push({ type: 'task', data: task, sortTime });
+    combinedItems.push({ type: 'task', data: task, sortTime: getTaskSortTimeOnDay(referenceDay, task) });
   }
   
-  // Add calendar events (use parseCalendarEventTime so UTC-from-API shows correct local time)
+  // Add calendar events (normalize to column day for mixed chronological sort)
   for (const event of calendarEvents) {
-    const sortTime = parseCalendarEventTime(event.start).getTime();
-    combinedItems.push({ type: 'event', data: event, sortTime });
+    combinedItems.push({ type: 'event', data: event, sortTime: getCalendarEventSortTimeOnDay(referenceDay, event.start) });
   }
   
-  // Sort by time
-  combinedItems.sort((a, b) => a.sortTime - b.sortTime);
+  // Sort by time (earliest first; no-time tasks last; events before tasks at same time)
+  combinedItems.sort((a, b) =>
+    compareChronologicalItemsOnDay(
+      a.sortTime,
+      b.sortTime,
+      a.type,
+      b.type,
+      a.type === 'task' ? a.data.id : a.data.id,
+      b.type === 'task' ? b.data.id : b.data.id,
+    ),
+  );
   
   const totalItems = combinedItems.length;
   const showAllItems = isExpanded || totalItems <= 2;

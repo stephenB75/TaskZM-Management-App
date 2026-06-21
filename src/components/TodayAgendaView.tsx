@@ -14,7 +14,7 @@ import { Button } from "./ui/button";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
-import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from "../lib/utils";
+import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, compareTasksByScheduledTimeOnDay, getTaskSortTimeOnDay, getCalendarEventSortTimeOnDay, compareChronologicalItemsOnDay } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "../lib/toast-wrapper";
 import { playTaskCompleteSound } from "../lib/toast-sound";
@@ -145,20 +145,13 @@ export function TodayAgendaView({
     const unique = Array.from(byId.values());
     return unique.sort((a, b) => {
       try {
-        const dateA = a.scheduledDate ? new Date(a.scheduledDate) : null;
-        const dateB = b.scheduledDate ? new Date(b.scheduledDate) : null;
-        if (!dateA || isNaN(dateA.getTime())) return 1;
-        if (!dateB || isNaN(dateB.getTime())) return -1;
-        const timeA = dateA.getTime();
-        const timeB = dateB.getTime();
-        if (timeA === timeB) return a.id.localeCompare(b.id);
-        return timeA - timeB;
+        return compareTasksByScheduledTimeOnDay(a, b, today);
       } catch (error) {
         console.error('Error sorting tasks:', error, a, b);
         return 0;
       }
     });
-  }, [incompleteTasks]);
+  }, [incompleteTasks, today]);
 
   // Fetch calendar events for today using optimized hook
   const todayStart = useMemo(() => {
@@ -211,39 +204,35 @@ export function TodayAgendaView({
         .filter((id): id is string => !!id)
     );
 
-    // Add tasks with their sort time
+    // Add tasks with sort time normalized to today (time-of-day only; recurring base dates differ)
     for (const task of todayTasks) {
-      const taskTime = task.scheduledDate ? new Date(task.scheduledDate).getTime() : Number.MAX_SAFE_INTEGER;
       items.push({
         type: 'task',
         task,
-        sortTime: taskTime,
+        sortTime: getTaskSortTimeOnDay(today, task),
       });
     }
 
     // Add calendar events (skip if a task already represents this event to avoid duplicate at same time)
     for (const event of todayCalendarEvents) {
       if (eventIdsRepresentedByTasks.has(event.id)) continue;
-      const sortTime = parseCalendarEventTime(event.start).getTime();
       items.push({
         type: 'event',
         event,
-        sortTime,
+        sortTime: getCalendarEventSortTimeOnDay(today, event.start),
       });
     }
     
     // Chronological order: earliest first; items without time go to end.
     // When a task and a calendar event have the same time, use stable order: events first, then tasks, then by id.
     items.sort((a, b) => {
-      if (a.sortTime !== b.sortTime) return a.sortTime - b.sortTime;
-      if (a.type !== b.type) return a.type === 'event' ? -1 : 1;
       const idA = a.type === 'task' && a.task ? a.task.id : a.type === 'event' && a.event ? a.event.id : '';
       const idB = b.type === 'task' && b.task ? b.task.id : b.type === 'event' && b.event ? b.event.id : '';
-      return idA.localeCompare(idB);
+      return compareChronologicalItemsOnDay(a.sortTime, b.sortTime, a.type, b.type, idA, idB);
     });
     
     return items;
-  }, [todayTasks, todayCalendarEvents]);
+  }, [todayTasks, todayCalendarEvents, today]);
 
   /** Timeline blocks (7AM–12AM). Single column: blocks stacked in time order; when one would overlap the previous, it is placed below it and the timeline extends vertically. Connector line from timeline to block shows actual time. */
   const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, laneCount } = useMemo(() => {

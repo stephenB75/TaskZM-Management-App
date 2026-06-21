@@ -125,6 +125,55 @@ export function dateStringToLocalDate(dateString: string): Date {
 }
 
 /**
+ * Map a time source onto a reference calendar day (local midnight + time-of-day).
+ * Use when sorting tasks and calendar events together within one day; recurring tasks
+ * keep a base scheduledDate on another day but should order by their assigned time-of-day.
+ */
+export function getSortTimestampOnDay(referenceDay: Date, timeSource: Date | string): number {
+  const ref = new Date(referenceDay);
+  ref.setHours(0, 0, 0, 0);
+  const src = typeof timeSource === 'string' ? new Date(timeSource) : new Date(timeSource.getTime());
+  if (Number.isNaN(src.getTime())) return Number.MAX_SAFE_INTEGER;
+  ref.setHours(src.getHours(), src.getMinutes(), src.getSeconds(), src.getMilliseconds());
+  return ref.getTime();
+}
+
+/** Chronological sort key for a task on a given display day (scheduledDate, else dueDate). */
+export function getTaskSortTimeOnDay(referenceDay: Date, task: Pick<Task, 'scheduledDate' | 'dueDate'>): number {
+  const source = task.scheduledDate || task.dueDate;
+  if (!source) return Number.MAX_SAFE_INTEGER;
+  return getSortTimestampOnDay(referenceDay, source);
+}
+
+/** Chronological sort key for a calendar event on a given display day. */
+export function getCalendarEventSortTimeOnDay(referenceDay: Date, eventStartIso: string): number {
+  return getSortTimestampOnDay(referenceDay, parseCalendarEventTime(eventStartIso));
+}
+
+/** Compare two tasks by assigned time-of-day on a reference day (earliest first; no time last). */
+export function compareTasksByScheduledTimeOnDay(a: Task, b: Task, referenceDay: Date): number {
+  const timeA = getTaskSortTimeOnDay(referenceDay, a);
+  const timeB = getTaskSortTimeOnDay(referenceDay, b);
+  if (timeA !== timeB) return timeA - timeB;
+  return (a.id || '').localeCompare(b.id || '');
+}
+
+/** Stable chronological compare for mixed tasks and calendar events on one day. */
+export function compareChronologicalItemsOnDay(
+  aSortTime: number,
+  bSortTime: number,
+  aType?: 'task' | 'event',
+  bType?: 'task' | 'event',
+  aId?: string,
+  bId?: string,
+): number {
+  if (aSortTime !== bSortTime) return aSortTime - bSortTime;
+  if (aType && bType && aType !== bType) return aType === 'event' ? -1 : 1;
+  if (aId && bId) return aId.localeCompare(bId);
+  return 0;
+}
+
+/**
  * Calculate total tracked time across all occurrences in a recurring task series
  * Includes both completed occurrences and active occurrences
  * @param baseTaskId - The base recurring task ID (without date suffix)

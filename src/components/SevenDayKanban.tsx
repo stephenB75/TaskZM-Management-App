@@ -15,7 +15,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from '../lib/utils';
+import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, compareTasksByScheduledTimeOnDay, getTaskSortTimeOnDay, getCalendarEventSortTimeOnDay, compareChronologicalItemsOnDay } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
@@ -42,7 +42,7 @@ import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
-import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
+import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
 import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
@@ -535,20 +535,7 @@ export function SevenDayKanban({
         })
         .sort((a, b) => {
           try {
-            // Sort by TIME OF DAY only (hours and minutes), not full timestamp
-            // This is important for recurring tasks where scheduledDate is the base date
-            // but we want to sort by the time they occur during the day
-            const dateA = a.scheduledDate ? new Date(a.scheduledDate) : null;
-            const dateB = b.scheduledDate ? new Date(b.scheduledDate) : null;
-            
-            if (!dateA || isNaN(dateA.getTime())) return 1;
-            if (!dateB || isNaN(dateB.getTime())) return -1;
-            
-            // Extract time of day in minutes (hours * MINUTES_PER_HOUR + minutes)
-            const timeOfDayA = dateA.getHours() * MINUTES_PER_HOUR + dateA.getMinutes();
-            const timeOfDayB = dateB.getHours() * MINUTES_PER_HOUR + dateB.getMinutes();
-            
-            return timeOfDayA - timeOfDayB;
+            return compareTasksByScheduledTimeOnDay(a, b, checkDate);
           } catch (error) {
             logger.error('Error sorting tasks:', error, a, b);
             return 0;
@@ -785,60 +772,37 @@ export function SevenDayKanban({
                       
                       const combinedItems: MobileCombinedItem[] = [];
                       
-                      // Normalize date to column's date for accurate time-of-day sorting
-                      const columnDate = new Date(currentColumn.date);
-                      columnDate.setHours(0, 0, 0, 0);
+                      const columnDate = dateStringToLocalDate(currentColumn.dateString);
                       
-                      // Add tasks with their sort time (normalize to column date for time-of-day sorting)
+                      // Add tasks with sort time normalized to column day
                       for (const layout of dayLayouts) {
-                        const taskTime = layout.task.scheduledDate || layout.task.dueDate;
-                        let sortTime: number;
-                        
-                        if (taskTime) {
-                          const taskDate = new Date(taskTime);
-                          // Normalize to column's date but preserve the time of day
-                          const normalizedDate = new Date(columnDate);
-                          normalizedDate.setHours(taskDate.getHours(), taskDate.getMinutes(), taskDate.getSeconds(), taskDate.getMilliseconds());
-                          sortTime = normalizedDate.getTime();
-                        } else {
-                          // For tasks without time, use end of day so they appear after timed items
-                          sortTime = Number.MAX_SAFE_INTEGER;
-                        }
-                        
                         combinedItems.push({
                           type: 'task',
                           task: layout.task,
                           marginTop: layout.marginTop,
-                          sortTime,
+                          sortTime: getTaskSortTimeOnDay(columnDate, layout.task),
                         });
                       }
                       
-// Add calendar events (normalize to column date for time-of-day sorting; use parseCalendarEventTime for correct local time)
-                          for (const event of calEvents) {
-                            const eventStart = parseCalendarEventTime(event.start);
-                            // Normalize to column's date but preserve the time of day (in local timezone)
-                            const normalizedDate = new Date(columnDate);
-                            normalizedDate.setHours(eventStart.getHours(), eventStart.getMinutes(), eventStart.getSeconds(), eventStart.getMilliseconds());
-                            const sortTime = normalizedDate.getTime();
-                            
-                            combinedItems.push({
-                              type: 'event',
-                              event,
-                              sortTime,
-                            });
-                          }
+                      // Add calendar events (normalize to column day for mixed chronological sort)
+                      for (const event of calEvents) {
+                        combinedItems.push({
+                          type: 'event',
+                          event,
+                          sortTime: getCalendarEventSortTimeOnDay(columnDate, event.start),
+                        });
+                      }
                           
-                          // Sort by time (earliest first, tasks without time go to end)
-                          // Secondary sort by type (events before tasks at same time) for consistent ordering
-                          combinedItems.sort((a, b) => {
-                            if (a.sortTime !== b.sortTime) {
-                              return a.sortTime - b.sortTime;
-                            }
-                            // If same time, events come before tasks
-                            if (a.type === 'event' && b.type === 'task') return -1;
-                            if (a.type === 'task' && b.type === 'event') return 1;
-                            return 0;
-                          });
+                          combinedItems.sort((a, b) =>
+                            compareChronologicalItemsOnDay(
+                              a.sortTime,
+                              b.sortTime,
+                              a.type,
+                              b.type,
+                              a.type === 'task' ? a.task.id : a.event.id,
+                              b.type === 'task' ? b.task.id : b.event.id,
+                            ),
+                          );
                           
                           const hasContent = combinedItems.length > 0;
                           
@@ -1358,60 +1322,37 @@ export function SevenDayKanban({
                           
                           const combinedItems: CombinedItem[] = [];
                           
-                          // Normalize date to column's date for accurate time-of-day sorting
-                          const columnDate = new Date(column.date);
-                          columnDate.setHours(0, 0, 0, 0);
+                          const columnDate = dateStringToLocalDate(column.dateString);
                           
-                          // Add tasks with their sort time (normalize to column date for time-of-day sorting)
+                          // Add tasks with sort time normalized to column day
                           for (const layout of dayLayouts) {
-                            const taskTime = layout.task.scheduledDate || layout.task.dueDate;
-                            let sortTime: number;
-                            
-                            if (taskTime) {
-                              const taskDate = new Date(taskTime);
-                              // Normalize to column's date but preserve the time of day
-                              const normalizedDate = new Date(columnDate);
-                              normalizedDate.setHours(taskDate.getHours(), taskDate.getMinutes(), taskDate.getSeconds(), taskDate.getMilliseconds());
-                              sortTime = normalizedDate.getTime();
-                            } else {
-                              // For tasks without time, use end of day so they appear after timed items
-                              sortTime = Number.MAX_SAFE_INTEGER;
-                            }
-                            
                             combinedItems.push({
                               type: 'task',
                               task: layout.task,
                               marginTop: layout.marginTop,
-                              sortTime,
+                              sortTime: getTaskSortTimeOnDay(columnDate, layout.task),
                             });
                           }
                           
-                          // Add calendar events (normalize to column date for time-of-day sorting; use parseCalendarEventTime for correct local time)
+                          // Add calendar events (normalize to column day for mixed chronological sort)
                           for (const event of calEvents) {
-                            const eventStart = parseCalendarEventTime(event.start);
-                            // Normalize to column's date but preserve the time of day (in local timezone)
-                            const normalizedDate = new Date(columnDate);
-                            normalizedDate.setHours(eventStart.getHours(), eventStart.getMinutes(), eventStart.getSeconds(), eventStart.getMilliseconds());
-                            const sortTime = normalizedDate.getTime();
-                            
                             combinedItems.push({
                               type: 'event',
                               event,
-                              sortTime,
+                              sortTime: getCalendarEventSortTimeOnDay(columnDate, event.start),
                             });
                           }
                           
-                          // Sort by time (earliest first, tasks without time go to end)
-                          // Secondary sort by type (events before tasks at same time) for consistent ordering
-                          combinedItems.sort((a, b) => {
-                            if (a.sortTime !== b.sortTime) {
-                              return a.sortTime - b.sortTime;
-                            }
-                            // If same time, events come before tasks
-                            if (a.type === 'event' && b.type === 'task') return -1;
-                            if (a.type === 'task' && b.type === 'event') return 1;
-                            return 0;
-                          });
+                          combinedItems.sort((a, b) =>
+                            compareChronologicalItemsOnDay(
+                              a.sortTime,
+                              b.sortTime,
+                              a.type,
+                              b.type,
+                              a.type === 'task' ? a.task.id : a.event.id,
+                              b.type === 'task' ? b.task.id : b.event.id,
+                            ),
+                          );
                           
                           const hasContent = combinedItems.length > 0;
                           
