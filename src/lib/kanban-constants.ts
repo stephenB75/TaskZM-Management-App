@@ -278,7 +278,14 @@ export const KANBAN_SCROLL = {
 export const KANBAN_TIME = {
   defaultHour: parseTimeToHour(DEFAULT_WEEKDAY_WORK_START), // Default work start time for new tasks
   daysPerWeek: 7,
-  daysInWeek: 14, // Desktop shows 2 weeks (14 days)
+  /** Scheduling / fetch horizon (e.g. AI scheduler); kanban desktop shows one week (daysPerWeek) */
+  daysInWeek: 14,
+} as const;
+
+/** Desktop kanban: fit exactly one week in the horizontal viewport */
+export const KANBAN_VIEWPORT_WEEK = {
+  /** Minimum width per day column before horizontal overflow is allowed */
+  minColumnWidthPx: 128,
 } as const;
 
 // Mobile View Constants

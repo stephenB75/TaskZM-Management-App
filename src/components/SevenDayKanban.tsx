@@ -35,11 +35,12 @@ import {
   KANBAN_WEEK_GROUP_HEADER,
   KANBAN_WEEK_GROUP_LABELS,
   KANBAN_COLUMN_HEIGHT,
+  KANBAN_VIEWPORT_WEEK,
   formatKanbanWeekGroupDateRange,
 } from '../lib/kanban-constants';
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
-import { VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
+import { NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
@@ -98,36 +99,6 @@ export function SevenDayKanban({
   const { calendarStatus } = useCalendar();
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
   
-  // Calculate responsive column width based on viewport
-  // Tablets should use mobile column width for one-column layout
-  const [columnWidth, setColumnWidth] = React.useState<number>(KANBAN_COLUMN_DIMENSIONS.width.desktop);
-  
-  React.useEffect(() => {
-    const updateColumnWidth = () => {
-      const width = window.innerWidth;
-      // Use mobile layout hook to determine if we should use mobile column width
-      // This ensures tablets get mobile layout in both portrait and landscape
-      if (shouldUseMobileLayout) {
-        // Mobile and tablets: use mobile column width for one-column layout
-        setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.mobile);
-      } else {
-        // Desktop: use appropriate column width based on viewport
-        if (width >= VIEWPORT_BREAKPOINTS.desktop) {
-          setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.desktop);
-        } else {
-          setColumnWidth(KANBAN_COLUMN_DIMENSIONS.width.smallMonitor);
-        }
-      }
-    };
-    
-    updateColumnWidth();
-    window.addEventListener('resize', updateColumnWidth);
-    window.addEventListener('orientationchange', updateColumnWidth);
-    return () => {
-      window.removeEventListener('resize', updateColumnWidth);
-      window.removeEventListener('orientationchange', updateColumnWidth);
-    };
-  }, [shouldUseMobileLayout]); // Re-calculate when mobile layout preference changes
   const [weekOffset, setWeekOffset] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -158,9 +129,6 @@ export function SevenDayKanban({
     KANBAN_COLUMN_HEIGHT.minRowHeightPx,
   );
   
-  // Track if we've scrolled to next day on mount (only once)
-  const hasScrolledToNextDayRef = React.useRef(false);
-
   // Helpers for subtle gradients to avoid blending into backgrounds
   const toAlphaHex = (hex: string, percent: number) => {
     const clean = hex.replace('#', '');
@@ -266,7 +234,8 @@ export function SevenDayKanban({
       }
     }
 
-    const totalDays = mobileMode ? KANBAN_TIME.daysPerWeek : KANBAN_TIME.daysInWeek;
+    // Desktop: one week fills the viewport; mobile: single-column day carousel
+    const totalDays = KANBAN_TIME.daysPerWeek;
 
     return Array.from({ length: totalDays }, (_, i) => {
       const date = new Date(startDate);
@@ -321,10 +290,10 @@ export function SevenDayKanban({
     };
   }, [weekColumns]);
 
-  // Fallback range when visibleRange not yet set (e.g. first paint): next KANBAN_TIME.daysInWeek days so hook can fetch
+  // Fallback range when visibleRange not yet set (e.g. first paint)
   const fallbackEnd = React.useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + KANBAN_TIME.daysInWeek);
+    d.setDate(d.getDate() + KANBAN_TIME.daysPerWeek);
     d.setHours(23, 59, 59, 999);
     return d;
   }, []);
@@ -468,129 +437,6 @@ export function SevenDayKanban({
       if (resizeTimeoutId) clearTimeout(resizeTimeoutId);
     };
   }, [tasks, mobileMode, viewMode, weekOffset, calendarEventsByDate]);
-
-  // Scroll to next day (tomorrow) on mount for desktop view
-  // Positions tomorrow at the left edge to hide previous days, but allows horizontal scroll
-  // FIXED: Accounts for column resizing and zoom scaling
-  React.useEffect(() => {
-    // Only for desktop view, not mobile
-    if (mobileMode || viewMode === 'month') return;
-    
-    const container = scrollContainerRef.current;
-    const columns = columnsContainerRef.current;
-    if (!container || !columns) return;
-    
-    // CRITICAL: Reset ref at the beginning to ensure scroll happens on every mount (including page refresh)
-    // This prevents the ref from blocking scroll on page refresh
-    hasScrolledToNextDayRef.current = false;
-    
-    // Immediately reset scroll position to 0 to prevent browser scroll restoration from interfering
-    // This must happen synchronously before any async operations
-    container.scrollLeft = 0;
-    
-    // Calculate tomorrow's date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    
-    // Find tomorrow's column in weekColumns
-    const tomorrowColumn = weekColumns.find(col => {
-      const colDate = new Date(col.date);
-      colDate.setHours(0, 0, 0, 0);
-      return colDate.getTime() === tomorrow.getTime();
-    });
-    
-    if (!tomorrowColumn) return;
-    
-    // Find the index of tomorrow's column
-    const tomorrowIndex = weekColumns.findIndex(col => col.dateString === tomorrowColumn.dateString);
-    if (tomorrowIndex === -1) return;
-    
-    // Wait for zoom calculation and column rendering to complete
-    // This ensures columns are properly sized before calculating scroll position
-    const scrollToNextDay = () => {
-      // Double-check that scroll is still at 0 (browser might have restored it)
-      // Force reset again to ensure we start from a known position
-      if (container.scrollLeft !== 0) {
-        container.scrollLeft = 0;
-      }
-      
-      // Use requestAnimationFrame to ensure DOM is ready and zoom has been applied
-      requestAnimationFrame(() => {
-        // Triple-check scroll position and reset if needed (browser restoration can happen asynchronously)
-        if (container.scrollLeft !== 0) {
-          container.scrollLeft = 0;
-        }
-        
-        // Wait one more frame after resetting scroll to ensure layout is stable
-        requestAnimationFrame(() => {
-          // Final check and reset before calculation
-          if (container.scrollLeft !== 0) {
-            container.scrollLeft = 0;
-          }
-          // Get all column elements
-          const columnElements = columns.querySelectorAll('[data-column-date]');
-          if (columnElements.length === 0) return;
-          
-          // Find tomorrow's column element
-          const tomorrowElement = Array.from(columnElements).find(el => {
-            const dateAttr = el.getAttribute('data-column-date');
-            return dateAttr === tomorrowColumn.dateString;
-          }) as HTMLElement | undefined;
-          
-          if (!tomorrowElement) return;
-          
-          // FIXED: Use getBoundingClientRect() which accounts for transforms and zoom scaling
-          // This is more accurate than offsetLeft when columns are scaled/zoomed
-          // getBoundingClientRect() returns positions after CSS transforms (including scale) are applied
-          const containerRect = container.getBoundingClientRect();
-          const elementRect = tomorrowElement.getBoundingClientRect();
-          
-          // Calculate the relative position accounting for zoom/scale
-          // getBoundingClientRect() already accounts for the transform scale, so we get the actual rendered position
-          // Get the actual left position relative to the container's scroll position (now at 0)
-          const relativeLeft = elementRect.left - containerRect.left + container.scrollLeft;
-          
-          // Account for container padding - use constants from KANBAN_COLUMN_DIMENSIONS
-          // Container has padding: p-2 (8px) on mobile/tablet, p-3 (12px) on desktop
-          // Match the actual padding values: p-2 on mobile/tablet, p-3 on desktop
-          // Tablets use mobile layout, so they use mobile padding
-          const containerPadding = shouldUseMobileLayout
-            ? KANBAN_COLUMN_DIMENSIONS.padding.mobile // p-2 = 8px on mobile/tablet
-            : KANBAN_COLUMN_DIMENSIONS.padding.desktop; // p-3 = 12px on desktop
-          
-          // Calculate scroll position to position tomorrow's column at the left edge of viewport
-          // This hides previous days while still allowing horizontal scroll to see week one and week two
-          // getBoundingClientRect() already accounts for zoom scale, so elementRect.width is the scaled width
-          // This ensures accurate positioning regardless of zoom level
-          // Position tomorrow at the left edge with container padding for visual spacing
-          const scrollPosition = relativeLeft - containerPadding;
-          
-          // Scroll to position where tomorrow's column is at the left edge (previous days hidden)
-          // Users can still scroll left to see week one and right to see week two
-          container.scrollTo({
-            left: Math.max(0, scrollPosition),
-            behavior: 'smooth',
-          });
-          
-          // Mark as scrolled
-          hasScrolledToNextDayRef.current = true;
-        });
-      });
-    };
-    
-    // Wait for zoom calculation to complete before scrolling
-    // This ensures columns are properly sized/resized before calculating scroll position
-    // Use a delay that accounts for zoom calculation and buffer (KANBAN_ZOOM.calculateDelay + KANBAN_SCROLL.zoomBufferMs)
-    // plus additional time for DOM rendering, transform application, and browser scroll restoration
-    // Increased delay to ensure browser scroll restoration completes before we calculate
-    const scrollTimeout = setTimeout(scrollToNextDay, Math.max(KANBAN_SCROLL.initialScrollDelay, KANBAN_ZOOM.calculateDelay + KANBAN_SCROLL.zoomBufferMs));
-    
-    return () => {
-      clearTimeout(scrollTimeout);
-    };
-  }, [weekColumns, mobileMode, viewMode, zoomScale]); // Include zoomScale to recalculate when zoom changes
 
   // Get tasks for a specific day (dateString = YYYY-MM-DD parsed as local; tasks sorted by time-of-day chronologically)
   const getTasksForDay = (dateString: string) => {
@@ -1161,9 +1007,9 @@ export function SevenDayKanban({
           <div 
             ref={scrollContainerRef}
             className={cn(
-              mobileMode ? "w-full" : "h-full min-h-0",
-              "overflow-x-auto",
-              // Desktop: horizontal scroll only; day columns scroll internally
+              mobileMode ? "w-full" : "h-full min-h-0 w-full",
+              mobileMode ? "overflow-x-auto" : "overflow-x-hidden",
+              // Desktop: horizontal fit one week; vertical scroll inside day columns
               mobileMode ? "" : "overflow-y-hidden",
               "scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent",
               activeId && "cursor-default" // Change cursor when dragging task
@@ -1177,8 +1023,8 @@ export function SevenDayKanban({
               ref={columnsContainerRef}
               data-kanban-zoom-scale={zoomScale}
               className={cn(
-                "flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3 min-w-max",
-                !mobileMode && "h-full max-h-full items-stretch",
+                "flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3",
+                mobileMode ? "min-w-max" : "w-full h-full max-h-full items-stretch",
               )}
               style={{
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
@@ -1235,7 +1081,10 @@ export function SevenDayKanban({
                       </div>
                     )}
 
-                  <div className="flex flex-col gap-2 min-w-max flex-1 self-stretch h-full min-h-0">
+                  <div className={cn(
+                    "flex flex-col gap-2 flex-1 self-stretch h-full min-h-0",
+                    mobileMode ? "min-w-max" : "w-full min-w-0",
+                  )}>
                     {(() => {
                       const groupStart = group[0]?.date;
                       const groupEnd = group[group.length - 1]?.date;
@@ -1294,7 +1143,7 @@ export function SevenDayKanban({
                     })()}
 
                     <div
-                      className="flex items-stretch gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 flex-shrink-0"
+                      className="flex items-stretch gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 flex-shrink-0 w-full min-w-0"
                       style={
                         mobileMode
                           ? undefined
@@ -1328,10 +1177,9 @@ export function SevenDayKanban({
                 return (
                   <div
                     key={column.dateString}
-                    className="flex flex-col self-stretch h-full min-h-0 flex-1"
+                    className="flex flex-col self-stretch h-full min-h-0 flex-1 min-w-0"
                     style={{
-                      minWidth: `${columnWidth}px`,
-                      width: `${columnWidth}px`,
+                      minWidth: mobileMode ? undefined : KANBAN_VIEWPORT_WEEK.minColumnWidthPx,
                     }}
                   >
                     {/* Reserve equal chrome above every column so card heights match */}
@@ -1370,8 +1218,6 @@ export function SevenDayKanban({
                         isSecondWeek && !column.isToday && 'ring-1 ring-primary/10 dark:ring-primary/15',
                       )}
                       style={{
-                        minWidth: `${columnWidth}px`,
-                        width: `${columnWidth}px`,
                         ...(column.isWeekend && !isDark && {
                           backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
                         }),
