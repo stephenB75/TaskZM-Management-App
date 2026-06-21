@@ -808,23 +808,26 @@ export const DASHBOARD_VIEW_HEADER_LABELS = {
   month: 'Month',
   today: 'Today',
   dashboard: 'Dashboard',
-  aiSchedulerSuggestions: 'Suggestions',
-  aiSchedulerSuggestionsLong: 'AI Scheduler Suggestions',
-  reschedule: 'Re-schedule',
+  aiSchedulerSuggestions: 'AI SCHEDULER',
+  aiSchedulerSuggestionsShort: 'SCHEDULER',
+  aiSchedulerSuggestionsLong: 'AI SCHEDULER',
+  reschedule: 'RE-SCHEDULE',
 } as const;
 
-/** Dashboard AI scheduler / re-schedule header action buttons */
+/** Dashboard AI scheduler / re-schedule header action buttons — icon + label compact */
 export const DASHBOARD_SCHEDULER_ACTION_BUTTON = {
-  heightSmallPx: 30,
-  heightDesktopPx: 34,
+  borderRadiusPx: 11,
+  heightSmallPx: 32,
+  heightDesktopPx: 36,
   iconSizeSmallPx: 14,
-  iconSizeDesktopPx: 16,
+  iconSizeDesktopPx: 15,
   paddingXSmallPx: 12,
-  paddingXDesktopPx: 14,
-  gapPx: 6,
-  fontSizeSmallPx: 11,
-  fontSizeDesktopPx: 12,
-  fontWeight: 600,
+  paddingXDesktopPx: 16,
+  gapPx: 8,
+  fontSizeSmallPx: 10,
+  fontSizeDesktopPx: 11,
+  fontWeight: 700,
+  letterSpacingEm: 0.06,
 } as const;
 
 /** Compact mobile week carousel strip below AppHeader */

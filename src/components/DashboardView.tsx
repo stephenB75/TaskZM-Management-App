@@ -1450,9 +1450,9 @@ export function DashboardView({
                 label={
                   showActionText
                     ? DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsLong
-                    : DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestions
+                    : DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsShort
                 }
-                icon="head-circuit"
+                icon="zap"
                 variant="primary"
                 onClick={handleScheduleUnscheduledTasks}
                 isSmallScreen={isSmallScreen}
