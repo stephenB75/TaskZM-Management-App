@@ -234,8 +234,10 @@ export function SevenDayKanban({
       }
     }
 
-    // Desktop: one week fills the viewport; mobile: single-column day carousel
-    const totalDays = KANBAN_TIME.daysPerWeek;
+    // Desktop: first N days of the aligned week; mobile: full 7-day carousel range
+    const totalDays = mobileMode
+      ? KANBAN_TIME.daysPerWeek
+      : KANBAN_VIEWPORT_WEEK.visibleDays;
 
     return Array.from({ length: totalDays }, (_, i) => {
       const date = new Date(startDate);
@@ -270,12 +272,15 @@ export function SevenDayKanban({
   // Memoize week columns so downstream effects don't re-run every render. Include todayDateKey so the "today" column indicator stays correct after midnight.
   const weekColumns = React.useMemo(() => getWeekColumns(), [mobileMode, mobileWeekOffset, weekOffset, todayDateKey]);
   const weekGroups = React.useMemo(() => {
+    const columnsPerGroup = mobileMode
+      ? KANBAN_TIME.daysPerWeek
+      : KANBAN_VIEWPORT_WEEK.visibleDays;
     const groups: DayColumn[][] = [];
-    for (let i = 0; i < weekColumns.length; i += KANBAN_TIME.daysPerWeek) {
-      groups.push(weekColumns.slice(i, i + KANBAN_TIME.daysPerWeek));
+    for (let i = 0; i < weekColumns.length; i += columnsPerGroup) {
+      groups.push(weekColumns.slice(i, i + columnsPerGroup));
     }
     return groups;
-  }, [weekColumns]);
+  }, [weekColumns, mobileMode]);
 
   // Compute visible date range once for the current week columns
   const visibleRange = React.useMemo(() => {
@@ -293,10 +298,10 @@ export function SevenDayKanban({
   // Fallback range when visibleRange not yet set (e.g. first paint)
   const fallbackEnd = React.useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + KANBAN_TIME.daysPerWeek);
+    d.setDate(d.getDate() + (mobileMode ? KANBAN_TIME.daysPerWeek : KANBAN_VIEWPORT_WEEK.visibleDays));
     d.setHours(23, 59, 59, 999);
     return d;
-  }, []);
+  }, [mobileMode]);
 
   const startDate = React.useMemo(() => {
     if (!visibleRange) {
@@ -1164,7 +1169,10 @@ export function SevenDayKanban({
                     return isRecurring ? `${t.id}__${column.dateString}` : t.id;
                   })
                   .filter((id): id is string => id !== null) : [];
-                      const globalIndex = groupIndex * KANBAN_TIME.daysPerWeek + columnIndex;
+                      const globalIndex =
+                        groupIndex
+                        * (mobileMode ? KANBAN_TIME.daysPerWeek : KANBAN_VIEWPORT_WEEK.visibleDays)
+                        + columnIndex;
                       const isSecondWeek = groupIndex === 1;
                       const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
                       const dayColors = getDayColors(column.dayName);

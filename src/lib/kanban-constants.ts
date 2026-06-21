@@ -282,8 +282,10 @@ export const KANBAN_TIME = {
   daysInWeek: 14,
 } as const;
 
-/** Desktop kanban: fit exactly one week in the horizontal viewport */
+/** Desktop kanban: fit visible days in the horizontal viewport */
 export const KANBAN_VIEWPORT_WEEK = {
+  /** Number of day columns shown on desktop (weekdays-first slice of the calendar week) */
+  visibleDays: 5,
   /** Minimum width per day column before horizontal overflow is allowed */
   minColumnWidthPx: 128,
 } as const;
