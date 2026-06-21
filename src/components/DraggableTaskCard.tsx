@@ -847,7 +847,7 @@ export const DraggableTaskCard = React.forwardRef<
               ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.draggingKanban} ring-2 ring-primary/50 ring-offset-2`
               : "",
             !dragDisabled && !(isDragging || isSortableDragging)
-              ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hoverKanban}`
+              ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hoverKanban} relative z-0 hover:z-20`
               : "",
           )}
           data-dnd-kit-dragging={isDragging || isSortableDragging}
@@ -969,7 +969,7 @@ export const DraggableTaskCard = React.forwardRef<
           ) : isKanban ? (
             <div
               className={cn(
-                "flex flex-col w-full h-full overflow-hidden",
+                "flex flex-col w-full h-full overflow-visible",
                 task.status === "done" && "opacity-60",
               )}
               style={kanbanCardShellStyle}

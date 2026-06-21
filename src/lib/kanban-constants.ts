@@ -221,7 +221,12 @@ export const KANBAN_COLUMN_DIMENSIONS = {
     desktop: 8, // gap-2 = 8px
   },
   /** Vertical gap (px) between task/event cards in a column. */
-  cardsGapPx: 0,
+  cardsGapPx: 4,
+  /** Extra inset so hover scale/shadow is not clipped by the column scrollport */
+  cardHoverBleedPx: {
+    horizontal: 10,
+    vertical: 8,
+  },
   padding: {
     mobile: 8, // p-2 = 8px
     tablet: 10, // p-2.5 = 10px

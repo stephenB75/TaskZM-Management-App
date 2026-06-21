@@ -679,6 +679,19 @@ export function SevenDayKanban({
     }
   };
 
+  const kanbanCardListPadX =
+    (shouldUseMobileLayout
+      ? KANBAN_COLUMN_DIMENSIONS.contentPadding.mobile
+      : KANBAN_COLUMN_DIMENSIONS.contentPadding.tablet)
+    + KANBAN_COLUMN_DIMENSIONS.cardHoverBleedPx.horizontal;
+  const kanbanCardListPadY =
+    (shouldUseMobileLayout
+      ? KANBAN_COLUMN_DIMENSIONS.contentPadding.mobile
+      : KANBAN_COLUMN_DIMENSIONS.contentPadding.tablet)
+    + KANBAN_COLUMN_DIMENSIONS.cardHoverBleedPx.vertical;
+  const kanbanCardItemClassName =
+    'w-full max-w-full overflow-visible relative z-0 hover:z-20 focus-within:z-20';
+
   // Render mobile single column or desktop multi-column
   if (mobileMode) {
     const currentColumn = weekColumns[mobileDayIndex] ?? weekColumns[0];
@@ -888,7 +901,10 @@ export function SevenDayKanban({
                             className="flex flex-col w-full min-w-0"
                             style={{
                               gap: KANBAN_COLUMN_DIMENSIONS.cardsGapPx,
-                              padding: 0,
+                              paddingLeft: kanbanCardListPadX,
+                              paddingRight: kanbanCardListPadX,
+                              paddingTop: kanbanCardListPadY,
+                              paddingBottom: kanbanCardListPadY,
                               // No paddingBottom - nav bar clearance handled by spacer in App.tsx
                               minHeight: 0,
                               height: 'auto',
@@ -917,7 +933,7 @@ export function SevenDayKanban({
                                   return (
                                     <div
                                       key={`mobile-event-${item.event.id}`}
-                                      className="w-full max-w-full overflow-hidden"
+                                      className={kanbanCardItemClassName}
                                       style={{ 
                                         display: 'block',
                                         width: '100%',
@@ -950,7 +966,7 @@ export function SevenDayKanban({
                                   return (
                           <div
                                       key={item.task.id}
-                            className="w-full max-w-full overflow-hidden"
+                            className={kanbanCardItemClassName}
                             style={{ 
                               display: 'block',
                               width: '100%',
@@ -997,7 +1013,6 @@ export function SevenDayKanban({
     );
   }
 
-  // Desktop multi-column view
   const backgroundGradient = isDark
     ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
     : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.desktop.from}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.via}, ${KANBAN_BACKGROUND_GRADIENTS.desktop.to})`;
@@ -1329,7 +1344,7 @@ export function SevenDayKanban({
                     <DroppableColumn
                       id={column.dateString}
                       fillHeight
-                      className="flex-1 min-h-0 overflow-hidden"
+                      className="flex-1 min-h-0 overflow-x-visible overflow-y-hidden"
                     >
                       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                         {(() => {
@@ -1403,10 +1418,14 @@ export function SevenDayKanban({
                           return (
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 flex flex-col flex-1 min-h-0 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent',
+                            'flex flex-col flex-1 min-h-0 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{
+                            paddingLeft: kanbanCardListPadX,
+                            paddingRight: kanbanCardListPadX,
+                            paddingTop: kanbanCardListPadY,
+                            paddingBottom: kanbanCardListPadY,
                             backgroundImage: isDark
                               ? getColumnBgGradient(column.dayName, isDark, column.isToday)
                               : getColumnBgGradient(column.dayName, false, column.isToday),
@@ -1440,7 +1459,7 @@ export function SevenDayKanban({
                                         return (
                                           <div
                                             key={`event-${item.event.id}`}
-                                            className="w-full max-w-full overflow-hidden"
+                                            className={kanbanCardItemClassName}
                                             style={{
                                               display: 'block',
                                               width: '100%',
@@ -1473,7 +1492,7 @@ export function SevenDayKanban({
                                         return (
                                   <div 
                                             key={item.task.id} 
-                                    className="w-full max-w-full overflow-hidden"
+                                    className={kanbanCardItemClassName}
                                     style={{ 
                                       display: 'block',
                                       width: '100%',

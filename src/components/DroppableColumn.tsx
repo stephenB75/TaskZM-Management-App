@@ -36,7 +36,7 @@ export function DroppableColumn({
         isMobile
           ? "min-h-0 [background:transparent!important] [background-color:transparent!important]"
           : fillHeight
-            ? "min-h-0 flex flex-col flex-1 h-full"
+            ? "min-h-0 flex flex-col flex-1 h-full overflow-x-visible overflow-y-hidden"
             : "min-h-[200px]",
         className,
         !isMobile &&
