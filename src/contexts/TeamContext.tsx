@@ -168,6 +168,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       setTeamMembers(prev =>
         prev.map(m => (m.id === memberId ? { ...m, ...updates } : m))
       );
+      setCurrentTeamMembers(prev =>
+        prev.map(m => (m.id === memberId ? { ...m, ...updates } : m))
+      );
       
       toast.success(TEAM_PANEL_UI_TEXT.teamMemberUpdated);
     } catch (error) {
@@ -216,7 +219,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const member = teamMembers.find(m => m.id === memberId);
+    const member =
+      teamMembers.find(m => m.id === memberId) ??
+      currentTeamMembers.find(m => m.id === memberId);
     if (!member || !member.invitationToken) {
       toast.error(TEAM_PANEL_UI_TEXT.invitationTokenNotFound);
       return;
@@ -240,14 +245,29 @@ export function TeamProvider({ children }: { children: ReactNode }) {
             : m
         )
       );
+      setCurrentTeamMembers(prev =>
+        prev.map(m =>
+          m.id === memberId
+            ? {
+                ...m,
+                expiresAt: newExpiresAt.toISOString(),
+                invitedAt: new Date().toISOString(),
+              }
+            : m
+        )
+      );
       
       toast.success(TEAM_PANEL_UI_TEXT.invitationResentTo(member.email));
       await syncTeamMembers(wsId);
+      if (currentTeamId) {
+        const refreshed = await api.getTeamMembersByTeam(currentTeamId);
+        setCurrentTeamMembers(refreshed);
+      }
     } catch (error) {
       console.error('Failed to resend invitation:', error);
       toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToResendInvitation);
     }
-  }, [accessToken, teamMembers, syncTeamMembers]);
+  }, [accessToken, teamMembers, currentTeamMembers, syncTeamMembers, currentTeamId]);
 
   const declineInvitation = useCallback(async (memberId: string, wsId: string) => {
     if (!accessToken || !wsId) {
@@ -255,7 +275,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const member = teamMembers.find(m => m.id === memberId);
+    const member =
+      teamMembers.find(m => m.id === memberId) ??
+      currentTeamMembers.find(m => m.id === memberId);
     if (!member || !member.invitationToken) {
       toast.error(TEAM_PANEL_UI_TEXT.invitationTokenNotFound);
       return;
@@ -264,16 +286,20 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     try {
       await api.declineInvitation(wsId, member.invitationToken);
       
-      // Remove from local state
       setTeamMembers(prev => prev.filter(m => m.id !== memberId));
+      setCurrentTeamMembers(prev => prev.filter(m => m.id !== memberId));
       
       toast.success(TEAM_PANEL_UI_TEXT.invitationDeclined);
       await syncTeamMembers(wsId);
+      if (currentTeamId) {
+        const refreshed = await api.getTeamMembersByTeam(currentTeamId);
+        setCurrentTeamMembers(refreshed);
+      }
     } catch (error) {
       console.error('Failed to decline invitation:', error);
       toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToDeclineInvitation);
     }
-  }, [accessToken, teamMembers, syncTeamMembers]);
+  }, [accessToken, teamMembers, currentTeamMembers, syncTeamMembers, currentTeamId]);
 
   // New multi-team functions
   const syncTeams = useCallback(async (wsId: string, preserveSelection: boolean = false) => {
@@ -459,6 +485,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    const notifyDirectAdd = () => {
+      if (!silent) {
+        toast.success(TEAM_PANEL_UI_TEXT.memberAddedDirectly(member.email));
+      }
+    };
+
     const applyPendingInvitation = (invitation: { token: string; expiresAt?: string }) => {
       const now = new Date().toISOString();
       const pendingMember: User = {
@@ -505,7 +537,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       result: { member?: User; invitation?: { token: string; expiresAt?: string } },
     ) => {
       if (result.member) {
-        notifySuccess();
+        notifyDirectAdd();
         if (!skipRefresh) {
           await refreshAfterInvite();
         }
@@ -643,12 +675,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // TODO: Add API endpoint for removing team member from team
-      // await api.removeTeamMemberFromTeam(teamId, memberId);
+      await api.removeTeamMemberFromTeam(teamId, memberId);
       setCurrentTeamMembers(prev => prev.filter(m => m.id !== memberId));
       toast.success(TEAM_PANEL_UI_TEXT.teamMemberRemoved);
-      // Preserve selection since we're already on this team
-      await syncTeams(workspaceId || '', true);
+      if (workspaceId) {
+        await syncTeams(workspaceId, true);
+        const refreshed = await api.getTeamMembersByTeam(teamId);
+        setCurrentTeamMembers(refreshed);
+      }
     } catch (error) {
       console.error('Failed to remove team member:', error);
       toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToRemoveTeamMember);
@@ -662,16 +696,29 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // TODO: Add API endpoint for updating team member in team
+      if (updates.role) {
+        await api.updateTeamMemberRoleInTeam(teamId, memberId, updates.role);
+      }
+
       setCurrentTeamMembers(prev =>
         prev.map(m => (m.id === memberId ? { ...m, ...updates } : m))
       );
+
+      if (workspaceId && updates.role) {
+        setTeamMembers(prev =>
+          prev.map(m => (m.id === memberId ? { ...m, ...updates } : m))
+        );
+      }
+
       toast.success(TEAM_PANEL_UI_TEXT.teamMemberUpdated);
+
+      const refreshed = await api.getTeamMembersByTeam(teamId);
+      setCurrentTeamMembers(refreshed);
     } catch (error) {
       console.error('Failed to update team member:', error);
       toast.error(error instanceof Error ? error.message : TEAM_PANEL_UI_TEXT.failedToUpdateTeamMember);
     }
-  }, [accessToken]);
+  }, [accessToken, workspaceId]);
 
   // Sync teams when workspace changes
   // Don't auto-select teams on initial load - default to workspace team

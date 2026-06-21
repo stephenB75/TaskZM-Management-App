@@ -48,7 +48,7 @@ import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { cn, getAbbreviatedDisplayName } from "../lib/utils";
-import type { User } from "../types";
+import type { User, Team } from "../types";
 import {
   PANEL_PADDING,
   PANEL_PADDING_TOP_MOBILE,
@@ -211,6 +211,18 @@ export function TeamPanel() {
   const [showDeleteTeamConfirm, setShowDeleteTeamConfirm] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
   const [isDeletingTeam, setIsDeletingTeam] = useState(false);
+  /** Target team when adding members (null = workspace team). */
+  const [inviteTargetTeamId, setInviteTargetTeamId] = useState<string | null>(null);
+
+  const openAddMemberDialog = () => {
+    setInviteTargetTeamId(currentTeamId);
+    setShowAddMember(true);
+  };
+
+  const openBulkInviteDialog = () => {
+    setInviteTargetTeamId(currentTeamId);
+    setShowBulkInvite(true);
+  };
 
   const handleAddMember = async () => {
     if (!newMemberName.trim() || !newMemberEmail.trim()) {
@@ -226,17 +238,23 @@ export function TeamPanel() {
     }
 
     // Check team member limit (8 max) if adding to a team
-    if (currentTeamId) {
-      const team = teams.find(t => t.id === currentTeamId);
-      const memberCount = Math.max(team?.memberCount ?? 0, currentTeamMembers.length);
+    if (inviteTargetTeamId) {
+      const team = teams.find(t => t.id === inviteTargetTeamId);
+      const memberCount = inviteTargetTeamId === currentTeamId
+        ? Math.max(team?.memberCount ?? 0, currentTeamMembers.length)
+        : (team?.memberCount ?? 0);
       if (memberCount >= TEAM_MAX_MEMBERS) {
         toast.error(TEAM_PANEL_UI_TEXT.maxMembersReached);
         return;
       }
     }
 
-    // Check if email already exists in current team/workspace
-    const membersToCheck = currentTeamId ? currentTeamMembers : teamMembers;
+    // Check if email already exists in target team/workspace
+    const membersToCheck = inviteTargetTeamId
+      ? (inviteTargetTeamId === currentTeamId
+          ? currentTeamMembers
+          : teamMembers.filter(m => m.teamId === inviteTargetTeamId))
+      : teamMembers;
     if (
       membersToCheck.some(
         (m) =>
@@ -272,10 +290,9 @@ export function TeamPanel() {
     }
 
     try {
-      if (currentTeamId) {
-        // Add to specific team
+      if (inviteTargetTeamId) {
         await addTeamMemberToTeam(
-          currentTeamId,
+          inviteTargetTeamId,
           {
             name: newMemberName.trim(),
             email: newMemberEmail.trim(),
@@ -284,7 +301,6 @@ export function TeamPanel() {
           newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim()),
         );
       } else {
-        // Legacy workspace-based team
         await addTeamMember({
           name: newMemberName.trim(),
           email: newMemberEmail.trim(),
@@ -293,11 +309,11 @@ export function TeamPanel() {
         }, currentWorkspaceId);
       }
 
-      // Reset form only on success
       setNewMemberName("");
       setNewMemberEmail("");
       setNewMemberRole("member");
       setNewMemberAvatar(undefined);
+      setInviteTargetTeamId(currentTeamId);
       setShowAddMember(false);
     } catch (error) {
       // Error already handled in addTeamMember, but keep dialog open on error
@@ -342,17 +358,24 @@ export function TeamPanel() {
       }
     }
 
-    // Handle pending invitations (they have IDs starting with "pending_")
+    // Handle pending invitations
     if (member.id.startsWith('pending_')) {
-      // Just remove from local state for pending invitations
-      removeTeamMember(member.id, currentWorkspaceId);
+      if (currentTeamId) {
+        await removeTeamMemberFromTeam(currentTeamId, member.id);
+      } else {
+        await declineInvitation(member.id, currentWorkspaceId);
+      }
       return;
     }
 
     try {
-      await removeTeamMember(member.id, currentWorkspaceId);
+      if (currentTeamId) {
+        await removeTeamMemberFromTeam(currentTeamId, member.id);
+      } else {
+        await removeTeamMember(member.id, currentWorkspaceId);
+      }
     } catch (error) {
-      // Error already handled in removeTeamMember
+      // Error already handled in removeTeamMember / removeTeamMemberFromTeam
     }
   };
 
@@ -385,16 +408,14 @@ export function TeamPanel() {
       }
     }
 
-    // Can't update role for pending invitations
-    if (member.id.startsWith('pending_')) {
-      toast.error(TEAM_PANEL_UI_TEXT.cannotUpdateRolePendingInvitations);
-      return;
-    }
-
     try {
-      await updateTeamMember(member.id, { role: newRole }, currentWorkspaceId);
+      if (currentTeamId) {
+        await updateTeamMemberInTeam(currentTeamId, member.id, { role: newRole });
+      } else {
+        await updateTeamMember(member.id, { role: newRole }, currentWorkspaceId);
+      }
     } catch (error) {
-      // Error already handled in updateTeamMember
+      // Error already handled in updateTeamMember / updateTeamMemberInTeam
     }
   };
 
@@ -1096,8 +1117,10 @@ export function TeamPanel() {
       return;
     }
 
-    // Check if any emails already exist in current team/workspace
-    const membersToCheck = currentTeamId ? currentTeamMembers : teamMembers;
+    // Check if any emails already exist in target team/workspace
+    const membersToCheck = inviteTargetTeamId
+      ? (inviteTargetTeamId === currentTeamId ? currentTeamMembers : [])
+      : teamMembers;
     const existingEmails = emails.filter(email =>
       membersToCheck.some(m => m.email.toLowerCase() === email.toLowerCase())
     );
@@ -1107,9 +1130,11 @@ export function TeamPanel() {
     }
 
     // Check team member limit if adding to a team
-    if (currentTeamId) {
-      const team = teams.find(t => t.id === currentTeamId);
-      const baseCount = Math.max(team?.memberCount ?? 0, currentTeamMembers.length);
+    if (inviteTargetTeamId) {
+      const team = teams.find(t => t.id === inviteTargetTeamId);
+      const baseCount = inviteTargetTeamId === currentTeamId
+        ? Math.max(team?.memberCount ?? 0, currentTeamMembers.length)
+        : (team?.memberCount ?? 0);
       if (baseCount + emails.length > TEAM_MAX_MEMBERS) {
         toast.error(TEAM_PANEL_UI_TEXT.maxMembersLimit(TEAM_MAX_MEMBERS));
         return;
@@ -1121,9 +1146,11 @@ export function TeamPanel() {
     let errorCount = 0;
 
     for (const email of emails) {
-      if (currentTeamId) {
-        const team = teams.find(t => t.id === currentTeamId);
-        const baseCount = Math.max(team?.memberCount ?? 0, currentTeamMembers.length);
+      if (inviteTargetTeamId) {
+        const team = teams.find(t => t.id === inviteTargetTeamId);
+        const baseCount = inviteTargetTeamId === currentTeamId
+          ? Math.max(team?.memberCount ?? 0, currentTeamMembers.length)
+          : (team?.memberCount ?? 0);
         if (baseCount + successCount >= TEAM_MAX_MEMBERS) {
           errorCount++;
           continue;
@@ -1131,7 +1158,6 @@ export function TeamPanel() {
       }
 
       try {
-        // Extract name from email (before @)
         const name = email.split("@")[0].replace(/[._-]/g, " ");
         const capitalizedName = name
           .split(" ")
@@ -1145,9 +1171,9 @@ export function TeamPanel() {
           batchInviteIndex: successCount,
         };
 
-        if (currentTeamId) {
+        if (inviteTargetTeamId) {
           await addTeamMemberToTeam(
-            currentTeamId,
+            inviteTargetTeamId,
             {
               name: capitalizedName,
               email,
@@ -1177,8 +1203,8 @@ export function TeamPanel() {
 
     if (successCount > 0) {
       try {
-        if (currentTeamId) {
-          await selectTeam(currentTeamId);
+        if (inviteTargetTeamId) {
+          await selectTeam(inviteTargetTeamId);
           await syncTeams(currentWorkspaceId, true);
         } else {
           await syncTeamMembers(currentWorkspaceId);
@@ -1231,26 +1257,55 @@ export function TeamPanel() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      onClick={() => currentTeamId ? setShowAddMember(true) : setShowCreateTeam(true)}
+                      onClick={() => setShowCreateTeam(true)}
                       className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          currentTeamId ? setShowAddMember(true) : setShowCreateTeam(true);
+                          setShowCreateTeam(true);
                         }
                       }}
                     >
                       <Icon 
-                        name={currentTeamId ? "user-plus" : "user-three"}
+                        name="user-three"
                         size={ICON_SIZE_XL}
                         className="text-primary dark:text-primary-foreground flex-shrink-0"
                       />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{currentTeamId ? TEAM_PANEL_UI_TEXT.addMemberToTeam : TEAM_PANEL_UI_TEXT.createNewTeam}</p>
+                    <p>{TEAM_PANEL_UI_TEXT.createNewTeam}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {isCurrentUserAdmin && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      onClick={openAddMemberDialog}
+                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          openAddMemberDialog();
+                        }
+                      }}
+                    >
+                      <Icon 
+                        name="user-plus"
+                        size={ICON_SIZE_XL}
+                        className="text-primary dark:text-primary-foreground flex-shrink-0"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{TEAM_PANEL_UI_TEXT.addMember}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -1260,7 +1315,7 @@ export function TeamPanel() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      onClick={() => setShowBulkInvite(true)}
+                      onClick={openBulkInviteDialog}
                       className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
                       role="button"
                       tabIndex={0}
@@ -1495,7 +1550,7 @@ export function TeamPanel() {
                       : TEAM_PANEL_UI_TEXT.inviteFamilyMembers}
                   </p>
                   <Button
-                    onClick={() => setShowAddMember(true)}
+                    onClick={openAddMemberDialog}
                     variant="outline"
                     size="sm"
                     style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
@@ -1528,20 +1583,8 @@ export function TeamPanel() {
                     onCardClick={handleCardClick}
                     onResendInvitation={handleResendInvitation}
                     onDeclineInvitation={handleDeclineInvitation}
-                    onUpdateRole={async (member, role) => {
-                      if (currentTeamId) {
-                        await updateTeamMemberInTeam(currentTeamId, member.id, { role });
-                      } else {
-                        await handleUpdateRole(member, role);
-                      }
-                    }}
-                    onRemoveMember={async (member) => {
-                      if (currentTeamId) {
-                        await removeTeamMemberFromTeam(currentTeamId, member.id);
-                      } else {
-                        await handleRemoveMember(member);
-                      }
-                    }}
+                    onUpdateRole={handleUpdateRole}
+                    onRemoveMember={handleRemoveMember}
                     getRoleIcon={getRoleIcon}
                     getRoleBadgeVariant={getRoleBadgeVariant}
                     getInviteStatusBadge={getInviteStatusBadge}
@@ -1604,7 +1647,7 @@ export function TeamPanel() {
                           : TEAM_PANEL_UI_TEXT.inviteFamilyMembers}
                       </p>
                       <Button
-                        onClick={() => setShowAddMember(true)}
+                        onClick={openAddMemberDialog}
                         variant="outline"
                         size="sm"
                         style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
@@ -1637,20 +1680,8 @@ export function TeamPanel() {
                         onCardClick={handleCardClick}
                         onResendInvitation={handleResendInvitation}
                         onDeclineInvitation={handleDeclineInvitation}
-                    onUpdateRole={async (member, role) => {
-                      if (currentTeamId) {
-                        await updateTeamMemberInTeam(currentTeamId, member.id, { role });
-                      } else {
-                        await handleUpdateRole(member, role);
-                      }
-                    }}
-                    onRemoveMember={async (member) => {
-                      if (currentTeamId) {
-                        await removeTeamMemberFromTeam(currentTeamId, member.id);
-                      } else {
-                        await handleRemoveMember(member);
-                      }
-                    }}
+                    onUpdateRole={handleUpdateRole}
+                    onRemoveMember={handleRemoveMember}
                         getRoleIcon={getRoleIcon}
                         getRoleBadgeVariant={getRoleBadgeVariant}
                         getInviteStatusBadge={getInviteStatusBadge}
@@ -1969,6 +2000,30 @@ export function TeamPanel() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingTop: PANEL_PADDING, paddingBottom: PANEL_PADDING }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label htmlFor="invite-team">{TEAM_PANEL_UI_TEXT.addMemberTargetTeamLabel}</Label>
+              <Select
+                value={inviteTargetTeamId ?? "workspace"}
+                onValueChange={(value) =>
+                  setInviteTargetTeamId(value === "workspace" ? null : value)
+                }
+              >
+                <SelectTrigger id="invite-team">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="workspace">
+                    {TEAM_PANEL_UI_TEXT.workspaceTeam}
+                  </SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label htmlFor="name">{TEAM_PANEL_UI_TEXT.nameLabel} *</Label>
               <Input
                 id="name"
@@ -2060,7 +2115,7 @@ export function TeamPanel() {
               size="sm"
               onClick={() => {
                 setShowAddMember(false);
-                setShowBulkInvite(true);
+                openBulkInviteDialog();
               }}
               style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}
             >
@@ -2099,6 +2154,30 @@ export function TeamPanel() {
           </DialogHeader>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingTop: PANEL_PADDING, paddingBottom: PANEL_PADDING }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+              <Label htmlFor="bulk-invite-team">{TEAM_PANEL_UI_TEXT.addMemberTargetTeamLabel}</Label>
+              <Select
+                value={inviteTargetTeamId ?? "workspace"}
+                onValueChange={(value) =>
+                  setInviteTargetTeamId(value === "workspace" ? null : value)
+                }
+              >
+                <SelectTrigger id="bulk-invite-team">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="workspace">
+                    {TEAM_PANEL_UI_TEXT.workspaceTeam}
+                  </SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label htmlFor="bulk-emails">Email Addresses *</Label>
               <textarea

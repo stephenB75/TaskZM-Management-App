@@ -550,6 +550,42 @@ async function assertWorkspaceMemberOrOwner(
   return { ok: false, status: 403, error: 'Unauthorized: Not a workspace member' };
 }
 
+async function assertWorkspaceAdminOrOwner(
+  workspaceId: string,
+  userId: string,
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const workspaceOwner = await kv.get(`workspace_${workspaceId}_owner`);
+  if (!workspaceOwner) {
+    return { ok: false, status: 404, error: 'Workspace not found' };
+  }
+  if (workspaceOwner === userId) {
+    return { ok: true };
+  }
+  const members = await getWorkspaceMembers(workspaceId);
+  if (!members.includes(userId)) {
+    return { ok: false, status: 403, error: 'Unauthorized: Not a workspace member' };
+  }
+  const role = await kv.get(`workspace_${workspaceId}_member_${userId}_role`);
+  if (role === 'admin') {
+    return { ok: true };
+  }
+  return { ok: false, status: 403, error: 'Unauthorized: Admin access required' };
+}
+
+async function cancelPendingInvitation(workspaceId: string, token: string) {
+  await kv.del(`invitation_${token}`);
+  const invitationTokensStr = await kv.get(`workspace_${workspaceId}_invitations`);
+  if (invitationTokensStr) {
+    try {
+      const tokens = JSON.parse(invitationTokensStr);
+      const updatedTokens = tokens.filter((t: string) => t !== token);
+      await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(updatedTokens));
+    } catch (e) {
+      console.log('Error updating invitations list:', e);
+    }
+  }
+}
+
 async function findPendingInvitationForEmail(
   workspaceId: string,
   email: string,
@@ -681,6 +717,79 @@ async function sendWorkspaceInvitation(options: {
   };
 }
 
+async function addExistingUserToWorkspaceDirect(options: {
+  workspaceId: string;
+  existingUser: {
+    id: string;
+    email?: string | null;
+    user_metadata?: { name?: string; avatar?: string };
+  };
+  name: string;
+  role: string;
+  avatar?: string;
+  teamId?: string;
+}): Promise<{ member: Record<string, unknown> } | { error: string; status: number }> {
+  const { workspaceId, existingUser, name, role, avatar, teamId } = options;
+
+  let workspaceMembers = await getWorkspaceMembers(workspaceId);
+  const wasInWorkspace = workspaceMembers.includes(existingUser.id);
+
+  if (!wasInWorkspace) {
+    workspaceMembers.push(existingUser.id);
+    await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(workspaceMembers));
+    await kv.set(`workspace_${workspaceId}_member_${existingUser.id}_role`, role || 'member');
+  }
+
+  if (teamId) {
+    const teamData = await kv.get(`team_${teamId}`);
+    if (!teamData) {
+      return { error: 'Team not found', status: 404 };
+    }
+    const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+    if (team.workspaceId !== workspaceId) {
+      return { error: 'Team does not belong to this workspace', status: 400 };
+    }
+
+    const teamMembersData = await kv.get(`team_${teamId}_members`);
+    const teamMemberIds: string[] = teamMembersData ? JSON.parse(teamMembersData) : [];
+
+    if (teamMemberIds.includes(existingUser.id)) {
+      return { error: 'User is already a team member', status: 400 };
+    }
+    if (teamMemberIds.length >= team.maxMembers) {
+      return { error: `Maximum of ${team.maxMembers} members per team`, status: 400 };
+    }
+
+    teamMemberIds.push(existingUser.id);
+    await kv.set(`team_${teamId}_members`, JSON.stringify(teamMemberIds));
+    team.memberCount = teamMemberIds.length;
+    await kv.set(`team_${teamId}`, JSON.stringify(team));
+
+    await kv.set(`workspace_${workspaceId}_member_${existingUser.id}`, JSON.stringify({
+      role: role || 'member',
+      teamId,
+    }));
+  } else if (!wasInWorkspace) {
+    await kv.set(`workspace_${workspaceId}_member_${existingUser.id}`, JSON.stringify({
+      role: role || 'member',
+    }));
+  } else {
+    return { error: 'User is already a member of this workspace', status: 400 };
+  }
+
+  return {
+    member: {
+      id: existingUser.id,
+      email: existingUser.email || '',
+      name: existingUser.user_metadata?.name || name,
+      avatar: avatar || existingUser.user_metadata?.avatar,
+      role: role || 'member',
+      inviteStatus: 'accepted',
+      ...(teamId ? { teamId } : {}),
+    },
+  };
+}
+
 async function addExistingUserToTeamDirect(options: {
   workspaceId: string;
   teamId: string;
@@ -693,55 +802,10 @@ async function addExistingUserToTeamDirect(options: {
   role: string;
   avatar?: string;
 }): Promise<{ member: Record<string, unknown> } | { error: string; status: number }> {
-  const { workspaceId, teamId, existingUser, name, role, avatar } = options;
-
-  const teamData = await kv.get(`team_${teamId}`);
-  if (!teamData) {
-    return { error: 'Team not found', status: 404 };
-  }
-  const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
-  if (team.workspaceId !== workspaceId) {
-    return { error: 'Team does not belong to this workspace', status: 400 };
-  }
-
-  const teamMembersData = await kv.get(`team_${teamId}_members`);
-  const teamMemberIds: string[] = teamMembersData ? JSON.parse(teamMembersData) : [];
-
-  if (teamMemberIds.includes(existingUser.id)) {
-    return { error: 'User is already a team member', status: 400 };
-  }
-  if (teamMemberIds.length >= team.maxMembers) {
-    return { error: `Maximum of ${team.maxMembers} members per team`, status: 400 };
-  }
-
-  let workspaceMembers = await getWorkspaceMembers(workspaceId);
-  if (!workspaceMembers.includes(existingUser.id)) {
-    workspaceMembers.push(existingUser.id);
-    await kv.set(`workspace_${workspaceId}_members`, JSON.stringify(workspaceMembers));
-    await kv.set(`workspace_${workspaceId}_member_${existingUser.id}_role`, role || 'member');
-  }
-
-  teamMemberIds.push(existingUser.id);
-  await kv.set(`team_${teamId}_members`, JSON.stringify(teamMemberIds));
-
-  team.memberCount = teamMemberIds.length;
-  await kv.set(`team_${teamId}`, JSON.stringify(team));
-
-  await kv.set(`workspace_${workspaceId}_member_${existingUser.id}`, JSON.stringify({
-    role: role || 'member',
-    teamId,
-  }));
-
-  return {
-    member: {
-      id: existingUser.id,
-      email: existingUser.email || '',
-      name: existingUser.user_metadata?.name || name,
-      avatar: avatar || existingUser.user_metadata?.avatar,
-      role: role || 'member',
-      teamId,
-    },
-  };
+  return addExistingUserToWorkspaceDirect({
+    ...options,
+    teamId: options.teamId,
+  });
 }
 
 /**
@@ -5238,6 +5302,23 @@ app.post("/taskzm-database-function/team/:workspaceId/invite", async (c) => {
         }
         return c.json({ error: 'User is already a member of this workspace' }, 400);
       }
+
+      const directAdd = await addExistingUserToWorkspaceDirect({
+        workspaceId,
+        existingUser,
+        name,
+        role: role || 'member',
+        avatar,
+        teamId,
+      });
+      if ('error' in directAdd) {
+        return c.json({ error: directAdd.error }, directAdd.status);
+      }
+      return c.json({
+        success: true,
+        message: 'Team member added',
+        member: directAdd.member,
+      });
     }
 
     const inviteResult = await sendWorkspaceInvitation({
@@ -5369,10 +5450,9 @@ app.delete("/taskzm-database-function/team/:workspaceId/members/:memberId", asyn
     const workspaceId = c.req.param('workspaceId');
     const memberId = c.req.param('memberId');
 
-    // Verify workspace ownership (only owner can remove members)
-    const owner = await kv.get(`workspace_${workspaceId}_owner`);
-    if (owner !== userId) {
-      return c.json({ error: 'Unauthorized: Only workspace owner can remove members' }, 403);
+    const adminAccess = await assertWorkspaceAdminOrOwner(workspaceId, userId);
+    if (!adminAccess.ok) {
+      return c.json({ error: adminAccess.error }, adminAccess.status);
     }
 
     // Can't remove yourself
@@ -5382,24 +5462,8 @@ app.delete("/taskzm-database-function/team/:workspaceId/members/:memberId", asyn
 
     // Handle pending invitations (IDs starting with "pending_")
     if (memberId.startsWith('pending_')) {
-      // Extract token from ID (format: "pending_<token>")
       const token = memberId.replace('pending_', '');
-      
-      // Remove invitation
-      await kv.del(`invitation_${token}`);
-      
-      // Remove from workspace invitations list
-      const invitationTokensStr = await kv.get(`workspace_${workspaceId}_invitations`);
-      if (invitationTokensStr) {
-        try {
-          const tokens = JSON.parse(invitationTokensStr);
-          const updatedTokens = tokens.filter((t: string) => t !== token);
-          await kv.set(`workspace_${workspaceId}_invitations`, JSON.stringify(updatedTokens));
-        } catch (e) {
-          console.log('Error updating invitations list:', e);
-        }
-      }
-      
+      await cancelPendingInvitation(workspaceId, token);
       return c.json({ success: true });
     }
 
@@ -5436,17 +5500,25 @@ app.put("/taskzm-database-function/team/:workspaceId/members/:memberId/role", as
       return c.json({ error: 'Invalid role' }, 400);
     }
 
-    // Verify workspace ownership (only owner can change roles)
-    const owner = await kv.get(`workspace_${workspaceId}_owner`);
-    if (owner !== userId) {
-      return c.json({ error: 'Unauthorized: Only workspace owner can change roles' }, 403);
+    const adminAccess = await assertWorkspaceAdminOrOwner(workspaceId, userId);
+    if (!adminAccess.ok) {
+      return c.json({ error: adminAccess.error }, adminAccess.status);
     }
 
-    // Verify member exists
-    // Handle pending invitations (IDs starting with "pending_")
+    // Pending invitations: update role on the invitation record
     if (memberId.startsWith('pending_')) {
-      // For pending invitations, we can't update role until they accept
-      return c.json({ error: 'Cannot update role for pending invitation. Wait for member to accept.' }, 400);
+      const token = memberId.replace('pending_', '');
+      const invitationData = await kv.get(`invitation_${token}`);
+      if (!invitationData) {
+        return c.json({ error: 'Invitation not found' }, 404);
+      }
+      const invitation = JSON.parse(invitationData);
+      if (invitation.workspaceId !== workspaceId) {
+        return c.json({ error: 'Invitation not found in workspace' }, 404);
+      }
+      invitation.role = role;
+      await kv.set(`invitation_${token}`, JSON.stringify(invitation));
+      return c.json({ success: true, role });
     }
     
     const members = await getWorkspaceMembers(workspaceId);
@@ -6102,15 +6174,20 @@ app.get("/taskzm-database-function/teams/:teamId/members", async (c) => {
         const { data: userData } = await supabase.auth.admin.getUserById(memberId);
         if (userData?.user) {
           const user = userData.user;
-          const memberData = await kv.get(`workspace_${workspaceId}_member_${memberId}`);
-          const memberInfo = memberData ? (typeof memberData === 'string' ? JSON.parse(memberData) : memberData) : {};
+          let memberRole = await kv.get(`workspace_${workspaceId}_member_${memberId}_role`);
+          if (!memberRole) {
+            const memberData = await kv.get(`workspace_${workspaceId}_member_${memberId}`);
+            const memberInfo = memberData ? (typeof memberData === 'string' ? JSON.parse(memberData) : memberData) : {};
+            memberRole = memberInfo.role || 'member';
+          }
 
           teamMembers.push({
             id: user.id,
             email: user.email || '',
             name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
             avatar: user.user_metadata?.avatar,
-            role: memberInfo.role || 'member',
+            role: memberRole,
+            inviteStatus: 'accepted',
             teamId: teamId,
           });
         }
@@ -6240,6 +6317,145 @@ app.post("/taskzm-database-function/teams/:teamId/invite", async (c) => {
     });
   } catch (error) {
     console.error('Error inviting team member:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Remove member from a specific sub-team (does not remove from workspace)
+app.delete("/taskzm-database-function/teams/:teamId/members/:memberId", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const teamId = c.req.param('teamId');
+    const memberId = c.req.param('memberId');
+
+    const teamData = await kv.get(`team_${teamId}`);
+    if (!teamData) {
+      return c.json({ error: 'Team not found' }, 404);
+    }
+    const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+    const workspaceId = team.workspaceId;
+
+    const adminAccess = await assertWorkspaceAdminOrOwner(workspaceId, userId);
+    if (!adminAccess.ok) {
+      return c.json({ error: adminAccess.error }, adminAccess.status);
+    }
+
+    if (memberId === userId) {
+      return c.json({ error: 'Cannot remove yourself from the team' }, 400);
+    }
+
+    if (memberId.startsWith('pending_')) {
+      const token = memberId.replace('pending_', '');
+      const invitationData = await kv.get(`invitation_${token}`);
+      if (invitationData) {
+        const invitation = JSON.parse(invitationData);
+        if (invitation.teamId !== teamId) {
+          return c.json({ error: 'Invitation is not for this team' }, 400);
+        }
+      }
+      await cancelPendingInvitation(workspaceId, token);
+      return c.json({ success: true });
+    }
+
+    const teamMembersData = await kv.get(`team_${teamId}_members`);
+    const teamMemberIds: string[] = teamMembersData ? JSON.parse(teamMembersData) : [];
+    if (!teamMemberIds.includes(memberId)) {
+      return c.json({ error: 'Member not found in team' }, 404);
+    }
+
+    const updatedMemberIds = teamMemberIds.filter((id: string) => id !== memberId);
+    await kv.set(`team_${teamId}_members`, JSON.stringify(updatedMemberIds));
+    team.memberCount = updatedMemberIds.length;
+    await kv.set(`team_${teamId}`, JSON.stringify(team));
+
+    const memberMeta = await kv.get(`workspace_${workspaceId}_member_${memberId}`);
+    if (memberMeta) {
+      try {
+        const parsed = typeof memberMeta === 'string' ? JSON.parse(memberMeta) : memberMeta;
+        if (parsed.teamId === teamId) {
+          delete parsed.teamId;
+          await kv.set(`workspace_${workspaceId}_member_${memberId}`, JSON.stringify(parsed));
+        }
+      } catch (e) {
+        console.log('Error updating member team association:', e);
+      }
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error removing team member from team:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Update member role for a sub-team member (workspace role; applies across teams)
+app.put("/taskzm-database-function/teams/:teamId/members/:memberId/role", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const teamId = c.req.param('teamId');
+    const memberId = c.req.param('memberId');
+    const { role } = await c.req.json();
+
+    if (!['admin', 'member', 'viewer'].includes(role)) {
+      return c.json({ error: 'Invalid role' }, 400);
+    }
+
+    const teamData = await kv.get(`team_${teamId}`);
+    if (!teamData) {
+      return c.json({ error: 'Team not found' }, 404);
+    }
+    const team = typeof teamData === 'string' ? JSON.parse(teamData) : teamData;
+    const workspaceId = team.workspaceId;
+
+    const adminAccess = await assertWorkspaceAdminOrOwner(workspaceId, userId);
+    if (!adminAccess.ok) {
+      return c.json({ error: adminAccess.error }, adminAccess.status);
+    }
+
+    if (memberId.startsWith('pending_')) {
+      const token = memberId.replace('pending_', '');
+      const invitationData = await kv.get(`invitation_${token}`);
+      if (!invitationData) {
+        return c.json({ error: 'Invitation not found' }, 404);
+      }
+      const invitation = JSON.parse(invitationData);
+      if (invitation.teamId !== teamId) {
+        return c.json({ error: 'Invitation is not for this team' }, 400);
+      }
+      invitation.role = role;
+      await kv.set(`invitation_${token}`, JSON.stringify(invitation));
+      return c.json({ success: true, role });
+    }
+
+    const teamMembersData = await kv.get(`team_${teamId}_members`);
+    const teamMemberIds: string[] = teamMembersData ? JSON.parse(teamMembersData) : [];
+    if (!teamMemberIds.includes(memberId)) {
+      return c.json({ error: 'Member not found in team' }, 404);
+    }
+
+    await kv.set(`workspace_${workspaceId}_member_${memberId}_role`, role);
+    const memberMeta = await kv.get(`workspace_${workspaceId}_member_${memberId}`);
+    if (memberMeta) {
+      try {
+        const parsed = typeof memberMeta === 'string' ? JSON.parse(memberMeta) : memberMeta;
+        parsed.role = role;
+        await kv.set(`workspace_${workspaceId}_member_${memberId}`, JSON.stringify(parsed));
+      } catch (e) {
+        console.log('Error updating member role metadata:', e);
+      }
+    }
+
+    return c.json({ success: true, role });
+  } catch (error) {
+    console.error('Error updating team member role:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
 });

@@ -1073,6 +1073,39 @@ export async function updateTeamMemberRole(workspaceId: string, memberId: string
   return response.json();
 }
 
+export async function removeTeamMemberFromTeam(teamId: string, memberId: string) {
+  const response = await fetch(`${API_BASE}/teams/${teamId}/members/${memberId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to remove team member');
+  }
+
+  return response.json();
+}
+
+export async function updateTeamMemberRoleInTeam(
+  teamId: string,
+  memberId: string,
+  role: 'admin' | 'member' | 'viewer',
+) {
+  const response = await fetch(`${API_BASE}/teams/${teamId}/members/${memberId}/role`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ role }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update team member role');
+  }
+
+  return response.json();
+}
+
 // Team Management API Functions
 export async function createTeam(workspaceId: string, name: string, description?: string) {
   const response = await fetch(`${API_BASE}/teams/${workspaceId}`, {
