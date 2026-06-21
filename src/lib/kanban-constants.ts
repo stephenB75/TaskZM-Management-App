@@ -284,10 +284,14 @@ export const KANBAN_TIME = {
 
 /** Desktop kanban: fit visible days in the horizontal viewport */
 export const KANBAN_VIEWPORT_WEEK = {
-  /** Number of day columns shown on desktop (weekdays-first slice of the calendar week) */
+  /** Number of day columns per week panel on desktop */
   visibleDays: 5,
+  /** Week panels available via horizontal scroll (e.g. 2 = two-week view) */
+  scrollWeeks: 2,
   /** Minimum width per day column before horizontal overflow is allowed */
   minColumnWidthPx: 128,
+  /** Snap each week panel to the scroll viewport when panning horizontally */
+  scrollSnap: true,
 } as const;
 
 // Mobile View Constants

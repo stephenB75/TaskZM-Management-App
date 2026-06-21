@@ -128,6 +128,7 @@ export function SevenDayKanban({
   const [columnRowHeightPx, setColumnRowHeightPx] = useState(
     KANBAN_COLUMN_HEIGHT.minRowHeightPx,
   );
+  const [viewportWeekWidthPx, setViewportWeekWidthPx] = useState(0);
   
   // Helpers for subtle gradients to avoid blending into backgrounds
   const toAlphaHex = (hex: string, percent: number) => {
@@ -198,6 +199,26 @@ export function SevenDayKanban({
     
     // Use mobileWeekOffset in mobile mode, weekOffset in desktop mode
     const currentWeekOffset = mobileMode ? mobileWeekOffset : weekOffset;
+
+    const buildColumnForDate = (date: Date, dayIndex: number, weekNumber: number): DayColumn => {
+      const isToday =
+        date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate();
+      const dayOfWeek = date.getDay();
+      const dayName = DAYS_OF_WEEK[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
+      const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dateString = getDateString(normalizedDate);
+      return {
+        date,
+        dayName,
+        dateString,
+        isToday,
+        isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+        weekNumber,
+        dayIndex,
+      };
+    };
     
     // Calculate start date based on weekStart setting
     let startDate: Date;
@@ -215,58 +236,39 @@ export function SevenDayKanban({
         const mondayOffset = (currentDay + KANBAN_TIME.daysPerWeek - 1) % KANBAN_TIME.daysPerWeek; // Convert to Monday=0
         startDate.setDate(startDate.getDate() - mondayOffset + currentWeekOffset * KANBAN_TIME.daysPerWeek);
       }
-    } else {
-      // Desktop: Start from tomorrow (today is shown in Today Agenda timeline, so exclude it)
-      // But align to week start for proper week grouping
-      startDate = new Date(today);
-      startDate.setDate(startDate.getDate() + 1 + (currentWeekOffset * KANBAN_TIME.daysPerWeek));
-      
-      // Align to week start
-      const currentDay = startDate.getDay(); // 0 (Sun) - 6 (Sat)
-      if (weekStart === 'sunday') {
-        // Align to Sunday
-        const sundayOffset = currentDay === 0 ? 0 : currentDay;
-        startDate.setDate(startDate.getDate() - sundayOffset);
-      } else {
-        // Align to Monday
-        const mondayOffset = currentDay === 0 ? KANBAN_TIME.daysPerWeek - 1 : currentDay - 1; // If Sunday, go back 6 days to Monday
-        startDate.setDate(startDate.getDate() - mondayOffset);
-      }
+
+      return Array.from({ length: KANBAN_TIME.daysPerWeek }, (_, i) => {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        return buildColumnForDate(date, i, Math.floor(i / KANBAN_TIME.daysPerWeek) + 1);
+      });
     }
 
-    // Desktop: first N days of the aligned week; mobile: full 7-day carousel range
-    const totalDays = mobileMode
-      ? KANBAN_TIME.daysPerWeek
-      : KANBAN_VIEWPORT_WEEK.visibleDays;
+    // Desktop: align to calendar week start, then render scrollWeeks × visibleDays panels
+    startDate = new Date(today);
+    startDate.setDate(startDate.getDate() + 1 + (currentWeekOffset * KANBAN_TIME.daysPerWeek));
+    const currentDay = startDate.getDay();
+    if (weekStart === 'sunday') {
+      const sundayOffset = currentDay === 0 ? 0 : currentDay;
+      startDate.setDate(startDate.getDate() - sundayOffset);
+    } else {
+      const mondayOffset = currentDay === 0 ? KANBAN_TIME.daysPerWeek - 1 : currentDay - 1;
+      startDate.setDate(startDate.getDate() - mondayOffset);
+    }
 
-    return Array.from({ length: totalDays }, (_, i) => {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      
-      const isToday = 
-        date.getFullYear() === today.getFullYear() &&
-        date.getMonth() === today.getMonth() &&
-        date.getDate() === today.getDate();
-
-      const dayOfWeek = date.getDay();
-      const dayName = DAYS_OF_WEEK[dayOfWeek === 0 ? 6 : dayOfWeek - 1]; // Monday-based array
-
-      // Normalize date to local midnight to ensure consistent date string format
-      // This prevents timezone issues when comparing dates
-      // Use getDateString() for consistency with calendar event grouping
-      const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const dateString = getDateString(normalizedDate);
-
-      return {
-        date,
-        dayName,
-        dateString,
-        isToday,
-        isWeekend: dayOfWeek === 0 || dayOfWeek === 6, // Sunday or Saturday
-        weekNumber: Math.floor(i / KANBAN_TIME.daysPerWeek) + 1,
-        dayIndex: i,
-      };
-    });
+    const columns: DayColumn[] = [];
+    let dayIndex = 0;
+    for (let weekIndex = 0; weekIndex < KANBAN_VIEWPORT_WEEK.scrollWeeks; weekIndex += 1) {
+      const weekAnchor = new Date(startDate);
+      weekAnchor.setDate(startDate.getDate() + weekIndex * KANBAN_TIME.daysPerWeek);
+      for (let d = 0; d < KANBAN_VIEWPORT_WEEK.visibleDays; d += 1) {
+        const date = new Date(weekAnchor);
+        date.setDate(weekAnchor.getDate() + d);
+        columns.push(buildColumnForDate(date, dayIndex, weekIndex + 1));
+        dayIndex += 1;
+      }
+    }
+    return columns;
   };
 
   // Memoize week columns so downstream effects don't re-run every render. Include todayDateKey so the "today" column indicator stays correct after midnight.
@@ -298,7 +300,10 @@ export function SevenDayKanban({
   // Fallback range when visibleRange not yet set (e.g. first paint)
   const fallbackEnd = React.useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + (mobileMode ? KANBAN_TIME.daysPerWeek : KANBAN_VIEWPORT_WEEK.visibleDays));
+    const daySpan = mobileMode
+      ? KANBAN_TIME.daysPerWeek
+      : KANBAN_VIEWPORT_WEEK.visibleDays * KANBAN_VIEWPORT_WEEK.scrollWeeks;
+    d.setDate(d.getDate() + daySpan);
     d.setHours(23, 59, 59, 999);
     return d;
   }, [mobileMode]);
@@ -372,6 +377,7 @@ export function SevenDayKanban({
         // Get viewport height - use the actual visible height of the scroll container
         const containerRect = container.getBoundingClientRect();
         const viewportHeight = containerRect.height;
+        const viewportWidth = containerRect.width;
         
         if (viewportHeight === 0) {
           setZoomScale(1);
@@ -380,6 +386,9 @@ export function SevenDayKanban({
         
         // Defer heavy DOM measurements to idle callback to avoid blocking animation frame
         const processMeasurements = () => {
+          if (viewportWidth > 0) {
+            setViewportWeekWidthPx(Math.floor(viewportWidth));
+          }
           const weekHeaderEl = columns.querySelector('[data-kanban-week-group-header]');
           const weekHeaderHeight =
             weekHeaderEl instanceof HTMLElement
@@ -1013,9 +1022,9 @@ export function SevenDayKanban({
             ref={scrollContainerRef}
             className={cn(
               mobileMode ? "w-full" : "h-full min-h-0 w-full",
-              mobileMode ? "overflow-x-auto" : "overflow-x-hidden",
-              // Desktop: horizontal fit one week; vertical scroll inside day columns
+              "overflow-x-auto",
               mobileMode ? "" : "overflow-y-hidden",
+              !mobileMode && KANBAN_VIEWPORT_WEEK.scrollSnap && "snap-x snap-mandatory",
               "scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent",
               activeId && "cursor-default" // Change cursor when dragging task
             )}
@@ -1029,7 +1038,7 @@ export function SevenDayKanban({
               data-kanban-zoom-scale={zoomScale}
               className={cn(
                 "flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3",
-                mobileMode ? "min-w-max" : "w-full h-full max-h-full items-stretch",
+                mobileMode ? "min-w-max" : "h-full max-h-full items-stretch flex-shrink-0",
               )}
               style={{
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
@@ -1050,9 +1059,11 @@ export function SevenDayKanban({
                   (weekStart === 'monday' && firstDayOfGroup.date.getDay() === 1)
                 );
                 
+                const showWeekDivider = mobileMode ? isStartOfWeek : groupIndex > 0;
+                
                 return (
                   <React.Fragment key={`week-group-${groupIndex}`}>
-                    {isStartOfWeek && (
+                    {showWeekDivider && (
                       <div
                         className="flex flex-col items-center self-stretch flex-shrink-0"
                         style={{
@@ -1086,10 +1097,20 @@ export function SevenDayKanban({
                       </div>
                     )}
 
-                  <div className={cn(
-                    "flex flex-col gap-2 flex-1 self-stretch h-full min-h-0",
-                    mobileMode ? "min-w-max" : "w-full min-w-0",
-                  )}>
+                  <div
+                    className={cn(
+                      "flex flex-col gap-2 flex-shrink-0 self-stretch h-full min-h-0",
+                      mobileMode ? "min-w-max flex-1" : "snap-start",
+                    )}
+                    style={
+                      mobileMode
+                        ? undefined
+                        : {
+                            width: viewportWeekWidthPx > 0 ? viewportWeekWidthPx : '100%',
+                            minWidth: viewportWeekWidthPx > 0 ? viewportWeekWidthPx : '100%',
+                          }
+                    }
+                  >
                     {(() => {
                       const groupStart = group[0]?.date;
                       const groupEnd = group[group.length - 1]?.date;
