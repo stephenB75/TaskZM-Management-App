@@ -47,11 +47,10 @@ export function DroppableColumn({
         // Ensure drop zone is always accessible, even when empty (inline minHeight overrides parent min-h-0)
         position: 'relative',
         zIndex: isOver ? 100 : 'auto',
-        ...(isMobile
+        ...(isMobile || fillHeight
           ? {}
           : {
-              minHeight:
-                bodyMinHeightPx ?? DROPPABLE_COLUMN_MIN_HEIGHT_PX,
+              minHeight: bodyMinHeightPx ?? DROPPABLE_COLUMN_MIN_HEIGHT_PX,
             }),
         backgroundColor: isMobile ? 'transparent' : undefined, // Transparent background on mobile to prevent white box
         background: isMobile ? 'transparent' : undefined,

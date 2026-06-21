@@ -39,7 +39,7 @@ import {
 } from '../lib/kanban-constants';
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
-import { VIEWPORT_BREAKPOINTS, DROPPABLE_COLUMN_MIN_HEIGHT_PX, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
+import { VIEWPORT_BREAKPOINTS, NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
@@ -154,12 +154,8 @@ export function SevenDayKanban({
   // Auto-zoom state for desktop view
   const columnsContainerRef = React.useRef<HTMLDivElement>(null);
   const [zoomScale, setZoomScale] = useState(1);
-  const [columnBlockMinHeightPx, setColumnBlockMinHeightPx] = useState(
-    DROPPABLE_COLUMN_MIN_HEIGHT_PX + KANBAN_COLUMN_HEIGHT.columnHeaderFallbackPx,
-  );
-  const columnBodyMinHeightPx = Math.max(
-    KANBAN_COLUMN_HEIGHT.minBodyHeightPx,
-    columnBlockMinHeightPx - KANBAN_COLUMN_HEIGHT.columnHeaderFallbackPx,
+  const [columnRowHeightPx, setColumnRowHeightPx] = useState(
+    KANBAN_COLUMN_HEIGHT.minRowHeightPx,
   );
   
   // Track if we've scrolled to next day on mount (only once)
@@ -416,44 +412,16 @@ export function SevenDayKanban({
               ? weekHeaderEl.getBoundingClientRect().height
               : KANBAN_COLUMN_HEIGHT.weekGroupHeaderFallbackPx;
           const containerPadding = KANBAN_COLUMN_DIMENSIONS.padding.desktop * 2;
-          const availableColumnBlock = Math.max(
-            DROPPABLE_COLUMN_MIN_HEIGHT_PX + KANBAN_COLUMN_HEIGHT.columnHeaderFallbackPx,
+          const availableColumnRow = Math.max(
+            KANBAN_COLUMN_HEIGHT.minRowHeightPx,
             viewportHeight
               - containerPadding
               - weekHeaderHeight
-              - KANBAN_COLUMN_HEIGHT.weekHeaderToColumnsGapPx
-              - KANBAN_ZOOM.padding,
+              - KANBAN_COLUMN_HEIGHT.weekHeaderToColumnsGapPx,
           );
-          setColumnBlockMinHeightPx(Math.floor(availableColumnBlock));
-
-          // Find the tallest day column (equal-height rows stretch to match)
-          let maxColumnHeight = 0;
-          const dayColumnElements = columns.querySelectorAll('[data-kanban-day-column]');
-
-          for (const col of dayColumnElements) {
-            if (!(col instanceof HTMLElement)) continue;
-            const rect = col.getBoundingClientRect();
-            const columnHeight = Math.max(rect.height, col.scrollHeight);
-            maxColumnHeight = Math.max(maxColumnHeight, columnHeight);
-          }
-          
-          // If no columns found or height is 0, reset zoom
-          if (maxColumnHeight === 0) {
-            setZoomScale(1);
-            return;
-          }
-          
-          // Calculate zoom scale if tallest column exceeds viewport
-          // Add padding to prevent edge clipping
-          if (maxColumnHeight > viewportHeight) {
-            const scale = (viewportHeight - KANBAN_ZOOM.padding) / maxColumnHeight;
-            // Clamp scale between min and max
-            const clampedScale = Math.max(KANBAN_ZOOM.minScale, Math.min(KANBAN_ZOOM.maxScale, scale));
-            setZoomScale(clampedScale);
-          } else {
-            // No zoom needed if content fits
-            setZoomScale(1);
-          }
+          setColumnRowHeightPx(Math.floor(availableColumnRow));
+          // Columns use a fixed viewport row height with internal scroll — no scale-down zoom
+          setZoomScale(1);
         };
         
         // Use requestIdleCallback if available, otherwise use setTimeout with small delay
@@ -1188,16 +1156,15 @@ export function SevenDayKanban({
     >
       {/* Week View - Kanban Board */}
         <div className={cn(
-          mobileMode ? "w-full" : "flex-1 overflow-hidden"
+          mobileMode ? "w-full" : "flex-1 min-h-0 overflow-hidden"
         )}>
           <div 
             ref={scrollContainerRef}
             className={cn(
-              mobileMode ? "w-full" : "h-full",
+              mobileMode ? "w-full" : "h-full min-h-0",
               "overflow-x-auto",
-              // On mobile, rely on parent scroll container - no overflow-y-auto
-              // On desktop, allow vertical scrolling within the kanban
-              mobileMode ? "" : "overflow-y-auto",
+              // Desktop: horizontal scroll only; day columns scroll internally
+              mobileMode ? "" : "overflow-y-hidden",
               "scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent",
               activeId && "cursor-default" // Change cursor when dragging task
             )}
@@ -1211,14 +1178,13 @@ export function SevenDayKanban({
               data-kanban-zoom-scale={zoomScale}
               className={cn(
                 "flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3 min-w-max",
-                !mobileMode && "h-full items-stretch",
+                !mobileMode && "h-full max-h-full items-stretch",
               )}
               style={{
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
                 transformOrigin: 'top left',
                 transition: KANBAN_ANIMATION.transformTransition,
-                // No paddingBottom - nav bar clearance handled by spacer in App.tsx
-                minHeight: mobileMode ? '100%' : '100%',
+                minHeight: mobileMode ? '100%' : undefined,
                 backgroundImage: mobileMode ? (isDark
                   ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
                   : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`)
@@ -1269,7 +1235,7 @@ export function SevenDayKanban({
                       </div>
                     )}
 
-                  <div className="flex flex-col gap-2 min-w-max flex-1 self-stretch h-full">
+                  <div className="flex flex-col gap-2 min-w-max flex-1 self-stretch h-full min-h-0">
                     {(() => {
                       const groupStart = group[0]?.date;
                       const groupEnd = group[group.length - 1]?.date;
@@ -1327,7 +1293,18 @@ export function SevenDayKanban({
                       );
                     })()}
 
-                    <div className="flex flex-1 items-stretch gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 min-h-0">
+                    <div
+                      className="flex items-stretch gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 flex-shrink-0"
+                      style={
+                        mobileMode
+                          ? undefined
+                          : {
+                              height: columnRowHeightPx,
+                              minHeight: columnRowHeightPx,
+                              maxHeight: columnRowHeightPx,
+                            }
+                      }
+                    >
                       {group.map((column, columnIndex) => {
                 const dayTasks = getTasksForDay(column.dateString);
                 // For recurring tasks, use unique ID per date occurrence to maintain chronological order
@@ -1351,36 +1328,41 @@ export function SevenDayKanban({
                 return (
                   <div
                     key={column.dateString}
-                    className="flex flex-col self-stretch h-full flex-1"
+                    className="flex flex-col self-stretch h-full min-h-0 flex-1"
                     style={{
                       minWidth: `${columnWidth}px`,
                       width: `${columnWidth}px`,
                     }}
                   >
-                    {/* Subtle today marker above column */}
-                    {column.isToday && (
-                      <div
-                        className="flex justify-center"
-                        style={{
-                          marginBottom: KANBAN_DAY_COLORS.today.indicatorLine.marginBottom,
-                        }}
-                      >
+                    {/* Reserve equal chrome above every column so card heights match */}
+                    <div
+                      className="flex justify-center flex-shrink-0"
+                      style={{
+                        height: KANBAN_COLUMN_HEIGHT.todayIndicatorChromePx,
+                        marginBottom: column.isToday
+                          ? undefined
+                          : 0,
+                      }}
+                      aria-hidden={!column.isToday}
+                    >
+                      {column.isToday && (
                         <div
-                          className="rounded-full"
+                          className="rounded-full self-end"
                           style={{
                             width: `${KANBAN_DAY_COLORS.today.indicatorLine.widthPercent * KANBAN_WEEK_GROUP_HEADER.columnHeader.todayIndicator.widthScale}%`,
                             height: KANBAN_WEEK_GROUP_HEADER.columnHeader.todayIndicator.heightPx,
+                            marginBottom: parseInt(KANBAN_DAY_COLORS.today.indicatorLine.marginBottom, 10),
                             backgroundColor: accentColor,
                             opacity: KANBAN_WEEK_GROUP_HEADER.columnHeader.todayIndicator.opacity,
                           }}
                         />
-                      </div>
-                    )}
+                      )}
+                    </div>
                     <motion.div
                       data-column-date={column.dateString}
                       data-kanban-day-column
                       className={cn(
-                        'flex flex-col flex-1 h-full min-h-0 rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
+                        'flex flex-col flex-1 min-h-0 h-full rounded-2xl overflow-hidden soft-shadow border border-primary/10 dark:border-border/50',
                         // Only use Tailwind bg when we are not applying column-wrapper tint (weekend or no header colors)
                         !column.isWeekend && !hasHeader(dayColors) && (isDark ? 'bg-card/80' : 'bg-transparent'),
                         column.isWeekend && isDark && 'bg-card/60',
@@ -1390,7 +1372,6 @@ export function SevenDayKanban({
                       style={{
                         minWidth: `${columnWidth}px`,
                         width: `${columnWidth}px`,
-                        minHeight: `${columnBlockMinHeightPx}px`,
                         ...(column.isWeekend && !isDark && {
                           backgroundImage: `linear-gradient(to bottom, ${KANBAN_DAY_COLORS.weekend.from}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')}, ${KANBAN_DAY_COLORS.weekend.to}${Math.round(KANBAN_DAY_COLORS.weekend.opacity * 2.55).toString(16).padStart(2, '0')})`,
                         }),
@@ -1473,8 +1454,7 @@ export function SevenDayKanban({
                     <DroppableColumn
                       id={column.dateString}
                       fillHeight
-                      bodyMinHeightPx={columnBodyMinHeightPx}
-                      className="flex-1 min-h-0"
+                      className="flex-1 min-h-0 overflow-hidden"
                     >
                       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                         {(() => {
@@ -1548,7 +1528,7 @@ export function SevenDayKanban({
                           return (
                         <div 
                           className={cn(
-                            'p-2 sm:p-3 flex flex-col flex-1 min-h-0 items-stretch h-full',
+                            'p-2 sm:p-3 flex flex-col flex-1 min-h-0 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent',
                             isDark ? 'bg-muted/10' : ''
                           )}
                           style={{

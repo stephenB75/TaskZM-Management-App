@@ -430,12 +430,15 @@ export const KANBAN_COLUMN_HEIGHT = {
   /** gap-2 between week label row and day columns */
   weekHeaderToColumnsGapPx: 8,
   /** Today indicator strip above a column (margin + line) */
-  todayIndicatorChromePx: 12,
+  todayIndicatorChromePx:
+    parseInt(KANBAN_DAY_COLORS.today.indicatorLine.marginBottom, 10)
+    + KANBAN_WEEK_GROUP_HEADER.columnHeader.todayIndicator.heightPx,
   /** Day column card header row (padding + label) */
   columnHeaderFallbackPx:
     KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingY * 2 + 28,
-  /** Minimum body height inside a day column */
-  minBodyHeightPx: DROPPABLE_COLUMN_MIN_HEIGHT_PX,
+  /** Minimum row height for day columns when viewport is not yet measured */
+  minRowHeightPx:
+    DROPPABLE_COLUMN_MIN_HEIGHT_PX + KANBAN_WEEK_GROUP_HEADER.columnHeader.paddingY * 2 + 28,
   measureDebounceMs: 100,
 } as const;
 

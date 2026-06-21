@@ -1713,7 +1713,7 @@ export function DashboardView({
           {/* Desktop: Full Kanban or Calendar (not mobile/tablet) */}
           {!shouldUseMobileLayout && (
             <div
-              className="h-full"
+              className="h-full min-h-0 flex flex-col"
               data-tour="kanban-board"
             >
               {viewMode === "week" ? (
