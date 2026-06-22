@@ -102,6 +102,22 @@ function KanbanWeekPanelGutter({
   );
 }
 
+function getKanbanSortableTaskId(task: Task, dateString: string): string | null {
+  if (!task?.id) return null;
+  const isRecurring = task.recurrence && task.recurrence.type !== 'none';
+  return isRecurring ? `${task.id}__${dateString}` : task.id;
+}
+
+function getKanbanSortableTaskIdsFromCombinedItems(
+  combinedItems: ReturnType<typeof buildSortedKanbanDayItems>,
+  dateString: string,
+): string[] {
+  return combinedItems
+    .filter((item): item is Extract<(typeof combinedItems)[number], { type: 'task' }> => item.type === 'task')
+    .map((item) => getKanbanSortableTaskId(item.task, dateString))
+    .filter((id): id is string => id !== null);
+}
+
 // Helper function to get day colors
 const getDayColors = (dayName: string) => {
   const dayKey = dayName.toLowerCase() as keyof typeof KANBAN_DAY_COLORS;
@@ -739,14 +755,11 @@ export function SevenDayKanban({
       return null;
     }
     const dayTasks = getTasksForDay(currentColumn.dateString);
-    // For recurring tasks, use unique ID per date occurrence to maintain chronological order
-    const taskIds = Array.isArray(dayTasks) ? dayTasks
-      .map(t => {
-        if (!t?.id) return null;
-        const isRecurring = t.recurrence && t.recurrence.type !== 'none';
-        return isRecurring ? `${t.id}__${currentColumn.dateString}` : t.id;
-      })
-      .filter((id): id is string => id !== null) : [];
+    const columnDate = dateStringToLocalDate(currentColumn.dateString);
+    const calEvents = calendarEventsByDate[currentColumn.dateString] || [];
+    const combinedItems = buildSortedKanbanDayItems(columnDate, dayTasks, calEvents);
+    const sortableTaskIds = getKanbanSortableTaskIdsFromCombinedItems(combinedItems, currentColumn.dateString);
+    const hasContent = combinedItems.length > 0;
 
     return (
       <div 
@@ -776,7 +789,7 @@ export function SevenDayKanban({
           } as React.CSSProperties}
         >
           <DroppableColumn id={currentColumn.dateString} className={shouldUseMobileLayout ? "" : "min-h-full"}>
-              <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+              <SortableContext items={sortableTaskIds} strategy={verticalListSortingStrategy}>
                 <div className="w-full min-h-0 flex-1 flex flex-col" style={{ backgroundColor: 'transparent', background: 'transparent' } as React.CSSProperties}>
                     <div className="flex items-center gap-2 mb-3 min-w-0">
                       <div className={cn(
@@ -811,25 +824,12 @@ export function SevenDayKanban({
                       </Button>
                     </div>
 
-                    {(() => {
-                      // Get calendar events for this day (mobile)
-                      // useCalendarEventsByDate already groups events by local date string using getDateString
-                      // This ensures consistency with desktop view
-                      const calEvents = calendarEventsByDate[currentColumn.dateString] || [];
-                      const columnDate = dateStringToLocalDate(currentColumn.dateString);
-                      const combinedItems = buildSortedKanbanDayItems(columnDate, dayTasks, calEvents);
-                          const hasContent = combinedItems.length > 0;
-                          
-                          return (
                     <div
                       className="w-full max-w-full flex flex-col items-center min-w-0" 
                       style={{ 
                         minHeight: 0, 
                         height: '100%',
                         width: '100%',
-                        // No paddingBottom - nav bar clearance handled by spacer in App.tsx
-                        // On mobile/tablet, make background transparent to show parent gradient
-                        // On desktop, use the gradient background
                         backgroundImage: shouldUseMobileLayout
                           ? 'transparent'
                           : (isDark
@@ -840,7 +840,7 @@ export function SevenDayKanban({
                           : undefined,
                       } as React.CSSProperties}
                     >
-                    <AnimatePresence mode="popLayout">
+                    <AnimatePresence mode="sync">
                           {!hasContent ? (
                         <motion.div
                           initial={{ opacity: 0 }}
@@ -968,8 +968,6 @@ export function SevenDayKanban({
                       )}
                     </AnimatePresence>
                     </div>
-                      );
-                    })()}
                 </div>
               </SortableContext>
             </DroppableColumn>
@@ -1154,14 +1152,11 @@ export function SevenDayKanban({
                     >
                       {group.map((column, columnIndex) => {
                 const dayTasks = getTasksForDay(column.dateString);
-                // For recurring tasks, use unique ID per date occurrence to maintain chronological order
-                const taskIds = Array.isArray(dayTasks) ? dayTasks
-                  .map(t => {
-                    if (!t?.id) return null;
-                    const isRecurring = t.recurrence && t.recurrence.type !== 'none';
-                    return isRecurring ? `${t.id}__${column.dateString}` : t.id;
-                  })
-                  .filter((id): id is string => id !== null) : [];
+                const columnDate = dateStringToLocalDate(column.dateString);
+                const calEvents = calendarEventsByDate[column.dateString] || [];
+                const combinedItems = buildSortedKanbanDayItems(columnDate, dayTasks, calEvents);
+                const sortableTaskIds = getKanbanSortableTaskIdsFromCombinedItems(combinedItems, column.dateString);
+                const hasContent = combinedItems.length > 0;
                       const globalIndex =
                         groupIndex
                         * (mobileMode ? KANBAN_TIME.daysPerWeek : KANBAN_VIEWPORT_WEEK.visibleDays)
@@ -1302,15 +1297,7 @@ export function SevenDayKanban({
                       fillHeight
                       className="flex-1 min-h-0 overflow-x-visible overflow-y-hidden"
                     >
-                      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-                        {(() => {
-                          // Get calendar events for this day
-                          const calEvents = calendarEventsByDate[column.dateString] || [];
-                          const columnDate = dateStringToLocalDate(column.dateString);
-                          const combinedItems = buildSortedKanbanDayItems(columnDate, dayTasks, calEvents);
-                          const hasContent = combinedItems.length > 0;
-                          
-                          return (
+                      <SortableContext items={sortableTaskIds} strategy={verticalListSortingStrategy}>
                         <div 
                           className={cn(
                             'flex flex-col flex-1 min-h-0 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent',
@@ -1326,7 +1313,7 @@ export function SevenDayKanban({
                               : getColumnBgGradient(column.dayName, false, column.isToday),
                           }}
                         >
-                          <AnimatePresence mode="popLayout">
+                          <AnimatePresence mode="sync">
                                 {!hasContent ? (
                               <motion.div
                                 initial={{ opacity: 0 }}
@@ -1409,11 +1396,9 @@ export function SevenDayKanban({
                                     })}
                                   </div>
                             )}
-                          </AnimatePresence>
-                        </div>
-                          );
-                        })()}
-                      </SortableContext>
+                    </AnimatePresence>
+                    </div>
+              </SortableContext>
                     </DroppableColumn>
                         </motion.div>
                     </div>

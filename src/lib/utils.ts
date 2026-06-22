@@ -29,7 +29,7 @@ export function formatTimeAMPM(dateStr: string | null): string | null {
 /** Returns time part (e.g. "11:00") and period ("AM" | "PM") for styling AM/PM separately. */
 export function getTimeAndPeriod(dateStr: string | null): { timePart: string; period: 'AM' | 'PM' } | null {
   if (!dateStr) return null;
-  const date = new Date(dateStr);
+  const date = parseChronologicalTimeSource(dateStr);
   if (isNaN(date.getTime())) return null;
   const hours = date.getHours();
   const period: 'AM' | 'PM' = hours < 12 ? 'AM' : 'PM';
@@ -108,6 +108,18 @@ export function parseCalendarEventTime(isoString: string): Date {
   return new Date(s);
 }
 
+/** Parse a task or calendar ISO timestamp for display/sort (shared rules with parseCalendarEventTime). */
+export function parseChronologicalTimeSource(timeSource: string | Date): Date {
+  if (typeof timeSource === 'string') {
+    const trimmed = timeSource.trim();
+    if (/^\d{4}-\d{2}-\d{2}(T|$)/.test(trimmed)) {
+      return parseCalendarEventTime(trimmed);
+    }
+    return new Date(trimmed);
+  }
+  return new Date(timeSource.getTime());
+}
+
 /**
  * Parse YYYY-MM-DD string as local midnight (not UTC).
  * Use this when comparing to "today" or column dates so tasks appear on the correct day in all timezones.
@@ -146,7 +158,7 @@ export function getTaskTimeSourceForSort(task: Pick<Task, 'scheduledDate' | 'due
 export function getSortTimestampOnDay(referenceDay: Date, timeSource: Date | string): number {
   const ref = new Date(referenceDay);
   ref.setHours(0, 0, 0, 0);
-  const src = typeof timeSource === 'string' ? new Date(timeSource) : new Date(timeSource.getTime());
+  const src = parseChronologicalTimeSource(timeSource);
   if (Number.isNaN(src.getTime())) return Number.MAX_SAFE_INTEGER;
   ref.setHours(src.getHours(), src.getMinutes(), src.getSeconds(), src.getMilliseconds());
   return ref.getTime();
