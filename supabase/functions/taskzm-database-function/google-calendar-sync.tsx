@@ -208,6 +208,9 @@ export async function syncGoogleCalendarsToDatabase(
             location: event.location,
             calendar_color: event.calendarColor,
             external_updated_at: event.start, // Use start time as updated_at since Google doesn't provide lastModified
+            rrule: event.rrule ?? null,
+            recurrence_base_id: event.recurrenceBaseId ?? null,
+            is_recurring: event.isRecurring ?? false,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
@@ -239,6 +242,9 @@ export async function syncGoogleCalendarsToDatabase(
             calendar_href: GOOGLE_CALENDAR_PRIMARY, // Google Calendar uses 'primary' as the default calendar
             calendar_color: event.calendarColor,
             external_updated_at: event.start, // Use start time as updated_at
+            rrule: event.rrule ?? null,
+            recurrence_base_id: event.recurrenceBaseId ?? null,
+            is_recurring: event.isRecurring ?? false,
             is_readonly: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),

@@ -948,6 +948,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
   }, [user, accessToken]);
 
+  // Keep ref in sync so periodic sync and post-setup sync can call latest callback without stale closures.
+  useEffect(() => {
+    syncAppleCalendarInternalRef.current = syncAppleCalendarInternal;
+  }, [syncAppleCalendarInternal]);
+
   // Sync Google Calendar events from Google Calendar to database
   const syncGoogleCalendarInternal = useCallback(async (silent: boolean = false): Promise<boolean> => {
     if (!user || !accessToken) {
