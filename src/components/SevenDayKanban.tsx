@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 // Icons migrated to Icon component
 import { Icon } from './Icon';
 import { useTasks } from '../contexts/TaskContext';
@@ -108,14 +109,120 @@ function getKanbanSortableTaskId(task: Task, dateString: string): string | null 
   return isRecurring ? `${task.id}__${dateString}` : task.id;
 }
 
-function getKanbanSortableTaskIdsFromCombinedItems(
+function getKanbanEventSortableId(eventId: string): string {
+  return `event-${eventId}`;
+}
+
+function getKanbanColumnSortableIds(
   combinedItems: ReturnType<typeof buildSortedKanbanDayItems>,
   dateString: string,
 ): string[] {
-  return combinedItems
-    .filter((item): item is Extract<(typeof combinedItems)[number], { type: 'task' }> => item.type === 'task')
-    .map((item) => getKanbanSortableTaskId(item.task, dateString))
-    .filter((id): id is string => id !== null);
+  return combinedItems.map((item) =>
+    item.type === 'event'
+      ? getKanbanEventSortableId(item.event.id)
+      : getKanbanSortableTaskId(item.task, dateString),
+  ).filter((id): id is string => id != null);
+}
+
+/** Registers calendar events in SortableContext at the correct DOM index (disabled drag). */
+function KanbanCalendarEventSlot({
+  id,
+  className,
+  children,
+}: {
+  id: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, transform, transition } = useSortable({ id, disabled: true });
+  return (
+    <div
+      ref={setNodeRef}
+      className={className}
+      style={{
+        display: 'block',
+        width: '100%',
+        minWidth: '100%',
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function KanbanColumnItems({
+  combinedItems,
+  dateString,
+  allTasks,
+  kanbanCardItemClassName,
+  onTaskClick,
+  onTaskComplete,
+}: {
+  combinedItems: ReturnType<typeof buildSortedKanbanDayItems>;
+  dateString: string;
+  allTasks: Task[];
+  kanbanCardItemClassName: string;
+  onTaskClick: (task: Task, dateString: string) => void;
+  onTaskComplete?: (element?: HTMLElement) => void;
+}) {
+  const cardScaleStyle: React.CSSProperties = {
+    transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
+    transformOrigin: 'top center',
+    width: '100%',
+  };
+
+  return (
+    <>
+      {combinedItems.map((item) => {
+        if (item.type === 'event') {
+          return (
+            <KanbanCalendarEventSlot
+              key={getKanbanEventSortableId(item.event.id)}
+              id={getKanbanEventSortableId(item.event.id)}
+              className={kanbanCardItemClassName}
+            >
+              <div style={cardScaleStyle}>
+                <CalendarEventCard
+                  title={item.event.title}
+                  start={item.event.start}
+                  end={item.event.end}
+                  location={item.event.location}
+                  provider={item.event.provider}
+                  calendarColor={item.event.calendarColor}
+                  isRecurring={item.event.isRecurring}
+                  variant="kanban"
+                />
+              </div>
+            </KanbanCalendarEventSlot>
+          );
+        }
+
+        return (
+          <div
+            key={item.task.id}
+            className={kanbanCardItemClassName}
+            style={{
+              display: 'block',
+              width: '100%',
+              minWidth: '100%',
+              transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
+              transformOrigin: 'top center',
+            }}
+          >
+            <DraggableTaskCard
+              task={getTaskWithOccurrenceSubtasks(item.task, dateString, allTasks)}
+              onClick={() => onTaskClick(item.task, dateString)}
+              droppableId={dateString}
+              occurrenceDate={dateString}
+              onComplete={onTaskComplete}
+            />
+          </div>
+        );
+      })}
+    </>
+  );
 }
 
 // Helper function to get day colors
@@ -758,7 +865,7 @@ export function SevenDayKanban({
     const columnDate = dateStringToLocalDate(currentColumn.dateString);
     const calEvents = calendarEventsByDate[currentColumn.dateString] || [];
     const combinedItems = buildSortedKanbanDayItems(columnDate, dayTasks, calEvents);
-    const sortableTaskIds = getKanbanSortableTaskIdsFromCombinedItems(combinedItems, currentColumn.dateString);
+    const sortableTaskIds = getKanbanColumnSortableIds(combinedItems, currentColumn.dateString);
     const hasContent = combinedItems.length > 0;
 
     return (
@@ -906,64 +1013,14 @@ export function SevenDayKanban({
                                 : undefined,
                             } as React.CSSProperties}
                           >
-                              {combinedItems.map((item, idx) => {
-                                if (item.type === 'event') {
-                                  return (
-                                    <div
-                                      key={`mobile-event-${item.event.id}`}
-                                      className={kanbanCardItemClassName}
-                                      style={{ 
-                                        display: 'block',
-                                        width: '100%',
-                                        minWidth: '100%',
-                                        transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                        transformOrigin: 'top center',
-                                      }}
-                                    >
-                                      <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                        style={{ width: '100%' }}
-                                      >
-                                        <CalendarEventCard
-                                          title={item.event.title}
-                                          start={item.event.start}
-                                          end={item.event.end}
-                                          location={item.event.location}
-                                          provider={item.event.provider}
-                                          calendarColor={item.event.calendarColor}
-                                          isRecurring={item.event.isRecurring}
-                                          variant="kanban"
-                                        />
-                                      </motion.div>
-                                    </div>
-                                  );
-                                } else {
-                                  return (
-                          <div
-                                      key={item.task.id}
-                            className={kanbanCardItemClassName}
-                            style={{ 
-                              display: 'block',
-                              width: '100%',
-                              minWidth: '100%',
-                              transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                              transformOrigin: 'top center',
-                            }}
-                          >
-                            <DraggableTaskCard
-                                        task={getTaskWithOccurrenceSubtasks(item.task, currentColumn.dateString, tasks)}
-                                        onClick={() => handleTaskClick(item.task, currentColumn.dateString)}
-                            droppableId={currentColumn.dateString}
-                            occurrenceDate={currentColumn.dateString}
-                            onComplete={onTaskComplete}
-                          />
-                          </div>
-                                  );
-                                }
-                              })}
+                              <KanbanColumnItems
+                                combinedItems={combinedItems}
+                                dateString={currentColumn.dateString}
+                                allTasks={tasks}
+                                kanbanCardItemClassName={kanbanCardItemClassName}
+                                onTaskClick={handleTaskClick}
+                                onTaskComplete={onTaskComplete}
+                              />
                             </div>
                       )}
                     </AnimatePresence>
@@ -1155,7 +1212,7 @@ export function SevenDayKanban({
                 const columnDate = dateStringToLocalDate(column.dateString);
                 const calEvents = calendarEventsByDate[column.dateString] || [];
                 const combinedItems = buildSortedKanbanDayItems(columnDate, dayTasks, calEvents);
-                const sortableTaskIds = getKanbanSortableTaskIdsFromCombinedItems(combinedItems, column.dateString);
+                const sortableTaskIds = getKanbanColumnSortableIds(combinedItems, column.dateString);
                 const hasContent = combinedItems.length > 0;
                       const globalIndex =
                         groupIndex
@@ -1336,64 +1393,14 @@ export function SevenDayKanban({
                                       boxSizing: 'border-box',
                                     }}
                                   >
-                                    {combinedItems.map((item, idx) => {
-                                      if (item.type === 'event') {
-                                        return (
-                                          <div
-                                            key={`event-${item.event.id}`}
-                                            className={kanbanCardItemClassName}
-                                            style={{
-                                              display: 'block',
-                                              width: '100%',
-                                              minWidth: '100%',
-                                              transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                              transformOrigin: 'top center',
-                                            }}
-                                          >
-                                            <motion.div
-                                              initial={{ opacity: 0, y: 10 }}
-                                              animate={{ opacity: 1, y: 0 }}
-                                              exit={{ opacity: 0, scale: 0.95 }}
-                                              transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                              style={{ width: '100%' }}
-                                            >
-                                              <CalendarEventCard
-                                                title={item.event.title}
-                                                start={item.event.start}
-                                                end={item.event.end}
-                                                location={item.event.location}
-                                                provider={item.event.provider}
-                                                calendarColor={item.event.calendarColor}
-                                                isRecurring={item.event.isRecurring}
-                                                variant="kanban"
-                                              />
-                                            </motion.div>
-                                          </div>
-                                        );
-                                      } else {
-                                        return (
-                                  <div 
-                                            key={item.task.id} 
-                                    className={kanbanCardItemClassName}
-                                    style={{ 
-                                      display: 'block',
-                                      width: '100%',
-                                      minWidth: '100%',
-                                      transform: `scale(${TASK_CARD_TIMELINE.scale.kanban})`,
-                                      transformOrigin: 'top center',
-                                    }}
-                                  >
-                                  <DraggableTaskCard
-                                              task={getTaskWithOccurrenceSubtasks(item.task, column.dateString, tasks)}
-                                              onClick={() => handleTaskClick(item.task, column.dateString)}
-                                    droppableId={column.dateString}
-                                    occurrenceDate={column.dateString}
-                                    onComplete={onTaskComplete}
-                                  />
-                                  </div>
-                                        );
-                                      }
-                                    })}
+                                    <KanbanColumnItems
+                                      combinedItems={combinedItems}
+                                      dateString={column.dateString}
+                                      allTasks={tasks}
+                                      kanbanCardItemClassName={kanbanCardItemClassName}
+                                      onTaskClick={handleTaskClick}
+                                      onTaskComplete={onTaskComplete}
+                                    />
                                   </div>
                             )}
                     </AnimatePresence>

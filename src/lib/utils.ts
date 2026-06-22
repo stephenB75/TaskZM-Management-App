@@ -93,8 +93,10 @@ export function getDateString(date: Date): string {
  * - ISO with Z or offset: parsed as-is (correct UTC/local).
  * - ISO datetime without Z or offset: treated as UTC so kanban/week view shows correct local time.
  */
-export function parseCalendarEventTime(isoString: string): Date {
-  const s = (isoString || '').trim();
+export function parseCalendarEventTime(isoString: string | number | null | undefined): Date {
+  if (isoString == null || isoString === '') return new Date(Number.NaN);
+  if (typeof isoString === 'number') return new Date(isoString);
+  const s = String(isoString).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
     const [y, m, d] = s.split('-').map(Number);
     if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) {
@@ -109,7 +111,9 @@ export function parseCalendarEventTime(isoString: string): Date {
 }
 
 /** Parse a task or calendar ISO timestamp for display/sort (shared rules with parseCalendarEventTime). */
-export function parseChronologicalTimeSource(timeSource: string | Date): Date {
+export function parseChronologicalTimeSource(timeSource: string | number | Date | null | undefined): Date {
+  if (timeSource == null || timeSource === '') return new Date(Number.NaN);
+  if (typeof timeSource === 'number') return new Date(timeSource);
   if (typeof timeSource === 'string') {
     const trimmed = timeSource.trim();
     if (/^\d{4}-\d{2}-\d{2}(T|$)/.test(trimmed)) {
@@ -181,8 +185,10 @@ export function getTaskSortTimeOnDay(referenceDay: Date, task: Pick<Task, 'sched
 }
 
 /** Chronological sort key for a calendar event on a given display day. */
-export function getCalendarEventSortTimeOnDay(referenceDay: Date, eventStartIso: string): number {
-  return getSortTimestampOnDay(referenceDay, parseCalendarEventTime(eventStartIso));
+export function getCalendarEventSortTimeOnDay(referenceDay: Date, eventStartIso: string | number): number {
+  const start = String(eventStartIso ?? '').trim();
+  if (!start) return Number.MAX_SAFE_INTEGER;
+  return getSortTimestampOnDay(referenceDay, parseCalendarEventTime(start));
 }
 
 /** Compare two tasks by assigned time-of-day on a reference day (earliest first; no time last). */
@@ -229,6 +235,7 @@ export function buildSortedKanbanDayItems<T extends { id: string; start: string 
   }
 
   for (const event of events) {
+    if (!event?.id || event.start == null || event.start === '') continue;
     items.push({
       type: 'event',
       event,
@@ -237,7 +244,9 @@ export function buildSortedKanbanDayItems<T extends { id: string; start: string 
     });
   }
 
-  items.sort((a, b) => compareChronologicalItemsOnDay(a.sortTime, b.sortTime, a.itemId, b.itemId));
+  items.sort((a, b) =>
+    compareChronologicalItemsOnDay(Number(a.sortTime), Number(b.sortTime), a.itemId, b.itemId),
+  );
   return items;
 }
 
