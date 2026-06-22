@@ -48,6 +48,60 @@ import type { Task } from '../types';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
+/** Horizontal gutter between kanban week panels (plain inset or optional divider). */
+function KanbanWeekPanelGutter({
+  widthPx,
+  showDivider = false,
+}: {
+  widthPx: number;
+  showDivider?: boolean;
+}) {
+  if (!showDivider) {
+    return (
+      <div
+        className="flex-shrink-0 self-stretch"
+        style={{ width: widthPx, minWidth: widthPx }}
+        aria-hidden
+      />
+    );
+  }
+
+  return (
+    <div
+      className="flex flex-col items-center self-stretch flex-shrink-0"
+      style={{
+        width: widthPx,
+        minWidth: widthPx,
+        paddingTop: KANBAN_WEEK_GROUP_HEADER.transition.verticalPaddingPx,
+        paddingBottom: KANBAN_WEEK_GROUP_HEADER.transition.verticalPaddingPx,
+      }}
+      aria-hidden
+    >
+      <div
+        className="w-px flex-1 bg-border dark:bg-border/60"
+        style={{
+          minHeight: KANBAN_WEEK_GROUP_HEADER.transition.minLineHeightPx,
+          opacity: KANBAN_WEEK_GROUP_HEADER.transition.lineOpacity,
+        }}
+      />
+      <div
+        className="rounded-full bg-primary/35 dark:bg-primary/45 flex-shrink-0 my-1"
+        style={{
+          width: KANBAN_WEEK_GROUP_HEADER.transition.dotSizePx,
+          height: KANBAN_WEEK_GROUP_HEADER.transition.dotSizePx,
+        }}
+      />
+      <div
+        className="w-px flex-1 bg-border dark:bg-border/60"
+        style={{
+          minHeight: KANBAN_WEEK_GROUP_HEADER.transition.minLineHeightPx,
+          opacity: KANBAN_WEEK_GROUP_HEADER.transition.lineOpacity,
+        }}
+      />
+    </div>
+  );
+}
+
 // Helper function to get day colors
 const getDayColors = (dayName: string) => {
   const dayKey = dayName.toLowerCase() as keyof typeof KANBAN_DAY_COLORS;
@@ -990,6 +1044,9 @@ export function SevenDayKanban({
                   : undefined,
               }}
             >
+              {!mobileMode && (
+                <KanbanWeekPanelGutter widthPx={KANBAN_VIEWPORT_WEEK.leadingInsetPx} />
+              )}
               {weekGroups.map((group, groupIndex) => {
                 // Check if this is the start of a week based on weekStart setting
                 const firstDayOfGroup = group[0];
@@ -999,41 +1056,17 @@ export function SevenDayKanban({
                 );
                 
                 const showWeekDivider = mobileMode ? isStartOfWeek : groupIndex > 0;
+                const weekGutterWidthPx = mobileMode
+                  ? KANBAN_WEEK_GROUP_HEADER.transition.widthPx
+                  : KANBAN_VIEWPORT_WEEK.betweenWeeksGapPx;
                 
                 return (
                   <React.Fragment key={`week-group-${groupIndex}`}>
                     {showWeekDivider && (
-                      <div
-                        className="flex flex-col items-center self-stretch flex-shrink-0"
-                        style={{
-                          width: KANBAN_WEEK_GROUP_HEADER.transition.widthPx,
-                          paddingTop: KANBAN_WEEK_GROUP_HEADER.transition.verticalPaddingPx,
-                          paddingBottom: KANBAN_WEEK_GROUP_HEADER.transition.verticalPaddingPx,
-                        }}
-                        aria-hidden
-                      >
-                        <div
-                          className="w-px flex-1 bg-border dark:bg-border/60"
-                          style={{
-                            minHeight: KANBAN_WEEK_GROUP_HEADER.transition.minLineHeightPx,
-                            opacity: KANBAN_WEEK_GROUP_HEADER.transition.lineOpacity,
-                          }}
-                        />
-                        <div
-                          className="rounded-full bg-primary/35 dark:bg-primary/45 flex-shrink-0 my-1"
-                          style={{
-                            width: KANBAN_WEEK_GROUP_HEADER.transition.dotSizePx,
-                            height: KANBAN_WEEK_GROUP_HEADER.transition.dotSizePx,
-                          }}
-                        />
-                        <div
-                          className="w-px flex-1 bg-border dark:bg-border/60"
-                          style={{
-                            minHeight: KANBAN_WEEK_GROUP_HEADER.transition.minLineHeightPx,
-                            opacity: KANBAN_WEEK_GROUP_HEADER.transition.lineOpacity,
-                          }}
-                        />
-                      </div>
+                      <KanbanWeekPanelGutter
+                        widthPx={weekGutterWidthPx}
+                        showDivider
+                      />
                     )}
 
                   <div

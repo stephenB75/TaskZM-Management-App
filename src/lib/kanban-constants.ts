@@ -297,6 +297,10 @@ export const KANBAN_VIEWPORT_WEEK = {
   minColumnWidthPx: 128,
   /** Snap each week panel to the scroll viewport when panning horizontally */
   scrollSnap: true,
+  /** Space before the first week panel (offset from sidebar) */
+  leadingInsetPx: 16,
+  /** Space between horizontally scrolled week panels */
+  betweenWeeksGapPx: 16,
 } as const;
 
 // Mobile View Constants
