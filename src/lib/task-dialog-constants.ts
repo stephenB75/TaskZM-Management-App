@@ -317,6 +317,8 @@ export const TASK_DIALOG_CALENDAR = {
   
   // Icon size for calendar buttons
   ICON_SIZE: 14, // ICON_SIZE_SM = 14px
+  /** Days ahead to load calendar events for manual scheduling conflict checks. */
+  conflictCheckHorizonDays: 90,
 } as const;
 
 // Timezone Constants

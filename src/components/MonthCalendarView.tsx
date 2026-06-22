@@ -353,10 +353,8 @@ function DroppableDay({
     compareChronologicalItemsOnDay(
       a.sortTime,
       b.sortTime,
-      a.type,
-      b.type,
-      a.type === 'task' ? a.data.id : a.data.id,
-      b.type === 'task' ? b.data.id : b.data.id,
+      a.data.id,
+      b.data.id,
     ),
   );
   

@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, closestCenter, pointerWithin, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTasks } from './TaskContext';
-import { useCalendarEvents } from '../hooks/useCalendarEvents';
-// DraggableTaskCard import removed - using lightweight drag overlay instead
+import { useCalendarEventsByDate } from '../hooks/useCalendarEvents';
+import { KANBAN_TIME } from '../lib/kanban-constants';
 import { isTaskBlocked, getIncompleteDependencies, cn, getDateString } from '../lib/utils';
-import { checkTimeConflict, findNextAvailableSlot, formatTime } from '../lib/time-conflict';
+import { checkTimeConflict, findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from '../lib/daily-hours-utils';
 import { useAI } from './AIContext';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
@@ -57,14 +57,20 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
   const { settings: aiSettings } = useAI();
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Today's calendar events for conflict check when dropping on Today Agenda (ensure timeslot not taken by task or event)
-  const todayRange = useMemo(() => {
-    const today = new Date();
-    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
-    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+  // Calendar events for conflict checks when dropping tasks (Today Agenda + Kanban columns)
+  const calendarConflictRange = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + KANBAN_TIME.daysInWeek - 1);
+    end.setHours(23, 59, 59, 999);
     return { start, end };
   }, []);
-  const { events: todayCalendarEvents } = useCalendarEvents(todayRange.start, todayRange.end, { enabled: true });
+  const { eventsByDate: calendarEventsByDate } = useCalendarEventsByDate(
+    calendarConflictRange.start,
+    calendarConflictRange.end,
+    { enabled: true },
+  );
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [pendingTaskUpdate, setPendingTaskUpdate] = useState<{
     taskId: string;
@@ -613,11 +619,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       }
       
       // Always use findNextAvailableSlot so the timeslot is not taken by another task or calendar event
-      const calendarEventsForConflict = todayCalendarEvents.map((e) => ({
-        start: e.start,
-        end: e.end,
-        title: e.title,
-      }));
+      const calendarEventsForConflict = filterCalendarEventsForDayFromByDate(calendarEventsByDate, requestedTime);
       const finalTime = findNextAvailableSlot(
         taskId,
         requestedTime,
@@ -1003,6 +1005,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
     })();
 
     const effectiveRequested = requestedTime || startTime;
+    const calendarEventsForConflict = filterCalendarEventsForDayFromByDate(calendarEventsByDate, targetDate);
     const newDate = findNextAvailableSlot(
       taskId,
       effectiveRequested,
@@ -1011,6 +1014,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       {
         ensureAfterCurrentTime: isTargetToday,
         categoryHours: categoryHours,
+        calendarEvents: calendarEventsForConflict,
       }
     );
     

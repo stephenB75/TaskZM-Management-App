@@ -5,7 +5,7 @@ import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
-import { getDateString, parseCalendarEventTime } from '../lib/utils';
+import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay } from '../lib/utils';
 
 export interface CalendarEvent {
   id: string;
@@ -390,6 +390,13 @@ export function useCalendarEventsByDate(
         grouped[dateKey] = [];
       }
       grouped[dateKey].push(event);
+    }
+
+    for (const dateKey of Object.keys(grouped)) {
+      const referenceDay = dateStringToLocalDate(dateKey);
+      grouped[dateKey].sort(
+        (a, b) => getCalendarEventSortTimeOnDay(referenceDay, a.start) - getCalendarEventSortTimeOnDay(referenceDay, b.start),
+      );
     }
 
     return grouped;

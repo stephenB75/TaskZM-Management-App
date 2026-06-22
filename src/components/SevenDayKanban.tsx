@@ -15,7 +15,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, compareTasksByScheduledTimeOnDay, getTaskSortTimeOnDay, getCalendarEventSortTimeOnDay, compareChronologicalItemsOnDay } from '../lib/utils';
+import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, compareTasksByScheduledTimeOnDay, buildSortedKanbanDayItems } from '../lib/utils';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
@@ -44,7 +44,6 @@ import { NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_S
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
-import { buildTaskLayouts } from '../lib/task-layout';
 import type { Task } from '../types';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
@@ -686,7 +685,6 @@ export function SevenDayKanban({
       return null;
     }
     const dayTasks = getTasksForDay(currentColumn.dateString);
-    const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
     // For recurring tasks, use unique ID per date occurrence to maintain chronological order
     const taskIds = Array.isArray(dayTasks) ? dayTasks
       .map(t => {
@@ -764,46 +762,8 @@ export function SevenDayKanban({
                       // useCalendarEventsByDate already groups events by local date string using getDateString
                       // This ensures consistency with desktop view
                       const calEvents = calendarEventsByDate[currentColumn.dateString] || [];
-                      
-                      // Create combined items (tasks + calendar events) sorted by time
-                      type MobileCombinedItem = 
-                        | { type: 'task'; task: Task; marginTop: number; sortTime: number }
-                        | { type: 'event'; event: typeof calEvents[0]; sortTime: number };
-                      
-                      const combinedItems: MobileCombinedItem[] = [];
-                      
                       const columnDate = dateStringToLocalDate(currentColumn.dateString);
-                      
-                      // Add tasks with sort time normalized to column day
-                      for (const layout of dayLayouts) {
-                        combinedItems.push({
-                          type: 'task',
-                          task: layout.task,
-                          marginTop: layout.marginTop,
-                          sortTime: getTaskSortTimeOnDay(columnDate, layout.task),
-                        });
-                      }
-                      
-                      // Add calendar events (normalize to column day for mixed chronological sort)
-                      for (const event of calEvents) {
-                        combinedItems.push({
-                          type: 'event',
-                          event,
-                          sortTime: getCalendarEventSortTimeOnDay(columnDate, event.start),
-                        });
-                      }
-                          
-                          combinedItems.sort((a, b) =>
-                            compareChronologicalItemsOnDay(
-                              a.sortTime,
-                              b.sortTime,
-                              a.type,
-                              b.type,
-                              a.type === 'task' ? a.task.id : a.event.id,
-                              b.type === 'task' ? b.task.id : b.event.id,
-                            ),
-                          );
-                          
+                      const combinedItems = buildSortedKanbanDayItems(columnDate, dayTasks, calEvents);
                           const hasContent = combinedItems.length > 0;
                           
                           return (
@@ -1174,7 +1134,6 @@ export function SevenDayKanban({
                         * (mobileMode ? KANBAN_TIME.daysPerWeek : KANBAN_VIEWPORT_WEEK.visibleDays)
                         + columnIndex;
                       const isSecondWeek = groupIndex === 1;
-                      const dayLayouts = buildTaskLayouts(dayTasks, undefined, false); // Use fixed spacing for kanban view
                       const dayColors = getDayColors(column.dayName);
                       const accentColor = column.isToday
                         ? KANBAN_DAY_COLORS.today.text
@@ -1314,46 +1273,8 @@ export function SevenDayKanban({
                         {(() => {
                           // Get calendar events for this day
                           const calEvents = calendarEventsByDate[column.dateString] || [];
-                          
-                          // Create combined items (tasks + calendar events) sorted chronologically by time-of-day
-                          type CombinedItem = 
-                            | { type: 'task'; task: Task; marginTop: number; sortTime: number }
-                            | { type: 'event'; event: typeof calEvents[0]; sortTime: number };
-                          
-                          const combinedItems: CombinedItem[] = [];
-                          
                           const columnDate = dateStringToLocalDate(column.dateString);
-                          
-                          // Add tasks with sort time normalized to column day
-                          for (const layout of dayLayouts) {
-                            combinedItems.push({
-                              type: 'task',
-                              task: layout.task,
-                              marginTop: layout.marginTop,
-                              sortTime: getTaskSortTimeOnDay(columnDate, layout.task),
-                            });
-                          }
-                          
-                          // Add calendar events (normalize to column day for mixed chronological sort)
-                          for (const event of calEvents) {
-                            combinedItems.push({
-                              type: 'event',
-                              event,
-                              sortTime: getCalendarEventSortTimeOnDay(columnDate, event.start),
-                            });
-                          }
-                          
-                          combinedItems.sort((a, b) =>
-                            compareChronologicalItemsOnDay(
-                              a.sortTime,
-                              b.sortTime,
-                              a.type,
-                              b.type,
-                              a.type === 'task' ? a.task.id : a.event.id,
-                              b.type === 'task' ? b.task.id : b.event.id,
-                            ),
-                          );
-                          
+                          const combinedItems = buildSortedKanbanDayItems(columnDate, dayTasks, calEvents);
                           const hasContent = combinedItems.length > 0;
                           
                           return (

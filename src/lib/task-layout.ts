@@ -2,6 +2,7 @@ import type { Task } from '../types';
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_LAYOUT_METRICS } from './task-card-constants';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
 import { getTaskMinutes } from './daily-hours-utils';
+import { getTaskTimeSourceForSort } from './utils';
 import { MINUTES_PER_HOUR } from './business-constants';
 
 const DEFAULT_DAY_START_MINUTES = TASK_CALCULATION_CONSTANTS.dragDrop.hourMin * MINUTES_PER_HOUR;
@@ -155,8 +156,9 @@ export function buildTaskLayouts(tasks: Task[], minGapOverride?: number, useTime
 }
 
 function getStartMinutes(task: Task): number | null {
-  if (!task || !task.scheduledDate) return null;
-  const date = new Date(task.scheduledDate);
+  const source = getTaskTimeSourceForSort(task);
+  if (!source) return null;
+  const date = new Date(source);
   if (Number.isNaN(date.getTime())) return null;
   return date.getHours() * MINUTES_PER_HOUR + date.getMinutes();
 }

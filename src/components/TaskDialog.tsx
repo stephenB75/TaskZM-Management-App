@@ -63,14 +63,14 @@ import { usePermissions } from "../hooks/usePermissions";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useAI } from "../contexts/AIContext";
 import { useAuth } from "../contexts/AuthContext";
-import { useCalendarEvents } from "../hooks/useCalendarEvents";
+import { useCalendarEventsByDate } from "../hooks/useCalendarEvents";
 import * as api from "../lib/api";
 import { toast } from "sonner";
 import { playSubtaskCompleteSound } from "../lib/toast-sound";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_MEDIUM_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
-import { findNextAvailableSlot, formatTime } from "../lib/time-conflict";
+import { findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../lib/daily-hours-utils";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
@@ -801,7 +801,27 @@ export function TaskDialog({
     const end = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999);
     return { start, end };
   }, [scheduledDate, scheduledMonth, scheduledDay, scheduledYear]);
-  const { events: scheduledDayCalendarEvents } = useCalendarEvents(scheduledDayRange.start, scheduledDayRange.end, { enabled: open });
+  const calendarConflictRange = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(Math.min(today.getTime(), scheduledDayRange.start.getTime()));
+    let end = new Date(today);
+    end.setDate(end.getDate() + TASK_DIALOG_CALENDAR.conflictCheckHorizonDays);
+    if (scheduledDayRange.end.getTime() > end.getTime()) {
+      end = new Date(scheduledDayRange.end);
+    }
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }, [scheduledDayRange]);
+  const { eventsByDate: calendarEventsByDate } = useCalendarEventsByDate(
+    calendarConflictRange.start,
+    calendarConflictRange.end,
+    { enabled: open },
+  );
+  const calendarEventsForDate = React.useCallback(
+    (date: Date) => filterCalendarEventsForDayFromByDate(calendarEventsByDate, date),
+    [calendarEventsByDate],
+  );
 
   // AI Task Breakdown - Real-time analysis
   const { breakdown, isLoading: isBreakdownLoading, error: breakdownError } = useTaskBreakdown(
@@ -1401,7 +1421,7 @@ export function TaskDialog({
       if (isNaN(dateWithTime.getTime())) {
         // Silently handle invalid date
       } else {
-        const defaultSlotCalendarEvents = scheduledDayCalendarEvents.map((e) => ({ start: e.start, end: e.end, title: e.title }));
+        const defaultSlotCalendarEvents = calendarEventsForDate(dateWithTime);
         // Use scheduledHours and scheduledMinutes if available, otherwise fall back to scheduledTime
         if (scheduledHours && scheduledMinutes) {
           let hours = parseInt(scheduledHours);
@@ -1708,6 +1728,7 @@ export function TaskDialog({
       
       if (firstOccurrenceDate) {
         const taskDuration = durationForSlot;
+        const firstOccurrenceCalendarEvents = calendarEventsForDate(firstOccurrenceDate);
         // Use explicit time from form when valid; otherwise select appropriate time from next available timeslot (no hardcoding)
         if (scheduledHours && scheduledMinutes) {
           let hours = parseInt(scheduledHours, 10);
@@ -1720,16 +1741,16 @@ export function TaskDialog({
             firstOccurrenceDate.setHours(hours, minutes, 0, 0);
           } else {
             firstOccurrenceDate.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-            const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
+            const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], { calendarEvents: firstOccurrenceCalendarEvents });
             firstOccurrenceDate.setTime(slot.getTime());
           }
         } else {
           firstOccurrenceDate.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-          const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
+          const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], { calendarEvents: firstOccurrenceCalendarEvents });
           firstOccurrenceDate.setTime(slot.getTime());
         }
-        // Always resolve to next available slot so we never save a time that conflicts with another task (guidelines)
-        const recurringConflictFreeSlot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? []);
+        // Always resolve to next available slot so we never save a time that conflicts with another task or calendar event
+        const recurringConflictFreeSlot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], { calendarEvents: firstOccurrenceCalendarEvents });
         firstOccurrenceDate.setTime(recurringConflictFreeSlot.getTime());
         finalScheduledDate = firstOccurrenceDate.toISOString();
       }
@@ -1879,6 +1900,7 @@ export function TaskDialog({
           {
             ensureAfterCurrentTime: true,
             categoryHours: categoryHours,
+            calendarEvents: calendarEventsForDate(scheduledDateTime),
           }
         );
         
@@ -1907,11 +1929,7 @@ export function TaskDialog({
       
       // Only check for conflicts if time has changed (tasks and calendar events must not share the same timeslot)
       if (timeHasChanged) {
-        const calendarEventsForSlot = scheduledDayCalendarEvents.map((e) => ({
-          start: e.start,
-          end: e.end,
-          title: e.title,
-        }));
+        const calendarEventsForSlot = calendarEventsForDate(scheduledDateTime);
         const alternativeTime = findNextAvailableSlot(
           taskId,
           scheduledDateTime,
@@ -1993,6 +2011,7 @@ export function TaskDialog({
                 {
                   ensureAfterCurrentTime: isToday,
                   categoryHours: categoryHours,
+                  calendarEvents: calendarEventsForDate(finalScheduledTime),
                 }
               );
               
@@ -2214,7 +2233,9 @@ export function TaskDialog({
           const dateStr = getDateString(date);
           const requestedTime = new Date(date.getFullYear(), date.getMonth(), date.getDate());
           requestedTime.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds());
-          const slot = findNextAvailableSlot(null, requestedTime, durationForSlot, allTasksForSlots);
+          const slot = findNextAvailableSlot(null, requestedTime, durationForSlot, allTasksForSlots, {
+            calendarEvents: calendarEventsForDate(date),
+          });
           const scheduledAt = new Date(slot.getTime());
           return {
             id: `${baseId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}${dateStr}`,

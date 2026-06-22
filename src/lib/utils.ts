@@ -124,6 +124,20 @@ export function dateStringToLocalDate(dateString: string): Date {
   return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate());
 }
 
+/** True when a date string carries an explicit time-of-day (not local midnight). */
+export function hasExplicitTimeOfDay(timeSource: Date | string): boolean {
+  const src = typeof timeSource === 'string' ? new Date(timeSource) : new Date(timeSource.getTime());
+  if (Number.isNaN(src.getTime())) return false;
+  return src.getHours() !== 0 || src.getMinutes() !== 0 || src.getSeconds() !== 0 || src.getMilliseconds() !== 0;
+}
+
+/** Time source for chronological sort: scheduledDate, or dueDate only when it has a time-of-day. */
+export function getTaskTimeSourceForSort(task: Pick<Task, 'scheduledDate' | 'dueDate'>): string | null {
+  if (task.scheduledDate) return task.scheduledDate;
+  if (task.dueDate && hasExplicitTimeOfDay(task.dueDate)) return task.dueDate;
+  return null;
+}
+
 /**
  * Map a time source onto a reference calendar day (local midnight + time-of-day).
  * Use when sorting tasks and calendar events together within one day; recurring tasks
@@ -138,9 +152,18 @@ export function getSortTimestampOnDay(referenceDay: Date, timeSource: Date | str
   return ref.getTime();
 }
 
-/** Chronological sort key for a task on a given display day (scheduledDate, else dueDate). */
+/** Minutes since local midnight on referenceDay (for compact comparisons). */
+export function getSortMinutesOnDay(referenceDay: Date, timeSource: Date | string): number {
+  const sortTime = getSortTimestampOnDay(referenceDay, timeSource);
+  if (sortTime === Number.MAX_SAFE_INTEGER) return Number.MAX_SAFE_INTEGER;
+  const ref = new Date(referenceDay);
+  ref.setHours(0, 0, 0, 0);
+  return Math.round((sortTime - ref.getTime()) / MILLISECONDS_PER_MINUTE);
+}
+
+/** Chronological sort key for a task on a given display day (scheduledDate, else timed dueDate). */
 export function getTaskSortTimeOnDay(referenceDay: Date, task: Pick<Task, 'scheduledDate' | 'dueDate'>): number {
-  const source = task.scheduledDate || task.dueDate;
+  const source = getTaskTimeSourceForSort(task);
   if (!source) return Number.MAX_SAFE_INTEGER;
   return getSortTimestampOnDay(referenceDay, source);
 }
@@ -158,19 +181,52 @@ export function compareTasksByScheduledTimeOnDay(a: Task, b: Task, referenceDay:
   return (a.id || '').localeCompare(b.id || '');
 }
 
-/** Stable chronological compare for mixed tasks and calendar events on one day. */
+/** Stable chronological compare for mixed tasks and calendar events on one day (earliest first). */
 export function compareChronologicalItemsOnDay(
   aSortTime: number,
   bSortTime: number,
-  aType?: 'task' | 'event',
-  bType?: 'task' | 'event',
   aId?: string,
   bId?: string,
 ): number {
   if (aSortTime !== bSortTime) return aSortTime - bSortTime;
-  if (aType && bType && aType !== bType) return aType === 'event' ? -1 : 1;
   if (aId && bId) return aId.localeCompare(bId);
   return 0;
+}
+
+/** Build tasks + calendar events for one kanban column, sorted by assigned local time-of-day. */
+export function buildSortedKanbanDayItems<T extends { id: string; start: string }>(
+  referenceDay: Date,
+  tasks: Task[],
+  events: T[],
+): Array<
+  | { type: 'task'; task: Task; sortTime: number; itemId: string }
+  | { type: 'event'; event: T; sortTime: number; itemId: string }
+> {
+  const items: Array<
+    | { type: 'task'; task: Task; sortTime: number; itemId: string }
+    | { type: 'event'; event: T; sortTime: number; itemId: string }
+  > = [];
+
+  for (const task of tasks) {
+    items.push({
+      type: 'task',
+      task,
+      sortTime: getTaskSortTimeOnDay(referenceDay, task),
+      itemId: task.id,
+    });
+  }
+
+  for (const event of events) {
+    items.push({
+      type: 'event',
+      event,
+      sortTime: getCalendarEventSortTimeOnDay(referenceDay, event.start),
+      itemId: event.id,
+    });
+  }
+
+  items.sort((a, b) => compareChronologicalItemsOnDay(a.sortTime, b.sortTime, a.itemId, b.itemId));
+  return items;
 }
 
 /**

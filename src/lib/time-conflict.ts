@@ -1,6 +1,6 @@
 import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
-import { parseCalendarEventTime } from './utils';
+import { parseCalendarEventTime, getDateString } from './utils';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
 import { getTaskMinutes } from './daily-hours-utils';
 import { DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MINUTES_PER_HOUR, HOURS_PER_DAY } from './business-constants';
@@ -15,6 +15,43 @@ export interface FindSlotOptions {
   onlyFixOverlaps?: boolean;
   categoryHours?: { start: number; end: number } | null; // in minutes from midnight
   calendarEvents?: Array<{ start: Date | string; end: Date | string; title: string }>; // Calendar events to avoid (start/end as ISO string or Date)
+}
+
+/** Calendar event shape for findNextAvailableSlot conflict checks. */
+export type ConflictCalendarEvent = { start: Date | string; end: Date | string; title: string };
+
+/** Map API calendar events to conflict-check format. */
+export function toConflictCalendarEvents(
+  events: Array<{ start: string; end: string; title: string }>,
+): ConflictCalendarEvent[] {
+  return events.map((event) => ({ start: event.start, end: event.end, title: event.title }));
+}
+
+/** Events occurring on a specific local calendar day. */
+export function filterCalendarEventsForDay(
+  events: Array<{ start: string; end: string; title: string }>,
+  targetDate: Date,
+): ConflictCalendarEvent[] {
+  const targetDay = new Date(targetDate);
+  targetDay.setHours(0, 0, 0, 0);
+  const targetTime = targetDay.getTime();
+  return events
+    .filter((event) => {
+      const eventStart = parseCalendarEventTime(event.start);
+      if (Number.isNaN(eventStart.getTime())) return false;
+      const eventDay = new Date(eventStart);
+      eventDay.setHours(0, 0, 0, 0);
+      return eventDay.getTime() === targetTime;
+    })
+    .map((event) => ({ start: event.start, end: event.end, title: event.title }));
+}
+
+/** Lookup events for one day from a pre-grouped events-by-date map. */
+export function filterCalendarEventsForDayFromByDate<T extends { start: string; end: string; title: string }>(
+  eventsByDate: Record<string, T[]>,
+  targetDate: Date,
+): ConflictCalendarEvent[] {
+  return toConflictCalendarEvents(eventsByDate[getDateString(targetDate)] ?? []);
 }
 
 /**

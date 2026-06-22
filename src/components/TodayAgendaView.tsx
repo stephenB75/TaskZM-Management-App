@@ -228,7 +228,7 @@ export function TodayAgendaView({
     items.sort((a, b) => {
       const idA = a.type === 'task' && a.task ? a.task.id : a.type === 'event' && a.event ? a.event.id : '';
       const idB = b.type === 'task' && b.task ? b.task.id : b.type === 'event' && b.event ? b.event.id : '';
-      return compareChronologicalItemsOnDay(a.sortTime, b.sortTime, a.type, b.type, idA, idB);
+      return compareChronologicalItemsOnDay(a.sortTime, b.sortTime, idA, idB);
     });
     
     return items;
