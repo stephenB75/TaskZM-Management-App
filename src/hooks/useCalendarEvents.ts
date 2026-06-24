@@ -6,10 +6,10 @@ import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay } from '../lib/utils';
-import { correctRecurringOccurrenceTimes } from '../lib/calendar-recurrence-utils';
+import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
-const CALENDAR_EVENTS_CACHE_VERSION = 'v2-tz-recurrence';
+const CALENDAR_EVENTS_CACHE_VERSION = 'v3-db-recurrence-anchor';
 
 export interface CalendarEvent {
   id: string;
@@ -104,30 +104,20 @@ async function fetchProviderEvents(
     const events: CalendarEvent[] = [];
     for (const event of data.events) {
       if (!event?.start || !event?.end) continue;
-      const corrected = correctRecurringOccurrenceTimes(
-        {
-          start: event.start,
-          end: event.end,
-          isRecurring: event.isRecurring,
-          recurrenceAnchorStart: event.recurrenceAnchorStart,
-          recurrenceAnchorEnd: event.recurrenceAnchorEnd,
-        },
-        userTimezone,
-      );
-      const eventStart = parseCalendarEventTime(corrected.start);
+      const eventStart = parseCalendarEventTime(event.start);
       if (isNaN(eventStart.getTime())) continue;
 
       events.push({
         id: event.id || `${provider}-${event.providerEventId || event.start}-${events.length}`,
         title: event.title || 'Calendar Event',
-        start: corrected.start,
-        end: corrected.end,
+        start: event.start,
+        end: event.end,
         location: event.location,
         provider,
         calendarColor: event.calendarColor,
         rrule: event.rrule,
         recurrenceBaseId: event.recurrenceBaseId,
-        isRecurring: event.isRecurring || false,
+        isRecurring: Boolean(event.isRecurring || event.rrule || event.recurrenceBaseId),
         recurrenceAnchorStart: event.recurrenceAnchorStart,
         recurrenceAnchorEnd: event.recurrenceAnchorEnd,
       });
@@ -156,9 +146,8 @@ async function fetchAllEvents(
   );
 
   const results = await Promise.all(promises);
-  
-  // Flatten and combine all events
-  return results.flat();
+  const combined = results.flat();
+  return applyRecurrenceTimeCorrections(combined, userTimezone);
 }
 
 /**

@@ -11,7 +11,7 @@ PROJECT_REF="gflesnyfpxqhaunfskrw"
 
 echo "🚀 Deploying Supabase Edge Functions..."
 cd "$PROJECT_ROOT"
-supabase functions deploy taskzm-database-function --project-ref "$PROJECT_REF"
+npx supabase functions deploy taskzm-database-function --project-ref "$PROJECT_REF"
 
 echo "✅ Deployment complete!"
 echo ""
