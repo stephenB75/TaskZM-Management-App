@@ -23,6 +23,10 @@ export interface AgendaListCardProps {
   durationLabel?: string | null;
   showCommentIcon?: boolean;
   compact?: boolean;
+  /** When true, omits the time header row (timeline rail shows time). */
+  hideTime?: boolean;
+  /** Ultra-compact single row: title + badge only (short timeline events). */
+  micro?: boolean;
   /** When true, renders without outer shadow/radius (for use inside a parent card shell). */
   embedded?: boolean;
   /** When true, title renders with line-through (completed tasks). */
@@ -46,6 +50,8 @@ export function AgendaListCard({
   durationLabel,
   showCommentIcon = false,
   compact = false,
+  hideTime = false,
+  micro = false,
   embedded = false,
   titleDone = false,
   className,
@@ -56,20 +62,41 @@ export function AgendaListCard({
   const isDark = actualTheme === 'dark';
   const badgeStyles = getAgendaCardBadgeStyles(accentColor);
 
-  const padding = compact ? AGENDA_LIST_CARD.compact.paddingPx : AGENDA_LIST_CARD.paddingPx;
-  const dotSize = compact ? AGENDA_LIST_CARD.compact.dotSizePx : AGENDA_LIST_CARD.dotSizePx;
-  const accentIconSize = compact ? 22 : AGENDA_LIST_CARD.accentIconSizePx;
+  const padding = micro
+    ? AGENDA_LIST_CARD.micro.paddingPx
+    : compact
+      ? AGENDA_LIST_CARD.compact.paddingPx
+      : AGENDA_LIST_CARD.paddingPx;
+  const dotSize = micro
+    ? AGENDA_LIST_CARD.micro.dotSizePx
+    : compact
+      ? AGENDA_LIST_CARD.compact.dotSizePx
+      : AGENDA_LIST_CARD.dotSizePx;
+  const accentIconSize = micro ? 18 : compact ? 22 : AGENDA_LIST_CARD.accentIconSizePx;
   const accentColumnWidth = accentIcon
     ? AGENDA_LIST_CARD.accentIconColumnWidthPx
     : AGENDA_LIST_CARD.accentColumnWidthPx;
-  const titleSize = compact ? AGENDA_LIST_CARD.compact.titleFontSizePx : AGENDA_LIST_CARD.titleFontSizePx;
+  const titleSize = micro
+    ? AGENDA_LIST_CARD.micro.titleFontSizePx
+    : compact
+      ? AGENDA_LIST_CARD.compact.titleFontSizePx
+      : AGENDA_LIST_CARD.titleFontSizePx;
   const timeSize = compact ? AGENDA_LIST_CARD.compact.timeFontSizePx : AGENDA_LIST_CARD.timeFontSizePx;
   const footerSize = compact ? AGENDA_LIST_CARD.compact.footerFontSizePx : AGENDA_LIST_CARD.footerFontSizePx;
-  const headerBodyGap = compact ? AGENDA_LIST_CARD.compact.headerBodyGapPx : AGENDA_LIST_CARD.headerBodyGapPx;
+  const headerBodyGap = micro
+    ? AGENDA_LIST_CARD.micro.headerBodyGapPx
+    : compact
+      ? AGENDA_LIST_CARD.compact.headerBodyGapPx
+      : AGENDA_LIST_CARD.headerBodyGapPx;
   const bodyFooterGap = compact ? AGENDA_LIST_CARD.compact.bodyFooterGapPx : AGENDA_LIST_CARD.bodyFooterGapPx;
-  const accentLineMinHeight = compact ? AGENDA_LIST_CARD.compact.accentLineMinHeightPx : AGENDA_LIST_CARD.accentLineMinHeightPx;
+  const accentLineMinHeight = micro
+    ? AGENDA_LIST_CARD.micro.accentLineMinHeightPx
+    : compact
+      ? AGENDA_LIST_CARD.compact.accentLineMinHeightPx
+      : AGENDA_LIST_CARD.accentLineMinHeightPx;
 
-  const hasTime = Boolean(allDayLabel || timePart);
+  const hasTime = !hideTime && Boolean(allDayLabel || timePart);
+  const showFooter = !micro;
 
   return (
     <div
@@ -124,7 +151,7 @@ export function AgendaListCard({
             className="flex-1 rounded-full mt-1"
             style={{
               width: AGENDA_LIST_CARD.accentLineWidthPx,
-              minHeight: accentLineMinHeight,
+              minHeight: micro ? 0 : accentLineMinHeight,
               backgroundColor: isDark ? AGENDA_LIST_CARD_COLORS.accentLineDark : AGENDA_LIST_CARD_COLORS.accentLine,
             }}
             aria-hidden
@@ -185,16 +212,16 @@ export function AgendaListCard({
 
           {/* Title + subtitle */}
           <div
-            className="flex flex-col min-w-0"
+            className={cn('flex min-w-0', micro ? 'items-center justify-between gap-2' : 'flex-col')}
             style={{
-              marginTop: headerBodyGap,
+              marginTop: hasTime || headerAction ? headerBodyGap : 0,
               gap: compact ? 2 : 4,
             }}
           >
             <h3
               className={cn(
-                'font-bold leading-snug break-words',
-                compact ? 'line-clamp-1' : 'line-clamp-2',
+                'font-bold leading-snug break-words min-w-0',
+                micro || compact ? 'line-clamp-1' : 'line-clamp-2',
                 titleDone && 'line-through opacity-60',
               )}
               style={{
@@ -205,7 +232,23 @@ export function AgendaListCard({
             >
               {title}
             </h3>
-            {!compact && subtitle && (
+            {micro && (
+              <span
+                className="rounded-full font-semibold capitalize flex-shrink-0 whitespace-nowrap"
+                style={{
+                  fontSize: AGENDA_LIST_CARD.badgeFontSizePx,
+                  paddingLeft: 8,
+                  paddingRight: 8,
+                  paddingTop: AGENDA_LIST_CARD.badgePaddingYPx,
+                  paddingBottom: AGENDA_LIST_CARD.badgePaddingYPx,
+                  backgroundColor: badgeStyles.badgeBackground,
+                  color: badgeStyles.badgeText,
+                }}
+              >
+                {badgeLabel}
+              </span>
+            )}
+            {!compact && !micro && subtitle && (
               <p
                 className="line-clamp-2 break-words"
                 style={{
@@ -220,6 +263,7 @@ export function AgendaListCard({
           </div>
 
           {/* Footer: source · duration + badge */}
+          {showFooter && (
           <div
             className="flex items-center justify-between gap-2 mt-auto min-w-0"
             style={{ marginTop: bodyFooterGap }}
@@ -261,6 +305,7 @@ export function AgendaListCard({
               {badgeLabel}
             </span>
           </div>
+          )}
         </div>
       </div>
     </div>

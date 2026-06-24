@@ -1,8 +1,3 @@
-/**
- * Today Agenda View Constants
- * Centralized text strings and configuration for TodayAgendaView component
- */
-
 export const TODAY_AGENDA_TEXT = {
   emptyState: {
     noTasks: "No tasks today",
@@ -18,4 +13,7 @@ export const TODAY_AGENDA_TEXT = {
   /** Shown in drop zone with emphasis (e.g. mobile). */
   dropPlaceholderWithEmoji: "✨ Drop task here to schedule for today",
 } as const;
+
+/** Fallback accent for calendar events without calendarColor on the timeline spine/dot. */
+export const TODAY_AGENDA_EVENT_ACCENT_HEX = '#22c55e';
 

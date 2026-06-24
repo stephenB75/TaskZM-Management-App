@@ -21,8 +21,15 @@ import { playTaskCompleteSound } from "../lib/toast-sound";
 import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
-import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE, TODAY_AGENDA_PRIORITY_INDICATOR_BG } from "../lib/task-card-constants";
-import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
+import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE, TASK_CARD_PRIORITY_COLORS, TODAY_AGENDA_PRIORITY_INDICATOR_BG } from "../lib/task-card-constants";
+import { TODAY_AGENDA_TEXT, TODAY_AGENDA_EVENT_ACCENT_HEX } from "../lib/today-agenda-constants";
+import {
+  resolveTodayAgendaLayoutMode,
+  getTodayAgendaCompactRowHeightPx,
+  formatTodayAgendaMinutesLabel,
+  type TodayAgendaLayoutMode,
+} from "../lib/today-agenda-layout";
+import { getColorWithOpacity } from "../lib/color-theme";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE, getTodayAgendaTimelineBlockHeightPx } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
@@ -41,6 +48,7 @@ export function TodayAgendaView({
 }: TodayAgendaViewProps = {}) {
   const { tasks, isLoading } = useTasks();
   const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const shouldUseMobileLayout = useMobileLayout();
   const { calendarStatus } = useCalendar();
   const { accessToken } = useAuth();
@@ -234,8 +242,8 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents, today]);
 
-  /** Timeline blocks (7AM–12AM). Single column: same-time or overlapping items stack vertically; timeline height grows to fit. */
-  const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx } = useMemo(() => {
+  /** Timeline blocks (7AM–12AM). Hybrid layout: compact list when sparse, duration blocks when dense/overlapping. */
+  const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, layoutMode } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
     const pxPerMinute = TODAY_AGENDA_TIMELINE.pxPerMinute;
@@ -259,13 +267,11 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        // Use task.estimatedTime when set so block height matches the duration shown on the card (e.g. "3h").
-        // When not set, use getTaskMinutes with cache so long AI-estimated blocks (e.g. 3h) get correct height and don't get a short block with the next task overlapping in time.
         const durationMins =
           typeof item.task.estimatedTime === 'number' && item.task.estimatedTime > 0
             ? item.task.estimatedTime
             : getTaskMinutes(item.task, { useCachedAIAnalysis: true });
-        const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins);
+        const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins, { isEvent: false });
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
         blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins });
@@ -282,7 +288,7 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins);
+        const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins, { isEvent: true });
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
         blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins });
@@ -294,7 +300,23 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Single column: stack same-time or overlapping items below earlier ones (never side-by-side).
+
+    const resolvedLayoutMode: TodayAgendaLayoutMode = resolveTodayAgendaLayoutMode(blocks);
+
+    if (resolvedLayoutMode === 'compactList') {
+      const listGapPx = TODAY_AGENDA_TIMELINE.compactListItemGapPx;
+      let y = 0;
+      for (const block of blocks) {
+        const isEvent = block.item.type === 'event';
+        block.heightPx = getTodayAgendaCompactRowHeightPx(block.actualDurationMins, isEvent);
+        block.topPx = y;
+        y += block.heightPx + listGapPx;
+      }
+      const layoutHeightPx = blocks.length > 0 ? y - listGapPx : 0;
+      return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx: layoutHeightPx, layoutMode: resolvedLayoutMode };
+    }
+
+    // Duration blocks: stack same-time or overlapping items vertically
     const placed: Block[] = [];
     for (const block of blocks) {
       let topPx = block.naturalTopPx;
@@ -311,8 +333,8 @@ export function TodayAgendaView({
     }
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
     const maxBlockBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.topPx + b.heightPx)) : 0;
-    const timelineLayoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
-    return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx };
+    const layoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
+    return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx: layoutHeightPx, layoutMode: resolvedLayoutMode };
   }, [combinedItems, getTaskMinutes]);
 
   /** Base timeline height (px) for 7 AM–12 AM scale. */
@@ -441,36 +463,174 @@ export function TodayAgendaView({
     return TODAY_AGENDA_PRIORITY_INDICATOR_BG[key as keyof typeof TODAY_AGENDA_PRIORITY_INDICATOR_BG];
   };
 
-  /** Vertical timeline: fixed hourly labels; block height and position follow each item's duration. */
+  const getTimelineBlockAccentColor = useCallback((item: CombinedItem): string => {
+    if (item.type === 'task' && item.task) {
+      return TASK_CARD_PRIORITY_COLORS[item.task.priority]?.line ?? TASK_CARD_PRIORITY_COLORS.default.line;
+    }
+    if (item.type === 'event' && item.event?.calendarColor) {
+      return item.event.calendarColor;
+    }
+    return TODAY_AGENDA_EVENT_ACCENT_HEX;
+  }, []);
+
+  const getEventCardVariant = (
+    actualDurationMins: number,
+  ): 'timelineMicro' | 'timelineCompact' => {
+    if (actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes) {
+      return 'timelineMicro';
+    }
+    return 'timelineCompact';
+  };
+
+  /** Hybrid timeline: compact list (sparse) or duration blocks (dense) with spine, dots, and hour grid. */
   const agendaListRows = useMemo(
     () => {
-      const { startHour, endHour, columnWidth, pxPerMinute, totalMinutes, columnGapPx, rowPaddingTopPx, cardPaddingRightPx, blocksColumnPaddingLeftPx, currentTimeLineHeightPx, labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
-      const allSlotMinutes: number[] = [];
-      for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
-        allSlotMinutes.push(m);
+      const {
+        startHour,
+        endHour,
+        columnWidth,
+        pxPerMinute,
+        totalMinutes,
+        columnGapPx,
+        cardPaddingRightPx,
+        blocksColumnPaddingLeftPx,
+        currentTimeLineHeightPx,
+        labelIntervalMinutes,
+        spineWidthPx,
+        spineDotSizePx,
+        hourGridLineOpacity,
+        blockTintOpacity,
+        blockAccentWidthPx,
+      } = TODAY_AGENDA_TIMELINE;
+
+      const isCompactList = layoutMode === 'compactList';
+      const spineColor = isDark ? 'rgba(148,163,184,0.45)' : 'rgba(148,163,184,0.35)';
+
+      const hourlyLabels: { minutesFromStart: number; label: string }[] = [];
+      if (!isCompactList) {
+        for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
+          const h = startHour + Math.floor(m / MINUTES_PER_HOUR);
+          const min = m % MINUTES_PER_HOUR;
+          const isMidnight = h === endHour && min === 0;
+          hourlyLabels.push({
+            minutesFromStart: m,
+            label: isMidnight
+              ? TODAY_AGENDA_TEXT.timelineMidnightLabel
+              : formatTodayAgendaMinutesLabel(m),
+          });
+        }
       }
-      const timelineLabels: { minutesFromStart: number; label: string }[] = allSlotMinutes.map((m) => {
-        const h = startHour + Math.floor(m / MINUTES_PER_HOUR);
-        const min = m % MINUTES_PER_HOUR;
-        const isMidnight = h === endHour && min === 0;
-        const label = isMidnight
-          ? TODAY_AGENDA_TEXT.timelineMidnightLabel
-          : (() => {
-              const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-              const ampm = h < 12 ? 'AM' : 'PM';
-              return `${hour12}:${min.toString().padStart(2, '0')} ${ampm}`;
-            })();
-        return { minutesFromStart: m, label };
-      });
-      const nextUpBlock = timelineBlocks.find((b) => b.item.type === 'task' && b.item.task && b.item.task.id === nextUpTaskId);
+
+      const nextUpBlock = timelineBlocks.find(
+        (b) => b.item.type === 'task' && b.item.task && b.item.task.id === nextUpTaskId,
+      );
       const nextUpTopPx = nextUpBlock != null ? nextUpBlock.topPx : null;
-      const nextUpBadgeTopPx = nextUpTopPx != null ? nextUpTopPx - TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx - TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveTimePx : 0;
+      const nextUpBadgeTopPx =
+        nextUpTopPx != null
+          ? nextUpTopPx - TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx - TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveTimePx
+          : 0;
+
+      const renderTimelineBlock = (
+        block: (typeof timelineBlocks)[number],
+      ) => {
+        const { item, topPx, heightPx, actualDurationMins } = block;
+        const key =
+          item.type === 'task' && item.task
+            ? `t-${item.task.id}`
+            : item.type === 'event' && item.event
+              ? `e-${item.event.id}`
+              : `b-${topPx}`;
+        const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
+        const accentColor = getTimelineBlockAccentColor(item);
+        const showDurationTint = !isCompactList;
+
+        return (
+          <div
+            key={key}
+            className="absolute overflow-hidden rounded-lg left-0 right-0"
+            style={{
+              top: topPx,
+              height: heightPx,
+              minHeight: isCompactList ? undefined : TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
+              zIndex: Z_INDEX.TIMELINE_BLOCK,
+              contain: 'layout paint',
+              isolation: 'isolate',
+            }}
+          >
+            {showDurationTint && (
+              <div
+                className="absolute inset-0 pointer-events-none rounded-lg"
+                style={{
+                  backgroundColor: getColorWithOpacity(accentColor, blockTintOpacity),
+                  borderLeft: `${blockAccentWidthPx}px solid ${accentColor}`,
+                }}
+                aria-hidden
+              />
+            )}
+            {item.type === 'task' && item.task ? (
+              <div data-task-id={item.task.id} className="relative w-full h-full z-[1]">
+                <div className="w-full min-w-full h-full flex flex-col">
+                  <DraggableTaskCard
+                    task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
+                    onClick={() => item.task && handleTaskClick(item.task)}
+                    droppableId="today-agenda"
+                    occurrenceDate={todayString}
+                    isNextUp={item.task.id === nextUpTaskId}
+                    onComplete={handleTaskComplete}
+                    timelineBlockHeightPx={heightPx}
+                    compactTimeline={compactTimeline}
+                    hideTimelineTime
+                    durationMinutes={actualDurationMins}
+                  />
+                </div>
+              </div>
+            ) : item.type === 'event' && item.event ? (
+              <div data-event-id={item.event.id} className="relative w-full h-full z-[1]">
+                <div className="w-full min-w-full h-full">
+                  <CalendarEventCard
+                    title={item.event.title}
+                    start={item.event.start}
+                    end={item.event.end}
+                    location={item.event.location}
+                    provider={item.event.provider}
+                    calendarColor={item.event.calendarColor}
+                    isRecurring={item.event.isRecurring}
+                    variant={getEventCardVariant(actualDurationMins)}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        );
+      };
 
       return (
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
-          <div className="flex w-full items-stretch" style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}>
-            {/* Left: hourly time labels only (no dots or grid lines) */}
-            <div className="flex-shrink-0 relative" style={{ width: columnWidth, height: timelineLayoutHeightPx, zIndex: Z_INDEX.TIMELINE_LABELS_AND_NEXT_UP }}>
+          <div
+            className="flex w-full items-stretch"
+            style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}
+          >
+            {/* Left rail: spine, per-item or hourly labels, start dots */}
+            <div
+              className="flex-shrink-0 relative"
+              style={{
+                width: columnWidth,
+                height: timelineLayoutHeightPx,
+                zIndex: Z_INDEX.TIMELINE_LABELS_AND_NEXT_UP,
+              }}
+            >
+              {/* Vertical spine */}
+              <div
+                className="absolute top-0 bottom-0"
+                style={{
+                  right: 0,
+                  width: spineWidthPx,
+                  backgroundColor: spineColor,
+                  borderRadius: spineWidthPx,
+                }}
+                aria-hidden
+              />
+
               {nextUpTopPx != null && (
                 <div
                   className="absolute right-0 flex items-center justify-end z-10"
@@ -485,121 +645,190 @@ export function TodayAgendaView({
                   </span>
                 </div>
               )}
-              {timelineLabels.map(({ minutesFromStart, label }) => {
-                const topPx = Math.round(minutesFromStart * pxPerMinute);
+
+              {isCompactList
+                ? timelineBlocks.map((block) => (
+                    <div
+                      key={`time-${block.item.type === 'task' && block.item.task ? block.item.task.id : block.item.type === 'event' && block.item.event ? block.item.event.id : block.topPx}`}
+                      className="absolute left-0 pr-2 text-right"
+                      style={{
+                        top: block.topPx,
+                        width: `calc(100% - ${spineWidthPx + 4}px)`,
+                      }}
+                    >
+                      <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums leading-none">
+                        {formatTodayAgendaMinutesLabel(block.actualStartMins)}
+                      </span>
+                    </div>
+                  ))
+                : hourlyLabels.map(({ minutesFromStart, label }) => {
+                    const topPx = Math.round(minutesFromStart * pxPerMinute);
+                    return (
+                      <div
+                        key={minutesFromStart}
+                        className="absolute left-0 pr-2 text-right"
+                        style={{
+                          top: topPx,
+                          transform: 'translateY(-50%)',
+                          width: `calc(100% - ${spineWidthPx + 4}px)`,
+                        }}
+                      >
+                        <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">{label}</span>
+                      </div>
+                    );
+                  })}
+
+              {/* Start dots on spine */}
+              {timelineBlocks.map((block) => {
+                const dotColor = getTimelineBlockAccentColor(block.item);
+                const dotKey =
+                  block.item.type === 'task' && block.item.task
+                    ? `dot-t-${block.item.task.id}`
+                    : block.item.type === 'event' && block.item.event
+                      ? `dot-e-${block.item.event.id}`
+                      : `dot-${block.topPx}`;
                 return (
                   <div
-                    key={minutesFromStart}
-                    className="absolute left-0 pr-1"
-                    style={{ top: topPx, transform: 'translateY(-50%)' }}
-                  >
-                    <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">{label}</span>
-                  </div>
+                    key={dotKey}
+                    className="absolute rounded-full z-[2]"
+                    style={{
+                      top: block.topPx + TODAY_AGENDA_TIMELINE.cardContentTopOffsetPx / 2,
+                      right: -(spineDotSizePx / 2) + spineWidthPx / 2,
+                      width: spineDotSizePx,
+                      height: spineDotSizePx,
+                      backgroundColor: dotColor,
+                      boxShadow: isDark ? '0 0 0 2px rgba(30,30,40,0.9)' : '0 0 0 2px rgba(255,255,255,0.95)',
+                    }}
+                    aria-hidden
+                  />
                 );
               })}
-            </div>
-            {/* Right: duration-sized task/event blocks positioned on the time scale */}
-            <div className="flex-1 min-w-0 relative" style={{ marginLeft: columnGapPx, paddingLeft: blocksColumnPaddingLeftPx, paddingRight: cardPaddingRightPx, height: timelineLayoutHeightPx, overflowY: 'hidden' }}>
-              {currentTimeTopPx != null && (
+
+              {/* Current time dot on spine (duration mode) */}
+              {!isCompactList && currentTimeTopPx != null && (
                 <div
-                  ref={currentTimeIndicatorRef}
-                  className="absolute left-0 right-0 rounded-full bg-primary/80"
-                  style={{ top: currentTimeTopPx, height: currentTimeLineHeightPx, zIndex: Z_INDEX.TIME_INDICATOR }}
+                  className="absolute rounded-full z-[3] bg-primary"
+                  style={{
+                    top: currentTimeTopPx - spineDotSizePx / 2,
+                    right: -(spineDotSizePx / 2) + spineWidthPx / 2,
+                    width: spineDotSizePx,
+                    height: spineDotSizePx,
+                    boxShadow: '0 0 0 2px hsl(var(--primary) / 0.25)',
+                  }}
                   aria-hidden
                 />
               )}
-              {timelineBlocks.map(({ item, topPx, heightPx, actualDurationMins }) => {
-                const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
-                const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
-                return (
-                  <div
-                    key={key}
-                    className="absolute overflow-hidden rounded-lg left-0 right-0"
-                    style={{
-                      top: topPx,
-                      height: heightPx,
-                      minHeight: TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
-                      zIndex: Z_INDEX.TIMELINE_BLOCK,
-                      contain: 'layout paint',
-                      isolation: 'isolate',
-                    }}
-                  >
-                      {item.type === 'task' && item.task ? (
-                        <div data-task-id={item.task.id} className="w-full h-full">
-                          <div
-                            className="w-full min-w-full h-full flex flex-col"
-                            style={{
-                              ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                                ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
-                                : {}),
-                            }}
-                          >
-                            <DraggableTaskCard
-                              task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                              onClick={() => item.task && handleTaskClick(item.task)}
-                              droppableId="today-agenda"
-                              occurrenceDate={todayString}
-                              isNextUp={item.task.id === nextUpTaskId}
-                              onComplete={handleTaskComplete}
-                              timelineBlockHeightPx={
-                                TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                                  ? Math.round(heightPx / TASK_CARD_TIMELINE.scale.todayAgenda)
-                                  : heightPx
-                              }
-                              compactTimeline={compactTimeline}
-                              durationMinutes={actualDurationMins}
-                            />
-                          </div>
-                        </div>
-                      ) : item.type === 'event' && item.event ? (
-                        <div data-event-id={item.event.id} className="w-full h-full">
-                          <div
-                            className="w-full min-w-full h-full"
-                            style={{
-                              ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1
-                                ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' }
-                                : {}),
-                            }}
-                          >
-                            <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} variant="timelineCompact" />
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                );
-              })}
+            </div>
+
+            {/* Blocks column */}
+            <div
+              className="flex-1 min-w-0 relative"
+              style={{
+                marginLeft: columnGapPx,
+                paddingLeft: blocksColumnPaddingLeftPx,
+                paddingRight: cardPaddingRightPx,
+                height: timelineLayoutHeightPx,
+                overflowY: 'hidden',
+              }}
+            >
+              {/* Hour grid (duration mode only) */}
+              {!isCompactList &&
+                hourlyLabels.map(({ minutesFromStart }) => {
+                  const topPx = Math.round(minutesFromStart * pxPerMinute);
+                  return (
+                    <div
+                      key={`grid-${minutesFromStart}`}
+                      className="absolute left-0 right-0 border-t border-border pointer-events-none"
+                      style={{
+                        top: topPx,
+                        opacity: hourGridLineOpacity,
+                        zIndex: Z_INDEX.TIMELINE_LINE,
+                      }}
+                      aria-hidden
+                    />
+                  );
+                })}
+
+              {!isCompactList && currentTimeTopPx != null && (
+                <div
+                  ref={currentTimeIndicatorRef}
+                  className="absolute left-0 right-0 rounded-full bg-primary/80"
+                  style={{
+                    top: currentTimeTopPx,
+                    height: currentTimeLineHeightPx,
+                    zIndex: Z_INDEX.TIME_INDICATOR,
+                  }}
+                  aria-hidden
+                />
+              )}
+
+              {timelineBlocks.map(renderTimelineBlock)}
             </div>
           </div>
+
           {/* Unscheduled: no time or outside 7AM–12AM */}
           {unscheduledItems.length > 0 && (
-            <div className="flex flex-col w-full mt-4 pt-4 border-t border-border" style={{ gap: TODAY_AGENDA_TIMELINE.itemGapPx }}>
+            <div
+              className="flex flex-col w-full mt-4 pt-4 border-t border-border"
+              style={{ gap: TODAY_AGENDA_TIMELINE.itemGapPx }}
+            >
               <span className="text-xs font-medium text-muted-foreground mb-1">No time slot</span>
               {unscheduledItems.map((item, index) => {
-                const timeLabel = item.type === 'task' && item.task ? getTaskTime(item.task) : item.type === 'event' && item.event ? getEventTime(item.event.start) : '';
+                const timeLabel =
+                  item.type === 'task' && item.task
+                    ? getTaskTime(item.task)
+                    : item.type === 'event' && item.event
+                      ? getEventTime(item.event.start)
+                      : '';
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-                const key = item.type === 'task' && item.task ? `u-t-${item.task.id}` : item.type === 'event' && item.event ? `u-e-${item.event.id}` : `u-${index}`;
-                const timelinePaddingTop = TODAY_AGENDA_TIMELINE.rowPaddingTopPx + (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
+                const key =
+                  item.type === 'task' && item.task
+                    ? `u-t-${item.task.id}`
+                    : item.type === 'event' && item.event
+                      ? `u-e-${item.event.id}`
+                      : `u-${index}`;
+                const timelinePaddingTop =
+                  TODAY_AGENDA_TIMELINE.rowPaddingTopPx +
+                  (isNextUp ? TODAY_AGENDA_TIMELINE.nextUpBadgeOffsetPx : 0);
                 return (
                   <div key={key} className="flex w-full items-start" style={{ gap: TODAY_AGENDA_TIMELINE.columnGapPx }}>
                     <div
                       className="flex-shrink-0"
                       style={{ width: TODAY_AGENDA_TIMELINE.columnWidth, paddingTop: timelinePaddingTop }}
                     >
-                      <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">{timeLabel || '—'}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+                        {timeLabel || '—'}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0 w-full" style={{ paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx, paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx }}>
+                    <div
+                      className="flex-1 min-w-0 w-full"
+                      style={{
+                        paddingTop: TODAY_AGENDA_TIMELINE.rowPaddingTopPx,
+                        paddingRight: TODAY_AGENDA_TIMELINE.cardPaddingRightPx,
+                      }}
+                    >
                       {item.type === 'task' && item.task ? (
                         <div data-task-id={item.task.id} className="w-full">
-                          <div className="w-full min-w-full" style={{ ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1 ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' } : {}) }}>
-                            <DraggableTaskCard task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)} onClick={() => item.task && handleTaskClick(item.task)} droppableId="today-agenda" occurrenceDate={todayString} isNextUp={item.task.id === nextUpTaskId} onComplete={handleTaskComplete} />
-                          </div>
+                          <DraggableTaskCard
+                            task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
+                            onClick={() => item.task && handleTaskClick(item.task)}
+                            droppableId="today-agenda"
+                            occurrenceDate={todayString}
+                            isNextUp={item.task.id === nextUpTaskId}
+                            onComplete={handleTaskComplete}
+                          />
                         </div>
                       ) : item.type === 'event' && item.event ? (
                         <div data-event-id={item.event.id} className="w-full">
-                          <div className="w-full min-w-full" style={{ ...(TASK_CARD_TIMELINE.scale.todayAgenda !== 1 ? { transform: `scale(${TASK_CARD_TIMELINE.scale.todayAgenda})`, transformOrigin: 'top center' } : {}) }}>
-                            <CalendarEventCard title={item.event.title} start={item.event.start} end={item.event.end} location={item.event.location} provider={item.event.provider} calendarColor={item.event.calendarColor} isRecurring={item.event.isRecurring} />
-                          </div>
+                          <CalendarEventCard
+                            title={item.event.title}
+                            start={item.event.start}
+                            end={item.event.end}
+                            location={item.event.location}
+                            provider={item.event.provider}
+                            calendarColor={item.event.calendarColor}
+                            isRecurring={item.event.isRecurring}
+                          />
                         </div>
                       ) : null}
                     </div>
@@ -611,7 +840,18 @@ export function TodayAgendaView({
         </div>
       );
     },
-    [timelineBlocks, unscheduledItems, timelineHeightPx, timelineLayoutHeightPx, currentTimeTopPx, nextUpTaskId, todayString, tasks]
+    [
+      timelineBlocks,
+      unscheduledItems,
+      timelineLayoutHeightPx,
+      layoutMode,
+      currentTimeTopPx,
+      nextUpTaskId,
+      todayString,
+      tasks,
+      isDark,
+      getTimelineBlockAccentColor,
+    ],
   );
 
   return (

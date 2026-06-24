@@ -271,7 +271,19 @@ export const TODAY_AGENDA_TIMELINE = {
   pxPerMinute: 4,
   /** Minimum timeline block height (px); kept small so block height tracks duration. */
   minTimelineBlockHeightPx: 48,
-  columnWidth: '4.5rem',
+  /** Gap (minutes) between consecutive items to use compact list instead of duration scale. */
+  layoutProximityThresholdMinutes: 45,
+  /** Vertical gap (px) between stacked items in compact list mode. */
+  compactListItemGapPx: 12,
+  /** Block height (px) for short calendar events on the timeline. */
+  microEventBlockHeightPx: 52,
+  /** Width (px) of the vertical timeline spine. */
+  spineWidthPx: 2,
+  /** Diameter (px) of timeline start dots on the spine. */
+  spineDotSizePx: 8,
+  /** Opacity (0–1) for hour grid lines in duration block mode. */
+  hourGridLineOpacity: 0.12,
+  columnWidth: '4rem',
   rowPaddingTopPx: 2,
   columnGapPx: 12,
   rowGapPx: 4,
@@ -299,8 +311,8 @@ export const TODAY_AGENDA_TIMELINE = {
   tabHeightPx: 34,
   /** Horizontal padding (px) for Today Agenda card content (left). */
   cardPaddingLeftPx: 10,
-  /** Horizontal padding (px) for Today Agenda card content (right) – enough so tab/headline aren’t cut off. */
-  cardPaddingRightPx: 28,
+  /** Horizontal padding (px) for Today Agenda card content (right). */
+  cardPaddingRightPx: 12,
   /** Vertical padding (px) at bottom of Today Agenda card so title doesn't touch block edge. */
   cardPaddingBottomPx: 8,
   /** Horizontal padding (px) for Today Agenda tab bar. */
@@ -331,11 +343,22 @@ export const TODAY_AGENDA_TIMELINE = {
   shortItemCompactRowHeightPx: 92,
 } as const;
 
-/** Timeline block height from duration; short items get a comfortable minimum so cards are not clipped. */
-export function getTodayAgendaTimelineBlockHeightPx(durationMinutes: number): number {
-  const { pxPerMinute, minTimelineBlockHeightPx, shortItemThresholdMinutes, shortTaskComfortableBlockHeightPx } =
-    TODAY_AGENDA_TIMELINE;
+/** Timeline block height from duration; short events use micro height, short tasks use comfortable minimum. */
+export function getTodayAgendaTimelineBlockHeightPx(
+  durationMinutes: number,
+  options?: { isEvent?: boolean },
+): number {
+  const {
+    pxPerMinute,
+    minTimelineBlockHeightPx,
+    shortItemThresholdMinutes,
+    shortTaskComfortableBlockHeightPx,
+    microEventBlockHeightPx,
+  } = TODAY_AGENDA_TIMELINE;
   const durationHeightPx = Math.round(durationMinutes * pxPerMinute);
+  if (options?.isEvent && durationMinutes < shortItemThresholdMinutes) {
+    return Math.max(durationHeightPx, microEventBlockHeightPx);
+  }
   if (durationMinutes < shortItemThresholdMinutes) {
     return Math.max(durationHeightPx, shortTaskComfortableBlockHeightPx);
   }

@@ -45,7 +45,7 @@ interface CalendarEventCardProps {
   /** When 'kanban', uses light gray background, square left corners, rounded right; background starts at vertical line. */
   /** When 'timelineCompact', two-line layout on Today Agenda timeline: line 1 = meta (calendar, time, duration), line 2 = headline only. */
   /** When 'inbox', 2-line layout: meta + time on line 1, headline + location on line 2. */
-  variant?: 'default' | 'kanban' | 'timelineCompact' | 'inbox';
+  variant?: 'default' | 'kanban' | 'timelineCompact' | 'timelineMicro' | 'inbox';
 }
 
 // Calculate duration in minutes between two ISO date strings (uses parseCalendarEventTime for correct timezone)
@@ -326,7 +326,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   const timeAndPeriod = !allDay ? getTimeAndPeriod(start) : null;
   const accentDotColor = palette.dotHex;
 
-  const agendaCard = (compact: boolean) => (
+  const agendaCard = (options: { compact?: boolean; hideTime?: boolean; micro?: boolean }) => (
     <TooltipProvider delayDuration={300}>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -334,15 +334,17 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             accentColor={accentDotColor}
             badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
             title={title}
-            subtitle={compact ? undefined : (location || undefined)}
+            subtitle={options.compact || options.micro ? undefined : (location || undefined)}
             timePart={timeAndPeriod?.timePart}
             periodPart={timeAndPeriod?.period}
             allDayLabel={allDay ? CALENDAR_EVENT_UI_TEXT.allDay : undefined}
             footerIcon="calendar"
             footerSourceLabel={providerLabel}
             durationLabel={formatDuration(durationMinutes)}
-            compact={compact}
-            style={compact ? { height: '100%', minHeight: '100%', maxHeight: '100%' } : { height: '100%', minHeight: '100%', maxHeight: '100%' }}
+            compact={options.compact}
+            hideTime={options.hideTime}
+            micro={options.micro}
+            style={options.compact || options.micro ? { height: '100%', minHeight: '100%', maxHeight: '100%' } : { height: '100%', minHeight: '100%', maxHeight: '100%' }}
           />
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
@@ -356,9 +358,14 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     </TooltipProvider>
   );
 
+  // Today Agenda timeline: ultra-compact row for short events
+  if (variant === 'timelineMicro') {
+    return agendaCard({ micro: true, hideTime: true });
+  }
+
   // Today Agenda timeline: compact or full agenda list card
   if (variant === 'timelineCompact') {
-    return agendaCard(true);
+    return agendaCard({ compact: true, hideTime: true });
   }
 
   // Kanban week view: same white agenda list card as tasks
@@ -453,6 +460,6 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   }
 
   // Default (Today Agenda unscheduled, etc.): white agenda list card
-  return agendaCard(false);
+  return agendaCard({ compact: false });
 }
 

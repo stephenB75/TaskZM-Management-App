@@ -39,6 +39,13 @@ export const AGENDA_LIST_CARD = {
     bodyFooterGapPx: 6,
     headerBodyGapPx: 3,
   },
+  micro: {
+    paddingPx: 8,
+    titleFontSizePx: 12,
+    dotSizePx: 6,
+    accentLineMinHeightPx: 0,
+    headerBodyGapPx: 0,
+  },
 } as const;
 
 export const AGENDA_LIST_CARD_COLORS = {

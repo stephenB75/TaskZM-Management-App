@@ -103,6 +103,8 @@ interface DraggableTaskCardProps {
   timelineBlockHeightPx?: number;
   /** When true (Today Agenda), use single-row compact layout for short-duration blocks so content is not clipped. */
   compactTimeline?: boolean;
+  /** When true (Today Agenda timeline), hide in-card time — rail shows time. */
+  hideTimelineTime?: boolean;
   /** Duration in minutes; used for compact layout tooltip and display. */
   durationMinutes?: number;
 }
@@ -112,7 +114,7 @@ export const DraggableTaskCard = React.forwardRef<
   DraggableTaskCardProps
 >(
   (
-    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx, compactTimeline = false, durationMinutes },
+    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx, compactTimeline = false, hideTimelineTime = false, durationMinutes },
     forwardedRef,
   ) => {
     const isTodayAgenda = droppableId === 'today-agenda';
@@ -781,6 +783,7 @@ export const DraggableTaskCard = React.forwardRef<
       compact?: boolean;
       embedded?: boolean;
       titleDone?: boolean;
+      hideTime?: boolean;
       style?: React.CSSProperties;
     }) => (
       <AgendaListCard
@@ -796,6 +799,7 @@ export const DraggableTaskCard = React.forwardRef<
         durationLabel={formatDuration(durationMinutes ?? task.estimatedTime ?? null)}
         showCommentIcon={Boolean(task.description?.trim())}
         compact={options.compact}
+        hideTime={options.hideTime}
         embedded={options.embedded}
         headerAction={agendaCompleteButton}
         style={options.style}
@@ -945,6 +949,7 @@ export const DraggableTaskCard = React.forwardRef<
                 <TooltipTrigger asChild>
                   {renderAgendaTaskCard({
                     compact: compactTimeline,
+                    hideTime: hideTimelineTime,
                     style: {
                       height: '100%',
                       minHeight: '100%',
