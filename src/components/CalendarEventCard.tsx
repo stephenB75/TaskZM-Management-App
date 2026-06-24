@@ -45,7 +45,10 @@ interface CalendarEventCardProps {
   /** When 'kanban', uses light gray background, square left corners, rounded right; background starts at vertical line. */
   /** When 'timelineCompact', two-line layout on Today Agenda timeline: line 1 = meta (calendar, time, duration), line 2 = headline only. */
   /** When 'inbox', 2-line layout: meta + time on line 1, headline + location on line 2. */
-  variant?: 'default' | 'kanban' | 'timelineCompact' | 'timelineMicro' | 'inbox';
+  /** When 'timeline', embedded in Today Agenda — same layout as task cards. */
+  variant?: 'default' | 'kanban' | 'timelineCompact' | 'timelineMicro' | 'timeline' | 'inbox';
+  /** Short-duration compact row (matches DraggableTaskCard compactTimeline). */
+  compactTimeline?: boolean;
 }
 
 // Calculate duration in minutes between two ISO date strings (uses parseCalendarEventTime for correct timezone)
@@ -286,7 +289,7 @@ const eventColorPalette = [
   },
 ];
 
-export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring, variant = 'default' }: CalendarEventCardProps) {
+export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring, variant = 'default', compactTimeline }: CalendarEventCardProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const mode = isDark ? 'dark' : 'light';
@@ -360,7 +363,31 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     </TooltipProvider>
   );
 
-  // Today Agenda timeline: ultra-compact row for short events
+  // Today Agenda timeline — same card structure as tasks (compact row + footer, embedded in block shell)
+  if (variant === 'timeline') {
+    const isCompact =
+      compactTimeline ?? durationMinutes < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
+    return (
+      <div className="w-full h-full min-h-full flex flex-col">
+        <AgendaListCard
+          accentColor={accentDotColor}
+          badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
+          title={title}
+          subtitle={isCompact ? undefined : (location || undefined)}
+          footerIcon="calendar"
+          footerSourceLabel={providerLabel}
+          durationLabel={formatDuration(durationMinutes)}
+          compact={isCompact}
+          hideTime
+          embedded
+          hideAccentColumn
+          style={{ height: '100%', minHeight: '100%', maxHeight: '100%' }}
+        />
+      </div>
+    );
+  }
+
+  // Today Agenda timeline: ultra-compact row for short events (legacy — prefer timeline)
   if (variant === 'timelineMicro') {
     return agendaCard({ micro: true, hideTime: true, timelineEmbedded: true });
   }

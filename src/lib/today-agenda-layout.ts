@@ -51,24 +51,20 @@ export function resolveTodayAgendaLayoutMode(blocks: TodayAgendaTimelineBlockInp
 }
 
 /** Row height when stacking items in compact list mode (content-sized, not time-scale gaps). */
-export function getTodayAgendaCompactRowHeightPx(durationMinutes: number, isEvent: boolean): number {
+export function getTodayAgendaCompactRowHeightPx(durationMinutes: number, _isEvent = false): number {
   const {
-    microEventBlockHeightPx,
     shortItemThresholdMinutes,
     shortTaskComfortableBlockHeightPx,
     taskRowHeightPx,
   } = TODAY_AGENDA_TIMELINE;
 
-  if (isEvent && durationMinutes < shortItemThresholdMinutes) {
-    return microEventBlockHeightPx;
-  }
   if (durationMinutes < shortItemThresholdMinutes) {
     return shortTaskComfortableBlockHeightPx;
   }
-  if (!isEvent && durationMinutes >= MINUTES_PER_HOUR) {
-    return Math.max(taskRowHeightPx, getTodayAgendaTimelineBlockHeightPx(durationMinutes, { isEvent: false }));
+  if (durationMinutes >= MINUTES_PER_HOUR) {
+    return Math.max(taskRowHeightPx, getTodayAgendaTimelineBlockHeightPx(durationMinutes));
   }
-  return getTodayAgendaTimelineBlockHeightPx(durationMinutes, { isEvent });
+  return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
 }
 
 /** Format minutes-from-range-start as "7:00 AM" label. */

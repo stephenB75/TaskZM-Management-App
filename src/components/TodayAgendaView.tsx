@@ -271,7 +271,7 @@ export function TodayAgendaView({
           typeof item.task.estimatedTime === 'number' && item.task.estimatedTime > 0
             ? item.task.estimatedTime
             : getTaskMinutes(item.task, { useCachedAIAnalysis: true });
-        const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins, { isEvent: false });
+        const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
         blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins });
@@ -288,7 +288,7 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins, { isEvent: true });
+        const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
         blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins });
@@ -307,8 +307,7 @@ export function TodayAgendaView({
       const listGapPx = TODAY_AGENDA_TIMELINE.compactListItemGapPx;
       let y = 0;
       for (const block of blocks) {
-        const isEvent = block.item.type === 'event';
-        block.heightPx = getTodayAgendaCompactRowHeightPx(block.actualDurationMins, isEvent);
+        block.heightPx = getTodayAgendaCompactRowHeightPx(block.actualDurationMins);
         block.topPx = y;
         y += block.heightPx + listGapPx;
       }
@@ -362,30 +361,33 @@ export function TodayAgendaView({
 
   // Single column; timeline extends vertically to fit stacked blocks. When scheduling a task, use findNextAvailableSlot (e.g. in DragDropContext or TaskDialog) so the assigned time does not overlap.
 
-  // Find the next uncompleted task after current time (next up)
+  // Find the next uncompleted task at or after current time (next up)
   const nextUpTaskId = useMemo(() => {
-    if (todayTasks.length === 0) return null;
-    
-    // Filter out completed tasks
-    const uncompletedTasks = todayTasks.filter(task => task.status !== 'done');
+    const uncompletedTasks = todayTasks.filter((task) => task.status !== 'done');
     if (uncompletedTasks.length === 0) return null;
-    
-    const now = new Date();
-    const currentTimeMs = now.getTime();
-    
-    // Find the first uncompleted task that starts at or after current time
-    for (const task of uncompletedTasks) {
-      if (!task.scheduledDate) continue;
-      const taskTime = parseChronologicalTimeSource(task.scheduledDate).getTime();
-      if (isNaN(taskTime)) continue;
-      if (taskTime >= currentTimeMs) {
-        return task.id;
-      }
-    }
-    
-    // If no uncompleted task is after current time, return the first uncompleted task
-    return uncompletedTasks[0]?.id || null;
-  }, [todayTasks, currentTime]);
+
+    const nowOnToday = new Date(today);
+    nowOnToday.setHours(
+      currentTime.getHours(),
+      currentTime.getMinutes(),
+      currentTime.getSeconds(),
+      currentTime.getMilliseconds(),
+    );
+    const nowMs = nowOnToday.getTime();
+
+    const withSortTime = uncompletedTasks
+      .map((task) => ({
+        task,
+        sortTime: getTaskSortTimeOnDay(today, task),
+      }))
+      .filter((entry) => entry.sortTime !== Number.MAX_SAFE_INTEGER)
+      .sort((a, b) => a.sortTime - b.sortTime);
+
+    const upcoming = withSortTime.find((entry) => entry.sortTime >= nowMs);
+    if (upcoming) return upcoming.task.id;
+
+    return withSortTime[0]?.task.id ?? uncompletedTasks[0]?.id ?? null;
+  }, [todayTasks, today, currentTime]);
 
   // Gaps between blocks; connector line from timeline to block when stacked so time stays aligned. Task times are never changed by this view or by drop-for-overlap.
 
@@ -473,15 +475,6 @@ export function TodayAgendaView({
     return TODAY_AGENDA_EVENT_ACCENT_HEX;
   }, []);
 
-  const getEventCardVariant = (
-    actualDurationMins: number,
-  ): 'timelineMicro' | 'timelineCompact' => {
-    if (actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes) {
-      return 'timelineMicro';
-    }
-    return 'timelineCompact';
-  };
-
   /** Hybrid timeline: compact list (sparse) or duration blocks (dense) with spine, dots, and hour grid. */
   const agendaListRows = useMemo(
     () => {
@@ -521,15 +514,6 @@ export function TodayAgendaView({
         }
       }
 
-      const nextUpBlock = timelineBlocks.find(
-        (b) => b.item.type === 'task' && b.item.task && b.item.task.id === nextUpTaskId,
-      );
-      const nextUpTopPx = nextUpBlock != null ? nextUpBlock.topPx : null;
-      const nextUpBadgeTopPx =
-        nextUpTopPx != null
-          ? nextUpTopPx - TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx - TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveTimePx
-          : 0;
-
       const renderTimelineBlock = (
         block: (typeof timelineBlocks)[number],
       ) => {
@@ -542,16 +526,21 @@ export function TodayAgendaView({
               : `b-${topPx}`;
         const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
         const accentColor = getTimelineBlockAccentColor(item);
+        const isNextUpTask = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+        const nextUpInsetPx = isNextUpTask
+          ? TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx + TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx * 2
+          : 0;
+        const cardAreaHeightPx = Math.max(1, heightPx - nextUpInsetPx);
 
         return (
           <div
             key={key}
-            className="absolute overflow-hidden left-0 right-0"
+            className="absolute overflow-hidden left-0 right-0 flex flex-col"
             style={{
               top: topPx,
               height: heightPx,
               minHeight: isCompactList ? undefined : TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
-              zIndex: Z_INDEX.TIMELINE_BLOCK,
+              zIndex: isNextUpTask ? Z_INDEX.TIMELINE_BLOCK + 1 : Z_INDEX.TIMELINE_BLOCK,
               backgroundColor: isDark
                 ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark
                 : AGENDA_LIST_CARD_COLORS.cardBackground,
@@ -560,16 +549,31 @@ export function TodayAgendaView({
               borderLeft: `${blockAccentWidthPx}px solid ${accentColor}`,
             }}
           >
+            {isNextUpTask && (
+              <div
+                className="flex-shrink-0 flex items-center"
+                style={{
+                  paddingLeft: AGENDA_LIST_CARD.compact.paddingPx,
+                  paddingRight: AGENDA_LIST_CARD.compact.paddingPx,
+                  paddingTop: TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx,
+                  paddingBottom: TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx,
+                }}
+              >
+                <span className="text-xs font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block">
+                  {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
+                </span>
+              </div>
+            )}
             {item.type === 'task' && item.task ? (
-              <div data-task-id={item.task.id} className="relative w-full h-full">
+              <div data-task-id={item.task.id} className="relative w-full flex-1 min-h-0">
                 <DraggableTaskCard
                   task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                   onClick={() => item.task && handleTaskClick(item.task)}
                   droppableId="today-agenda"
                   occurrenceDate={todayString}
-                  isNextUp={item.task.id === nextUpTaskId}
+                  isNextUp={isNextUpTask}
                   onComplete={handleTaskComplete}
-                  timelineBlockHeightPx={heightPx}
+                  timelineBlockHeightPx={cardAreaHeightPx}
                   compactTimeline={compactTimeline}
                   hideTimelineTime
                   hideTimelineAccent
@@ -577,7 +581,7 @@ export function TodayAgendaView({
                 />
               </div>
             ) : item.type === 'event' && item.event ? (
-              <div data-event-id={item.event.id} className="relative w-full h-full">
+              <div data-event-id={item.event.id} className="relative w-full flex-1 min-h-0">
                 <CalendarEventCard
                   title={item.event.title}
                   start={item.event.start}
@@ -586,7 +590,8 @@ export function TodayAgendaView({
                   provider={item.event.provider}
                   calendarColor={item.event.calendarColor}
                   isRecurring={item.event.isRecurring}
-                  variant={getEventCardVariant(actualDurationMins)}
+                  variant="timeline"
+                  compactTimeline={compactTimeline}
                 />
               </div>
             ) : null}
@@ -620,21 +625,6 @@ export function TodayAgendaView({
                 }}
                 aria-hidden
               />
-
-              {nextUpTopPx != null && (
-                <div
-                  className="absolute right-0 flex items-center justify-end z-10"
-                  style={{
-                    top: nextUpBadgeTopPx,
-                    height: TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx,
-                    width: columnWidth,
-                  }}
-                >
-                  <span className="text-xs font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground inline-block">
-                    {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
-                  </span>
-                </div>
-              )}
 
               {timelineBlocks.map((block) => (
                 <div

@@ -105,7 +105,7 @@ export function AgendaListCard({
     <div
       className={cn(
         'flex flex-col w-full h-full min-w-0 box-border',
-        isDark ? 'dark:bg-[#3E3E52]' : 'bg-white',
+        !embedded && (isDark ? 'dark:bg-[#3E3E52]' : 'bg-white'),
         className,
       )}
       style={{

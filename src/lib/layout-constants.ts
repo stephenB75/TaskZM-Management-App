@@ -345,22 +345,15 @@ export const TODAY_AGENDA_TIMELINE = {
   shortItemCompactRowHeightPx: 92,
 } as const;
 
-/** Timeline block height from duration; short events use micro height, short tasks use comfortable minimum. */
-export function getTodayAgendaTimelineBlockHeightPx(
-  durationMinutes: number,
-  options?: { isEvent?: boolean },
-): number {
+/** Timeline block height from duration; short items use comfortable minimum (tasks and events). */
+export function getTodayAgendaTimelineBlockHeightPx(durationMinutes: number): number {
   const {
     pxPerMinute,
     minTimelineBlockHeightPx,
     shortItemThresholdMinutes,
     shortTaskComfortableBlockHeightPx,
-    microEventBlockHeightPx,
   } = TODAY_AGENDA_TIMELINE;
   const durationHeightPx = Math.round(durationMinutes * pxPerMinute);
-  if (options?.isEvent && durationMinutes < shortItemThresholdMinutes) {
-    return Math.max(durationHeightPx, microEventBlockHeightPx);
-  }
   if (durationMinutes < shortItemThresholdMinutes) {
     return Math.max(durationHeightPx, shortTaskComfortableBlockHeightPx);
   }
