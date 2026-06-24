@@ -98,7 +98,11 @@ export function getDateString(date: Date): string {
 export function parseCalendarEventTime(isoString: string | number | null | undefined): Date {
   if (isoString == null || isoString === '') return new Date(Number.NaN);
   if (typeof isoString === 'number') return new Date(isoString);
-  const s = String(isoString).trim();
+  let s = String(isoString).trim();
+  // Postgres / Supabase timestamptz may use a space separator instead of T
+  if (/^\d{4}-\d{2}-\d{2} \d/.test(s)) {
+    s = s.replace(' ', 'T');
+  }
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
     const [y, m, d] = s.split('-').map(Number);
     if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) {

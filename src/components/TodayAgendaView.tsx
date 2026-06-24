@@ -14,7 +14,7 @@ import { Button } from "./ui/button";
 import { TaskDialog } from "./TaskDialog";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { Confetti } from "./Confetti";
-import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, compareTasksByScheduledTimeOnDay, getTaskSortTimeOnDay, getCalendarEventSortTimeOnDay, compareChronologicalItemsOnDay } from "../lib/utils";
+import { cn, prepareTaskForDialog, hasHTMLTags, sanitizeHTML, getDateString, getTaskWithOccurrenceSubtasks, parseCalendarEventTime, parseChronologicalTimeSource, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, compareTasksByScheduledTimeOnDay, getTaskSortTimeOnDay, getCalendarEventSortTimeOnDay, compareChronologicalItemsOnDay } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { toast } from "../lib/toast-wrapper";
 import { playTaskCompleteSound } from "../lib/toast-sound";
@@ -234,13 +234,13 @@ export function TodayAgendaView({
     return items;
   }, [todayTasks, todayCalendarEvents, today]);
 
-  /** Timeline blocks (7AM–12AM). Single column: blocks stacked in time order; when one would overlap the previous, it is placed below it and the timeline extends vertically. Connector line from timeline to block shows actual time. */
-  const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, laneCount } = useMemo(() => {
+  /** Timeline blocks (7AM–12AM). Single column: same-time or overlapping items stack vertically; timeline height grows to fit. */
+  const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
     const pxPerMinute = TODAY_AGENDA_TIMELINE.pxPerMinute;
     const blockGapPx = TODAY_AGENDA_TIMELINE.blockGapPx;
-    type Block = { item: CombinedItem; naturalTopPx: number; topPx: number; heightPx: number; actualStartMins: number; actualDurationMins: number; actualEndMins: number; laneIndex: number };
+    type Block = { item: CombinedItem; naturalTopPx: number; topPx: number; heightPx: number; actualStartMins: number; actualDurationMins: number; actualEndMins: number };
     const blocks: Block[] = [];
     const unscheduled: CombinedItem[] = [];
     for (const item of combinedItems) {
@@ -249,7 +249,11 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const start = new Date(item.task.scheduledDate);
+        const start = parseChronologicalTimeSource(item.task.scheduledDate);
+        if (isNaN(start.getTime())) {
+          unscheduled.push(item);
+          continue;
+        }
         const startMins = start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - startHour * MINUTES_PER_HOUR;
         if (startMins < 0 || startMins >= totalMinutes) {
           unscheduled.push(item);
@@ -264,10 +268,14 @@ export function TodayAgendaView({
         const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
-        blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins, laneIndex: 0 });
+        blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins });
       } else if (item.type === 'event' && item.event) {
         const start = parseCalendarEventTime(item.event.start);
         const end = parseCalendarEventTime(item.event.end);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          unscheduled.push(item);
+          continue;
+        }
         const startMins = start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - startHour * MINUTES_PER_HOUR;
         const durationMins = Math.max(1, Math.round((end.getTime() - start.getTime()) / MILLISECONDS_PER_MINUTE));
         if (startMins < 0 || startMins >= totalMinutes) {
@@ -277,7 +285,7 @@ export function TodayAgendaView({
         const heightPx = getTodayAgendaTimelineBlockHeightPx(durationMins);
         const naturalTopPx = Math.round(startMins * pxPerMinute);
         const actualEndMins = startMins + durationMins;
-        blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins, laneIndex: 0 });
+        blocks.push({ item, naturalTopPx, topPx: naturalTopPx, heightPx, actualStartMins: startMins, actualDurationMins: durationMins, actualEndMins });
       }
     }
     blocks.sort((a, b) => {
@@ -286,23 +294,25 @@ export function TodayAgendaView({
       const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
       return keyA.localeCompare(keyB);
     });
-    // Place blocks at their scheduled time; overlapping blocks use side-by-side lanes.
-    const laneBottomPx: number[] = [];
+    // Single column: stack same-time or overlapping items below earlier ones (never side-by-side).
+    const placed: Block[] = [];
     for (const block of blocks) {
-      let laneIndex = laneBottomPx.findIndex((bottomPx) => bottomPx + blockGapPx <= block.naturalTopPx);
-      if (laneIndex === -1) {
-        laneIndex = laneBottomPx.length;
-        laneBottomPx.push(0);
+      let topPx = block.naturalTopPx;
+      for (const prev of placed) {
+        const sameStart = block.actualStartMins === prev.actualStartMins;
+        const timeOverlap =
+          block.actualStartMins < prev.actualEndMins && block.actualEndMins > prev.actualStartMins;
+        if (!sameStart && !timeOverlap) continue;
+        const prevBottom = prev.topPx + prev.heightPx + blockGapPx;
+        if (topPx < prevBottom) topPx = prevBottom;
       }
-      block.topPx = block.naturalTopPx;
-      block.laneIndex = laneIndex;
-      laneBottomPx[laneIndex] = block.naturalTopPx + block.heightPx;
+      block.topPx = topPx;
+      placed.push(block);
     }
-    const laneCount = Math.max(1, laneBottomPx.length);
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
     const maxBlockBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.topPx + b.heightPx)) : 0;
     const timelineLayoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
-    return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx, laneCount };
+    return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx };
   }, [combinedItems, getTaskMinutes]);
 
   /** Base timeline height (px) for 7 AM–12 AM scale. */
@@ -344,7 +354,8 @@ export function TodayAgendaView({
     // Find the first uncompleted task that starts at or after current time
     for (const task of uncompletedTasks) {
       if (!task.scheduledDate) continue;
-      const taskTime = new Date(task.scheduledDate).getTime();
+      const taskTime = parseChronologicalTimeSource(task.scheduledDate).getTime();
+      if (isNaN(taskTime)) continue;
       if (taskTime >= currentTimeMs) {
         return task.id;
       }
@@ -399,7 +410,7 @@ export function TodayAgendaView({
   const getTaskTime = (task: Task) => {
     if (!task.scheduledDate) return TODAY_AGENDA_TEXT.noTimeSlot;
     try {
-      const date = new Date(task.scheduledDate);
+      const date = parseChronologicalTimeSource(task.scheduledDate);
       if (isNaN(date.getTime())) return TODAY_AGENDA_TEXT.noTimeSlot;
       return date.toLocaleTimeString("en-US", {
         hour: "numeric",
@@ -488,7 +499,7 @@ export function TodayAgendaView({
               })}
             </div>
             {/* Right: duration-sized task/event blocks positioned on the time scale */}
-            <div className="flex-1 min-w-0 relative" style={{ marginLeft: columnGapPx, paddingLeft: blocksColumnPaddingLeftPx, paddingRight: cardPaddingRightPx, height: timelineLayoutHeightPx, overflowX: laneCount > 1 ? 'auto' : 'visible', overflowY: 'hidden', ...(laneCount > 1 ? { minWidth: laneCount * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx) - TODAY_AGENDA_TIMELINE.laneGapPx } : {}) }}>
+            <div className="flex-1 min-w-0 relative" style={{ marginLeft: columnGapPx, paddingLeft: blocksColumnPaddingLeftPx, paddingRight: cardPaddingRightPx, height: timelineLayoutHeightPx, overflowY: 'hidden' }}>
               {currentTimeTopPx != null && (
                 <div
                   ref={currentTimeIndicatorRef}
@@ -497,17 +508,16 @@ export function TodayAgendaView({
                   aria-hidden
                 />
               )}
-              {timelineBlocks.map(({ item, topPx, heightPx, laneIndex, actualDurationMins }) => {
+              {timelineBlocks.map(({ item, topPx, heightPx, actualDurationMins }) => {
                 const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
                 const key = item.type === 'task' && item.task ? `t-${item.task.id}` : item.type === 'event' && item.event ? `e-${item.event.id}` : `b-${topPx}`;
                 const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
                 return (
                   <div
                     key={key}
-                    className="absolute overflow-hidden rounded-lg"
+                    className="absolute overflow-hidden rounded-lg left-0 right-0"
                     style={{
                       top: topPx,
-                      ...(laneCount > 1 ? { left: laneIndex * (TODAY_AGENDA_TIMELINE.laneMinWidthPx + TODAY_AGENDA_TIMELINE.laneGapPx), width: TODAY_AGENDA_TIMELINE.laneMinWidthPx } : { left: 0, right: 0 }),
                       height: heightPx,
                       minHeight: TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
                       zIndex: Z_INDEX.TIMELINE_BLOCK,
@@ -601,7 +611,7 @@ export function TodayAgendaView({
         </div>
       );
     },
-    [timelineBlocks, unscheduledItems, timelineHeightPx, timelineLayoutHeightPx, currentTimeTopPx, nextUpTaskId, todayString, tasks, laneCount]
+    [timelineBlocks, unscheduledItems, timelineHeightPx, timelineLayoutHeightPx, currentTimeTopPx, nextUpTaskId, todayString, tasks]
   );
 
   return (

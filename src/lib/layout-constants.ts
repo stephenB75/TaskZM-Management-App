@@ -319,9 +319,9 @@ export const TODAY_AGENDA_TIMELINE = {
   currentTimeLineHeightPx: 6,
   /** Padding left (px) for the timeline blocks column (matches pl-2). */
   blocksColumnPaddingLeftPx: 8,
-  /** Gap (px) between horizontal lanes when overlapping blocks are shown side-by-side. */
+  /** @deprecated Same-time items stack vertically; lanes are no longer used in Today Agenda. */
   laneGapPx: 8,
-  /** Min width (px) per lane when overlapping blocks share the same time (so time axis stays aligned). */
+  /** @deprecated Same-time items stack vertically; lanes are no longer used in Today Agenda. */
   laneMinWidthPx: 200,
   /** Duration (minutes) below which timeline items use compact single-row layout so info is not clipped. */
   shortItemThresholdMinutes: 20,
