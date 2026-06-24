@@ -64,6 +64,9 @@ export const CALENDAR_SETTINGS_UI = {
   sectionSubtitle: 'Sync your tasks with external calendar services',
   /** Shown when Google or Outlook is connected (read-only: we only display calendar, we do not write). */
   viewOnlyMessage: 'Your calendar is shown in the app for scheduling. We only read your events; we don\'t add or change them.',
+  /** Imported event times follow device timezone, not the task dialog timezone picker. */
+  deviceTimezoneNote:
+    'Imported calendar event times use your device timezone ({timezone}), not the timezone selected when creating tasks.',
   syncButtonLabel: 'Sync All Tasks',
   syncButtonSyncing: 'Syncing...',
   lastSyncedLabel: 'Last synced:',

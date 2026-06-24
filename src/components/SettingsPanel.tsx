@@ -203,6 +203,7 @@ import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/not
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { CALENDAR_PROVIDERS, CALENDAR_SETTINGS_LABELS, CALENDAR_SETTINGS_UI } from '../lib/calendar-integration-constants';
+import { getBrowserTimezone } from '../lib/timing-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 import { COLOR_PRIMARY, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
 import { API_BASE, getAIConfigStatus } from '../lib/api';
@@ -1085,6 +1086,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       ) : (
                         <SettingsGroup>
                           <SettingsLead>{CALENDAR_SETTINGS_UI.sectionSubtitle}</SettingsLead>
+                          <p className="text-xs text-muted-foreground">
+                            {CALENDAR_SETTINGS_UI.deviceTimezoneNote.replace('{timezone}', getBrowserTimezone())}
+                          </p>
                           <SettingsControlGroup>
                             <SettingsToggleRow
                               id={`${CALENDAR_PROVIDERS.google}-cal`}

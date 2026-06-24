@@ -23,6 +23,18 @@ const END_OF_DAY_HOUR = 23; // Hour for end of day normalization
 const END_OF_DAY_MINUTE = 59; // Minute for end of day normalization
 const END_OF_DAY_SECOND = 59; // Second for end of day normalization
 const END_OF_DAY_MILLISECOND = 999; // Millisecond for end of day normalization
+const DEFAULT_CALENDAR_TIMEZONE = 'America/New_York';
+
+function resolveUserTimezone(userTimezone?: string): string {
+  const candidate = (userTimezone || '').trim();
+  if (!candidate) return DEFAULT_CALENDAR_TIMEZONE;
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: candidate });
+    return candidate;
+  } catch {
+    return DEFAULT_CALENDAR_TIMEZONE;
+  }
+}
 
 // Calendar provider types
 export type CalendarProvider = 'google' | 'outlook' | 'apple';
@@ -978,8 +990,11 @@ export async function getCalendarEvents(
   userId: string,
   provider: CalendarProvider,
   startDate: string,
-  endDate: string
+  endDate: string,
+  userTimezone?: string
 ): Promise<CalendarEvent[]> {
+  const resolvedTimezone = resolveUserTimezone(userTimezone);
+
   // For Apple, always use database (events are synced via CalDAV)
   if (provider === 'apple') {
     return await getAppleEventsFromDatabase(userId, startDate, endDate);
@@ -995,7 +1010,7 @@ export async function getCalendarEvents(
       const tokens = await getCalendarTokens(userId, provider);
       if (tokens) {
         const refreshedTokens = await refreshAccessToken(userId, provider, tokens);
-        events = await getGoogleCalendarEvents(refreshedTokens, startDate, endDate);
+        events = await getGoogleCalendarEvents(refreshedTokens, startDate, endDate, resolvedTimezone);
       }
     }
   } else if (provider === 'outlook') {
@@ -1005,7 +1020,7 @@ export async function getCalendarEvents(
       const tokens = await getCalendarTokens(userId, provider);
       if (tokens) {
         const refreshedTokens = await refreshAccessToken(userId, provider, tokens);
-        events = await getOutlookCalendarEvents(refreshedTokens, startDate, endDate);
+        events = await getOutlookCalendarEvents(refreshedTokens, startDate, endDate, resolvedTimezone);
       }
     }
   }
@@ -1555,14 +1570,17 @@ function googleColorIdToHex(colorId: string | number | undefined): string | unde
 async function getGoogleCalendarEvents(
   tokens: CalendarTokens,
   startDate: string,
-  endDate: string
+  endDate: string,
+  userTimezone: string = DEFAULT_CALENDAR_TIMEZONE
 ): Promise<CalendarEvent[]> {
+  const resolvedTimezone = resolveUserTimezone(userTimezone);
   // Fetch base recurring events (not expanded)
   const baseUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
   baseUrl.searchParams.set('timeMin', startDate);
   baseUrl.searchParams.set('timeMax', endDate);
   baseUrl.searchParams.set('singleEvents', 'false'); // Get base recurring events
   baseUrl.searchParams.set('orderBy', 'startTime');
+  baseUrl.searchParams.set('timeZone', resolvedTimezone);
 
   const response = await fetch(baseUrl.toString(), {
     headers: {
@@ -1696,8 +1714,10 @@ function convertOutlookRecurrenceToRRULE(recurrence: any): string | undefined {
 async function getOutlookCalendarEvents(
   tokens: CalendarTokens,
   startDate: string,
-  endDate: string
+  endDate: string,
+  userTimezone: string = DEFAULT_CALENDAR_TIMEZONE
 ): Promise<CalendarEvent[]> {
+  const resolvedTimezone = resolveUserTimezone(userTimezone);
   // Fetch base recurring events (not expanded instances)
   // Use /events endpoint with $filter to get series masters
   const url = new URL('https://graph.microsoft.com/v1.0/me/calendar/events');
@@ -1708,7 +1728,7 @@ async function getOutlookCalendarEvents(
   const response = await fetch(url.toString(), {
     headers: {
       'Authorization': `Bearer ${tokens.accessToken}`,
-      'Prefer': 'outlook.timezone="UTC"',
+      'Prefer': `outlook.timezone="${resolvedTimezone}"`,
     },
   });
 

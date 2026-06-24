@@ -4,7 +4,7 @@ import { useCalendar } from '../contexts/CalendarContext';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
-import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay } from '../lib/utils';
 
 export interface CalendarEvent {
@@ -46,9 +46,10 @@ const inFlightRequests = getInFlightRequests();
 function getCacheKey(
   startDate: string,
   endDate: string,
-  providers: Array<'google' | 'apple' | 'outlook'>
+  providers: Array<'google' | 'apple' | 'outlook'>,
+  userTimezone: string
 ): string {
-  return `${startDate}_${endDate}_${providers.join(',')}`;
+  return `${startDate}_${endDate}_${providers.join(',')}_${userTimezone}`;
 }
 
 /**
@@ -65,11 +66,17 @@ async function fetchProviderEvents(
   provider: 'google' | 'apple' | 'outlook',
   startDate: string,
   endDate: string,
-  accessToken: string
+  accessToken: string,
+  userTimezone: string
 ): Promise<CalendarEvent[]> {
   try {
+    const params = new URLSearchParams({
+      startDate,
+      endDate,
+      userTimezone,
+    });
     const resp = await fetch(
-      `${CALENDAR_API_BASE}/calendar/events/${provider}?startDate=${startDate}&endDate=${endDate}`,
+      `${CALENDAR_API_BASE}/calendar/events/${provider}?${params.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -122,11 +129,12 @@ async function fetchAllEvents(
   providers: Array<'google' | 'apple' | 'outlook'>,
   startDate: string,
   endDate: string,
-  accessToken: string
+  accessToken: string,
+  userTimezone: string
 ): Promise<CalendarEvent[]> {
   // Fetch all providers in parallel
   const promises = providers.map(provider =>
-    fetchProviderEvents(provider, startDate, endDate, accessToken)
+    fetchProviderEvents(provider, startDate, endDate, accessToken, userTimezone)
   );
 
   const results = await Promise.all(promises);
@@ -183,9 +191,11 @@ export function useCalendarEvents(
     return active;
   }, [calendarStatus.google, calendarStatus.apple, calendarStatus.outlook]);
 
+  const userTimezone = useMemo(() => getBrowserTimezone(), []);
+
   const cacheKey = useMemo(
-    () => getCacheKey(startIso, endIso, providers),
-    [startIso, endIso, providers]
+    () => getCacheKey(startIso, endIso, providers, userTimezone),
+    [startIso, endIso, providers, userTimezone]
   );
 
   // Fetch events with caching and deduplication
@@ -227,7 +237,7 @@ export function useCalendarEvents(
     setError(null);
 
     // Create and store the promise
-    const fetchPromise = fetchAllEvents(providers, startIso, endIso, accessToken)
+    const fetchPromise = fetchAllEvents(providers, startIso, endIso, accessToken, userTimezone)
       .then((fetchedEvents) => {
         // Update cache
         globalCache[cacheKey] = {
@@ -263,7 +273,7 @@ export function useCalendarEvents(
     inFlightRequests.set(inFlightKey, fetchPromise);
 
     return fetchPromise;
-  }, [enabled, accessToken, providers, startIso, endIso, cacheKey]);
+  }, [enabled, accessToken, providers, startIso, endIso, cacheKey, userTimezone]);
 
   // When providers goes from empty to non-empty, clear cache and trigger an immediate fetch so events show without waiting for debounce
   useEffect(() => {

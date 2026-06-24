@@ -9,7 +9,7 @@ import { findNextAvailableSlot } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
-import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import {
@@ -92,8 +92,13 @@ export function useAIScheduler() {
     
     for (const provider of providers) {
       try {
+        const params = new URLSearchParams({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          userTimezone: getBrowserTimezone(),
+        });
         const response = await fetch(
-          `${CALENDAR_API_BASE}/calendar/events/${provider}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
+          `${CALENDAR_API_BASE}/calendar/events/${provider}?${params.toString()}`,
           {
             headers: {
               'Authorization': `Bearer ${accessToken}`,

@@ -16,13 +16,15 @@ export function formatDate(dateStr: string | null): string {
 }
 
 export function formatTime(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = parseChronologicalTimeSource(dateStr);
+  if (isNaN(date.getTime())) return '';
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 export function formatTimeAMPM(dateStr: string | null): string | null {
   if (!dateStr) return null;
-  const date = new Date(dateStr);
+  const date = parseChronologicalTimeSource(dateStr);
+  if (isNaN(date.getTime())) return null;
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 

@@ -3810,10 +3810,11 @@ app.get("/taskzm-database-function/calendar/events/:provider", async (c) => {
     const provider = c.req.param('provider') as calendarSync.CalendarProvider;
     const startDate = c.req.query('startDate') || new Date().toISOString();
     const endDate = c.req.query('endDate') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const userTimezone = c.req.query('userTimezone') || undefined;
 
     let events: any[] = [];
     try {
-      events = await calendarSync.getCalendarEvents(userId, provider, startDate, endDate);
+      events = await calendarSync.getCalendarEvents(userId, provider, startDate, endDate, userTimezone);
     } catch (fetchError) {
       console.error(`Error fetching ${provider} calendar events (returning empty):`, fetchError);
       // Return 200 with empty events so client doesn't treat as fatal; other providers can still show

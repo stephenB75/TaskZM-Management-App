@@ -6,6 +6,16 @@
 /** Fallback IANA timezone when browser timezone cannot be resolved (e.g. calendar sync, server requests) */
 export const DEFAULT_FALLBACK_TIMEZONE = 'America/New_York';
 
+/** Browser IANA timezone for calendar display and live API reads (falls back when unavailable). */
+export function getBrowserTimezone(): string {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz || DEFAULT_FALLBACK_TIMEZONE;
+  } catch {
+    return DEFAULT_FALLBACK_TIMEZONE;
+  }
+}
+
 export const TIMING_CONSTANTS = {
   // Intervals (in milliseconds)
   intervals: {
