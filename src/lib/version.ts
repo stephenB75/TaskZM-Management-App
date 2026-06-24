@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.22';
-export const VERSION_NAME = 'AI Description User Input Coordination';
-export const VERSION_DATE = 'February 20, 2026';
-export const BUILD_NUMBER = '20260220-2';
+export const APP_VERSION = '1.0.25';
+export const VERSION_NAME = 'Today Agenda Timeline Polish';
+export const VERSION_DATE = 'June 24, 2026';
+export const BUILD_NUMBER = '20260624-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,19 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.25',
+    date: 'June 24, 2026',
+    name: 'Today Agenda Timeline Polish',
+    changes: [
+      'Today Agenda: hybrid timeline (compact list when sparse, duration blocks when dense/overlapping)',
+      'Today Agenda: single-layer timeline cards (no stacked shadow); shared AgendaListCard for tasks and events',
+      'Today Agenda: NEXT UP badge on the next scheduled incomplete task',
+      'Today Agenda: time labels and spine dots aligned to card tops; compact-list label overlap fix',
+      'Kanban: wider week columns, increased card spacing, chronological task and event ordering',
+      'PWA: service worker registers in production only; dev clears stale SW/runtime cache on load',
+    ],
+  },
   {
     version: '1.0.22',
     date: 'February 20, 2026',
