@@ -576,32 +576,19 @@ export function TodayAgendaView({
         const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
         const isNextUpTask =
           item.type === 'task' && item.task && timelineTaskMatchesNextUp(item.task, nextUpTaskId);
-        const cardAreaHeightPx = Math.max(1, heightPx);
+        const cardAreaHeightPx = Math.max(1, displayHeightPx - cardTopInsetPx);
 
         return (
           <div
             key={key}
             className="absolute left-0 right-0 flex flex-col"
             style={{
-              top: displayTopPx,
-              height: displayHeightPx,
+              top: displayTopPx + cardTopInsetPx,
+              height: cardAreaHeightPx,
               minHeight: isCompactList ? undefined : TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
               zIndex: isNextUpTask ? Z_INDEX.TIMELINE_BLOCK + 1 : Z_INDEX.TIMELINE_BLOCK,
             }}
           >
-            {isNextUpTask && (
-              <div
-                className="flex-shrink-0 flex items-center"
-                style={{
-                  height: cardTopInsetPx,
-                  paddingLeft: TODAY_AGENDA_TIMELINE.blocksColumnPaddingLeftPx,
-                }}
-              >
-                <span className="text-xs font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block">
-                  {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
-                </span>
-              </div>
-            )}
             {item.type === 'task' && item.task ? (
               <div data-task-id={item.task.id} className="relative w-full flex-1 min-h-0" style={{ height: cardAreaHeightPx }}>
                 <DraggableTaskCard
@@ -638,7 +625,11 @@ export function TodayAgendaView({
       };
 
       return (
-        <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
+        <div
+          className="flex flex-col w-full relative"
+          style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
+          data-agenda-timeline="v3"
+        >
           <div
             className="flex w-full items-stretch"
             style={{ minHeight: displayTimelineLayoutHeightPx, height: displayTimelineLayoutHeightPx }}
@@ -673,6 +664,10 @@ export function TodayAgendaView({
                       : block.item.type === 'event' && block.item.event
                         ? block.item.event.id
                         : String(block.displayTopPx);
+                  const isNextUpBlock =
+                    block.item.type === 'task' &&
+                    block.item.task &&
+                    timelineTaskMatchesNextUp(block.item.task, nextUpTaskId);
                   const cardTopPx = getBlockCardTopPx(block);
                   let labelTop = cardTopPx;
                   if (labelTop < prevLabelBottom + timeLabelMinSeparationPx - timeLabelLineHeightPx) {
@@ -680,22 +675,36 @@ export function TodayAgendaView({
                   }
                   prevLabelBottom = labelTop + timeLabelLineHeightPx;
                   return (
-                    <div
-                      key={`time-${blockKey}`}
-                      className="absolute left-0 pr-2 text-right"
-                      style={{
-                        top: labelTop,
-                        width: `calc(100% - ${spineWidthPx + 4}px)`,
-                        height: timeLabelLineHeightPx,
-                      }}
-                    >
-                      <span
-                        className="text-xs text-muted-foreground whitespace-nowrap tabular-nums block"
-                        style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
+                    <React.Fragment key={`rail-${blockKey}`}>
+                      {isNextUpBlock && (
+                        <div
+                          className="absolute left-0 pr-1 text-right"
+                          style={{
+                            top: block.displayTopPx,
+                            width: `calc(100% - ${spineWidthPx + 4}px)`,
+                          }}
+                        >
+                          <span className="text-[10px] font-bold tracking-wide px-1 py-0.5 rounded bg-primary text-primary-foreground inline-block leading-none">
+                            {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        className="absolute left-0 pr-2 text-right"
+                        style={{
+                          top: labelTop,
+                          width: `calc(100% - ${spineWidthPx + 4}px)`,
+                          height: timeLabelLineHeightPx,
+                        }}
                       >
-                        {formatTodayAgendaMinutesLabel(block.actualStartMins)}
-                      </span>
-                    </div>
+                        <span
+                          className="text-xs text-muted-foreground whitespace-nowrap tabular-nums block"
+                          style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
+                        >
+                          {formatTodayAgendaMinutesLabel(block.actualStartMins)}
+                        </span>
+                      </div>
+                    </React.Fragment>
                   );
                 });
               })()}

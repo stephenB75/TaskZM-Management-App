@@ -465,7 +465,8 @@ const isNative = Capacitor.isNativePlatform();
 // PWA Service Worker Registration
 // Background updates: Checks for updates periodically without disrupting sessions
 // Shows notification when updates are available, letting users refresh when ready
-if ('serviceWorker' in navigator) {
+// Only register in production — dev HMR must not serve stale cached chunks from RUNTIME_CACHE
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', async () => {
     let registration: ServiceWorkerRegistration | null = null;
     try {
