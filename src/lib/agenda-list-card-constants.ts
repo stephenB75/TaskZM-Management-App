@@ -9,6 +9,10 @@ export const AGENDA_LIST_CARD = {
   borderRadiusPx: 16,
   paddingPx: 14,
   shadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)',
+  /** Lighter single-layer shadow for Today Agenda timeline cards (avoids stacked-card look). */
+  timelineShadow: '0 1px 2px rgba(0,0,0,0.05)',
+  timelineBorderLight: 'rgba(0,0,0,0.07)',
+  timelineBorderDark: 'rgba(255,255,255,0.08)',
   dotSizePx: 8,
   accentLineWidthPx: 2,
   accentLineMinHeightPx: 48,

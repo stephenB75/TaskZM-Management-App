@@ -381,6 +381,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         hideAccentColumn
         leftAccentColor={accentDotColor}
         leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
+        surface="timeline"
         style={{ height: '100%', minHeight: '100%', maxHeight: '100%' }}
       />
     );

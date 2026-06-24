@@ -27,6 +27,7 @@ import {
   resolveTodayAgendaLayoutMode,
   getTodayAgendaCompactRowHeightPx,
   formatTodayAgendaMinutesLabel,
+  getTodayAgendaNextUpInsetPx,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE, getTodayAgendaTimelineBlockHeightPx } from "../lib/layout-constants";
@@ -360,11 +361,8 @@ export function TodayAgendaView({
 
   // Single column; timeline extends vertically to fit stacked blocks. When scheduling a task, use findNextAvailableSlot (e.g. in DragDropContext or TaskDialog) so the assigned time does not overlap.
 
-  // Find the next uncompleted task at or after current time (next up)
+  // Find the next uncompleted scheduled task on the timeline (next up)
   const nextUpTaskId = useMemo(() => {
-    const uncompletedTasks = todayTasks.filter((task) => task.status !== 'done');
-    if (uncompletedTasks.length === 0) return null;
-
     const nowOnToday = new Date(today);
     nowOnToday.setHours(
       currentTime.getHours(),
@@ -374,19 +372,68 @@ export function TodayAgendaView({
     );
     const nowMs = nowOnToday.getTime();
 
-    const withSortTime = uncompletedTasks
-      .map((task) => ({
-        task,
-        sortTime: getTaskSortTimeOnDay(today, task),
+    const timelineTasks = timelineBlocks
+      .filter((block) => block.item.type === 'task' && block.item.task && block.item.task.status !== 'done')
+      .map((block) => ({
+        task: block.item.task!,
+        sortTime: getTaskSortTimeOnDay(today, block.item.task!),
       }))
       .filter((entry) => entry.sortTime !== Number.MAX_SAFE_INTEGER)
       .sort((a, b) => a.sortTime - b.sortTime);
 
-    const upcoming = withSortTime.find((entry) => entry.sortTime >= nowMs);
-    if (upcoming) return upcoming.task.id;
+    if (timelineTasks.length === 0) return null;
 
-    return withSortTime[0]?.task.id ?? uncompletedTasks[0]?.id ?? null;
-  }, [todayTasks, today, currentTime]);
+    const upcoming = timelineTasks.find((entry) => entry.sortTime >= nowMs);
+    return upcoming?.task.id ?? timelineTasks[0]?.task.id ?? null;
+  }, [timelineBlocks, today, currentTime]);
+
+  const timelineTaskMatchesNextUp = useCallback(
+    (task: Task | undefined, targetId: string | null): boolean => {
+      if (!task?.id || !targetId) return false;
+      if (task.id === targetId) return true;
+      const baseTarget = targetId.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)[0];
+      const baseTask = task.id.split(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)[0];
+      return baseTask === baseTarget;
+    },
+    [],
+  );
+
+  /** Timeline blocks with Next Up inset applied for layout/render (avoids overlap in compact list). */
+  const displayTimelineBlocks = useMemo(() => {
+    const nextUpInsetPx = getTodayAgendaNextUpInsetPx();
+    const isNextUpBlock = (item: CombinedItem) =>
+      item.type === 'task' && item.task && timelineTaskMatchesNextUp(item.task, nextUpTaskId);
+
+    if (layoutMode === 'compactList') {
+      const listGapPx = TODAY_AGENDA_TIMELINE.compactListItemGapPx;
+      let y = 0;
+      return timelineBlocks.map((block) => {
+        const cardTopInsetPx = isNextUpBlock(block.item) ? nextUpInsetPx : 0;
+        const displayHeightPx = block.heightPx + cardTopInsetPx;
+        const displayTopPx = y;
+        y += displayHeightPx + listGapPx;
+        return { ...block, displayTopPx, displayHeightPx, cardTopInsetPx };
+      });
+    }
+
+    return timelineBlocks.map((block) => {
+      const cardTopInsetPx = isNextUpBlock(block.item) ? nextUpInsetPx : 0;
+      return {
+        ...block,
+        displayTopPx: block.topPx,
+        displayHeightPx: block.heightPx + cardTopInsetPx,
+        cardTopInsetPx,
+      };
+    });
+  }, [timelineBlocks, layoutMode, nextUpTaskId, timelineTaskMatchesNextUp]);
+
+  const displayTimelineLayoutHeightPx = useMemo(() => {
+    if (displayTimelineBlocks.length === 0) return timelineLayoutHeightPx;
+    const maxBottom = Math.max(
+      ...displayTimelineBlocks.map((block) => block.displayTopPx + block.displayHeightPx),
+    );
+    return Math.max(timelineLayoutHeightPx, maxBottom + TODAY_AGENDA_TIMELINE.blockGapPx);
+  }, [displayTimelineBlocks, timelineLayoutHeightPx]);
 
   // Gaps between blocks; connector line from timeline to block when stacked so time stays aligned. Task times are never changed by this view or by drop-for-overlap.
 
@@ -498,6 +545,9 @@ export function TodayAgendaView({
       const isCompactList = layoutMode === 'compactList';
       const spineColor = isDark ? 'rgba(148,163,184,0.45)' : 'rgba(148,163,184,0.35)';
 
+      const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
+        block.displayTopPx + block.cardTopInsetPx;
+
       const hourlyLabels: { minutesFromStart: number; label: string }[] = [];
       if (!isCompactList) {
         for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
@@ -514,39 +564,54 @@ export function TodayAgendaView({
       }
 
       const renderTimelineBlock = (
-        block: (typeof timelineBlocks)[number],
+        block: (typeof displayTimelineBlocks)[number],
       ) => {
-        const { item, topPx, heightPx, actualDurationMins } = block;
+        const { item, displayTopPx, displayHeightPx, cardTopInsetPx, heightPx, actualDurationMins } = block;
         const key =
           item.type === 'task' && item.task
             ? `t-${item.task.id}`
             : item.type === 'event' && item.event
               ? `e-${item.event.id}`
-              : `b-${topPx}`;
+              : `b-${displayTopPx}`;
         const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
-        const isNextUpTask = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+        const isNextUpTask =
+          item.type === 'task' && item.task && timelineTaskMatchesNextUp(item.task, nextUpTaskId);
+        const cardAreaHeightPx = Math.max(1, heightPx);
 
         return (
           <div
             key={key}
             className="absolute left-0 right-0 flex flex-col"
             style={{
-              top: topPx,
-              height: heightPx,
+              top: displayTopPx,
+              height: displayHeightPx,
               minHeight: isCompactList ? undefined : TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
               zIndex: isNextUpTask ? Z_INDEX.TIMELINE_BLOCK + 1 : Z_INDEX.TIMELINE_BLOCK,
             }}
           >
+            {isNextUpTask && (
+              <div
+                className="flex-shrink-0 flex items-center"
+                style={{
+                  height: cardTopInsetPx,
+                  paddingLeft: TODAY_AGENDA_TIMELINE.blocksColumnPaddingLeftPx,
+                }}
+              >
+                <span className="text-xs font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block">
+                  {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
+                </span>
+              </div>
+            )}
             {item.type === 'task' && item.task ? (
-              <div data-task-id={item.task.id} className="relative w-full h-full min-h-0">
+              <div data-task-id={item.task.id} className="relative w-full flex-1 min-h-0" style={{ height: cardAreaHeightPx }}>
                 <DraggableTaskCard
                   task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                   onClick={() => item.task && handleTaskClick(item.task)}
                   droppableId="today-agenda"
                   occurrenceDate={todayString}
-                  isNextUp={isNextUpTask}
+                  isNextUp={false}
                   onComplete={handleTaskComplete}
-                  timelineBlockHeightPx={heightPx}
+                  timelineBlockHeightPx={cardAreaHeightPx}
                   compactTimeline={compactTimeline}
                   hideTimelineTime
                   hideTimelineAccent
@@ -554,7 +619,7 @@ export function TodayAgendaView({
                 />
               </div>
             ) : item.type === 'event' && item.event ? (
-              <div data-event-id={item.event.id} className="relative w-full h-full min-h-0">
+              <div data-event-id={item.event.id} className="relative w-full flex-1 min-h-0" style={{ height: cardAreaHeightPx }}>
                 <CalendarEventCard
                   title={item.event.title}
                   start={item.event.start}
@@ -576,14 +641,14 @@ export function TodayAgendaView({
         <div className="flex flex-col w-full relative" style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}>
           <div
             className="flex w-full items-stretch"
-            style={{ minHeight: timelineLayoutHeightPx, height: timelineLayoutHeightPx }}
+            style={{ minHeight: displayTimelineLayoutHeightPx, height: displayTimelineLayoutHeightPx }}
           >
             {/* Left rail: spine, per-item or hourly labels, start dots */}
             <div
               className="flex-shrink-0 relative"
               style={{
                 width: columnWidth,
-                height: timelineLayoutHeightPx,
+                height: displayTimelineLayoutHeightPx,
                 zIndex: Z_INDEX.TIMELINE_LABELS_AND_NEXT_UP,
               }}
             >
@@ -601,14 +666,15 @@ export function TodayAgendaView({
 
               {(() => {
                 let prevLabelBottom = -Infinity;
-                return timelineBlocks.map((block) => {
+                return displayTimelineBlocks.map((block) => {
                   const blockKey =
                     block.item.type === 'task' && block.item.task
                       ? block.item.task.id
                       : block.item.type === 'event' && block.item.event
                         ? block.item.event.id
-                        : String(block.topPx);
-                  let labelTop = block.topPx;
+                        : String(block.displayTopPx);
+                  const cardTopPx = getBlockCardTopPx(block);
+                  let labelTop = cardTopPx;
                   if (labelTop < prevLabelBottom + timeLabelMinSeparationPx - timeLabelLineHeightPx) {
                     labelTop = prevLabelBottom + timeLabelMinSeparationPx;
                   }
@@ -634,16 +700,17 @@ export function TodayAgendaView({
                 });
               })()}
 
-              {/* Start dots on spine — one per item, aligned with time label */}
-              {timelineBlocks.map((block) => {
+              {/* Start dots on spine — aligned with card top edge */}
+              {displayTimelineBlocks.map((block) => {
                 const dotColor = getTimelineBlockAccentColor(block.item);
                 const dotKey =
                   block.item.type === 'task' && block.item.task
                     ? `dot-t-${block.item.task.id}`
                     : block.item.type === 'event' && block.item.event
                       ? `dot-e-${block.item.event.id}`
-                      : `dot-${block.topPx}`;
-                const dotTop = block.topPx + (timeLabelLineHeightPx - spineDotSizePx) / 2;
+                      : `dot-${block.displayTopPx}`;
+                const cardTopPx = getBlockCardTopPx(block);
+                const dotTop = cardTopPx + (timeLabelLineHeightPx - spineDotSizePx) / 2;
                 return (
                   <div
                     key={dotKey}
@@ -684,8 +751,8 @@ export function TodayAgendaView({
                 marginLeft: columnGapPx,
                 paddingLeft: blocksColumnPaddingLeftPx,
                 paddingRight: cardPaddingRightPx,
-                height: timelineLayoutHeightPx,
-                overflowY: 'hidden',
+                height: displayTimelineLayoutHeightPx,
+                overflow: 'visible',
               }}
             >
               {/* Hour grid (duration mode only) */}
@@ -719,7 +786,7 @@ export function TodayAgendaView({
                 />
               )}
 
-              {timelineBlocks.map(renderTimelineBlock)}
+              {displayTimelineBlocks.map(renderTimelineBlock)}
             </div>
           </div>
 
@@ -737,7 +804,10 @@ export function TodayAgendaView({
                     : item.type === 'event' && item.event
                       ? getEventTime(item.event.start)
                       : '';
-                const isNextUp = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
+                const isNextUp =
+                  item.type === 'task' &&
+                  item.task &&
+                  timelineTaskMatchesNextUp(item.task, nextUpTaskId);
                 const key =
                   item.type === 'task' && item.task
                     ? `u-t-${item.task.id}`
@@ -798,7 +868,8 @@ export function TodayAgendaView({
       );
     },
     [
-      timelineBlocks,
+      displayTimelineBlocks,
+      displayTimelineLayoutHeightPx,
       unscheduledItems,
       timelineLayoutHeightPx,
       layoutMode,
@@ -808,6 +879,7 @@ export function TodayAgendaView({
       tasks,
       isDark,
       getTimelineBlockAccentColor,
+      timelineTaskMatchesNextUp,
     ],
   );
 

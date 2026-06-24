@@ -67,6 +67,12 @@ export function getTodayAgendaCompactRowHeightPx(durationMinutes: number, _isEve
   return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
 }
 
+/** Total vertical space (px) for the Next Up badge row above a timeline card. */
+export function getTodayAgendaNextUpInsetPx(): number {
+  const { nextUpBadgeHeightPx, nextUpBadgeGapAboveBlockPx } = TODAY_AGENDA_TIMELINE;
+  return nextUpBadgeHeightPx + nextUpBadgeGapAboveBlockPx * 2;
+}
+
 /** Format minutes-from-range-start as "7:00 AM" label. */
 export function formatTodayAgendaMinutesLabel(minutesFromStart: number): string {
   const { startHour, endHour } = TODAY_AGENDA_TIMELINE;

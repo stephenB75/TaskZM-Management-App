@@ -38,6 +38,8 @@ export interface AgendaListCardProps {
   leftAccentWidthPx?: number;
   /** When true, renders without outer shadow/radius (for use inside a parent card shell). */
   embedded?: boolean;
+  /** Timeline cards use a lighter single-layer surface (no stacked-card look). */
+  surface?: 'default' | 'timeline';
   /** When true, title renders with line-through (completed tasks). */
   titleDone?: boolean;
   className?: string;
@@ -66,6 +68,7 @@ export function AgendaListCard({
   leftAccentWidthPx,
   showNextUpBadge = false,
   embedded = false,
+  surface = 'default',
   titleDone = false,
   className,
   style,
@@ -110,25 +113,38 @@ export function AgendaListCard({
 
   const hasTime = !hideTime && Boolean(allDayLabel || timePart);
   const showFooter = !micro;
+  const isTimelineSurface = surface === 'timeline' && !embedded;
+  const cardBackground = embedded
+    ? 'transparent'
+    : isDark
+      ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark
+      : AGENDA_LIST_CARD_COLORS.cardBackground;
+  const cardShadow = embedded
+    ? 'none'
+    : isTimelineSurface
+      ? AGENDA_LIST_CARD.timelineShadow
+      : AGENDA_LIST_CARD.shadow;
 
   return (
     <div
       className={cn(
-        'flex flex-col w-full h-full min-w-0 box-border',
-        !embedded && (isDark ? 'dark:bg-[#3E3E52]' : 'bg-white'),
+        'flex flex-col w-full h-full min-w-0 box-border overflow-hidden',
         className,
       )}
       style={{
         borderRadius: embedded ? 0 : AGENDA_LIST_CARD.borderRadiusPx,
         padding,
-        boxShadow: embedded ? 'none' : AGENDA_LIST_CARD.shadow,
-        backgroundColor: embedded
-          ? 'transparent'
-          : isDark
-            ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark
-            : AGENDA_LIST_CARD_COLORS.cardBackground,
+        boxShadow: cardShadow,
+        backgroundColor: cardBackground,
+        ...(isTimelineSurface
+          ? {
+              border: `1px solid ${isDark ? AGENDA_LIST_CARD.timelineBorderDark : AGENDA_LIST_CARD.timelineBorderLight}`,
+            }
+          : {}),
         ...(leftAccentColor && hideAccentColumn
-          ? { borderLeft: `${leftAccentWidthPx ?? AGENDA_LIST_CARD.accentLineWidthPx * 2}px solid ${leftAccentColor}` }
+          ? {
+              borderLeft: `${leftAccentWidthPx ?? AGENDA_LIST_CARD.accentLineWidthPx * 2}px solid ${leftAccentColor}`,
+            }
           : {}),
         ...style,
       }}
