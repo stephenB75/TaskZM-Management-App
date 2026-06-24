@@ -89,6 +89,16 @@ export function getDateString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/** True when an ISO datetime string includes Z or a numeric UTC offset. */
+export function hasExplicitTimezoneInIso(iso: string): boolean {
+  const s = iso.trim();
+  if (/Z$/i.test(s)) return true;
+  // +00:00, -04:00, +0000, or fractional seconds before offset
+  if (/[+-]\d{2}:\d{2}(?::\d{2})?$/i.test(s)) return true;
+  if (/[+-]\d{4}$/i.test(s)) return true;
+  return false;
+}
+
 /**
  * Parse calendar event start/end string to a Date for correct local-time display and sorting.
  * - Date-only (YYYY-MM-DD): local midnight.
@@ -109,9 +119,9 @@ export function parseCalendarEventTime(isoString: string | number | null | undef
       return new Date(y, m - 1, d);
     }
   }
-  // Full ISO without timezone is often UTC from APIs; appending Z ensures correct local conversion
-  if (/^\d{4}-\d{2}-\d{2}T\d/.test(s) && !/Z|[-+]\d{2}:?\d{2}$/.test(s)) {
-    return new Date(s.endsWith('Z') ? s : s + 'Z');
+  // Naive ISO datetimes from APIs/DB are UTC instants; appending Z ensures correct local conversion
+  if (/^\d{4}-\d{2}-\d{2}T\d/.test(s) && !hasExplicitTimezoneInIso(s)) {
+    return new Date(s + 'Z');
   }
   return new Date(s);
 }

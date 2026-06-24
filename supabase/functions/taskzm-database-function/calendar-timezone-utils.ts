@@ -8,6 +8,16 @@ export const DEFAULT_CALENDAR_TIMEZONE = 'America/New_York';
 /** Minutes to search each direction when resolving wall-clock → UTC (covers all current UTC offsets). */
 const WALL_CLOCK_SEARCH_RANGE_MINUTES = 18 * 60;
 
+/** True when an ISO timestamp string carries an explicit UTC or offset suffix. */
+export function isUtcIsoTimestamp(iso: string | null | undefined): boolean {
+  if (!iso) return false;
+  const s = iso.trim();
+  if (/Z$/i.test(s)) return true;
+  if (/[+-]00:00(?::00)?$/i.test(s)) return true;
+  if (/[+-]0000$/i.test(s)) return true;
+  return false;
+}
+
 /**
  * Normalize CalDAV TZID values (IANA, GMT offsets, abbreviations) to a valid IANA timezone.
  */

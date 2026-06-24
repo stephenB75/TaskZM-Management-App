@@ -1091,11 +1091,10 @@ function generateRecurringOccurrences(
   const byDay = parts['BYDAY'];
   const byMonthDay = parts['BYMONTHDAY'];
 
-  // Parse base event times
+  // Parse base event times (timestamptz values are UTC instants regardless of serialization)
   const baseStart = new Date(baseEvent.start_time);
   const baseEnd = new Date(baseEvent.end_time);
   const duration = baseEnd.getTime() - baseStart.getTime();
-  const isUtc = baseEvent.start_time.endsWith('Z');
 
   // Calculate until date
   let untilDate = rangeEnd;
@@ -1127,18 +1126,10 @@ function generateRecurringOccurrences(
     
     if (freq === 'DAILY') {
       const intervalsToSkip = Math.floor(daysDiff / interval);
-      if (isUtc) {
-        currentDate.setUTCDate(currentDate.getUTCDate() + (intervalsToSkip * interval));
-      } else {
-        currentDate.setDate(currentDate.getDate() + (intervalsToSkip * interval));
-      }
+      currentDate.setUTCDate(currentDate.getUTCDate() + (intervalsToSkip * interval));
     } else if (freq === 'WEEKLY') {
       const weeksDiff = Math.floor(daysDiff / (DAYS_PER_WEEK * interval));
-      if (isUtc) {
-        currentDate.setUTCDate(currentDate.getUTCDate() + (weeksDiff * DAYS_PER_WEEK * interval));
-      } else {
-        currentDate.setDate(currentDate.getDate() + (weeksDiff * DAYS_PER_WEEK * interval));
-      }
+      currentDate.setUTCDate(currentDate.getUTCDate() + (weeksDiff * DAYS_PER_WEEK * interval));
     }
     // For MONTHLY and YEARLY, we'll let the loop handle it naturally
     // as the calculation is more complex with BYDAY and BYMONTHDAY
@@ -1161,8 +1152,8 @@ function generateRecurringOccurrences(
         id: `${baseEvent.id}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
         title: baseEvent.title,
         description: baseEvent.description,
-        start: isUtc ? currentDate.toISOString() : currentDate.toISOString().replace('Z', ''),
-        end: isUtc ? endDate.toISOString() : endDate.toISOString().replace('Z', ''),
+        start: currentDate.toISOString(),
+        end: endDate.toISOString(),
         location: baseEvent.location,
         provider: provider as CalendarProvider,
         providerEventId: `${baseEvent.external_id}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
@@ -1174,53 +1165,28 @@ function generateRecurringOccurrences(
       });
     }
 
-    // Move to next occurrence
-    if (isUtc) {
-      switch (freq) {
-        case 'DAILY':
-          currentDate.setUTCDate(currentDate.getUTCDate() + interval);
-          break;
-        case 'WEEKLY':
-          currentDate.setUTCDate(currentDate.getUTCDate() + (DAYS_PER_WEEK * interval));
-          break;
-        case 'MONTHLY':
-          if (byMonthDay) {
-            const targetDay = parseInt(byMonthDay, 10);
-            currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
-            currentDate.setUTCDate(Math.min(targetDay, new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0).getUTCDate()));
-          } else {
-            currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
-          }
-          break;
-        case 'YEARLY':
-          currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
-          break;
-        default:
-          iterations = maxIterations;
-      }
-    } else {
-      switch (freq) {
-        case 'DAILY':
-          currentDate.setDate(currentDate.getDate() + interval);
-          break;
-        case 'WEEKLY':
-          currentDate.setDate(currentDate.getDate() + (DAYS_PER_WEEK * interval));
-          break;
-        case 'MONTHLY':
-          if (byMonthDay) {
-            const targetDay = parseInt(byMonthDay, 10);
-            currentDate.setMonth(currentDate.getMonth() + interval);
-            currentDate.setDate(Math.min(targetDay, new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()));
-          } else {
-            currentDate.setMonth(currentDate.getMonth() + interval);
-          }
-          break;
-        case 'YEARLY':
-          currentDate.setFullYear(currentDate.getFullYear() + interval);
-          break;
-        default:
-          iterations = maxIterations;
-      }
+    // Move to next occurrence (always UTC — matches timestamptz storage)
+    switch (freq) {
+      case 'DAILY':
+        currentDate.setUTCDate(currentDate.getUTCDate() + interval);
+        break;
+      case 'WEEKLY':
+        currentDate.setUTCDate(currentDate.getUTCDate() + (DAYS_PER_WEEK * interval));
+        break;
+      case 'MONTHLY':
+        if (byMonthDay) {
+          const targetDay = parseInt(byMonthDay, 10);
+          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+          currentDate.setUTCDate(Math.min(targetDay, new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0)).getUTCDate()));
+        } else {
+          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+        }
+        break;
+      case 'YEARLY':
+        currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
+        break;
+      default:
+        iterations = maxIterations;
     }
 
     iterations++;

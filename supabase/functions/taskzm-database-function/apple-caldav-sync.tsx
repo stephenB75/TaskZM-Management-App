@@ -758,9 +758,6 @@ function expandRecurringEvent(
 ): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   
-  // Check if the base event's time is in UTC (ends with Z)
-  const isUtc = baseEvent.dtstart.endsWith('Z');
-  
   // Parse RRULE parts
   const parts: Record<string, string> = {};
   rrule.split(';').forEach(part => {
@@ -812,8 +809,8 @@ function expandRecurringEvent(
       events.push({
         ...baseEvent,
         uid: eventUid,
-        dtstart: formatDatePreservingTimezone(currentDate, isUtc),
-        dtend: formatDatePreservingTimezone(endDate, isUtc),
+        dtstart: formatDatePreservingTimezone(currentDate, true),
+        dtend: formatDatePreservingTimezone(endDate, true),
         // Preserve recurrence metadata for all instances
         rrule: baseEvent.rrule || rrule, // Ensure RRULE is preserved
         recurrenceBaseId: recurrenceBaseId || baseEvent.uid, // Link to base event
@@ -821,55 +818,28 @@ function expandRecurringEvent(
       });
     }
     
-    // Move to next occurrence based on frequency
-    // Use local time methods if not UTC, UTC methods if UTC
-    if (isUtc) {
-      switch (freq) {
-        case 'DAILY':
-          currentDate.setUTCDate(currentDate.getUTCDate() + interval);
-          break;
-        case 'WEEKLY':
-          currentDate.setUTCDate(currentDate.getUTCDate() + (7 * interval));
-          break;
-        case 'MONTHLY':
-          if (byMonthDay) {
-            const targetDay = parseInt(byMonthDay, 10);
-            currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
-            currentDate.setUTCDate(Math.min(targetDay, new Date(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0).getUTCDate()));
-          } else {
-            currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
-          }
-          break;
-        case 'YEARLY':
-          currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
-          break;
-        default:
-          iterations = maxIterations;
-      }
-    } else {
-      // Use local time methods
-      switch (freq) {
-        case 'DAILY':
-          currentDate.setDate(currentDate.getDate() + interval);
-          break;
-        case 'WEEKLY':
-          currentDate.setDate(currentDate.getDate() + (7 * interval));
-          break;
-        case 'MONTHLY':
-          if (byMonthDay) {
-            const targetDay = parseInt(byMonthDay, 10);
-            currentDate.setMonth(currentDate.getMonth() + interval);
-            currentDate.setDate(Math.min(targetDay, new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()));
-          } else {
-            currentDate.setMonth(currentDate.getMonth() + interval);
-          }
-          break;
-        case 'YEARLY':
-          currentDate.setFullYear(currentDate.getFullYear() + interval);
-          break;
-        default:
-          iterations = maxIterations;
-      }
+    // Move to next occurrence (always UTC — dtstart/dtend are UTC instants after parseDate)
+    switch (freq) {
+      case 'DAILY':
+        currentDate.setUTCDate(currentDate.getUTCDate() + interval);
+        break;
+      case 'WEEKLY':
+        currentDate.setUTCDate(currentDate.getUTCDate() + (7 * interval));
+        break;
+      case 'MONTHLY':
+        if (byMonthDay) {
+          const targetDay = parseInt(byMonthDay, 10);
+          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+          currentDate.setUTCDate(Math.min(targetDay, new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0)).getUTCDate()));
+        } else {
+          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
+        }
+        break;
+      case 'YEARLY':
+        currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
+        break;
+      default:
+        iterations = maxIterations;
     }
     
     iterations++;
@@ -969,12 +939,7 @@ function parseVEvent(
       const day = cleanDateStr.substring(6, 8);
       const hour = cleanDateStr.substring(9, 11);
       const minute = cleanDateStr.substring(11, 13);
-      const second = cleanDateStr.substring(13, 15);
-      
-      // If original was UTC, keep it UTC
-      if (isUtc) {
-        return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
-      }
+      const second = cleanDateStr.length >= 15 ? cleanDateStr.substring(13, 15) : '00';
       
       const yearNum = parseInt(year, 10);
       const monthNum = parseInt(month, 10) - 1; // JS months are 0-indexed
@@ -997,9 +962,14 @@ function parseVEvent(
         );
       };
 
-      // If there's a TZID, convert from that timezone to UTC
+      // TZID wins over a Z suffix (some feeds incorrectly mark local wall times as UTC)
       if (tzid) {
         return convertToUTC(tzid);
+      }
+
+      // Explicit UTC (Z suffix, no TZID): keep wall-clock components as UTC
+      if (isUtc) {
+        return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
       }
 
       // No TZID and no Z = floating/local time — use the user's browser timezone from sync
