@@ -20,14 +20,24 @@ if (!version) {
 }
 
 const cacheName = `taskzm-v${version}`;
+const runtimeCacheName = `taskzm-runtime-v${version}`;
 let sw = fs.readFileSync(swPath, 'utf8');
 
 // Match CACHE_NAME = 'taskzm-vX.Y.Z' (any version) and replace with current package version
-const regex = /(const CACHE_NAME = ')taskzm-v[^']+(';)/;
-if (!regex.test(sw)) {
+const cacheNameRegex = /(const CACHE_NAME = ')taskzm-v[^']+(';)/;
+if (!cacheNameRegex.test(sw)) {
   console.error('update-service-worker-cache: could not find CACHE_NAME in service-worker.js');
   process.exit(1);
 }
-sw = sw.replace(regex, `$1${cacheName}$2`);
+sw = sw.replace(cacheNameRegex, `$1${cacheName}$2`);
+
+// Version-scoped runtime cache — stale hashed JS chunks must not survive across deploys
+const runtimeCacheRegex = /(const RUNTIME_CACHE = ')taskzm-runtime(?:-v[^']+)?(';)/;
+if (!runtimeCacheRegex.test(sw)) {
+  console.error('update-service-worker-cache: could not find RUNTIME_CACHE in service-worker.js');
+  process.exit(1);
+}
+sw = sw.replace(runtimeCacheRegex, `$1${runtimeCacheName}$2`);
+
 fs.writeFileSync(swPath, sw);
-console.log(`update-service-worker-cache: CACHE_NAME set to ${cacheName}`);
+console.log(`update-service-worker-cache: CACHE_NAME set to ${cacheName}, RUNTIME_CACHE set to ${runtimeCacheName}`);

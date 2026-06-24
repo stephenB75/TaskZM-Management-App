@@ -2,7 +2,7 @@
 // IMPORTANT: This service worker is configured to NOT cause automatic page refreshes
 // Updates will only apply on manual page refresh or navigation
 const CACHE_NAME = 'taskzm-v1.0.25'; // Increment version to force update on next deploy (match package.json)
-const RUNTIME_CACHE = 'taskzm-runtime';
+const RUNTIME_CACHE = 'taskzm-runtime-v1.0.25'; // Version-scoped so old JS chunks are purged on activate
 
 // Core files to cache immediately
 const CORE_ASSETS = [
@@ -43,7 +43,12 @@ self.addEventListener('activate', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames
-            .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
+            .filter((name) => {
+              // Drop prior version caches and legacy unversioned runtime bucket
+              if (name === CACHE_NAME || name === RUNTIME_CACHE) return false;
+              if (name === 'taskzm-runtime') return true;
+              return name.startsWith('taskzm-v') || name.startsWith('taskzm-runtime-v');
+            })
             .map((name) => caches.delete(name))
         );
       }),
