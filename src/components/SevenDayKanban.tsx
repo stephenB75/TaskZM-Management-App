@@ -37,6 +37,7 @@ import {
   KANBAN_WEEK_GROUP_LABELS,
   KANBAN_COLUMN_HEIGHT,
   KANBAN_VIEWPORT_WEEK,
+  getKanbanWeekPanelWidthPx,
   formatKanbanWeekGroupDateRange,
 } from '../lib/kanban-constants';
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
@@ -304,7 +305,10 @@ export function SevenDayKanban({
   const [columnRowHeightPx, setColumnRowHeightPx] = useState(
     KANBAN_COLUMN_HEIGHT.minRowHeightPx,
   );
-  const [viewportWeekWidthPx, setViewportWeekWidthPx] = useState(0);
+  const desktopWeekPanelWidthPx = React.useMemo(
+    () => getKanbanWeekPanelWidthPx(KANBAN_VIEWPORT_WEEK.visibleDays),
+    [],
+  );
   
   // Helpers for subtle gradients to avoid blending into backgrounds
   const toAlphaHex = (hex: string, percent: number) => {
@@ -562,9 +566,6 @@ export function SevenDayKanban({
         
         // Defer heavy DOM measurements to idle callback to avoid blocking animation frame
         const processMeasurements = () => {
-          if (viewportWidth > 0) {
-            setViewportWeekWidthPx(Math.floor(viewportWidth));
-          }
           const weekHeaderEl = columns.querySelector('[data-kanban-week-group-header]');
           const weekHeaderHeight =
             weekHeaderEl instanceof HTMLElement
@@ -1150,8 +1151,8 @@ export function SevenDayKanban({
                       mobileMode
                         ? undefined
                         : {
-                            width: viewportWeekWidthPx > 0 ? viewportWeekWidthPx : '100%',
-                            minWidth: viewportWeekWidthPx > 0 ? viewportWeekWidthPx : '100%',
+                            width: desktopWeekPanelWidthPx,
+                            minWidth: desktopWeekPanelWidthPx,
                           }
                     }
                   >
@@ -1250,10 +1251,15 @@ export function SevenDayKanban({
                 return (
                   <div
                     key={column.dateString}
-                    className="flex flex-col self-stretch h-full min-h-0 flex-1 min-w-0"
-                    style={{
-                      minWidth: mobileMode ? undefined : KANBAN_VIEWPORT_WEEK.minColumnWidthPx,
-                    }}
+                    className="flex flex-col self-stretch h-full min-h-0 flex-shrink-0"
+                    style={
+                      mobileMode
+                        ? undefined
+                        : {
+                            width: KANBAN_VIEWPORT_WEEK.dayColumnWidthPx,
+                            minWidth: KANBAN_VIEWPORT_WEEK.dayColumnWidthPx,
+                          }
+                    }
                   >
                     {/* Reserve equal chrome above every column so card heights match */}
                     <div

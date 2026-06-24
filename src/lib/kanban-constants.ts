@@ -241,9 +241,8 @@ export const KANBAN_COLUMN_DIMENSIONS = {
     tablet: 12, // p-3 = 12px
   },
   cardsContainerMaxWidth: {
-    // Max width for cards container: wider cards, minimal gap from column border when centered
-    mobile: '98%', // ~1% gap each side
-    desktop: '98%',
+    mobile: '98%',
+    desktop: '100%',
   },
   // Horizontal margin so cards container is centered and doesn't touch column border
   cardsContainerMargin: '0 auto',
@@ -293,8 +292,8 @@ export const KANBAN_VIEWPORT_WEEK = {
   visibleDays: KANBAN_TIME.daysPerWeek,
   /** Week panels available via horizontal scroll (e.g. 2 = two-week view) */
   scrollWeeks: 2,
-  /** Minimum width per day column before horizontal overflow is allowed */
-  minColumnWidthPx: 128,
+  /** Fixed width per day column on desktop (matches KANBAN_COLUMN_DIMENSIONS.width.desktop) */
+  dayColumnWidthPx: KANBAN_COLUMN_DIMENSIONS.width.desktop,
   /** Snap each week panel to the scroll viewport when panning horizontally */
   scrollSnap: true,
   /** Gap from app sidebar to first day column (scroll padding; preserved under scroll-snap) */
@@ -481,6 +480,15 @@ export function formatKanbanWeekGroupDateRange(startDate: Date, endDate: Date): 
     ...(startDate.getFullYear() !== endDate.getFullYear() ? { year: 'numeric' as const } : {}),
   });
   return `${startStr} – ${endStr}`;
+}
+
+/** Total horizontal width of one desktop week panel (all day columns + gaps). */
+export function getKanbanWeekPanelWidthPx(
+  dayCount: number = KANBAN_VIEWPORT_WEEK.visibleDays,
+): number {
+  const { dayColumnWidthPx, betweenColumnsGapPx } = KANBAN_VIEWPORT_WEEK;
+  const gapCount = Math.max(0, dayCount - 1);
+  return dayCount * dayColumnWidthPx + gapCount * betweenColumnsGapPx;
 }
 
 // Spacing
