@@ -570,7 +570,9 @@ export function SevenDayKanban({
             weekHeaderEl instanceof HTMLElement
               ? weekHeaderEl.getBoundingClientRect().height
               : KANBAN_COLUMN_HEIGHT.weekGroupHeaderFallbackPx;
-          const containerPadding = KANBAN_COLUMN_DIMENSIONS.padding.desktop * 2;
+          const containerPadding = mobileMode
+            ? KANBAN_COLUMN_DIMENSIONS.padding.desktop * 2
+            : KANBAN_VIEWPORT_WEEK.outerPaddingVerticalPx * 2;
           const availableColumnRow = Math.max(
             KANBAN_COLUMN_HEIGHT.minRowHeightPx,
             viewportHeight
@@ -1085,14 +1087,24 @@ export function SevenDayKanban({
               ref={columnsContainerRef}
               data-kanban-zoom-scale={zoomScale}
               className={cn(
-                "flex gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3",
-                mobileMode ? "min-w-max" : "h-full max-h-full items-stretch flex-shrink-0",
+                "flex",
+                mobileMode
+                  ? "gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 p-2 sm:p-2.5 md:p-2.5 lg:p-3 min-w-max"
+                  : "gap-0 h-full max-h-full items-stretch flex-shrink-0",
               )}
               style={{
                 transform: zoomScale !== 1 ? `scale(${zoomScale})` : 'none',
                 transformOrigin: 'top left',
                 transition: KANBAN_ANIMATION.transformTransition,
                 minHeight: mobileMode ? '100%' : undefined,
+                ...(!mobileMode
+                  ? {
+                      paddingLeft: KANBAN_VIEWPORT_WEEK.outerPaddingHorizontalPx,
+                      paddingRight: KANBAN_VIEWPORT_WEEK.outerPaddingHorizontalPx,
+                      paddingTop: KANBAN_VIEWPORT_WEEK.outerPaddingVerticalPx,
+                      paddingBottom: KANBAN_VIEWPORT_WEEK.outerPaddingVerticalPx,
+                    }
+                  : {}),
                 backgroundImage: mobileMode ? (isDark
                   ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
                   : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`)
@@ -1196,7 +1208,10 @@ export function SevenDayKanban({
                     })()}
 
                     <div
-                      className="flex items-stretch gap-1 sm:gap-1.5 md:gap-2 lg:gap-2 flex-shrink-0 w-full min-w-0"
+                      className={cn(
+                        "flex items-stretch flex-shrink-0 w-full min-w-0",
+                        mobileMode && "gap-1 sm:gap-1.5 md:gap-2 lg:gap-2",
+                      )}
                       style={
                         mobileMode
                           ? undefined
@@ -1204,6 +1219,7 @@ export function SevenDayKanban({
                               height: columnRowHeightPx,
                               minHeight: columnRowHeightPx,
                               maxHeight: columnRowHeightPx,
+                              gap: KANBAN_VIEWPORT_WEEK.betweenColumnsGapPx,
                             }
                       }
                     >
@@ -1416,6 +1432,9 @@ export function SevenDayKanban({
                 </React.Fragment>
                 );
               })}
+              {!mobileMode && (
+                <KanbanWeekPanelGutter widthPx={KANBAN_VIEWPORT_WEEK.trailingInsetPx} />
+              )}
             </div>
           </div>
 

@@ -218,7 +218,7 @@ export const KANBAN_COLUMN_DIMENSIONS = {
   gap: {
     mobile: 4, // gap-1 = 4px
     tablet: 6, // gap-1.5 = 6px
-    desktop: 8, // gap-2 = 8px
+    desktop: 12, // gap between day columns on desktop week view
   },
   /** Vertical gap (px) between task/event cards in a column. */
   cardsGapPx: 4,
@@ -298,9 +298,16 @@ export const KANBAN_VIEWPORT_WEEK = {
   /** Snap each week panel to the scroll viewport when panning horizontally */
   scrollSnap: true,
   /** Space before the first week panel (offset from sidebar) */
-  leadingInsetPx: 16,
+  leadingInsetPx: 32,
+  /** Space after the last week panel (offset from right edge) */
+  trailingInsetPx: 32,
   /** Space between horizontally scrolled week panels */
-  betweenWeeksGapPx: 16,
+  betweenWeeksGapPx: 32,
+  /** Horizontal gap between day columns within one week panel */
+  betweenColumnsGapPx: 12,
+  /** Outer padding around the scrollable week row (desktop) */
+  outerPaddingHorizontalPx: 16,
+  outerPaddingVerticalPx: 12,
 } as const;
 
 // Mobile View Constants
