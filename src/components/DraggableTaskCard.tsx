@@ -105,6 +105,8 @@ interface DraggableTaskCardProps {
   compactTimeline?: boolean;
   /** When true (Today Agenda timeline), hide in-card time — rail shows time. */
   hideTimelineTime?: boolean;
+  /** When true (Today Agenda timeline), hide left dot column — rail shows dot. */
+  hideTimelineAccent?: boolean;
   /** Duration in minutes; used for compact layout tooltip and display. */
   durationMinutes?: number;
 }
@@ -114,7 +116,7 @@ export const DraggableTaskCard = React.forwardRef<
   DraggableTaskCardProps
 >(
   (
-    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx, compactTimeline = false, hideTimelineTime = false, durationMinutes },
+    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx, compactTimeline = false, hideTimelineTime = false, hideTimelineAccent = false, durationMinutes },
     forwardedRef,
   ) => {
     const isTodayAgenda = droppableId === 'today-agenda';
@@ -784,6 +786,7 @@ export const DraggableTaskCard = React.forwardRef<
       embedded?: boolean;
       titleDone?: boolean;
       hideTime?: boolean;
+      hideAccentColumn?: boolean;
       style?: React.CSSProperties;
     }) => (
       <AgendaListCard
@@ -797,9 +800,10 @@ export const DraggableTaskCard = React.forwardRef<
         footerIcon="list-checks"
         footerSourceLabel={agendaFooterSource}
         durationLabel={formatDuration(durationMinutes ?? task.estimatedTime ?? null)}
-        showCommentIcon={Boolean(task.description?.trim())}
+        showCommentIcon={Boolean(task.description?.trim()) && !options.hideAccentColumn}
         compact={options.compact}
         hideTime={options.hideTime}
+        hideAccentColumn={options.hideAccentColumn}
         embedded={options.embedded}
         headerAction={agendaCompleteButton}
         style={options.style}
@@ -868,7 +872,7 @@ export const DraggableTaskCard = React.forwardRef<
               "relative box-border flex flex-col",
               "overflow-visible", // Never clip tab; allow full tab content to show
               // Rounded only on Today Agenda; full card uses bordered wrapper below tab
-              isTodayAgenda && "rounded-lg",
+              isTodayAgenda && timelineBlockHeightPx == null && "rounded-lg",
               isKanban && "rounded-lg",
               // Responsive spacing between children
               TASK_CARD_SPACING.spaceY.mobile,
@@ -949,7 +953,9 @@ export const DraggableTaskCard = React.forwardRef<
                 <TooltipTrigger asChild>
                   {renderAgendaTaskCard({
                     compact: compactTimeline,
+                    embedded: timelineBlockHeightPx != null,
                     hideTime: hideTimelineTime,
+                    hideAccentColumn: hideTimelineAccent,
                     style: {
                       height: '100%',
                       minHeight: '100%',

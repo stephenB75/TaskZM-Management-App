@@ -326,7 +326,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   const timeAndPeriod = !allDay ? getTimeAndPeriod(start) : null;
   const accentDotColor = palette.dotHex;
 
-  const agendaCard = (options: { compact?: boolean; hideTime?: boolean; micro?: boolean }) => (
+  const agendaCard = (options: { compact?: boolean; hideTime?: boolean; micro?: boolean; timelineEmbedded?: boolean }) => (
     <TooltipProvider delayDuration={300}>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -344,7 +344,9 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
             compact={options.compact}
             hideTime={options.hideTime}
             micro={options.micro}
-            style={options.compact || options.micro ? { height: '100%', minHeight: '100%', maxHeight: '100%' } : { height: '100%', minHeight: '100%', maxHeight: '100%' }}
+            embedded={options.timelineEmbedded}
+            hideAccentColumn={options.timelineEmbedded}
+            style={{ height: '100%', minHeight: '100%', maxHeight: '100%' }}
           />
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
@@ -360,12 +362,12 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
 
   // Today Agenda timeline: ultra-compact row for short events
   if (variant === 'timelineMicro') {
-    return agendaCard({ micro: true, hideTime: true });
+    return agendaCard({ micro: true, hideTime: true, timelineEmbedded: true });
   }
 
   // Today Agenda timeline: compact or full agenda list card
   if (variant === 'timelineCompact') {
-    return agendaCard({ compact: true, hideTime: true });
+    return agendaCard({ compact: true, hideTime: true, timelineEmbedded: true });
   }
 
   // Kanban week view: same white agenda list card as tasks

@@ -281,6 +281,8 @@ export const TODAY_AGENDA_TIMELINE = {
   spineWidthPx: 2,
   /** Diameter (px) of timeline start dots on the spine. */
   spineDotSizePx: 8,
+  /** Line height (px) for per-item time labels on the timeline rail. */
+  timeLabelLineHeightPx: 12,
   /** Opacity (0–1) for hour grid lines in duration block mode. */
   hourGridLineOpacity: 0.12,
   columnWidth: '4rem',

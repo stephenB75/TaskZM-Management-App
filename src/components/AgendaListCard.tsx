@@ -27,6 +27,8 @@ export interface AgendaListCardProps {
   hideTime?: boolean;
   /** Ultra-compact single row: title + badge only (short timeline events). */
   micro?: boolean;
+  /** When true, hides the left dot/accent column (timeline rail shows the dot). */
+  hideAccentColumn?: boolean;
   /** When true, renders without outer shadow/radius (for use inside a parent card shell). */
   embedded?: boolean;
   /** When true, title renders with line-through (completed tasks). */
@@ -52,6 +54,7 @@ export function AgendaListCard({
   compact = false,
   hideTime = false,
   micro = false,
+  hideAccentColumn = false,
   embedded = false,
   titleDone = false,
   className,
@@ -117,8 +120,9 @@ export function AgendaListCard({
         ...style,
       }}
     >
-      <div className="flex flex-1 min-h-0 w-full" style={{ gap: accentColumnWidth - (accentIcon ? accentIconSize : dotSize) }}>
+      <div className={cn('flex flex-1 min-h-0 w-full', hideAccentColumn ? '' : '')} style={hideAccentColumn ? undefined : { gap: accentColumnWidth - (accentIcon ? accentIconSize : dotSize) }}>
         {/* Colored dot or icon + vertical accent line */}
+        {!hideAccentColumn && (
         <div className="flex flex-col items-center flex-shrink-0" style={{ width: accentColumnWidth }}>
           {accentIcon ? (
             <div
@@ -157,6 +161,7 @@ export function AgendaListCard({
             aria-hidden
           />
         </div>
+        )}
 
         <div className="flex flex-col flex-1 min-w-0">
           {/* Header: time + optional comment / action */}

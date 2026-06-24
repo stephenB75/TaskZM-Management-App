@@ -29,7 +29,7 @@ import {
   formatTodayAgendaMinutesLabel,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
-import { getColorWithOpacity } from "../lib/color-theme";
+import { AGENDA_LIST_CARD, AGENDA_LIST_CARD_COLORS } from "../lib/agenda-list-card-constants";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE, getTodayAgendaTimelineBlockHeightPx } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
@@ -499,8 +499,8 @@ export function TodayAgendaView({
         spineWidthPx,
         spineDotSizePx,
         hourGridLineOpacity,
-        blockTintOpacity,
         blockAccentWidthPx,
+        timeLabelLineHeightPx,
       } = TODAY_AGENDA_TIMELINE;
 
       const isCompactList = layoutMode === 'compactList';
@@ -542,62 +542,52 @@ export function TodayAgendaView({
               : `b-${topPx}`;
         const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
         const accentColor = getTimelineBlockAccentColor(item);
-        const showDurationTint = !isCompactList;
 
         return (
           <div
             key={key}
-            className="absolute overflow-hidden rounded-lg left-0 right-0"
+            className="absolute overflow-hidden left-0 right-0"
             style={{
               top: topPx,
               height: heightPx,
               minHeight: isCompactList ? undefined : TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
               zIndex: Z_INDEX.TIMELINE_BLOCK,
-              contain: 'layout paint',
-              isolation: 'isolate',
+              backgroundColor: isDark
+                ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark
+                : AGENDA_LIST_CARD_COLORS.cardBackground,
+              boxShadow: AGENDA_LIST_CARD.shadow,
+              borderRadius: AGENDA_LIST_CARD.borderRadiusPx,
+              borderLeft: `${blockAccentWidthPx}px solid ${accentColor}`,
             }}
           >
-            {showDurationTint && (
-              <div
-                className="absolute inset-0 pointer-events-none rounded-lg"
-                style={{
-                  backgroundColor: getColorWithOpacity(accentColor, blockTintOpacity),
-                  borderLeft: `${blockAccentWidthPx}px solid ${accentColor}`,
-                }}
-                aria-hidden
-              />
-            )}
             {item.type === 'task' && item.task ? (
-              <div data-task-id={item.task.id} className="relative w-full h-full z-[1]">
-                <div className="w-full min-w-full h-full flex flex-col">
-                  <DraggableTaskCard
-                    task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
-                    onClick={() => item.task && handleTaskClick(item.task)}
-                    droppableId="today-agenda"
-                    occurrenceDate={todayString}
-                    isNextUp={item.task.id === nextUpTaskId}
-                    onComplete={handleTaskComplete}
-                    timelineBlockHeightPx={heightPx}
-                    compactTimeline={compactTimeline}
-                    hideTimelineTime
-                    durationMinutes={actualDurationMins}
-                  />
-                </div>
+              <div data-task-id={item.task.id} className="relative w-full h-full">
+                <DraggableTaskCard
+                  task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
+                  onClick={() => item.task && handleTaskClick(item.task)}
+                  droppableId="today-agenda"
+                  occurrenceDate={todayString}
+                  isNextUp={item.task.id === nextUpTaskId}
+                  onComplete={handleTaskComplete}
+                  timelineBlockHeightPx={heightPx}
+                  compactTimeline={compactTimeline}
+                  hideTimelineTime
+                  hideTimelineAccent
+                  durationMinutes={actualDurationMins}
+                />
               </div>
             ) : item.type === 'event' && item.event ? (
-              <div data-event-id={item.event.id} className="relative w-full h-full z-[1]">
-                <div className="w-full min-w-full h-full">
-                  <CalendarEventCard
-                    title={item.event.title}
-                    start={item.event.start}
-                    end={item.event.end}
-                    location={item.event.location}
-                    provider={item.event.provider}
-                    calendarColor={item.event.calendarColor}
-                    isRecurring={item.event.isRecurring}
-                    variant={getEventCardVariant(actualDurationMins)}
-                  />
-                </div>
+              <div data-event-id={item.event.id} className="relative w-full h-full">
+                <CalendarEventCard
+                  title={item.event.title}
+                  start={item.event.start}
+                  end={item.event.end}
+                  location={item.event.location}
+                  provider={item.event.provider}
+                  calendarColor={item.event.calendarColor}
+                  isRecurring={item.event.isRecurring}
+                  variant={getEventCardVariant(actualDurationMins)}
+                />
               </div>
             ) : null}
           </div>
@@ -646,39 +636,26 @@ export function TodayAgendaView({
                 </div>
               )}
 
-              {isCompactList
-                ? timelineBlocks.map((block) => (
-                    <div
-                      key={`time-${block.item.type === 'task' && block.item.task ? block.item.task.id : block.item.type === 'event' && block.item.event ? block.item.event.id : block.topPx}`}
-                      className="absolute left-0 pr-2 text-right"
-                      style={{
-                        top: block.topPx,
-                        width: `calc(100% - ${spineWidthPx + 4}px)`,
-                      }}
-                    >
-                      <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums leading-none">
-                        {formatTodayAgendaMinutesLabel(block.actualStartMins)}
-                      </span>
-                    </div>
-                  ))
-                : hourlyLabels.map(({ minutesFromStart, label }) => {
-                    const topPx = Math.round(minutesFromStart * pxPerMinute);
-                    return (
-                      <div
-                        key={minutesFromStart}
-                        className="absolute left-0 pr-2 text-right"
-                        style={{
-                          top: topPx,
-                          transform: 'translateY(-50%)',
-                          width: `calc(100% - ${spineWidthPx + 4}px)`,
-                        }}
-                      >
-                        <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">{label}</span>
-                      </div>
-                    );
-                  })}
+              {timelineBlocks.map((block) => (
+                <div
+                  key={`time-${block.item.type === 'task' && block.item.task ? block.item.task.id : block.item.type === 'event' && block.item.event ? block.item.event.id : block.topPx}`}
+                  className="absolute left-0 pr-2 text-right"
+                  style={{
+                    top: block.topPx,
+                    width: `calc(100% - ${spineWidthPx + 4}px)`,
+                    height: timeLabelLineHeightPx,
+                  }}
+                >
+                  <span
+                    className="text-xs text-muted-foreground whitespace-nowrap tabular-nums block"
+                    style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
+                  >
+                    {formatTodayAgendaMinutesLabel(block.actualStartMins)}
+                  </span>
+                </div>
+              ))}
 
-              {/* Start dots on spine */}
+              {/* Start dots on spine — one per item, aligned with time label */}
               {timelineBlocks.map((block) => {
                 const dotColor = getTimelineBlockAccentColor(block.item);
                 const dotKey =
@@ -687,12 +664,13 @@ export function TodayAgendaView({
                     : block.item.type === 'event' && block.item.event
                       ? `dot-e-${block.item.event.id}`
                       : `dot-${block.topPx}`;
+                const dotTop = block.topPx + (timeLabelLineHeightPx - spineDotSizePx) / 2;
                 return (
                   <div
                     key={dotKey}
                     className="absolute rounded-full z-[2]"
                     style={{
-                      top: block.topPx + TODAY_AGENDA_TIMELINE.cardContentTopOffsetPx / 2,
+                      top: dotTop,
                       right: -(spineDotSizePx / 2) + spineWidthPx / 2,
                       width: spineDotSizePx,
                       height: spineDotSizePx,
