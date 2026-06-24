@@ -462,6 +462,23 @@ import { SplashScreen } from '@capacitor/splash-screen';
 // Platform detection
 const isNative = Capacitor.isNativePlatform();
 
+// In dev, unregister any existing service worker and clear runtime caches so Vite HMR
+// always serves the latest Today Agenda (and other) chunks — stale SW caused "no change" reports.
+if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  void navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      void registration.unregister();
+    });
+  });
+  if ('caches' in window) {
+    void caches.keys().then((keys) => {
+      keys.forEach((key) => {
+        void caches.delete(key);
+      });
+    });
+  }
+}
+
 // PWA Service Worker Registration
 // Background updates: Checks for updates periodically without disrupting sessions
 // Shows notification when updates are available, letting users refresh when ready

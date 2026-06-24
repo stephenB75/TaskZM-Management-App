@@ -119,11 +119,25 @@ export function AgendaListCard({
     : isDark
       ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark
       : AGENDA_LIST_CARD_COLORS.cardBackground;
-  const cardShadow = embedded
-    ? 'none'
-    : isTimelineSurface
-      ? AGENDA_LIST_CARD.timelineShadow
-      : AGENDA_LIST_CARD.shadow;
+  const cardShadow = embedded || isTimelineSurface ? 'none' : AGENDA_LIST_CARD.shadow;
+  const timelineBorderColor = isDark
+    ? AGENDA_LIST_CARD.timelineBorderDark
+    : AGENDA_LIST_CARD.timelineBorderLight;
+  const timelineBorderStyles =
+    isTimelineSurface && leftAccentColor && hideAccentColumn
+      ? {
+          borderTop: `1px solid ${timelineBorderColor}`,
+          borderRight: `1px solid ${timelineBorderColor}`,
+          borderBottom: `1px solid ${timelineBorderColor}`,
+          borderLeft: `${leftAccentWidthPx ?? AGENDA_LIST_CARD.accentLineWidthPx * 2}px solid ${leftAccentColor}`,
+        }
+      : isTimelineSurface
+        ? { border: `1px solid ${timelineBorderColor}` }
+        : leftAccentColor && hideAccentColumn
+          ? {
+              borderLeft: `${leftAccentWidthPx ?? AGENDA_LIST_CARD.accentLineWidthPx * 2}px solid ${leftAccentColor}`,
+            }
+          : {};
 
   return (
     <div
@@ -136,16 +150,7 @@ export function AgendaListCard({
         padding,
         boxShadow: cardShadow,
         backgroundColor: cardBackground,
-        ...(isTimelineSurface
-          ? {
-              border: `1px solid ${isDark ? AGENDA_LIST_CARD.timelineBorderDark : AGENDA_LIST_CARD.timelineBorderLight}`,
-            }
-          : {}),
-        ...(leftAccentColor && hideAccentColumn
-          ? {
-              borderLeft: `${leftAccentWidthPx ?? AGENDA_LIST_CARD.accentLineWidthPx * 2}px solid ${leftAccentColor}`,
-            }
-          : {}),
+        ...timelineBorderStyles,
         ...style,
       }}
     >
