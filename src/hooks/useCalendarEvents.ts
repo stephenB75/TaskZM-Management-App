@@ -6,6 +6,10 @@ import { logger } from '../lib/logger';
 import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay } from '../lib/utils';
+import { correctRecurringOccurrenceTimes } from '../lib/calendar-recurrence-utils';
+
+/** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
+const CALENDAR_EVENTS_CACHE_VERSION = 'v2-tz-recurrence';
 
 export interface CalendarEvent {
   id: string;
@@ -18,6 +22,9 @@ export interface CalendarEvent {
   rrule?: string; // Original RRULE string for recurring events
   recurrenceBaseId?: string; // Links instances to base recurring event
   isRecurring?: boolean; // Flag indicating if this is a recurring event
+  /** Base series start/end from DB — used to correct DST drift on expanded occurrences */
+  recurrenceAnchorStart?: string;
+  recurrenceAnchorEnd?: string;
 }
 
 interface CacheEntry {
@@ -49,7 +56,7 @@ function getCacheKey(
   providers: Array<'google' | 'apple' | 'outlook'>,
   userTimezone: string
 ): string {
-  return `${startDate}_${endDate}_${providers.join(',')}_${userTimezone}`;
+  return `${CALENDAR_EVENTS_CACHE_VERSION}_${startDate}_${endDate}_${providers.join(',')}_${userTimezone}`;
 }
 
 /**
@@ -97,21 +104,32 @@ async function fetchProviderEvents(
     const events: CalendarEvent[] = [];
     for (const event of data.events) {
       if (!event?.start || !event?.end) continue;
-      const eventStart = parseCalendarEventTime(event.start);
+      const corrected = correctRecurringOccurrenceTimes(
+        {
+          start: event.start,
+          end: event.end,
+          isRecurring: event.isRecurring,
+          recurrenceAnchorStart: event.recurrenceAnchorStart,
+          recurrenceAnchorEnd: event.recurrenceAnchorEnd,
+        },
+        userTimezone,
+      );
+      const eventStart = parseCalendarEventTime(corrected.start);
       if (isNaN(eventStart.getTime())) continue;
 
       events.push({
         id: event.id || `${provider}-${event.providerEventId || event.start}-${events.length}`,
         title: event.title || 'Calendar Event',
-        start: event.start,
-        end: event.end,
+        start: corrected.start,
+        end: corrected.end,
         location: event.location,
         provider,
         calendarColor: event.calendarColor,
-        // Include recurrence metadata if available
         rrule: event.rrule,
         recurrenceBaseId: event.recurrenceBaseId,
         isRecurring: event.isRecurring || false,
+        recurrenceAnchorStart: event.recurrenceAnchorStart,
+        recurrenceAnchorEnd: event.recurrenceAnchorEnd,
       });
     }
 

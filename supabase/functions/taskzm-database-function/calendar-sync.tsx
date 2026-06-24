@@ -73,6 +73,8 @@ export interface CalendarEvent {
   rrule?: string; // Original RRULE string for recurring events
   recurrenceBaseId?: string; // Links instances to base recurring event
   isRecurring?: boolean; // Flag indicating if this is a recurring event
+  recurrenceAnchorStart?: string; // Base series start (for client DST correction)
+  recurrenceAnchorEnd?: string; // Base series end (for duration)
 }
 
 /**
@@ -1169,6 +1171,8 @@ function generateRecurringOccurrences(
         rrule: baseEvent.rrule,
         recurrenceBaseId: baseEvent.external_id,
         isRecurring: true,
+        recurrenceAnchorStart: new Date(baseEvent.start_time).toISOString(),
+        recurrenceAnchorEnd: new Date(baseEvent.end_time).toISOString(),
       });
     }
 
