@@ -1078,6 +1078,16 @@ export function SevenDayKanban({
               "scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent",
               activeId && "cursor-default" // Change cursor when dragging task
             )}
+            style={
+              mobileMode
+                ? undefined
+                : {
+                    paddingLeft: KANBAN_VIEWPORT_WEEK.sidebarGapPx,
+                    paddingRight: KANBAN_VIEWPORT_WEEK.trailingEdgeGapPx,
+                    scrollPaddingLeft: KANBAN_VIEWPORT_WEEK.sidebarGapPx,
+                    scrollPaddingRight: KANBAN_VIEWPORT_WEEK.trailingEdgeGapPx,
+                  }
+            }
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -1099,8 +1109,6 @@ export function SevenDayKanban({
                 minHeight: mobileMode ? '100%' : undefined,
                 ...(!mobileMode
                   ? {
-                      paddingLeft: KANBAN_VIEWPORT_WEEK.outerPaddingHorizontalPx,
-                      paddingRight: KANBAN_VIEWPORT_WEEK.outerPaddingHorizontalPx,
                       paddingTop: KANBAN_VIEWPORT_WEEK.outerPaddingVerticalPx,
                       paddingBottom: KANBAN_VIEWPORT_WEEK.outerPaddingVerticalPx,
                     }
@@ -1111,9 +1119,6 @@ export function SevenDayKanban({
                   : undefined,
               }}
             >
-              {!mobileMode && (
-                <KanbanWeekPanelGutter widthPx={KANBAN_VIEWPORT_WEEK.leadingInsetPx} />
-              )}
               {weekGroups.map((group, groupIndex) => {
                 // Check if this is the start of a week based on weekStart setting
                 const firstDayOfGroup = group[0];
@@ -1432,9 +1437,6 @@ export function SevenDayKanban({
                 </React.Fragment>
                 );
               })}
-              {!mobileMode && (
-                <KanbanWeekPanelGutter widthPx={KANBAN_VIEWPORT_WEEK.trailingInsetPx} />
-              )}
             </div>
           </div>
 

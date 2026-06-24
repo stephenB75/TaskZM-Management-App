@@ -297,16 +297,15 @@ export const KANBAN_VIEWPORT_WEEK = {
   minColumnWidthPx: 128,
   /** Snap each week panel to the scroll viewport when panning horizontally */
   scrollSnap: true,
-  /** Space before the first week panel (offset from sidebar) */
-  leadingInsetPx: 32,
-  /** Space after the last week panel (offset from right edge) */
-  trailingInsetPx: 32,
+  /** Gap from app sidebar to first day column (scroll padding; preserved under scroll-snap) */
+  sidebarGapPx: 48,
+  /** Gap from last day column to viewport right edge */
+  trailingEdgeGapPx: 32,
   /** Space between horizontally scrolled week panels */
   betweenWeeksGapPx: 32,
   /** Horizontal gap between day columns within one week panel */
   betweenColumnsGapPx: 12,
-  /** Outer padding around the scrollable week row (desktop) */
-  outerPaddingHorizontalPx: 16,
+  /** Vertical padding around the scrollable week row (desktop) */
   outerPaddingVerticalPx: 12,
 } as const;
 
