@@ -221,7 +221,7 @@ export const KANBAN_COLUMN_DIMENSIONS = {
     desktop: 12, // gap between day columns on desktop week view
   },
   /** Vertical gap (px) between task/event cards in a column. */
-  cardsGapPx: 4,
+  cardsGapPx: 12,
   /** Extra inset so hover scale/shadow is not clipped by the column scrollport */
   cardHoverBleedPx: {
     horizontal: 10,
@@ -493,7 +493,7 @@ export function getKanbanWeekPanelWidthPx(
 
 // Spacing
 export const KANBAN_SPACING = {
-  taskGap: 8, // space-y-2 = 8px
+  taskGap: 12, // space-y-3 = 12px — matches KANBAN_COLUMN_DIMENSIONS.cardsGapPx
   headerMargin: {
     mobile: 2, // mb-0.5 = 2px
     tablet: 4, // sm:mb-1 = 4px
