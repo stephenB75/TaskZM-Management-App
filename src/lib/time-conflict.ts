@@ -20,16 +20,68 @@ export interface FindSlotOptions {
 /** Calendar event shape for findNextAvailableSlot conflict checks. */
 export type ConflictCalendarEvent = { start: Date | string; end: Date | string; title: string };
 
+/** Normalized calendar block for conflict checks (ms timestamps). */
+export type CalendarConflictBlock = { start: number; end: number; title: string };
+
 /** Map API calendar events to conflict-check format. */
 export function toConflictCalendarEvents(
-  events: Array<{ start: string; end: string; title: string }>,
+  events: Array<{ start: Date | string; end: Date | string; title: string }>,
 ): ConflictCalendarEvent[] {
   return events.map((event) => ({ start: event.start, end: event.end, title: event.title }));
 }
 
+/** Parse a calendar event timestamp (ISO string or Date) to epoch ms. */
+export function calendarEventToTimestamp(value: Date | string): number {
+  if (value instanceof Date) return value.getTime();
+  return parseCalendarEventTime(value).getTime();
+}
+
+/** End of a calendar block for scheduling; enforces a minimum duration so zero-length events still block. */
+export function getCalendarEventBlockEndMs(startMs: number, endMs: number): number {
+  const minEnd = startMs + MIN_TASK_DURATION_MINUTES * MILLISECONDS_PER_MINUTE;
+  return Number.isNaN(endMs) || endMs <= startMs ? minEnd : Math.max(endMs, minEnd);
+}
+
+/** True when a candidate task slot shares start time or overlaps another block (tasks or calendar events). */
+export function scheduleBlocksConflict(
+  candidateStart: number,
+  candidateEnd: number,
+  blockStart: number,
+  blockEnd: number,
+): boolean {
+  const sameStartTime = Math.abs(candidateStart - blockStart) < MILLISECONDS_PER_MINUTE;
+  const overlaps = candidateStart < blockEnd && candidateEnd > blockStart;
+  return sameStartTime || overlaps;
+}
+
+/** Build normalized calendar conflict blocks for one local day. */
+export function buildCalendarConflictBlocksForDay(
+  events: ConflictCalendarEvent[],
+  targetDate: Date,
+): CalendarConflictBlock[] {
+  const targetDay = new Date(targetDate);
+  targetDay.setHours(0, 0, 0, 0);
+  const targetTime = targetDay.getTime();
+  const blocks: CalendarConflictBlock[] = [];
+  for (const event of events) {
+    const startMs = calendarEventToTimestamp(event.start);
+    if (Number.isNaN(startMs)) continue;
+    const eventDay = new Date(startMs);
+    eventDay.setHours(0, 0, 0, 0);
+    if (eventDay.getTime() !== targetTime) continue;
+    const endMs = calendarEventToTimestamp(event.end);
+    blocks.push({
+      start: startMs,
+      end: getCalendarEventBlockEndMs(startMs, endMs),
+      title: event.title,
+    });
+  }
+  return blocks;
+}
+
 /** Events occurring on a specific local calendar day. */
 export function filterCalendarEventsForDay(
-  events: Array<{ start: string; end: string; title: string }>,
+  events: Array<{ start: Date | string; end: Date | string; title: string }>,
   targetDate: Date,
 ): ConflictCalendarEvent[] {
   const targetDay = new Date(targetDate);
@@ -37,8 +89,8 @@ export function filterCalendarEventsForDay(
   const targetTime = targetDay.getTime();
   return events
     .filter((event) => {
-      const eventStart = parseCalendarEventTime(event.start);
-      if (Number.isNaN(eventStart.getTime())) return false;
+      const eventStart = calendarEventToTimestamp(event.start);
+      if (Number.isNaN(eventStart)) return false;
       const eventDay = new Date(eventStart);
       eventDay.setHours(0, 0, 0, 0);
       return eventDay.getTime() === targetTime;
@@ -66,7 +118,8 @@ export function checkTimeConflict(
   taskId: string | null,
   scheduledTime: Date,
   taskDuration: number,
-  allTasks: Task[]
+  allTasks: Task[],
+  calendarEvents?: ConflictCalendarEvent[],
 ): Task | null {
   const targetDate = new Date(scheduledTime);
   targetDate.setHours(0, 0, 0, 0);
@@ -80,6 +133,15 @@ export function checkTimeConflict(
 
   const newTaskStart = scheduledTime.getTime();
   const newTaskEnd = newTaskStart + (taskDuration * MILLISECONDS_PER_MINUTE);
+
+  if (calendarEvents?.length) {
+    const calendarBlocks = buildCalendarConflictBlocksForDay(calendarEvents, targetDate);
+    for (const event of calendarBlocks) {
+      if (scheduleBlocksConflict(newTaskStart, newTaskEnd, event.start, event.end)) {
+        return null;
+      }
+    }
+  }
 
   // Check for overlaps with existing tasks
   for (const existingTask of dateTasks) {
@@ -250,26 +312,10 @@ export function findNextAvailableSlot(
       return a.end - b.end;
     });
   
-  // Add calendar events to the conflict list
-  const calendarConflicts: Array<{ start: number; end: number; title: string }> = [];
-  if (options?.calendarEvents) {
-    for (const event of options.calendarEvents) {
-      const eventStart = typeof event.start === 'string' ? parseCalendarEventTime(event.start) : event.start;
-      const eventEnd = typeof event.end === 'string' ? parseCalendarEventTime(event.end) : event.end;
-      
-      // Check if event is on the target date
-      const eventDate = new Date(eventStart);
-      eventDate.setHours(0, 0, 0, 0);
-      
-      if (eventDate.getTime() === targetDate.getTime()) {
-        calendarConflicts.push({
-          start: eventStart.getTime(),
-          end: eventEnd.getTime(),
-          title: event.title,
-        });
-      }
-    }
-  }
+  // Add calendar events to the conflict list (minimum block duration so short events still block scheduling)
+  const calendarConflicts: CalendarConflictBlock[] = options?.calendarEvents
+    ? buildCalendarConflictBlocksForDay(options.calendarEvents, targetDate)
+    : [];
 
   // Determine start time: ensure after current time if scheduling for today
   let candidateTime = new Date(requestedTime);
@@ -379,10 +425,9 @@ export function findNextAvailableSlot(
     let hasConflict = false;
     let maxConflictEnd = candidateStart; // Track the latest end time of all conflicts
     
-    // Check conflicts with tasks: only true overlap (shared time). Back-to-back is not a conflict.
+    // Check conflicts with tasks: same start or shared time (back-to-back is allowed).
     for (const existing of sortedTasks) {
-      const overlaps = candidateStart < existing.end && candidateEnd > existing.start;
-      if (overlaps) {
+      if (scheduleBlocksConflict(candidateStart, candidateEnd, existing.start, existing.end)) {
         hasConflict = true;
         maxConflictEnd = Math.max(maxConflictEnd, existing.end);
         if (import.meta.env.DEV) {
@@ -399,10 +444,9 @@ export function findNextAvailableSlot(
       }
     }
     
-    // Check conflicts with calendar events: only true overlap. Back-to-back is not a conflict.
+    // Check conflicts with calendar events: same start or shared time.
     for (const event of calendarConflicts) {
-      const overlaps = candidateStart < event.end && candidateEnd > event.start;
-      if (overlaps) {
+      if (scheduleBlocksConflict(candidateStart, candidateEnd, event.start, event.end)) {
         hasConflict = true;
         maxConflictEnd = Math.max(maxConflictEnd, event.end);
         if (import.meta.env.DEV) {
