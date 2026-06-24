@@ -12,14 +12,18 @@
  * 5. Store as read-only items with source="iCloud"
  */
 
+import {
+  DEFAULT_CALENDAR_TIMEZONE,
+  normalizeCalDavTimeZone,
+  wallClockInTimeZoneToUtcIso,
+} from './calendar-timezone-utils.ts';
+
 // Constants
-const DEFAULT_TIMEZONE = 'America/New_York';
+const DEFAULT_TIMEZONE = DEFAULT_CALENDAR_TIMEZONE;
 const MAX_RECURRENCE_ITERATIONS = 365; // Maximum iterations for recurring event expansion (1 year)
 const CALENDAR_SYNC_PAST_DAYS = 365; // Days to look back when syncing calendar (to capture recurring events)
 const CALENDAR_SYNC_FUTURE_DAYS = 90; // Days to look ahead when syncing calendar
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000; // 86400000 ms
-/** Last-resort UTC offset in hours when both timezone and UTC fail (EST = -5, so we add 5 to local components to get UTC) */
-const FALLBACK_UTC_OFFSET_HOURS = 5;
 
 // Module-level variable to store user's timezone (set during sync)
 let currentUserTimezone = DEFAULT_TIMEZONE;
@@ -972,247 +976,35 @@ function parseVEvent(
         return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
       }
       
-      // Helper function to normalize timezone identifier
-      // Converts offset formats (GMT-0400) to IANA timezone identifiers
-      const normalizeTimezone = (tzid: string): string => {
-        if (!tzid) return DEFAULT_TIMEZONE;
-        
-        // Remove any quotes or extra whitespace
-        const cleanTzid = tzid.trim().replace(/["']/g, '');
-        
-        // Check if it's already a valid IANA timezone (contains /)
-        if (cleanTzid.includes('/')) {
-          return cleanTzid;
-        }
-        
-        // Handle GMT offset formats (GMT-0400, GMT+0500, etc.)
-        const gmtMatch = cleanTzid.match(/^GMT([+-])(\d{2})(\d{2})$/i);
-        if (gmtMatch) {
-          const sign = gmtMatch[1];
-          const hours = parseInt(gmtMatch[2], 10);
-          const minutes = parseInt(gmtMatch[3], 10);
-          const totalOffsetMinutes = (sign === '+' ? 1 : -1) * (hours * 60 + minutes);
-          
-          // Map common offsets to IANA timezones
-          // This is approximate - we'll use the user's timezone as fallback
-          if (totalOffsetMinutes === -300) return 'America/New_York'; // EST/EDT
-          if (totalOffsetMinutes === -240) return 'America/New_York'; // EDT
-          if (totalOffsetMinutes === -360) return 'America/Chicago'; // CST/CDT
-          if (totalOffsetMinutes === -420) return 'America/Denver'; // MST/MDT
-          if (totalOffsetMinutes === -480) return 'America/Los_Angeles'; // PST/PDT
-          if (totalOffsetMinutes === 0) return 'UTC';
-          
-          // For other offsets, try to use user's timezone or default
-          // Log warning but ensure we return a valid IANA timezone
-          console.warn(`Unmapped GMT offset ${cleanTzid} (${totalOffsetMinutes} minutes), using default timezone`);
-          const fallback = currentUserTimezone || DEFAULT_TIMEZONE;
-          // Ensure fallback is valid IANA format
-          if (fallback.includes('/') || fallback === 'UTC') {
-            return fallback;
-          }
-          // If fallback is also invalid, use UTC
-          return 'UTC';
-        }
-        
-        // Handle other common abbreviations (EST, EDT, PST, etc.)
-        const abbrevMap: Record<string, string> = {
-          'EST': 'America/New_York',
-          'EDT': 'America/New_York',
-          'CST': 'America/Chicago',
-          'CDT': 'America/Chicago',
-          'MST': 'America/Denver',
-          'MDT': 'America/Denver',
-          'PST': 'America/Los_Angeles',
-          'PDT': 'America/Los_Angeles',
-          'UTC': 'UTC',
-          'GMT': 'UTC',
-        };
-        
-        const upperTzid = cleanTzid.toUpperCase();
-        if (abbrevMap[upperTzid]) {
-          return abbrevMap[upperTzid];
-        }
-        
-        // If we can't normalize it, use default timezone
-        console.warn(`Unknown timezone format ${cleanTzid}, using default timezone`);
-        const fallback = currentUserTimezone || DEFAULT_TIMEZONE;
-        // Ensure fallback is valid IANA format
-        if (fallback.includes('/') || fallback === 'UTC') {
-          return fallback;
-        }
-        // If fallback is also invalid, use UTC
-        return 'UTC';
-      };
-      
-      // Helper function to convert local time in a timezone to UTC
-      const convertToUTC = (targetTzid: string, yr: number, mo: number, dy: number, hr: number, mn: number, sc: number): string => {
-        // Normalize timezone identifier first
-        let normalizedTzid: string;
-        try {
-          normalizedTzid = normalizeTimezone(targetTzid);
-          // Ensure normalized timezone is not the original invalid format
-          if (normalizedTzid === targetTzid && !normalizedTzid.includes('/') && normalizedTzid.toUpperCase().startsWith('GMT')) {
-            // Normalization didn't change the value and it's still an invalid GMT format
-            console.warn(`normalizeTimezone returned unchanged invalid timezone ${targetTzid}, using fallback`);
-            normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
-          }
-        } catch (normalizeError) {
-          // If normalization itself fails, use default
-          console.warn(`Failed to normalize timezone ${targetTzid}, using default:`, normalizeError);
-          normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
-        }
-        
-        // Validate that the normalized timezone is valid for Intl.DateTimeFormat
-        // Double-check it's not still an invalid GMT format
-        if (normalizedTzid.toUpperCase().startsWith('GMT') && !normalizedTzid.includes('/')) {
-          console.warn(`Normalized timezone ${normalizedTzid} is still invalid GMT format, using fallback`);
-          normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
-        }
-        
-        let validTzid = normalizedTzid;
-        try {
-          // Test if timezone is valid by trying to create a formatter
-          new Intl.DateTimeFormat('en-US', { timeZone: normalizedTzid });
-        } catch (e) {
-          // Invalid timezone - use default silently (normalization already attempted)
-          // Only log if normalization didn't change the value (meaning it was already invalid)
-          const errorMsg = e instanceof Error ? e.message : String(e);
-          if (targetTzid === normalizedTzid && targetTzid.toUpperCase().startsWith('GMT')) {
-            // Original was invalid GMT format and normalization didn't help - this is expected, don't warn
-            // The fallback will be used instead
-          } else if (targetTzid !== normalizedTzid) {
-            // Normalization changed it but it's still invalid - log only in debug mode
-            if (import.meta.env.DEV) {
-              console.debug(`Timezone ${targetTzid} normalized to ${normalizedTzid} but still invalid, using fallback`);
-            }
-          }
-          const fallback = currentUserTimezone || DEFAULT_TIMEZONE;
-          // Ensure fallback is valid IANA format
-          if (fallback.includes('/') || fallback === 'UTC') {
-            validTzid = fallback;
-          } else {
-            // If fallback is also invalid, use UTC
-            validTzid = 'UTC';
-          }
-          // Validate the fallback timezone too
-          try {
-            new Intl.DateTimeFormat('en-US', { timeZone: validTzid });
-          } catch (fallbackError) {
-            // Even fallback is invalid - use named constant and calculate offset directly
-            // Don't log warning - this is expected for edge cases
-            const fallbackUTC = new Date(Date.UTC(yr, mo, dy, hr + FALLBACK_UTC_OFFSET_HOURS, mn, sc));
-            return fallbackUTC.toISOString();
-          }
-        }
-        
-        // Use formatToParts for reliable parsing
-        const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: validTzid,
-          year: 'numeric',
-          month: 'numeric',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: 'numeric',
-          second: 'numeric',
-          hour12: false,
-        });
-        
-        // Try different UTC offsets to find the one that gives us our target local time
-        for (let offsetHours = -12; offsetHours <= 14; offsetHours++) {
-          const testUTC = new Date(Date.UTC(yr, mo, dy, hr - offsetHours, mn, sc));
-          
-          const parts = formatter.formatToParts(testUTC);
-          const getPart = (type: string): number => {
-            const part = parts.find(p => p.type === type);
-            return part ? parseInt(part.value, 10) : 0;
-          };
-          
-          const tzYear = getPart('year');
-          const tzMonth = getPart('month');
-          const tzDay = getPart('day');
-          let tzHour = getPart('hour');
-          const tzMin = getPart('minute');
-          
-          // Handle hour 24 (midnight next day)
-          if (tzHour === 24) tzHour = 0;
-          
-          // Check if this UTC time produces our desired local time
-          if (tzYear === yr && tzMonth === mo + 1 && tzDay === dy && 
-              tzHour === hr && tzMin === mn) {
-            return testUTC.toISOString();
-          }
-        }
-        
-        // Fallback: assume timezone is similar to EST/EDT (-5/-4)
-        const fallbackUTC = new Date(Date.UTC(yr, mo, dy, hr + 5, mn, sc));
-        return fallbackUTC.toISOString();
+      const yearNum = parseInt(year, 10);
+      const monthNum = parseInt(month, 10) - 1; // JS months are 0-indexed
+      const dayNum = parseInt(day, 10);
+      const hourNum = parseInt(hour, 10);
+      const minuteNum = parseInt(minute, 10);
+      const secondNum = parseInt(second, 10);
+
+      const convertToUTC = (targetTzid: string): string => {
+        const normalized = normalizeCalDavTimeZone(targetTzid, currentUserTimezone || DEFAULT_TIMEZONE);
+        return wallClockInTimeZoneToUtcIso(
+          yearNum,
+          monthNum,
+          dayNum,
+          hourNum,
+          minuteNum,
+          secondNum,
+          normalized,
+          currentUserTimezone || DEFAULT_TIMEZONE,
+        );
       };
 
       // If there's a TZID, convert from that timezone to UTC
       if (tzid) {
-        try {
-          const yearNum = parseInt(year, 10);
-          const monthNum = parseInt(month, 10) - 1; // JS months are 0-indexed
-          const dayNum = parseInt(day, 10);
-          const hourNum = parseInt(hour, 10);
-          const minuteNum = parseInt(minute, 10);
-          const secondNum = parseInt(second, 10);
-          
-          return convertToUTC(tzid, yearNum, monthNum, dayNum, hourNum, minuteNum, secondNum);
-        } catch (e) {
-          // Normalize timezone before logging error to show what was attempted
-          let normalizedTzid = tzid;
-          try {
-            // Try to normalize if it's a GMT offset format
-            const gmtMatch = tzid.match(/^GMT([+-])(\d{2})(\d{2})$/i);
-            if (gmtMatch) {
-              const sign = gmtMatch[1];
-              const hours = parseInt(gmtMatch[2], 10);
-              const minutes = parseInt(gmtMatch[3], 10);
-              const totalOffsetMinutes = (sign === '+' ? 1 : -1) * (hours * 60 + minutes);
-              
-              // Map common offsets to IANA timezones
-              if (totalOffsetMinutes === -300 || totalOffsetMinutes === -240) normalizedTzid = 'America/New_York';
-              else if (totalOffsetMinutes === -360) normalizedTzid = 'America/Chicago';
-              else if (totalOffsetMinutes === -420) normalizedTzid = 'America/Denver';
-              else if (totalOffsetMinutes === -480) normalizedTzid = 'America/Los_Angeles';
-              else if (totalOffsetMinutes === 0) normalizedTzid = 'UTC';
-              else normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
-            }
-          } catch (normalizeErr) {
-            // Normalization failed, use default
-            normalizedTzid = currentUserTimezone || DEFAULT_TIMEZONE;
-          }
-          
-          // Only log warning if normalization didn't help or wasn't possible
-          if (normalizedTzid === tzid || normalizedTzid.toUpperCase().startsWith('GMT')) {
-            // Don't log warning - normalization already attempted, using fallback silently
-          } else {
-            // Normalization worked, but conversion still failed - this shouldn't happen often
-            console.debug(`Timezone ${tzid} normalized to ${normalizedTzid}, but conversion failed:`, e);
-          }
-          return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
-        }
+        return convertToUTC(tzid);
       }
-      
-      // No TZID and no Z = floating/local time
-      // Use the user's detected timezone for conversion to UTC
-      try {
-        const defaultTzid = currentUserTimezone;
-        console.log(`Parsing floating time ${dateStr} with user timezone: ${defaultTzid}`);
-        
-        const yearNum = parseInt(year, 10);
-        const monthNum = parseInt(month, 10) - 1;
-        const dayNum = parseInt(day, 10);
-        const hourNum = parseInt(hour, 10);
-        const minuteNum = parseInt(minute, 10);
-        const secondNum = parseInt(second, 10);
-        
-        return convertToUTC(defaultTzid, yearNum, monthNum, dayNum, hourNum, minuteNum, secondNum);
-      } catch (e) {
-        console.warn(`Failed to convert floating time with timezone ${currentUserTimezone}:`, e);
-        return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
-      }
+
+      // No TZID and no Z = floating/local time — use the user's browser timezone from sync
+      console.log(`Parsing floating time ${dateStr} with user timezone: ${currentUserTimezone}`);
+      return convertToUTC(currentUserTimezone || DEFAULT_TIMEZONE);
     }
     
     // Handle DATE format (e.g., 20231225) - all-day events
