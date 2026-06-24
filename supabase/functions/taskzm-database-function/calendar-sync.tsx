@@ -8,6 +8,13 @@ import * as kv from "./kv_store.tsx";
 import * as caldav from "./caldav-client.tsx";
 import { getGoogleOAuthConfig } from "./google-oauth-config.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  addCalendarDays,
+  addCalendarMonths,
+  addCalendarYears,
+  getWallClockInTimeZone,
+  wallClockPartsToUtcDate,
+} from './calendar-timezone-utils.ts';
 
 // Constants
 const MAX_RECURRENCE_ITERATIONS = 365; // Maximum iterations for recurring event expansion (1 year)
@@ -997,14 +1004,14 @@ export async function getCalendarEvents(
 
   // For Apple, always use database (events are synced via CalDAV)
   if (provider === 'apple') {
-    return await getAppleEventsFromDatabase(userId, startDate, endDate);
+    return await getAppleEventsFromDatabase(userId, startDate, endDate, resolvedTimezone);
   }
 
   // For Google and Outlook, try database first, then fall back to API
   let events: CalendarEvent[] = [];
   
   if (provider === 'google') {
-    events = await getGoogleEventsFromDatabase(userId, startDate, endDate);
+    events = await getGoogleEventsFromDatabase(userId, startDate, endDate, resolvedTimezone);
     // If no events in database, fetch from API
     if (events.length === 0) {
       const tokens = await getCalendarTokens(userId, provider);
@@ -1014,7 +1021,7 @@ export async function getCalendarEvents(
       }
     }
   } else if (provider === 'outlook') {
-    events = await getOutlookEventsFromDatabase(userId, startDate, endDate);
+    events = await getOutlookEventsFromDatabase(userId, startDate, endDate, resolvedTimezone);
     // If no events in database, fetch from API
     if (events.length === 0) {
       const tokens = await getCalendarTokens(userId, provider);
@@ -1029,13 +1036,18 @@ export async function getCalendarEvents(
 }
 
 /**
- * Generate recurring event occurrences from RRULE
+ * Generate recurring event occurrences from RRULE.
+ * Preserves wall-clock time in `timeZone` across DST (iCalendar semantics).
  */
 function generateRecurringOccurrences(
   baseEvent: any,
   rangeStart: Date,
-  rangeEnd: Date
+  rangeEnd: Date,
+  timeZone: string,
 ): CalendarEvent[] {
+  const normalizeStart = (ts: string) => new Date(ts).toISOString();
+  const normalizeEnd = (ts: string) => new Date(ts).toISOString();
+
   if (!baseEvent.rrule) {
     // Not a recurring event, return single occurrence if in range
     const eventStart = new Date(baseEvent.start_time);
@@ -1052,15 +1064,14 @@ function generateRecurringOccurrences(
         id: baseEvent.id,
         title: baseEvent.title,
         description: baseEvent.description,
-        start: baseEvent.start_time,
-        end: baseEvent.end_time,
+        start: normalizeStart(baseEvent.start_time),
+        end: normalizeEnd(baseEvent.end_time),
         location: baseEvent.location,
         provider,
         providerEventId: baseEvent.external_id,
         calendarColor: baseEvent.calendar_color,
-        // Include recurrence metadata (will be undefined for non-recurring events)
         rrule: baseEvent.rrule,
-        recurrenceBaseId: undefined, // Not storing instances, so no base ID
+        recurrenceBaseId: undefined,
         isRecurring: !!baseEvent.rrule,
       }];
     }
@@ -1069,7 +1080,6 @@ function generateRecurringOccurrences(
 
   const occurrences: CalendarEvent[] = [];
   
-  // Determine provider from source or external_id format
   let provider: CalendarProvider = 'apple';
   if (baseEvent.source === 'google' || baseEvent.external_id?.startsWith('google_')) {
     provider = 'google';
@@ -1077,7 +1087,6 @@ function generateRecurringOccurrences(
     provider = 'outlook';
   }
   
-  // Parse RRULE
   const parts: Record<string, string> = {};
   baseEvent.rrule.split(';').forEach((part: string) => {
     const [key, value] = part.split('=');
@@ -1088,107 +1097,100 @@ function generateRecurringOccurrences(
   const interval = parseInt(parts['INTERVAL'] || '1', 10);
   const count = parts['COUNT'] ? parseInt(parts['COUNT'], 10) : undefined;
   const until = parts['UNTIL'];
-  const byDay = parts['BYDAY'];
-  const byMonthDay = parts['BYMONTHDAY'];
+  const byMonthDay = parts['BYMONTHDAY'] ? parseInt(parts['BYMONTHDAY'], 10) : undefined;
 
-  // Parse base event times (timestamptz values are UTC instants regardless of serialization)
   const baseStart = new Date(baseEvent.start_time);
   const baseEnd = new Date(baseEvent.end_time);
   const duration = baseEnd.getTime() - baseStart.getTime();
 
-  // Calculate until date
   let untilDate = rangeEnd;
-  if (until) {
-    if (until.length >= 8) {
-      const year = parseInt(until.substring(0, 4), 10);
-      const month = parseInt(until.substring(4, 6), 10) - 1;
-      const day = parseInt(until.substring(6, 8), 10);
-      let hour = 23, minute = 59, second = 59;
-      if (until.length >= 15) {
-        hour = parseInt(until.substring(9, 11), 10);
-        minute = parseInt(until.substring(11, 13), 10);
-        second = parseInt(until.substring(13, 15), 10);
-      }
-      untilDate = new Date(Date.UTC(year, month, day, hour, minute, second));
+  if (until && until.length >= 8) {
+    const year = parseInt(until.substring(0, 4), 10);
+    const month = parseInt(until.substring(4, 6), 10) - 1;
+    const day = parseInt(until.substring(6, 8), 10);
+    let hour = 23, minute = 59, second = 59;
+    if (until.length >= 15) {
+      hour = parseInt(until.substring(9, 11), 10);
+      minute = parseInt(until.substring(11, 13), 10);
+      second = parseInt(until.substring(13, 15), 10);
     }
+    untilDate = wallClockPartsToUtcDate(
+      { year, monthIndex: month, day, hour, minute, second },
+      timeZone,
+    );
   }
 
-  // Limit iterations
   const maxIterations = count || MAX_RECURRENCE_ITERATIONS;
   let iterations = 0;
-  let currentDate = new Date(baseStart);
 
-  // If base event starts before the range, fast-forward to first occurrence within range
-  // This ensures we generate all occurrences within the requested date range
-  if (currentDate < rangeStart) {
-    // Calculate how many intervals we need to skip to reach the range start
-    const daysDiff = Math.floor((rangeStart.getTime() - currentDate.getTime()) / MILLISECONDS_PER_DAY);
-    
+  // Preserve local wall-clock time from the base event (handles DST on each occurrence)
+  let wall = getWallClockInTimeZone(baseStart, timeZone);
+  let currentInstant = wallClockPartsToUtcDate(wall, timeZone);
+
+  // Fast-forward to first occurrence near rangeStart
+  if (currentInstant < rangeStart) {
     if (freq === 'DAILY') {
+      const daysDiff = Math.floor((rangeStart.getTime() - currentInstant.getTime()) / MILLISECONDS_PER_DAY);
       const intervalsToSkip = Math.floor(daysDiff / interval);
-      currentDate.setUTCDate(currentDate.getUTCDate() + (intervalsToSkip * interval));
+      wall = addCalendarDays(wall, intervalsToSkip * interval);
     } else if (freq === 'WEEKLY') {
-      const weeksDiff = Math.floor(daysDiff / (DAYS_PER_WEEK * interval));
-      currentDate.setUTCDate(currentDate.getUTCDate() + (weeksDiff * DAYS_PER_WEEK * interval));
+      const daysDiff = Math.floor((rangeStart.getTime() - currentInstant.getTime()) / MILLISECONDS_PER_DAY);
+      const weeksToSkip = Math.floor(daysDiff / (DAYS_PER_WEEK * interval));
+      wall = addCalendarDays(wall, weeksToSkip * DAYS_PER_WEEK * interval);
+    } else {
+      let skipGuard = 0;
+      while (wallClockPartsToUtcDate(wall, timeZone) < rangeStart && skipGuard < maxIterations) {
+        if (freq === 'MONTHLY') {
+          wall = addCalendarMonths(wall, interval, byMonthDay);
+        } else if (freq === 'YEARLY') {
+          wall = addCalendarYears(wall, interval, byMonthDay);
+        } else {
+          break;
+        }
+        skipGuard++;
+      }
     }
-    // For MONTHLY and YEARLY, we'll let the loop handle it naturally
-    // as the calculation is more complex with BYDAY and BYMONTHDAY
+    currentInstant = wallClockPartsToUtcDate(wall, timeZone);
   }
 
-  while (currentDate <= untilDate && currentDate <= rangeEnd && iterations < maxIterations) {
-    // Check if this occurrence falls within the requested date range
-    // Compare dates at midnight to ensure we catch all occurrences on the same day
-    const currentDateOnly = new Date(currentDate);
-    currentDateOnly.setHours(MIDNIGHT_HOUR, MIDNIGHT_MINUTE, MIDNIGHT_SECOND, MIDNIGHT_MILLISECOND);
-    const rangeStartOnly = new Date(rangeStart);
-    rangeStartOnly.setHours(MIDNIGHT_HOUR, MIDNIGHT_MINUTE, MIDNIGHT_SECOND, MIDNIGHT_MILLISECOND);
-    const rangeEndOnly = new Date(rangeEnd);
-    rangeEndOnly.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
-    
-    if (currentDateOnly >= rangeStartOnly && currentDateOnly <= rangeEndOnly) {
-      const endDate = new Date(currentDate.getTime() + duration);
-      
+  while (currentInstant <= untilDate && currentInstant <= rangeEnd && iterations < maxIterations) {
+    if (currentInstant >= rangeStart && currentInstant <= rangeEnd) {
+      const endInstant = new Date(currentInstant.getTime() + duration);
       occurrences.push({
-        id: `${baseEvent.id}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
+        id: `${baseEvent.id}_${currentInstant.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
         title: baseEvent.title,
         description: baseEvent.description,
-        start: currentDate.toISOString(),
-        end: endDate.toISOString(),
+        start: currentInstant.toISOString(),
+        end: endInstant.toISOString(),
         location: baseEvent.location,
         provider: provider as CalendarProvider,
-        providerEventId: `${baseEvent.external_id}_${currentDate.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
+        providerEventId: `${baseEvent.external_id}_${currentInstant.toISOString().replace(/[-:TZ.]/g, '').substring(0, 14)}`,
         calendarColor: baseEvent.calendar_color,
-        // Include recurrence metadata so frontend can recognize recurring events
         rrule: baseEvent.rrule,
-        recurrenceBaseId: baseEvent.external_id, // Link to base event
-        isRecurring: true, // All occurrences are part of recurring series
+        recurrenceBaseId: baseEvent.external_id,
+        isRecurring: true,
       });
     }
 
-    // Move to next occurrence (always UTC — matches timestamptz storage)
     switch (freq) {
       case 'DAILY':
-        currentDate.setUTCDate(currentDate.getUTCDate() + interval);
+        wall = addCalendarDays(wall, interval);
         break;
       case 'WEEKLY':
-        currentDate.setUTCDate(currentDate.getUTCDate() + (DAYS_PER_WEEK * interval));
+        wall = addCalendarDays(wall, DAYS_PER_WEEK * interval);
         break;
       case 'MONTHLY':
-        if (byMonthDay) {
-          const targetDay = parseInt(byMonthDay, 10);
-          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
-          currentDate.setUTCDate(Math.min(targetDay, new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() + 1, 0)).getUTCDate()));
-        } else {
-          currentDate.setUTCMonth(currentDate.getUTCMonth() + interval);
-        }
+        wall = addCalendarMonths(wall, interval, byMonthDay);
         break;
       case 'YEARLY':
-        currentDate.setUTCFullYear(currentDate.getUTCFullYear() + interval);
+        wall = addCalendarYears(wall, interval, byMonthDay);
         break;
       default:
         iterations = maxIterations;
+        break;
     }
 
+    currentInstant = wallClockPartsToUtcDate(wall, timeZone);
     iterations++;
   }
 
@@ -1201,7 +1203,8 @@ function generateRecurringOccurrences(
 async function getAppleEventsFromDatabase(
   userId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  timeZone: string,
 ): Promise<CalendarEvent[]> {
   try {
     const supabase = createClient(
@@ -1246,7 +1249,8 @@ async function getAppleEventsFromDatabase(
         const occurrences = generateRecurringOccurrences(
           event,
           startDateObj,
-          endDateObj
+          endDateObj,
+          timeZone,
         );
         result.push(...occurrences);
       } else {
@@ -1289,7 +1293,8 @@ async function getAppleEventsFromDatabase(
 async function getGoogleEventsFromDatabase(
   userId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  timeZone: string,
 ): Promise<CalendarEvent[]> {
   try {
     const supabase = createClient(
@@ -1328,7 +1333,8 @@ async function getGoogleEventsFromDatabase(
         const occurrences = generateRecurringOccurrences(
           event,
           startDateObj,
-          endDateObj
+          endDateObj,
+          timeZone,
         );
         result.push(...occurrences);
       } else {
@@ -1371,7 +1377,8 @@ async function getGoogleEventsFromDatabase(
 async function getOutlookEventsFromDatabase(
   userId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  timeZone: string,
 ): Promise<CalendarEvent[]> {
   try {
     const supabase = createClient(
@@ -1410,7 +1417,8 @@ async function getOutlookEventsFromDatabase(
         const occurrences = generateRecurringOccurrences(
           event,
           startDateObj,
-          endDateObj
+          endDateObj,
+          timeZone,
         );
         result.push(...occurrences);
       } else {
