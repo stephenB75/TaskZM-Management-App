@@ -283,6 +283,8 @@ export const TODAY_AGENDA_TIMELINE = {
   spineDotSizePx: 8,
   /** Line height (px) for per-item time labels on the timeline rail. */
   timeLabelLineHeightPx: 12,
+  /** Minimum vertical gap (px) between consecutive time labels on the rail. */
+  timeLabelMinSeparationPx: 14,
   /** Opacity (0–1) for hour grid lines in duration block mode. */
   hourGridLineOpacity: 0.12,
   columnWidth: '4rem',

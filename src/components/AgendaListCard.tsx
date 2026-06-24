@@ -7,6 +7,8 @@ import {
   AGENDA_LIST_CARD_COLORS,
   getAgendaCardBadgeStyles,
 } from '../lib/agenda-list-card-constants';
+import { TODAY_AGENDA_TEXT } from '../lib/today-agenda-constants';
+import { TODAY_AGENDA_TIMELINE } from '../lib/layout-constants';
 
 export interface AgendaListCardProps {
   accentColor: string;
@@ -27,8 +29,13 @@ export interface AgendaListCardProps {
   hideTime?: boolean;
   /** Ultra-compact single row: title + badge only (short timeline events). */
   micro?: boolean;
+  /** When true, show compact "NEXT UP" pill at top of timeline card. */
+  showNextUpBadge?: boolean;
   /** When true, hides the left dot/accent column (timeline rail shows the dot). */
   hideAccentColumn?: boolean;
+  /** Left accent bar on the card (used on timeline when hideAccentColumn is set). */
+  leftAccentColor?: string;
+  leftAccentWidthPx?: number;
   /** When true, renders without outer shadow/radius (for use inside a parent card shell). */
   embedded?: boolean;
   /** When true, title renders with line-through (completed tasks). */
@@ -55,6 +62,9 @@ export function AgendaListCard({
   hideTime = false,
   micro = false,
   hideAccentColumn = false,
+  leftAccentColor,
+  leftAccentWidthPx,
+  showNextUpBadge = false,
   embedded = false,
   titleDone = false,
   className,
@@ -117,6 +127,9 @@ export function AgendaListCard({
           : isDark
             ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark
             : AGENDA_LIST_CARD_COLORS.cardBackground,
+        ...(leftAccentColor && hideAccentColumn
+          ? { borderLeft: `${leftAccentWidthPx ?? AGENDA_LIST_CARD.accentLineWidthPx * 2}px solid ${leftAccentColor}` }
+          : {}),
         ...style,
       }}
     >
@@ -164,6 +177,16 @@ export function AgendaListCard({
         )}
 
         <div className="flex flex-col flex-1 min-w-0">
+          {showNextUpBadge && (
+            <div
+              className="flex-shrink-0"
+              style={{ marginBottom: TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx }}
+            >
+              <span className="text-xs font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block">
+                {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
+              </span>
+            </div>
+          )}
           {/* Header: time + optional comment / action */}
           <div className="flex items-start justify-between gap-2 min-w-0">
             <div className="flex items-baseline gap-1 min-w-0">

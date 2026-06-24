@@ -787,6 +787,9 @@ export const DraggableTaskCard = React.forwardRef<
       titleDone?: boolean;
       hideTime?: boolean;
       hideAccentColumn?: boolean;
+      showNextUpBadge?: boolean;
+      leftAccentColor?: string;
+      leftAccentWidthPx?: number;
       style?: React.CSSProperties;
     }) => (
       <AgendaListCard
@@ -804,6 +807,9 @@ export const DraggableTaskCard = React.forwardRef<
         compact={options.compact}
         hideTime={options.hideTime}
         hideAccentColumn={options.hideAccentColumn}
+        showNextUpBadge={options.showNextUpBadge}
+        leftAccentColor={options.leftAccentColor}
+        leftAccentWidthPx={options.leftAccentWidthPx}
         embedded={options.embedded}
         headerAction={agendaCompleteButton}
         style={options.style}
@@ -815,6 +821,58 @@ export const DraggableTaskCard = React.forwardRef<
       boxShadow: AGENDA_LIST_CARD.shadow,
       backgroundColor: isDark ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark : AGENDA_LIST_CARD_COLORS.cardBackground,
     };
+
+    if (isTodayAgenda && timelineBlockHeightPx != null) {
+      return (
+        <div
+          ref={cardRef}
+          className="relative w-full h-full min-h-0"
+          style={{ width: '100%', minWidth: '100%', maxWidth: '100%' }}
+        >
+          <div
+            ref={setNodeRef}
+            style={{
+              ...style,
+              height: '100%',
+              width: '100%',
+              touchAction: dragDisabled ? 'auto' : 'none',
+              ...(!dragDisabled && (isDragging || isSortableDragging)
+                ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 }
+                : {}),
+            }}
+            {...attributes}
+            {...(dragDisabled ? {} : listeners)}
+            className={cn(
+              'w-full h-full',
+              !dragDisabled && !(isDragging || isSortableDragging) && 'cursor-grab',
+              !dragDisabled && (isDragging || isSortableDragging) && 'cursor-grabbing',
+              task.status === 'done' && 'opacity-60',
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDragging && !isSortableDragging && !document.body.classList.contains('dragging')) {
+                requestAnimationFrame(() => onClick());
+              }
+            }}
+          >
+            {renderAgendaTaskCard({
+              compact: compactTimeline,
+              embedded: false,
+              hideTime: hideTimelineTime,
+              hideAccentColumn: hideTimelineAccent,
+              showNextUpBadge: isNextUp,
+              leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
+              leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
+              style: {
+                height: '100%',
+                minHeight: '100%',
+                maxHeight: '100%',
+              },
+            })}
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div

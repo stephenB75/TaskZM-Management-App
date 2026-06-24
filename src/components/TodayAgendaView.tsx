@@ -29,7 +29,6 @@ import {
   formatTodayAgendaMinutesLabel,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
-import { AGENDA_LIST_CARD, AGENDA_LIST_CARD_COLORS } from "../lib/agenda-list-card-constants";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE, getTodayAgendaTimelineBlockHeightPx } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
@@ -492,8 +491,8 @@ export function TodayAgendaView({
         spineWidthPx,
         spineDotSizePx,
         hourGridLineOpacity,
-        blockAccentWidthPx,
         timeLabelLineHeightPx,
+        timeLabelMinSeparationPx,
       } = TODAY_AGENDA_TIMELINE;
 
       const isCompactList = layoutMode === 'compactList';
@@ -525,47 +524,21 @@ export function TodayAgendaView({
               ? `e-${item.event.id}`
               : `b-${topPx}`;
         const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
-        const accentColor = getTimelineBlockAccentColor(item);
         const isNextUpTask = item.type === 'task' && item.task && item.task.id === nextUpTaskId;
-        const nextUpInsetPx = isNextUpTask
-          ? TODAY_AGENDA_TIMELINE.nextUpBadgeHeightPx + TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx * 2
-          : 0;
-        const cardAreaHeightPx = Math.max(1, heightPx - nextUpInsetPx);
 
         return (
           <div
             key={key}
-            className="absolute overflow-hidden left-0 right-0 flex flex-col"
+            className="absolute left-0 right-0 flex flex-col"
             style={{
               top: topPx,
               height: heightPx,
               minHeight: isCompactList ? undefined : TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
               zIndex: isNextUpTask ? Z_INDEX.TIMELINE_BLOCK + 1 : Z_INDEX.TIMELINE_BLOCK,
-              backgroundColor: isDark
-                ? AGENDA_LIST_CARD_COLORS.cardBackgroundDark
-                : AGENDA_LIST_CARD_COLORS.cardBackground,
-              boxShadow: AGENDA_LIST_CARD.shadow,
-              borderRadius: AGENDA_LIST_CARD.borderRadiusPx,
-              borderLeft: `${blockAccentWidthPx}px solid ${accentColor}`,
             }}
           >
-            {isNextUpTask && (
-              <div
-                className="flex-shrink-0 flex items-center"
-                style={{
-                  paddingLeft: AGENDA_LIST_CARD.compact.paddingPx,
-                  paddingRight: AGENDA_LIST_CARD.compact.paddingPx,
-                  paddingTop: TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx,
-                  paddingBottom: TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx,
-                }}
-              >
-                <span className="text-xs font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block">
-                  {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
-                </span>
-              </div>
-            )}
             {item.type === 'task' && item.task ? (
-              <div data-task-id={item.task.id} className="relative w-full flex-1 min-h-0">
+              <div data-task-id={item.task.id} className="relative w-full h-full min-h-0">
                 <DraggableTaskCard
                   task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                   onClick={() => item.task && handleTaskClick(item.task)}
@@ -573,7 +546,7 @@ export function TodayAgendaView({
                   occurrenceDate={todayString}
                   isNextUp={isNextUpTask}
                   onComplete={handleTaskComplete}
-                  timelineBlockHeightPx={cardAreaHeightPx}
+                  timelineBlockHeightPx={heightPx}
                   compactTimeline={compactTimeline}
                   hideTimelineTime
                   hideTimelineAccent
@@ -581,7 +554,7 @@ export function TodayAgendaView({
                 />
               </div>
             ) : item.type === 'event' && item.event ? (
-              <div data-event-id={item.event.id} className="relative w-full flex-1 min-h-0">
+              <div data-event-id={item.event.id} className="relative w-full h-full min-h-0">
                 <CalendarEventCard
                   title={item.event.title}
                   start={item.event.start}
@@ -626,24 +599,40 @@ export function TodayAgendaView({
                 aria-hidden
               />
 
-              {timelineBlocks.map((block) => (
-                <div
-                  key={`time-${block.item.type === 'task' && block.item.task ? block.item.task.id : block.item.type === 'event' && block.item.event ? block.item.event.id : block.topPx}`}
-                  className="absolute left-0 pr-2 text-right"
-                  style={{
-                    top: block.topPx,
-                    width: `calc(100% - ${spineWidthPx + 4}px)`,
-                    height: timeLabelLineHeightPx,
-                  }}
-                >
-                  <span
-                    className="text-xs text-muted-foreground whitespace-nowrap tabular-nums block"
-                    style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
-                  >
-                    {formatTodayAgendaMinutesLabel(block.actualStartMins)}
-                  </span>
-                </div>
-              ))}
+              {(() => {
+                let prevLabelBottom = -Infinity;
+                return timelineBlocks.map((block) => {
+                  const blockKey =
+                    block.item.type === 'task' && block.item.task
+                      ? block.item.task.id
+                      : block.item.type === 'event' && block.item.event
+                        ? block.item.event.id
+                        : String(block.topPx);
+                  let labelTop = block.topPx;
+                  if (labelTop < prevLabelBottom + timeLabelMinSeparationPx - timeLabelLineHeightPx) {
+                    labelTop = prevLabelBottom + timeLabelMinSeparationPx;
+                  }
+                  prevLabelBottom = labelTop + timeLabelLineHeightPx;
+                  return (
+                    <div
+                      key={`time-${blockKey}`}
+                      className="absolute left-0 pr-2 text-right"
+                      style={{
+                        top: labelTop,
+                        width: `calc(100% - ${spineWidthPx + 4}px)`,
+                        height: timeLabelLineHeightPx,
+                      }}
+                    >
+                      <span
+                        className="text-xs text-muted-foreground whitespace-nowrap tabular-nums block"
+                        style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
+                      >
+                        {formatTodayAgendaMinutesLabel(block.actualStartMins)}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
 
               {/* Start dots on spine — one per item, aligned with time label */}
               {timelineBlocks.map((block) => {

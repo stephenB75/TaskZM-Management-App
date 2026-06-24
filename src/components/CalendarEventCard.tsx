@@ -363,27 +363,26 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     </TooltipProvider>
   );
 
-  // Today Agenda timeline — same card structure as tasks (compact row + footer, embedded in block shell)
+  // Today Agenda timeline — single AgendaListCard shell (matches task cards)
   if (variant === 'timeline') {
     const isCompact =
       compactTimeline ?? durationMinutes < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
     return (
-      <div className="w-full h-full min-h-full flex flex-col">
-        <AgendaListCard
-          accentColor={accentDotColor}
-          badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
-          title={title}
-          subtitle={isCompact ? undefined : (location || undefined)}
-          footerIcon="calendar"
-          footerSourceLabel={providerLabel}
-          durationLabel={formatDuration(durationMinutes)}
-          compact={isCompact}
-          hideTime
-          embedded
-          hideAccentColumn
-          style={{ height: '100%', minHeight: '100%', maxHeight: '100%' }}
-        />
-      </div>
+      <AgendaListCard
+        accentColor={accentDotColor}
+        badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
+        title={title}
+        subtitle={isCompact ? undefined : (location || undefined)}
+        footerIcon="calendar"
+        footerSourceLabel={providerLabel}
+        durationLabel={formatDuration(durationMinutes)}
+        compact={isCompact}
+        hideTime
+        hideAccentColumn
+        leftAccentColor={accentDotColor}
+        leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
+        style={{ height: '100%', minHeight: '100%', maxHeight: '100%' }}
+      />
     );
   }
 
