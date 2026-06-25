@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.25';
-export const VERSION_NAME = 'Today Agenda Timeline Polish';
+export const APP_VERSION = '1.0.26';
+export const VERSION_NAME = 'Today Agenda Timeline Fixes';
 export const VERSION_DATE = 'June 24, 2026';
-export const BUILD_NUMBER = '20260624-1';
+export const BUILD_NUMBER = '20260624-2';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,19 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.26',
+    date: 'June 24, 2026',
+    name: 'Today Agenda Timeline Fixes',
+    changes: [
+      'Today Agenda sidebar: always use compact list layout (fixes label/card misalignment in narrow panel)',
+      'Dedupe duplicate calendar events/blocks (fixes double cards, double dots, and overlapping time labels)',
+      'Timeline rail: dots aligned to card top edge; hide duplicate time labels for same start time',
+      'NEXT UP badge: show on first incomplete task when all scheduled times have passed',
+      'Unscheduled events use timeline card surface; task list cards use single-layer timeline styling',
+      'Service worker: version-scoped runtime cache purges stale JS chunks after deploy',
+    ],
+  },
   {
     version: '1.0.25',
     date: 'June 24, 2026',

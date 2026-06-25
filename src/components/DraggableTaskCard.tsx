@@ -1014,8 +1014,12 @@ export const DraggableTaskCard = React.forwardRef<
                   {renderAgendaTaskCard({
                     compact: compactTimeline,
                     embedded: timelineBlockHeightPx != null,
+                    surface: 'timeline',
                     hideTime: hideTimelineTime,
                     hideAccentColumn: hideTimelineAccent,
+                    leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
+                    leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
+                    showNextUpBadge: isNextUp && timelineBlockHeightPx == null,
                     style: {
                       height: '100%',
                       minHeight: '100%',

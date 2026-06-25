@@ -222,8 +222,11 @@ export function TodayAgendaView({
     }
 
     // Add calendar events (skip if a task already represents this event to avoid duplicate at same time)
+    const seenEventIds = new Set<string>();
     for (const event of todayCalendarEvents) {
       if (eventIdsRepresentedByTasks.has(event.id)) continue;
+      if (seenEventIds.has(event.id)) continue;
+      seenEventIds.add(event.id);
       items.push({
         type: 'event',
         event,
@@ -301,23 +304,40 @@ export function TodayAgendaView({
       return keyA.localeCompare(keyB);
     });
 
-    const resolvedLayoutMode: TodayAgendaLayoutMode = resolveTodayAgendaLayoutMode(blocks);
+    // Drop duplicate task/event blocks (stale calendar sync can emit the same event twice → stacked cards + double labels)
+    const dedupedBlocks: typeof blocks = [];
+    const seenBlockKeys = new Set<string>();
+    for (const block of blocks) {
+      const blockKey =
+        block.item.type === 'task' && block.item.task
+          ? `task:${block.item.task.id}`
+          : block.item.type === 'event' && block.item.event
+            ? `event:${block.item.event.id}`
+            : `block:${block.actualStartMins}:${dedupedBlocks.length}`;
+      if (seenBlockKeys.has(blockKey)) continue;
+      seenBlockKeys.add(blockKey);
+      dedupedBlocks.push(block);
+    }
+
+    const resolvedLayoutMode: TodayAgendaLayoutMode = hideHeader
+      ? 'compactList'
+      : resolveTodayAgendaLayoutMode(dedupedBlocks);
 
     if (resolvedLayoutMode === 'compactList') {
       const listGapPx = TODAY_AGENDA_TIMELINE.compactListItemGapPx;
       let y = 0;
-      for (const block of blocks) {
+      for (const block of dedupedBlocks) {
         block.heightPx = getTodayAgendaCompactRowHeightPx(block.actualDurationMins);
         block.topPx = y;
         y += block.heightPx + listGapPx;
       }
-      const layoutHeightPx = blocks.length > 0 ? y - listGapPx : 0;
-      return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx: layoutHeightPx, layoutMode: resolvedLayoutMode };
+      const layoutHeightPx = dedupedBlocks.length > 0 ? y - listGapPx : 0;
+      return { timelineBlocks: dedupedBlocks, unscheduledItems: unscheduled, timelineLayoutHeightPx: layoutHeightPx, layoutMode: resolvedLayoutMode };
     }
 
     // Duration blocks: stack same-time or overlapping items vertically
     const placed: Block[] = [];
-    for (const block of blocks) {
+    for (const block of dedupedBlocks) {
       let topPx = block.naturalTopPx;
       for (const prev of placed) {
         const sameStart = block.actualStartMins === prev.actualStartMins;
@@ -331,10 +351,10 @@ export function TodayAgendaView({
       placed.push(block);
     }
     const baseTimelineHeightPx = totalMinutes * pxPerMinute;
-    const maxBlockBottomPx = blocks.length > 0 ? Math.max(...blocks.map((b) => b.topPx + b.heightPx)) : 0;
+    const maxBlockBottomPx = dedupedBlocks.length > 0 ? Math.max(...dedupedBlocks.map((b) => b.topPx + b.heightPx)) : 0;
     const layoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
-    return { timelineBlocks: blocks, unscheduledItems: unscheduled, timelineLayoutHeightPx: layoutHeightPx, layoutMode: resolvedLayoutMode };
-  }, [combinedItems, getTaskMinutes]);
+    return { timelineBlocks: dedupedBlocks, unscheduledItems: unscheduled, timelineLayoutHeightPx: layoutHeightPx, layoutMode: resolvedLayoutMode };
+  }, [combinedItems, getTaskMinutes, hideHeader]);
 
   /** Base timeline height (px) for 7 AM–12 AM scale. */
   const timelineHeightPx = TODAY_AGENDA_TIMELINE.totalMinutes * TODAY_AGENDA_TIMELINE.pxPerMinute;
@@ -548,6 +568,10 @@ export function TodayAgendaView({
       const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
         block.displayTopPx + block.cardTopInsetPx;
 
+      /** Dot center sits on the card top edge (not centered in the time-label row). */
+      const getBlockDotTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
+        getBlockCardTopPx(block) - spineDotSizePx / 2;
+
       const hourlyLabels: { minutesFromStart: number; label: string }[] = [];
       if (!isCompactList) {
         for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
@@ -596,6 +620,7 @@ export function TodayAgendaView({
                   height: cardTopInsetPx,
                   paddingLeft: TODAY_AGENDA_TIMELINE.blocksColumnPaddingLeftPx,
                 }}
+                data-next-up-badge="true"
               >
                 <span className="text-xs font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block">
                   {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
@@ -641,7 +666,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v4"
+          data-agenda-timeline="v5"
         >
           <div
             className="flex w-full items-stretch"
@@ -670,6 +695,7 @@ export function TodayAgendaView({
 
               {(() => {
                 let prevLabelBottom = -Infinity;
+                let prevLabelStartMins: number | null = null;
                 return displayTimelineBlocks.map((block) => {
                   const blockKey =
                     block.item.type === 'task' && block.item.task
@@ -678,18 +704,27 @@ export function TodayAgendaView({
                         ? block.item.event.id
                         : String(block.displayTopPx);
                   const cardTopPx = getBlockCardTopPx(block);
+                  const showTimeLabel =
+                    prevLabelStartMins == null || block.actualStartMins !== prevLabelStartMins;
                   let labelTop = cardTopPx;
                   if (
+                    showTimeLabel &&
                     !isCompactList &&
                     labelTop < prevLabelBottom + timeLabelMinSeparationPx - timeLabelLineHeightPx
                   ) {
                     labelTop = prevLabelBottom + timeLabelMinSeparationPx;
                   }
-                  prevLabelBottom = labelTop + timeLabelLineHeightPx;
+                  if (showTimeLabel) {
+                    prevLabelBottom = labelTop + timeLabelLineHeightPx;
+                    prevLabelStartMins = block.actualStartMins;
+                  }
+                  if (!showTimeLabel) {
+                    return null;
+                  }
                   return (
                     <div
                       key={`time-${blockKey}`}
-                      className="absolute left-0 pr-2 text-right"
+                      className="absolute left-0 pr-2 text-right flex items-start"
                       style={{
                         top: labelTop,
                         width: `calc(100% - ${spineWidthPx + 4}px)`,
@@ -697,7 +732,7 @@ export function TodayAgendaView({
                       }}
                     >
                       <span
-                        className="text-xs text-muted-foreground whitespace-nowrap tabular-nums block"
+                        className="text-xs text-muted-foreground whitespace-nowrap tabular-nums block w-full"
                         style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
                       >
                         {formatTodayAgendaMinutesLabel(block.actualStartMins)}
@@ -716,8 +751,7 @@ export function TodayAgendaView({
                     : block.item.type === 'event' && block.item.event
                       ? `dot-e-${block.item.event.id}`
                       : `dot-${block.displayTopPx}`;
-                const cardTopPx = getBlockCardTopPx(block);
-                const dotTop = cardTopPx + (timeLabelLineHeightPx - spineDotSizePx) / 2;
+                const dotTop = getBlockDotTopPx(block);
                 return (
                   <div
                     key={dotKey}
@@ -862,6 +896,7 @@ export function TodayAgendaView({
                             provider={item.event.provider}
                             calendarColor={item.event.calendarColor}
                             isRecurring={item.event.isRecurring}
+                            variant="timeline"
                           />
                         </div>
                       ) : null}
