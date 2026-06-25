@@ -274,7 +274,7 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Gap (minutes) between consecutive items to use compact list instead of duration scale. */
   layoutProximityThresholdMinutes: 45,
   /** Vertical gap (px) between consecutive scheduled timeline cards (compact list + duration stack). */
-  compactListItemGapPx: 16,
+  compactListItemGapPx: 10,
   /** Block height (px) for short calendar events on the timeline. */
   microEventBlockHeightPx: 52,
   /** Width (px) of the vertical timeline spine. */
@@ -292,11 +292,11 @@ export const TODAY_AGENDA_TIMELINE = {
   columnGapPx: 12,
   rowGapPx: 4,
   /** Minimum gap (px) between consecutive timeline blocks so they don’t touch. */
-  blockGapPx: 16,
+  blockGapPx: 10,
   /** Gap (px) between back-to-back blocks in same lane so calendar event and task never overlap visually. */
   blockBackToBackGapPx: 4,
   /** Gap (px) between consecutive agenda items when using list fallback (e.g. no time). */
-  itemGapPx: 16,
+  itemGapPx: 10,
   /** Estimated height (px) for calendar event cards when computing cumulative spacing (+20% for larger container). */
   eventCardHeightPx: 120,
   /** Offset (px) from row top to card top when item shows Next Up badge (badge height + mb-2). Used so timeline time aligns with card top. */

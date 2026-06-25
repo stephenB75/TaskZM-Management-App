@@ -67,6 +67,45 @@ export function getTodayAgendaCompactRowHeightPx(durationMinutes: number, _isEve
   return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
 }
 
+/** Unique key for a timeline row — includes start so recurring events with the same id still render. */
+export function getTodayAgendaTimelineBlockKey(
+  item: {
+    type: 'task' | 'event';
+    task?: { id: string };
+    event?: { id: string; start: string };
+  },
+  actualStartMins: number,
+): string {
+  if (item.type === 'task' && item.task) {
+    return `task:${item.task.id}:${actualStartMins}`;
+  }
+  if (item.type === 'event' && item.event) {
+    return `event:${item.event.id}:${item.event.start}`;
+  }
+  return `block:${actualStartMins}`;
+}
+
+/** Unique key for deduping calendar events in the combined list (same id, different occurrence). */
+export function getTodayAgendaCalendarEventOccurrenceKey(event: { id: string; start: string }): string {
+  return `${event.id}:${event.start}`;
+}
+
+/** Minutes from timeline start (7 AM) for a local datetime; null if invalid. */
+export function getTodayAgendaMinutesFromTimelineStart(
+  date: Date,
+  startHour: number = TODAY_AGENDA_TIMELINE.startHour,
+): number | null {
+  if (isNaN(date.getTime())) return null;
+  return date.getHours() * MINUTES_PER_HOUR + date.getMinutes() - startHour * MINUTES_PER_HOUR;
+}
+
+export function isTodayAgendaMinutesInTimelineRange(
+  minutesFromStart: number,
+  totalMinutes: number = TODAY_AGENDA_TIMELINE.totalMinutes,
+): boolean {
+  return minutesFromStart >= 0 && minutesFromStart < totalMinutes;
+}
+
 /** Total vertical space (px) reserved above a Next Up card (badge sits in the inter-card gap). */
 export function getTodayAgendaNextUpInsetPx(): number {
   const { nextUpBadgeHeightPx, nextUpBadgeGapAboveBlockPx } = TODAY_AGENDA_TIMELINE;

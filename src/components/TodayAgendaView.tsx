@@ -28,6 +28,10 @@ import {
   getTodayAgendaCompactRowHeightPx,
   formatTodayAgendaMinutesLabel,
   getTodayAgendaNextUpInsetPx,
+  getTodayAgendaTimelineBlockKey,
+  getTodayAgendaCalendarEventOccurrenceKey,
+  getTodayAgendaMinutesFromTimelineStart,
+  isTodayAgendaMinutesInTimelineRange,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE, getTodayAgendaTimelineBlockHeightPx } from "../lib/layout-constants";
@@ -67,7 +71,7 @@ export function TodayAgendaView({
   const hasScrolledToCurrentTimeRef = useRef(false);
   // Current time for display - updates every minute to show current time
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' | 'outlook'; calendarColor?: string; isRecurring?: boolean }>>([]);
+  const [todayCalendarEvents, setTodayCalendarEvents] = useState<Array<{ id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' | 'outlook'; calendarColor?: string; isRecurring?: boolean; recurrenceBaseId?: string }>>([]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -200,17 +204,31 @@ export function TodayAgendaView({
   interface CombinedItem {
     type: 'task' | 'event';
     task?: Task;
-    event?: { id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' | 'outlook'; calendarColor?: string; isRecurring?: boolean };
+    event?: { id: string; title: string; start: string; end: string; location?: string; provider: 'google' | 'apple' | 'outlook'; calendarColor?: string; isRecurring?: boolean; recurrenceBaseId?: string };
     sortTime: number;
   }
 
   const combinedItems = useMemo(() => {
     const items: CombinedItem[] = [];
-    const eventIdsRepresentedByTasks = new Set(
-      todayTasks
-        .map((t) => (t as Task & { calendar_event_id?: string | null }).calendar_event_id)
-        .filter((id): id is string => !!id)
-    );
+    const startHour = TODAY_AGENDA_TIMELINE.startHour;
+    const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
+
+    // Only suppress a calendar event when a linked task is actually on today's timeline (not merely referenced).
+    const eventIdsRepresentedByOnTimelineTasks = new Set<string>();
+    for (const task of todayTasks) {
+      const calId = (task as Task & { calendar_event_id?: string | null }).calendar_event_id;
+      if (!calId || !task.scheduledDate) continue;
+      const start = parseChronologicalTimeSource(task.scheduledDate);
+      const startMins = getTodayAgendaMinutesFromTimelineStart(start, startHour);
+      if (startMins == null || !isTodayAgendaMinutesInTimelineRange(startMins, totalMinutes)) continue;
+      eventIdsRepresentedByOnTimelineTasks.add(calId);
+    }
+
+    const isEventRepresentedByTimelineTask = (event: { id: string; recurrenceBaseId?: string }) => {
+      if (eventIdsRepresentedByOnTimelineTasks.has(event.id)) return true;
+      if (event.recurrenceBaseId && eventIdsRepresentedByOnTimelineTasks.has(event.recurrenceBaseId)) return true;
+      return false;
+    };
 
     // Add tasks with sort time normalized to today (time-of-day only; recurring base dates differ)
     for (const task of todayTasks) {
@@ -221,12 +239,13 @@ export function TodayAgendaView({
       });
     }
 
-    // Add calendar events (skip if a task already represents this event to avoid duplicate at same time)
-    const seenEventIds = new Set<string>();
+    // Add calendar events (skip only when a timeline task already represents this occurrence)
+    const seenEventOccurrences = new Set<string>();
     for (const event of todayCalendarEvents) {
-      if (eventIdsRepresentedByTasks.has(event.id)) continue;
-      if (seenEventIds.has(event.id)) continue;
-      seenEventIds.add(event.id);
+      if (isEventRepresentedByTimelineTask(event)) continue;
+      const occurrenceKey = getTodayAgendaCalendarEventOccurrenceKey(event);
+      if (seenEventOccurrences.has(occurrenceKey)) continue;
+      seenEventOccurrences.add(occurrenceKey);
       items.push({
         type: 'event',
         event,
@@ -237,8 +256,18 @@ export function TodayAgendaView({
     // Chronological order: earliest first; items without time go to end.
     // When a task and a calendar event have the same time, use stable order: events first, then tasks, then by id.
     items.sort((a, b) => {
-      const idA = a.type === 'task' && a.task ? a.task.id : a.type === 'event' && a.event ? a.event.id : '';
-      const idB = b.type === 'task' && b.task ? b.task.id : b.type === 'event' && b.event ? b.event.id : '';
+      const idA =
+        a.type === 'task' && a.task
+          ? a.task.id
+          : a.type === 'event' && a.event
+            ? getTodayAgendaCalendarEventOccurrenceKey(a.event)
+            : '';
+      const idB =
+        b.type === 'task' && b.task
+          ? b.task.id
+          : b.type === 'event' && b.event
+            ? getTodayAgendaCalendarEventOccurrenceKey(b.event)
+            : '';
       return compareChronologicalItemsOnDay(a.sortTime, b.sortTime, idA, idB);
     });
     
@@ -299,21 +328,16 @@ export function TodayAgendaView({
     }
     blocks.sort((a, b) => {
       if (a.actualStartMins !== b.actualStartMins) return a.actualStartMins - b.actualStartMins;
-      const keyA = a.item.type === 'task' && a.item.task ? a.item.task.id : a.item.type === 'event' && a.item.event ? a.item.event.id : '';
-      const keyB = b.item.type === 'task' && b.item.task ? b.item.task.id : b.item.type === 'event' && b.item.event ? b.item.event.id : '';
+      const keyA = getTodayAgendaTimelineBlockKey(a.item, a.actualStartMins);
+      const keyB = getTodayAgendaTimelineBlockKey(b.item, b.actualStartMins);
       return keyA.localeCompare(keyB);
     });
 
-    // Drop duplicate task/event blocks (stale calendar sync can emit the same event twice → stacked cards + double labels)
+    // Drop exact duplicate blocks (same item + start); recurring events share ids but differ by start.
     const dedupedBlocks: typeof blocks = [];
     const seenBlockKeys = new Set<string>();
     for (const block of blocks) {
-      const blockKey =
-        block.item.type === 'task' && block.item.task
-          ? `task:${block.item.task.id}`
-          : block.item.type === 'event' && block.item.event
-            ? `event:${block.item.event.id}`
-            : `block:${block.actualStartMins}:${dedupedBlocks.length}`;
+      const blockKey = getTodayAgendaTimelineBlockKey(block.item, block.actualStartMins);
       if (seenBlockKeys.has(blockKey)) continue;
       seenBlockKeys.add(blockKey);
       dedupedBlocks.push(block);
@@ -590,13 +614,8 @@ export function TodayAgendaView({
       const renderTimelineBlock = (
         block: (typeof displayTimelineBlocks)[number],
       ) => {
-        const { item, displayTopPx, displayHeightPx, cardTopInsetPx, heightPx, actualDurationMins } = block;
-        const key =
-          item.type === 'task' && item.task
-            ? `t-${item.task.id}`
-            : item.type === 'event' && item.event
-              ? `e-${item.event.id}`
-              : `b-${displayTopPx}`;
+        const { item, displayTopPx, displayHeightPx, cardTopInsetPx, heightPx, actualDurationMins, actualStartMins } = block;
+        const key = getTodayAgendaTimelineBlockKey(item, actualStartMins);
         const compactTimeline = actualDurationMins < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
         const isNextUpTask =
           item.type === 'task' && item.task && timelineTaskMatchesNextUp(item.task, nextUpTaskId);
@@ -674,7 +693,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v6"
+          data-agenda-timeline="v7"
         >
           <div
             className="flex w-full items-stretch"
@@ -709,12 +728,7 @@ export function TodayAgendaView({
                 let prevLabelBottom = -Infinity;
                 let prevLabelStartMins: number | null = null;
                 return displayTimelineBlocks.map((block) => {
-                  const blockKey =
-                    block.item.type === 'task' && block.item.task
-                      ? block.item.task.id
-                      : block.item.type === 'event' && block.item.event
-                        ? block.item.event.id
-                        : String(block.displayTopPx);
+                  const blockKey = getTodayAgendaTimelineBlockKey(block.item, block.actualStartMins);
                   const cardTopPx = getBlockCardTopPx(block);
                   const showTimeLabel =
                     prevLabelStartMins == null || block.actualStartMins !== prevLabelStartMins;
@@ -757,12 +771,7 @@ export function TodayAgendaView({
               {/* Start dots on spine — aligned with card top edge */}
               {displayTimelineBlocks.map((block) => {
                 const dotColor = getTimelineBlockAccentColor(block.item);
-                const dotKey =
-                  block.item.type === 'task' && block.item.task
-                    ? `dot-t-${block.item.task.id}`
-                    : block.item.type === 'event' && block.item.event
-                      ? `dot-e-${block.item.event.id}`
-                      : `dot-${block.displayTopPx}`;
+                const dotKey = `dot-${getTodayAgendaTimelineBlockKey(block.item, block.actualStartMins)}`;
                 const dotTop = getBlockDotTopPx(block);
                 return (
                   <div
@@ -865,7 +874,7 @@ export function TodayAgendaView({
                   item.type === 'task' && item.task
                     ? `u-t-${item.task.id}`
                     : item.type === 'event' && item.event
-                      ? `u-e-${item.event.id}`
+                      ? `u-e-${getTodayAgendaCalendarEventOccurrenceKey(item.event)}`
                       : `u-${index}`;
                 const timelinePaddingTop =
                   TODAY_AGENDA_TIMELINE.rowPaddingTopPx +
