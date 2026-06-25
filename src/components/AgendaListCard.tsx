@@ -126,9 +126,6 @@ export function AgendaListCard({
   const timelineBorderStyles =
     isTimelineSurface && leftAccentColor && hideAccentColumn
       ? {
-          borderTop: `1px solid ${timelineBorderColor}`,
-          borderRight: `1px solid ${timelineBorderColor}`,
-          borderBottom: `1px solid ${timelineBorderColor}`,
           borderLeft: `${leftAccentWidthPx ?? AGENDA_LIST_CARD.accentLineWidthPx * 2}px solid ${leftAccentColor}`,
         }
       : isTimelineSurface

@@ -1,8 +1,8 @@
 // TaskZM Service Worker - Offline Support & Caching
 // IMPORTANT: This service worker is configured to NOT cause automatic page refreshes
 // Updates will only apply on manual page refresh or navigation
-const CACHE_NAME = 'taskzm-v1.0.26'; // Increment version to force update on next deploy (match package.json)
-const RUNTIME_CACHE = 'taskzm-runtime-v1.0.26'; // Version-scoped so old JS chunks are purged on activate
+const CACHE_NAME = 'taskzm-v1.0.27'; // Increment version to force update on next deploy (match package.json)
+const RUNTIME_CACHE = 'taskzm-runtime-v1.0.27'; // Version-scoped so old JS chunks are purged on activate
 
 // Core files to cache immediately
 const CORE_ASSETS = [
@@ -103,6 +103,29 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '' ||
     url.pathname.endsWith('/index.html');
 
+  const isAppBundle =
+    url.pathname.startsWith('/assets/') &&
+    (url.pathname.endsWith('.js') || url.pathname.endsWith('.css'));
+
+  // JS/CSS bundles: always bypass browser HTTP cache and never store in RUNTIME_CACHE.
+  // Immutable Cache-Control on /assets/* was causing stale Today Agenda chunks after deploy.
+  if (isAppBundle) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).catch(() =>
+        caches.match(event.request).then(
+          (cached) =>
+            cached ??
+            new Response('Network error', {
+              status: 408,
+              statusText: 'Request Timeout',
+              headers: { 'Content-Type': 'text/plain' },
+            }),
+        ),
+      ),
+    );
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -113,7 +136,8 @@ self.addEventListener('fetch', (event) => {
             event.request.url.startsWith('http') &&
             !event.request.url.includes('supabase.co') &&
             !event.request.url.includes('/functions/') &&
-            !isDocumentRequest) {
+            !isDocumentRequest &&
+            !isAppBundle) {
           const responseClone = response.clone();
           caches.open(RUNTIME_CACHE).then((cache) => {
             try {

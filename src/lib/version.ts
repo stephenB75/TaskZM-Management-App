@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.26';
-export const VERSION_NAME = 'Today Agenda Timeline Fixes';
+export const APP_VERSION = '1.0.27';
+export const VERSION_NAME = 'Today Agenda Cache & Card Fix';
 export const VERSION_DATE = 'June 24, 2026';
-export const BUILD_NUMBER = '20260624-2';
+export const BUILD_NUMBER = '20260624-3';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,17 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.27',
+    date: 'June 24, 2026',
+    name: 'Today Agenda Cache & Card Fix',
+    changes: [
+      'Service worker + server: JS/CSS bundles fetched with cache no-store (fixes stale Today Agenda after deploy)',
+      'App version bump auto-purges Cache Storage and unregisters old service workers',
+      'Timeline cards: left accent only (removes double-border stacked look on events)',
+      'Build marker data-agenda-timeline=v6 for verifying fresh bundle in DevTools',
+    ],
+  },
   {
     version: '1.0.26',
     date: 'June 24, 2026',

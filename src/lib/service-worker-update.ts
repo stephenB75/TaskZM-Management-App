@@ -214,6 +214,40 @@ function showUpdateAvailableNotification() {
 }
 
 /**
+ * When APP_VERSION changes, purge Cache Storage and unregister service workers so
+ * immutable /assets/* HTTP cache and RUNTIME_CACHE cannot serve stale Today Agenda chunks.
+ * Returns true if caches were purged (caller may want a reload on next paint).
+ */
+export async function purgeAppCachesIfVersionChanged(currentVersion: string): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+
+  const versionKey = NOTIFICATION_STORAGE_KEYS.appVersion;
+  const storedVersion = localStorage.getItem(versionKey);
+
+  if (storedVersion === currentVersion) {
+    return false;
+  }
+
+  localStorage.setItem(versionKey, currentVersion);
+
+  if (storedVersion == null) {
+    return false;
+  }
+
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => caches.delete(key)));
+  }
+
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  }
+
+  return true;
+}
+
+/**
  * Clean up update checking
  */
 export function cleanupServiceWorkerUpdates() {

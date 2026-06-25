@@ -67,10 +67,10 @@ export function getTodayAgendaCompactRowHeightPx(durationMinutes: number, _isEve
   return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
 }
 
-/** Total vertical space (px) for the Next Up badge row above a timeline card. */
+/** Total vertical space (px) reserved above a Next Up card (badge sits in the inter-card gap). */
 export function getTodayAgendaNextUpInsetPx(): number {
   const { nextUpBadgeHeightPx, nextUpBadgeGapAboveBlockPx } = TODAY_AGENDA_TIMELINE;
-  return nextUpBadgeHeightPx + nextUpBadgeGapAboveBlockPx * 2;
+  return nextUpBadgeHeightPx + nextUpBadgeGapAboveBlockPx;
 }
 
 /** Format minutes-from-range-start as "7:00 AM" label. */

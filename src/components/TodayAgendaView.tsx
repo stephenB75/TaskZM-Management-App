@@ -429,9 +429,9 @@ export function TodayAgendaView({
       let y = 0;
       return timelineBlocks.map((block) => {
         const cardTopInsetPx = isNextUpBlock(block.item) ? nextUpInsetPx : 0;
-        const displayHeightPx = block.heightPx + cardTopInsetPx;
         const displayTopPx = y;
-        y += displayHeightPx + listGapPx;
+        const displayHeightPx = block.heightPx;
+        y += block.heightPx + listGapPx;
         return { ...block, displayTopPx, displayHeightPx, cardTopInsetPx };
       });
     }
@@ -441,7 +441,7 @@ export function TodayAgendaView({
       return {
         ...block,
         displayTopPx: block.topPx,
-        displayHeightPx: block.heightPx + cardTopInsetPx,
+        displayHeightPx: block.heightPx,
         cardTopInsetPx,
       };
     });
@@ -566,7 +566,7 @@ export function TodayAgendaView({
       const spineColor = isDark ? 'rgba(148,163,184,0.45)' : 'rgba(148,163,184,0.35)';
 
       const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
-        block.displayTopPx + block.cardTopInsetPx;
+        block.displayTopPx;
 
       /** Dot center sits on the card top edge (not centered in the time-label row). */
       const getBlockDotTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
@@ -611,18 +611,20 @@ export function TodayAgendaView({
               height: displayHeightPx,
               minHeight: isCompactList ? undefined : TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
               zIndex: isNextUpTask ? Z_INDEX.TIMELINE_BLOCK + 1 : Z_INDEX.TIMELINE_BLOCK,
+              overflow: 'visible',
             }}
           >
             {isNextUpTask && (
               <div
-                className="flex-shrink-0 flex items-center"
+                className="absolute left-0 right-0 flex items-end pointer-events-none"
                 style={{
+                  top: -cardTopInsetPx,
                   height: cardTopInsetPx,
                   paddingLeft: TODAY_AGENDA_TIMELINE.blocksColumnPaddingLeftPx,
                 }}
                 data-next-up-badge="true"
               >
-                <span className="text-xs font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block">
+                <span className="text-xs font-bold tracking-wide px-1.5 py-0.5 rounded bg-primary text-primary-foreground inline-block pointer-events-auto">
                   {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
                 </span>
               </div>
@@ -662,22 +664,32 @@ export function TodayAgendaView({
         );
       };
 
+      const nextUpHeadroomPx =
+        displayTimelineBlocks.length > 0 && displayTimelineBlocks[0].cardTopInsetPx > 0
+          ? displayTimelineBlocks[0].cardTopInsetPx
+          : 0;
+      const timelineContentHeightPx = displayTimelineLayoutHeightPx + nextUpHeadroomPx;
+
       return (
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v5"
+          data-agenda-timeline="v6"
         >
           <div
             className="flex w-full items-stretch"
-            style={{ minHeight: displayTimelineLayoutHeightPx, height: displayTimelineLayoutHeightPx }}
+            style={{
+              minHeight: timelineContentHeightPx,
+              height: timelineContentHeightPx,
+              paddingTop: nextUpHeadroomPx,
+            }}
           >
             {/* Left rail: spine, per-item or hourly labels, start dots */}
             <div
               className="flex-shrink-0 relative"
               style={{
                 width: columnWidth,
-                height: displayTimelineLayoutHeightPx,
+                height: timelineContentHeightPx - nextUpHeadroomPx,
                 zIndex: Z_INDEX.TIMELINE_LABELS_AND_NEXT_UP,
               }}
             >
@@ -792,7 +804,7 @@ export function TodayAgendaView({
                 marginLeft: columnGapPx,
                 paddingLeft: blocksColumnPaddingLeftPx,
                 paddingRight: cardPaddingRightPx,
-                height: displayTimelineLayoutHeightPx,
+                height: timelineContentHeightPx - nextUpHeadroomPx,
                 overflow: 'visible',
               }}
             >

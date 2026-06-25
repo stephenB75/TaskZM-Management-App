@@ -79,7 +79,9 @@ function serveStaticFile(path, res) {
     };
 
     // Cache headers for static assets
-    if (path.startsWith('/assets/') || STATIC_PATHS.includes(path)) {
+    if (path.startsWith('/assets/') && (path.endsWith('.js') || path.endsWith('.css'))) {
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    } else if (path.startsWith('/assets/') || STATIC_PATHS.includes(path)) {
       headers['Cache-Control'] = 'public, max-age=31536000, immutable';
     } else if (path.startsWith('/avatars/')) {
       // Avatar files: cache for 1 week, but allow revalidation

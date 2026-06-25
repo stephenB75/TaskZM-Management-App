@@ -39,6 +39,7 @@ export const NOTIFICATION_STORAGE_KEYS = {
   lastSeenAwards: 'lastSeenAwards',
   toastNotifications: 'toastNotifications',
   updateAvailable: 'taskzm_update_available', // Service worker update notification key
+  appVersion: 'taskzm_app_version', // Last loaded APP_VERSION — triggers cache purge when bumped
   tourCompleted: 'taskzm_tour_completed', // App tour completion flag
   newSignup: 'taskzm_is_new_signup', // New user signup flag
 } as const;
