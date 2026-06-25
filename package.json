@@ -75,7 +75,8 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "node scripts/update-service-worker-cache.js",
-    "build": "vite build",
+    "build": "npm run build --prefix src",
+    "serve": "npm run serve --prefix src",
     "screenshots": "playwright test --config=playwright.config.ts",
     "deploy-functions": "./scripts/deploy-functions.sh",
     "setup:google-calendar": "bash scripts/setup-google-calendar-secrets.sh",
