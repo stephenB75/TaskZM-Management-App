@@ -271,8 +271,8 @@ export const TODAY_AGENDA_TIMELINE = {
   totalMinutes: (24 - 7) * 60,
   /** Pixels per minute so task height = duration (e.g. 2h → 120 * pxPerMinute). Lower = tighter vertical spacing. */
   pxPerMinute: 1.75,
-  /** Minimum timeline block height (px); kept small so block height tracks duration. */
-  minTimelineBlockHeightPx: 48,
+  /** Minimum timeline block height (px); floor for very short blocks only — does not inflate multi-hour tasks. */
+  minTimelineBlockHeightPx: 28,
   /** Gap (minutes) between consecutive items to use compact list instead of duration scale. */
   layoutProximityThresholdMinutes: 60,
   /** Vertical gap (px) between consecutive scheduled timeline cards (compact list + duration stack). */
@@ -349,18 +349,10 @@ export const TODAY_AGENDA_TIMELINE = {
   shortItemCompactRowHeightPx: 92,
 } as const;
 
-/** Timeline block height from duration; short items use comfortable minimum (tasks and events). */
+/** Strict duration height (px) on the timeline — block span matches scheduled minutes × pxPerMinute. */
 export function getTodayAgendaTimelineBlockHeightPx(durationMinutes: number): number {
-  const {
-    pxPerMinute,
-    minTimelineBlockHeightPx,
-    shortItemThresholdMinutes,
-    shortTaskComfortableBlockHeightPx,
-  } = TODAY_AGENDA_TIMELINE;
-  const durationHeightPx = Math.round(durationMinutes * pxPerMinute);
-  if (durationMinutes < shortItemThresholdMinutes) {
-    return Math.max(durationHeightPx, shortTaskComfortableBlockHeightPx);
-  }
+  const { pxPerMinute, minTimelineBlockHeightPx } = TODAY_AGENDA_TIMELINE;
+  const durationHeightPx = Math.round(Math.max(1, durationMinutes) * pxPerMinute);
   return Math.max(minTimelineBlockHeightPx, durationHeightPx);
 }
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;

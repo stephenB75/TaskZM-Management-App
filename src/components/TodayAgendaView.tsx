@@ -24,7 +24,6 @@ import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE, TASK_CARD_PRIORITY_COLORS, TODAY_AGENDA_PRIORITY_INDICATOR_BG } from "../lib/task-card-constants";
 import { TODAY_AGENDA_TEXT, TODAY_AGENDA_EVENT_ACCENT_HEX } from "../lib/today-agenda-constants";
 import {
-  resolveTodayAgendaLayoutMode,
   getTodayAgendaCompactRowHeightPx,
   formatTodayAgendaMinutesLabel,
   getTodayAgendaNextUpInsetPx,
@@ -348,7 +347,7 @@ export function TodayAgendaView({
 
     const resolvedLayoutMode: TodayAgendaLayoutMode = hideHeader
       ? 'compactList'
-      : resolveTodayAgendaLayoutMode(dedupedBlocks);
+      : 'durationBlocks';
 
     const { viewStartMins, viewEndMins } =
       resolvedLayoutMode === 'durationBlocks'
@@ -374,29 +373,17 @@ export function TodayAgendaView({
       };
     }
 
-    // Duration blocks: offset positions to visible viewport and stack overlaps
+    // Duration blocks: place at scheduled time (top = duration × pxPerMinute); overlaps stack visually.
     for (const block of dedupedBlocks) {
       block.naturalTopPx = Math.round((block.actualStartMins - viewStartMins) * pxPerMinute);
+      block.topPx = block.naturalTopPx;
     }
 
-    // Duration blocks: stack same-time or overlapping items vertically
-    const placed: Block[] = [];
-    for (const block of dedupedBlocks) {
-      let topPx = block.naturalTopPx;
-      for (const prev of placed) {
-        const sameStart = block.actualStartMins === prev.actualStartMins;
-        const timeOverlap =
-          block.actualStartMins < prev.actualEndMins && block.actualEndMins > prev.actualStartMins;
-        if (!sameStart && !timeOverlap) continue;
-        const prevBottom = prev.topPx + prev.heightPx + blockGapPx;
-        if (topPx < prevBottom) topPx = prevBottom;
-      }
-      block.topPx = topPx;
-      placed.push(block);
-    }
     const viewSpanMins = viewEndMins - viewStartMins;
     const baseTimelineHeightPx = viewSpanMins * pxPerMinute;
-    const maxBlockBottomPx = dedupedBlocks.length > 0 ? Math.max(...dedupedBlocks.map((b) => b.topPx + b.heightPx)) : 0;
+    const maxBlockBottomPx = dedupedBlocks.length > 0
+      ? Math.max(...dedupedBlocks.map((b) => b.topPx + b.heightPx))
+      : 0;
     const layoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
     return {
       timelineBlocks: dedupedBlocks,
@@ -491,14 +478,18 @@ export function TodayAgendaView({
 
     return timelineBlocks.map((block) => {
       const cardTopInsetPx = isNextUpBlock(block.item) ? nextUpInsetPx : 0;
+      const naturalTopPx = Math.round(
+        (block.actualStartMins - timelineViewStartMins) * TODAY_AGENDA_TIMELINE.pxPerMinute,
+      );
       return {
         ...block,
         displayTopPx: block.topPx,
         displayHeightPx: block.heightPx,
+        naturalTopPx,
         cardTopInsetPx,
       };
     });
-  }, [timelineBlocks, layoutMode, nextUpTaskId, timelineTaskMatchesNextUp]);
+  }, [timelineBlocks, layoutMode, nextUpTaskId, timelineTaskMatchesNextUp, timelineViewStartMins]);
 
   const displayTimelineLayoutHeightPx = useMemo(() => {
     if (displayTimelineBlocks.length === 0) return timelineLayoutHeightPx;
@@ -616,10 +607,13 @@ export function TodayAgendaView({
       const isCompactList = layoutMode === 'compactList';
       const spineColor = isDark ? 'rgba(148,163,184,0.45)' : 'rgba(148,163,184,0.35)';
 
-      const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
-        block.displayTopPx;
+      const getBlockNaturalTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
+        Math.round((block.actualStartMins - timelineViewStartMins) * pxPerMinute);
 
-      /** Dot center sits on the card top edge (not centered in the time-label row). */
+      const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
+        isCompactList ? block.displayTopPx : getBlockNaturalTopPx(block);
+
+      /** Dot center sits on the scheduled start time (card top edge in duration mode). */
       const getBlockDotTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
         getBlockCardTopPx(block) - spineDotSizePx / 2;
 
@@ -639,17 +633,20 @@ export function TodayAgendaView({
         const isNextUpTask =
           item.type === 'task' && item.task && timelineTaskMatchesNextUp(item.task, nextUpTaskId);
         const cardAreaHeightPx = Math.max(1, heightPx);
+        const blockNaturalTopPx = Math.round((actualStartMins - timelineViewStartMins) * pxPerMinute);
+        const blockZIndex =
+          Z_INDEX.TIMELINE_BLOCK + (isNextUpTask ? 1000 : 0) + actualStartMins;
 
         return (
           <div
             key={key}
             className="absolute left-0 right-0 flex flex-col"
             style={{
-              top: displayTopPx,
+              top: isCompactList ? displayTopPx : blockNaturalTopPx,
               height: displayHeightPx,
-              minHeight: isCompactList ? undefined : TODAY_AGENDA_TIMELINE.minTimelineBlockHeightPx,
-              zIndex: isNextUpTask ? Z_INDEX.TIMELINE_BLOCK + 1 : Z_INDEX.TIMELINE_BLOCK,
-              overflow: 'visible',
+              minHeight: isCompactList ? undefined : heightPx,
+              zIndex: blockZIndex,
+              overflow: isCompactList ? 'visible' : 'hidden',
             }}
           >
             {isNextUpTask && (
@@ -715,7 +712,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v9"
+          data-agenda-timeline="v10"
         >
           <div
             className="flex w-full items-stretch"
@@ -787,16 +784,18 @@ export function TodayAgendaView({
                     prevLabelStartMins = block.actualStartMins;
                     return null;
                   }
-                  let labelTop = cardTopPx;
+                  const labelTop = isCompactList
+                    ? cardTopPx
+                    : getBlockNaturalTopPx(block) - timeLabelLineHeightPx / 2;
+                  let resolvedLabelTop = labelTop;
                   if (
-                    showTimeLabel &&
-                    !isCompactList &&
+                    isCompactList &&
                     labelTop < prevLabelBottom + timeLabelMinSeparationPx - timeLabelLineHeightPx
                   ) {
-                    labelTop = prevLabelBottom + timeLabelMinSeparationPx;
+                    resolvedLabelTop = prevLabelBottom + timeLabelMinSeparationPx;
                   }
                   if (showTimeLabel) {
-                    prevLabelBottom = labelTop + timeLabelLineHeightPx;
+                    prevLabelBottom = resolvedLabelTop + timeLabelLineHeightPx;
                     prevLabelStartMins = block.actualStartMins;
                   }
                   return (
@@ -804,7 +803,7 @@ export function TodayAgendaView({
                       key={`time-${blockKey}`}
                       className="absolute left-0 pr-2 text-right flex items-start"
                       style={{
-                        top: labelTop,
+                        top: resolvedLabelTop,
                         width: `calc(100% - ${spineWidthPx + 4}px)`,
                         height: timeLabelLineHeightPx,
                         zIndex: 2,
