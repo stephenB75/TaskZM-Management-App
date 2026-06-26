@@ -112,6 +112,25 @@ export function getTodayAgendaNextUpInsetPx(): number {
   return nextUpBadgeHeightPx + nextUpBadgeGapAboveBlockPx;
 }
 
+/** Visible minute range for duration-block mode (avoids full 7 AM–midnight scroll when items cluster). */
+export function getTodayAgendaDurationViewportMins(
+  blocks: TodayAgendaTimelineBlockInput[],
+  totalMinutes: number = TODAY_AGENDA_TIMELINE.totalMinutes,
+): { viewStartMins: number; viewEndMins: number } {
+  const { labelIntervalMinutes, timelineContentPaddingMinutes } = TODAY_AGENDA_TIMELINE;
+  if (blocks.length === 0) {
+    return { viewStartMins: 0, viewEndMins: totalMinutes };
+  }
+  const minStart = Math.min(...blocks.map((b) => b.actualStartMins));
+  const maxEnd = Math.max(...blocks.map((b) => b.actualEndMins));
+  const paddedStart = Math.max(0, minStart - timelineContentPaddingMinutes);
+  const paddedEnd = Math.min(totalMinutes, maxEnd + timelineContentPaddingMinutes);
+  const viewStartMins = Math.floor(paddedStart / labelIntervalMinutes) * labelIntervalMinutes;
+  let viewEndMins = Math.ceil(paddedEnd / labelIntervalMinutes) * labelIntervalMinutes;
+  viewEndMins = Math.max(viewEndMins, viewStartMins + labelIntervalMinutes);
+  return { viewStartMins, viewEndMins: Math.min(viewEndMins, totalMinutes) };
+}
+
 /** Format minutes-from-range-start as "7:00 AM" label. */
 export function formatTodayAgendaMinutesLabel(minutesFromStart: number): string {
   const { startHour, endHour } = TODAY_AGENDA_TIMELINE;

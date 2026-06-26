@@ -32,6 +32,7 @@ import {
   getTodayAgendaCalendarEventOccurrenceKey,
   getTodayAgendaMinutesFromTimelineStart,
   isTodayAgendaMinutesInTimelineRange,
+  getTodayAgendaDurationViewportMins,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE, getTodayAgendaTimelineBlockHeightPx } from "../lib/layout-constants";
@@ -275,7 +276,7 @@ export function TodayAgendaView({
   }, [todayTasks, todayCalendarEvents, today]);
 
   /** Timeline blocks (7AM–12AM). Hybrid layout: compact list when sparse, duration blocks when dense/overlapping. */
-  const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, layoutMode } = useMemo(() => {
+  const { timelineBlocks, unscheduledItems, timelineLayoutHeightPx, layoutMode, timelineViewStartMins, timelineViewEndMins } = useMemo(() => {
     const startHour = TODAY_AGENDA_TIMELINE.startHour;
     const totalMinutes = TODAY_AGENDA_TIMELINE.totalMinutes;
     const pxPerMinute = TODAY_AGENDA_TIMELINE.pxPerMinute;
@@ -347,6 +348,11 @@ export function TodayAgendaView({
       ? 'compactList'
       : resolveTodayAgendaLayoutMode(dedupedBlocks);
 
+    const { viewStartMins, viewEndMins } =
+      resolvedLayoutMode === 'durationBlocks'
+        ? getTodayAgendaDurationViewportMins(dedupedBlocks, totalMinutes)
+        : { viewStartMins: 0, viewEndMins: totalMinutes };
+
     if (resolvedLayoutMode === 'compactList') {
       const listGapPx = TODAY_AGENDA_TIMELINE.compactListItemGapPx;
       let y = 0;
@@ -356,7 +362,19 @@ export function TodayAgendaView({
         y += block.heightPx + listGapPx;
       }
       const layoutHeightPx = dedupedBlocks.length > 0 ? y - listGapPx : 0;
-      return { timelineBlocks: dedupedBlocks, unscheduledItems: unscheduled, timelineLayoutHeightPx: layoutHeightPx, layoutMode: resolvedLayoutMode };
+      return {
+        timelineBlocks: dedupedBlocks,
+        unscheduledItems: unscheduled,
+        timelineLayoutHeightPx: layoutHeightPx,
+        layoutMode: resolvedLayoutMode,
+        timelineViewStartMins: 0,
+        timelineViewEndMins: totalMinutes,
+      };
+    }
+
+    // Duration blocks: offset positions to visible viewport and stack overlaps
+    for (const block of dedupedBlocks) {
+      block.naturalTopPx = Math.round((block.actualStartMins - viewStartMins) * pxPerMinute);
     }
 
     // Duration blocks: stack same-time or overlapping items vertically
@@ -374,10 +392,18 @@ export function TodayAgendaView({
       block.topPx = topPx;
       placed.push(block);
     }
-    const baseTimelineHeightPx = totalMinutes * pxPerMinute;
+    const viewSpanMins = viewEndMins - viewStartMins;
+    const baseTimelineHeightPx = viewSpanMins * pxPerMinute;
     const maxBlockBottomPx = dedupedBlocks.length > 0 ? Math.max(...dedupedBlocks.map((b) => b.topPx + b.heightPx)) : 0;
     const layoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
-    return { timelineBlocks: dedupedBlocks, unscheduledItems: unscheduled, timelineLayoutHeightPx: layoutHeightPx, layoutMode: resolvedLayoutMode };
+    return {
+      timelineBlocks: dedupedBlocks,
+      unscheduledItems: unscheduled,
+      timelineLayoutHeightPx: layoutHeightPx,
+      layoutMode: resolvedLayoutMode,
+      timelineViewStartMins: viewStartMins,
+      timelineViewEndMins: viewEndMins,
+    };
   }, [combinedItems, getTaskMinutes, hideHeader]);
 
   /** Base timeline height (px) for 7 AM–12 AM scale. */
@@ -387,9 +413,10 @@ export function TodayAgendaView({
   const currentTimeTopPx = useMemo(() => {
     const now = new Date();
     const mins = now.getHours() * MINUTES_PER_HOUR + now.getMinutes() - TODAY_AGENDA_TIMELINE.startHour * MINUTES_PER_HOUR;
+    if (mins < timelineViewStartMins || mins > timelineViewEndMins) return null;
     if (mins < 0 || mins >= TODAY_AGENDA_TIMELINE.totalMinutes) return null;
-    return Math.round(mins * TODAY_AGENDA_TIMELINE.pxPerMinute);
-  }, [currentTime]);
+    return Math.round((mins - timelineViewStartMins) * TODAY_AGENDA_TIMELINE.pxPerMinute);
+  }, [currentTime, timelineViewStartMins, timelineViewEndMins]);
 
   // Scroll to current time once when the timeline is shown so the "now" line is in view; user can still scroll freely afterward (must run after currentTimeTopPx and combinedItems are defined)
   useEffect(() => {
@@ -598,7 +625,7 @@ export function TodayAgendaView({
 
       const hourlyLabels: { minutesFromStart: number; label: string }[] = [];
       if (!isCompactList) {
-        for (let m = 0; m <= totalMinutes; m += labelIntervalMinutes) {
+        for (let m = timelineViewStartMins; m <= timelineViewEndMins; m += labelIntervalMinutes) {
           const h = startHour + Math.floor(m / MINUTES_PER_HOUR);
           const min = m % MINUTES_PER_HOUR;
           const isMidnight = h === endHour && min === 0;
@@ -696,7 +723,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v7"
+          data-agenda-timeline="v8"
         >
           <div
             className="flex w-full items-stretch"
@@ -823,7 +850,7 @@ export function TodayAgendaView({
               {/* Hour grid (duration mode only) */}
               {!isCompactList &&
                 hourlyLabels.map(({ minutesFromStart }) => {
-                  const topPx = Math.round(minutesFromStart * pxPerMinute);
+                  const topPx = Math.round((minutesFromStart - timelineViewStartMins) * pxPerMinute);
                   return (
                     <div
                       key={`grid-${minutesFromStart}`}
@@ -940,6 +967,8 @@ export function TodayAgendaView({
       timelineLayoutHeightPx,
       layoutMode,
       currentTimeTopPx,
+      timelineViewStartMins,
+      timelineViewEndMins,
       nextUpTaskId,
       todayString,
       tasks,

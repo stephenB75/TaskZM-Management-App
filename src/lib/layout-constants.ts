@@ -261,18 +261,20 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Time range: start hour (7 = 7:00 AM), end hour (24 = 12:00 AM midnight). */
   startHour: 7,
   endHour: 24,
-  /** Interval (minutes) between timeline labels (60 = hourly: 7:00 AM, 8:00 AM, …, 12:00 AM). */
-  labelIntervalMinutes: 60,
+  /** Interval (minutes) between timeline labels and grid lines (30 = 7:00, 7:30, 8:00, …). */
+  labelIntervalMinutes: 30,
+  /** Padding (minutes) above/below first/last item when duration mode bounds the visible timeline. */
+  timelineContentPaddingMinutes: 30,
   /** Start of timeline in minutes from range start (always 0 = 7:00 AM). */
   startOffsetMinutes: 0,
   /** Total minutes in range: (24 - 7) * 60 = 1020. */
   totalMinutes: (24 - 7) * 60,
-  /** Pixels per minute so task height = duration (e.g. 2h → 120 * pxPerMinute). */
-  pxPerMinute: 4,
+  /** Pixels per minute so task height = duration (e.g. 2h → 120 * pxPerMinute). Lower = tighter vertical spacing. */
+  pxPerMinute: 2.5,
   /** Minimum timeline block height (px); kept small so block height tracks duration. */
   minTimelineBlockHeightPx: 48,
   /** Gap (minutes) between consecutive items to use compact list instead of duration scale. */
-  layoutProximityThresholdMinutes: 45,
+  layoutProximityThresholdMinutes: 60,
   /** Vertical gap (px) between consecutive scheduled timeline cards (compact list + duration stack). */
   compactListItemGapPx: 10,
   /** Block height (px) for short calendar events on the timeline. */
