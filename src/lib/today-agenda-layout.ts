@@ -78,31 +78,58 @@ export function getTodayAgendaCombinedSlotLabelMaxHeightPx(
 
 export interface TodayAgendaRailLabelSpec {
   id: string;
-  idealTopPx: number;
+  topPx: number;
   text: string;
+  kind: 'start' | 'end' | 'range';
 }
 
-/** Nudge rail labels downward only when they would overlap. */
-export function resolveTodayAgendaRailLabelTops(
-  labels: TodayAgendaRailLabelSpec[],
+/** Build start/end rail labels pinned to a block's duration slot (no collision nudging). */
+export function buildTodayAgendaBlockRailLabels(
+  block: {
+    displayTopPx: number;
+    slotHeightPx: number;
+    actualStartMins: number;
+    actualEndMins: number;
+  },
+  blockKey: string,
+  formatLabel: (minutesFromStart: number) => string,
   lineHeightPx: number,
-  minSeparationPx: number,
-): { id: string; topPx: number; text: string }[] {
-  const sorted = [...labels].sort((a, b) => a.idealTopPx - b.idealTopPx);
-  let prevBottomPx = -Infinity;
-  return sorted.map((label) => {
-    let topPx = label.idealTopPx;
-    const minTopPx = prevBottomPx + minSeparationPx - lineHeightPx;
-    if (topPx < minTopPx) {
-      topPx = minTopPx;
-    }
-    prevBottomPx = topPx + lineHeightPx;
-    return { id: label.id, topPx, text: label.text };
-  });
+  combinedSlotLabelMaxHeightPx: number,
+): TodayAgendaRailLabelSpec[] {
+  const slotStartTopPx = getTodayAgendaBlockSlotStartTopPx(block);
+  const slotEndTopPx = getTodayAgendaBlockSlotEndTopPx(block);
+  const startLabel = formatLabel(block.actualStartMins);
+  const endLabel = formatLabel(block.actualEndMins);
+
+  if (block.slotHeightPx < combinedSlotLabelMaxHeightPx) {
+    return [
+      {
+        id: `range-${blockKey}`,
+        topPx: slotStartTopPx,
+        text: `${startLabel} – ${endLabel}`,
+        kind: 'range',
+      },
+    ];
+  }
+
+  return [
+    {
+      id: `start-${blockKey}`,
+      topPx: slotStartTopPx,
+      text: startLabel,
+      kind: 'start',
+    },
+    {
+      id: `end-${blockKey}`,
+      topPx: slotEndTopPx - lineHeightPx,
+      text: endLabel,
+      kind: 'end',
+    },
+  ];
 }
 
 /**
- * Stack overlapping blocks vertically (full width). Rail dots/labels align with each card top.
+ * Stack blocks only when scheduled times overlap; otherwise keep grid positions.
  */
 export function resolveTodayAgendaDurationBlockTops<
   T extends {
@@ -118,11 +145,10 @@ export function resolveTodayAgendaDurationBlockTops<
   for (const block of blocks) {
     let topPx = block.naturalTopPx;
     for (const prev of placed) {
+      if (!todayAgendaBlocksTimeOverlap(block, prev)) continue;
       const prevExtentPx = getTodayAgendaBlockVisualExtentPx(prev);
       const prevVisualBottomPx = prev.topPx + prevExtentPx + blockGapPx;
-      const timeOverlap = todayAgendaBlocksTimeOverlap(block, prev);
-      const wouldVisualOverlap = topPx < prev.topPx + prevExtentPx;
-      if ((timeOverlap || wouldVisualOverlap) && topPx < prevVisualBottomPx) {
+      if (topPx < prevVisualBottomPx) {
         topPx = prevVisualBottomPx;
       }
     }

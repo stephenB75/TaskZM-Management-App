@@ -40,8 +40,8 @@ import {
   getTodayAgendaBlockSlotStartTopPx,
   getTodayAgendaBlockSlotEndTopPx,
   getTodayAgendaCombinedSlotLabelMaxHeightPx,
+  buildTodayAgendaBlockRailLabels,
   isTodayAgendaMinuteOccupiedByScheduledBlock,
-  resolveTodayAgendaRailLabelTops,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
@@ -729,38 +729,29 @@ export function TodayAgendaView({
       );
 
       const durationRailLabels = !isCompactList
-        ? resolveTodayAgendaRailLabelTops(
-            displayTimelineBlocks.flatMap((block) => {
+        ? (() => {
+            const labels: ReturnType<typeof buildTodayAgendaBlockRailLabels> = [];
+            const seen = new Set<string>();
+            const sortedBlocks = [...displayTimelineBlocks].sort(
+              (a, b) => a.actualStartMins - b.actualStartMins || a.displayTopPx - b.displayTopPx,
+            );
+            for (const block of sortedBlocks) {
               const blockKey = getTodayAgendaTimelineBlockKey(block.item, block.actualStartMins);
-              const slotStartTopPx = getTodayAgendaBlockSlotStartTopPx(block);
-              const slotEndTopPx = getTodayAgendaBlockSlotEndTopPx(block);
-              const startLabel = formatTodayAgendaMinutesLabel(block.actualStartMins);
-              const endLabel = formatTodayAgendaMinutesLabel(block.actualEndMins);
-              if (block.slotHeightPx < combinedSlotLabelMaxHeightPx) {
-                return [
-                  {
-                    id: `range-${blockKey}`,
-                    idealTopPx: slotStartTopPx - timeLabelLineHeightPx / 2,
-                    text: `${startLabel} – ${endLabel}`,
-                  },
-                ];
+              for (const label of buildTodayAgendaBlockRailLabels(
+                block,
+                blockKey,
+                formatTodayAgendaMinutesLabel,
+                timeLabelLineHeightPx,
+                combinedSlotLabelMaxHeightPx,
+              )) {
+                const dedupeKey = `${label.text}@${Math.round(label.topPx)}`;
+                if (seen.has(dedupeKey)) continue;
+                seen.add(dedupeKey);
+                labels.push(label);
               }
-              return [
-                {
-                  id: `start-${blockKey}`,
-                  idealTopPx: slotStartTopPx - timeLabelLineHeightPx / 2,
-                  text: startLabel,
-                },
-                {
-                  id: `end-${blockKey}`,
-                  idealTopPx: slotEndTopPx - timeLabelLineHeightPx / 2,
-                  text: endLabel,
-                },
-              ];
-            }),
-            timeLabelLineHeightPx,
-            timeLabelMinSeparationPx,
-          )
+            }
+            return labels;
+          })()
         : [];
 
       const hourlyLabels = !isCompactList
@@ -795,8 +786,8 @@ export function TodayAgendaView({
             className="absolute left-0 right-0"
             style={{
               top: rowTopPx,
+              height: isCompactList ? undefined : slotHeightPx,
               minHeight: isCompactList ? cardHeightPx : slotHeightPx,
-              height: 'auto',
               zIndex: blockZIndex,
               overflow: 'visible',
             }}
@@ -873,7 +864,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v18"
+          data-agenda-timeline="v19"
         >
           <div
             className="flex w-full items-stretch"
@@ -939,7 +930,7 @@ export function TodayAgendaView({
 
               {/* Per-item slot start/end labels (duration mode) */}
               {!isCompactList &&
-                durationRailLabels.map(({ id, topPx, text }) => (
+                durationRailLabels.map(({ id, topPx, text, kind }) => (
                   <div
                     key={id}
                     className="absolute left-0 pr-2 text-right flex items-start pointer-events-none"
@@ -947,11 +938,16 @@ export function TodayAgendaView({
                       top: topPx,
                       width: `calc(100% - ${spineWidthPx + 4}px)`,
                       height: timeLabelLineHeightPx,
-                      zIndex: 2,
+                      zIndex: kind === 'end' ? 1 : 2,
                     }}
                   >
                     <span
-                      className="text-xs font-medium text-muted-foreground whitespace-nowrap tabular-nums block w-full"
+                      className={cn(
+                        'text-xs whitespace-nowrap tabular-nums block w-full',
+                        kind === 'end'
+                          ? 'font-normal text-muted-foreground/75'
+                          : 'font-medium text-muted-foreground',
+                      )}
                       style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
                     >
                       {text}
