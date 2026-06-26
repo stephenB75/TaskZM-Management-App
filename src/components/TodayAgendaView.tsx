@@ -643,7 +643,10 @@ export function TodayAgendaView({
                 }}
                 data-next-up-badge="true"
               >
-                <span className="text-xs font-bold tracking-wide px-1.5 py-0 rounded bg-primary text-primary-foreground inline-block pointer-events-auto">
+                <span
+                  className="text-xs font-bold tracking-wide px-1.5 py-0 rounded bg-primary text-primary-foreground inline-block pointer-events-auto"
+                  style={{ marginBottom: TODAY_AGENDA_TIMELINE.nextUpBadgeGapAboveBlockPx }}
+                >
                   {TODAY_AGENDA_TEXT.nextUp.toUpperCase()}
                 </span>
               </div>
