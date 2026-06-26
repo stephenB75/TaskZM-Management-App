@@ -8,6 +8,8 @@ import {
   getTodayAgendaTimelineBlockHeightPx,
 } from './layout-constants';
 
+export type TodayAgendaLayoutMode = 'compactList' | 'durationBlocks';
+
 /** Timeline slot height (px) — exact duration on the time scale. */
 export function getTodayAgendaTimelineSlotHeightPx(durationMinutes: number): number {
   return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
@@ -40,6 +42,61 @@ export function todayAgendaBlocksTimeOverlap(
   b: { actualStartMins: number; actualEndMins: number },
 ): boolean {
   return a.actualStartMins < b.actualEndMins && a.actualEndMins > b.actualStartMins;
+}
+
+/** Top (px) on the visible timeline for a minute value. */
+export function getTodayAgendaScheduledTopPx(
+  minutesFromRangeStart: number,
+  viewStartMins: number,
+  pxPerMinute: number = TODAY_AGENDA_TIMELINE.pxPerMinute,
+): number {
+  return Math.round((minutesFromRangeStart - viewStartMins) * pxPerMinute);
+}
+
+/** Duration slot height (px) from scheduled start/end — matches grid lines exactly. */
+export function getTodayAgendaBlockScheduledSlotHeightPx(
+  block: { actualStartMins: number; actualEndMins: number },
+  viewStartMins: number,
+  pxPerMinute: number = TODAY_AGENDA_TIMELINE.pxPerMinute,
+): number {
+  const startPx = getTodayAgendaScheduledTopPx(block.actualStartMins, viewStartMins, pxPerMinute);
+  const endPx = getTodayAgendaScheduledTopPx(block.actualEndMins, viewStartMins, pxPerMinute);
+  return Math.max(1, endPx - startPx);
+}
+
+/** True when a block was pushed below its natural grid start (overlapping schedule). */
+export function isTodayAgendaBlockStacked(block: {
+  displayTopPx: number;
+  scheduledStartTopPx: number;
+}): boolean {
+  return block.displayTopPx > block.scheduledStartTopPx + 1;
+}
+
+export interface TodayAgendaBlockRailLabelPositions {
+  startTopPx: number;
+  endTopPx: number;
+  slotHeightPx: number;
+}
+
+/** Rail label positions pinned to the duration slot (grid when unstacked, row when stacked). */
+export function getTodayAgendaBlockRailLabelPositions(
+  block: {
+    displayTopPx: number;
+    scheduledStartTopPx: number;
+    scheduledEndTopPx: number;
+    scheduledSlotHeightPx: number;
+  },
+  lineHeightPx: number = TODAY_AGENDA_TIMELINE.timeLabelLineHeightPx,
+): TodayAgendaBlockRailLabelPositions {
+  const stacked = isTodayAgendaBlockStacked(block);
+  const slotHeightPx = block.scheduledSlotHeightPx;
+  const startTopPx = stacked ? block.displayTopPx : block.scheduledStartTopPx;
+  const slotEndTopPx = startTopPx + slotHeightPx;
+  return {
+    startTopPx,
+    endTopPx: slotEndTopPx - lineHeightPx,
+    slotHeightPx,
+  };
 }
 
 /** Top (px) of a block's scheduled start on the card row (stacked position). */
@@ -83,52 +140,100 @@ export interface TodayAgendaRailLabelSpec {
   kind: 'start' | 'end';
 }
 
-/** Build start/end rail labels pinned to a block's duration slot (no collision nudging). */
+/** Build start/end rail labels pinned to the duration slot (grid-accurate end position). */
 export function buildTodayAgendaBlockRailLabels(
   block: {
     displayTopPx: number;
-    slotHeightPx: number;
+    scheduledStartTopPx: number;
+    scheduledEndTopPx: number;
+    scheduledSlotHeightPx: number;
     actualStartMins: number;
     actualEndMins: number;
   },
   blockKey: string,
   formatLabel: (minutesFromStart: number) => string,
   lineHeightPx: number,
-  combinedSlotLabelMaxHeightPx: number,
 ): TodayAgendaRailLabelSpec[] {
-  const slotStartTopPx = getTodayAgendaBlockSlotStartTopPx(block);
-  const slotEndTopPx = getTodayAgendaBlockSlotEndTopPx(block);
+  const { startTopPx, endTopPx } = getTodayAgendaBlockRailLabelPositions(block, lineHeightPx);
   const startLabel = formatLabel(block.actualStartMins);
   const endLabel = formatLabel(block.actualEndMins);
-
-  if (block.slotHeightPx < combinedSlotLabelMaxHeightPx) {
-    return [
-      {
-        id: `start-${blockKey}`,
-        topPx: slotStartTopPx,
-        text: startLabel,
-        kind: 'start',
-      },
-    ];
-  }
 
   const labels: TodayAgendaRailLabelSpec[] = [
     {
       id: `start-${blockKey}`,
-      topPx: slotStartTopPx,
+      topPx: startTopPx,
       text: startLabel,
       kind: 'start',
     },
   ];
-  if (endLabel !== startLabel) {
+
+  if (endLabel !== startLabel && endTopPx >= startTopPx + lineHeightPx) {
     labels.push({
       id: `end-${blockKey}`,
-      topPx: slotEndTopPx - lineHeightPx,
+      topPx: endTopPx,
       text: endLabel,
       kind: 'end',
     });
   }
+
   return labels;
+}
+
+/** Full timeline content height — blocks, overflow cards, rail labels, and viewport floor. */
+export function getTodayAgendaDisplayLayoutHeightPx<
+  T extends {
+    displayTopPx: number;
+    scheduledSlotHeightPx: number;
+    cardHeightPx: number;
+    scheduledStartTopPx: number;
+    scheduledEndTopPx: number;
+    actualStartMins: number;
+    actualEndMins: number;
+  },
+>(
+  blocks: T[],
+  options: {
+    timelineLayoutHeightPx: number;
+    timelineViewStartMins: number;
+    timelineViewEndMins: number;
+    layoutMode: TodayAgendaLayoutMode;
+    blockGapPx: number;
+    lineHeightPx: number;
+    formatLabel: (minutesFromStart: number) => string;
+    getBlockKey: (block: T) => string;
+  },
+): number {
+  const { pxPerMinute } = TODAY_AGENDA_TIMELINE;
+  const viewportHeightPx = Math.round(
+    (options.timelineViewEndMins - options.timelineViewStartMins) * pxPerMinute,
+  );
+
+  let maxBottomPx = 0;
+  for (const block of blocks) {
+    const blockExtentPx =
+      options.layoutMode === 'compactList'
+        ? block.cardHeightPx
+        : Math.max(block.scheduledSlotHeightPx, block.cardHeightPx);
+    maxBottomPx = Math.max(maxBottomPx, block.displayTopPx + blockExtentPx);
+
+    if (options.layoutMode === 'durationBlocks') {
+      const blockKey = options.getBlockKey(block);
+      for (const label of buildTodayAgendaBlockRailLabels(
+        block,
+        blockKey,
+        options.formatLabel,
+        options.lineHeightPx,
+      )) {
+        maxBottomPx = Math.max(maxBottomPx, label.topPx + options.lineHeightPx);
+      }
+    }
+  }
+
+  return Math.max(
+    options.timelineLayoutHeightPx,
+    viewportHeightPx,
+    maxBottomPx + options.blockGapPx,
+  );
 }
 
 /**
@@ -159,8 +264,6 @@ export function resolveTodayAgendaDurationBlockTops<
     placed.push(block);
   }
 }
-
-export type TodayAgendaLayoutMode = 'compactList' | 'durationBlocks';
 
 export interface TodayAgendaTimelineBlockInput {
   actualStartMins: number;

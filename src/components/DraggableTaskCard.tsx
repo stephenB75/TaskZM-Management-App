@@ -834,6 +834,7 @@ export const DraggableTaskCard = React.forwardRef<
           style={{
             ...style,
             width: '100%',
+            height: '100%',
             minHeight: timelineBlockHeightPx,
             touchAction: dragDisabled ? 'auto' : 'none',
             ...(!dragDisabled && (isDragging || isSortableDragging)
@@ -867,6 +868,7 @@ export const DraggableTaskCard = React.forwardRef<
             leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
             leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
             style: {
+              height: '100%',
               minHeight: timelineBlockHeightPx,
             },
           })}
