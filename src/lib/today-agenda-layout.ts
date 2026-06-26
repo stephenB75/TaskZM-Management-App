@@ -3,7 +3,37 @@
  */
 
 import { MINUTES_PER_HOUR } from './business-constants';
-import { TODAY_AGENDA_TIMELINE, getTodayAgendaTimelineBlockHeightPx } from './layout-constants';
+import {
+  TODAY_AGENDA_TIMELINE,
+  getTodayAgendaTimelineBlockHeightPx,
+} from './layout-constants';
+
+/** Timeline slot height (px) — exact duration on the time scale. */
+export function getTodayAgendaTimelineSlotHeightPx(durationMinutes: number): number {
+  return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
+}
+
+/** Card render height (px) — slot height for long blocks; comfortable minimum for short tasks/events. */
+export function getTodayAgendaTimelineCardHeightPx(
+  durationMinutes: number,
+  options?: { isEvent?: boolean },
+): number {
+  const slotHeightPx = getTodayAgendaTimelineSlotHeightPx(durationMinutes);
+  const {
+    shortItemThresholdMinutes,
+    shortTaskComfortableBlockHeightPx,
+    microEventBlockHeightPx,
+  } = TODAY_AGENDA_TIMELINE;
+
+  if (durationMinutes >= shortItemThresholdMinutes) {
+    return slotHeightPx;
+  }
+
+  const comfortableMinPx = options?.isEvent
+    ? microEventBlockHeightPx
+    : shortTaskComfortableBlockHeightPx;
+  return Math.max(slotHeightPx, comfortableMinPx);
+}
 
 export type TodayAgendaLayoutMode = 'compactList' | 'durationBlocks';
 

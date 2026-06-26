@@ -349,11 +349,10 @@ export const TODAY_AGENDA_TIMELINE = {
   shortItemCompactRowHeightPx: 92,
 } as const;
 
-/** Strict duration height (px) on the timeline — block span matches scheduled minutes × pxPerMinute. */
+/** Strict timeline slot height (px) — vertical span on the time grid = duration × pxPerMinute. */
 export function getTodayAgendaTimelineBlockHeightPx(durationMinutes: number): number {
-  const { pxPerMinute, minTimelineBlockHeightPx } = TODAY_AGENDA_TIMELINE;
-  const durationHeightPx = Math.round(Math.max(1, durationMinutes) * pxPerMinute);
-  return Math.max(minTimelineBlockHeightPx, durationHeightPx);
+  const { pxPerMinute } = TODAY_AGENDA_TIMELINE;
+  return Math.round(Math.max(1, durationMinutes) * pxPerMinute);
 }
 export const TODAY_AGENDA_TIMELINE_COLUMN_WIDTH = TODAY_AGENDA_TIMELINE.columnWidth;
 
