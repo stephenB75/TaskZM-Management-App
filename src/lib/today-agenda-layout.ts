@@ -52,8 +52,7 @@ export function todayAgendaBlocksTimeOverlap(
 }
 
 /**
- * Stack duration-mode blocks so cards never overlap.
- * Non-conflicting items keep time-proportional tops; overlapping items shift below prior rows.
+ * Stack overlapping blocks vertically (full width). Timestamps/dots stay at scheduled time on the rail.
  */
 export function resolveTodayAgendaDurationBlockTops<
   T extends {

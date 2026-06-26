@@ -269,8 +269,8 @@ export const TODAY_AGENDA_TIMELINE = {
   startOffsetMinutes: 0,
   /** Total minutes in range: (24 - 7) * 60 = 1020. */
   totalMinutes: (24 - 7) * 60,
-  /** Pixels per minute so task height = duration (e.g. 2h → 120 * pxPerMinute). Lower = tighter vertical spacing. */
-  pxPerMinute: 1.75,
+  /** Pixels per minute — vertical time scale (3h task ≈ 630px at 3.5). */
+  pxPerMinute: 3.5,
   /** Minimum timeline block height (px); floor for very short blocks only — does not inflate multi-hour tasks. */
   minTimelineBlockHeightPx: 28,
   /** Gap (minutes) between consecutive items to use compact list instead of duration scale. */
@@ -337,10 +337,10 @@ export const TODAY_AGENDA_TIMELINE = {
   currentTimeLineHeightPx: 6,
   /** Padding left (px) for the timeline blocks column (matches pl-2). */
   blocksColumnPaddingLeftPx: 8,
-  /** @deprecated Same-time items stack vertically; lanes are no longer used in Today Agenda. */
+  /** Gap (px) between side-by-side lanes when scheduled times overlap. */
   laneGapPx: 8,
-  /** @deprecated Same-time items stack vertically; lanes are no longer used in Today Agenda. */
-  laneMinWidthPx: 200,
+  /** Minimum width (px) per lane when items overlap in time. */
+  laneMinWidthPx: 160,
   /** Duration (minutes) below which timeline items use compact single-row layout so info is not clipped. */
   shortItemThresholdMinutes: 20,
   /** Minimum block height (px) for items under shortItemThresholdMinutes — fits compact card without clipping. */

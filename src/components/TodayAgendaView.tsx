@@ -411,7 +411,7 @@ export function TodayAgendaView({
       };
     }
 
-    // Duration blocks: time-proportional tops, then stack rows that would overlap.
+    // Duration blocks: time-proportional grid; overlapping items stack vertically (full width).
     for (const block of dedupedBlocks) {
       block.naturalTopPx = Math.round((block.actualStartMins - viewStartMins) * pxPerMinute);
       block.topPx = block.naturalTopPx;
@@ -651,12 +651,15 @@ export function TodayAgendaView({
       const isCompactList = layoutMode === 'compactList';
       const spineColor = isDark ? 'rgba(148,163,184,0.45)' : 'rgba(148,163,184,0.35)';
 
-      const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
-        block.displayTopPx;
+      const getBlockScheduledTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
+        Math.round((block.actualStartMins - timelineViewStartMins) * pxPerMinute);
 
-      /** Dot center sits on the card top edge. */
+      const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
+        isCompactList ? block.displayTopPx : getBlockScheduledTopPx(block);
+
+      /** Dot on spine at scheduled start time. */
       const getBlockDotTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
-        getBlockCardTopPx(block) - spineDotSizePx / 2;
+        getBlockScheduledTopPx(block) - spineDotSizePx / 2;
 
       const hourlyLabels = !isCompactList
         ? getTodayAgendaIntervalLabels(timelineViewStartMins, timelineViewEndMins)
@@ -782,7 +785,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v12"
+          data-agenda-timeline="v14"
         >
           <div
             className="flex w-full items-stretch"
@@ -854,13 +857,11 @@ export function TodayAgendaView({
                     prevLabelStartMins = block.actualStartMins;
                     return null;
                   }
-                  const labelTop = isCompactList
-                    ? cardTopPx
-                    : getBlockCardTopPx(block) - timeLabelLineHeightPx / 2;
-                  let resolvedLabelTop = labelTop;
+                  const scheduledLabelTop = getBlockScheduledTopPx(block) - timeLabelLineHeightPx / 2;
+                  let resolvedLabelTop = isCompactList ? cardTopPx : scheduledLabelTop;
                   if (
                     isCompactList &&
-                    labelTop < prevLabelBottom + timeLabelMinSeparationPx - timeLabelLineHeightPx
+                    resolvedLabelTop < prevLabelBottom + timeLabelMinSeparationPx - timeLabelLineHeightPx
                   ) {
                     resolvedLabelTop = prevLabelBottom + timeLabelMinSeparationPx;
                   }
