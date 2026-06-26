@@ -43,7 +43,7 @@ export function todayAgendaBlocksTimeOverlap(
 }
 
 /**
- * Stack overlapping blocks vertically (full width). Timestamps/dots stay at scheduled time on the rail.
+ * Stack overlapping blocks vertically (full width). Rail dots/labels align with each card top.
  */
 export function resolveTodayAgendaDurationBlockTops<
   T extends {

@@ -32,7 +32,6 @@ import {
   getTodayAgendaMinutesFromTimelineStart,
   isTodayAgendaMinutesInTimelineRange,
   getTodayAgendaDurationViewportMins,
-  isTodayAgendaOnLabelInterval,
   getTodayAgendaIntervalLabels,
   getTodayAgendaTimelineSlotHeightPx,
   getTodayAgendaTimelineCardHeightPx,
@@ -712,15 +711,16 @@ export function TodayAgendaView({
       const isCompactList = layoutMode === 'compactList';
       const spineColor = isDark ? 'rgba(148,163,184,0.45)' : 'rgba(148,163,184,0.35)';
 
-      const getBlockScheduledTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
-        Math.round((block.actualStartMins - timelineViewStartMins) * pxPerMinute);
+      /** Card top on the timeline — stacked position when items overlap. */
+      const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) => block.displayTopPx;
 
-      const getBlockCardTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
-        isCompactList ? block.displayTopPx : getBlockScheduledTopPx(block);
-
-      /** Dot on spine at scheduled start time. */
+      /** Dot on spine aligned with card top. */
       const getBlockDotTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
-        getBlockScheduledTopPx(block) - spineDotSizePx / 2;
+        getBlockCardTopPx(block) - spineDotSizePx / 2;
+
+      const blockStartMinutes = new Set(
+        displayTimelineBlocks.map((block) => block.actualStartMins),
+      );
 
       const hourlyLabels = !isCompactList
         ? getTodayAgendaIntervalLabels(timelineViewStartMins, timelineViewEndMins)
@@ -746,8 +746,6 @@ export function TodayAgendaView({
           item.type === 'task' && item.task && timelineTaskMatchesNextUp(item.task, nextUpTaskId);
         const blockZIndex =
           Z_INDEX.TIMELINE_BLOCK + (isNextUpTask ? 1000 : 0) + actualStartMins;
-        const accentColor = getTimelineBlockAccentColor(item);
-        const { blockTintOpacity, blockAccentWidthPx } = TODAY_AGENDA_TIMELINE;
         const rowTopPx = displayTopPx;
 
         return (
@@ -762,19 +760,6 @@ export function TodayAgendaView({
               overflow: 'visible',
             }}
           >
-            {!isCompactList && (
-              <div
-                className="absolute left-0 right-0 rounded-lg pointer-events-none"
-                style={{
-                  top: 0,
-                  height: slotHeightPx,
-                  backgroundColor: accentColor,
-                  opacity: blockTintOpacity,
-                  borderLeft: `${blockAccentWidthPx}px solid ${accentColor}`,
-                }}
-                aria-hidden
-              />
-            )}
             {isNextUpTask && (
               <div
                 className="absolute left-0 right-0 flex items-end pointer-events-none"
@@ -847,7 +832,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v15"
+          data-agenda-timeline="v17"
         >
           <div
             className="flex w-full items-stretch"
@@ -878,9 +863,11 @@ export function TodayAgendaView({
                 aria-hidden
               />
 
-              {/* Fixed 30-min interval labels on the rail (duration mode) */}
+              {/* Fixed 30-min interval labels — only where no item starts (items get per-card labels). */}
               {!isCompactList &&
-                hourlyLabels.map(({ minutesFromStart, label, isHour }) => (
+                hourlyLabels
+                  .filter(({ minutesFromStart }) => !blockStartMinutes.has(minutesFromStart))
+                  .map(({ minutesFromStart, label, isHour }) => (
                   <div
                     key={`interval-${minutesFromStart}`}
                     className="absolute left-0 pr-2 text-right flex items-center pointer-events-none"
@@ -903,7 +890,7 @@ export function TodayAgendaView({
                   </div>
                 ))}
 
-              {/* Per-item times that fall between interval ticks (e.g. 6:45 PM) */}
+              {/* Per-item start times aligned with card top */}
               {(() => {
                 let prevLabelBottom = -Infinity;
                 let prevLabelStartMins: number | null = null;
@@ -915,12 +902,7 @@ export function TodayAgendaView({
                   if (!showTimeLabel) {
                     return null;
                   }
-                  if (!isCompactList && isTodayAgendaOnLabelInterval(block.actualStartMins, labelIntervalMinutes)) {
-                    prevLabelStartMins = block.actualStartMins;
-                    return null;
-                  }
-                  const scheduledLabelTop = getBlockScheduledTopPx(block) - timeLabelLineHeightPx / 2;
-                  let resolvedLabelTop = isCompactList ? cardTopPx : scheduledLabelTop;
+                  let resolvedLabelTop = cardTopPx - timeLabelLineHeightPx / 2;
                   if (
                     isCompactList &&
                     resolvedLabelTop < prevLabelBottom + timeLabelMinSeparationPx - timeLabelLineHeightPx
