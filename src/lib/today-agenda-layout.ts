@@ -42,6 +42,65 @@ export function todayAgendaBlocksTimeOverlap(
   return a.actualStartMins < b.actualEndMins && a.actualEndMins > b.actualStartMins;
 }
 
+/** Top (px) of a block's scheduled start on the card row (stacked position). */
+export function getTodayAgendaBlockSlotStartTopPx(block: { displayTopPx: number }): number {
+  return block.displayTopPx;
+}
+
+/** Top (px) of a block's scheduled end on the card row (start + duration slot height). */
+export function getTodayAgendaBlockSlotEndTopPx(block: {
+  displayTopPx: number;
+  slotHeightPx: number;
+}): number {
+  return block.displayTopPx + block.slotHeightPx;
+}
+
+/** True when a grid minute is covered by a block's scheduled range (use per-item labels instead). */
+export function isTodayAgendaMinuteOccupiedByScheduledBlock(
+  minutesFromStart: number,
+  blocks: { actualStartMins: number; actualEndMins: number }[],
+): boolean {
+  return blocks.some(
+    (block) =>
+      minutesFromStart === block.actualStartMins ||
+      minutesFromStart === block.actualEndMins ||
+      (minutesFromStart > block.actualStartMins && minutesFromStart < block.actualEndMins),
+  );
+}
+
+/** Minimum slot height (px) before start and end labels are shown separately. */
+export function getTodayAgendaCombinedSlotLabelMaxHeightPx(
+  lineHeightPx: number = TODAY_AGENDA_TIMELINE.timeLabelLineHeightPx,
+  minSeparationPx: number = TODAY_AGENDA_TIMELINE.timeLabelMinSeparationPx,
+): number {
+  return 2 * lineHeightPx + minSeparationPx;
+}
+
+export interface TodayAgendaRailLabelSpec {
+  id: string;
+  idealTopPx: number;
+  text: string;
+}
+
+/** Nudge rail labels downward only when they would overlap. */
+export function resolveTodayAgendaRailLabelTops(
+  labels: TodayAgendaRailLabelSpec[],
+  lineHeightPx: number,
+  minSeparationPx: number,
+): { id: string; topPx: number; text: string }[] {
+  const sorted = [...labels].sort((a, b) => a.idealTopPx - b.idealTopPx);
+  let prevBottomPx = -Infinity;
+  return sorted.map((label) => {
+    let topPx = label.idealTopPx;
+    const minTopPx = prevBottomPx + minSeparationPx - lineHeightPx;
+    if (topPx < minTopPx) {
+      topPx = minTopPx;
+    }
+    prevBottomPx = topPx + lineHeightPx;
+    return { id: label.id, topPx, text: label.text };
+  });
+}
+
 /**
  * Stack overlapping blocks vertically (full width). Rail dots/labels align with each card top.
  */
