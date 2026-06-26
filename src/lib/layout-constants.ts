@@ -341,9 +341,13 @@ export const TODAY_AGENDA_TIMELINE = {
   laneGapPx: 8,
   /** Minimum width (px) per lane when items overlap in time. */
   laneMinWidthPx: 160,
-  /** Duration (minutes) below which timeline items use compact single-row layout so info is not clipped. */
+  /** Duration (minutes) below which timeline items prefer compact single-row layout. */
   shortItemThresholdMinutes: 20,
-  /** Minimum block height (px) for items under shortItemThresholdMinutes — fits compact card without clipping. */
+  /** Minimum card height (px) for timeline tasks — tab, title, footer; may exceed slot height. */
+  timelineTaskCardMinHeightPx: 110,
+  /** Minimum card height (px) for timeline calendar events — full agenda row without clipping. */
+  timelineEventCardMinHeightPx: 120,
+  /** @deprecated Use timelineTaskCardMinHeightPx — kept for compact-list fallback. */
   shortTaskComfortableBlockHeightPx: 92,
   /** Target height (px) for compact single-row layout inside a duration-sized block. */
   shortItemCompactRowHeightPx: 92,

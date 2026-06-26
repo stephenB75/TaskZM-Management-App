@@ -114,6 +114,7 @@ export function AgendaListCard({
   const hasTime = !hideTime && Boolean(allDayLabel || timePart);
   const showFooter = !micro;
   const isTimelineSurface = surface === 'timeline' && !embedded;
+  const allowFullContent = isTimelineSurface;
   /** When the rail shows time, put complete/action controls on the title row — not a separate header line. */
   const inlineActionsWithTitle = !hasTime && Boolean(headerAction || showCommentIcon);
   const cardBackground = embedded
@@ -151,7 +152,8 @@ export function AgendaListCard({
   return (
     <div
       className={cn(
-        'flex flex-col w-full h-full min-w-0 box-border overflow-hidden',
+        'flex flex-col w-full min-w-0 box-border',
+        allowFullContent ? 'overflow-visible' : 'h-full overflow-hidden',
         className,
       )}
       style={{
@@ -289,7 +291,7 @@ export function AgendaListCard({
             <h3
               className={cn(
                 'font-bold leading-snug break-words min-w-0',
-                micro || compact ? 'line-clamp-1' : 'line-clamp-2',
+                !allowFullContent && (micro || compact ? 'line-clamp-1' : 'line-clamp-2'),
                 titleDone && 'line-through opacity-60',
               )}
               style={{
@@ -302,7 +304,7 @@ export function AgendaListCard({
             </h3>
             {!compact && !micro && subtitle && (
               <p
-                className="line-clamp-2 break-words"
+                className={cn(allowFullContent ? 'break-words' : 'line-clamp-2 break-words')}
                 style={{
                   fontSize: AGENDA_LIST_CARD.subtitleFontSizePx,
                   color: isDark ? AGENDA_LIST_CARD_COLORS.subtitleDark : AGENDA_LIST_CARD_COLORS.subtitle,

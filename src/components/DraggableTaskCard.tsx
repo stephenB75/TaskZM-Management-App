@@ -833,8 +833,8 @@ export const DraggableTaskCard = React.forwardRef<
           }}
           style={{
             ...style,
-            height: '100%',
             width: '100%',
+            minHeight: timelineBlockHeightPx,
             touchAction: dragDisabled ? 'auto' : 'none',
             ...(!dragDisabled && (isDragging || isSortableDragging)
               ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 }
@@ -843,7 +843,7 @@ export const DraggableTaskCard = React.forwardRef<
           {...attributes}
           {...(dragDisabled ? {} : listeners)}
           className={cn(
-            'relative w-full h-full min-h-0',
+            'relative w-full min-h-0',
             !dragDisabled && !(isDragging || isSortableDragging) && 'cursor-grab',
             !dragDisabled && (isDragging || isSortableDragging) && 'cursor-grabbing',
             task.status === 'done' && 'opacity-60',
@@ -859,7 +859,7 @@ export const DraggableTaskCard = React.forwardRef<
           }}
         >
           {renderAgendaTaskCard({
-            compact: compactTimeline,
+            compact: false,
             embedded: false,
             surface: 'timeline',
             hideTime: hideTimelineTime,
@@ -867,9 +867,7 @@ export const DraggableTaskCard = React.forwardRef<
             leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
             leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
             style: {
-              height: '100%',
-              minHeight: '100%',
-              maxHeight: '100%',
+              minHeight: timelineBlockHeightPx,
             },
           })}
         </div>
@@ -947,16 +945,14 @@ export const DraggableTaskCard = React.forwardRef<
             ...(isTodayAgenda
               ? timelineBlockHeightPx != null
                 ? {
-                    height: '100%',
-                    minHeight: '100%',
-                    maxHeight: '100%',
+                    minHeight: timelineBlockHeightPx,
                     boxSizing: 'border-box' as const,
                     flexShrink: 0,
                     background: 'transparent',
                     border: 'none',
                     boxShadow: 'none',
                     padding: 0,
-                    overflow: 'hidden',
+                    overflow: 'visible',
                   }
                 : {
                     minHeight: TODAY_AGENDA_TIMELINE.taskRowHeightPx,
@@ -1012,7 +1008,7 @@ export const DraggableTaskCard = React.forwardRef<
               <Tooltip>
                 <TooltipTrigger asChild>
                   {renderAgendaTaskCard({
-                    compact: compactTimeline,
+                    compact: false,
                     embedded: timelineBlockHeightPx != null,
                     surface: 'timeline',
                     hideTime: hideTimelineTime,
@@ -1020,11 +1016,14 @@ export const DraggableTaskCard = React.forwardRef<
                     leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
                     leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
                     showNextUpBadge: isNextUp && timelineBlockHeightPx == null,
-                    style: {
-                      height: '100%',
-                      minHeight: '100%',
-                      maxHeight: '100%',
-                    },
+                    style:
+                      timelineBlockHeightPx != null
+                        ? { minHeight: timelineBlockHeightPx }
+                        : {
+                            height: '100%',
+                            minHeight: '100%',
+                            maxHeight: '100%',
+                          },
                   })}
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">

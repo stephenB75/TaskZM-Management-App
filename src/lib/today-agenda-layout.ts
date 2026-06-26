@@ -13,25 +13,16 @@ export function getTodayAgendaTimelineSlotHeightPx(durationMinutes: number): num
   return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
 }
 
-/** Card render height (px) — slot height for long blocks; comfortable minimum for short tasks/events. */
+/** Estimated card height (px) — at least the time slot; grows to fit full agenda card content. */
 export function getTodayAgendaTimelineCardHeightPx(
   durationMinutes: number,
   options?: { isEvent?: boolean },
 ): number {
   const slotHeightPx = getTodayAgendaTimelineSlotHeightPx(durationMinutes);
-  const {
-    shortItemThresholdMinutes,
-    shortTaskComfortableBlockHeightPx,
-    microEventBlockHeightPx,
-  } = TODAY_AGENDA_TIMELINE;
-
-  if (durationMinutes >= shortItemThresholdMinutes) {
-    return slotHeightPx;
-  }
-
+  const { timelineTaskCardMinHeightPx, timelineEventCardMinHeightPx } = TODAY_AGENDA_TIMELINE;
   const comfortableMinPx = options?.isEvent
-    ? microEventBlockHeightPx
-    : shortTaskComfortableBlockHeightPx;
+    ? timelineEventCardMinHeightPx
+    : timelineTaskCardMinHeightPx;
   return Math.max(slotHeightPx, comfortableMinPx);
 }
 
@@ -127,20 +118,18 @@ export function resolveTodayAgendaLayoutMode(blocks: TodayAgendaTimelineBlockInp
 }
 
 /** Row height when stacking items in compact list mode (content-sized, not time-scale gaps). */
-export function getTodayAgendaCompactRowHeightPx(durationMinutes: number, _isEvent = false): number {
+export function getTodayAgendaCompactRowHeightPx(durationMinutes: number, isEvent = false): number {
   const {
-    shortItemThresholdMinutes,
-    shortTaskComfortableBlockHeightPx,
+    timelineTaskCardMinHeightPx,
+    timelineEventCardMinHeightPx,
     taskRowHeightPx,
   } = TODAY_AGENDA_TIMELINE;
-
-  if (durationMinutes < shortItemThresholdMinutes) {
-    return shortTaskComfortableBlockHeightPx;
-  }
+  const comfortableMinPx = isEvent ? timelineEventCardMinHeightPx : timelineTaskCardMinHeightPx;
+  const slotHeightPx = getTodayAgendaTimelineBlockHeightPx(durationMinutes);
   if (durationMinutes >= MINUTES_PER_HOUR) {
-    return Math.max(taskRowHeightPx, getTodayAgendaTimelineBlockHeightPx(durationMinutes));
+    return Math.max(comfortableMinPx, taskRowHeightPx, slotHeightPx);
   }
-  return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
+  return Math.max(comfortableMinPx, slotHeightPx);
 }
 
 /** Unique key for a timeline row — includes start so recurring events with the same id still render. */

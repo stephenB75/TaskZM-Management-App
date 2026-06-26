@@ -365,24 +365,21 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
 
   // Today Agenda timeline — single AgendaListCard shell (matches task cards)
   if (variant === 'timeline') {
-    const isCompact =
-      compactTimeline ?? durationMinutes < TODAY_AGENDA_TIMELINE.shortItemThresholdMinutes;
     return (
       <AgendaListCard
         accentColor={accentDotColor}
         badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
         title={title}
-        subtitle={isCompact ? undefined : (location || undefined)}
+        subtitle={location || undefined}
         footerIcon="calendar"
         footerSourceLabel={providerLabel}
         durationLabel={formatDuration(durationMinutes)}
-        compact={isCompact}
+        compact={false}
         hideTime
         hideAccentColumn
         leftAccentColor={accentDotColor}
         leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
         surface="timeline"
-        style={{ height: '100%', minHeight: '100%', maxHeight: '100%' }}
       />
     );
   }
