@@ -289,7 +289,7 @@ export const TODAY_AGENDA_TIMELINE = {
   timeLabelMinSeparationPx: 14,
   /** Opacity (0–1) for hour grid lines in duration block mode. */
   hourGridLineOpacity: 0.12,
-  columnWidth: '4rem',
+  columnWidth: '4.75rem',
   rowPaddingTopPx: 2,
   columnGapPx: 12,
   rowGapPx: 4,

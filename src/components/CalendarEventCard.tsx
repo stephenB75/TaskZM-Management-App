@@ -55,7 +55,7 @@ interface CalendarEventCardProps {
 function getDurationMinutes(start: string, end: string): number {
   const startDate = parseCalendarEventTime(start);
   const endDate = parseCalendarEventTime(end);
-  return Math.round((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_MINUTE);
+  return Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_MINUTE));
 }
 
 // Format time to AM/PM in user's local timezone (uses parseCalendarEventTime so UTC-from-API displays correctly)

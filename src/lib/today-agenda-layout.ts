@@ -80,7 +80,7 @@ export interface TodayAgendaRailLabelSpec {
   id: string;
   topPx: number;
   text: string;
-  kind: 'start' | 'end' | 'range';
+  kind: 'start' | 'end';
 }
 
 /** Build start/end rail labels pinned to a block's duration slot (no collision nudging). */
@@ -104,28 +104,31 @@ export function buildTodayAgendaBlockRailLabels(
   if (block.slotHeightPx < combinedSlotLabelMaxHeightPx) {
     return [
       {
-        id: `range-${blockKey}`,
+        id: `start-${blockKey}`,
         topPx: slotStartTopPx,
-        text: `${startLabel} – ${endLabel}`,
-        kind: 'range',
+        text: startLabel,
+        kind: 'start',
       },
     ];
   }
 
-  return [
+  const labels: TodayAgendaRailLabelSpec[] = [
     {
       id: `start-${blockKey}`,
       topPx: slotStartTopPx,
       text: startLabel,
       kind: 'start',
     },
-    {
+  ];
+  if (endLabel !== startLabel) {
+    labels.push({
       id: `end-${blockKey}`,
       topPx: slotEndTopPx - lineHeightPx,
       text: endLabel,
       kind: 'end',
-    },
-  ];
+    });
+  }
+  return labels;
 }
 
 /**

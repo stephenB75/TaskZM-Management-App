@@ -763,6 +763,7 @@ export function TodayAgendaView({
 
       const renderTimelineBlock = (
         block: (typeof displayTimelineBlocks)[number],
+        blockIndex: number,
       ) => {
         const {
           item,
@@ -776,8 +777,7 @@ export function TodayAgendaView({
         const key = getTodayAgendaTimelineBlockKey(item, actualStartMins);
         const isNextUpTask =
           item.type === 'task' && item.task && timelineTaskMatchesNextUp(item.task, nextUpTaskId);
-        const blockZIndex =
-          Z_INDEX.TIMELINE_BLOCK + (isNextUpTask ? 1000 : 0) + actualStartMins;
+        const blockZIndex = 1 + blockIndex + (isNextUpTask ? 1 : 0);
         const rowTopPx = displayTopPx;
 
         return (
@@ -864,7 +864,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v19"
+          data-agenda-timeline="v20"
         >
           <div
             className="flex w-full items-stretch"
@@ -876,7 +876,7 @@ export function TodayAgendaView({
           >
             {/* Left rail: spine, per-item or hourly labels, start dots */}
             <div
-              className="flex-shrink-0 relative"
+              className="flex-shrink-0 relative overflow-hidden"
               style={{
                 width: columnWidth,
                 height: timelineContentHeightPx - nextUpHeadroomPx,
@@ -933,7 +933,7 @@ export function TodayAgendaView({
                 durationRailLabels.map(({ id, topPx, text, kind }) => (
                   <div
                     key={id}
-                    className="absolute left-0 pr-2 text-right flex items-start pointer-events-none"
+                    className="absolute left-0 pr-2 text-right flex items-start pointer-events-none overflow-hidden"
                     style={{
                       top: topPx,
                       width: `calc(100% - ${spineWidthPx + 4}px)`,
@@ -943,12 +943,13 @@ export function TodayAgendaView({
                   >
                     <span
                       className={cn(
-                        'text-xs whitespace-nowrap tabular-nums block w-full',
+                        'text-xs tabular-nums block w-full truncate',
                         kind === 'end'
                           ? 'font-normal text-muted-foreground/75'
                           : 'font-medium text-muted-foreground',
                       )}
                       style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
+                      title={text}
                     >
                       {text}
                     </span>
@@ -1047,6 +1048,7 @@ export function TodayAgendaView({
                 paddingRight: cardPaddingRightPx,
                 height: timelineContentHeightPx - nextUpHeadroomPx,
                 overflow: 'visible',
+                zIndex: Z_INDEX.TIMELINE_BLOCK,
               }}
             >
               {/* Hour grid (duration mode only) */}
@@ -1080,7 +1082,9 @@ export function TodayAgendaView({
                 />
               )}
 
-              {displayTimelineBlocks.map(renderTimelineBlock)}
+              {displayTimelineBlocks.map((block, blockIndex) =>
+                renderTimelineBlock(block, blockIndex),
+              )}
             </div>
           </div>
 
