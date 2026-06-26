@@ -114,6 +114,8 @@ export function AgendaListCard({
   const hasTime = !hideTime && Boolean(allDayLabel || timePart);
   const showFooter = !micro;
   const isTimelineSurface = surface === 'timeline' && !embedded;
+  /** When the rail shows time, put complete/action controls on the title row — not a separate header line. */
+  const inlineActionsWithTitle = !hasTime && Boolean(headerAction || showCommentIcon);
   const cardBackground = embedded
     ? 'transparent'
     : isDark
@@ -136,6 +138,16 @@ export function AgendaListCard({
             }
           : {};
 
+  const cardPaddingStyle: React.CSSProperties =
+    isTimelineSurface && hideTime
+      ? {
+          paddingTop: AGENDA_LIST_CARD.timelineContentPaddingTopPx,
+          paddingRight: padding,
+          paddingBottom: padding,
+          paddingLeft: padding,
+        }
+      : { padding };
+
   return (
     <div
       className={cn(
@@ -144,10 +156,10 @@ export function AgendaListCard({
       )}
       style={{
         borderRadius: embedded ? 0 : AGENDA_LIST_CARD.borderRadiusPx,
-        padding,
         boxShadow: cardShadow,
         backgroundColor: cardBackground,
         ...timelineBorderStyles,
+        ...cardPaddingStyle,
         ...style,
       }}
     >
@@ -205,7 +217,8 @@ export function AgendaListCard({
               </span>
             </div>
           )}
-          {/* Header: time + optional comment / action */}
+          {/* Header: time (+ action when time is shown) */}
+          {hasTime && (
           <div className="flex items-start justify-between gap-2 min-w-0">
             <div className="flex items-baseline gap-1 min-w-0">
               {allDayLabel ? (
@@ -218,7 +231,7 @@ export function AgendaListCard({
                 >
                   {allDayLabel}
                 </span>
-              ) : hasTime && timePart ? (
+              ) : timePart ? (
                 <>
                   <span
                     className="font-semibold flex-shrink-0"
@@ -255,15 +268,24 @@ export function AgendaListCard({
               )}
             </div>
           </div>
+          )}
 
-          {/* Title + subtitle */}
+          {/* Title + subtitle (+ inline complete dot when no time header) */}
           <div
-            className={cn('flex min-w-0', micro ? 'items-center justify-between gap-2' : 'flex-col')}
+            className={cn(
+              'flex min-w-0',
+              inlineActionsWithTitle
+                ? 'items-start justify-between gap-2'
+                : micro
+                  ? 'items-center justify-between gap-2'
+                  : 'flex-col',
+            )}
             style={{
-              marginTop: hasTime || headerAction ? headerBodyGap : 0,
-              gap: compact ? 2 : 4,
+              marginTop: hasTime ? headerBodyGap : 0,
+              gap: inlineActionsWithTitle ? 0 : compact ? 2 : 4,
             }}
           >
+            <div className={cn('min-w-0', inlineActionsWithTitle ? 'flex-1' : 'w-full')}>
             <h3
               className={cn(
                 'font-bold leading-snug break-words min-w-0',
@@ -278,6 +300,33 @@ export function AgendaListCard({
             >
               {title}
             </h3>
+            {!compact && !micro && subtitle && (
+              <p
+                className="line-clamp-2 break-words"
+                style={{
+                  fontSize: AGENDA_LIST_CARD.subtitleFontSizePx,
+                  color: isDark ? AGENDA_LIST_CARD_COLORS.subtitleDark : AGENDA_LIST_CARD_COLORS.subtitle,
+                  marginTop: compact ? 2 : 4,
+                }}
+                title={subtitle}
+              >
+                {subtitle}
+              </p>
+            )}
+            </div>
+            {inlineActionsWithTitle && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {headerAction}
+                {showCommentIcon && (
+                  <Icon
+                    name="note"
+                    size={AGENDA_LIST_CARD.headerCommentIconSizePx}
+                    className={isDark ? 'text-gray-500' : 'text-gray-300'}
+                    weight="regular"
+                  />
+                )}
+              </div>
+            )}
             {micro && (
               <span
                 className="rounded-full font-semibold capitalize flex-shrink-0 whitespace-nowrap"
@@ -293,18 +342,6 @@ export function AgendaListCard({
               >
                 {badgeLabel}
               </span>
-            )}
-            {!compact && !micro && subtitle && (
-              <p
-                className="line-clamp-2 break-words"
-                style={{
-                  fontSize: AGENDA_LIST_CARD.subtitleFontSizePx,
-                  color: isDark ? AGENDA_LIST_CARD_COLORS.subtitleDark : AGENDA_LIST_CARD_COLORS.subtitle,
-                }}
-                title={subtitle}
-              >
-                {subtitle}
-              </p>
             )}
           </div>
 

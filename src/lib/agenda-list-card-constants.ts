@@ -32,6 +32,8 @@ export const AGENDA_LIST_CARD = {
   headerBodyGapPx: 4,
   bodyFooterGapPx: 10,
   footerDotSizePx: 3,
+  /** Top padding (px) for timeline cards when the rail shows time (tighter under NEXT UP badge). */
+  timelineContentPaddingTopPx: 10,
   compact: {
     paddingPx: 10,
     titleFontSizePx: 13,
