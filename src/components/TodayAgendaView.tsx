@@ -33,6 +33,8 @@ import {
   getTodayAgendaMinutesFromTimelineStart,
   isTodayAgendaMinutesInTimelineRange,
   getTodayAgendaDurationViewportMins,
+  isTodayAgendaOnLabelInterval,
+  getTodayAgendaIntervalLabels,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE, getTodayAgendaTimelineBlockHeightPx } from "../lib/layout-constants";
@@ -596,8 +598,6 @@ export function TodayAgendaView({
   const agendaListRows = useMemo(
     () => {
       const {
-        startHour,
-        endHour,
         columnWidth,
         pxPerMinute,
         totalMinutes,
@@ -623,20 +623,12 @@ export function TodayAgendaView({
       const getBlockDotTopPx = (block: (typeof displayTimelineBlocks)[number]) =>
         getBlockCardTopPx(block) - spineDotSizePx / 2;
 
-      const hourlyLabels: { minutesFromStart: number; label: string }[] = [];
-      if (!isCompactList) {
-        for (let m = timelineViewStartMins; m <= timelineViewEndMins; m += labelIntervalMinutes) {
-          const h = startHour + Math.floor(m / MINUTES_PER_HOUR);
-          const min = m % MINUTES_PER_HOUR;
-          const isMidnight = h === endHour && min === 0;
-          hourlyLabels.push({
-            minutesFromStart: m,
-            label: isMidnight
-              ? TODAY_AGENDA_TEXT.timelineMidnightLabel
-              : formatTodayAgendaMinutesLabel(m),
-          });
-        }
-      }
+      const hourlyLabels = !isCompactList
+        ? getTodayAgendaIntervalLabels(timelineViewStartMins, timelineViewEndMins)
+        : [];
+
+      const getIntervalLabelTopPx = (minutesFromStart: number) =>
+        Math.round((minutesFromStart - timelineViewStartMins) * pxPerMinute) - timeLabelLineHeightPx / 2;
 
       const renderTimelineBlock = (
         block: (typeof displayTimelineBlocks)[number],
@@ -723,7 +715,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v8"
+          data-agenda-timeline="v9"
         >
           <div
             className="flex w-full items-stretch"
@@ -754,6 +746,32 @@ export function TodayAgendaView({
                 aria-hidden
               />
 
+              {/* Fixed 30-min interval labels on the rail (duration mode) */}
+              {!isCompactList &&
+                hourlyLabels.map(({ minutesFromStart, label, isHour }) => (
+                  <div
+                    key={`interval-${minutesFromStart}`}
+                    className="absolute left-0 pr-2 text-right flex items-center pointer-events-none"
+                    style={{
+                      top: getIntervalLabelTopPx(minutesFromStart),
+                      width: `calc(100% - ${spineWidthPx + 4}px)`,
+                      height: timeLabelLineHeightPx,
+                      zIndex: 1,
+                    }}
+                  >
+                    <span
+                      className={cn(
+                        'text-xs whitespace-nowrap tabular-nums block w-full',
+                        isHour ? 'font-semibold text-muted-foreground' : 'font-normal text-muted-foreground/75',
+                      )}
+                      style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                ))}
+
+              {/* Per-item times that fall between interval ticks (e.g. 6:45 PM) */}
               {(() => {
                 let prevLabelBottom = -Infinity;
                 let prevLabelStartMins: number | null = null;
@@ -762,6 +780,13 @@ export function TodayAgendaView({
                   const cardTopPx = getBlockCardTopPx(block);
                   const showTimeLabel =
                     prevLabelStartMins == null || block.actualStartMins !== prevLabelStartMins;
+                  if (!showTimeLabel) {
+                    return null;
+                  }
+                  if (!isCompactList && isTodayAgendaOnLabelInterval(block.actualStartMins, labelIntervalMinutes)) {
+                    prevLabelStartMins = block.actualStartMins;
+                    return null;
+                  }
                   let labelTop = cardTopPx;
                   if (
                     showTimeLabel &&
@@ -774,9 +799,6 @@ export function TodayAgendaView({
                     prevLabelBottom = labelTop + timeLabelLineHeightPx;
                     prevLabelStartMins = block.actualStartMins;
                   }
-                  if (!showTimeLabel) {
-                    return null;
-                  }
                   return (
                     <div
                       key={`time-${blockKey}`}
@@ -785,10 +807,11 @@ export function TodayAgendaView({
                         top: labelTop,
                         width: `calc(100% - ${spineWidthPx + 4}px)`,
                         height: timeLabelLineHeightPx,
+                        zIndex: 2,
                       }}
                     >
                       <span
-                        className="text-xs text-muted-foreground whitespace-nowrap tabular-nums block w-full"
+                        className="text-xs font-medium text-muted-foreground whitespace-nowrap tabular-nums block w-full"
                         style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
                       >
                         {formatTodayAgendaMinutesLabel(block.actualStartMins)}

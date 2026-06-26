@@ -131,6 +131,31 @@ export function getTodayAgendaDurationViewportMins(
   return { viewStartMins, viewEndMins: Math.min(viewEndMins, totalMinutes) };
 }
 
+/** True when a time falls on a fixed interval label tick (e.g. :00 or :30). */
+export function isTodayAgendaOnLabelInterval(
+  minutesFromStart: number,
+  intervalMinutes: number = TODAY_AGENDA_TIMELINE.labelIntervalMinutes,
+): boolean {
+  return minutesFromStart % intervalMinutes === 0;
+}
+
+/** Build interval label ticks for the visible timeline viewport. */
+export function getTodayAgendaIntervalLabels(
+  viewStartMins: number,
+  viewEndMins: number,
+): { minutesFromStart: number; label: string; isHour: boolean }[] {
+  const { labelIntervalMinutes } = TODAY_AGENDA_TIMELINE;
+  const labels: { minutesFromStart: number; label: string; isHour: boolean }[] = [];
+  for (let m = viewStartMins; m <= viewEndMins; m += labelIntervalMinutes) {
+    labels.push({
+      minutesFromStart: m,
+      label: formatTodayAgendaMinutesLabel(m),
+      isHour: m % MINUTES_PER_HOUR === 0,
+    });
+  }
+  return labels;
+}
+
 /** Format minutes-from-range-start as "7:00 AM" label. */
 export function formatTodayAgendaMinutesLabel(minutesFromStart: number): string {
   const { startHour, endHour } = TODAY_AGENDA_TIMELINE;
