@@ -380,8 +380,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         leftAccentColor={accentDotColor}
         leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
         surface="timeline"
-        className="h-full"
-        style={{ minHeight: '100%' }}
+        className="h-full min-h-0"
+        style={{ height: '100%', maxHeight: '100%', overflow: 'auto' }}
       />
     );
   }

@@ -834,8 +834,10 @@ export const DraggableTaskCard = React.forwardRef<
           style={{
             ...style,
             width: '100%',
-            height: '100%',
+            height: timelineBlockHeightPx,
             minHeight: timelineBlockHeightPx,
+            maxHeight: timelineBlockHeightPx,
+            overflow: 'hidden',
             touchAction: dragDisabled ? 'auto' : 'none',
             ...(!dragDisabled && (isDragging || isSortableDragging)
               ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 }
@@ -870,6 +872,8 @@ export const DraggableTaskCard = React.forwardRef<
             style: {
               height: '100%',
               minHeight: timelineBlockHeightPx,
+              maxHeight: timelineBlockHeightPx,
+              overflow: 'auto',
             },
           })}
         </div>

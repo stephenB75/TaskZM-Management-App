@@ -2,7 +2,7 @@
  * Today Agenda hybrid timeline layout — compact list vs duration-proportional blocks.
  */
 
-import { MINUTES_PER_HOUR } from './business-constants';
+import { MINUTES_PER_HOUR, MILLISECONDS_PER_MINUTE } from './business-constants';
 import {
   TODAY_AGENDA_TIMELINE,
   getTodayAgendaTimelineBlockHeightPx,
@@ -90,13 +90,66 @@ export function getTodayAgendaBlockRailLabelPositions(
 ): TodayAgendaBlockRailLabelPositions {
   const stacked = isTodayAgendaBlockStacked(block);
   const slotHeightPx = block.scheduledSlotHeightPx;
-  const startTopPx = stacked ? block.displayTopPx : block.scheduledStartTopPx;
-  const slotEndTopPx = startTopPx + slotHeightPx;
+
+  if (!stacked) {
+    return {
+      startTopPx: block.scheduledStartTopPx,
+      endTopPx: block.scheduledEndTopPx - lineHeightPx,
+      slotHeightPx,
+    };
+  }
+
+  const startTopPx = block.displayTopPx;
   return {
     startTopPx,
-    endTopPx: slotEndTopPx - lineHeightPx,
+    endTopPx: startTopPx + slotHeightPx - lineHeightPx,
     slotHeightPx,
   };
+}
+
+/** Timeline minute range for a task block (start + duration). */
+export function getTodayAgendaTaskTimeRangeMins(
+  start: Date,
+  durationMinutes: number,
+  timelineStartHour: number = TODAY_AGENDA_TIMELINE.startHour,
+  totalMinutes: number = TODAY_AGENDA_TIMELINE.totalMinutes,
+): { startMins: number; endMins: number; durationMins: number } | null {
+  if (isNaN(start.getTime())) return null;
+  const startMins =
+    start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - timelineStartHour * MINUTES_PER_HOUR;
+  if (startMins < 0 || startMins >= totalMinutes) return null;
+  const durationMins = Math.max(1, durationMinutes);
+  const endMins = Math.min(totalMinutes, startMins + durationMins);
+  return { startMins, endMins, durationMins: endMins - startMins };
+}
+
+/** Timeline minute range for a calendar event (parsed start/end — end label matches event end time). */
+export function getTodayAgendaEventTimeRangeMins(
+  start: Date,
+  end: Date,
+  timelineStartHour: number = TODAY_AGENDA_TIMELINE.startHour,
+  totalMinutes: number = TODAY_AGENDA_TIMELINE.totalMinutes,
+): { startMins: number; endMins: number; durationMins: number } | null {
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+  const startMins =
+    start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - timelineStartHour * MINUTES_PER_HOUR;
+  if (startMins < 0 || startMins >= totalMinutes) return null;
+
+  let endMins =
+    end.getHours() * MINUTES_PER_HOUR + end.getMinutes() - timelineStartHour * MINUTES_PER_HOUR;
+  if (endMins <= startMins) {
+    endMins = startMins + Math.max(1, Math.round((end.getTime() - start.getTime()) / MILLISECONDS_PER_MINUTE));
+  }
+  endMins = Math.min(totalMinutes, Math.max(startMins + 1, endMins));
+  return { startMins, endMins, durationMins: endMins - startMins };
+}
+
+/** Row top for a duration block — grid start unless stacked below another item. */
+export function getTodayAgendaBlockRowTopPx(block: {
+  displayTopPx: number;
+  scheduledStartTopPx: number;
+}): number {
+  return isTodayAgendaBlockStacked(block) ? block.displayTopPx : block.scheduledStartTopPx;
 }
 
 /** Top (px) of a block's scheduled start on the card row (stacked position). */
@@ -213,7 +266,7 @@ export function getTodayAgendaDisplayLayoutHeightPx<
     const blockExtentPx =
       options.layoutMode === 'compactList'
         ? block.cardHeightPx
-        : Math.max(block.scheduledSlotHeightPx, block.cardHeightPx);
+        : block.scheduledSlotHeightPx;
     maxBottomPx = Math.max(maxBottomPx, block.displayTopPx + blockExtentPx);
 
     if (options.layoutMode === 'durationBlocks') {
@@ -254,7 +307,7 @@ export function resolveTodayAgendaDurationBlockTops<
     let topPx = block.naturalTopPx;
     for (const prev of placed) {
       if (!todayAgendaBlocksTimeOverlap(block, prev)) continue;
-      const prevExtentPx = getTodayAgendaBlockVisualExtentPx(prev);
+      const prevExtentPx = prev.slotHeightPx;
       const prevVisualBottomPx = prev.topPx + prevExtentPx + blockGapPx;
       if (topPx < prevVisualBottomPx) {
         topPx = prevVisualBottomPx;

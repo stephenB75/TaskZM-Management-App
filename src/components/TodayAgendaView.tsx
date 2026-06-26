@@ -34,15 +34,17 @@ import {
   getTodayAgendaDurationViewportMins,
   getTodayAgendaIntervalLabels,
   getTodayAgendaTimelineSlotHeightPx,
-  getTodayAgendaTimelineCardHeightPx,
   resolveTodayAgendaDurationBlockTops,
-  getTodayAgendaBlockVisualExtentPx,
-  getTodayAgendaScheduledTopPx,
   getTodayAgendaBlockScheduledSlotHeightPx,
+  getTodayAgendaScheduledTopPx,
   getTodayAgendaBlockRailLabelPositions,
   buildTodayAgendaBlockRailLabels,
   getTodayAgendaDisplayLayoutHeightPx,
+  getTodayAgendaBlockRowTopPx,
+  getTodayAgendaTaskTimeRangeMins,
+  getTodayAgendaEventTimeRangeMins,
   isTodayAgendaMinuteOccupiedByScheduledBlock,
+  blocksHaveTimeOverlap,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
@@ -315,19 +317,16 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const startMins = start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - startHour * MINUTES_PER_HOUR;
-        if (startMins < 0 || startMins >= totalMinutes) {
+        const durationMins = getTaskMinutes(item.task, { useCachedAIAnalysis: true });
+        const timeRange = getTodayAgendaTaskTimeRangeMins(start, durationMins, startHour, totalMinutes);
+        if (!timeRange) {
           unscheduled.push(item);
           continue;
         }
-        const durationMins =
-          typeof item.task.estimatedTime === 'number' && item.task.estimatedTime > 0
-            ? item.task.estimatedTime
-            : getTaskMinutes(item.task, { useCachedAIAnalysis: true });
-        const slotHeightPx = getTodayAgendaTimelineSlotHeightPx(durationMins);
-        const cardHeightPx = getTodayAgendaTimelineCardHeightPx(durationMins);
+        const { startMins, endMins, durationMins: slotDurationMins } = timeRange;
+        const slotHeightPx = getTodayAgendaTimelineSlotHeightPx(slotDurationMins);
+        const cardHeightPx = slotHeightPx;
         const naturalTopPx = Math.round(startMins * pxPerMinute);
-        const actualEndMins = startMins + durationMins;
         blocks.push({
           item,
           naturalTopPx,
@@ -336,8 +335,8 @@ export function TodayAgendaView({
           cardHeightPx,
           heightPx: slotHeightPx,
           actualStartMins: startMins,
-          actualDurationMins: durationMins,
-          actualEndMins,
+          actualDurationMins: slotDurationMins,
+          actualEndMins: endMins,
         });
       } else if (item.type === 'event' && item.event) {
         const start = parseCalendarEventTime(item.event.start);
@@ -346,16 +345,15 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const startMins = start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - startHour * MINUTES_PER_HOUR;
-        const durationMins = Math.max(1, Math.round((end.getTime() - start.getTime()) / MILLISECONDS_PER_MINUTE));
-        if (startMins < 0 || startMins >= totalMinutes) {
+        const timeRange = getTodayAgendaEventTimeRangeMins(start, end, startHour, totalMinutes);
+        if (!timeRange) {
           unscheduled.push(item);
           continue;
         }
+        const { startMins, endMins, durationMins } = timeRange;
         const slotHeightPx = getTodayAgendaTimelineSlotHeightPx(durationMins);
-        const cardHeightPx = getTodayAgendaTimelineCardHeightPx(durationMins, { isEvent: true });
+        const cardHeightPx = slotHeightPx;
         const naturalTopPx = Math.round(startMins * pxPerMinute);
-        const actualEndMins = startMins + durationMins;
         blocks.push({
           item,
           naturalTopPx,
@@ -365,7 +363,7 @@ export function TodayAgendaView({
           heightPx: slotHeightPx,
           actualStartMins: startMins,
           actualDurationMins: durationMins,
-          actualEndMins,
+          actualEndMins: endMins,
         });
       }
     }
@@ -426,7 +424,7 @@ export function TodayAgendaView({
     const viewSpanMins = viewEndMins - viewStartMins;
     const baseTimelineHeightPx = viewSpanMins * pxPerMinute;
     const maxBlockBottomPx = dedupedBlocks.length > 0
-      ? Math.max(...dedupedBlocks.map((b) => b.topPx + getTodayAgendaBlockVisualExtentPx(b)))
+      ? Math.max(...dedupedBlocks.map((b) => b.topPx + b.slotHeightPx))
       : 0;
     const layoutHeightPx = Math.max(baseTimelineHeightPx, maxBlockBottomPx + blockGapPx);
     return {
@@ -439,57 +437,17 @@ export function TodayAgendaView({
     };
   }, [combinedItems, getTaskMinutes, hideHeader]);
 
-  /** Measured card heights — cards may grow beyond their time slot to show full content. */
-  const [measuredCardHeights, setMeasuredCardHeights] = useState<Record<string, number>>({});
-  const cardMeasureObserversRef = useRef<Map<string, ResizeObserver>>(new Map());
-
-  useEffect(() => {
-    setMeasuredCardHeights({});
-  }, [combinedItems]);
-
-  const handleTimelineCardMeasure = useCallback((blockKey: string, node: HTMLDivElement | null) => {
-    const observers = cardMeasureObserversRef.current;
-    const existing = observers.get(blockKey);
-    if (existing) {
-      existing.disconnect();
-      observers.delete(blockKey);
-    }
-    if (!node) return;
-    const reportHeight = () => {
-      const height = Math.ceil(node.getBoundingClientRect().height);
-      setMeasuredCardHeights((prev) => (prev[blockKey] === height ? prev : { ...prev, [blockKey]: height }));
-    };
-    reportHeight();
-    const observer = new ResizeObserver(reportHeight);
-    observer.observe(node);
-    observers.set(blockKey, observer);
-  }, []);
-
-  useEffect(() => {
-    const observers = cardMeasureObserversRef.current;
-    return () => {
-      observers.forEach((observer) => observer.disconnect());
-      observers.clear();
-    };
-  }, []);
-
-  /** Duration blocks restacked when measured card heights exceed slot height. */
+  /** Duration blocks restacked only when scheduled times overlap. */
   const layoutTimelineBlocks = useMemo(() => {
     if (layoutMode !== 'durationBlocks') return timelineBlocks;
     const { pxPerMinute, blockGapPx } = TODAY_AGENDA_TIMELINE;
     const blocks = timelineBlocks.map((block) => {
-      const key = getTodayAgendaTimelineBlockKey(block.item, block.actualStartMins);
-      const measured = measuredCardHeights[key];
       const scheduledSlotHeightPx = getTodayAgendaBlockScheduledSlotHeightPx(
         block,
         timelineViewStartMins,
         pxPerMinute,
       );
-      const cardHeightPx =
-        measured != null
-          ? Math.max(block.cardHeightPx, measured)
-          : block.cardHeightPx;
-      return { ...block, slotHeightPx: scheduledSlotHeightPx, cardHeightPx };
+      return { ...block, slotHeightPx: scheduledSlotHeightPx, cardHeightPx: scheduledSlotHeightPx };
     });
     for (const block of blocks) {
       block.naturalTopPx = getTodayAgendaScheduledTopPx(
@@ -501,7 +459,7 @@ export function TodayAgendaView({
     }
     resolveTodayAgendaDurationBlockTops(blocks, blockGapPx);
     return blocks;
-  }, [timelineBlocks, layoutMode, measuredCardHeights, timelineViewStartMins]);
+  }, [timelineBlocks, layoutMode, timelineViewStartMins]);
 
   /** Base timeline height (px) for 7 AM–12 AM scale. */
   const timelineHeightPx = TODAY_AGENDA_TIMELINE.totalMinutes * TODAY_AGENDA_TIMELINE.pxPerMinute;
@@ -610,7 +568,7 @@ export function TodayAgendaView({
       return {
         ...block,
         displayTopPx: block.topPx,
-        displayHeightPx: Math.max(scheduledSlotHeightPx, block.cardHeightPx),
+        displayHeightPx: scheduledSlotHeightPx,
         scheduledStartTopPx,
         scheduledEndTopPx,
         scheduledSlotHeightPx,
@@ -626,6 +584,28 @@ export function TodayAgendaView({
     timelineTaskMatchesNextUp,
     timelineViewStartMins,
   ]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || layoutMode !== 'durationBlocks') return;
+    const overlapInputs = displayTimelineBlocks.map((block) => ({
+      actualStartMins: block.actualStartMins,
+      actualEndMins: block.actualEndMins,
+    }));
+    if (blocksHaveTimeOverlap(overlapInputs)) {
+      logger.warn('Today Agenda: overlapping scheduled times in timeline data', {
+        date: todayString,
+        blocks: displayTimelineBlocks.map((block) => ({
+          kind: block.item.type,
+          startMins: block.actualStartMins,
+          endMins: block.actualEndMins,
+          title:
+            block.item.type === 'task'
+              ? block.item.task?.title
+              : block.item.event?.title,
+        })),
+      });
+    }
+  }, [displayTimelineBlocks, layoutMode, todayString]);
 
   const displayTimelineLayoutHeightPx = useMemo(() => {
     const { blockGapPx, timeLabelLineHeightPx } = TODAY_AGENDA_TIMELINE;
@@ -806,7 +786,7 @@ export function TodayAgendaView({
           displayTopPx,
           cardTopInsetPx,
           scheduledSlotHeightPx,
-          cardHeightPx,
+          scheduledStartTopPx,
           actualDurationMins,
           actualStartMins,
         } = block;
@@ -814,7 +794,7 @@ export function TodayAgendaView({
         const isNextUpTask =
           item.type === 'task' && item.task && timelineTaskMatchesNextUp(item.task, nextUpTaskId);
         const blockZIndex = 1 + blockIndex + (isNextUpTask ? 1 : 0);
-        const rowTopPx = displayTopPx;
+        const rowTopPx = getTodayAgendaBlockRowTopPx({ displayTopPx, scheduledStartTopPx });
         const slotHeightPx = scheduledSlotHeightPx;
 
         return (
@@ -823,10 +803,10 @@ export function TodayAgendaView({
             className="absolute left-0 right-0"
             style={{
               top: rowTopPx,
-              minHeight: isCompactList ? cardHeightPx : slotHeightPx,
-              height: isCompactList ? undefined : 'auto',
+              height: isCompactList ? undefined : slotHeightPx,
+              minHeight: isCompactList ? scheduledSlotHeightPx : slotHeightPx,
               zIndex: blockZIndex,
-              overflow: 'visible',
+              overflow: isCompactList ? 'visible' : 'hidden',
             }}
           >
             {isNextUpTask && (
@@ -849,14 +829,8 @@ export function TodayAgendaView({
               </div>
             )}
             <div
-              ref={(node) => handleTimelineCardMeasure(key, node)}
-              className="relative w-full"
-              style={{
-                minHeight: isCompactList ? cardHeightPx : slotHeightPx,
-                height: 'auto',
-                overflow: 'visible',
-                zIndex: 1,
-              }}
+              className="relative w-full h-full min-h-0 overflow-y-auto overflow-x-hidden"
+              style={{ zIndex: 1 }}
             >
             {item.type === 'task' && item.task ? (
               <div data-task-id={item.task.id} className="relative w-full h-full min-h-0">
@@ -902,7 +876,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v22"
+          data-agenda-timeline="v23"
         >
           <div
             className="flex w-full items-stretch"
@@ -1225,7 +1199,6 @@ export function TodayAgendaView({
       isDark,
       getTimelineBlockAccentColor,
       timelineTaskMatchesNextUp,
-      handleTimelineCardMeasure,
     ],
   );
 

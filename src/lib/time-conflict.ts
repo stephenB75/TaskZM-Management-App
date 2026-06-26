@@ -54,6 +54,46 @@ export function scheduleBlocksConflict(
   return sameStartTime || overlaps;
 }
 
+/** True when any task or calendar event blocks overlap on a local day (post-scheduling validation). */
+export function dayHasScheduleOverlaps(
+  tasks: Task[],
+  calendarEvents: ConflictCalendarEvent[],
+  targetDate: Date,
+): boolean {
+  const targetDay = new Date(targetDate);
+  targetDay.setHours(0, 0, 0, 0);
+
+  type Block = { start: number; end: number };
+  const blocks: Block[] = [];
+
+  for (const event of buildCalendarConflictBlocksForDay(calendarEvents, targetDay)) {
+    blocks.push({ start: event.start, end: event.end });
+  }
+
+  for (const task of tasks) {
+    if (task.status === 'done' || !task.scheduledDate) continue;
+    if (!isDateInRecurrence(task, targetDay)) continue;
+    const startMs = calendarEventToTimestamp(task.scheduledDate);
+    if (Number.isNaN(startMs)) continue;
+    const durationMins = Math.max(getTaskMinutes(task, { useCachedAIAnalysis: true }), MIN_TASK_DURATION_MINUTES);
+    blocks.push({
+      start: startMs,
+      end: startMs + durationMins * MILLISECONDS_PER_MINUTE,
+    });
+  }
+
+  blocks.sort((a, b) => a.start - b.start);
+  for (let i = 0; i < blocks.length; i++) {
+    for (let j = i + 1; j < blocks.length; j++) {
+      if (blocks[j].start >= blocks[i].end) break;
+      if (scheduleBlocksConflict(blocks[i].start, blocks[i].end, blocks[j].start, blocks[j].end)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /** Build normalized calendar conflict blocks for one local day. */
 export function buildCalendarConflictBlocksForDay(
   events: ConflictCalendarEvent[],
