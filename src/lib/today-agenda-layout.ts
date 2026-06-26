@@ -35,6 +35,53 @@ export function getTodayAgendaTimelineCardHeightPx(
   return Math.max(slotHeightPx, comfortableMinPx);
 }
 
+/** Visual height of a block row (card may extend below its time slot for short items). */
+export function getTodayAgendaBlockVisualExtentPx(block: {
+  slotHeightPx: number;
+  cardHeightPx: number;
+}): number {
+  return Math.max(block.slotHeightPx, block.cardHeightPx);
+}
+
+/** True when two blocks' scheduled times overlap. */
+export function todayAgendaBlocksTimeOverlap(
+  a: { actualStartMins: number; actualEndMins: number },
+  b: { actualStartMins: number; actualEndMins: number },
+): boolean {
+  return a.actualStartMins < b.actualEndMins && a.actualEndMins > b.actualStartMins;
+}
+
+/**
+ * Stack duration-mode blocks so cards never overlap.
+ * Non-conflicting items keep time-proportional tops; overlapping items shift below prior rows.
+ */
+export function resolveTodayAgendaDurationBlockTops<
+  T extends {
+    naturalTopPx: number;
+    topPx: number;
+    slotHeightPx: number;
+    cardHeightPx: number;
+    actualStartMins: number;
+    actualEndMins: number;
+  },
+>(blocks: T[], blockGapPx: number): void {
+  const placed: T[] = [];
+  for (const block of blocks) {
+    let topPx = block.naturalTopPx;
+    for (const prev of placed) {
+      const prevExtentPx = getTodayAgendaBlockVisualExtentPx(prev);
+      const prevVisualBottomPx = prev.topPx + prevExtentPx + blockGapPx;
+      const timeOverlap = todayAgendaBlocksTimeOverlap(block, prev);
+      const wouldVisualOverlap = topPx < prev.topPx + prevExtentPx;
+      if ((timeOverlap || wouldVisualOverlap) && topPx < prevVisualBottomPx) {
+        topPx = prevVisualBottomPx;
+      }
+    }
+    block.topPx = topPx;
+    placed.push(block);
+  }
+}
+
 export type TodayAgendaLayoutMode = 'compactList' | 'durationBlocks';
 
 export interface TodayAgendaTimelineBlockInput {
