@@ -54,7 +54,7 @@ import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, 
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
-import { getTaskMinutes } from "../lib/daily-hours-utils";
+import { getTaskSchedulingMinutes } from "../lib/daily-hours-utils";
 import { logger } from "../lib/logger";
 import { useCalendarEvents } from "../hooks/useCalendarEvents";
 import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR, MINUTES_PER_HOUR, MILLISECONDS_PER_MINUTE } from "../lib/business-constants";
@@ -320,7 +320,7 @@ export function TodayAgendaView({
           unscheduled.push(item);
           continue;
         }
-        const durationMins = getTaskMinutes(item.task, { useCachedAIAnalysis: true });
+        const durationMins = getTaskSchedulingMinutes(item.task, { useCachedAIAnalysis: true });
         const timeRange = getTodayAgendaTaskTimeRangeMins(start, durationMins, startHour, totalMinutes);
         if (!timeRange) {
           unscheduled.push(item);
@@ -438,7 +438,7 @@ export function TodayAgendaView({
       timelineViewStartMins: viewStartMins,
       timelineViewEndMins: viewEndMins,
     };
-  }, [combinedItems, getTaskMinutes, hideHeader]);
+  }, [combinedItems, hideHeader]);
 
   /** Duration blocks restacked only when scheduled times overlap. */
   const layoutTimelineBlocks = useMemo(() => {
@@ -577,6 +577,7 @@ export function TodayAgendaView({
       const rowHeightPx = getTodayAgendaTimelineRowHeightPx(
         scheduledSlotHeightPx,
         cardPresentation.tier,
+        { isEvent },
       );
       return {
         ...block,
@@ -843,7 +844,7 @@ export function TodayAgendaView({
               height: isCompactList ? undefined : blockRowHeightPx,
               minHeight: isCompactList ? scheduledSlotHeightPx : blockRowHeightPx,
               zIndex: blockZIndex,
-              overflow: isCompactList ? 'visible' : 'hidden',
+              overflow: 'visible',
             }}
           >
             {isNextUpTask && (
@@ -917,7 +918,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v24"
+          data-agenda-timeline="v25"
         >
           <div
             className="flex w-full items-stretch"

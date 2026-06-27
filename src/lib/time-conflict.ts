@@ -2,7 +2,7 @@ import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
 import { parseCalendarEventTime, getDateString } from './utils';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
-import { getTaskMinutes } from './daily-hours-utils';
+import { getTaskMinutes, getTaskSchedulingMinutes } from './daily-hours-utils';
 import { DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MINUTES_PER_HOUR, HOURS_PER_DAY } from './business-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES, MIN_TASK_DURATION_MINUTES } from './ai-config';
 
@@ -75,7 +75,7 @@ export function dayHasScheduleOverlaps(
     if (!isDateInRecurrence(task, targetDay)) continue;
     const startMs = calendarEventToTimestamp(task.scheduledDate);
     if (Number.isNaN(startMs)) continue;
-    const durationMins = Math.max(getTaskMinutes(task, { useCachedAIAnalysis: true }), MIN_TASK_DURATION_MINUTES);
+    const durationMins = getTaskSchedulingMinutes(task, { useCachedAIAnalysis: true });
     blocks.push({
       start: startMs,
       end: startMs + durationMins * MILLISECONDS_PER_MINUTE,
@@ -194,7 +194,7 @@ export function checkTimeConflict(
     
     const existingTaskStart = existingTaskScheduledDate.getTime();
     // Use at least MIN_TASK_DURATION_MINUTES so we never treat a scheduled block as zero-length (prevents overlaps)
-    const existingTaskDuration = Math.max(getTaskMinutes(existingTask, { useCachedAIAnalysis: true }), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
+    const existingTaskDuration = getTaskSchedulingMinutes(existingTask, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
 
     // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
@@ -337,7 +337,7 @@ export function findNextAvailableSlot(
         : scheduledDate;
 
       const start = startDateForBlock.getTime();
-      const duration = Math.max(getTaskMinutes(task), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
+      const duration = getTaskSchedulingMinutes(task) * MILLISECONDS_PER_MINUTE;
       const end = start + duration;
 
       return { task, start, end };
@@ -596,7 +596,7 @@ export function reorganizeAllTasksForDate(
       }
       
       const start = scheduledDate.getTime();
-      const duration = Math.max(getTaskMinutes(task, { useCachedAIAnalysis: true }), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
+      const duration = getTaskSchedulingMinutes(task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
       const end = start + duration;
       
       return { task, start, end };
@@ -743,7 +743,7 @@ export function reorganizeConflictingTasks(
       : new Date(task.scheduledDate);
     
     const existingTaskStart = existingTaskScheduledDate.getTime();
-    const existingTaskDuration = Math.max(getTaskMinutes(task, { useCachedAIAnalysis: true }), MIN_TASK_DURATION_MINUTES) * MILLISECONDS_PER_MINUTE;
+    const existingTaskDuration = getTaskSchedulingMinutes(task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
     
     // Check for overlap

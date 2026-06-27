@@ -27,6 +27,8 @@ export interface AgendaListCardProps {
   compact?: boolean;
   /** When true, omits footer row (fits short timeline slots). */
   hideFooter?: boolean;
+  /** When true, card is embedded in a Today Agenda duration block (scroll + clamp). */
+  fitTimelineSlot?: boolean;
   /** When true, omits the time header row (timeline rail shows time). */
   hideTime?: boolean;
   /** Ultra-compact single row: title + badge only (short timeline events). */
@@ -64,6 +66,7 @@ export function AgendaListCard({
   showCommentIcon = false,
   compact = false,
   hideFooter = false,
+  fitTimelineSlot = false,
   hideTime = false,
   micro = false,
   hideAccentColumn = false,
@@ -117,6 +120,7 @@ export function AgendaListCard({
   const hasTime = !hideTime && Boolean(allDayLabel || timePart);
   const showFooter = !micro && !hideFooter;
   const isTimelineSurface = surface === 'timeline' && !embedded;
+  const isEmbeddedTimeline = surface === 'timeline' && embedded && fitTimelineSlot;
   const allowFullContent = isTimelineSurface;
   /** When the rail shows time, put complete/action controls on the title row — not a separate header line. */
   const inlineActionsWithTitle = !hasTime && Boolean(headerAction || showCommentIcon);
@@ -156,7 +160,11 @@ export function AgendaListCard({
     <div
       className={cn(
         'flex flex-col w-full min-w-0 box-border',
-        allowFullContent ? 'overflow-visible' : 'h-full overflow-hidden',
+        isEmbeddedTimeline
+          ? 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden'
+          : allowFullContent
+            ? 'overflow-visible'
+            : 'h-full overflow-hidden',
         className,
       )}
       style={{
@@ -294,7 +302,11 @@ export function AgendaListCard({
             <h3
               className={cn(
                 'font-bold leading-snug break-words min-w-0',
-                !allowFullContent && (micro || compact ? 'line-clamp-1' : 'line-clamp-2'),
+                isEmbeddedTimeline
+                  ? micro
+                    ? 'line-clamp-2'
+                    : 'line-clamp-3'
+                  : !allowFullContent && (micro || compact ? 'line-clamp-1' : 'line-clamp-2'),
                 titleDone && 'line-through opacity-60',
               )}
               style={{
@@ -305,7 +317,7 @@ export function AgendaListCard({
             >
               {title}
             </h3>
-            {!compact && !micro && subtitle && (
+            {!micro && subtitle && (
               <p
                 className={cn(allowFullContent ? 'break-words' : 'line-clamp-2 break-words')}
                 style={{

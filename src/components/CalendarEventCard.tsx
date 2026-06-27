@@ -373,26 +373,40 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
     const useMicro = tier === 'micro';
     const useCompact = tier === 'compact' || useMicro;
     return (
-      <AgendaListCard
-        accentColor={accentDotColor}
-        badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
-        title={title}
-        subtitle={useCompact ? undefined : (location || undefined)}
-        footerIcon="calendar"
-        footerSourceLabel={providerLabel}
-        durationLabel={formatDuration(durationMinutes)}
-        compact={useCompact}
-        micro={useMicro}
-        hideFooter={timelineHideFooter}
-        hideTime
-        hideAccentColumn
-        embedded
-        leftAccentColor={accentDotColor}
-        leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
-        surface="timeline"
-        className="h-full min-h-0 flex-1"
-        style={{ height: '100%', minHeight: 0, maxHeight: '100%' }}
-      />
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <AgendaListCard
+              accentColor={accentDotColor}
+              badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
+              title={title}
+              subtitle={useMicro ? undefined : (location || undefined)}
+              footerIcon="calendar"
+              footerSourceLabel={providerLabel}
+              durationLabel={formatDuration(durationMinutes)}
+              compact={useCompact}
+              micro={useMicro}
+              hideFooter={timelineHideFooter}
+              fitTimelineSlot
+              hideTime
+              hideAccentColumn
+              embedded
+              leftAccentColor={accentDotColor}
+              leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
+              surface="timeline"
+              className="h-full min-h-0 flex-1"
+              style={{ height: '100%', minHeight: 0, flex: 1 }}
+            />
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs">
+            <p className="font-semibold">{title}</p>
+            <p className="text-primary-foreground/90 text-xs mt-0.5">
+              {allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`} · {formatDuration(durationMinutes)}
+              {location && ` · ${location}`}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 

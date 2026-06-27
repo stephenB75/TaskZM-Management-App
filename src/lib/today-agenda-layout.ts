@@ -44,27 +44,37 @@ export function getTodayAgendaTimelineCardPresentation(
   durationMinutes: number,
   options?: { isEvent?: boolean },
 ): TodayAgendaTimelineCardPresentation {
-  const { timelineTightFooterMaxSlotHeightPx } = TODAY_AGENDA_TIMELINE;
   const tier = getTodayAgendaTimelineLayoutTier(slotHeightPx, durationMinutes, options);
   return {
     tier,
     compact: tier !== 'full',
     micro: tier === 'micro',
-    hideFooter: tier === 'micro' || slotHeightPx < timelineTightFooterMaxSlotHeightPx,
-    hideSubtitle: tier !== 'full',
+    hideFooter: tier === 'micro',
+    hideSubtitle: tier === 'micro',
   };
 }
 
-/** Row height (px) — at least readable for micro slots; otherwise matches the time grid slot. */
+/** Row height (px) — at least tall enough to show card content; grid start/end labels stay on the slot. */
 export function getTodayAgendaTimelineRowHeightPx(
   slotHeightPx: number,
   tier: TodayAgendaTimelineLayoutTier,
+  options?: { isEvent?: boolean },
 ): number {
-  const { timelineMinVisibleRowHeightPx } = TODAY_AGENDA_TIMELINE;
-  if (tier === 'micro' && slotHeightPx < timelineMinVisibleRowHeightPx) {
-    return timelineMinVisibleRowHeightPx;
+  const {
+    timelineMinVisibleRowHeightPx,
+    shortItemCompactRowHeightPx,
+    timelineTaskCardMinHeightPx,
+    timelineEventCardMinHeightPx,
+  } = TODAY_AGENDA_TIMELINE;
+  const fullMinPx = options?.isEvent ? timelineEventCardMinHeightPx : timelineTaskCardMinHeightPx;
+
+  if (tier === 'micro') {
+    return Math.max(slotHeightPx, timelineMinVisibleRowHeightPx);
   }
-  return slotHeightPx;
+  if (tier === 'compact') {
+    return Math.max(slotHeightPx, shortItemCompactRowHeightPx);
+  }
+  return Math.max(slotHeightPx, fullMinPx);
 }
 
 /** Timeline slot height (px) — exact duration on the time scale. */

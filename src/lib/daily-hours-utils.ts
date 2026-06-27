@@ -396,12 +396,16 @@ export function getTaskMinutes(
     console.warn('⚠️ getTaskMinutes: No task provided');
     return BASE_TASK_DURATION_MINUTES;
   }
-  
-  // Check for cached AI Analysis results first (if enabled)
+
+  // User-set duration always wins (persisted on task.estimatedTime)
+  if (task.estimatedTime !== null && task.estimatedTime !== undefined && task.estimatedTime > 0) {
+    return task.estimatedTime;
+  }
+
+  // Cached AI Analysis (same breakdown shown in Task Dialog)
   if (options?.useCachedAIAnalysis) {
     const cachedAnalysis = getCachedAIAnalysis(task);
     if (cachedAnalysis && cachedAnalysis.estimatedMinutes > 0) {
-      // Use cached estimated minutes directly from AI Analysis
       if (import.meta.env.DEV) {
         console.log('✅ getTaskMinutes: Using cached AI Analysis estimated minutes', {
           taskId: task.id,
@@ -412,8 +416,18 @@ export function getTaskMinutes(
       return cachedAnalysis.estimatedMinutes;
     }
   }
-  
-  // Fall back to calculating from hours
+
   const hours = estimateTaskHours(task, options);
-  return Math.round(hours * MINUTES_PER_HOUR); // Convert hours to minutes, rounded
+  return Math.round(hours * MINUTES_PER_HOUR);
+}
+
+/**
+ * Duration used for timeline blocks and conflict detection — same source as getTaskMinutes
+ * with the scheduling minimum floor applied.
+ */
+export function getTaskSchedulingMinutes(
+  task: Task,
+  options?: { useCachedAIAnalysis?: boolean },
+): number {
+  return Math.max(getTaskMinutes(task, options), MIN_TASK_DURATION_MINUTES);
 }

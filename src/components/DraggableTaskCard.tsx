@@ -789,6 +789,7 @@ export const DraggableTaskCard = React.forwardRef<
       compact?: boolean;
       micro?: boolean;
       embedded?: boolean;
+      fitTimelineSlot?: boolean;
       titleDone?: boolean;
       hideTime?: boolean;
       hideAccentColumn?: boolean;
@@ -804,7 +805,7 @@ export const DraggableTaskCard = React.forwardRef<
         badgeLabel={agendaBadgeLabel}
         title={task.title}
         titleDone={options.titleDone}
-        subtitle={options.compact || options.micro ? undefined : agendaTaskSubtitle}
+        subtitle={options.micro ? undefined : agendaTaskSubtitle}
         timePart={agendaTimeAndPeriod?.timePart}
         periodPart={agendaTimeAndPeriod?.period}
         footerIcon="list-checks"
@@ -814,6 +815,7 @@ export const DraggableTaskCard = React.forwardRef<
         compact={options.compact}
         micro={options.micro}
         hideFooter={options.hideFooter}
+        fitTimelineSlot={options.fitTimelineSlot}
         hideTime={options.hideTime}
         hideAccentColumn={options.hideAccentColumn}
         showNextUpBadge={options.showNextUpBadge}
@@ -837,58 +839,72 @@ export const DraggableTaskCard = React.forwardRef<
       const useMicro = tier === 'micro';
       const useCompact = tier === 'compact' || useMicro;
       return (
-        <div
-          ref={(node) => {
-            cardRef.current = node;
-            setNodeRef(node);
-          }}
-          style={{
-            ...style,
-            width: '100%',
-            height: '100%',
-            minHeight: 0,
-            overflow: 'hidden',
-            touchAction: dragDisabled ? 'auto' : 'none',
-            ...(!dragDisabled && (isDragging || isSortableDragging)
-              ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 }
-              : {}),
-          }}
-          {...attributes}
-          {...(dragDisabled ? {} : listeners)}
-          className={cn(
-            'relative w-full min-h-0 flex flex-col',
-            !dragDisabled && !(isDragging || isSortableDragging) && 'cursor-grab',
-            !dragDisabled && (isDragging || isSortableDragging) && 'cursor-grabbing',
-            task.status === 'done' && 'opacity-60',
-          )}
-          data-task-card="true"
-          data-task-id={task.id}
-          data-sortable-id={sortableId}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!isDragging && !isSortableDragging && !document.body.classList.contains('dragging')) {
-              requestAnimationFrame(() => onClick());
-            }
-          }}
-        >
-          {renderAgendaTaskCard({
-            compact: useCompact,
-            micro: useMicro,
-            embedded: true,
-            surface: 'timeline',
-            hideTime: hideTimelineTime,
-            hideAccentColumn: hideTimelineAccent,
-            hideFooter: timelineHideFooter,
-            leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
-            leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
-            style: {
-              height: '100%',
-              minHeight: 0,
-              maxHeight: '100%',
-              flex: 1,
-            },
-          })}
-        </div>
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                ref={(node) => {
+                  cardRef.current = node;
+                  setNodeRef(node);
+                }}
+                style={{
+                  ...style,
+                  width: '100%',
+                  height: '100%',
+                  minHeight: 0,
+                  touchAction: dragDisabled ? 'auto' : 'none',
+                  ...(!dragDisabled && (isDragging || isSortableDragging)
+                    ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 }
+                    : {}),
+                }}
+                {...attributes}
+                {...(dragDisabled ? {} : listeners)}
+                className={cn(
+                  'relative w-full min-h-0 flex flex-col',
+                  !dragDisabled && !(isDragging || isSortableDragging) && 'cursor-grab',
+                  !dragDisabled && (isDragging || isSortableDragging) && 'cursor-grabbing',
+                  task.status === 'done' && 'opacity-60',
+                )}
+                data-task-card="true"
+                data-task-id={task.id}
+                data-sortable-id={sortableId}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isDragging && !isSortableDragging && !document.body.classList.contains('dragging')) {
+                    requestAnimationFrame(() => onClick());
+                  }
+                }}
+              >
+                {renderAgendaTaskCard({
+                  compact: useCompact,
+                  micro: useMicro,
+                  embedded: true,
+                  fitTimelineSlot: true,
+                  surface: 'timeline',
+                  hideTime: hideTimelineTime,
+                  hideAccentColumn: hideTimelineAccent,
+                  hideFooter: timelineHideFooter,
+                  leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
+                  leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
+                  style: {
+                    height: '100%',
+                    minHeight: 0,
+                    flex: 1,
+                  },
+                })}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="font-semibold">{task.title}</p>
+              {(durationMinutes ?? task.estimatedTime) != null && (
+                <p className="text-primary-foreground/90 text-xs mt-0.5">
+                  {formatDuration(durationMinutes ?? task.estimatedTime ?? null)}
+                  {agendaTaskSubtitle ? ` · ${agendaTaskSubtitle}` : ''}
+                </p>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     }
 

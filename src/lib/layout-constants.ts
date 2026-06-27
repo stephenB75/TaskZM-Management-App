@@ -356,7 +356,7 @@ export const TODAY_AGENDA_TIMELINE = {
   /** Slot height (px) below which footer is hidden so title fits in the duration block. */
   timelineTightFooterMaxSlotHeightPx: 70,
   /** Minimum visible row height (px) for ultra-short slots so content is not collapsed. */
-  timelineMinVisibleRowHeightPx: 36,
+  timelineMinVisibleRowHeightPx: 48,
 } as const;
 
 /** Strict timeline slot height (px) — vertical span on the time grid = duration × pxPerMinute. */
