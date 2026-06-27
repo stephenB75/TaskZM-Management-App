@@ -76,7 +76,9 @@ import {
   HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT,
   HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL,
   HEADER_SIDE_PANEL_ANIMATION_EASE,
-  DESKTOP_SIDE_PANEL_SPRING,
+  DESKTOP_SIDE_PANEL_SPRING_ENTER,
+  DESKTOP_SIDE_PANEL_EXIT_SECONDS,
+  DESKTOP_SIDE_PANEL_EXIT_EASE,
   HEADER_MOBILE_SAFE_AREA_SPACER,
   VIEWPORT_BREAKPOINTS,
   HEADER_BACKDROP_BLUR_CLASS,
@@ -366,7 +368,11 @@ export function AppHeader({
           key={`main-header-${actualTheme}`}
           className={shouldUseMobileLayout ? "hidden" : cn("fixed top-0 border-b overflow-hidden", HEADER_BACKDROP_BLUR_CLASS)}
           animate={{ left: headerLeft }}
-          transition={DESKTOP_SIDE_PANEL_SPRING}
+          transition={
+            panelOpen
+              ? DESKTOP_SIDE_PANEL_SPRING_ENTER
+              : { duration: DESKTOP_SIDE_PANEL_EXIT_SECONDS, ease: DESKTOP_SIDE_PANEL_EXIT_EASE }
+          }
           style={{ 
             zIndex: HEADER_Z_INDEX,
             ...headerSurfaceStyle,

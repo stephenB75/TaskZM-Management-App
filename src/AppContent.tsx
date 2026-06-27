@@ -41,7 +41,7 @@ import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 import logoImageGray from './assets/taskzm-logo-gray.png';
@@ -892,9 +892,17 @@ export default function AppContent() {
               <motion.div
                 key="desktop-side-panel-shell"
                 initial={{ x: -panelWidth }}
-                animate={{ x: 0 }}
-                exit={{ x: -panelWidth }}
-                transition={DESKTOP_SIDE_PANEL_SPRING}
+                animate={{
+                  x: 0,
+                  transition: DESKTOP_SIDE_PANEL_SPRING_ENTER,
+                }}
+                exit={{
+                  x: panelWidth,
+                  transition: {
+                    duration: DESKTOP_SIDE_PANEL_EXIT_SECONDS,
+                    ease: DESKTOP_SIDE_PANEL_EXIT_EASE,
+                  },
+                }}
                 className="h-full h-viewport-safe bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
                 style={{
                   zIndex: HEADER_Z_INDEX + 1,
