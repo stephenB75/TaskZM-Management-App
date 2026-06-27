@@ -553,6 +553,7 @@ export function AppTour({
       showSkipButton={true}
       callback={handleJoyrideCallback}
       styles={joyrideStyles}
+      disableOverlay={shouldUseMobileLayout}
       locale={{
         back: TOUR_CONSTANTS.locale.back,
         close: TOUR_CONSTANTS.locale.close,

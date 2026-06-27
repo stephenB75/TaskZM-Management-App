@@ -678,19 +678,21 @@ export function DashboardView({
   >([]);
   // Which AI schedule suggestions are selected to accept (task ids)
   const [selectedPlanTaskIds, setSelectedPlanTaskIds] = useState<Set<string>>(new Set());
-  // Calculate current day index in the week (Monday = 0, Sunday = 6)
-  const getCurrentDayIndex = () => {
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
-    return (dayOfWeek + 6) % 7; // Convert to Monday=0, Sunday=6
+  // Day index within the visible week carousel (0 = first column, respects week-start preference)
+  const getDayIndexInVisibleWeek = (date: Date) => {
+    const dayOfWeek = date.getDay(); // 0 (Sun) - 6 (Sat)
+    if (getWeekStart() === 'sunday') {
+      return dayOfWeek;
+    }
+    return (dayOfWeek + 6) % 7; // Monday = 0
   };
 
-  // Calculate tomorrow's day index in the week (Monday = 0, Sunday = 6)
+  const getCurrentDayIndex = () => getDayIndexInVisibleWeek(new Date());
+
   const getTomorrowDayIndex = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const dayOfWeek = tomorrow.getDay(); // 0 (Sun) - 6 (Sat)
-    return (dayOfWeek + 6) % 7; // Convert to Monday=0, Sunday=6
+    return getDayIndexInVisibleWeek(tomorrow);
   };
 
   const [mobileDayIndex, setMobileDayIndex] = useState(getTomorrowDayIndex());

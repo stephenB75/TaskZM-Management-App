@@ -41,6 +41,7 @@ import {
   NAV_BAR_SHADOW_BLUR_SMALL,
   NAV_BAR_SHADOW_OFFSET_Y_LARGE,
   NAV_BAR_SHADOW_OFFSET_Y_SMALL,
+  Z_INDEX,
 } from "../lib/layout-constants";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
@@ -58,6 +59,10 @@ interface BottomNavProps {
   onViewChange: (view: string) => void;
   mobileView?: "today" | "week";
   onMobileViewChange?: (view: "today" | "week") => void;
+  /** Called before any nav tap (e.g. dismiss onboarding tour overlay). */
+  onNavInteraction?: () => void;
+  /** Single handler for Week tab — sets dashboard + week view together. */
+  onWeekPress?: () => void;
   unscheduledCount?: number;
   upcomingAndDueNowCount?: number;
 }
@@ -67,6 +72,8 @@ export function BottomNav({
   onViewChange,
   mobileView = "today",
   onMobileViewChange,
+  onNavInteraction,
+  onWeekPress,
   unscheduledCount = 0,
   upcomingAndDueNowCount = 0,
 }: BottomNavProps) {
@@ -89,6 +96,7 @@ export function BottomNav({
       iconName: "calendar",
       onClick: () => {
         triggerHaptic();
+        onNavInteraction?.();
         onViewChange("today");
       },
       active: currentView === "today",
@@ -100,6 +108,11 @@ export function BottomNav({
       iconName: "calendar-days",
       onClick: () => {
         triggerHaptic();
+        onNavInteraction?.();
+        if (onWeekPress) {
+          onWeekPress();
+          return;
+        }
         if (currentView !== "dashboard") {
           onViewChange("dashboard");
         }
@@ -113,6 +126,7 @@ export function BottomNav({
       iconName: "inbox",
       onClick: () => {
         triggerHaptic();
+        onNavInteraction?.();
         onViewChange("inbox");
       },
       active: currentView === "inbox",
@@ -124,6 +138,7 @@ export function BottomNav({
       iconName: "settings",
       onClick: () => {
         triggerHaptic();
+        onNavInteraction?.();
         onViewChange("settings");
       },
       active: currentView === "settings",
@@ -132,11 +147,12 @@ export function BottomNav({
 
   return (
     <motion.nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900 backdrop-blur-lg border-t border-primary/10 dark:border-gray-700/50 shadow-2xl overflow-visible"
+      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900 backdrop-blur-lg border-t border-primary/10 dark:border-gray-700/50 shadow-2xl overflow-visible"
       initial={{ y: NAV_BAR_INITIAL_Y_OFFSET }}
       animate={{ y: 0 }}
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
       style={{
+        zIndex: Z_INDEX.NAV_BAR,
         boxShadow: isDark
           ? `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity('#000000', 0.3)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity('#000000', 0.2)}`
           : `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_LIGHT)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_DARK)}`,

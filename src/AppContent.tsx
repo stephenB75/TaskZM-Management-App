@@ -784,6 +784,16 @@ export default function AppContent() {
     });
   };
 
+  const handleBottomNavInteraction = () => {
+    setRunTour(false);
+  };
+
+  const handleMobileWeekPress = () => {
+    setCurrentView('dashboard');
+    setMobileView('week');
+    setSidebarOpen(false);
+  };
+
   if (inviteToken) {
     return <InviteAcceptancePage token={inviteToken} />;
   }
@@ -936,6 +946,8 @@ export default function AppContent() {
           onViewChange={handleViewChange}
           mobileView={mobileView}
           onMobileViewChange={setMobileView}
+          onNavInteraction={handleBottomNavInteraction}
+          onWeekPress={handleMobileWeekPress}
           unscheduledCount={unscheduledCount}
           upcomingAndDueNowCount={upcomingAndDueNowCount}
         />

@@ -1010,6 +1010,8 @@ export const Z_INDEX = {
   DROPDOWN: 9999, // z-[9999] - Used in Team/Folder panels dropdowns
   CONFETTI: 9999, // z-[9999] - Used in Confetti component
   APP_TOUR: 10000, // z-[10000] - Used in AppTour overlay
+  /** Mobile bottom nav — above tour overlay so Week/Today/Inbox remain tappable during onboarding tour */
+  NAV_BAR: 10001,
   TOUR_HIGHLIGHT: 9998, // z-index for tour highlighted elements (below tour overlay)
   DROP_ZONE: 100, // z-100 - Used in TodayAgendaView for drop zone overlay
   TIME_INDICATOR: 50, // z-50 - Current time line (drawn behind task blocks so it passes through)
