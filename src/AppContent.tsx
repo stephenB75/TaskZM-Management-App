@@ -897,7 +897,7 @@ export default function AppContent() {
                   transition: DESKTOP_SIDE_PANEL_SPRING_ENTER,
                 }}
                 exit={{
-                  x: panelWidth,
+                  x: -panelWidth,
                   transition: {
                     duration: DESKTOP_SIDE_PANEL_EXIT_SECONDS,
                     ease: DESKTOP_SIDE_PANEL_EXIT_EASE,

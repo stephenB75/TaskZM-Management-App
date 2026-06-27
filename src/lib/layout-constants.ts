@@ -22,7 +22,7 @@ export const DESKTOP_SIDE_PANEL_SPRING_ENTER = {
   mass: 0.75,
 };
 
-/** Fast ease-in close — slides panel right (away from sidebar icons, not over them). */
+/** Fast ease-in retract — panel slides back toward the sidebar (same direction as open, reversed). */
 export const DESKTOP_SIDE_PANEL_EXIT_SECONDS = 0.22;
 export const DESKTOP_SIDE_PANEL_EXIT_EASE = [0.4, 0, 1, 1] as const;
 
@@ -157,6 +157,8 @@ export const HEADER_SIDE_PANEL_GAP_MAIN = '0.75rem'; // gap-3 = 0.75rem (12px) -
 export const HEADER_SIDE_PANEL_GAP_LEFT = '0.625rem'; // ~gap-2.5 = 0.625rem (10px) - reduced from 0.75rem/1rem
 export const HEADER_SIDE_PANEL_GAP_RIGHT = '0.375rem'; // gap-1.5 = 0.375rem (6px) - reduced from 0.5rem
 export const HEADER_Z_INDEX = 40; // z-40 = 40
+/** Desktop icon sidebar — above side panel so icons stay clickable while panel retracts. */
+export const SIDEBAR_Z_INDEX = HEADER_Z_INDEX + 2;
 export const HEADER_BACKGROUND_OPACITY = 0.88; // Slightly translucent bar — visible but not heavy
 export const HEADER_BACKGROUND_LIGHT_COLOR = '#FFFFFF';
 export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.92)';

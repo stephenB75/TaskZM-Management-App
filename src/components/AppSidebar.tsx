@@ -18,7 +18,7 @@ import {
 } from "./ui/tooltip";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
-import { COMPONENT_DIMENSIONS } from "../lib/layout-constants";
+import { COMPONENT_DIMENSIONS, SIDEBAR_Z_INDEX } from "../lib/layout-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -249,7 +249,10 @@ export function AppSidebar({
     <>
       {/* Desktop Icon Navbar - Only visible on desktop (>= 1280px) */}
       {!shouldUseMobileLayout && (
-        <div className="flex w-16 border-r border-primary/20 bg-gradient-to-b from-[#F3F0F9] via-[#E6D5F0] to-[#D4C5F9] dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex-col h-full">
+        <div
+          className="relative flex w-16 border-r border-primary/20 bg-gradient-to-b from-[#F3F0F9] via-[#E6D5F0] to-[#D4C5F9] dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex-col h-full flex-shrink-0"
+          style={{ zIndex: SIDEBAR_Z_INDEX }}
+        >
           {iconNavContent}
         </div>
       )}
