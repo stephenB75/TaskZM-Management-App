@@ -25,6 +25,8 @@ export interface AgendaListCardProps {
   durationLabel?: string | null;
   showCommentIcon?: boolean;
   compact?: boolean;
+  /** When true, omits footer row (fits short timeline slots). */
+  hideFooter?: boolean;
   /** When true, omits the time header row (timeline rail shows time). */
   hideTime?: boolean;
   /** Ultra-compact single row: title + badge only (short timeline events). */
@@ -61,6 +63,7 @@ export function AgendaListCard({
   durationLabel,
   showCommentIcon = false,
   compact = false,
+  hideFooter = false,
   hideTime = false,
   micro = false,
   hideAccentColumn = false,
@@ -112,7 +115,7 @@ export function AgendaListCard({
       : AGENDA_LIST_CARD.accentLineMinHeightPx;
 
   const hasTime = !hideTime && Boolean(allDayLabel || timePart);
-  const showFooter = !micro;
+  const showFooter = !micro && !hideFooter;
   const isTimelineSurface = surface === 'timeline' && !embedded;
   const allowFullContent = isTimelineSurface;
   /** When the rail shows time, put complete/action controls on the title row — not a separate header line. */

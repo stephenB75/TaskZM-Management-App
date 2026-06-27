@@ -109,6 +109,10 @@ interface DraggableTaskCardProps {
   hideTimelineAccent?: boolean;
   /** Duration in minutes; used for compact layout tooltip and display. */
   durationMinutes?: number;
+  /** Slot-fit layout tier from Today Agenda (micro / compact / full). */
+  timelineLayoutTier?: 'micro' | 'compact' | 'full';
+  /** When true, hide footer so title fits in a short timeline slot. */
+  timelineHideFooter?: boolean;
 }
 
 export const DraggableTaskCard = React.forwardRef<
@@ -116,7 +120,7 @@ export const DraggableTaskCard = React.forwardRef<
   DraggableTaskCardProps
 >(
   (
-    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx, compactTimeline = false, hideTimelineTime = false, hideTimelineAccent = false, durationMinutes },
+    { task, onClick, droppableId, occurrenceDate, isDragging = false, isNextUp = false, onComplete, timelineBlockHeightPx, compactTimeline = false, hideTimelineTime = false, hideTimelineAccent = false, durationMinutes, timelineLayoutTier, timelineHideFooter = false },
     forwardedRef,
   ) => {
     const isTodayAgenda = droppableId === 'today-agenda';
@@ -783,10 +787,12 @@ export const DraggableTaskCard = React.forwardRef<
 
     const renderAgendaTaskCard = (options: {
       compact?: boolean;
+      micro?: boolean;
       embedded?: boolean;
       titleDone?: boolean;
       hideTime?: boolean;
       hideAccentColumn?: boolean;
+      hideFooter?: boolean;
       showNextUpBadge?: boolean;
       leftAccentColor?: string;
       leftAccentWidthPx?: number;
@@ -798,7 +804,7 @@ export const DraggableTaskCard = React.forwardRef<
         badgeLabel={agendaBadgeLabel}
         title={task.title}
         titleDone={options.titleDone}
-        subtitle={options.compact ? undefined : agendaTaskSubtitle}
+        subtitle={options.compact || options.micro ? undefined : agendaTaskSubtitle}
         timePart={agendaTimeAndPeriod?.timePart}
         periodPart={agendaTimeAndPeriod?.period}
         footerIcon="list-checks"
@@ -806,6 +812,8 @@ export const DraggableTaskCard = React.forwardRef<
         durationLabel={formatDuration(durationMinutes ?? task.estimatedTime ?? null)}
         showCommentIcon={Boolean(task.description?.trim()) && !options.hideAccentColumn}
         compact={options.compact}
+        micro={options.micro}
+        hideFooter={options.hideFooter}
         hideTime={options.hideTime}
         hideAccentColumn={options.hideAccentColumn}
         showNextUpBadge={options.showNextUpBadge}
@@ -825,6 +833,9 @@ export const DraggableTaskCard = React.forwardRef<
     };
 
     if (isTodayAgenda && timelineBlockHeightPx != null) {
+      const tier = timelineLayoutTier ?? (compactTimeline ? 'compact' : 'full');
+      const useMicro = tier === 'micro';
+      const useCompact = tier === 'compact' || useMicro;
       return (
         <div
           ref={(node) => {
@@ -834,9 +845,8 @@ export const DraggableTaskCard = React.forwardRef<
           style={{
             ...style,
             width: '100%',
-            height: timelineBlockHeightPx,
-            minHeight: timelineBlockHeightPx,
-            maxHeight: timelineBlockHeightPx,
+            height: '100%',
+            minHeight: 0,
             overflow: 'hidden',
             touchAction: dragDisabled ? 'auto' : 'none',
             ...(!dragDisabled && (isDragging || isSortableDragging)
@@ -846,7 +856,7 @@ export const DraggableTaskCard = React.forwardRef<
           {...attributes}
           {...(dragDisabled ? {} : listeners)}
           className={cn(
-            'relative w-full min-h-0',
+            'relative w-full min-h-0 flex flex-col',
             !dragDisabled && !(isDragging || isSortableDragging) && 'cursor-grab',
             !dragDisabled && (isDragging || isSortableDragging) && 'cursor-grabbing',
             task.status === 'done' && 'opacity-60',
@@ -862,18 +872,20 @@ export const DraggableTaskCard = React.forwardRef<
           }}
         >
           {renderAgendaTaskCard({
-            compact: false,
-            embedded: false,
+            compact: useCompact,
+            micro: useMicro,
+            embedded: true,
             surface: 'timeline',
             hideTime: hideTimelineTime,
             hideAccentColumn: hideTimelineAccent,
+            hideFooter: timelineHideFooter,
             leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
             leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
             style: {
               height: '100%',
-              minHeight: timelineBlockHeightPx,
-              maxHeight: timelineBlockHeightPx,
-              overflow: 'auto',
+              minHeight: 0,
+              maxHeight: '100%',
+              flex: 1,
             },
           })}
         </div>

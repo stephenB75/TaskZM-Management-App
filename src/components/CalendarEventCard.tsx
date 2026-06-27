@@ -49,6 +49,10 @@ interface CalendarEventCardProps {
   variant?: 'default' | 'kanban' | 'timelineCompact' | 'timelineMicro' | 'timeline' | 'inbox';
   /** Short-duration compact row (matches DraggableTaskCard compactTimeline). */
   compactTimeline?: boolean;
+  /** Slot-fit layout tier from Today Agenda (micro / compact / full). */
+  timelineLayoutTier?: 'micro' | 'compact' | 'full';
+  /** When true, hide footer so title fits in a short timeline slot. */
+  timelineHideFooter?: boolean;
 }
 
 // Calculate duration in minutes between two ISO date strings (uses parseCalendarEventTime for correct timezone)
@@ -289,7 +293,7 @@ const eventColorPalette = [
   },
 ];
 
-export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring, variant = 'default', compactTimeline }: CalendarEventCardProps) {
+export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring, variant = 'default', compactTimeline, timelineLayoutTier, timelineHideFooter = false }: CalendarEventCardProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const mode = isDark ? 'dark' : 'light';
@@ -365,23 +369,29 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
 
   // Today Agenda timeline — single AgendaListCard shell (matches task cards)
   if (variant === 'timeline') {
+    const tier = timelineLayoutTier ?? (compactTimeline ? 'compact' : 'full');
+    const useMicro = tier === 'micro';
+    const useCompact = tier === 'compact' || useMicro;
     return (
       <AgendaListCard
         accentColor={accentDotColor}
         badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
         title={title}
-        subtitle={location || undefined}
+        subtitle={useCompact ? undefined : (location || undefined)}
         footerIcon="calendar"
         footerSourceLabel={providerLabel}
         durationLabel={formatDuration(durationMinutes)}
-        compact={false}
+        compact={useCompact}
+        micro={useMicro}
+        hideFooter={timelineHideFooter}
         hideTime
         hideAccentColumn
+        embedded
         leftAccentColor={accentDotColor}
         leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
         surface="timeline"
-        className="h-full min-h-0"
-        style={{ height: '100%', maxHeight: '100%', overflow: 'auto' }}
+        className="h-full min-h-0 flex-1"
+        style={{ height: '100%', minHeight: 0, maxHeight: '100%' }}
       />
     );
   }

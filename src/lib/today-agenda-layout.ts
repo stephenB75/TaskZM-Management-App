@@ -10,6 +10,63 @@ import {
 
 export type TodayAgendaLayoutMode = 'compactList' | 'durationBlocks';
 
+export type TodayAgendaTimelineLayoutTier = 'micro' | 'compact' | 'full';
+
+export interface TodayAgendaTimelineCardPresentation {
+  tier: TodayAgendaTimelineLayoutTier;
+  compact: boolean;
+  micro: boolean;
+  hideFooter: boolean;
+  hideSubtitle: boolean;
+}
+
+/** Pick card density so content fits inside the duration slot on the time grid. */
+export function getTodayAgendaTimelineLayoutTier(
+  slotHeightPx: number,
+  durationMinutes: number,
+  options?: { isEvent?: boolean },
+): TodayAgendaTimelineLayoutTier {
+  const {
+    shortItemThresholdMinutes,
+    timelineTaskCardMinHeightPx,
+    timelineEventCardMinHeightPx,
+    timelineMicroMaxSlotHeightPx,
+  } = TODAY_AGENDA_TIMELINE;
+  const comfortableMinPx = options?.isEvent ? timelineEventCardMinHeightPx : timelineTaskCardMinHeightPx;
+  if (slotHeightPx <= timelineMicroMaxSlotHeightPx || durationMinutes <= 10) return 'micro';
+  if (slotHeightPx < comfortableMinPx || durationMinutes <= shortItemThresholdMinutes) return 'compact';
+  return 'full';
+}
+
+/** Card presentation flags for timeline slot-fit rendering. */
+export function getTodayAgendaTimelineCardPresentation(
+  slotHeightPx: number,
+  durationMinutes: number,
+  options?: { isEvent?: boolean },
+): TodayAgendaTimelineCardPresentation {
+  const { timelineTightFooterMaxSlotHeightPx } = TODAY_AGENDA_TIMELINE;
+  const tier = getTodayAgendaTimelineLayoutTier(slotHeightPx, durationMinutes, options);
+  return {
+    tier,
+    compact: tier !== 'full',
+    micro: tier === 'micro',
+    hideFooter: tier === 'micro' || slotHeightPx < timelineTightFooterMaxSlotHeightPx,
+    hideSubtitle: tier !== 'full',
+  };
+}
+
+/** Row height (px) — at least readable for micro slots; otherwise matches the time grid slot. */
+export function getTodayAgendaTimelineRowHeightPx(
+  slotHeightPx: number,
+  tier: TodayAgendaTimelineLayoutTier,
+): number {
+  const { timelineMinVisibleRowHeightPx } = TODAY_AGENDA_TIMELINE;
+  if (tier === 'micro' && slotHeightPx < timelineMinVisibleRowHeightPx) {
+    return timelineMinVisibleRowHeightPx;
+  }
+  return slotHeightPx;
+}
+
 /** Timeline slot height (px) — exact duration on the time scale. */
 export function getTodayAgendaTimelineSlotHeightPx(durationMinutes: number): number {
   return getTodayAgendaTimelineBlockHeightPx(durationMinutes);
@@ -263,10 +320,14 @@ export function getTodayAgendaDisplayLayoutHeightPx<
 
   let maxBottomPx = 0;
   for (const block of blocks) {
+    const rowHeightPx =
+      'rowHeightPx' in block && typeof block.rowHeightPx === 'number'
+        ? block.rowHeightPx
+        : block.scheduledSlotHeightPx;
     const blockExtentPx =
       options.layoutMode === 'compactList'
         ? block.cardHeightPx
-        : block.scheduledSlotHeightPx;
+        : rowHeightPx;
     maxBottomPx = Math.max(maxBottomPx, block.displayTopPx + blockExtentPx);
 
     if (options.layoutMode === 'durationBlocks') {
@@ -298,6 +359,7 @@ export function resolveTodayAgendaDurationBlockTops<
     topPx: number;
     slotHeightPx: number;
     cardHeightPx: number;
+    rowHeightPx?: number;
     actualStartMins: number;
     actualEndMins: number;
   },
@@ -309,6 +371,36 @@ export function resolveTodayAgendaDurationBlockTops<
       if (!todayAgendaBlocksTimeOverlap(block, prev)) continue;
       const prevExtentPx = prev.slotHeightPx;
       const prevVisualBottomPx = prev.topPx + prevExtentPx + blockGapPx;
+      if (topPx < prevVisualBottomPx) {
+        topPx = prevVisualBottomPx;
+      }
+    }
+    block.topPx = topPx;
+    placed.push(block);
+  }
+}
+
+/** Stack blocks when times overlap or a prior micro row extends past its grid slot. */
+export function resolveTodayAgendaVisualBlockTops<
+  T extends {
+    naturalTopPx: number;
+    topPx: number;
+    slotHeightPx: number;
+    rowHeightPx?: number;
+    actualStartMins: number;
+    actualEndMins: number;
+  },
+>(blocks: T[], blockGapPx: number): void {
+  const placed: T[] = [];
+  for (const block of blocks) {
+    let topPx = block.naturalTopPx;
+    for (const prev of placed) {
+      const prevExtentPx = prev.rowHeightPx ?? prev.slotHeightPx;
+      const prevVisualBottomPx = prev.topPx + prevExtentPx + blockGapPx;
+      const timeOverlaps = todayAgendaBlocksTimeOverlap(block, prev);
+      const prevExtendsPastSlot = prevExtentPx > prev.slotHeightPx + 1;
+      const visualCollision = prevExtendsPastSlot && block.naturalTopPx < prevVisualBottomPx;
+      if (!timeOverlaps && !visualCollision) continue;
       if (topPx < prevVisualBottomPx) {
         topPx = prevVisualBottomPx;
       }

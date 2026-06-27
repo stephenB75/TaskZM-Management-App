@@ -351,6 +351,12 @@ export const TODAY_AGENDA_TIMELINE = {
   shortTaskComfortableBlockHeightPx: 92,
   /** Target height (px) for compact single-row layout inside a duration-sized block. */
   shortItemCompactRowHeightPx: 92,
+  /** Slot height (px) at or below which timeline items use micro single-line layout. */
+  timelineMicroMaxSlotHeightPx: 56,
+  /** Slot height (px) below which footer is hidden so title fits in the duration block. */
+  timelineTightFooterMaxSlotHeightPx: 70,
+  /** Minimum visible row height (px) for ultra-short slots so content is not collapsed. */
+  timelineMinVisibleRowHeightPx: 36,
 } as const;
 
 /** Strict timeline slot height (px) — vertical span on the time grid = duration × pxPerMinute. */
