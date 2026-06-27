@@ -14,6 +14,17 @@ export const PANEL_WIDTH = 440;
 export const PANEL_WIDTH_TABLET = 360; // Narrower for tablets
 export const PANEL_WIDTH_SMALL_MONITOR = 400; // Slightly narrower for small monitors
 
+/** Shared spring for desktop side-panel slide and main header shift (kept in sync to avoid glitching). */
+export const DESKTOP_SIDE_PANEL_SPRING = {
+  type: 'spring' as const,
+  damping: 32,
+  stiffness: 320,
+  mass: 0.85,
+};
+
+/** Crossfade when switching between desktop side panels (shell stays mounted). */
+export const DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS = 0.15;
+
 // Header height (matches header minHeight/height in AppHeader.tsx and padding in App.tsx)
 export const HEADER_HEIGHT = 73;
 

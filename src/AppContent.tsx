@@ -41,7 +41,7 @@ import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 import logoImageGray from './assets/taskzm-logo-gray.png';
@@ -52,6 +52,21 @@ function ViewFallback() {
       <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
   );
+}
+
+const DESKTOP_SIDE_PANEL_VIEWS = new Set([
+  'notifications',
+  'today',
+  'inbox',
+  'team',
+  'folders',
+  'analytics',
+  'archive',
+  'settings',
+]);
+
+function isDesktopSidePanelView(view: string): boolean {
+  return DESKTOP_SIDE_PANEL_VIEWS.has(view);
 }
 
 /**
@@ -872,52 +887,57 @@ export default function AppContent() {
           </div>
           )}
 
-          <AnimatePresence mode="wait">
-            {!shouldUseMobileLayout && (currentView === 'notifications' || currentView === 'today' || currentView === 'inbox' || currentView === 'team' || currentView === 'folders' || currentView === 'analytics' || currentView === 'archive' || currentView === 'settings') && (
+          <AnimatePresence initial={false}>
+            {!shouldUseMobileLayout && isDesktopSidePanelView(currentView) && (
               <motion.div
-                key={currentView}
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ 
-                  width: panelWidth,
-                  opacity: 1 
-                }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                key="desktop-side-panel-shell"
+                initial={{ x: -panelWidth }}
+                animate={{ x: 0 }}
+                exit={{ x: -panelWidth }}
+                transition={DESKTOP_SIDE_PANEL_SPRING}
                 className="h-full h-viewport-safe bg-background shadow-2xl border-r border-border flex-shrink-0 overflow-hidden"
-                style={{ 
+                style={{
                   zIndex: HEADER_Z_INDEX + 1,
                   position: 'fixed',
                   left: `${SIDEBAR_WIDTH}px`,
                   top: 0,
+                  width: panelWidth,
                   minHeight: 'var(--viewport-height, 100vh)',
                 }}
               >
-                <div 
-                  className="h-full min-h-full w-full overflow-y-auto overflow-x-auto min-w-0"
-                  style={{
-                    WebkitOverflowScrolling: 'touch',
-                    touchAction: 'pan-y',
-                    overscrollBehaviorY: 'contain',
-                    minHeight: '100%',
-                  } as React.CSSProperties}
-                >
-                  {currentView === 'notifications' && <NotificationsPanel />}
-                  {currentView === 'today' && <TodayAgendaView />}
-                  {currentView === 'inbox' && <InboxView />}
-                  {currentView === 'team' && <TeamPanel />}
-                  {currentView === 'folders' && <FoldersPanel />}
-                  {currentView === 'analytics' && (
-                    <ErrorBoundary>
-                      <AnalyticsPanel onClose={handleClosePanel} />
-                    </ErrorBoundary>
-                  )}
-                  {currentView === 'archive' && <ArchiveView />}
-                  {currentView === 'settings' && (
-                    <SettingsPanel 
-                      onStartTour={handleTourStart}
-                    />
-                  )}
-                </div>
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.div
+                    key={currentView}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS }}
+                    className="h-full min-h-full w-full overflow-y-auto overflow-x-auto min-w-0"
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-y',
+                      overscrollBehaviorY: 'contain',
+                      minHeight: '100%',
+                    } as React.CSSProperties}
+                  >
+                    <Suspense fallback={<ViewFallback />}>
+                      {currentView === 'notifications' && <NotificationsPanel />}
+                      {currentView === 'today' && <TodayAgendaView />}
+                      {currentView === 'inbox' && <InboxView />}
+                      {currentView === 'team' && <TeamPanel />}
+                      {currentView === 'folders' && <FoldersPanel />}
+                      {currentView === 'analytics' && (
+                        <ErrorBoundary>
+                          <AnalyticsPanel onClose={handleClosePanel} />
+                        </ErrorBoundary>
+                      )}
+                      {currentView === 'archive' && <ArchiveView />}
+                      {currentView === 'settings' && (
+                        <SettingsPanel onStartTour={handleTourStart} />
+                      )}
+                    </Suspense>
+                  </motion.div>
+                </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>

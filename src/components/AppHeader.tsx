@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { motion } from "motion/react";
@@ -11,10 +11,8 @@ import { useSidebar } from "../contexts/SidebarContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { 
   SIDEBAR_WIDTH, 
-  PANEL_WIDTH, 
   HEADER_HEIGHT, 
   getMainHeaderLeft, 
-  getMainHeaderWidth,
   HEADER_PADDING_X_MOBILE,
   HEADER_PADDING_Y_MOBILE,
   HEADER_PADDING_X_DESKTOP,
@@ -78,8 +76,7 @@ import {
   HEADER_SIDE_PANEL_ANIMATION_X_OFFSET_RIGHT,
   HEADER_SIDE_PANEL_ANIMATION_SCALE_INITIAL,
   HEADER_SIDE_PANEL_ANIMATION_EASE,
-  HEADER_MAIN_TRANSITION_DURATION,
-  HEADER_MAIN_TRANSITION_EASE,
+  DESKTOP_SIDE_PANEL_SPRING,
   HEADER_MOBILE_SAFE_AREA_SPACER,
   VIEWPORT_BREAKPOINTS,
   HEADER_BACKDROP_BLUR_CLASS,
@@ -140,52 +137,9 @@ export function AppHeader({
   // Logo scale: laptop (1024-1279), laptop landscape, small desktop (1280-largeDesktop-1), full desktop (largeDesktop+)
   const logoScale = isSmallMonitor && isLandscape ? HEADER_LOGO_SCALE.laptopLandscape : isSmallMonitor ? HEADER_LOGO_SCALE.laptop : isSmallDesktop ? HEADER_LOGO_SCALE.smallDesktop : HEADER_LOGO_SCALE.desktop;
 
-  // Use state to force re-render when panelOpen, panelKey, or theme changes
-  // This ensures the header position and theme updates immediately
-  const [headerUpdateKey, setHeaderUpdateKey] = useState(0);
-  const prevPanelKeyRef = useRef(panelKey);
-  const prevPanelOpenRef = useRef(panelOpen);
-  const prevThemeRef = useRef(actualTheme);
-  
-  // Update state immediately when panelOpen changes to force re-render
-  useEffect(() => {
-    if (prevPanelOpenRef.current !== panelOpen) {
-      setHeaderUpdateKey(prev => prev + 1);
-      prevPanelOpenRef.current = panelOpen;
-    }
-  }, [panelOpen]);
-  
-  // Also update when panelKey changes (even if panelOpen stays the same)
-  // This ensures header re-renders when switching between panels
-  useEffect(() => {
-    if (prevPanelKeyRef.current !== panelKey) {
-      setHeaderUpdateKey(prev => prev + 1);
-      prevPanelKeyRef.current = panelKey;
-    }
-  }, [panelKey]);
-  
-  // Update when theme changes to force immediate re-render with new colors
-  useEffect(() => {
-    if (prevThemeRef.current !== actualTheme) {
-      setHeaderUpdateKey(prev => prev + 1);
-      prevThemeRef.current = actualTheme;
-    }
-  }, [actualTheme]);
-  
-  // Calculate left position and width using layout constants
-  // - Side panel headers: positioned at sidebar width - start of panel
-  // - Main header when panel open: sidebar + panel width
-  // - Main header when panel closed: sidebar width only
-  // Use panelOpen prop directly (not currentPanelOpen) to ensure we always have the latest value
-  // The key prop and headerUpdateKey ensure React re-renders when needed
   const headerLeft = isSidePanelHeader 
-    ? SIDEBAR_WIDTH // Side panel headers at start of panel
-    : getMainHeaderLeft(panelOpen); // Main header shifts instantly when panel opens/closes
-
-  // Calculate header width to properly resize during panel transitions
-  const headerWidth = isSidePanelHeader 
-    ? undefined // Side panel headers don't need width calculation
-    : getMainHeaderWidth(panelOpen); // Main header should span from left position to right edge
+    ? SIDEBAR_WIDTH
+    : getMainHeaderLeft(panelOpen);
 
   const headerSurfaceStyle: React.CSSProperties = {
     backgroundColor: isDark
@@ -408,31 +362,23 @@ export function AppHeader({
           </motion.div>
         </motion.div>
       ) : (
-        // Main header - fixed positioning, shifts instantly when panel opens/closes (no animation)
-        // Follows week view code sequence - responds to panel push/retract without animation
-        // Use key prop based on panelOpen prop, panelKey, and updateKey to force re-render when panel state changes
-        // Include panelOpen in key to ensure React unmounts/remounts when state changes
-        <div 
-          key={`main-header-${String(panelOpen)}-${String(panelKey || 'default')}-${actualTheme}-${headerUpdateKey}`}
+        <motion.div 
+          key={`main-header-${actualTheme}`}
           className={shouldUseMobileLayout ? "hidden" : cn("fixed top-0 border-b overflow-hidden", HEADER_BACKDROP_BLUR_CLASS)}
+          animate={{ left: headerLeft }}
+          transition={DESKTOP_SIDE_PANEL_SPRING}
           style={{ 
             zIndex: HEADER_Z_INDEX,
             ...headerSurfaceStyle,
             backgroundImage: 'none',
-            // No left padding - header extends to left browser edge
             paddingLeft: '0',
-            paddingRight: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_PADDING_X_DESKTOP), // Keep original right padding
+            paddingRight: isSmallMonitor && isLandscape ? '1rem' : (isSmallMonitor ? '1.25rem' : HEADER_PADDING_X_DESKTOP),
             paddingTop: isSmallMonitor && isLandscape ? '0.375rem' : (isSmallMonitor ? HEADER_PADDING_Y_DESKTOP : HEADER_PADDING_Y_DESKTOP),
             paddingBottom: isSmallMonitor && isLandscape ? '0.375rem' : (isSmallMonitor ? HEADER_PADDING_Y_DESKTOP : HEADER_PADDING_Y_DESKTOP),
             minHeight: `${HEADER_HEIGHT}px`, 
             height: `${HEADER_HEIGHT}px`,
-            left: `${headerLeft}px`,
-            width: headerWidth,
             right: 0,
-            // Smooth transition for left and width to match panel animation
-            // Only transition position/width, not background-color (theme changes should be instant)
-            transition: `left ${HEADER_MAIN_TRANSITION_DURATION}s ${HEADER_MAIN_TRANSITION_EASE}, width ${HEADER_MAIN_TRANSITION_DURATION}s ${HEADER_MAIN_TRANSITION_EASE}`,
-            willChange: 'left, width', // Optimize for position/width changes only
+            willChange: 'left',
           }}
         >
           {/* Static container for logo and title - no animations */}
@@ -529,7 +475,7 @@ export function AppHeader({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
     </>
   );
