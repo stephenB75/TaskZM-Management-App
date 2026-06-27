@@ -20,7 +20,7 @@ export interface TodayAgendaTimelineCardPresentation {
   hideSubtitle: boolean;
 }
 
-/** Pick card density so content fits inside the duration slot on the time grid. */
+/** Pick card density — longer blocks use full layout; row height may extend past the grid slot. */
 export function getTodayAgendaTimelineLayoutTier(
   slotHeightPx: number,
   durationMinutes: number,
@@ -34,7 +34,9 @@ export function getTodayAgendaTimelineLayoutTier(
   } = TODAY_AGENDA_TIMELINE;
   const comfortableMinPx = options?.isEvent ? timelineEventCardMinHeightPx : timelineTaskCardMinHeightPx;
   if (slotHeightPx <= timelineMicroMaxSlotHeightPx || durationMinutes <= 10) return 'micro';
-  if (slotHeightPx < comfortableMinPx || durationMinutes <= shortItemThresholdMinutes) return 'compact';
+  // Multi-slot items (e.g. 30 min): full card even when grid slot is slightly shorter than content min
+  if (durationMinutes > shortItemThresholdMinutes) return 'full';
+  if (slotHeightPx < comfortableMinPx) return 'compact';
   return 'full';
 }
 
@@ -45,11 +47,14 @@ export function getTodayAgendaTimelineCardPresentation(
   options?: { isEvent?: boolean },
 ): TodayAgendaTimelineCardPresentation {
   const tier = getTodayAgendaTimelineLayoutTier(slotHeightPx, durationMinutes, options);
+  const { timelineTightFooterMaxSlotHeightPx } = TODAY_AGENDA_TIMELINE;
   return {
     tier,
     compact: tier !== 'full',
     micro: tier === 'micro',
-    hideFooter: tier === 'micro',
+    hideFooter:
+      tier === 'micro' ||
+      (tier === 'compact' && slotHeightPx < timelineTightFooterMaxSlotHeightPx),
     hideSubtitle: tier === 'micro',
   };
 }
@@ -71,10 +76,8 @@ export function getTodayAgendaTimelineRowHeightPx(
   if (tier === 'micro') {
     return Math.max(slotHeightPx, timelineMinVisibleRowHeightPx);
   }
-  if (tier === 'compact') {
-    return Math.max(slotHeightPx, shortItemCompactRowHeightPx);
-  }
-  return Math.max(slotHeightPx, fullMinPx);
+  // Row must fit title + subtitle + footer; may extend below the time grid slot (visual restack handles overlap).
+  return Math.max(slotHeightPx, fullMinPx, tier === 'compact' ? shortItemCompactRowHeightPx : 0);
 }
 
 /** Timeline slot height (px) — exact duration on the time scale. */

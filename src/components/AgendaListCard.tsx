@@ -219,7 +219,7 @@ export function AgendaListCard({
         </div>
         )}
 
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex flex-col flex-1 min-w-0 min-h-0">
           {showNextUpBadge && (
             <div
               className="flex-shrink-0"
@@ -319,7 +319,14 @@ export function AgendaListCard({
             </h3>
             {!micro && subtitle && (
               <p
-                className={cn(allowFullContent ? 'break-words' : 'line-clamp-2 break-words')}
+                className={cn(
+                  'break-words',
+                  isEmbeddedTimeline && !compact
+                    ? 'line-clamp-3'
+                    : allowFullContent
+                      ? undefined
+                      : 'line-clamp-2',
+                )}
                 style={{
                   fontSize: AGENDA_LIST_CARD.subtitleFontSizePx,
                   color: isDark ? AGENDA_LIST_CARD_COLORS.subtitleDark : AGENDA_LIST_CARD_COLORS.subtitle,
@@ -365,7 +372,7 @@ export function AgendaListCard({
           {/* Footer: source · duration + badge */}
           {showFooter && (
           <div
-            className="flex items-center justify-between gap-2 mt-auto min-w-0"
+            className="flex items-center justify-between gap-2 mt-auto min-w-0 flex-shrink-0"
             style={{ marginTop: bodyFooterGap }}
           >
             <div

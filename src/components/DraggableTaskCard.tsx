@@ -887,8 +887,7 @@ export const DraggableTaskCard = React.forwardRef<
                   leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
                   leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
                   style: {
-                    height: '100%',
-                    minHeight: 0,
+                    minHeight: '100%',
                     flex: 1,
                   },
                 })}

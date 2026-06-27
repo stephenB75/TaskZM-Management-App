@@ -363,10 +363,10 @@ export const TODAY_AGENDA_TIMELINE = {
   laneMinWidthPx: 160,
   /** Duration (minutes) below which timeline items prefer compact single-row layout. */
   shortItemThresholdMinutes: 20,
-  /** Minimum card height (px) for timeline tasks — tab, title, footer; may exceed slot height. */
-  timelineTaskCardMinHeightPx: 110,
-  /** Minimum card height (px) for timeline calendar events — full agenda row without clipping. */
-  timelineEventCardMinHeightPx: 120,
+  /** Minimum card height (px) for timeline tasks — title, optional subtitle, footer. */
+  timelineTaskCardMinHeightPx: 118,
+  /** Minimum card height (px) for timeline calendar events — title, location, footer. */
+  timelineEventCardMinHeightPx: 132,
   /** @deprecated Use timelineTaskCardMinHeightPx — kept for compact-list fallback. */
   shortTaskComfortableBlockHeightPx: 92,
   /** Target height (px) for compact single-row layout inside a duration-sized block. */

@@ -394,8 +394,8 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
               leftAccentColor={accentDotColor}
               leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
               surface="timeline"
-              className="h-full min-h-0 flex-1"
-              style={{ height: '100%', minHeight: 0, flex: 1 }}
+              className="h-full min-h-0 flex-1 flex flex-col"
+              style={{ minHeight: '100%', flex: 1 }}
             />
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
