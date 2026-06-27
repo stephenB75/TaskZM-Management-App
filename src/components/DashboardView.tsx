@@ -1687,9 +1687,8 @@ export function DashboardView({
 
       {/* Main Layout */}
       <div className={cn("flex-1 flex min-h-0 min-w-0", shouldUseMobileLayout ? "overflow-x-hidden" : "overflow-hidden")}>
-        {/* Desktop: Today Agenda Sidebar - only show when hideAgenda is false (hidden on tablets to save space) */}
-        {/* xl breakpoint (1280px) ensures it only shows on true desktop, not tablets */}
-        {!hideAgenda && (
+        {/* Desktop: Today Agenda Sidebar — not mounted on mobile/tablet (avoids duplicate TodayAgendaView work) */}
+        {!hideAgenda && !shouldUseMobileLayout && (
           <motion.div
             className="hidden xl:flex flex-col w-64 h-full min-h-0 border-r border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm"
             initial={{ opacity: 0, x: -20 }}

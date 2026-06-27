@@ -539,6 +539,12 @@ export function TodayAgendaView({
       let y = 0;
       return sourceBlocks.map((block) => {
         const cardTopInsetPx = isNextUpBlock(block.item) ? nextUpInsetPx : 0;
+        const isEvent = block.item.type === 'event';
+        const cardPresentation = getTodayAgendaTimelineCardPresentation(
+          block.cardHeightPx,
+          block.actualDurationMins,
+          { isEvent },
+        );
         const displayTopPx = y;
         const displayHeightPx = block.cardHeightPx;
         y += block.cardHeightPx + listGapPx;
@@ -550,6 +556,7 @@ export function TodayAgendaView({
           scheduledStartTopPx: displayTopPx,
           scheduledEndTopPx: displayTopPx + block.cardHeightPx,
           scheduledSlotHeightPx: block.cardHeightPx,
+          cardPresentation,
         };
       });
     }
@@ -834,6 +841,13 @@ export function TodayAgendaView({
         const blockZIndex = 1 + blockIndex + (isNextUpTask ? 1 : 0);
         const rowTopPx = getTodayAgendaBlockRowTopPx({ displayTopPx, scheduledStartTopPx });
         const blockRowHeightPx = rowHeightPx ?? scheduledSlotHeightPx;
+        const resolvedPresentation =
+          cardPresentation ??
+          getTodayAgendaTimelineCardPresentation(
+            scheduledSlotHeightPx ?? block.displayHeightPx ?? block.cardHeightPx,
+            actualDurationMins,
+            { isEvent: item.type === 'event' },
+          );
 
         return (
           <div
@@ -880,8 +894,8 @@ export function TodayAgendaView({
                   isNextUp={false}
                   onComplete={handleTaskComplete}
                   timelineBlockHeightPx={blockRowHeightPx}
-                  timelineLayoutTier={cardPresentation.tier}
-                  timelineHideFooter={cardPresentation.hideFooter}
+                  timelineLayoutTier={resolvedPresentation.tier}
+                  timelineHideFooter={resolvedPresentation.hideFooter}
                   hideTimelineTime
                   hideTimelineAccent
                   durationMinutes={actualDurationMins}
@@ -898,8 +912,8 @@ export function TodayAgendaView({
                   calendarColor={item.event.calendarColor}
                   isRecurring={item.event.isRecurring}
                   variant="timeline"
-                  timelineLayoutTier={cardPresentation.tier}
-                  timelineHideFooter={cardPresentation.hideFooter}
+                  timelineLayoutTier={resolvedPresentation.tier}
+                  timelineHideFooter={resolvedPresentation.hideFooter}
                 />
               </div>
             ) : null}
