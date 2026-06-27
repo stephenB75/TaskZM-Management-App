@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.27';
-export const VERSION_NAME = 'Today Agenda Cache & Card Fix';
-export const VERSION_DATE = 'June 24, 2026';
-export const BUILD_NUMBER = '20260624-3';
+export const APP_VERSION = '1.0.28';
+export const VERSION_NAME = 'Today Agenda Timeline Content & Duration';
+export const VERSION_DATE = 'June 26, 2026';
+export const BUILD_NUMBER = '20260626-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,20 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.28',
+    date: 'June 26, 2026',
+    name: 'Today Agenda Timeline Content & Duration',
+    changes: [
+      'Today Agenda: grid-aligned start/end rail labels; task/event blocks sized to scheduled duration on the time scale',
+      'Today Agenda: adaptive card tiers (micro / compact / full) with readable row heights so titles and footers are not clipped',
+      'Today Agenda: tooltips on timeline task and event cards for full title, duration, and location when truncated',
+      'Today Agenda: vertical stacking when times overlap or a short slot row extends past its grid end; build marker data-agenda-timeline=v25',
+      'Task duration: user-set estimatedTime wins over cached AI in getTaskMinutes; getTaskSchedulingMinutes applies 15-min floor for timeline and conflict detection',
+      'Calendar events on timeline use parsed end time for slot height and end labels (matches event end, e.g. 8:30–9:31)',
+      'Scheduling unchanged: findNextAvailableSlot checks tasks and calendar events on manual save, drag-drop, and AI scheduler',
+    ],
+  },
   {
     version: '1.0.27',
     date: 'June 24, 2026',
