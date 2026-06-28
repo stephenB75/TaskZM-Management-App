@@ -278,14 +278,33 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
   const { subscription } = useSubscription();
   const shouldUseMobileLayout = useMobileLayout();
   const [tourStepIndex, setTourStepIndex] = useState(0);
+  const [joyrideActive, setJoyrideActive] = useState(false);
   const targetRetryTimeoutRef = useRef<number | null>(null);
   const advanceTimeoutRef = useRef<number | null>(null);
+
+  const activateJoyrideForStep = useCallback((index: number) => {
+    const meta = stepDefs[index];
+    if (!meta || meta.target === APP_TOUR_TARGETS.body) {
+      setJoyrideActive(true);
+      return;
+    }
+    setJoyrideActive(false);
+    waitForTourTarget(
+      meta.target,
+      () => setJoyrideActive(true),
+      TIMING_CONSTANTS.tour.highlightDelay * 4,
+    );
+  }, [stepDefs]);
 
   useEffect(() => {
     if (run) {
       setTourStepIndex(0);
+      setJoyrideActive(false);
+      window.requestAnimationFrame(() => activateJoyrideForStep(0));
+    } else {
+      setJoyrideActive(false);
     }
-  }, [run]);
+  }, [run, activateJoyrideForStep]);
 
   useEffect(() => {
     return () => {
@@ -323,33 +342,26 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       return shouldUseMobileLayout && (p === 'right' || p === 'left' || p === 'bottom-end') ? 'top' : p;
     };
 
-    return stepDefs.map((meta, index) => {
-      const resolvedTarget =
-        run && index === tourStepIndex && meta.target !== APP_TOUR_TARGETS.body
-          ? queryVisibleTourTarget(meta.target) ?? meta.target
-          : meta.target;
-
-      return {
-        target: resolvedTarget,
-        placement: placementFor(meta.placement),
-        disableBeacon: meta.disableBeacon ?? false,
-        content: renderStepContent(meta, shouldUseMobileLayout),
-        data: meta,
-        disableScrolling: meta.isFixed ?? false,
-        disableScrollParentFix: meta.isFixed ?? false,
-        isFixed: meta.isFixed ?? false,
-        offset: meta.isFixed ? 8 : 0,
-        floaterProps: meta.isFixed
-          ? { offset: 12, options: { preventOverflow: { boundariesElement: 'viewport' } } }
-          : undefined,
-        spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
-      };
-    });
-  }, [shouldUseMobileLayout, stepDefs, run, tourStepIndex]);
+    return stepDefs.map((meta) => ({
+      target: meta.target,
+      placement: placementFor(meta.placement),
+      disableBeacon: meta.disableBeacon ?? false,
+      content: renderStepContent(meta, shouldUseMobileLayout),
+      data: meta,
+      disableScrolling: meta.isFixed ?? false,
+      disableScrollParentFix: meta.isFixed ?? false,
+      isFixed: meta.isFixed ?? false,
+      offset: meta.isFixed ? 8 : 0,
+      floaterProps: meta.isFixed
+        ? { offset: 12, options: { preventOverflow: { boundariesElement: 'viewport' } } }
+        : undefined,
+      spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
+    }));
+  }, [shouldUseMobileLayout, stepDefs]);
 
   const getStepMeta = useCallback(
-    (index: number) => steps[index]?.data as AppTourStepMeta | undefined,
-    [steps],
+    (index: number) => stepDefs[index],
+    [stepDefs],
   );
 
   const prepareStep = useCallback(
@@ -475,6 +487,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       }
 
       if (type === EVENTS.TARGET_NOT_FOUND && meta) {
+        setJoyrideActive(false);
         prepareStep(index);
         if (targetRetryTimeoutRef.current !== null) {
           window.clearTimeout(targetRetryTimeoutRef.current);
@@ -484,7 +497,10 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           if (meta.isFixed) {
             prepareFixedHeaderTourTarget(meta.target);
           }
-          waitForTourTarget(meta.target, () => setTourStepIndex(index));
+          waitForTourTarget(meta.target, () => {
+            setJoyrideActive(true);
+            setTourStepIndex(index);
+          });
         };
         targetRetryTimeoutRef.current = window.setTimeout(
           retry,
@@ -527,12 +543,19 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             const delay = advanceDelayForStep(nextMeta);
             advanceTimeoutRef.current = window.setTimeout(() => {
               advanceTimeoutRef.current = null;
-              if (nextMeta?.isFixed) {
-                prepareFixedHeaderTourTarget(nextMeta.target);
-                waitForTourTarget(nextMeta.target, () => setTourStepIndex(nextIndex));
-              } else {
+              if (!nextMeta) {
                 setTourStepIndex(nextIndex);
+                return;
               }
+              setJoyrideActive(false);
+              prepareStep(nextIndex);
+              if (nextMeta.isFixed) {
+                prepareFixedHeaderTourTarget(nextMeta.target);
+              }
+              waitForTourTarget(nextMeta.target, () => {
+                setTourStepIndex(nextIndex);
+                setJoyrideActive(true);
+              });
             }, delay);
           };
 
@@ -541,7 +564,19 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         }
 
         if (action === ACTIONS.PREV) {
-          setTourStepIndex(Math.max(0, index - 1));
+          const prevIndex = Math.max(0, index - 1);
+          const prevMeta = getStepMeta(prevIndex);
+          setJoyrideActive(false);
+          if (prevMeta) {
+            prepareStep(prevIndex);
+            waitForTourTarget(prevMeta.target, () => {
+              setTourStepIndex(prevIndex);
+              setJoyrideActive(true);
+            });
+          } else {
+            setTourStepIndex(prevIndex);
+            setJoyrideActive(true);
+          }
           return;
         }
       }
@@ -573,6 +608,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         }
 
         setTourStepIndex(0);
+        setJoyrideActive(false);
         onFinish();
       }
     },
@@ -618,8 +654,9 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
 
   return (
     <Joyride
+      key={`tour-step-${tourStepIndex}`}
       steps={steps}
-      run={run}
+      run={run && joyrideActive}
       stepIndex={tourStepIndex}
       continuous
       showProgress
