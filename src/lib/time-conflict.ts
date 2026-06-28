@@ -62,6 +62,236 @@ export function expandCalendarBlockForSchedulingPrep(
   return { start: blockStartMs - prepBufferMs, end: blockEndMs + prepBufferMs };
 }
 
+/** Round a time up to the next scheduling slot boundary. */
+export function roundTimeUpToSchedulingSlot(time: Date): Date {
+  const rounded = new Date(time);
+  const minutes = rounded.getMinutes();
+  const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
+  if (roundedMinutes >= MINUTES_PER_HOUR) {
+    rounded.setHours(rounded.getHours() + 1);
+    rounded.setMinutes(0);
+  } else {
+    rounded.setMinutes(roundedMinutes);
+  }
+  rounded.setSeconds(0);
+  rounded.setMilliseconds(0);
+  return rounded;
+}
+
+/** If a start time falls inside a calendar prep window, advance to after that window. */
+export function advancePastCalendarPrepWindows(
+  startMs: number,
+  calendarBlocks: CalendarConflictBlock[],
+  prepBufferMs: number,
+): number {
+  let next = startMs;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const block of calendarBlocks) {
+      const expanded = expandCalendarBlockForSchedulingPrep(block.start, block.end, prepBufferMs);
+      if (next >= expanded.start && next < expanded.end) {
+        next = expanded.end;
+        changed = true;
+      }
+    }
+  }
+  return next;
+}
+
+type SchedulingObstacle = { start: number; end: number };
+
+function buildSchedulingObstaclesForDay(
+  targetDate: Date,
+  sortedTasks: Array<{ task: Task; start: number; end: number }>,
+  calendarBlocks: CalendarConflictBlock[],
+  prepBufferMs: number,
+  excludeTaskId?: string | null,
+): SchedulingObstacle[] {
+  const obstacles: SchedulingObstacle[] = [];
+  for (const block of calendarBlocks) {
+    const expanded = expandCalendarBlockForSchedulingPrep(block.start, block.end, prepBufferMs);
+    obstacles.push({ start: expanded.start, end: expanded.end });
+  }
+  for (const existing of sortedTasks) {
+    if (excludeTaskId && existing.task.id === excludeTaskId) continue;
+    obstacles.push({
+      start: existing.start,
+      end: expandTaskBlockEndForSchedulingPrep(existing.end, prepBufferMs),
+    });
+  }
+  obstacles.sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged: SchedulingObstacle[] = [];
+  for (const obstacle of obstacles) {
+    const last = merged[merged.length - 1];
+    if (!last || obstacle.start > last.end) {
+      merged.push({ ...obstacle });
+    } else {
+      last.end = Math.max(last.end, obstacle.end);
+    }
+  }
+  return merged;
+}
+
+function fitsCategoryHours(
+  startMs: number,
+  durationMinutes: number,
+  categoryHours?: { start: number; end: number } | null,
+): boolean {
+  if (!categoryHours) return true;
+  const startDate = new Date(startMs);
+  const startMinutes = startDate.getHours() * MINUTES_PER_HOUR + startDate.getMinutes();
+  const endMinutes = startMinutes + durationMinutes;
+  return startMinutes >= categoryHours.start && endMinutes <= categoryHours.end;
+}
+
+/**
+ * Find an open gap before calendar/task obstacles when forward placement exceeds category hours.
+ */
+function tryFindGapBeforeObstacles(
+  targetDate: Date,
+  earliestStartMs: number,
+  taskDurationMinutes: number,
+  obstacles: SchedulingObstacle[],
+  categoryHours?: { start: number; end: number } | null,
+): Date | null {
+  const durationMs = taskDurationMinutes * MILLISECONDS_PER_MINUTE;
+  let cursor = roundTimeUpToSchedulingSlot(new Date(Math.max(earliestStartMs, targetDate.getTime()))).getTime();
+  const dayEndMs = new Date(targetDate);
+  dayEndMs.setHours(HOURS_PER_DAY, 0, 0, 0);
+
+  for (const obstacle of obstacles) {
+    if (obstacle.end <= cursor) continue;
+    if (cursor + durationMs <= obstacle.start && fitsCategoryHours(cursor, taskDurationMinutes, categoryHours)) {
+      return new Date(cursor);
+    }
+    cursor = Math.max(cursor, obstacle.end);
+    cursor = roundTimeUpToSchedulingSlot(new Date(cursor)).getTime();
+  }
+
+  if (cursor + durationMs <= dayEndMs.getTime() && fitsCategoryHours(cursor, taskDurationMinutes, categoryHours)) {
+    return new Date(cursor);
+  }
+  return null;
+}
+
+/** Force a slot after all obstacles conflicting with the requested window. */
+function findSlotAfterObstacles(
+  targetDate: Date,
+  requestedTime: Date,
+  taskDurationMinutes: number,
+  obstacles: SchedulingObstacle[],
+  options?: FindSlotOptions,
+): Date | null {
+  const durationMs = taskDurationMinutes * MILLISECONDS_PER_MINUTE;
+  const requestedStart = requestedTime.getTime();
+  const requestedEnd = requestedStart + durationMs;
+  let maxConflictEnd = requestedStart;
+  for (const obstacle of obstacles) {
+    if (scheduleBlocksConflict(requestedStart, requestedEnd, obstacle.start, obstacle.end)) {
+      maxConflictEnd = Math.max(maxConflictEnd, obstacle.end);
+    }
+  }
+  if (maxConflictEnd <= requestedStart) return null;
+  const afterObstacles = roundTimeUpToSchedulingSlot(new Date(maxConflictEnd));
+  const slot = findNextAvailableSlot(
+    null,
+    afterObstacles,
+    taskDurationMinutes,
+    [],
+    { ...options, categoryHours: undefined },
+  );
+  if (slot.getHours() < HOURS_PER_DAY) {
+    return slot;
+  }
+  return null;
+}
+
+export function resolveSchedulingSlot(
+  taskId: string | null,
+  requestedTime: Date,
+  taskDurationMinutes: number,
+  allTasks: Task[],
+  options?: FindSlotOptions,
+): Date {
+  const targetDate = new Date(requestedTime);
+  targetDate.setHours(0, 0, 0, 0);
+  const prepBufferMs = getSchedulingPrepBufferMs(options);
+  const calendarBlocks = options?.calendarEvents
+    ? buildCalendarConflictBlocksForDay(options.calendarEvents, targetDate)
+    : [];
+
+  let slot = findNextAvailableSlot(taskId, requestedTime, taskDurationMinutes, allTasks, options);
+  if (slot.getHours() < HOURS_PER_DAY) {
+    const slotStart = slot.getTime();
+    const slotEnd = slotStart + taskDurationMinutes * MILLISECONDS_PER_MINUTE;
+    const hasCalendarConflict = calendarBlocks.some((block) => {
+      const expanded = expandCalendarBlockForSchedulingPrep(block.start, block.end, prepBufferMs);
+      return scheduleBlocksConflict(slotStart, slotEnd, expanded.start, expanded.end);
+    });
+    if (!hasCalendarConflict) {
+      return slot;
+    }
+  }
+
+  const dateTasks = allTasks.filter((task) => {
+    if (taskId && task.id === taskId) return false;
+    if (task.status === 'done' || !task.scheduledDate) return false;
+    return isDateInRecurrence(task, targetDate);
+  });
+  const sortedTasks = dateTasks
+    .map((task) => {
+      const scheduledDate = typeof task.scheduledDate === 'string'
+        ? new Date(task.scheduledDate)
+        : new Date(task.scheduledDate);
+      if (isNaN(scheduledDate.getTime())) return null;
+      const start = scheduledDate.getTime();
+      const end = start + getTaskSchedulingMinutes(task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
+      return { task, start, end };
+    })
+    .filter((item): item is { task: Task; start: number; end: number } => item !== null)
+    .sort((a, b) => a.start - b.start);
+
+  const obstacles = buildSchedulingObstaclesForDay(
+    targetDate,
+    sortedTasks,
+    calendarBlocks,
+    prepBufferMs,
+    taskId,
+  );
+
+  const gapSlot = tryFindGapBeforeObstacles(
+    targetDate,
+    requestedTime.getTime(),
+    taskDurationMinutes,
+    obstacles,
+    options?.categoryHours ?? null,
+  );
+  if (gapSlot) return gapSlot;
+
+  slot = findNextAvailableSlot(
+    taskId,
+    requestedTime,
+    taskDurationMinutes,
+    allTasks,
+    { ...options, categoryHours: undefined },
+  );
+  if (slot.getHours() < HOURS_PER_DAY) return slot;
+
+  const forced = findSlotAfterObstacles(
+    targetDate,
+    requestedTime,
+    taskDurationMinutes,
+    obstacles,
+    options,
+  );
+  if (forced) return forced;
+
+  const failureTime = new Date(requestedTime);
+  failureTime.setHours(HOURS_PER_DAY, 0, 0, 0);
+  return failureTime;
+}
+
 /** Calendar event shape for findNextAvailableSlot conflict checks. */
 export type ConflictCalendarEvent = { start: Date | string; end: Date | string; title: string };
 
@@ -512,8 +742,23 @@ export function findNextAvailableSlot(
           }
           continue; // Retry with new candidate time
         } else {
-          // Task end exceeds category hours—no slot today. Return clear "no slot" time (24:00)
-          // so callers don't use an overlapping requestedTime and misalign the timeline.
+          // Task end exceeds category hours — try an earlier gap before calendar/task obstacles.
+          const gapSlot = tryFindGapBeforeObstacles(
+            targetDate,
+            requestedTime.getTime(),
+            taskDuration,
+            buildSchedulingObstaclesForDay(
+              targetDate,
+              sortedTasks,
+              calendarConflicts,
+              prepBufferMs,
+              taskId,
+            ),
+            options.categoryHours,
+          );
+          if (gapSlot) {
+            return gapSlot;
+          }
           const noSlotTime = new Date(requestedTime);
           noSlotTime.setHours(HOURS_PER_DAY, 0, 0, 0);
           return noSlotTime;
@@ -613,6 +858,30 @@ export function findNextAvailableSlot(
     }
     candidateTime.setSeconds(0);
     candidateTime.setMilliseconds(0);
+  }
+
+  // If no slot found, try gaps before obstacles or after the last calendar block.
+  const prepBufferMs = getSchedulingPrepBufferMs(options);
+  const gapSlot = tryFindGapBeforeObstacles(
+    targetDate,
+    requestedTime.getTime(),
+    taskDuration,
+    buildSchedulingObstaclesForDay(targetDate, sortedTasks, calendarConflicts, prepBufferMs, taskId),
+    options?.categoryHours ?? null,
+  );
+  if (gapSlot) {
+    return gapSlot;
+  }
+
+  const forcedAfter = findSlotAfterObstacles(
+    targetDate,
+    requestedTime,
+    taskDuration,
+    buildSchedulingObstaclesForDay(targetDate, sortedTasks, calendarConflicts, prepBufferMs, taskId),
+    options,
+  );
+  if (forcedAfter) {
+    return forcedAfter;
   }
 
   // If no slot found, return a time that indicates failure (24:00 or later)
@@ -728,31 +997,31 @@ export function reorganizeAllTasksForDate(
     const taskDurationMinutes = getTaskSchedulingMinutes(task, { useCachedAIAnalysis: true });
     const taskDuration = taskDurationMinutes * MILLISECONDS_PER_MINUTE;
 
-    const needsMove =
-      taskInfo.start < nextAllowedStartMs
-      || taskConflictsCalendarWithPrep(taskInfo.start, taskInfo.end, calendarBlocks, prepBufferMs);
+    nextAllowedStartMs = advancePastCalendarPrepWindows(
+      nextAllowedStartMs,
+      calendarBlocks,
+      prepBufferMs,
+    );
+
+    const conflictsPriorTask = taskInfo.start < nextAllowedStartMs;
+    const conflictsCalendar = taskConflictsCalendarWithPrep(
+      taskInfo.start,
+      taskInfo.end,
+      calendarBlocks,
+      prepBufferMs,
+    );
+
+    const needsMove = conflictsPriorTask || conflictsCalendar;
 
     if (needsMove) {
-      const candidateTime = new Date(Math.max(nextAllowedStartMs, taskInfo.start));
-      
-      // Round to nearest 15-minute slot
-      const minutes = candidateTime.getMinutes();
-      const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-      if (roundedMinutes >= MINUTES_PER_HOUR) {
-        candidateTime.setHours(candidateTime.getHours() + 1);
-        candidateTime.setMinutes(0);
-      } else {
-        candidateTime.setMinutes(roundedMinutes);
-      }
-      candidateTime.setSeconds(0);
-      candidateTime.setMilliseconds(0);
+      const candidateTime = roundTimeUpToSchedulingSlot(new Date(nextAllowedStartMs));
 
-      const newTime = findNextAvailableSlot(
+      const newTime = resolveSchedulingSlot(
         task.id,
         candidateTime,
         taskDurationMinutes,
         workingTasks,
-        options
+        options,
       );
 
       if (newTime.getHours() < HOURS_PER_DAY) {
@@ -765,8 +1034,23 @@ export function reorganizeAllTasksForDate(
         lastScheduledEnd = newTime.getTime() + taskDuration;
         nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
       } else {
-        lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);
-        nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
+        // No open slot today — push after the conflicting calendar block if possible.
+        const forced = findSlotAfterObstacles(
+          targetDate,
+          new Date(taskInfo.start),
+          taskDurationMinutes,
+          buildSchedulingObstaclesForDay(targetDate, sortedTasks, calendarBlocks, prepBufferMs, task.id),
+          options,
+        );
+        if (forced && forced.getHours() < HOURS_PER_DAY) {
+          reorganizations.push({ taskId: task.id, newTime: forced });
+          workingTasks = applyTaskTimeToList(workingTasks, task.id, forced);
+          lastScheduledEnd = forced.getTime() + taskDuration;
+          nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
+        } else {
+          lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);
+          nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
+        }
       }
     } else {
       lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);

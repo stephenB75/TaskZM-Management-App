@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isTaskBlocked, calculateDependencyDepth, getDateString } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { findNextAvailableSlot, filterCalendarEventsForDay, buildCalendarConflictBlocksForDay, scheduleBlocksConflict, buildAISchedulerSlotOptions, expandTaskBlockEndForSchedulingPrep, expandCalendarBlockForSchedulingPrep, aiSchedulingTaskBlockConflicts, enforcePrepBufferUntilStable, type ConflictCalendarEvent } from '../lib/time-conflict';
+import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
@@ -127,7 +128,20 @@ export function useAIScheduler() {
       }
     }
     
-    return events;
+    return applyRecurrenceTimeCorrections(
+      events.map((event) => ({
+        id: event.title,
+        title: event.title,
+        start: typeof event.start === 'string' ? event.start : event.start.toISOString(),
+        end: typeof event.end === 'string' ? event.end : event.end.toISOString(),
+        provider: 'google' as const,
+      })),
+      getBrowserTimezone(),
+    ).map((event) => ({
+      start: event.start,
+      end: event.end,
+      title: event.title,
+    }));
   };
 
   const getUnscheduledTasks = () => {
@@ -4031,9 +4045,10 @@ export function useAIScheduler() {
             : t;
         });
 
+      let workingDayTasks = [...dayTasks];
       const moves = enforcePrepBufferUntilStable(
         normalizedDate,
-        dayTasks,
+        workingDayTasks,
         buildAISchedulerSlotOptions({
           calendarEvents: dayCalendarEvents,
           ensureAfterCurrentTime: false,
@@ -4044,6 +4059,9 @@ export function useAIScheduler() {
       for (const move of moves) {
         await updateTask(move.taskId, { scheduledDate: move.newTime.toISOString() });
         scheduledById.set(move.taskId, move.newTime);
+        workingDayTasks = workingDayTasks.map((t) =>
+          t.id === move.taskId ? { ...t, scheduledDate: move.newTime.toISOString() } : t,
+        );
       }
     }
   };
