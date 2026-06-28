@@ -4,7 +4,7 @@ import { useTasks } from './TaskContext';
 import { useCalendarEventsByDate } from '../hooks/useCalendarEvents';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { isTaskBlocked, getIncompleteDependencies, cn, getDateString } from '../lib/utils';
-import { findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate, buildSchedulingSlotOptions } from '../lib/time-conflict';
+import { findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate, buildManualSchedulingSlotOptions } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from '../lib/daily-hours-utils';
 import { useAI } from './AIContext';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
@@ -625,7 +625,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         requestedTime,
         taskDuration,
         tasks,
-        buildSchedulingSlotOptions({
+        buildManualSchedulingSlotOptions({
           ensureAfterCurrentTime: isToday,
           categoryHours: categoryHours,
           calendarEvents: calendarEventsForConflict,
@@ -1011,7 +1011,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       effectiveRequested,
       taskDuration,
       tasks,
-      buildSchedulingSlotOptions({
+      buildManualSchedulingSlotOptions({
         ensureAfterCurrentTime: isTargetToday,
         categoryHours: categoryHours,
         calendarEvents: calendarEventsForConflict,

@@ -1071,29 +1071,43 @@ export function DashboardView({
     end.setDate(end.getDate() + (TWO_WEEKS_DAYS - 1)); // 14 days total (today + 13 more)
     end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
     const range = { startDate: today, endDate: end };
-    const result = await generateSchedulePlan(undefined, range, { 
-      forceCategoryHours: true,
-      enforceMinimumHours: true // Always enforce 5-hour minimum before pushing to next day
-    });
-
-    if (result.scheduled.length === 0 && result.exceedsLimit.length === 0) {
-      toast.info("No available time slots", {
-        description: "AI Scheduler couldn't find any openings within the next two weeks.",
+    try {
+      const result = await generateSchedulePlan(undefined, range, { 
+        forceCategoryHours: true,
+        enforceMinimumHours: true // Always enforce 5-hour minimum before pushing to next day
       });
-      return;
-    }
 
-    setSchedulePlan(result.scheduled);
-    setShowSchedulePreview(true);
+      if (result.scheduled.length === 0 && result.exceedsLimit.length === 0) {
+        toast.info("No available time slots", {
+          description: "AI Scheduler couldn't find any openings within the next two weeks.",
+        });
+        return;
+      }
 
-    if (result.exceedsLimit.length > 0) {
-      toast.warning(
-        `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} need manual scheduling`,
-        {
-          description: 'No available slots within the next two weeks for these tasks.',
-          duration: 5000,
-        }
-      );
+      setSchedulePlan(result.scheduled);
+      setShowSchedulePreview(true);
+
+      if (result.exceedsLimit.length > 0) {
+        toast.warning(
+          `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} need manual scheduling`,
+          {
+            description: 'No available slots within the next two weeks for these tasks.',
+            duration: 5000,
+          }
+        );
+      }
+    } catch (error) {
+      console.error('AI scheduling error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isExtensionError = errorMessage.includes('message channel')
+        || errorMessage.includes('listener indicated')
+        || errorMessage.includes('asynchronous response');
+      if (!isExtensionError) {
+        toast.error('Scheduling failed', {
+          description: errorMessage || 'Something went wrong. Please try again.',
+          duration: TOAST_DURATION_MEDIUM_MS,
+        });
+      }
     }
   };
 

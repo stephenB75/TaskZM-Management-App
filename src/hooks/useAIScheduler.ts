@@ -128,7 +128,7 @@ export function useAIScheduler() {
       }
     }
     
-    return applyRecurrenceTimeCorrections(
+    const correctedEvents = await applyRecurrenceTimeCorrections(
       events.map((event) => ({
         id: event.title,
         title: event.title,
@@ -137,7 +137,8 @@ export function useAIScheduler() {
         provider: 'google' as const,
       })),
       getBrowserTimezone(),
-    ).map((event) => ({
+    );
+    return correctedEvents.map((event) => ({
       start: event.start,
       end: event.end,
       title: event.title,

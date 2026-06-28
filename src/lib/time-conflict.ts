@@ -33,6 +33,13 @@ export function buildSchedulingSlotOptions(
   };
 }
 
+/** Manual scheduling (TaskDialog, drag-drop) — no AI prep buffer between tasks/events. */
+export function buildManualSchedulingSlotOptions(
+  base: Omit<FindSlotOptions, 'schedulingPrepBufferMinutes'> = {},
+): FindSlotOptions {
+  return { ...base };
+}
+
 /** @deprecated Prefer `buildSchedulingSlotOptions` — kept for AI scheduler call sites. */
 export function buildAISchedulerSlotOptions(
   base: Omit<FindSlotOptions, 'schedulingPrepBufferMinutes'> = {},

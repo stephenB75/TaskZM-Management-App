@@ -232,33 +232,46 @@ export function AIRecommendationPanel({
       range = { startDate: start, endDate: end };
     }
     
-    const result = await generateSchedulePlan(undefined, range, { forceCategoryHours: true });
-    
-    // Check if any days exceed 5 hours
-    if (result.daysExceedingLimit.length > 0) {
-      // Show consultation dialog before proceeding
-      setExceedsLimitData({
-        days: result.daysExceedingLimit,
-        tasks: result.exceedsLimit
-      });
-      setShowExceedsLimitDialog(true);
-      return;
-    }
-    
-    // If no days exceed limit, proceed normally
-    setSchedulePlan(result.scheduled);
-    setSelectedPlanTaskIds(new Set(result.scheduled.map((p) => p.task.id)));
-    setShowSchedulePreview(true);
-    
-    // Show warning if tasks exceed limit (no available slots)
-    if (result.exceedsLimit.length > 0) {
-      toast.warning(
-        `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} exceed the ${aiSettings.maxHoursPerDay ?? 5}-hour daily limit`,
-        {
-          description: 'These tasks will need to be scheduled manually.',
-          duration: 5000,
-        }
-      );
+    try {
+      const result = await generateSchedulePlan(undefined, range, { forceCategoryHours: true });
+      
+      // Check if any days exceed 5 hours
+      if (result.daysExceedingLimit.length > 0) {
+        // Show consultation dialog before proceeding
+        setExceedsLimitData({
+          days: result.daysExceedingLimit,
+          tasks: result.exceedsLimit
+        });
+        setShowExceedsLimitDialog(true);
+        return;
+      }
+      
+      // If no days exceed limit, proceed normally
+      setSchedulePlan(result.scheduled);
+      setSelectedPlanTaskIds(new Set(result.scheduled.map((p) => p.task.id)));
+      setShowSchedulePreview(true);
+      
+      // Show warning if tasks exceed limit (no available slots)
+      if (result.exceedsLimit.length > 0) {
+        toast.warning(
+          `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} exceed the ${aiSettings.maxHoursPerDay ?? 5}-hour daily limit`,
+          {
+            description: 'These tasks will need to be scheduled manually.',
+            duration: 5000,
+          }
+        );
+      }
+    } catch (error) {
+      console.error('AI scheduling error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isExtensionError = errorMessage.includes('message channel')
+        || errorMessage.includes('listener indicated')
+        || errorMessage.includes('asynchronous response');
+      if (!isExtensionError) {
+        toast.error('Scheduling failed', {
+          description: errorMessage || 'Something went wrong. Please try again.',
+        });
+      }
     }
   };
 
