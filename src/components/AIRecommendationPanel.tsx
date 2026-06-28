@@ -586,7 +586,7 @@ export function AIRecommendationPanel({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4" data-tour="reschedule-dialog-options">
             <div className="space-y-2">
               <label className="text-sm font-medium">Select {rescheduleType === 'day' ? 'Date' : rescheduleType === 'week' ? 'Date (Week Starting)' : 'Month'}</label>
               <Popover open={rescheduleDateOpen} onOpenChange={setRescheduleDateOpen}>

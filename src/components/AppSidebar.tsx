@@ -124,6 +124,7 @@ export function AppSidebar({
                     <motion.button
                       type="button"
                       aria-label={item.label}
+                      data-tour={`sidebar-${item.id}`}
                       className={cn(
                         "w-12 h-12 rounded-xl transition-all relative flex items-center justify-center",
                         "bg-transparent border-none cursor-pointer",

@@ -346,7 +346,7 @@ function RescheduleMiniCalendar({
   return (
     <div className="w-full bg-white/80 dark:bg-gray-800/95 dark:border-gray-600 rounded-lg p-3 border-2 border-primary/30 dark:border-primary/20 shadow-lg">
       {/* Toggle Buttons */}
-      <div className="flex gap-2 mb-3">
+      <div className="flex gap-2 mb-3" data-tour="reschedule-dialog-options">
         <Button
           type="button"
           variant={rescheduleType === "day" ? "default" : "outline"}
@@ -1823,7 +1823,7 @@ export function DashboardView({
               {schedulePlan.length === 1 ? "" : "s"} across
               upcoming days
             </DialogDescription>
-            <div className="flex items-center gap-3 pt-1">
+            <div className="flex items-center gap-3 pt-1" data-tour="ai-schedule-preview-options">
               <button
                 type="button"
                 onClick={selectAllPlanSuggestions}

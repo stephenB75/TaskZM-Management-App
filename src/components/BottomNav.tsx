@@ -185,6 +185,7 @@ export function BottomNav({
           return (
             <button
               key={item.id}
+              data-tour={`bottom-nav-${item.id}`}
               onClick={item.onClick}
               className={cn(
                 "flex flex-col items-center justify-center flex-1 rounded-xl relative overflow-visible",

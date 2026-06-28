@@ -7,202 +7,237 @@ import { NAVIGATION_UI_TEXT } from './navigation-constants';
 import { SETTINGS_PANEL_UI_TEXT } from './settings-panel-constants';
 import { DASHBOARD_VIEW_HEADER_LABELS } from './layout-constants';
 
+/** Sidebar icon tour stops (desktop) — order matches AppSidebar menuItems. */
+export const APP_TOUR_SIDEBAR_ITEMS = [
+  {
+    id: 'dashboard',
+    label: NAVIGATION_UI_TEXT.dashboard,
+    description:
+      'Your main workspace — 7-day Week view and Month calendar. Drag tasks, add items, and plan your schedule.',
+  },
+  {
+    id: 'notifications',
+    label: NAVIGATION_UI_TEXT.notifications,
+    description:
+      'Due-soon, overdue, and system alerts. Badge counts show how many need attention.',
+  },
+  {
+    id: 'today',
+    label: NAVIGATION_UI_TEXT.todayAgenda,
+    description:
+      'Today’s timeline — tasks and calendar events in chronological order with a visual day rail.',
+  },
+  {
+    id: 'inbox',
+    label: NAVIGATION_UI_TEXT.inbox,
+    description:
+      'Unscheduled tasks waiting to be planned. Capture ideas here, then schedule with AI or manually.',
+  },
+  {
+    id: 'folders',
+    label: NAVIGATION_UI_TEXT.folders,
+    description: 'Organize tasks into folders for projects or areas of life.',
+  },
+  {
+    id: 'team',
+    label: NAVIGATION_UI_TEXT.team,
+    description: 'Invite teammates, assign tasks, and collaborate (Pro).',
+  },
+  {
+    id: 'analytics',
+    label: NAVIGATION_UI_TEXT.analytics,
+    description: 'Track completion trends, focus time, and productivity insights (Pro).',
+  },
+  {
+    id: 'archive',
+    label: NAVIGATION_UI_TEXT.archive,
+    description: 'Completed and archived tasks kept out of your active views.',
+  },
+  {
+    id: 'settings',
+    label: NAVIGATION_UI_TEXT.settings,
+    description: 'Profile, calendars, notifications, AI scheduling, hours, and preferences.',
+  },
+] as const;
+
+/** Bottom nav tour stops (mobile/tablet). */
+export const APP_TOUR_BOTTOM_NAV_ITEMS = [
+  {
+    id: 'today',
+    label: NAVIGATION_UI_TEXT.today,
+    description: 'Today Agenda — your scheduled day in timeline order.',
+  },
+  {
+    id: 'week',
+    label: NAVIGATION_UI_TEXT.week,
+    description: 'Week view — scroll the 7-day board and manage task cards.',
+  },
+  {
+    id: 'inbox',
+    label: NAVIGATION_UI_TEXT.inbox,
+    description: 'Unscheduled tasks ready for AI Scheduler or manual planning.',
+  },
+  {
+    id: 'settings',
+    label: NAVIGATION_UI_TEXT.settings,
+    description: 'Customize calendars, notifications, AI behavior, and more.',
+  },
+] as const;
+
+/** Settings accordion sections highlighted during the tour. */
+export const APP_TOUR_SETTINGS_SECTIONS = [
+  {
+    id: 'user-profile',
+    title: SETTINGS_PANEL_UI_TEXT.profile.userProfile,
+    description: SETTINGS_PANEL_UI_TEXT.sections.userProfile.description,
+    detail: 'Update your name, avatar, email, plan, and sign out.',
+  },
+  {
+    id: 'calendar',
+    title: 'Calendar Integrations',
+    description: SETTINGS_PANEL_UI_TEXT.sections.calendar.description,
+    detail: 'Connect Google, Apple, or Outlook so events block time when AI schedules.',
+  },
+  {
+    id: 'notifications',
+    title: 'Notifications',
+    description: SETTINGS_PANEL_UI_TEXT.sections.notifications.description,
+    detail: 'Configure due-soon reminders and overdue alerts.',
+  },
+  {
+    id: 'tags',
+    title: 'Tags',
+    description: SETTINGS_PANEL_UI_TEXT.sections.tags.description,
+    detail: 'Create and manage tags for filtering tasks across views.',
+  },
+  {
+    id: 'ai-settings',
+    title: 'AI Settings',
+    description: SETTINGS_PANEL_UI_TEXT.sections.aiSettings.description,
+    detail: 'Enable auto-scheduling, priority-based placement, and daily hour limits.',
+  },
+  {
+    id: 'hours',
+    title: 'Category Hours',
+    description: SETTINGS_PANEL_UI_TEXT.sections.hours.description,
+    detail: 'Set Work, Personal, and Project windows for weekdays vs weekends.',
+  },
+  {
+    id: 'rollover',
+    title: 'Task Rollover',
+    description: SETTINGS_PANEL_UI_TEXT.sections.rollover.description,
+    detail: 'Automatically move incomplete tasks to the next day.',
+  },
+  {
+    id: 'datetime',
+    title: 'Date & Time',
+    description: SETTINGS_PANEL_UI_TEXT.sections.dateTime.description,
+    detail: 'Choose 12h/24h time, week start day, and appearance.',
+  },
+  {
+    id: 'app-tour',
+    title: 'App Tour',
+    description: SETTINGS_PANEL_UI_TEXT.sections.appTour.description,
+    detail: 'Replay this guided walkthrough anytime.',
+  },
+] as const;
+
 export const APP_TOUR_UI = {
   welcome: {
     title: 'Welcome to TaskZM!',
     description:
-      'This quick walkthrough shows you how to navigate the app, switch between Week and Month views, use AI scheduling, and customize settings.',
+      'This walkthrough highlights each navigation icon, Week and Month views, AI scheduling buttons and dialogs, and key settings sections.',
   },
-  navigation: {
-    title: 'Navigation',
-    desktopIntro:
-      'The icon sidebar on the left opens sliding panels and switches your main workspace. Tap any icon to jump there.',
-    mobileIntro:
-      'The bottom bar is your main navigation on phone and tablet. Each tab opens a different part of the app.',
-    desktopIcons: [
-      {
-        label: NAVIGATION_UI_TEXT.dashboard,
-        description: 'Your 7-day Week view and Month calendar — drag tasks, add items, and plan your schedule.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.notifications,
-        description: 'Due-soon, overdue, and system alerts. Badges show how many need attention.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.todayAgenda,
-        description: 'Today’s timeline — tasks and calendar events in time order with a visual day rail.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.inbox,
-        description: 'Unscheduled tasks waiting to be planned. Capture ideas here, then schedule with AI or manually.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.folders,
-        description: 'Organize tasks into folders for projects or areas of life.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.team,
-        description: 'Invite teammates, assign tasks, and collaborate (Pro).',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.analytics,
-        description: 'Track completion trends, focus time, and productivity insights (Pro).',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.archive,
-        description: 'Completed and archived tasks kept out of your active views.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.settings,
-        description: 'Profile, calendars, notifications, AI scheduling, hours, and preferences.',
-      },
-    ] as const,
-    mobileTabs: [
-      {
-        label: NAVIGATION_UI_TEXT.today,
-        description: 'Today Agenda — your scheduled day in timeline order.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.week,
-        description: 'Week view — scroll through the 7-day board and manage task cards.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.inbox,
-        description: 'Unscheduled tasks ready for AI Scheduler or manual planning.',
-      },
-      {
-        label: NAVIGATION_UI_TEXT.settings,
-        description: 'Customize calendars, notifications, AI behavior, and more.',
-      },
-    ] as const,
+  sidebarIconIntro: {
+    title: 'Sidebar Icons',
+    description: 'Each icon opens a different part of TaskZM. We’ll highlight them one by one.',
+  },
+  bottomNavIntro: {
+    title: 'Bottom Navigation',
+    description: 'Each tab opens a different part of TaskZM. We’ll highlight them one by one.',
   },
   weekMonthToggle: {
-    title: 'Week & Month Toggle',
+    title: 'Week ↔ Month Toggle',
     description:
-      'Switch between Week and Month at any time. Week shows a detailed 7-day kanban; Month shows the full calendar grid for long-range planning.',
-    hint: 'Week is best for daily execution. Month helps you spot busy days and plan ahead.',
+      'Use this switch to move between Week and Month. Week shows your 7-day kanban; Month shows the full calendar grid.',
+    hint: 'Flip toward Month when you want the big-picture view — we’ll switch there on the next step.',
   },
   weekView: {
     title: 'Week View',
     description:
-      'Your main working board: seven color-coded day columns with task cards showing priority, tags, duration, and inline Pomodoro controls.',
+      'Seven color-coded day columns with task cards showing priority, tags, duration, and inline Pomodoro controls.',
     bullets: [
-      'Drag tasks between days or times to reschedule',
-      'Click a card to edit details, subtasks, and dependencies',
-      'Use the play icon on a card footer to start a focus timer',
-      'Tap + on a day to add a new task',
+      'Drag tasks between days to reschedule',
+      'Click a card to edit details and subtasks',
+      'Use the play icon on a card footer to start focus time',
     ] as const,
-  },
-  switchToMonth: {
-    title: 'Month View Next',
-    description: 'Let’s switch to Month view so you can see the calendar layout.',
   },
   monthView: {
     title: 'Month View',
     description:
-      'The calendar grid shows scheduled tasks and synced calendar events across the whole month. Click a day to inspect or add tasks.',
+      'The calendar grid shows scheduled tasks and synced events across the month. Click any day to inspect or add tasks.',
     bullets: [
-      'Scan workload density before committing to new work',
+      'Spot busy days before committing to new work',
       'Drag tasks between days when rescheduling manually',
-      'Works alongside connected Google, Apple, or Outlook calendars',
+      'Use the Week ↔ Month toggle anytime to switch back',
     ] as const,
   },
-  switchToWeek: {
-    title: 'Back to Week View',
-    description: 'Switching back to Week view for task-level detail.',
-  },
-  aiScheduler: {
-    title: `${DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsLong}`,
+  aiSchedulerButton: {
+    title: DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsLong,
     description:
-      'Schedules unscheduled Inbox tasks into open slots across the next two weeks. AI respects priority, due dates, your daily hour limits, category hours, and calendar conflicts.',
-    bullets: [
-      'Urgent and high-priority tasks are placed first',
-      'Review the preview plan before applying',
-      'Free tier has a weekly suggestion limit; Pro is unlimited',
-    ] as const,
-    mobileNote:
-      'On mobile, open the AI panel from the dashboard to run the scheduler and review suggestions.',
+      'Click this button to run AI Scheduler. It places unscheduled Inbox tasks into open slots using priority, due dates, your hours, and calendar conflicts.',
+    hint: 'On the next step you’ll see the preview dialog before anything is saved.',
   },
   aiSchedulePreview: {
-    title: 'Schedule Preview',
+    title: 'Schedule Preview Dialog',
     description:
-      'Before anything is saved, review where AI placed each task. Select or deselect items, then confirm to apply the plan.',
-    hint: 'You can cancel and adjust tasks manually if the plan needs tweaks.',
+      'Review AI’s proposed plan here. Each row shows a task, suggested date/time, and priority.',
+    bullets: [
+      'Select all / Deselect all to bulk choose suggestions',
+      'Toggle individual tasks with the checkboxes',
+      'Cancel to discard or Accept selected to apply the plan',
+    ] as const,
   },
-  closeSchedulePreview: {
-    title: 'Next: Re-Scheduler',
-    description: 'Closing the preview. Next up — moving tasks that are already scheduled.',
-  },
-  aiRescheduler: {
+  aiReschedulerButton: {
     title: DASHBOARD_VIEW_HEADER_LABELS.reschedule,
     description:
-      'Re-Scheduler reshuffles tasks that already have dates — useful when plans change. Pick a day, week, or month; AI clears and redistributes those tasks into new open slots.',
-    bullets: [
-      'Day — move everything from one date to a new date',
-      'Week — redistribute an entire week’s tasks',
-      'Month — rebalance tasks across a new month',
-    ] as const,
-    mobileNote:
-      'On mobile, use the Day / Week / Month buttons in the AI panel to re-schedule.',
+      'Click Re-Schedule when plans change. It reshuffles tasks that already have dates into new open slots.',
+    hint: 'The next step shows the dialog where you pick Day, Week, or Month and a target date.',
   },
   rescheduleDialog: {
     title: 'Re-Schedule Dialog',
     description:
-      'Choose the period and target date, then confirm. Tasks in that range are unscheduled and run through AI slot-finding again.',
-    hint: 'Pro feature — respects the same hours, categories, and calendar rules as AI Scheduler.',
-  },
-  openSettings: {
-    title: 'Settings',
-    description: 'Last stop — a quick look at where to customize TaskZM.',
-  },
-  settingsPanel: {
-    title: 'Settings Panel',
-    intro: 'Expand any section in Settings to fine-tune how TaskZM works for you. Key areas:',
-    sections: [
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.userProfile.description,
-        detail: 'Name, avatar, plan, and sign-out.',
-      },
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.calendar.description,
-        detail: 'Connect external calendars so events block scheduling time.',
-      },
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.notifications.description,
-        detail: 'Due-soon reminders and overdue alerts.',
-      },
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.tags.description,
-        detail: 'Create tags for filtering and organization.',
-      },
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.aiSettings.description,
-        detail: 'Toggle auto-scheduling, priority-based placement, and daily limits.',
-      },
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.hours.description,
-        detail: 'Set Work, Personal, and Project hours for weekdays vs weekends.',
-      },
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.rollover.description,
-        detail: 'Automatically move incomplete tasks to the next day.',
-      },
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.dateTime.description,
-        detail: '12h/24h time, week start day, and appearance.',
-      },
-      {
-        title: SETTINGS_PANEL_UI_TEXT.sections.appTour.description,
-        detail: 'Replay this walkthrough anytime.',
-      },
+      'Choose a period type and date, then confirm. Tasks in that range are unscheduled and run through AI again.',
+    bullets: [
+      'Day — move tasks from specific date(s)',
+      'Week — redistribute an entire week',
+      'Month — rebalance across a month',
+      'Confirm with Re-Schedule to apply (Pro feature)',
     ] as const,
+  },
+  settingsIntro: {
+    title: 'Settings Panel',
+    description:
+      'Each expandable section below controls part of TaskZM. We’ll highlight the most useful ones.',
   },
   complete: {
     title: 'You’re Ready!',
     description:
-      'You now know the sidebar, Week and Month views, AI Scheduler & Re-Scheduler, and where to adjust settings. Click Get Started to begin.',
+      'You’ve seen the navigation icons, Week/Month toggle, AI Scheduler & Re-Scheduler flows, and settings sections. Click Get Started to begin.',
   },
 } as const;
+
+export function sidebarNavTarget(id: string): string {
+  return `[data-tour="sidebar-${id}"]`;
+}
+
+export function bottomNavTarget(id: string): string {
+  return `[data-tour="bottom-nav-${id}"]`;
+}
+
+export function settingsSectionTarget(id: string): string {
+  return `[data-tour="settings-${id}"]`;
+}
 
 /** Joyride `target` selectors — keep in sync with data-tour attributes in the UI. */
 export const APP_TOUR_TARGETS = {
@@ -214,40 +249,161 @@ export const APP_TOUR_TARGETS = {
   kanbanMobile: '[data-tour="kanban"]',
   monthCalendar: '[data-tour="month-calendar-view"]',
   aiScheduler: '[data-tour="ai-scheduler"]',
-  aiSchedulerSection: '[data-tour="ai-scheduler-section"]',
   aiSchedulePreview: '[data-tour="ai-schedule-preview-dialog"]',
   aiReschedule: '[data-tour="re-schedule"]',
-  aiRescheduleSection: '[data-tour="ai-reschedule-section"]',
   rescheduleDialog: '[data-tour="reschedule-dialog"]',
+  rescheduleDialogOptions: '[data-tour="reschedule-dialog-options"]',
   aiRecommendationsPanel: '[data-tour="ai-recommendations-panel"]',
+  aiSchedulerSection: '[data-tour="ai-scheduler-section"]',
+  aiRescheduleSection: '[data-tour="ai-reschedule-section"]',
   settingsPanel: '[data-tour="settings-panel"]',
 } as const;
 
+export const APP_TOUR_STEP_KEYS = {
+  welcome: 'welcome',
+  navIntro: 'navIntro',
+  navIcon: 'navIcon',
+  weekView: 'weekView',
+  weekMonthToggle: 'weekMonthToggle',
+  monthView: 'monthView',
+  aiSchedulerButton: 'aiSchedulerButton',
+  aiSchedulePreview: 'aiSchedulePreview',
+  aiReschedulerButton: 'aiReschedulerButton',
+  rescheduleDialog: 'rescheduleDialog',
+  settingsIntro: 'settingsIntro',
+  settingsSection: 'settingsSection',
+  complete: 'complete',
+} as const;
+
+export type AppTourStepKey = keyof typeof APP_TOUR_STEP_KEYS;
+
 export type AppTourStepMeta = {
+  stepKey: AppTourStepKey;
   target: string;
-  /** When true, step is omitted on mobile/tablet layouts. */
+  navId?: string;
+  settingsId?: string;
   desktopOnly?: boolean;
-  /** When true, step is omitted on desktop. */
   mobileOnly?: boolean;
   placement?: 'center' | 'bottom' | 'top' | 'left' | 'right';
   disableBeacon?: boolean;
-  stepKey: keyof typeof APP_TOUR_STEP_KEYS;
 };
 
-export const APP_TOUR_STEP_KEYS = {
-  welcome: 'welcome',
-  navigation: 'navigation',
-  weekMonthToggle: 'weekMonthToggle',
-  weekView: 'weekView',
-  switchToMonth: 'switchToMonth',
-  monthView: 'monthView',
-  switchToWeek: 'switchToWeek',
-  aiScheduler: 'aiScheduler',
-  aiSchedulePreview: 'aiSchedulePreview',
-  closeSchedulePreview: 'closeSchedulePreview',
-  aiRescheduler: 'aiRescheduler',
-  rescheduleDialog: 'rescheduleDialog',
-  openSettings: 'openSettings',
-  settingsPanel: 'settingsPanel',
-  complete: 'complete',
-} as const;
+export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
+  const steps: AppTourStepMeta[] = [
+    {
+      stepKey: APP_TOUR_STEP_KEYS.welcome,
+      target: APP_TOUR_TARGETS.body,
+      placement: 'center',
+      disableBeacon: true,
+    },
+  ];
+
+  if (isMobile) {
+    steps.push({
+      stepKey: APP_TOUR_STEP_KEYS.navIntro,
+      target: APP_TOUR_TARGETS.bottomNav,
+      placement: 'top',
+      mobileOnly: true,
+    });
+    for (const item of APP_TOUR_BOTTOM_NAV_ITEMS) {
+      steps.push({
+        stepKey: APP_TOUR_STEP_KEYS.navIcon,
+        target: bottomNavTarget(item.id),
+        navId: item.id,
+        placement: 'top',
+        mobileOnly: true,
+      });
+    }
+  } else {
+    steps.push({
+      stepKey: APP_TOUR_STEP_KEYS.navIntro,
+      target: APP_TOUR_TARGETS.sidebar,
+      placement: 'right',
+      desktopOnly: true,
+    });
+    for (const item of APP_TOUR_SIDEBAR_ITEMS) {
+      steps.push({
+        stepKey: APP_TOUR_STEP_KEYS.navIcon,
+        target: sidebarNavTarget(item.id),
+        navId: item.id,
+        placement: 'right',
+        desktopOnly: true,
+      });
+    }
+  }
+
+  steps.push(
+    {
+      stepKey: APP_TOUR_STEP_KEYS.weekView,
+      target: isMobile ? APP_TOUR_TARGETS.kanbanMobile : APP_TOUR_TARGETS.kanbanBoard,
+      placement: isMobile ? 'top' : 'bottom',
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.weekMonthToggle,
+      target: APP_TOUR_TARGETS.weekMonthToggle,
+      placement: 'bottom',
+      desktopOnly: true,
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.monthView,
+      target: APP_TOUR_TARGETS.monthCalendar,
+      placement: 'bottom',
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.aiSchedulerButton,
+      target: isMobile ? APP_TOUR_TARGETS.aiSchedulerSection : APP_TOUR_TARGETS.aiScheduler,
+      placement: isMobile ? 'left' : 'bottom',
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.aiSchedulePreview,
+      target: APP_TOUR_TARGETS.aiSchedulePreview,
+      placement: 'left',
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.aiReschedulerButton,
+      target: isMobile ? APP_TOUR_TARGETS.aiRescheduleSection : APP_TOUR_TARGETS.aiReschedule,
+      placement: isMobile ? 'left' : 'bottom',
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.rescheduleDialog,
+      target: isMobile ? APP_TOUR_TARGETS.rescheduleDialog : APP_TOUR_TARGETS.rescheduleDialogOptions,
+      placement: 'left',
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.settingsIntro,
+      target: APP_TOUR_TARGETS.settingsPanel,
+      placement: 'left',
+    },
+  );
+
+  for (const section of APP_TOUR_SETTINGS_SECTIONS) {
+    steps.push({
+      stepKey: APP_TOUR_STEP_KEYS.settingsSection,
+      target: settingsSectionTarget(section.id),
+      settingsId: section.id,
+      placement: 'left',
+    });
+  }
+
+  steps.push({
+    stepKey: APP_TOUR_STEP_KEYS.complete,
+    target: APP_TOUR_TARGETS.body,
+    placement: 'center',
+    disableBeacon: true,
+  });
+
+  return steps;
+}
+
+export function getNavIconCopy(
+  navId: string,
+  isMobile: boolean,
+): { label: string; description: string } | null {
+  const items = isMobile ? APP_TOUR_BOTTOM_NAV_ITEMS : APP_TOUR_SIDEBAR_ITEMS;
+  const item = items.find((entry) => entry.id === navId);
+  return item ? { label: item.label, description: item.description } : null;
+}
+
+export function getSettingsSectionCopy(settingsId: string) {
+  return APP_TOUR_SETTINGS_SECTIONS.find((section) => section.id === settingsId) ?? null;
+}

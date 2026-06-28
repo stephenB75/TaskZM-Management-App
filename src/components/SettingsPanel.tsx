@@ -585,6 +585,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.account} />
         <SettingsSection
           value="user-profile"
+          dataTour="settings-user-profile"
           icon="user-circle-check"
           title={SETTINGS_PANEL_UI_TEXT.profile.userProfile}
           description={SETTINGS_PANEL_UI_TEXT.sections.userProfile.description}
@@ -1045,10 +1046,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.integrations} />
         <SettingsSection
           value="calendar"
+          dataTour="settings-calendar"
           icon="calendar"
           title={CALENDAR_SETTINGS_UI.sectionTitle}
           description={SETTINGS_PANEL_UI_TEXT.sections.calendar.description}
-          dataTour="calendar-integration"
           badge={!features.calendarSync ? (
             <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
               PRO
@@ -1174,6 +1175,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
         <SettingsSection
           value="notifications"
+          dataTour="settings-notifications"
           icon="bell"
           title="Notifications"
           description={SETTINGS_PANEL_UI_TEXT.sections.notifications.description}
@@ -1397,6 +1399,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.tasks} />
         <SettingsSection
           value="tags"
+          dataTour="settings-tags"
           icon="tag"
           title="Tags Management"
           description={SETTINGS_PANEL_UI_TEXT.sections.tags.description}
@@ -1505,6 +1508,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.scheduling} />
         <SettingsSection
           value="ai-settings"
+          dataTour="settings-ai-settings"
           icon="head-circuit"
           title="AI Scheduling"
           description={SETTINGS_PANEL_UI_TEXT.sections.aiSettings.description}
@@ -1622,6 +1626,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
         <SettingsSection
           value="rollover"
+          dataTour="settings-rollover"
           icon="rotate-ccw"
           title="Task Rollover"
           description={SETTINGS_PANEL_UI_TEXT.sections.rollover.description}
@@ -1683,6 +1688,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
         <SettingsSection
           value="hours"
+          dataTour="settings-hours"
           icon="briefcase"
           title="Task Category Hours"
           description={SETTINGS_PANEL_UI_TEXT.sections.hours.description}
@@ -2018,6 +2024,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.preferences} />
         <SettingsSection
           value="datetime"
+          dataTour="settings-datetime"
           icon="clock"
           title="Date, Time & Theme"
           description={SETTINGS_PANEL_UI_TEXT.sections.dateTime.description}
@@ -2501,6 +2508,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
         <SettingsSection
           value="app-tour"
+          dataTour="settings-app-tour"
           icon="compass"
           title="App Tour"
           description={SETTINGS_PANEL_UI_TEXT.sections.appTour.description}
@@ -2541,10 +2549,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
                         <p className="text-xs font-medium">Tour Highlights:</p>
                         <ul className="text-xs text-muted-foreground" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_MEDIUM }}>
-                          <li>• Sidebar icons & mobile navigation</li>
-                          <li>• Week view & Month calendar toggle</li>
-                          <li>• AI Scheduler & Re-Scheduler</li>
-                          <li>• Settings — calendars, AI, hours & more</li>
+                          <li>• Each sidebar icon (or bottom tab on mobile)</li>
+                          <li>• Week ↔ Month toggle and calendar views</li>
+                          <li>• AI Scheduler & Re-Schedule buttons and dialogs</li>
+                          <li>• Settings sections — calendars, AI, hours, and more</li>
                         </ul>
                       </div>
 

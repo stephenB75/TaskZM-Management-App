@@ -1,6 +1,6 @@
 /**
  * App Tour Component
- * Guided walkthrough focused on navigation, Week/Month views, AI scheduling, and settings.
+ * Highlights each nav icon, Week/Month toggle, AI buttons + dialogs, and settings sections.
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -8,7 +8,7 @@ import Joyride, { CallBackProps, STATUS, Step, EVENTS } from 'react-joyride';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
-import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from '../lib/subscription-constants';
+import { DEFAULT_MONTHLY_PRICE } from '../lib/subscription-constants';
 import { getOfferings, configureRevenueCat } from '../lib/revenuecat';
 import { Z_INDEX, TOUR_CONSTANTS } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
@@ -18,6 +18,9 @@ import {
   APP_TOUR_UI,
   APP_TOUR_TARGETS,
   APP_TOUR_STEP_KEYS,
+  buildAppTourStepDefs,
+  getNavIconCopy,
+  getSettingsSectionCopy,
   type AppTourStepMeta,
 } from '../lib/app-tour-constants';
 
@@ -40,26 +43,8 @@ function TourBullets({ items }: { items: readonly string[] }) {
   );
 }
 
-function TourIconDescriptions({
-  items,
-}: {
-  items: readonly { label: string; description: string }[];
-}) {
-  return (
-    <ul className="text-xs text-muted-foreground space-y-1.5 mt-2 ml-1">
-      {items.map((item) => (
-        <li key={item.label}>
-          <span className="font-medium text-foreground">{item.label}</span>
-          {' — '}
-          {item.description}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function renderStepContent(stepKey: AppTourStepMeta['stepKey'], isMobile: boolean): React.ReactNode {
-  switch (stepKey) {
+function renderStepContent(meta: AppTourStepMeta, isMobile: boolean): React.ReactNode {
+  switch (meta.stepKey) {
     case APP_TOUR_STEP_KEYS.welcome:
       return (
         <div>
@@ -67,18 +52,16 @@ function renderStepContent(stepKey: AppTourStepMeta['stepKey'], isMobile: boolea
           <p className="text-sm text-muted-foreground">{APP_TOUR_UI.welcome.description}</p>
         </div>
       );
-    case APP_TOUR_STEP_KEYS.navigation:
+    case APP_TOUR_STEP_KEYS.navIcon: {
+      const copy = meta.navId ? getNavIconCopy(meta.navId, isMobile) : null;
+      if (!copy) return null;
       return (
         <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.navigation.title}</h3>
-          <p className="text-sm text-muted-foreground mb-1">
-            {isMobile ? APP_TOUR_UI.navigation.mobileIntro : APP_TOUR_UI.navigation.desktopIntro}
-          </p>
-          <TourIconDescriptions
-            items={isMobile ? APP_TOUR_UI.navigation.mobileTabs : APP_TOUR_UI.navigation.desktopIcons}
-          />
+          <h3 className="text-lg font-semibold mb-2">{copy.label}</h3>
+          <p className="text-sm text-muted-foreground">{copy.description}</p>
         </div>
       );
+    }
     case APP_TOUR_STEP_KEYS.weekMonthToggle:
       return (
         <div>
@@ -95,13 +78,6 @@ function renderStepContent(stepKey: AppTourStepMeta['stepKey'], isMobile: boolea
           <TourBullets items={APP_TOUR_UI.weekView.bullets} />
         </div>
       );
-    case APP_TOUR_STEP_KEYS.switchToMonth:
-      return (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.switchToMonth.title}</h3>
-          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.switchToMonth.description}</p>
-        </div>
-      );
     case APP_TOUR_STEP_KEYS.monthView:
       return (
         <div>
@@ -110,22 +86,12 @@ function renderStepContent(stepKey: AppTourStepMeta['stepKey'], isMobile: boolea
           <TourBullets items={APP_TOUR_UI.monthView.bullets} />
         </div>
       );
-    case APP_TOUR_STEP_KEYS.switchToWeek:
+    case APP_TOUR_STEP_KEYS.aiSchedulerButton:
       return (
         <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.switchToWeek.title}</h3>
-          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.switchToWeek.description}</p>
-        </div>
-      );
-    case APP_TOUR_STEP_KEYS.aiScheduler:
-      return (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.aiScheduler.title}</h3>
-          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.aiScheduler.description}</p>
-          <TourBullets items={APP_TOUR_UI.aiScheduler.bullets} />
-          {isMobile && (
-            <p className="text-xs text-muted-foreground mt-2">{APP_TOUR_UI.aiScheduler.mobileNote}</p>
-          )}
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.aiSchedulerButton.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.aiSchedulerButton.description}</p>
+          <p className="text-xs text-primary font-medium">{APP_TOUR_UI.aiSchedulerButton.hint}</p>
         </div>
       );
     case APP_TOUR_STEP_KEYS.aiSchedulePreview:
@@ -133,25 +99,15 @@ function renderStepContent(stepKey: AppTourStepMeta['stepKey'], isMobile: boolea
         <div>
           <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.aiSchedulePreview.title}</h3>
           <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.aiSchedulePreview.description}</p>
-          <p className="text-xs text-muted-foreground">{APP_TOUR_UI.aiSchedulePreview.hint}</p>
+          <TourBullets items={APP_TOUR_UI.aiSchedulePreview.bullets} />
         </div>
       );
-    case APP_TOUR_STEP_KEYS.closeSchedulePreview:
+    case APP_TOUR_STEP_KEYS.aiReschedulerButton:
       return (
         <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.closeSchedulePreview.title}</h3>
-          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.closeSchedulePreview.description}</p>
-        </div>
-      );
-    case APP_TOUR_STEP_KEYS.aiRescheduler:
-      return (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.aiRescheduler.title}</h3>
-          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.aiRescheduler.description}</p>
-          <TourBullets items={APP_TOUR_UI.aiRescheduler.bullets} />
-          {isMobile && (
-            <p className="text-xs text-muted-foreground mt-2">{APP_TOUR_UI.aiRescheduler.mobileNote}</p>
-          )}
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.aiReschedulerButton.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.aiReschedulerButton.description}</p>
+          <p className="text-xs text-primary font-medium">{APP_TOUR_UI.aiReschedulerButton.hint}</p>
         </div>
       );
     case APP_TOUR_STEP_KEYS.rescheduleDialog:
@@ -159,32 +115,27 @@ function renderStepContent(stepKey: AppTourStepMeta['stepKey'], isMobile: boolea
         <div>
           <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.rescheduleDialog.title}</h3>
           <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.rescheduleDialog.description}</p>
-          <p className="text-xs text-muted-foreground">{APP_TOUR_UI.rescheduleDialog.hint}</p>
+          <TourBullets items={APP_TOUR_UI.rescheduleDialog.bullets} />
         </div>
       );
-    case APP_TOUR_STEP_KEYS.openSettings:
+    case APP_TOUR_STEP_KEYS.settingsIntro:
       return (
         <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.openSettings.title}</h3>
-          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.openSettings.description}</p>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.settingsIntro.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.settingsIntro.description}</p>
         </div>
       );
-    case APP_TOUR_STEP_KEYS.settingsPanel:
+    case APP_TOUR_STEP_KEYS.settingsSection: {
+      const section = meta.settingsId ? getSettingsSectionCopy(meta.settingsId) : null;
+      if (!section) return null;
       return (
         <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.settingsPanel.title}</h3>
-          <p className="text-sm text-muted-foreground mb-2">{APP_TOUR_UI.settingsPanel.intro}</p>
-          <ul className="text-xs text-muted-foreground space-y-1.5">
-            {APP_TOUR_UI.settingsPanel.sections.map((section) => (
-              <li key={section.title}>
-                <span className="font-medium capitalize">{section.title}</span>
-                {' — '}
-                {section.detail}
-              </li>
-            ))}
-          </ul>
+          <h3 className="text-lg font-semibold mb-2">{section.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{section.description}</p>
+          <p className="text-xs text-muted-foreground">{section.detail}</p>
         </div>
       );
+    }
     case APP_TOUR_STEP_KEYS.complete:
       return (
         <div>
@@ -197,28 +148,6 @@ function renderStepContent(stepKey: AppTourStepMeta['stepKey'], isMobile: boolea
   }
 }
 
-const TOUR_STEP_DEFS: AppTourStepMeta[] = [
-  { stepKey: APP_TOUR_STEP_KEYS.welcome, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
-  { stepKey: APP_TOUR_STEP_KEYS.navigation, target: APP_TOUR_TARGETS.sidebar, placement: 'right', desktopOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.navigation, target: APP_TOUR_TARGETS.bottomNav, placement: 'top', mobileOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.weekMonthToggle, target: APP_TOUR_TARGETS.weekMonthToggle, placement: 'bottom', desktopOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.weekView, target: APP_TOUR_TARGETS.kanbanBoard, placement: 'bottom', desktopOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.weekView, target: APP_TOUR_TARGETS.kanbanMobile, placement: 'top', mobileOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.switchToMonth, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
-  { stepKey: APP_TOUR_STEP_KEYS.monthView, target: APP_TOUR_TARGETS.monthCalendar, placement: 'bottom' },
-  { stepKey: APP_TOUR_STEP_KEYS.switchToWeek, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
-  { stepKey: APP_TOUR_STEP_KEYS.aiScheduler, target: APP_TOUR_TARGETS.aiScheduler, placement: 'bottom', desktopOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.aiScheduler, target: APP_TOUR_TARGETS.aiRecommendationsPanel, placement: 'left', mobileOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.aiSchedulePreview, target: APP_TOUR_TARGETS.aiSchedulePreview, placement: 'left' },
-  { stepKey: APP_TOUR_STEP_KEYS.closeSchedulePreview, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
-  { stepKey: APP_TOUR_STEP_KEYS.aiRescheduler, target: APP_TOUR_TARGETS.aiReschedule, placement: 'bottom', desktopOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.aiRescheduler, target: APP_TOUR_TARGETS.aiRecommendationsPanel, placement: 'left', mobileOnly: true },
-  { stepKey: APP_TOUR_STEP_KEYS.rescheduleDialog, target: APP_TOUR_TARGETS.rescheduleDialog, placement: 'left' },
-  { stepKey: APP_TOUR_STEP_KEYS.openSettings, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
-  { stepKey: APP_TOUR_STEP_KEYS.settingsPanel, target: APP_TOUR_TARGETS.settingsPanel, placement: 'left' },
-  { stepKey: APP_TOUR_STEP_KEYS.complete, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
-];
-
 const DASHBOARD_TARGETS = new Set<string>([
   APP_TOUR_TARGETS.weekMonthToggle,
   APP_TOUR_TARGETS.kanbanBoard,
@@ -228,15 +157,13 @@ const DASHBOARD_TARGETS = new Set<string>([
   APP_TOUR_TARGETS.aiSchedulePreview,
   APP_TOUR_TARGETS.aiReschedule,
   APP_TOUR_TARGETS.rescheduleDialog,
+  APP_TOUR_TARGETS.rescheduleDialogOptions,
   APP_TOUR_TARGETS.aiSchedulerSection,
   APP_TOUR_TARGETS.aiRescheduleSection,
-  APP_TOUR_TARGETS.aiRecommendationsPanel,
 ]);
 
 function dispatchTourViewMode(mode: 'week' | 'month') {
-  window.dispatchEvent(
-    new CustomEvent('tour-set-view-mode', { detail: { mode } }),
-  );
+  window.dispatchEvent(new CustomEvent('tour-set-view-mode', { detail: { mode } }));
 }
 
 function dispatchTourOpenPanel(panel: string) {
@@ -248,9 +175,7 @@ function dispatchTourClosePanel() {
 }
 
 function dispatchTourOpenAiDialog(dialog: 'schedule-preview' | 'reschedule-day') {
-  window.dispatchEvent(
-    new CustomEvent('tour-open-ai-dialog', { detail: { dialog } }),
-  );
+  window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { detail: { dialog } }));
 }
 
 function dispatchTourCloseAiDialog() {
@@ -269,29 +194,45 @@ function dispatchTourCloseDashboardDialogs() {
   window.dispatchEvent(new CustomEvent('tour-close-dashboard-dialogs'));
 }
 
+function closeAllTourDialogs(isMobile: boolean) {
+  dispatchTourCloseAiDialog();
+  dispatchTourCloseDashboardDialogs();
+  if (isMobile) {
+    dispatchTourClosePanel();
+  }
+}
+
+function scrollTourTargetIntoView(target: string) {
+  window.setTimeout(() => {
+    const el = document.querySelector(target);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  }, TIMING_CONSTANTS.tour.highlightDelay);
+}
+
 export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { user } = useAuth();
   const { subscription } = useSubscription();
   const shouldUseMobileLayout = useMobileLayout();
-  const [, setMonthlyPrice] = useState<string>(DEFAULT_MONTHLY_PRICE);
 
   useEffect(() => {
     const fetchPricing = async () => {
       if (!user?.id) return;
       try {
         await configureRevenueCat(user.id);
-        const offerings = await getOfferings();
-        if (offerings.monthly?.priceString) {
-          setMonthlyPrice(offerings.monthly.priceString);
-        }
+        await getOfferings();
       } catch (error) {
         console.warn('Failed to fetch RevenueCat pricing for app tour:', error);
       }
     };
     fetchPricing();
   }, [user?.id]);
+
+  const stepDefs = useMemo(
+    () => buildAppTourStepDefs(shouldUseMobileLayout),
+    [shouldUseMobileLayout],
+  );
 
   const steps = useMemo((): Step[] => {
     const placementFor = (p?: AppTourStepMeta['placement']): TourPlacement => {
@@ -300,122 +241,138 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       return shouldUseMobileLayout && (p === 'right' || p === 'left') ? 'top' : p;
     };
 
-    return TOUR_STEP_DEFS.filter((def) => {
-      if (def.desktopOnly && shouldUseMobileLayout) return false;
-      if (def.mobileOnly && !shouldUseMobileLayout) return false;
-      return true;
-    }).map((def) => ({
-      target: def.target,
-      placement: placementFor(def.placement),
-      disableBeacon: def.disableBeacon ?? false,
-      content: renderStepContent(def.stepKey, shouldUseMobileLayout),
-      data: { stepKey: def.stepKey },
+    return stepDefs.map((meta) => ({
+      target: meta.target,
+      placement: placementFor(meta.placement),
+      disableBeacon: meta.disableBeacon ?? false,
+      content: renderStepContent(meta, shouldUseMobileLayout),
+      data: meta,
+      disableScrolling: false,
+      spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
     }));
-  }, [shouldUseMobileLayout]);
+  }, [shouldUseMobileLayout, stepDefs]);
 
-  const getStepKey = useCallback(
-    (index: number) => {
-      const step = steps[index];
-      return (step?.data as { stepKey?: AppTourStepMeta['stepKey'] } | undefined)?.stepKey;
-    },
+  const getStepMeta = useCallback(
+    (index: number) => steps[index]?.data as AppTourStepMeta | undefined,
     [steps],
   );
 
   const prepareStep = useCallback(
     (index: number) => {
-      const step = steps[index];
-      if (!step) return;
+      const meta = getStepMeta(index);
+      if (!meta) return;
 
-      const target = step.target as string;
-      const stepKey = getStepKey(index);
+      const { stepKey, target, settingsId } = meta;
 
       if (DASHBOARD_TARGETS.has(target)) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
       }
 
-      if (stepKey === APP_TOUR_STEP_KEYS.monthView) {
-        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.month);
-      }
-
       if (stepKey === APP_TOUR_STEP_KEYS.weekView) {
         dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
+        closeAllTourDialogs(shouldUseMobileLayout);
       }
 
-      if (stepKey === APP_TOUR_STEP_KEYS.aiScheduler && shouldUseMobileLayout) {
-        dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+      if (stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle) {
+        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
+        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
+        closeAllTourDialogs(shouldUseMobileLayout);
+      }
+
+      if (stepKey === APP_TOUR_STEP_KEYS.monthView) {
+        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
+        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.month);
+        closeAllTourDialogs(shouldUseMobileLayout);
+      }
+
+      if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulerButton) {
+        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
+        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
+        closeAllTourDialogs(shouldUseMobileLayout);
+        if (shouldUseMobileLayout) {
+          dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+        }
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulePreview) {
+        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
         if (shouldUseMobileLayout) {
           dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
           window.setTimeout(() => {
             dispatchTourOpenAiDialog('schedule-preview');
+            scrollTourTargetIntoView(APP_TOUR_TARGETS.aiSchedulePreview);
           }, TIMING_CONSTANTS.tour.navigationComplete);
         } else {
-          dispatchTourOpenDashboardSchedulePreview();
+          window.setTimeout(() => {
+            dispatchTourOpenDashboardSchedulePreview();
+            scrollTourTargetIntoView(APP_TOUR_TARGETS.aiSchedulePreview);
+          }, TIMING_CONSTANTS.tour.navigationComplete);
         }
       }
 
-      if (stepKey === APP_TOUR_STEP_KEYS.aiRescheduler && shouldUseMobileLayout) {
-        dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+      if (stepKey === APP_TOUR_STEP_KEYS.aiReschedulerButton) {
+        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
+        if (shouldUseMobileLayout) {
+          dispatchTourCloseDashboardDialogs();
+          dispatchTourCloseAiDialog();
+          dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+        } else {
+          dispatchTourCloseDashboardDialogs();
+          dispatchTourCloseAiDialog();
+        }
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.rescheduleDialog) {
+        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
         if (shouldUseMobileLayout) {
           dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
           window.setTimeout(() => {
             dispatchTourOpenAiDialog('reschedule-day');
+            scrollTourTargetIntoView(APP_TOUR_TARGETS.rescheduleDialog);
           }, TIMING_CONSTANTS.tour.navigationComplete);
         } else {
-          dispatchTourOpenDashboardRescheduleDialog();
+          window.setTimeout(() => {
+            dispatchTourOpenDashboardRescheduleDialog();
+            scrollTourTargetIntoView(APP_TOUR_TARGETS.rescheduleDialogOptions);
+          }, TIMING_CONSTANTS.tour.navigationComplete);
         }
       }
 
-      if (stepKey === APP_TOUR_STEP_KEYS.settingsPanel) {
+      if (stepKey === APP_TOUR_STEP_KEYS.settingsIntro || stepKey === APP_TOUR_STEP_KEYS.settingsSection) {
+        closeAllTourDialogs(shouldUseMobileLayout);
+        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
         onNavigate?.('settings');
+        if (settingsId) {
+          scrollTourTargetIntoView(meta.target);
+        }
+      }
+
+      if (stepKey === APP_TOUR_STEP_KEYS.navIcon) {
+        scrollTourTargetIntoView(meta.target);
       }
     },
-    [getStepKey, onNavigate, shouldUseMobileLayout, steps],
+    [getStepMeta, onNavigate, shouldUseMobileLayout],
   );
 
   const handleJoyrideCallback = useCallback(
     (data: CallBackProps) => {
       const { status, type, index } = data;
-      const stepKey = getStepKey(index);
+      const meta = getStepMeta(index);
 
       if (type === EVENTS.STEP_BEFORE) {
         prepareStep(index);
       }
 
       if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
-        if (stepKey === APP_TOUR_STEP_KEYS.switchToMonth) {
+        if (meta?.stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle) {
           window.setTimeout(() => {
             dispatchTourViewMode(TOUR_CONSTANTS.viewModes.month);
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
 
-        if (stepKey === APP_TOUR_STEP_KEYS.switchToWeek) {
+        if (meta?.stepKey === APP_TOUR_STEP_KEYS.monthView) {
           window.setTimeout(() => {
             dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        if (stepKey === APP_TOUR_STEP_KEYS.closeSchedulePreview) {
-          window.setTimeout(() => {
-            if (shouldUseMobileLayout) {
-              dispatchTourCloseAiDialog();
-            } else {
-              dispatchTourCloseDashboardDialogs();
-            }
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        if (stepKey === APP_TOUR_STEP_KEYS.openSettings) {
-          window.setTimeout(() => {
-            dispatchTourClosePanel();
-            dispatchTourCloseAiDialog();
-            dispatchTourCloseDashboardDialogs();
-            onNavigate?.('settings');
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
       }
@@ -427,9 +384,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           console.warn('Failed to save tour completion:', error);
         }
 
-        dispatchTourClosePanel();
-        dispatchTourCloseAiDialog();
-        dispatchTourCloseDashboardDialogs();
+        closeAllTourDialogs(shouldUseMobileLayout);
 
         const isNewSignup =
           window?.localStorage?.getItem(NOTIFICATION_STORAGE_KEYS.newSignup) === 'true';
@@ -442,7 +397,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         onFinish();
       }
     },
-    [getStepKey, onFinish, onNavigate, onShowPricing, prepareStep, shouldUseMobileLayout, subscription.tier],
+    [getStepMeta, onFinish, onShowPricing, prepareStep, shouldUseMobileLayout, subscription.tier],
   );
 
   const joyrideStyles = {
@@ -504,6 +459,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       }}
       disableOverlayClose
       disableScrolling={false}
+      scrollToFirstStep
       scrollOffset={TOUR_CONSTANTS.scroll.offset}
       spotlightPadding={TOUR_CONSTANTS.spotlight.padding}
     />
