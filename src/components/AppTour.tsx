@@ -286,7 +286,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
     const placementFor = (p?: AppTourStepMeta['placement']): TourPlacement => {
       if (!p) return shouldUseMobileLayout ? 'top' : 'right';
       if (p === 'center') return 'center';
-      return shouldUseMobileLayout && (p === 'right' || p === 'left') ? 'top' : p;
+      return shouldUseMobileLayout && (p === 'right' || p === 'left' || p === 'bottom-end') ? 'top' : p;
     };
 
     return stepDefs.map((meta) => ({
@@ -296,6 +296,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       content: renderStepContent(meta, shouldUseMobileLayout),
       data: meta,
       disableScrolling: false,
+      isFixed: meta.isFixed ?? false,
       spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
     }));
   }, [shouldUseMobileLayout, stepDefs]);
@@ -322,7 +323,6 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle) {
-        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
         dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
         closeAllTourDialogs(shouldUseMobileLayout);
       }
@@ -344,6 +344,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
 
       if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulePreview) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
+        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
         if (shouldUseMobileLayout) {
           dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
           window.setTimeout(() => {
@@ -396,6 +397,14 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.navIcon) {
+        scrollTourTargetIntoView(meta.target);
+      }
+
+      if (
+        stepKey === APP_TOUR_STEP_KEYS.aiSchedulerButton
+        || stepKey === APP_TOUR_STEP_KEYS.aiReschedulerButton
+        || stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle
+      ) {
         scrollTourTargetIntoView(meta.target);
       }
     },

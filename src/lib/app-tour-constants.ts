@@ -284,7 +284,9 @@ export type AppTourStepMeta = {
   settingsId?: string;
   desktopOnly?: boolean;
   mobileOnly?: boolean;
-  placement?: 'center' | 'bottom' | 'top' | 'left' | 'right';
+  placement?: 'center' | 'bottom' | 'bottom-end' | 'top' | 'left' | 'right';
+  /** Fixed header targets need isFixed so Joyride positions the spotlight correctly. */
+  isFixed?: boolean;
   disableBeacon?: boolean;
 };
 
@@ -339,9 +341,21 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
       placement: isMobile ? 'top' : 'bottom',
     },
     {
+      stepKey: APP_TOUR_STEP_KEYS.aiSchedulerButton,
+      target: isMobile ? APP_TOUR_TARGETS.aiSchedulerSection : APP_TOUR_TARGETS.aiScheduler,
+      placement: isMobile ? 'left' : 'bottom-end',
+      isFixed: !isMobile,
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.aiSchedulePreview,
+      target: APP_TOUR_TARGETS.aiSchedulePreview,
+      placement: 'left',
+    },
+    {
       stepKey: APP_TOUR_STEP_KEYS.weekMonthToggle,
       target: APP_TOUR_TARGETS.weekMonthToggle,
-      placement: 'bottom',
+      placement: 'bottom-end',
+      isFixed: true,
       desktopOnly: true,
     },
     {
@@ -350,19 +364,10 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
       placement: 'bottom',
     },
     {
-      stepKey: APP_TOUR_STEP_KEYS.aiSchedulerButton,
-      target: isMobile ? APP_TOUR_TARGETS.aiSchedulerSection : APP_TOUR_TARGETS.aiScheduler,
-      placement: isMobile ? 'left' : 'bottom',
-    },
-    {
-      stepKey: APP_TOUR_STEP_KEYS.aiSchedulePreview,
-      target: APP_TOUR_TARGETS.aiSchedulePreview,
-      placement: 'left',
-    },
-    {
       stepKey: APP_TOUR_STEP_KEYS.aiReschedulerButton,
       target: isMobile ? APP_TOUR_TARGETS.aiRescheduleSection : APP_TOUR_TARGETS.aiReschedule,
-      placement: isMobile ? 'left' : 'bottom',
+      placement: isMobile ? 'left' : 'bottom-end',
+      isFixed: !isMobile,
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.rescheduleDialog,
