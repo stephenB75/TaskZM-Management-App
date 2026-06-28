@@ -48,6 +48,8 @@ import {
   blocksHaveTimeOverlap,
   getTodayAgendaTimelineCardPresentation,
   getTodayAgendaTimelineRowHeightPx,
+  estimateTodayAgendaTimelineContentHeightPx,
+  getTodayAgendaTimelineBlockTextContent,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
 import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
@@ -545,9 +547,21 @@ export function TodayAgendaView({
           block.actualDurationMins,
           { isEvent },
         );
+        const { titleText, subtitleText } = getTodayAgendaTimelineBlockTextContent(block.item);
+        const contentHeightPx = estimateTodayAgendaTimelineContentHeightPx({
+          tier: cardPresentation.tier,
+          titleText,
+          subtitleText: cardPresentation.hideSubtitle ? undefined : subtitleText,
+          showFooter: !cardPresentation.hideFooter,
+        });
+        const rowHeightPx = getTodayAgendaTimelineRowHeightPx(
+          block.cardHeightPx,
+          cardPresentation.tier,
+          { isEvent, contentHeightPx },
+        );
         const displayTopPx = y;
-        const displayHeightPx = block.cardHeightPx;
-        y += block.cardHeightPx + listGapPx;
+        const displayHeightPx = rowHeightPx;
+        y += rowHeightPx + listGapPx;
         return {
           ...block,
           displayTopPx,
@@ -556,6 +570,7 @@ export function TodayAgendaView({
           scheduledStartTopPx: displayTopPx,
           scheduledEndTopPx: displayTopPx + block.cardHeightPx,
           scheduledSlotHeightPx: block.cardHeightPx,
+          rowHeightPx,
           cardPresentation,
         };
       });
@@ -581,10 +596,17 @@ export function TodayAgendaView({
         block.actualDurationMins,
         { isEvent },
       );
+      const { titleText, subtitleText } = getTodayAgendaTimelineBlockTextContent(block.item);
+      const contentHeightPx = estimateTodayAgendaTimelineContentHeightPx({
+        tier: cardPresentation.tier,
+        titleText,
+        subtitleText: cardPresentation.hideSubtitle ? undefined : subtitleText,
+        showFooter: !cardPresentation.hideFooter,
+      });
       const rowHeightPx = getTodayAgendaTimelineRowHeightPx(
         scheduledSlotHeightPx,
         cardPresentation.tier,
-        { isEvent },
+        { isEvent, contentHeightPx },
       );
       return {
         ...block,
@@ -855,8 +877,7 @@ export function TodayAgendaView({
             className="absolute left-0 right-0 flex flex-col"
             style={{
               top: rowTopPx,
-              height: isCompactList ? undefined : blockRowHeightPx,
-              minHeight: isCompactList ? scheduledSlotHeightPx : blockRowHeightPx,
+              minHeight: blockRowHeightPx,
               zIndex: blockZIndex,
               overflow: 'visible',
             }}
@@ -881,11 +902,11 @@ export function TodayAgendaView({
               </div>
             )}
             <div
-              className="relative w-full flex-1 min-h-0 flex flex-col"
-              style={{ zIndex: 1 }}
+              className="relative w-full flex flex-col"
+              style={{ zIndex: 1, minHeight: blockRowHeightPx }}
             >
             {item.type === 'task' && item.task ? (
-              <div data-task-id={item.task.id} className="relative w-full flex-1 min-h-0 flex flex-col">
+              <div data-task-id={item.task.id} className="relative w-full flex flex-col">
                 <DraggableTaskCard
                   task={getTaskWithOccurrenceSubtasks(item.task, todayString, tasks)}
                   onClick={() => item.task && handleTaskClick(item.task)}
@@ -902,7 +923,7 @@ export function TodayAgendaView({
                 />
               </div>
             ) : item.type === 'event' && item.event ? (
-              <div data-event-id={item.event.id} className="relative w-full flex-1 min-h-0 flex flex-col">
+              <div data-event-id={item.event.id} className="relative w-full flex flex-col">
                 <CalendarEventCard
                   title={item.event.title}
                   start={item.event.start}
@@ -1007,22 +1028,25 @@ export function TodayAgendaView({
                 durationRailLabels.map(({ id, topPx, text, kind }) => (
                   <div
                     key={id}
-                    className="absolute left-0 pr-2 text-right flex items-start pointer-events-none overflow-hidden"
+                    className="absolute left-0 pr-2 text-right flex items-start pointer-events-none"
                     style={{
                       top: topPx,
                       width: `calc(100% - ${spineWidthPx + 4}px)`,
-                      height: timeLabelLineHeightPx,
-                      zIndex: kind === 'end' ? 1 : 2,
+                      minHeight: timeLabelLineHeightPx,
+                      zIndex: kind === 'end' ? 3 : 4,
                     }}
                   >
                     <span
                       className={cn(
-                        'text-xs tabular-nums block w-full truncate',
+                        'text-xs tabular-nums block w-full whitespace-nowrap',
                         kind === 'end'
                           ? 'font-normal text-muted-foreground/75'
                           : 'font-medium text-muted-foreground',
                       )}
-                      style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
+                      style={{
+                        lineHeight: `${timeLabelLineHeightPx}px`,
+                        backgroundColor: isDark ? 'rgba(30,30,40,0.92)' : 'rgba(255,255,255,0.92)',
+                      }}
                       title={text}
                     >
                       {text}

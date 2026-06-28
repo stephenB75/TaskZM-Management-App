@@ -377,6 +377,20 @@ export const TODAY_AGENDA_TIMELINE = {
   timelineTightFooterMaxSlotHeightPx: 70,
   /** Minimum visible row height (px) for ultra-short slots so content is not collapsed. */
   timelineMinVisibleRowHeightPx: 48,
+  /** Vertical padding (px) inside embedded timeline cards (top + bottom) for content height estimates. */
+  timelineEmbeddedCardPaddingPx: 28,
+  /** Line height (px) for title text in timeline content height estimates. */
+  timelineContentTitleLineHeightPx: 22,
+  /** Line height (px) for subtitle text in timeline content height estimates. */
+  timelineContentSubtitleLineHeightPx: 20,
+  /** Footer row height (px) in timeline content height estimates. */
+  timelineContentFooterHeightPx: 28,
+  /** Gap (px) between title, subtitle, and footer in timeline content height estimates. */
+  timelineContentSectionGapPx: 6,
+  /** Approximate characters per title line on sidebar timeline cards. */
+  timelineContentTitleCharsPerLine: 34,
+  /** Approximate characters per subtitle line on sidebar timeline cards. */
+  timelineContentSubtitleCharsPerLine: 40,
 } as const;
 
 /** Strict timeline slot height (px) — vertical span on the time grid = duration × pxPerMinute. */

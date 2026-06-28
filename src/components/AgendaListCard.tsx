@@ -121,7 +121,8 @@ export function AgendaListCard({
   const showFooter = !micro && !hideFooter;
   const isTimelineSurface = surface === 'timeline' && !embedded;
   const isEmbeddedTimeline = surface === 'timeline' && embedded && fitTimelineSlot;
-  const allowFullContent = isTimelineSurface;
+  const showFullEmbeddedTimelineContent = isEmbeddedTimeline && !micro;
+  const allowFullContent = isTimelineSurface || showFullEmbeddedTimelineContent;
   /** When the rail shows time, put complete/action controls on the title row — not a separate header line. */
   const inlineActionsWithTitle = !hasTime && Boolean(headerAction || showCommentIcon);
   const cardBackground = embedded
@@ -161,7 +162,9 @@ export function AgendaListCard({
       className={cn(
         'flex flex-col w-full min-w-0 box-border',
         isEmbeddedTimeline
-          ? 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden'
+          ? showFullEmbeddedTimelineContent
+            ? 'overflow-visible'
+            : 'flex-1 min-h-0 overflow-x-hidden'
           : allowFullContent
             ? 'overflow-visible'
             : 'h-full overflow-hidden',
@@ -219,7 +222,7 @@ export function AgendaListCard({
         </div>
         )}
 
-        <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        <div className={cn('flex flex-col flex-1 min-w-0', showFullEmbeddedTimelineContent ? '' : 'min-h-0')}>
           {showNextUpBadge && (
             <div
               className="flex-shrink-0"
@@ -305,7 +308,7 @@ export function AgendaListCard({
                 isEmbeddedTimeline
                   ? micro
                     ? 'line-clamp-2'
-                    : 'line-clamp-3'
+                    : undefined
                   : !allowFullContent && (micro || compact ? 'line-clamp-1' : 'line-clamp-2'),
                 titleDone && 'line-through opacity-60',
               )}
@@ -321,8 +324,10 @@ export function AgendaListCard({
               <p
                 className={cn(
                   'break-words',
-                  isEmbeddedTimeline && !compact
-                    ? 'line-clamp-3'
+                  isEmbeddedTimeline
+                    ? micro
+                      ? 'line-clamp-2'
+                      : undefined
                     : allowFullContent
                       ? undefined
                       : 'line-clamp-2',

@@ -47,14 +47,11 @@ export function getTodayAgendaTimelineCardPresentation(
   options?: { isEvent?: boolean },
 ): TodayAgendaTimelineCardPresentation {
   const tier = getTodayAgendaTimelineLayoutTier(slotHeightPx, durationMinutes, options);
-  const { timelineTightFooterMaxSlotHeightPx } = TODAY_AGENDA_TIMELINE;
   return {
     tier,
     compact: tier !== 'full',
     micro: tier === 'micro',
-    hideFooter:
-      tier === 'micro' ||
-      (tier === 'compact' && slotHeightPx < timelineTightFooterMaxSlotHeightPx),
+    hideFooter: tier === 'micro',
     hideSubtitle: tier === 'micro',
   };
 }
@@ -63,7 +60,7 @@ export function getTodayAgendaTimelineCardPresentation(
 export function getTodayAgendaTimelineRowHeightPx(
   slotHeightPx: number,
   tier: TodayAgendaTimelineLayoutTier,
-  options?: { isEvent?: boolean },
+  options?: { isEvent?: boolean; contentHeightPx?: number },
 ): number {
   const {
     timelineMinVisibleRowHeightPx,
@@ -77,7 +74,76 @@ export function getTodayAgendaTimelineRowHeightPx(
     return Math.max(slotHeightPx, timelineMinVisibleRowHeightPx);
   }
   // Row must fit title + subtitle + footer; may extend below the time grid slot (visual restack handles overlap).
-  return Math.max(slotHeightPx, fullMinPx, tier === 'compact' ? shortItemCompactRowHeightPx : 0);
+  const basePx = Math.max(slotHeightPx, fullMinPx, tier === 'compact' ? shortItemCompactRowHeightPx : 0);
+  if (options?.contentHeightPx != null) {
+    return Math.max(basePx, options.contentHeightPx);
+  }
+  return basePx;
+}
+
+/** Title and subtitle text for timeline row-height estimation. */
+export function getTodayAgendaTimelineBlockTextContent(item: {
+  type: 'task' | 'event';
+  task?: { title?: string; description?: string };
+  event?: { title?: string; location?: string };
+}): { titleText: string; subtitleText?: string } {
+  if (item.type === 'task' && item.task) {
+    const titleText = item.task.title?.trim() ?? '';
+    const rawDescription = item.task.description?.trim();
+    const subtitleText = rawDescription
+      ? rawDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      : undefined;
+    return { titleText, subtitleText: subtitleText || undefined };
+  }
+  if (item.type === 'event' && item.event) {
+    return {
+      titleText: item.event.title?.trim() ?? '',
+      subtitleText: item.event.location?.trim() || undefined,
+    };
+  }
+  return { titleText: '', subtitleText: undefined };
+}
+
+/** Estimated card body height (px) from title, subtitle, and footer visibility. */
+export function estimateTodayAgendaTimelineContentHeightPx(input: {
+  tier: TodayAgendaTimelineLayoutTier;
+  titleText: string;
+  subtitleText?: string;
+  showFooter: boolean;
+}): number {
+  const {
+    timelineMinVisibleRowHeightPx,
+    timelineEmbeddedCardPaddingPx,
+    timelineContentTitleLineHeightPx,
+    timelineContentSubtitleLineHeightPx,
+    timelineContentFooterHeightPx,
+    timelineContentSectionGapPx,
+    timelineContentTitleCharsPerLine,
+    timelineContentSubtitleCharsPerLine,
+  } = TODAY_AGENDA_TIMELINE;
+
+  if (input.tier === 'micro') {
+    return timelineMinVisibleRowHeightPx;
+  }
+
+  const titleLines = Math.max(
+    1,
+    Math.ceil((input.titleText.length || 0) / timelineContentTitleCharsPerLine),
+  );
+  const subtitleText = input.subtitleText?.trim();
+  const subtitleLines = subtitleText
+    ? Math.max(1, Math.ceil(subtitleText.length / timelineContentSubtitleCharsPerLine))
+    : 0;
+
+  let heightPx = timelineEmbeddedCardPaddingPx;
+  heightPx += titleLines * timelineContentTitleLineHeightPx;
+  if (subtitleLines > 0) {
+    heightPx += timelineContentSectionGapPx + subtitleLines * timelineContentSubtitleLineHeightPx;
+  }
+  if (input.showFooter) {
+    heightPx += timelineContentSectionGapPx + timelineContentFooterHeightPx;
+  }
+  return heightPx;
 }
 
 /** Timeline slot height (px) — exact duration on the time scale. */
@@ -155,11 +221,13 @@ export function getTodayAgendaBlockRailLabelPositions(
     scheduledStartTopPx: number;
     scheduledEndTopPx: number;
     scheduledSlotHeightPx: number;
+    rowHeightPx?: number;
   },
   lineHeightPx: number = TODAY_AGENDA_TIMELINE.timeLabelLineHeightPx,
 ): TodayAgendaBlockRailLabelPositions {
   const stacked = isTodayAgendaBlockStacked(block);
   const slotHeightPx = block.scheduledSlotHeightPx;
+  const rowHeightPx = block.rowHeightPx ?? slotHeightPx;
 
   if (!stacked) {
     return {
@@ -172,7 +240,7 @@ export function getTodayAgendaBlockRailLabelPositions(
   const startTopPx = block.displayTopPx;
   return {
     startTopPx,
-    endTopPx: startTopPx + slotHeightPx - lineHeightPx,
+    endTopPx: startTopPx + rowHeightPx - lineHeightPx,
     slotHeightPx,
   };
 }
@@ -270,6 +338,7 @@ export function buildTodayAgendaBlockRailLabels(
     scheduledStartTopPx: number;
     scheduledEndTopPx: number;
     scheduledSlotHeightPx: number;
+    rowHeightPx?: number;
     actualStartMins: number;
     actualEndMins: number;
   },

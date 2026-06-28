@@ -850,8 +850,7 @@ export const DraggableTaskCard = React.forwardRef<
                 style={{
                   ...style,
                   width: '100%',
-                  height: '100%',
-                  minHeight: 0,
+                  minHeight: timelineBlockHeightPx,
                   touchAction: dragDisabled ? 'auto' : 'none',
                   ...(!dragDisabled && (isDragging || isSortableDragging)
                     ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 }
@@ -860,7 +859,7 @@ export const DraggableTaskCard = React.forwardRef<
                 {...attributes}
                 {...(dragDisabled ? {} : listeners)}
                 className={cn(
-                  'relative w-full min-h-0 flex flex-col',
+                  'relative w-full flex flex-col',
                   !dragDisabled && !(isDragging || isSortableDragging) && 'cursor-grab',
                   !dragDisabled && (isDragging || isSortableDragging) && 'cursor-grabbing',
                   task.status === 'done' && 'opacity-60',
@@ -887,8 +886,7 @@ export const DraggableTaskCard = React.forwardRef<
                   leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
                   leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
                   style: {
-                    minHeight: '100%',
-                    flex: 1,
+                    minHeight: timelineBlockHeightPx,
                   },
                 })}
               </div>
