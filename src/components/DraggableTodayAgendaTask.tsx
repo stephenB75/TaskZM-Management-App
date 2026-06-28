@@ -7,7 +7,7 @@ import { Icon } from "./Icon";
 import { ICON_SIZE_XS, ICON_SIZE_SM, ICON_SIZE_MD, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { Badge } from "./ui/badge";
 import { cn, getDateString } from "../lib/utils";
-import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, SECONDS_PER_MINUTE } from "../lib/business-constants";
+import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from "../lib/business-constants";
 import { toast } from "sonner";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -15,7 +15,7 @@ import { useTeam } from "../contexts/TeamContext";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePomodoro } from "../contexts/PomodoroContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { NOTIFICATION_POMODORO_UI, NOTIFICATION_POMODORO_ARIA } from "../lib/notification-constants";
+import { TaskCardInlinePomodoro } from "./TaskCardInlinePomodoro";
 import {
   Tooltip,
   TooltipContent,
@@ -90,7 +90,7 @@ export function DraggableTodayAgendaTask({
     canViewAnalytics: true,
     role: 'admin' as const,
   };
-  const { getTimerState, startTimer, pauseTimer, stopTimer, timers: pomodoroTimers } = usePomodoro();
+  const { getTimerState, timers: pomodoroTimers } = usePomodoro();
   const { actualTheme } = useTheme();
   const shouldUseMobileLayout = useMobileLayout(); // Covers mobile, iPad, tablet, and landscape on smaller screens
   const isMobile = shouldUseMobileLayout; // Keep isMobile for backward compatibility with existing code
@@ -182,13 +182,7 @@ export function DraggableTodayAgendaTask({
     return `${mins}m`;
   };
 
-  // Format Pomodoro countdown (timeLeft in seconds) as MM:SS
-  const formatPomodoroCountdown = (seconds: number) => {
-    const mins = Math.floor(seconds / SECONDS_PER_MINUTE);
-    const secs = seconds % SECONDS_PER_MINUTE;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
+  // Compact layout: tab row + headline only. Dot aligns with headline center.
   const handleToggleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -374,58 +368,22 @@ export function DraggableTodayAgendaTask({
               {task.estimatedTime ? (
                 <span className="text-xs truncate">{formatDuration(task.estimatedTime)}</span>
               ) : null}
-              {canUsePomodoro && timerState.isRunning && (
-                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0 ml-auto">
-                  <span className="text-xs font-mono font-medium tabular-nums" aria-label={NOTIFICATION_POMODORO_ARIA.timeRemaining}>
-                    {formatPomodoroCountdown(timerState.timeLeft)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); pauseTimer(pomodoroTimerId); }}
-                    className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-                    aria-label={NOTIFICATION_POMODORO_ARIA.pauseTimer}
-                  >
-                    <Icon name="pause" size={ICON_SIZE_XS} weight="fill" className="text-white" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); stopTimer(pomodoroTimerId); }}
-                    className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-                    aria-label={NOTIFICATION_POMODORO_ARIA.stopTimer}
-                  >
-                    <Icon name="stop" size={ICON_SIZE_XS} weight="fill" className="text-white" />
-                  </button>
-                </div>
-              )}
-              {canUsePomodoro && timerState.isPaused && (
-                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 flex-shrink-0 ml-auto rounded px-1.5 py-0.5 border border-amber-400/60 dark:border-amber-300/60 bg-amber-500/20 dark:bg-amber-400/20">
-                  <span className="text-xs font-mono font-medium tabular-nums text-amber-800 dark:text-amber-200" aria-label={NOTIFICATION_POMODORO_ARIA.pausedTimeRemaining}>
-                    {formatPomodoroCountdown(timerState.timeLeft)} {NOTIFICATION_POMODORO_UI.pausedLabel}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); startTimer(pomodoroTimerId); }}
-                    className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-                    aria-label={NOTIFICATION_POMODORO_ARIA.resumeTimer}
-                  >
-                    <Icon name="play" size={ICON_SIZE_XS} weight="fill" className="text-amber-800 dark:text-amber-200" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); stopTimer(pomodoroTimerId); }}
-                    className="p-0.5 rounded hover:bg-white/20 dark:hover:bg-white/10 transition-colors"
-                    aria-label={NOTIFICATION_POMODORO_ARIA.stopTimer}
-                  >
-                    <Icon name="stop" size={ICON_SIZE_XS} weight="fill" className="text-amber-800 dark:text-amber-200" />
-                  </button>
-                </div>
+              {canUsePomodoro && task.status !== "done" && (
+                <TaskCardInlinePomodoro
+                  timerId={pomodoroTimerId}
+                  durationMinutes={task.estimatedTime}
+                  variant="tab"
+                  isMobile={isMobile}
+                  className={cn((timerState.isRunning || timerState.isPaused) && "ml-auto")}
+                />
               )}
               <button
                 type="button"
                 onClick={handleToggleComplete}
                 onPointerDown={(e) => e.stopPropagation()}
                 className={cn(
-                  canUsePomodoro && (timerState.isRunning || timerState.isPaused) ? "flex-shrink-0 rounded-full hover:opacity-80 transition-opacity flex items-center justify-center" : "ml-auto flex-shrink-0 rounded-full hover:opacity-80 transition-opacity flex items-center justify-center",
+                  "flex-shrink-0 rounded-full hover:opacity-80 transition-opacity flex items-center justify-center",
+                  !(timerState.isRunning || timerState.isPaused) && "ml-auto",
                 )}
                 style={{ minWidth: checkboxSizePx, minHeight: checkboxSizePx }}
                 aria-label={task.status === "done" ? TASK_CARD_ARIA_AND_LABELS.markIncomplete : TASK_CARD_ARIA_AND_LABELS.markComplete}

@@ -49,6 +49,8 @@ export interface AgendaListCardProps {
   className?: string;
   style?: React.CSSProperties;
   headerAction?: React.ReactNode;
+  /** Optional inline control in the footer row (e.g. Pomodoro), after duration. */
+  footerAction?: React.ReactNode;
 }
 
 export function AgendaListCard({
@@ -79,6 +81,7 @@ export function AgendaListCard({
   className,
   style,
   headerAction,
+  footerAction,
 }: AgendaListCardProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
@@ -399,6 +402,20 @@ export function AgendaListCard({
                   />
                   <Icon name="clock" size={AGENDA_LIST_CARD.footerIconSizePx} weight="regular" className="flex-shrink-0" />
                   <span className="flex-shrink-0 whitespace-nowrap">{durationLabel}</span>
+                </>
+              )}
+              {footerAction && (
+                <>
+                  <span
+                    className="rounded-full flex-shrink-0"
+                    style={{
+                      width: AGENDA_LIST_CARD.footerDotSizePx,
+                      height: AGENDA_LIST_CARD.footerDotSizePx,
+                      backgroundColor: isDark ? AGENDA_LIST_CARD_COLORS.footerDark : AGENDA_LIST_CARD_COLORS.footer,
+                    }}
+                    aria-hidden
+                  />
+                  {footerAction}
                 </>
               )}
             </div>

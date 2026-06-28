@@ -189,6 +189,7 @@ export const NOTIFICATION_POMODORO_UI = {
 
 /** Aria labels for Pomodoro timer (task card, agenda, dialog) */
 export const NOTIFICATION_POMODORO_ARIA = {
+  startTimer: 'Start timer',
   pauseTimer: 'Pause timer',
   resumeTimer: 'Resume timer',
   stopTimer: 'Stop timer',
