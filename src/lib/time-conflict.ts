@@ -92,6 +92,22 @@ export function scheduleBlocksConflict(
   return sameStartTime || overlaps;
 }
 
+/** True when a candidate slot conflicts with a task block, including AI prep time after the block. */
+export function aiSchedulingTaskBlockConflicts(
+  candidateStartMs: number,
+  candidateEndMs: number,
+  blockStartMs: number,
+  blockEndMs: number,
+  prepBufferMs: number = AI_SCHEDULING_PREP_BUFFER_MINUTES * MILLISECONDS_PER_MINUTE,
+): boolean {
+  return scheduleBlocksConflict(
+    candidateStartMs,
+    candidateEndMs,
+    blockStartMs,
+    expandTaskBlockEndForSchedulingPrep(blockEndMs, prepBufferMs),
+  );
+}
+
 /** True when any task or calendar event blocks overlap on a local day (post-scheduling validation). */
 export function dayHasScheduleOverlaps(
   tasks: Task[],
@@ -655,6 +671,7 @@ export function reorganizeAllTasksForDate(
 
   const reorganizations: Array<{ taskId: string; newTime: Date }> = [];
   let lastScheduledEnd = 0;
+  const prepBufferMs = getSchedulingPrepBufferMs(options);
 
   // Determine the earliest start time
   const now = new Date();
@@ -691,14 +708,15 @@ export function reorganizeAllTasksForDate(
     lastScheduledEnd = defaultStart.getTime();
   }
 
-  // Reorganize: move a task only if it truly overlaps the previous one (start < previous end). Back-to-back (start === previous end) is not overlap.
+  // Reorganize: move a task if it overlaps the previous block or starts before the prep buffer after it.
+  let nextAllowedStartMs = lastScheduledEnd;
   for (const taskInfo of sortedTasks) {
     const task = taskInfo.task;
     const taskDuration = getTaskMinutes(task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE; // Use AI estimator
 
-    if (taskInfo.start < lastScheduledEnd) {
+    if (taskInfo.start < nextAllowedStartMs) {
       // Task needs to be moved
-      const candidateTime = new Date(lastScheduledEnd);
+      const candidateTime = new Date(nextAllowedStartMs);
       
       // Round to nearest 15-minute slot
       const minutes = candidateTime.getMinutes();
@@ -730,13 +748,16 @@ export function reorganizeAllTasksForDate(
         
         // Update last scheduled end for next iteration
         lastScheduledEnd = newTime.getTime() + taskDuration;
+        nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
       } else {
         // No slot found, keep original time but update lastScheduledEnd if it's later
         lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);
+        nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
       }
     } else {
       // Task doesn't need to be moved, but update lastScheduledEnd
       lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);
+      nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
     }
   }
 

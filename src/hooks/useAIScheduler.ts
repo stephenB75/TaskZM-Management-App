@@ -5,7 +5,7 @@ import { useCalendar } from '../contexts/CalendarContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isTaskBlocked, calculateDependencyDepth, getDateString } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
-import { findNextAvailableSlot, filterCalendarEventsForDay, buildCalendarConflictBlocksForDay, scheduleBlocksConflict, buildAISchedulerSlotOptions, expandTaskBlockEndForSchedulingPrep, expandCalendarBlockForSchedulingPrep, type ConflictCalendarEvent } from '../lib/time-conflict';
+import { findNextAvailableSlot, filterCalendarEventsForDay, buildCalendarConflictBlocksForDay, scheduleBlocksConflict, buildAISchedulerSlotOptions, expandTaskBlockEndForSchedulingPrep, expandCalendarBlockForSchedulingPrep, aiSchedulingTaskBlockConflicts, reorganizeAllTasksForDate, type ConflictCalendarEvent } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
@@ -648,8 +648,6 @@ export function useAIScheduler() {
         
         for (const existingTask of existingTasksForDay) {
           if (!existingTask.scheduledDate) continue;
-          const existingCat = getTaskCategory(existingTask);
-          if (existingCat !== category) continue;
           
           // Only check tasks with valid scheduled times (not midnight)
           const existingTaskScheduledDate = typeof existingTask.scheduledDate === 'string'
@@ -663,11 +661,13 @@ export function useAIScheduler() {
           const existingTaskDuration = getTaskMinutes(existingTask, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
           const existingTaskEnd = existingTaskStart + existingTaskDuration;
           
-          // Check for exact same start time or overlap
-          const sameStartTime = Math.abs(existingTaskStart - nextAvailableTimeMs) < MILLISECONDS_PER_MINUTE;
-          const overlaps = nextAvailableTimeMs < existingTaskEnd && nextAvailableEndMs > existingTaskStart;
-          
-          if (sameStartTime || overlaps) {
+          if (aiSchedulingTaskBlockConflicts(
+            nextAvailableTimeMs,
+            nextAvailableEndMs,
+            existingTaskStart,
+            existingTaskEnd,
+            AI_SCHEDULING_PREP_BUFFER_MS,
+          )) {
             hasConflict = true;
             maxConflictEnd = Math.max(
               maxConflictEnd,
@@ -761,11 +761,9 @@ export function useAIScheduler() {
     // This matches the gap-finding logic which excludes midnight-time tasks
     // CRITICAL: Use existingTasksForDay which is passed as a parameter - this should include tasks from the plan
     // when called from generateSchedulePlan, but we need to verify it's the combined list
-    const sameCategoryTasksForConflictCheck = existingTasksForDay
+    const scheduledTasksForConflictCheck = existingTasksForDay
       .filter(t => {
         if (!t.scheduledDate) return false;
-        const existingCat = getTaskCategory(t);
-        if (existingCat !== category) return false;
         // CRITICAL: Only include tasks with valid scheduled times (not just midnight/00:00:00)
         // This matches the gap-finding logic at lines 368-379 which excludes midnight-time tasks
         // This prevents false conflicts with tasks that have dates but no actual scheduled times
@@ -793,12 +791,14 @@ export function useAIScheduler() {
     let hasConflict = false;
     let maxConflictEnd = calculatedTimeMs;
     
-    for (const existingTaskInfo of sameCategoryTasksForConflictCheck) {
-      // Check for exact same start time or overlap
-      const sameStartTime = Math.abs(existingTaskInfo.start - calculatedTimeMs) < MILLISECONDS_PER_MINUTE;
-      const overlaps = calculatedTimeMs < existingTaskInfo.end && calculatedEndMs > existingTaskInfo.start;
-      
-      if (sameStartTime || overlaps) {
+    for (const existingTaskInfo of scheduledTasksForConflictCheck) {
+      if (aiSchedulingTaskBlockConflicts(
+        calculatedTimeMs,
+        calculatedEndMs,
+        existingTaskInfo.start,
+        existingTaskInfo.end,
+        AI_SCHEDULING_PREP_BUFFER_MS,
+      )) {
         hasConflict = true;
         // Track the latest end time of all conflicts (not just the first one)
         maxConflictEnd = Math.max(
@@ -3418,11 +3418,13 @@ export function useAIScheduler() {
           const planTaskDuration = getTaskMinutes(planItem.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
           const planEndMs = planTimeMs + planTaskDuration;
           
-          // Check for exact same start time or overlap
-          const sameStartTime = Math.abs(planTimeMs - scheduleTimeMs) < MILLISECONDS_PER_MINUTE;
-          const overlaps = scheduleTimeMs < planEndMs && scheduleEndMs > planTimeMs;
-          
-          if (sameStartTime || overlaps) {
+          if (aiSchedulingTaskBlockConflicts(
+            scheduleTimeMs,
+            scheduleEndMs,
+            planTimeMs,
+            planEndMs,
+            AI_SCHEDULING_PREP_BUFFER_MS,
+          )) {
             hasConflict = true;
             // Track the latest end time of all conflicts
             maxConflictEnd = Math.max(
@@ -3434,8 +3436,6 @@ export function useAIScheduler() {
               logger.error('🚨 DIRECT CONFLICT DETECTED BEFORE ADDING TO PLAN!', {
                 currentTask: { id: task.id, title: task.title, time: scheduleDate.toISOString() },
                 conflictingTask: { id: planItem.task.id, title: planItem.task.title, time: planScheduledDate.toISOString() },
-                sameStartTime,
-                overlaps,
                 planEndMs: new Date(planEndMs).toISOString(),
                 maxConflictEnd: new Date(maxConflictEnd).toISOString(),
               });
@@ -3527,10 +3527,13 @@ export function useAIScheduler() {
             const planTaskDuration = getTaskMinutes(planItem.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
             const planEndMs = planTimeMs + planTaskDuration;
             
-            const sameStartTime = Math.abs(planTimeMs - adjustedTimeMs) < MILLISECONDS_PER_MINUTE;
-            const overlaps = adjustedTimeMs < planEndMs && adjustedEndMs > planTimeMs;
-            
-            if (sameStartTime || overlaps) {
+            if (aiSchedulingTaskBlockConflicts(
+              adjustedTimeMs,
+              adjustedEndMs,
+              planTimeMs,
+              planEndMs,
+              AI_SCHEDULING_PREP_BUFFER_MS,
+            )) {
               stillHasConflict = true;
               newMaxConflictEnd = Math.max(
                 newMaxConflictEnd,
@@ -3547,8 +3550,6 @@ export function useAIScheduler() {
                     time: planScheduledDate.toISOString(),
                     adjustedTime: new Date(planTimeMs).toISOString()
                   },
-                  sameStartTime,
-                  overlaps,
                   planEndMs: new Date(planEndMs).toISOString(),
                   newMaxConflictEnd: new Date(newMaxConflictEnd).toISOString(),
                 });
@@ -3627,19 +3628,24 @@ export function useAIScheduler() {
           const planTaskDuration = getTaskMinutes(planItem.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
           const planTaskEnd = planTaskStart + planTaskDuration;
           
-          // Check for overlap (including exact same start time)
-          const sameStartTime = Math.abs(planTaskStart - safeguardScheduleTimeMs) < MILLISECONDS_PER_MINUTE;
-          const overlaps = safeguardScheduleTimeMs < planTaskEnd && safeguardScheduleEndMs > planTaskStart;
-          
-          if (sameStartTime || overlaps) {
+          if (aiSchedulingTaskBlockConflicts(
+            safeguardScheduleTimeMs,
+            safeguardScheduleEndMs,
+            planTaskStart,
+            planTaskEnd,
+            AI_SCHEDULING_PREP_BUFFER_MS,
+          )) {
             hasConflictInPlan = true;
-            maxConflictEndInPlan = Math.max(maxConflictEndInPlan, planTaskEnd);
+            maxConflictEndInPlan = Math.max(
+              maxConflictEndInPlan,
+              expandTaskBlockEndForSchedulingPrep(planTaskEnd, AI_SCHEDULING_PREP_BUFFER_MS),
+            );
           }
         }
         
         // If conflict found, move to after all conflicts
         if (hasConflictInPlan) {
-          const conflictFreeTime = new Date(maxConflictEndInPlan + MILLISECONDS_PER_MINUTE);
+          const conflictFreeTime = new Date(maxConflictEndInPlan);
           // Round up to nearest 15-minute interval
           const roundedMinutes = Math.ceil(conflictFreeTime.getMinutes() / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
           if (roundedMinutes >= MINUTES_PER_HOUR) {
@@ -4017,6 +4023,49 @@ export function useAIScheduler() {
     }
   };
 
+  /** Reorganize affected days so rescheduled tasks honor the AI prep buffer vs tasks and calendar events. */
+  const enforcePrepBufferOnScheduledDays = async (
+    scheduledPlans: SchedulePlan[],
+    calendarEvents: ConflictCalendarEvent[],
+  ): Promise<void> => {
+    if (scheduledPlans.length === 0) return;
+
+    const scheduledById = new Map<string, Date>(
+      scheduledPlans.map(({ task, scheduledDate }) => [task.id, scheduledDate]),
+    );
+    const dayDates = new Map<string, Date>();
+    for (const { scheduledDate } of scheduledPlans) {
+      dayDates.set(getDateKey(scheduledDate), new Date(scheduledDate));
+    }
+
+    for (const [, date] of dayDates) {
+      const dayCalendarEvents = filterCalendarEventsForDay(calendarEvents, date);
+      const dayTasks = tasks
+        .filter((t) => t.status !== 'done' && isDateInRecurrence(t, date))
+        .filter((t) => scheduledById.has(t.id) || t.scheduledDate)
+        .map((t) => {
+          const override = scheduledById.get(t.id);
+          return override
+            ? { ...t, scheduledDate: override.toISOString() }
+            : t;
+        });
+
+      const moves = reorganizeAllTasksForDate(
+        date,
+        dayTasks,
+        buildAISchedulerSlotOptions({
+          calendarEvents: dayCalendarEvents,
+          ensureAfterCurrentTime: false,
+        }),
+      );
+
+      for (const move of moves) {
+        await updateTask(move.taskId, { scheduledDate: move.newTime.toISOString() });
+        scheduledById.set(move.taskId, move.newTime);
+      }
+    }
+  };
+
   // Reschedule tasks for a specific day
   const rescheduleDay = async (date: Date): Promise<ScheduleResult> => {
     setIsScheduling(true);
@@ -4059,6 +4108,7 @@ export function useAIScheduler() {
       
       // Generate new schedule for these specific tasks within the selected day
       // Shuffle tasks and enforce minimum hours for rescheduling
+      const calendarEvents = await fetchCalendarEvents(scheduleStartDate, scheduleEndDate);
       const result = await generateSchedulePlan(
         tasksForReschedule,
         { startDate: scheduleStartDate, endDate: scheduleEndDate },
@@ -4069,6 +4119,7 @@ export function useAIScheduler() {
         for (const { task, scheduledDate } of result.scheduled) {
           await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
         }
+        await enforcePrepBufferOnScheduledDays(result.scheduled, calendarEvents);
       }
       return result;
     } catch (error) {
@@ -4145,6 +4196,7 @@ export function useAIScheduler() {
       
       // Generate new schedule for these specific tasks within the selected date range
       // Shuffle tasks and enforce minimum hours for rescheduling
+      const calendarEvents = await fetchCalendarEvents(scheduleStartDate, scheduleEndDate);
       const result = await generateSchedulePlan(
         tasksForReschedule,
         { startDate: scheduleStartDate, endDate: scheduleEndDate },
@@ -4155,6 +4207,7 @@ export function useAIScheduler() {
         for (const { task, scheduledDate } of result.scheduled) {
           await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
         }
+        await enforcePrepBufferOnScheduledDays(result.scheduled, calendarEvents);
       }
       return result;
     } catch (error) {
@@ -4209,6 +4262,7 @@ export function useAIScheduler() {
       
       // Generate new schedule for these specific tasks within the selected week
       // Shuffle tasks and enforce minimum hours for rescheduling
+      const calendarEvents = await fetchCalendarEvents(scheduleStartDate, weekEnd);
       const result = await generateSchedulePlan(
         tasksForReschedule,
         { startDate: scheduleStartDate, endDate: weekEnd },
@@ -4219,6 +4273,7 @@ export function useAIScheduler() {
         for (const { task, scheduledDate } of result.scheduled) {
           await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
         }
+        await enforcePrepBufferOnScheduledDays(result.scheduled, calendarEvents);
       }
       return result;
     } catch (error) {
@@ -4271,6 +4326,7 @@ export function useAIScheduler() {
       
       // Generate new schedule for these specific tasks within the selected month
       // Shuffle tasks and enforce minimum hours for rescheduling
+      const calendarEvents = await fetchCalendarEvents(scheduleStartDate, monthEnd);
       const result = await generateSchedulePlan(
         tasksForReschedule,
         { startDate: scheduleStartDate, endDate: monthEnd },
@@ -4281,6 +4337,7 @@ export function useAIScheduler() {
         for (const { task, scheduledDate } of result.scheduled) {
           await updateTask(task.id, { scheduledDate: scheduledDate.toISOString() });
         }
+        await enforcePrepBufferOnScheduledDays(result.scheduled, calendarEvents);
       }
       return result;
     } catch (error) {
