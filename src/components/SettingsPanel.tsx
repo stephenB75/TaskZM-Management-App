@@ -29,6 +29,7 @@ import { AvatarSelection } from './AvatarSelection';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import { SETTINGS_PANEL_UI_TEXT } from '../lib/settings-panel-constants';
 import { NAVIGATION_UI_TEXT } from '../lib/navigation-constants';
+import { scrollSettingsTourTargetIntoView } from '../lib/app-tour-constants';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -246,10 +247,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         prev.includes(sectionId) ? prev : [...prev, sectionId]
       ));
       window.requestAnimationFrame(() => {
-        const sectionEl = document.querySelector(`[data-tour="settings-${sectionId}"]`);
-        if (sectionEl instanceof HTMLElement) {
-          sectionEl.scrollIntoView({ behavior: 'instant', block: 'nearest' });
-        }
+        scrollSettingsTourTargetIntoView(`[data-tour="settings-${sectionId}"]`, 0);
       });
     };
 

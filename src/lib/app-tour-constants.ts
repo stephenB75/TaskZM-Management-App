@@ -5,7 +5,7 @@
 
 import { NAVIGATION_UI_TEXT } from './navigation-constants';
 import { SETTINGS_PANEL_UI_TEXT } from './settings-panel-constants';
-import { DASHBOARD_VIEW_HEADER_LABELS } from './layout-constants';
+import { DASHBOARD_VIEW_HEADER_LABELS, TOUR_CONSTANTS } from './layout-constants';
 import { TIMING_CONSTANTS } from './timing-constants';
 
 /** Sidebar icon tour stops (desktop) — order matches AppSidebar menuItems. */
@@ -304,6 +304,57 @@ function isElementVisibleForTour(el: HTMLElement): boolean {
   return true;
 }
 
+/** Scroll a settings accordion target into view with room for the tour tooltip above or below. */
+export function scrollSettingsTourTargetIntoView(
+  target: string,
+  delayMs: number = TIMING_CONSTANTS.tour.navigationComplete,
+): void {
+  window.setTimeout(() => {
+    const el = queryVisibleTourTarget(target);
+    if (!el) return;
+
+    const container = document.querySelector(APP_TOUR_TARGETS.settingsPanel);
+    const clearance = TOUR_CONSTANTS.tooltip.footerReservePx;
+    const edgePadding = TOUR_CONSTANTS.floater.settingsViewportPadding;
+
+    const ensureTooltipClearance = () => {
+      const rect = el.getBoundingClientRect();
+      const viewportBottom = window.innerHeight - edgePadding;
+      const viewportTop = edgePadding;
+
+      const spaceBelow = viewportBottom - rect.bottom;
+      if (spaceBelow < clearance && container instanceof HTMLElement) {
+        container.scrollTop += clearance - spaceBelow;
+        return;
+      }
+
+      const spaceAbove = rect.top - viewportTop;
+      if (spaceAbove < clearance && container instanceof HTMLElement) {
+        container.scrollTop -= clearance - spaceAbove;
+      }
+    };
+
+    if (!(container instanceof HTMLElement)) {
+      el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
+      window.requestAnimationFrame(ensureTooltipClearance);
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const visibleTop = Math.max(containerRect.top, 0);
+    const visibleBottom = Math.min(containerRect.bottom, window.innerHeight);
+    const visibleMid = (visibleTop + visibleBottom) / 2;
+    const elRect = el.getBoundingClientRect();
+    const elMid = elRect.top + elRect.height / 2;
+
+    container.scrollTop += elMid - visibleMid;
+    window.requestAnimationFrame(() => {
+      ensureTooltipClearance();
+      window.requestAnimationFrame(ensureTooltipClearance);
+    });
+  }, delayMs);
+}
+
 /** Dev helper: verify every tour step resolves to a visible DOM node on the current layout. */
 export function auditTourTargets(isMobile: boolean): Array<{ stepKey: string; target: string; ok: boolean }> {
   return buildAppTourStepDefs(isMobile).map((step) => ({
@@ -431,7 +482,7 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
     {
       stepKey: APP_TOUR_STEP_KEYS.settingsIntro,
       target: APP_TOUR_TARGETS.settingsPanel,
-      placement: isMobile ? 'top' : 'left',
+      placement: 'auto',
     },
   );
 
@@ -440,7 +491,7 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
       stepKey: APP_TOUR_STEP_KEYS.settingsSection,
       target: settingsSectionTarget(section.id),
       settingsId: section.id,
-      placement: isMobile ? 'top' : 'left',
+      placement: 'auto',
     });
   }
 

@@ -1375,6 +1375,8 @@ export const TOUR_CONSTANTS = {
   floater: {
     offset: 12, // px - Distance between spotlight target and tooltip
     viewportPadding: 16, // px - Min inset from viewport edge (popper preventOverflow / flip)
+    /** Extra inset for settings accordion steps so tooltip + footer stay on screen */
+    settingsViewportPadding: 72,
   },
   button: {
     fontSize: 14, // px - Font size for buttons

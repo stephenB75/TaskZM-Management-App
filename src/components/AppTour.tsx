@@ -27,6 +27,7 @@ import {
   isAppTourSettingsSectionStep,
   isAppTourSettingsStep,
   queryVisibleTourTarget,
+  scrollSettingsTourTargetIntoView,
   type AppTourStepMeta,
 } from '../lib/app-tour-constants';
 
@@ -221,11 +222,14 @@ function dispatchTourExpandSettingsSection(sectionId: string) {
 }
 
 function scrollTourTargetIntoView(target: string) {
+  if (target.startsWith('[data-tour="settings-')) {
+    scrollSettingsTourTargetIntoView(target);
+    return;
+  }
   window.setTimeout(() => {
     const el = queryVisibleTourTarget(target);
     if (!el || el.getAttribute('data-slot') === 'dialog-content') return;
-    const behavior: ScrollBehavior = target.includes('settings-') ? 'instant' : 'smooth';
-    el.scrollIntoView({ behavior, block: 'nearest', inline: 'nearest' });
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }, TIMING_CONSTANTS.tour.navigationComplete);
 }
 function closeTourDashboardDialogs() {
@@ -300,21 +304,41 @@ function stepNeedsNavigationLeadTime(meta: AppTourStepMeta | undefined): boolean
 }
 
 /** Popper options so every step keeps the tooltip (and Next button) inside the viewport. */
-function buildTourFloaterProps() {
+function buildTourFloaterProps(viewportPadding = TOUR_CONSTANTS.floater.viewportPadding) {
   return {
     offset: TOUR_CONSTANTS.floater.offset,
     disableFlip: false,
     options: {
       flip: {
         enabled: true,
-        padding: TOUR_CONSTANTS.floater.viewportPadding,
+        padding: viewportPadding,
       },
       preventOverflow: {
         boundariesElement: 'viewport' as const,
-        padding: TOUR_CONSTANTS.floater.viewportPadding,
+        padding: viewportPadding,
+        altAxis: true,
+        tether: false,
       },
     },
   };
+}
+
+function buildSettingsTourFloaterProps() {
+  return buildTourFloaterProps(TOUR_CONSTANTS.floater.settingsViewportPadding);
+}
+
+function activateJoyrideAfterTargetReady(
+  meta: AppTourStepMeta,
+  onReady: () => void,
+) {
+  if (isAppTourSettingsSectionStep(meta)) {
+    scrollSettingsTourTargetIntoView(meta.target, 0);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(onReady);
+    });
+    return;
+  }
+  onReady();
 }
 
 function resolveTourPlacement(
@@ -372,7 +396,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       meta.target,
       () => {
         markSettingsPanelReadyIfNeeded(meta.target);
-        setJoyrideActive(true);
+        activateJoyrideAfterTargetReady(meta, () => setJoyrideActive(true));
       },
       meta,
     );
@@ -441,8 +465,6 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
   }, [user?.id]);
 
   const steps = useMemo((): Step[] => {
-    const tourFloaterProps = buildTourFloaterProps();
-
     return stepDefs.map((meta) => ({
       target: meta.target,
       placement: resolveTourPlacement(meta.placement, shouldUseMobileLayout),
@@ -450,10 +472,10 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       content: renderStepContent(meta, shouldUseMobileLayout),
       data: meta,
       disableScrolling: meta.isFixed ?? isAppTourDialogStep(meta),
-      disableScrollParentFix: meta.isFixed ?? false,
+      disableScrollParentFix: isAppTourSettingsStep(meta) ? false : (meta.isFixed ?? false),
       isFixed: meta.isFixed ?? false,
       offset: meta.isFixed ? TOUR_CONSTANTS.floater.offset : 0,
-      floaterProps: tourFloaterProps,
+      floaterProps: isAppTourSettingsStep(meta) ? buildSettingsTourFloaterProps() : buildTourFloaterProps(),
       spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
       ...(isAppTourDialogStep(meta) ? { spotlightClicks: true } : {}),
     }));
@@ -667,7 +689,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
               markSettingsPanelReadyIfNeeded(nextMeta.target);
               waitForTourTargetWithRetry(nextMeta.target, () => {
                 markSettingsPanelReadyIfNeeded(nextMeta.target);
-                setJoyrideActive(true);
+                activateJoyrideAfterTargetReady(nextMeta, () => setJoyrideActive(true));
               }, nextMeta);
             };
 
@@ -719,7 +741,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             prepareStep(prevIndex);
             waitForTourTargetWithRetry(prevMeta.target, () => {
               markSettingsPanelReadyIfNeeded(prevMeta.target);
-              setJoyrideActive(true);
+              activateJoyrideAfterTargetReady(prevMeta, () => setJoyrideActive(true));
             }, prevMeta);
           } else {
             setJoyrideActive(true);

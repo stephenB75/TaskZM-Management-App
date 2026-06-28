@@ -39,13 +39,13 @@ export function SettingsSection({
   return (
     <AccordionItem
       value={value}
-      data-tour={dataTour}
       className={cn(
         'mb-2 overflow-hidden rounded-2xl border border-border/40 bg-card/95 shadow-sm last:mb-0',
         className,
       )}
     >
       <AccordionTrigger
+        data-tour={dataTour}
         className="hover:no-underline px-0 [&>svg:last-child]:mr-4 [&>svg:last-child]:text-muted-foreground/70"
         style={{
           paddingTop: SETTINGS_PANEL_ACCORDION_TRIGGER_PADDING_Y,
