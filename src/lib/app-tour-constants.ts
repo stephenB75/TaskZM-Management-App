@@ -6,6 +6,7 @@
 import { NAVIGATION_UI_TEXT } from './navigation-constants';
 import { SETTINGS_PANEL_UI_TEXT } from './settings-panel-constants';
 import { DASHBOARD_VIEW_HEADER_LABELS } from './layout-constants';
+import { TIMING_CONSTANTS } from './timing-constants';
 
 /** Sidebar icon tour stops (desktop) — order matches AppSidebar menuItems. */
 export const APP_TOUR_SIDEBAR_ITEMS = [
@@ -456,4 +457,64 @@ export function getNavIconCopy(
 
 export function getSettingsSectionCopy(settingsId: string) {
   return APP_TOUR_SETTINGS_SECTIONS.find((section) => section.id === settingsId) ?? null;
+}
+
+const TOUR_DIALOG_STEP_KEYS = new Set<AppTourStepKey>([
+  APP_TOUR_STEP_KEYS.aiSchedulePreview,
+  APP_TOUR_STEP_KEYS.rescheduleDialog,
+]);
+
+const TOUR_LAZY_PANEL_STEP_KEYS = new Set<AppTourStepKey>([
+  APP_TOUR_STEP_KEYS.settingsIntro,
+  APP_TOUR_STEP_KEYS.settingsSection,
+]);
+
+export function getTourStepWaitTimeoutMs(
+  meta: AppTourStepMeta | undefined,
+  highlightDelayMs: number = TIMING_CONSTANTS.tour.highlightDelay,
+): number {
+  if (!meta) {
+    return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.defaultMultiplier;
+  }
+  if (TOUR_DIALOG_STEP_KEYS.has(meta.stepKey)) {
+    return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.dialogMultiplier;
+  }
+  if (TOUR_LAZY_PANEL_STEP_KEYS.has(meta.stepKey)) {
+    return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.lazyPanelMultiplier;
+  }
+  if (meta.stepKey === APP_TOUR_STEP_KEYS.monthView) {
+    return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.viewSwitchMultiplier;
+  }
+  if (meta.isFixed) {
+    return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.viewSwitchMultiplier;
+  }
+  return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.defaultMultiplier;
+}
+
+const TOUR_DASHBOARD_PREP_STEP_KEYS = new Set<AppTourStepKey>([
+  APP_TOUR_STEP_KEYS.weekView,
+  APP_TOUR_STEP_KEYS.aiSchedulerButton,
+  APP_TOUR_STEP_KEYS.weekMonthToggle,
+  APP_TOUR_STEP_KEYS.aiReschedulerButton,
+]);
+
+export function getTourStepAdvanceDelayMs(meta: AppTourStepMeta | undefined): number {
+  if (!meta) return 0;
+  const { highlightDelay, advanceExtra } = TIMING_CONSTANTS.tour;
+  if (meta.isFixed) {
+    return highlightDelay + advanceExtra.fixedHeaderMs;
+  }
+  if (TOUR_DIALOG_STEP_KEYS.has(meta.stepKey)) {
+    return highlightDelay + advanceExtra.dialogMs;
+  }
+  if (TOUR_LAZY_PANEL_STEP_KEYS.has(meta.stepKey)) {
+    return highlightDelay + advanceExtra.lazyPanelMs;
+  }
+  if (meta.stepKey === APP_TOUR_STEP_KEYS.monthView) {
+    return highlightDelay + advanceExtra.viewSwitchMs;
+  }
+  if (TOUR_DASHBOARD_PREP_STEP_KEYS.has(meta.stepKey)) {
+    return highlightDelay;
+  }
+  return 0;
 }

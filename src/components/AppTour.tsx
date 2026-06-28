@@ -21,6 +21,8 @@ import {
   buildAppTourStepDefs,
   getNavIconCopy,
   getSettingsSectionCopy,
+  getTourStepAdvanceDelayMs,
+  getTourStepWaitTimeoutMs,
   queryVisibleTourTarget,
   type AppTourStepMeta,
 } from '../lib/app-tour-constants';
@@ -227,15 +229,24 @@ function isTourTargetReady(target: string): boolean {
   return queryVisibleTourTarget(target) !== null;
 }
 
+function preloadSettingsPanelForTour() {
+  void import('./SettingsPanel');
+}
+
 function waitForTourTarget(
   target: string,
   onReady: () => void,
-  timeoutMs: number = TIMING_CONSTANTS.tour.highlightDelay * 4,
+  timeoutMs: number = getTourStepWaitTimeoutMs(undefined),
+  onTimeout?: () => void,
 ): void {
   const started = performance.now();
   const tick = () => {
-    if (isTourTargetReady(target) || performance.now() - started >= timeoutMs) {
+    if (isTourTargetReady(target)) {
       onReady();
+      return;
+    }
+    if (performance.now() - started >= timeoutMs) {
+      onTimeout?.();
       return;
     }
     window.requestAnimationFrame(tick);
@@ -243,23 +254,24 @@ function waitForTourTarget(
   tick();
 }
 
-function prepareFixedHeaderTourTarget(target: string) {
-  window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
-  waitForTourTarget(target, () => {
-    const el = queryVisibleTourTarget(target);
-    el?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+function waitForTourTargetWithRetry(
+  target: string,
+  onReady: () => void,
+  meta: AppTourStepMeta | undefined,
+): void {
+  const timeoutMs = getTourStepWaitTimeoutMs(meta);
+  waitForTourTarget(target, onReady, timeoutMs, () => {
+    waitForTourTarget(target, onReady, timeoutMs, onReady);
   });
 }
 
-function advanceDelayForStep(nextMeta: AppTourStepMeta | undefined): number {
-  if (!nextMeta) return 0;
-  if (nextMeta.isFixed) {
-    return TIMING_CONSTANTS.tour.highlightDelay + TIMING_CONSTANTS.tour.navigationComplete;
-  }
-  if (stepNeedsNavigationLeadTime(nextMeta)) {
-    return TIMING_CONSTANTS.tour.highlightDelay;
-  }
-  return 0;
+function prepareFixedHeaderTourTarget(target: string) {
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  const waitMs = TIMING_CONSTANTS.tour.highlightDelay * TIMING_CONSTANTS.tour.targetWait.viewSwitchMultiplier;
+  waitForTourTarget(target, () => {
+    const el = queryVisibleTourTarget(target);
+    el?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+  }, waitMs);
 }
 
 function stepNeedsNavigationLeadTime(meta: AppTourStepMeta | undefined): boolean {
@@ -328,10 +340,10 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       return;
     }
     setJoyrideActive(false);
-    waitForTourTarget(
+    waitForTourTargetWithRetry(
       meta.target,
       () => setJoyrideActive(true),
-      TIMING_CONSTANTS.tour.highlightDelay * 4,
+      meta,
     );
   }, [stepDefs]);
 
@@ -431,25 +443,16 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulePreview) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
         dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
+        closeAllTourDialogs(shouldUseMobileLayout);
         if (shouldUseMobileLayout) {
           dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
           window.setTimeout(() => {
             dispatchTourOpenAiDialog('schedule-preview');
-            scrollTourTargetIntoView(
-              shouldUseMobileLayout
-                ? APP_TOUR_TARGETS.aiSchedulePreviewMobile
-                : APP_TOUR_TARGETS.aiSchedulePreview,
-            );
+            scrollTourTargetIntoView(APP_TOUR_TARGETS.aiSchedulePreviewMobile);
           }, TIMING_CONSTANTS.tour.navigationComplete);
         } else {
-          window.setTimeout(() => {
-            dispatchTourOpenDashboardSchedulePreview();
-            scrollTourTargetIntoView(
-              shouldUseMobileLayout
-                ? APP_TOUR_TARGETS.aiSchedulePreviewMobile
-                : APP_TOUR_TARGETS.aiSchedulePreview,
-            );
-          }, TIMING_CONSTANTS.tour.navigationComplete);
+          dispatchTourOpenDashboardSchedulePreview();
+          scrollTourTargetIntoView(APP_TOUR_TARGETS.aiSchedulePreview);
         }
       }
 
@@ -467,6 +470,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
 
       if (stepKey === APP_TOUR_STEP_KEYS.rescheduleDialog) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
+        preloadSettingsPanelForTour();
         if (shouldUseMobileLayout) {
           dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
           window.setTimeout(() => {
@@ -474,10 +478,8 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             scrollTourTargetIntoView(APP_TOUR_TARGETS.rescheduleDialog);
           }, TIMING_CONSTANTS.tour.navigationComplete);
         } else {
-          window.setTimeout(() => {
-            dispatchTourOpenDashboardRescheduleDialog();
-            scrollTourTargetIntoView(APP_TOUR_TARGETS.rescheduleDialogOptions);
-          }, TIMING_CONSTANTS.tour.navigationComplete);
+          dispatchTourOpenDashboardRescheduleDialog();
+          scrollTourTargetIntoView(APP_TOUR_TARGETS.rescheduleDialogOptions);
         }
       }
 
@@ -488,6 +490,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       if (stepKey === APP_TOUR_STEP_KEYS.settingsIntro || stepKey === APP_TOUR_STEP_KEYS.settingsSection) {
         closeAllTourDialogs(shouldUseMobileLayout);
         dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
+        preloadSettingsPanelForTour();
         onNavigate?.('settings');
         scrollTourTargetIntoView(meta.target);
       }
@@ -527,16 +530,14 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           if (meta.isFixed) {
             prepareFixedHeaderTourTarget(meta.target);
           }
-          waitForTourTarget(meta.target, () => {
+          waitForTourTargetWithRetry(meta.target, () => {
             setJoyrideActive(true);
             setTourStepIndex(index);
-          });
+          }, meta);
         };
         targetRetryTimeoutRef.current = window.setTimeout(
           retry,
-          meta.isFixed
-            ? TIMING_CONSTANTS.tour.highlightDelay + TIMING_CONSTANTS.tour.navigationComplete
-            : TIMING_CONSTANTS.tour.highlightDelay,
+          getTourStepAdvanceDelayMs(meta),
         );
         return;
       }
@@ -570,7 +571,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             if (advanceTimeoutRef.current !== null) {
               window.clearTimeout(advanceTimeoutRef.current);
             }
-            const delay = advanceDelayForStep(nextMeta);
+            const delay = getTourStepAdvanceDelayMs(nextMeta);
             advanceTimeoutRef.current = window.setTimeout(() => {
               advanceTimeoutRef.current = null;
               if (!nextMeta) {
@@ -582,10 +583,10 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
               if (nextMeta.isFixed) {
                 prepareFixedHeaderTourTarget(nextMeta.target);
               }
-              waitForTourTarget(nextMeta.target, () => {
+              waitForTourTargetWithRetry(nextMeta.target, () => {
                 setTourStepIndex(nextIndex);
                 setJoyrideActive(true);
-              });
+              }, nextMeta);
             }, delay);
           };
 
@@ -599,10 +600,10 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           setJoyrideActive(false);
           if (prevMeta) {
             prepareStep(prevIndex);
-            waitForTourTarget(prevMeta.target, () => {
+            waitForTourTargetWithRetry(prevMeta.target, () => {
               setTourStepIndex(prevIndex);
               setJoyrideActive(true);
-            });
+            }, prevMeta);
           } else {
             setTourStepIndex(prevIndex);
             setJoyrideActive(true);

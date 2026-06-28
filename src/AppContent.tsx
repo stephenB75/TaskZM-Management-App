@@ -783,6 +783,29 @@ export default function AppContent() {
 
   const handleTourStart = () => {
     tourTriggeredRef.current = false;
+
+    const needsPanelClose = currentView !== 'dashboard' || aiPanelOpen;
+
+    if (needsPanelClose) {
+      flushSync(() => {
+        setCurrentView('dashboard');
+        if (shouldUseMobileLayout) {
+          setMobileView('week');
+        }
+        setAiPanelOpen(false);
+        setSidebarOpen(false);
+      });
+
+      const panelCloseMs = shouldUseMobileLayout
+        ? TIMING_CONSTANTS.tour.navigationComplete
+        : Math.round(DESKTOP_SIDE_PANEL_EXIT_SECONDS * 1000) + TIMING_CONSTANTS.tour.navigationComplete;
+
+      window.setTimeout(() => {
+        setRunTour(true);
+      }, panelCloseMs);
+      return;
+    }
+
     setRunTour(true);
   };
 

@@ -133,6 +133,20 @@ export const TIMING_CONSTANTS = {
     highlightDelay: 600, // ms - Wait for navigation and panel opening before highlighting
     initializationReset: 100, // ms - Short delay for initialization reset
     pricingDialogDelay: 300, // ms - Delay before showing pricing dialog after tour
+    /** Multipliers × highlightDelay for waitForTourTarget max poll duration */
+    targetWait: {
+      defaultMultiplier: 4,
+      dialogMultiplier: 10,
+      viewSwitchMultiplier: 8,
+      lazyPanelMultiplier: 20,
+    },
+    /** Extra advance delay beyond highlightDelay (ms) before showing step */
+    advanceExtra: {
+      dialogMs: 600,
+      viewSwitchMs: 400,
+      lazyPanelMs: 500,
+      fixedHeaderMs: 300,
+    },
     animation: {
       delay: 0.2, // seconds - Default animation delay for illustrations
       duration: 0.8, // seconds - Default animation duration for illustrations
