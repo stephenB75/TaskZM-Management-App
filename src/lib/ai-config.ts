@@ -746,6 +746,17 @@ export const BASE_TASK_DURATION_MINUTES = 30;
 export const MIN_TASK_DURATION_MINUTES = 15;
 
 /**
+ * Minimum prep/transition gap (minutes) between AI-scheduled tasks and around calendar events.
+ * Gives time to prepare before the next task or meeting.
+ */
+export const AI_SCHEDULING_PREP_BUFFER_MIN_MINUTES = 10;
+
+/**
+ * Default prep/transition gap (minutes) used by the AI scheduler between tasks and calendar events.
+ */
+export const AI_SCHEDULING_PREP_BUFFER_MINUTES = 15;
+
+/**
  * Maximum task duration in minutes
  * Default: 300 minutes (5 hours)
  */

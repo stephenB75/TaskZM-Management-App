@@ -5,7 +5,7 @@ import { useCalendar } from '../contexts/CalendarContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isTaskBlocked, calculateDependencyDepth, getDateString } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
-import { findNextAvailableSlot, filterCalendarEventsForDay, buildCalendarConflictBlocksForDay, scheduleBlocksConflict, type ConflictCalendarEvent } from '../lib/time-conflict';
+import { findNextAvailableSlot, filterCalendarEventsForDay, buildCalendarConflictBlocksForDay, scheduleBlocksConflict, buildAISchedulerSlotOptions, expandTaskBlockEndForSchedulingPrep, expandCalendarBlockForSchedulingPrep, type ConflictCalendarEvent } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
@@ -27,6 +27,7 @@ import {
   DEFAULT_TASK_CATEGORY,
   PRIORITY_WEIGHTS,
   STATUS_WEIGHTS,
+  AI_SCHEDULING_PREP_BUFFER_MINUTES,
   getCategoryFromTags,
   isWeekend as isWeekendDate,
   DEFAULT_CATEGORY_WORK_WINDOW_HOURS,
@@ -58,6 +59,8 @@ import {
   AI_SCHEDULER_MAX_END_HOUR,
 } from '../lib/business-constants';
 import type { Task, RecurrenceConfig } from '../types';
+
+const AI_SCHEDULING_PREP_BUFFER_MS = AI_SCHEDULING_PREP_BUFFER_MINUTES * MILLISECONDS_PER_MINUTE;
 
 export interface SchedulePlan {
   task: Task;
@@ -314,9 +317,19 @@ export function useAIScheduler() {
 
     const calendarBlocks = buildCalendarConflictBlocksForDay(calendarEventsForDay, scheduleDate);
     const slotConflictsWithCalendar = (startMs: number, durationMin: number) =>
-      calendarBlocks.some((block) =>
-        scheduleBlocksConflict(startMs, startMs + durationMin * MILLISECONDS_PER_MINUTE, block.start, block.end),
-      );
+      calendarBlocks.some((block) => {
+        const expanded = expandCalendarBlockForSchedulingPrep(
+          block.start,
+          block.end,
+          AI_SCHEDULING_PREP_BUFFER_MS,
+        );
+        return scheduleBlocksConflict(
+          startMs,
+          startMs + durationMin * MILLISECONDS_PER_MINUTE,
+          expanded.start,
+          expanded.end,
+        );
+      });
 
     const isWeekendDate = isWeekend(scheduleDate);
     const dayHours = isWeekendDate ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
@@ -585,6 +598,7 @@ export function useAIScheduler() {
           const prevTaskDuration = getTaskMinutes(prevTask); // Use AI estimator for existing tasks
           gapStart = new Date(prevTaskStart);
           gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
+          gapStart.setTime(gapStart.getTime() + AI_SCHEDULING_PREP_BUFFER_MS);
         }
         
         // Ensure gap start is not before earliest allowed time
@@ -592,14 +606,15 @@ export function useAIScheduler() {
           gapStart = new Date(earliestAllowedTime);
         }
         
-        // Calculate gap duration in minutes
-        const gapDuration = (currentTaskStart.getTime() - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
+        // Reserve prep time before the next task starts
+        const gapEndMs = currentTaskStart.getTime() - AI_SCHEDULING_PREP_BUFFER_MS;
+        const gapDuration = (gapEndMs - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
         // Use provided duration if available, otherwise use AI estimator
         // Uses cached AI Analysis results for consistency
         const taskDuration = taskDurationMinutes ?? getTaskMinutes(task, { useCachedAIAnalysis: true });
         
         // If gap is large enough for this task and clear of calendar events, use it
-        if (gapDuration >= taskDuration && !slotConflictsWithCalendar(gapStart.getTime(), taskDuration)) {
+        if (gapDuration >= taskDuration && gapDuration > 0 && !slotConflictsWithCalendar(gapStart.getTime(), taskDuration)) {
           return {
             hours: gapStart.getHours(),
             minutes: gapStart.getMinutes(),
@@ -617,6 +632,7 @@ export function useAIScheduler() {
         const lastTaskDuration = getTaskMinutes(lastTask); // Use AI estimator for existing tasks
         let nextAvailableTime = new Date(lastTaskStart);
         nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
+        nextAvailableTime.setTime(nextAvailableTime.getTime() + AI_SCHEDULING_PREP_BUFFER_MS);
         
         // CRITICAL: Check if this time conflicts with any other tasks from the plan
         // Even though we're placing after the last task, there might be tasks in the plan
@@ -653,20 +669,28 @@ export function useAIScheduler() {
           
           if (sameStartTime || overlaps) {
             hasConflict = true;
-            maxConflictEnd = Math.max(maxConflictEnd, existingTaskEnd);
+            maxConflictEnd = Math.max(
+              maxConflictEnd,
+              expandTaskBlockEndForSchedulingPrep(existingTaskEnd, AI_SCHEDULING_PREP_BUFFER_MS),
+            );
           }
         }
 
         for (const block of calendarBlocks) {
-          if (scheduleBlocksConflict(nextAvailableTimeMs, nextAvailableEndMs, block.start, block.end)) {
+          const expandedBlock = expandCalendarBlockForSchedulingPrep(
+            block.start,
+            block.end,
+            AI_SCHEDULING_PREP_BUFFER_MS,
+          );
+          if (scheduleBlocksConflict(nextAvailableTimeMs, nextAvailableEndMs, expandedBlock.start, expandedBlock.end)) {
             hasConflict = true;
-            maxConflictEnd = Math.max(maxConflictEnd, block.end);
+            maxConflictEnd = Math.max(maxConflictEnd, expandedBlock.end);
           }
         }
         
         // If conflicts found, move to after ALL conflicting tasks
         if (hasConflict) {
-          nextAvailableTime = new Date(maxConflictEnd + MILLISECONDS_PER_MINUTE);
+          nextAvailableTime = new Date(maxConflictEnd);
         }
         
         // CRITICAL: Round to nearest interval to avoid scheduling at odd times
@@ -777,21 +801,29 @@ export function useAIScheduler() {
       if (sameStartTime || overlaps) {
         hasConflict = true;
         // Track the latest end time of all conflicts (not just the first one)
-        maxConflictEnd = Math.max(maxConflictEnd, existingTaskInfo.end);
+        maxConflictEnd = Math.max(
+          maxConflictEnd,
+          expandTaskBlockEndForSchedulingPrep(existingTaskInfo.end, AI_SCHEDULING_PREP_BUFFER_MS),
+        );
       }
     }
 
     for (const block of calendarBlocks) {
-      if (scheduleBlocksConflict(calculatedTimeMs, calculatedEndMs, block.start, block.end)) {
+      const expandedBlock = expandCalendarBlockForSchedulingPrep(
+        block.start,
+        block.end,
+        AI_SCHEDULING_PREP_BUFFER_MS,
+      );
+      if (scheduleBlocksConflict(calculatedTimeMs, calculatedEndMs, expandedBlock.start, expandedBlock.end)) {
         hasConflict = true;
-        maxConflictEnd = Math.max(maxConflictEnd, block.end);
+        maxConflictEnd = Math.max(maxConflictEnd, expandedBlock.end);
       }
     }
     
     // If conflicts found, move to after ALL conflicting tasks
     if (hasConflict) {
-      // Move to after the latest conflict end time, plus a 1-minute buffer
-      const conflictFreeTime = new Date(maxConflictEnd + MILLISECONDS_PER_MINUTE);
+      // Move to after the latest conflict end time (prep buffer already included)
+      const conflictFreeTime = new Date(maxConflictEnd);
       // Round up to nearest interval
       const conflictMinutes = conflictFreeTime.getMinutes();
       const roundedConflictMinutes = Math.ceil(conflictMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
@@ -828,7 +860,7 @@ export function useAIScheduler() {
       // We'll check gaps between existing tasks, working backwards from the first conflict
       for (let i = sameCategoryTasksForConflictCheck.length - 1; i >= 0; i--) {
         const taskBeforeGap = sameCategoryTasksForConflictCheck[i];
-        const gapEnd = taskBeforeGap.start; // Gap ends where this task starts
+        const gapEnd = taskBeforeGap.start - AI_SCHEDULING_PREP_BUFFER_MS; // Gap ends before next item with prep time
         
         // Find the task before this one (or category start if this is the first task)
         let gapStart: number;
@@ -836,7 +868,7 @@ export function useAIScheduler() {
           gapStart = earliestAllowedTime.getTime();
         } else {
           const prevTask = sameCategoryTasksForConflictCheck[i - 1];
-          gapStart = prevTask.end;
+          gapStart = expandTaskBlockEndForSchedulingPrep(prevTask.end, AI_SCHEDULING_PREP_BUFFER_MS);
         }
         
         // Calculate gap duration
@@ -2293,14 +2325,14 @@ export function useAIScheduler() {
                   testTime,
                   taskDurationMinutes,
                   allOccurrenceTasks, // Use all tasks for this occurrence day (existing + from plan)
-                  {
+                  buildAISchedulerSlotOptions({
                     ensureAfterCurrentTime: false, // Don't check current time for future days
                     categoryHours: categoryHours ? {
                       start: categoryHours.start,
                       end: categoryHours.end,
                     } : undefined,
                     calendarEvents: occurrenceDayCalendarEvents, // Include calendar events for this occurrence day
-                  }
+                  })
                 );
                 
                 // Check if the result is different from the test time (indicates conflict)
@@ -2351,14 +2383,14 @@ export function useAIScheduler() {
                   candidateTime,
                   taskDurationMinutes,
                   validTasksForDay, // Use the main task list for consistency
-                  {
+                  buildAISchedulerSlotOptions({
                     ensureAfterCurrentTime: isToday,
                     categoryHours: categoryHours ? {
                       start: categoryHours.start,
                       end: categoryHours.end,
                     } : undefined,
                     calendarEvents: scheduleDayCalendarEvents, // Include calendar events
-                  }
+                  })
                 );
                 
                 // Only accept if the double-check confirms the time is valid (within 1 minute)
@@ -2419,14 +2451,14 @@ export function useAIScheduler() {
                 proposedTime,
                 taskDurationMinutes,
                 validTasksForDay,
-                {
+                buildAISchedulerSlotOptions({
                   ensureAfterCurrentTime: isToday,
                   categoryHours: categoryHours ? {
                     start: categoryHours.start,
                     end: categoryHours.end,
                   } : undefined,
                   calendarEvents: dayCalendarEvents,
-                }
+                })
               );
             }
           } else {
@@ -2439,14 +2471,14 @@ export function useAIScheduler() {
               proposedTime,
               taskDurationMinutes,
               validTasksForDay, // Use validated tasks to ensure conflict detection works
-              {
+              buildAISchedulerSlotOptions({
                 ensureAfterCurrentTime: isToday,
                 categoryHours: categoryHours ? {
                   start: categoryHours.start,
                   end: categoryHours.end,
                 } : undefined,
                 calendarEvents: dayCalendarEvents,
-              }
+              })
             );
           }
           
@@ -2510,11 +2542,11 @@ export function useAIScheduler() {
               proposedTime,
               taskDurationMinutes,
               validTasksForDay, // Use validated tasks which includes tasks from current plan
-              {
+              buildAISchedulerSlotOptions({
                 ensureAfterCurrentTime: isToday,
                 categoryHours: undefined, // Remove category hours constraint to find ANY slot
                 calendarEvents: dayCalendarEventsForFallback, // Include calendar events to avoid conflicts
-              }
+              })
             );
             
             if (isSlotOnRequestedDay(fallbackSlot, scheduleDate)) {
@@ -2549,11 +2581,11 @@ export function useAIScheduler() {
                 earliestTime,
                 taskDurationMinutes,
                 validTasksForDay,
-                {
+                buildAISchedulerSlotOptions({
                   ensureAfterCurrentTime: isToday,
                   categoryHours: undefined,
                   calendarEvents: dayCalendarEventsForLastResort, // Include calendar events to avoid conflicts
-                }
+                })
               );
               
               if (isSlotOnRequestedDay(lastResortSlot, scheduleDate)) {
@@ -3010,14 +3042,14 @@ export function useAIScheduler() {
             proposedTime,
             taskDurationMinutes,
             validTasksForDay, // Use validated tasks to ensure conflict detection works
-            {
+            buildAISchedulerSlotOptions({
               ensureAfterCurrentTime: isToday,
               categoryHours: effectiveCategoryHours ? {
                 start: effectiveCategoryHours.start,
                 end: effectiveCategoryHours.end,
               } : undefined,
               calendarEvents: dayCalendarEventsForFinalSlot,
-            }
+            })
           );
           
           // If a valid slot was found (on the requested day, not next-day 12 AM), use it
@@ -3049,14 +3081,14 @@ export function useAIScheduler() {
               fallbackProposed,
               taskDurationMinutes,
               validTasksForDay,
-              {
+              buildAISchedulerSlotOptions({
                 ensureAfterCurrentTime: isToday,
                 categoryHours: effectiveCategoryHours ? {
                   start: effectiveCategoryHours.start,
                   end: effectiveCategoryHours.end,
                 } : undefined,
                 calendarEvents: dayCalendarEventsForFinalSlot,
-              }
+              })
             );
             if (isSlotOnRequestedDay(fallbackSlot, scheduleDate)) {
               scheduleDate.setTime(fallbackSlot.getTime());
@@ -3074,14 +3106,14 @@ export function useAIScheduler() {
             scheduleDate,
             taskDurationMinutes,
             validTasksForDay, // Use validated tasks which includes tasks from current plan
-            {
+            buildAISchedulerSlotOptions({
               ensureAfterCurrentTime: false, // Already handled by earlier logic
               categoryHours: effectiveCategoryHours ? {
                 start: effectiveCategoryHours.start,
                 end: effectiveCategoryHours.end,
               } : undefined,
               calendarEvents: finalCheckCalendarEvents, // Include calendar events
-            }
+            })
           );
           
           // ALWAYS use the conflict-free slot from findNextAvailableSlot (tasks + calendar events)
@@ -3285,11 +3317,11 @@ export function useAIScheduler() {
           scheduleDate,
           taskDurationMinutes,
           updatedValidTasksForDay, // Use updated list with all tasks from plan
-          {
+          buildAISchedulerSlotOptions({
             ensureAfterCurrentTime: false,
             categoryHours: undefined, // Remove constraints for final check
             calendarEvents: finalSafeguardCalendarEvents, // Include calendar events
-          }
+          })
         );
         
         // ALWAYS use the final safeguard slot if it's on the requested day
@@ -3393,7 +3425,10 @@ export function useAIScheduler() {
           if (sameStartTime || overlaps) {
             hasConflict = true;
             // Track the latest end time of all conflicts
-            maxConflictEnd = Math.max(maxConflictEnd, planEndMs);
+            maxConflictEnd = Math.max(
+              maxConflictEnd,
+              expandTaskBlockEndForSchedulingPrep(planEndMs, AI_SCHEDULING_PREP_BUFFER_MS),
+            );
             
             if (import.meta.env.DEV) {
               logger.error('🚨 DIRECT CONFLICT DETECTED BEFORE ADDING TO PLAN!', {
@@ -3409,9 +3444,14 @@ export function useAIScheduler() {
         }
 
         for (const block of buildCalendarConflictBlocksForDay(calendarEventsForDay(scheduleDate), scheduleDate)) {
-          if (scheduleBlocksConflict(scheduleTimeMs, scheduleEndMs, block.start, block.end)) {
+          const expandedBlock = expandCalendarBlockForSchedulingPrep(
+            block.start,
+            block.end,
+            AI_SCHEDULING_PREP_BUFFER_MS,
+          );
+          if (scheduleBlocksConflict(scheduleTimeMs, scheduleEndMs, expandedBlock.start, expandedBlock.end)) {
             hasConflict = true;
-            maxConflictEnd = Math.max(maxConflictEnd, block.end);
+            maxConflictEnd = Math.max(maxConflictEnd, expandedBlock.end);
             if (import.meta.env.DEV) {
               logger.error('🚨 DIRECT CALENDAR CONFLICT BEFORE ADDING TO PLAN!', {
                 currentTask: { id: task.id, title: task.title, time: scheduleDate.toISOString() },
@@ -3425,8 +3465,8 @@ export function useAIScheduler() {
         
         // If conflicts found, move to after ALL conflicting tasks and calendar events
         if (hasConflict) {
-          // Move to after the latest conflict end time, plus a 1-minute buffer
-          scheduleDate.setTime(maxConflictEnd + MILLISECONDS_PER_MINUTE);
+          // Move to after the latest conflict end time (prep buffer already included)
+          scheduleDate.setTime(maxConflictEnd);
           // Round up to nearest interval to ensure we're past the conflict
           const minutes = scheduleDate.getMinutes();
           const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
@@ -3492,7 +3532,10 @@ export function useAIScheduler() {
             
             if (sameStartTime || overlaps) {
               stillHasConflict = true;
-              newMaxConflictEnd = Math.max(newMaxConflictEnd, planEndMs);
+              newMaxConflictEnd = Math.max(
+                newMaxConflictEnd,
+                expandTaskBlockEndForSchedulingPrep(planEndMs, AI_SCHEDULING_PREP_BUFFER_MS),
+              );
               
               if (import.meta.env.DEV) {
                 logger.error('🚨 DIRECT CONFLICT STILL EXISTS AFTER ADJUSTMENT!', {
@@ -3515,7 +3558,7 @@ export function useAIScheduler() {
           
           // If still has conflict, move again (this should be rare, but handle it)
           if (stillHasConflict) {
-            scheduleDate.setTime(newMaxConflictEnd + MILLISECONDS_PER_MINUTE);
+            scheduleDate.setTime(newMaxConflictEnd);
             const minutes = scheduleDate.getMinutes();
             const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
             if (roundedMinutes >= MINUTES_PER_HOUR) {
@@ -3740,13 +3783,20 @@ export function useAIScheduler() {
           if (!t.scheduledDate) return false;
           const start = new Date(t.scheduledDate).getTime();
           const dur = getTaskMinutes(t, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
-          const end = start + dur;
+          const end = expandTaskBlockEndForSchedulingPrep(start + dur, AI_SCHEDULING_PREP_BUFFER_MS);
           return scheduleBlocksConflict(itemStart, itemEnd, start, end);
         });
         const targetDate = item.scheduledDate instanceof Date ? new Date(item.scheduledDate) : new Date(item.scheduledDate);
         const dayCalendarEventsForOverlap = calendarEventsForDay(targetDate);
         const hasCalendarOverlap = buildCalendarConflictBlocksForDay(dayCalendarEventsForOverlap, targetDate)
-          .some((block) => scheduleBlocksConflict(itemStart, itemEnd, block.start, block.end));
+          .some((block) => {
+            const expanded = expandCalendarBlockForSchedulingPrep(
+              block.start,
+              block.end,
+              AI_SCHEDULING_PREP_BUFFER_MS,
+            );
+            return scheduleBlocksConflict(itemStart, itemEnd, expanded.start, expanded.end);
+          });
         if (hasTaskOverlap || hasCalendarOverlap) {
           const categoryHours = getCategoryHoursForTask(item.task, targetDate, hoursSettings);
           const slot = findNextAvailableSlot(
@@ -3754,7 +3804,7 @@ export function useAIScheduler() {
             targetDate,
             Math.round(itemDuration / MILLISECONDS_PER_MINUTE),
             othersForDay,
-            { ensureAfterCurrentTime: false, categoryHours: categoryHours ?? undefined, calendarEvents: dayCalendarEventsForOverlap }
+            buildAISchedulerSlotOptions({ ensureAfterCurrentTime: false, categoryHours: categoryHours ?? undefined, calendarEvents: dayCalendarEventsForOverlap })
           );
           if (isSlotOnRequestedDay(slot, targetDate) && slot.getTime() !== itemStart) {
             const newDate = new Date(slot.getTime());

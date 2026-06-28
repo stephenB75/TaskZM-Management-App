@@ -4,7 +4,11 @@ import { parseCalendarEventTime, getDateString } from './utils';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
 import { getTaskMinutes, getTaskSchedulingMinutes } from './daily-hours-utils';
 import { DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MINUTES_PER_HOUR, HOURS_PER_DAY } from './business-constants';
-import { TIME_ROUNDING_INTERVAL_MINUTES, MIN_TASK_DURATION_MINUTES } from './ai-config';
+import {
+  TIME_ROUNDING_INTERVAL_MINUTES,
+  MIN_TASK_DURATION_MINUTES,
+  AI_SCHEDULING_PREP_BUFFER_MINUTES,
+} from './ai-config';
 
 /**
  * Options for finding next available slot
@@ -15,6 +19,40 @@ export interface FindSlotOptions {
   onlyFixOverlaps?: boolean;
   categoryHours?: { start: number; end: number } | null; // in minutes from midnight
   calendarEvents?: Array<{ start: Date | string; end: Date | string; title: string }>; // Calendar events to avoid (start/end as ISO string or Date)
+  /** Prep buffer (minutes) after tasks and before/after calendar events — used by AI scheduler. */
+  schedulingPrepBufferMinutes?: number;
+}
+
+/** Slot options for AI scheduler calls — includes prep time between tasks and around events. */
+export function buildAISchedulerSlotOptions(
+  base: Omit<FindSlotOptions, 'schedulingPrepBufferMinutes'> = {},
+): FindSlotOptions {
+  return {
+    ...base,
+    schedulingPrepBufferMinutes: AI_SCHEDULING_PREP_BUFFER_MINUTES,
+  };
+}
+
+export function getSchedulingPrepBufferMs(options?: FindSlotOptions): number {
+  const minutes = options?.schedulingPrepBufferMinutes ?? 0;
+  return minutes > 0 ? minutes * MILLISECONDS_PER_MINUTE : 0;
+}
+
+/** Extend a task block end to reserve prep time before the next item. */
+export function expandTaskBlockEndForSchedulingPrep(blockEndMs: number, prepBufferMs: number): number {
+  return prepBufferMs > 0 ? blockEndMs + prepBufferMs : blockEndMs;
+}
+
+/** Extend a calendar block to reserve prep time before and after the event. */
+export function expandCalendarBlockForSchedulingPrep(
+  blockStartMs: number,
+  blockEndMs: number,
+  prepBufferMs: number,
+): { start: number; end: number } {
+  if (prepBufferMs <= 0) {
+    return { start: blockStartMs, end: blockEndMs };
+  }
+  return { start: blockStartMs - prepBufferMs, end: blockEndMs + prepBufferMs };
 }
 
 /** Calendar event shape for findNextAvailableSlot conflict checks. */
@@ -460,16 +498,19 @@ export function findNextAvailableSlot(
       }
     }
 
+    const prepBufferMs = getSchedulingPrepBufferMs(options);
+
     // Check if this slot conflicts with any existing task or calendar event
     // IMPORTANT: Check ALL conflicts, not just the first one, to ensure we move past all overlapping tasks
     let hasConflict = false;
     let maxConflictEnd = candidateStart; // Track the latest end time of all conflicts
     
-    // Check conflicts with tasks: same start or shared time (back-to-back is allowed).
+    // Check conflicts with tasks: same start or shared time (back-to-back when no prep buffer).
     for (const existing of sortedTasks) {
-      if (scheduleBlocksConflict(candidateStart, candidateEnd, existing.start, existing.end)) {
+      const existingBlockEnd = expandTaskBlockEndForSchedulingPrep(existing.end, prepBufferMs);
+      if (scheduleBlocksConflict(candidateStart, candidateEnd, existing.start, existingBlockEnd)) {
         hasConflict = true;
-        maxConflictEnd = Math.max(maxConflictEnd, existing.end);
+        maxConflictEnd = Math.max(maxConflictEnd, existingBlockEnd);
         if (import.meta.env.DEV) {
           console.debug('🔴 Conflict detected in findNextAvailableSlot', {
             candidateTime: new Date(candidateStart).toISOString(),
@@ -484,11 +525,12 @@ export function findNextAvailableSlot(
       }
     }
     
-    // Check conflicts with calendar events: same start or shared time.
+    // Check conflicts with calendar events: same start or shared time (+ prep buffer when set).
     for (const event of calendarConflicts) {
-      if (scheduleBlocksConflict(candidateStart, candidateEnd, event.start, event.end)) {
+      const expandedEvent = expandCalendarBlockForSchedulingPrep(event.start, event.end, prepBufferMs);
+      if (scheduleBlocksConflict(candidateStart, candidateEnd, expandedEvent.start, expandedEvent.end)) {
         hasConflict = true;
-        maxConflictEnd = Math.max(maxConflictEnd, event.end);
+        maxConflictEnd = Math.max(maxConflictEnd, expandedEvent.end);
         if (import.meta.env.DEV) {
           console.debug('🔴 Calendar event conflict detected in findNextAvailableSlot', {
             candidateTime: new Date(candidateStart).toISOString(),
@@ -534,9 +576,9 @@ export function findNextAvailableSlot(
       return candidateTime;
     }
     
-    // Move candidate time to after ALL conflicting tasks (not just the first one)
-    // Add a small buffer (1 minute) to ensure we don't schedule exactly at the end time
-    candidateTime = new Date(maxConflictEnd + MILLISECONDS_PER_MINUTE);
+    // Move candidate time to after ALL conflicting blocks (prep buffer already included when set).
+    const postConflictGapMs = prepBufferMs > 0 ? 0 : MILLISECONDS_PER_MINUTE;
+    candidateTime = new Date(maxConflictEnd + postConflictGapMs);
     // Round to nearest 15-minute slot (rounding up to ensure we're past the conflict)
     const minutes = candidateTime.getMinutes();
     const roundedMinutes = Math.ceil(minutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
