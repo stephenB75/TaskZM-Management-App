@@ -1404,13 +1404,14 @@ export function DashboardView({
           >
             {/* View mode toggle — desktop only */}
             {!shouldUseMobileLayout && (
-              <div 
-                className="flex items-center"
-                style={{ 
+              <div
+                className="flex items-center flex-shrink-0"
+                data-tour="week-month-toggle"
+                style={{
                   gap: isSmallScreen ? HEADER_GAP_XSMALL : HEADER_GAP_SMALL,
                 }}
               >
-                <div 
+                <div
                   className={cn(
                     "flex items-center rounded-full border",
                     TOGGLE_SWITCH_SPACING.container.gapClass,
@@ -1421,8 +1422,10 @@ export function DashboardView({
                     TOGGLE_SWITCH_COLORS.container.border.light,
                     TOGGLE_SWITCH_COLORS.container.border.dark
                   )}
-                  style={{ transform: `scale(${buttonScale})` }}
-                  data-tour="week-month-toggle"
+                  style={{
+                    transform: `scale(${buttonScale})`,
+                    transformOrigin: "center right",
+                  }}
                 >
               <Icon
                 name="calendar"
@@ -1482,6 +1485,7 @@ export function DashboardView({
               className={cn(!shouldUseMobileLayout ? 'flex items-center flex-shrink-0' : 'hidden')}
               style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
             >
+              <div data-tour="ai-scheduler" className="inline-flex flex-shrink-0">
               <DashboardSchedulerActionButton
                 label={
                   showActionText
@@ -1493,8 +1497,9 @@ export function DashboardView({
                 onClick={handleScheduleUnscheduledTasks}
                 isSmallScreen={isSmallScreen}
                 scale={buttonScale}
-                data-tour="ai-scheduler"
               />
+              </div>
+              <div data-tour="re-schedule" className="inline-flex flex-shrink-0">
               <DashboardSchedulerActionButton
                 label={DASHBOARD_VIEW_HEADER_LABELS.reschedule}
                 icon="calendar-dots"
@@ -1504,8 +1509,8 @@ export function DashboardView({
                 iconSpinning={isRescheduling}
                 isSmallScreen={isSmallScreen}
                 scale={buttonScale}
-                data-tour="re-schedule"
               />
+              </div>
             </div>
           </div>
         }

@@ -225,7 +225,42 @@ function isTourTargetReady(target: string): boolean {
   const el = document.querySelector(target);
   if (!el) return false;
   const rect = el.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0;
+  return rect.width > 4 && rect.height > 4 && rect.bottom > 0 && rect.right > 0;
+}
+
+function waitForTourTarget(
+  target: string,
+  onReady: () => void,
+  timeoutMs: number = TIMING_CONSTANTS.tour.highlightDelay * 4,
+): void {
+  const started = performance.now();
+  const tick = () => {
+    if (isTourTargetReady(target) || performance.now() - started >= timeoutMs) {
+      onReady();
+      return;
+    }
+    window.requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+function prepareFixedHeaderTourTarget(target: string) {
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  waitForTourTarget(target, () => {
+    const el = document.querySelector(target);
+    el?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+  });
+}
+
+function advanceDelayForStep(nextMeta: AppTourStepMeta | undefined): number {
+  if (!nextMeta) return 0;
+  if (nextMeta.isFixed) {
+    return TIMING_CONSTANTS.tour.highlightDelay + TIMING_CONSTANTS.tour.navigationComplete;
+  }
+  if (stepNeedsNavigationLeadTime(nextMeta)) {
+    return TIMING_CONSTANTS.tour.highlightDelay;
+  }
+  return 0;
 }
 
 function stepNeedsNavigationLeadTime(meta: AppTourStepMeta | undefined): boolean {
@@ -295,8 +330,13 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       disableBeacon: meta.disableBeacon ?? false,
       content: renderStepContent(meta, shouldUseMobileLayout),
       data: meta,
-      disableScrolling: false,
+      disableScrolling: meta.isFixed ?? false,
+      disableScrollParentFix: meta.isFixed ?? false,
       isFixed: meta.isFixed ?? false,
+      offset: meta.isFixed ? 8 : 0,
+      floaterProps: meta.isFixed
+        ? { offset: 12, options: { preventOverflow: { boundariesElement: 'viewport' } } }
+        : undefined,
       spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
     }));
   }, [shouldUseMobileLayout, stepDefs]);
@@ -405,7 +445,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         || stepKey === APP_TOUR_STEP_KEYS.aiReschedulerButton
         || stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle
       ) {
-        scrollTourTargetIntoView(meta.target);
+        prepareFixedHeaderTourTarget(meta.target);
       }
     },
     [getStepMeta, onNavigate, shouldUseMobileLayout],
@@ -425,15 +465,19 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         if (targetRetryTimeoutRef.current !== null) {
           window.clearTimeout(targetRetryTimeoutRef.current);
         }
-        targetRetryTimeoutRef.current = window.setTimeout(() => {
+        const retry = () => {
           targetRetryTimeoutRef.current = null;
-          if (isTourTargetReady(meta.target)) {
-            setTourStepIndex(index);
-          } else {
-            prepareStep(index);
-            setTourStepIndex(index);
+          if (meta.isFixed) {
+            prepareFixedHeaderTourTarget(meta.target);
           }
-        }, TIMING_CONSTANTS.tour.highlightDelay);
+          waitForTourTarget(meta.target, () => setTourStepIndex(index));
+        };
+        targetRetryTimeoutRef.current = window.setTimeout(
+          retry,
+          meta.isFixed
+            ? TIMING_CONSTANTS.tour.highlightDelay + TIMING_CONSTANTS.tour.navigationComplete
+            : TIMING_CONSTANTS.tour.highlightDelay,
+        );
         return;
       }
 
@@ -466,12 +510,15 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             if (advanceTimeoutRef.current !== null) {
               window.clearTimeout(advanceTimeoutRef.current);
             }
-            const delay = stepNeedsNavigationLeadTime(nextMeta)
-              ? TIMING_CONSTANTS.tour.highlightDelay
-              : 0;
+            const delay = advanceDelayForStep(nextMeta);
             advanceTimeoutRef.current = window.setTimeout(() => {
               advanceTimeoutRef.current = null;
-              setTourStepIndex(nextIndex);
+              if (nextMeta?.isFixed) {
+                prepareFixedHeaderTourTarget(nextMeta.target);
+                waitForTourTarget(nextMeta.target, () => setTourStepIndex(nextIndex));
+              } else {
+                setTourStepIndex(nextIndex);
+              }
             }, delay);
           };
 
@@ -577,8 +624,9 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         disableAnimation: false,
       }}
       disableOverlayClose
+      disableScrollParentFix
       disableScrolling={false}
-      scrollToFirstStep
+      scrollToFirstStep={false}
       scrollOffset={TOUR_CONSTANTS.scroll.offset}
       spotlightPadding={TOUR_CONSTANTS.spotlight.padding}
     />
