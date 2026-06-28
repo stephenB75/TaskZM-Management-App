@@ -500,21 +500,21 @@ const TOUR_DASHBOARD_PREP_STEP_KEYS = new Set<AppTourStepKey>([
 
 export function getTourStepAdvanceDelayMs(meta: AppTourStepMeta | undefined): number {
   if (!meta) return 0;
-  const { highlightDelay, advanceExtra } = TIMING_CONSTANTS.tour;
+  const { navigationComplete, advanceExtra } = TIMING_CONSTANTS.tour;
   if (meta.isFixed) {
-    return highlightDelay + advanceExtra.fixedHeaderMs;
+    return navigationComplete + advanceExtra.fixedHeaderMs;
   }
   if (TOUR_DIALOG_STEP_KEYS.has(meta.stepKey)) {
-    return highlightDelay + advanceExtra.dialogMs;
+    return navigationComplete + advanceExtra.dialogMs;
   }
   if (TOUR_LAZY_PANEL_STEP_KEYS.has(meta.stepKey)) {
-    return highlightDelay + advanceExtra.lazyPanelMs;
+    return navigationComplete + advanceExtra.lazyPanelMs;
   }
   if (meta.stepKey === APP_TOUR_STEP_KEYS.monthView) {
-    return highlightDelay + advanceExtra.viewSwitchMs;
+    return navigationComplete + advanceExtra.viewSwitchMs;
   }
   if (TOUR_DASHBOARD_PREP_STEP_KEYS.has(meta.stepKey)) {
-    return highlightDelay;
+    return navigationComplete;
   }
   return 0;
 }

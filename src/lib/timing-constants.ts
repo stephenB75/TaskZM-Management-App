@@ -128,9 +128,9 @@ export const TIMING_CONSTANTS = {
   
   // Tour-specific delays and timeouts
   tour: {
-    navigationComplete: 300, // ms - Wait for navigation to complete before opening panels
-    navigationReset: 500, // ms - Delay before resetting navigation flag
-    highlightDelay: 600, // ms - Wait for navigation and panel opening before highlighting
+    navigationComplete: 200, // ms - Wait for navigation / panel animation before highlighting
+    navigationReset: 300, // ms - Delay before resetting navigation flag
+    highlightDelay: 200, // ms - Scroll/highlight settle (keep in sync with navigationComplete)
     initializationReset: 100, // ms - Short delay for initialization reset
     pricingDialogDelay: 300, // ms - Delay before showing pricing dialog after tour
     /** Multipliers × highlightDelay for waitForTourTarget max poll duration */
@@ -140,12 +140,12 @@ export const TIMING_CONSTANTS = {
       viewSwitchMultiplier: 8,
       lazyPanelMultiplier: 20,
     },
-    /** Extra advance delay beyond highlightDelay (ms) before showing step */
+    /** Extra advance delay beyond navigationComplete (ms) before showing step */
     advanceExtra: {
-      dialogMs: 600,
-      viewSwitchMs: 400,
-      lazyPanelMs: 500,
-      fixedHeaderMs: 300,
+      dialogMs: 250,
+      viewSwitchMs: 150,
+      lazyPanelMs: 300,
+      fixedHeaderMs: 100,
     },
     animation: {
       delay: 0.2, // seconds - Default animation delay for illustrations

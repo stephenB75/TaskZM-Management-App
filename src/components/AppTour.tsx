@@ -221,7 +221,7 @@ function scrollTourTargetIntoView(target: string) {
   window.setTimeout(() => {
     const el = queryVisibleTourTarget(target);
     el?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-  }, TIMING_CONSTANTS.tour.highlightDelay);
+  }, TIMING_CONSTANTS.tour.navigationComplete);
 }
 
 function isTourTargetReady(target: string): boolean {
@@ -571,23 +571,28 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             if (advanceTimeoutRef.current !== null) {
               window.clearTimeout(advanceTimeoutRef.current);
             }
+            if (!nextMeta) {
+              setTourStepIndex(nextIndex);
+              return;
+            }
+            setJoyrideActive(false);
+            prepareStep(nextIndex);
+            if (nextMeta.isFixed) {
+              prepareFixedHeaderTourTarget(nextMeta.target);
+            }
             const delay = getTourStepAdvanceDelayMs(nextMeta);
-            advanceTimeoutRef.current = window.setTimeout(() => {
+            const showNextStep = () => {
               advanceTimeoutRef.current = null;
-              if (!nextMeta) {
-                setTourStepIndex(nextIndex);
-                return;
-              }
-              setJoyrideActive(false);
-              prepareStep(nextIndex);
-              if (nextMeta.isFixed) {
-                prepareFixedHeaderTourTarget(nextMeta.target);
-              }
               waitForTourTargetWithRetry(nextMeta.target, () => {
                 setTourStepIndex(nextIndex);
                 setJoyrideActive(true);
               }, nextMeta);
-            }, delay);
+            };
+            if (delay <= 0) {
+              showNextStep();
+              return;
+            }
+            advanceTimeoutRef.current = window.setTimeout(showNextStep, delay);
           };
 
           scheduleAdvance();
