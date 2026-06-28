@@ -493,8 +493,19 @@ export const APP_TOUR_DEMO_SCHEDULE_TASKS = [
 
 const TOUR_LAZY_PANEL_STEP_KEYS = new Set<AppTourStepKey>([
   APP_TOUR_STEP_KEYS.settingsIntro,
-  APP_TOUR_STEP_KEYS.settingsSection,
 ]);
+
+export function isAppTourSettingsIntroStep(meta: AppTourStepMeta | undefined): boolean {
+  return meta?.stepKey === APP_TOUR_STEP_KEYS.settingsIntro;
+}
+
+export function isAppTourSettingsSectionStep(meta: AppTourStepMeta | undefined): boolean {
+  return meta?.stepKey === APP_TOUR_STEP_KEYS.settingsSection;
+}
+
+export function isAppTourSettingsStep(meta: AppTourStepMeta | undefined): boolean {
+  return isAppTourSettingsIntroStep(meta) || isAppTourSettingsSectionStep(meta);
+}
 
 export function getTourStepWaitTimeoutMs(
   meta: AppTourStepMeta | undefined,
@@ -508,6 +519,9 @@ export function getTourStepWaitTimeoutMs(
   }
   if (TOUR_LAZY_PANEL_STEP_KEYS.has(meta.stepKey)) {
     return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.lazyPanelMultiplier;
+  }
+  if (isAppTourSettingsSectionStep(meta)) {
+    return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.defaultMultiplier;
   }
   if (meta.stepKey === APP_TOUR_STEP_KEYS.monthView) {
     return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.viewSwitchMultiplier;

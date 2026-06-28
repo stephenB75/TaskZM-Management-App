@@ -24,6 +24,8 @@ import {
   getTourStepAdvanceDelayMs,
   getTourStepWaitTimeoutMs,
   isAppTourDialogStep,
+  isAppTourSettingsSectionStep,
+  isAppTourSettingsStep,
   queryVisibleTourTarget,
   type AppTourStepMeta,
 } from '../lib/app-tour-constants';
@@ -214,6 +216,18 @@ function dispatchTourActiveChanged(active: boolean) {
   window.dispatchEvent(new CustomEvent('tour-active-changed', { detail: { active } }));
 }
 
+function dispatchTourExpandSettingsSection(sectionId: string) {
+  window.dispatchEvent(new CustomEvent('tour-expand-settings-section', { detail: { sectionId } }));
+}
+
+function scrollTourTargetIntoView(target: string) {
+  window.setTimeout(() => {
+    const el = queryVisibleTourTarget(target);
+    if (!el || el.getAttribute('data-slot') === 'dialog-content') return;
+    const behavior: ScrollBehavior = target.includes('settings-') ? 'instant' : 'smooth';
+    el.scrollIntoView({ behavior, block: 'nearest', inline: 'nearest' });
+  }, TIMING_CONSTANTS.tour.navigationComplete);
+}
 function closeTourDashboardDialogs() {
   dispatchTourCloseAiDialog();
   dispatchTourCloseDashboardDialogs();
@@ -224,14 +238,6 @@ function closeAllTourDialogs(isMobile: boolean) {
   if (isMobile) {
     dispatchTourClosePanel();
   }
-}
-
-function scrollTourTargetIntoView(target: string) {
-  window.setTimeout(() => {
-    const el = queryVisibleTourTarget(target);
-    if (!el || el.getAttribute('data-slot') === 'dialog-content') return;
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-  }, TIMING_CONSTANTS.tour.navigationComplete);
 }
 
 function isTourTargetReady(target: string): boolean {
@@ -286,10 +292,10 @@ function prepareFixedHeaderTourTarget(target: string) {
 
 function stepNeedsNavigationLeadTime(meta: AppTourStepMeta | undefined): boolean {
   if (!meta) return false;
+  if (isAppTourSettingsSectionStep(meta)) return false;
   return (
     DASHBOARD_TARGETS.has(meta.target)
     || meta.stepKey === APP_TOUR_STEP_KEYS.settingsIntro
-    || meta.stepKey === APP_TOUR_STEP_KEYS.settingsSection
   );
 }
 
@@ -338,11 +344,22 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
   const targetRetryTimeoutRef = useRef<number | null>(null);
   const advanceTimeoutRef = useRef<number | null>(null);
   const preparedStepIndexRef = useRef<number | null>(null);
+  const settingsPanelReadyRef = useRef(false);
+  const tourFinishingRef = useRef(false);
 
   const stepDefs = useMemo(
     () => buildAppTourStepDefs(shouldUseMobileLayout),
     [shouldUseMobileLayout],
   );
+
+  const markSettingsPanelReadyIfNeeded = useCallback((target: string) => {
+    if (
+      target === APP_TOUR_TARGETS.settingsPanel
+      || target.startsWith('[data-tour="settings-')
+    ) {
+      settingsPanelReadyRef.current = true;
+    }
+  }, []);
 
   const activateJoyrideForStep = useCallback((index: number) => {
     const meta = stepDefs[index];
@@ -353,15 +370,32 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
     setJoyrideActive(false);
     waitForTourTargetWithRetry(
       meta.target,
-      () => setJoyrideActive(true),
+      () => {
+        markSettingsPanelReadyIfNeeded(meta.target);
+        setJoyrideActive(true);
+      },
       meta,
     );
-  }, [stepDefs]);
+  }, [stepDefs, markSettingsPanelReadyIfNeeded]);
+
+  useEffect(() => {
+    const handleSettingsPanelReady = () => {
+      settingsPanelReadyRef.current = true;
+    };
+    window.addEventListener('settings-panel-tour-ready', handleSettingsPanelReady);
+    return () => {
+      window.removeEventListener('settings-panel-tour-ready', handleSettingsPanelReady);
+    };
+  }, []);
 
   useEffect(() => {
     dispatchTourActiveChanged(run);
     if (!run) {
       closeAllTourDialogs(shouldUseMobileLayout);
+      settingsPanelReadyRef.current = false;
+      tourFinishingRef.current = false;
+    } else {
+      preloadSettingsPanelForTour();
     }
     return () => {
       dispatchTourActiveChanged(false);
@@ -373,6 +407,8 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       setTourStepIndex(0);
       setJoyrideActive(false);
       preparedStepIndexRef.current = null;
+      settingsPanelReadyRef.current = false;
+      tourFinishingRef.current = false;
       window.requestAnimationFrame(() => activateJoyrideForStep(0));
     } else {
       setJoyrideActive(false);
@@ -528,6 +564,9 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
         preloadSettingsPanelForTour();
         onNavigate?.('settings');
+        if (stepKey === APP_TOUR_STEP_KEYS.settingsSection && meta.settingsId) {
+          dispatchTourExpandSettingsSection(meta.settingsId);
+        }
         scrollTourTargetIntoView(meta.target);
       }
 
@@ -571,6 +610,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             prepareFixedHeaderTourTarget(meta.target);
           }
           waitForTourTargetWithRetry(meta.target, () => {
+            markSettingsPanelReadyIfNeeded(meta.target);
             setJoyrideActive(true);
           }, meta);
         };
@@ -622,19 +662,42 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
               setTourStepIndex(nextIndex);
               return;
             }
-            // Controlled Joyride requires stepIndex to update on the first Next click.
+
+            const advanceToStep = () => {
+              markSettingsPanelReadyIfNeeded(nextMeta.target);
+              waitForTourTargetWithRetry(nextMeta.target, () => {
+                markSettingsPanelReadyIfNeeded(nextMeta.target);
+                setJoyrideActive(true);
+              }, nextMeta);
+            };
+
+            // Body / welcome-style steps — no target wait or joyride pause.
+            if (nextMeta.target === APP_TOUR_TARGETS.body) {
+              setTourStepIndex(nextIndex);
+              setJoyrideActive(true);
+              return;
+            }
+
+            // Settings sections after the panel is loaded — keep tooltip alive between steps.
+            const fastSettingsStep =
+              isAppTourSettingsSectionStep(nextMeta) && settingsPanelReadyRef.current;
+
             setTourStepIndex(nextIndex);
-            setJoyrideActive(false);
             prepareStep(nextIndex);
             if (nextMeta.isFixed) {
               prepareFixedHeaderTourTarget(nextMeta.target);
             }
+
+            if (fastSettingsStep) {
+              advanceToStep();
+              return;
+            }
+
+            setJoyrideActive(false);
             const delay = getTourStepAdvanceDelayMs(nextMeta);
             const showNextStep = () => {
               advanceTimeoutRef.current = null;
-              waitForTourTargetWithRetry(nextMeta.target, () => {
-                setJoyrideActive(true);
-              }, nextMeta);
+              advanceToStep();
             };
             if (delay <= 0) {
               showNextStep();
@@ -655,6 +718,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           if (prevMeta) {
             prepareStep(prevIndex);
             waitForTourTargetWithRetry(prevMeta.target, () => {
+              markSettingsPanelReadyIfNeeded(prevMeta.target);
               setJoyrideActive(true);
             }, prevMeta);
           } else {
@@ -671,14 +735,17 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
 
       if (status === STATUS.FINISHED) {
         const onLastStep = index >= steps.length - 1;
-        const advancing = action === ACTIONS.NEXT || action === ACTIONS.SKIP;
-        if (onLastStep && advancing) {
+        const userCompleted =
+          action === ACTIONS.NEXT || action === ACTIONS.SKIP || action === ACTIONS.CLOSE;
+        if (onLastStep && userCompleted) {
           finishTour();
         }
         return;
       }
 
       function finishTour() {
+        if (tourFinishingRef.current) return;
+        tourFinishingRef.current = true;
         try {
           localStorage.setItem(NOTIFICATION_STORAGE_KEYS.tourCompleted, 'true');
         } catch (error) {
@@ -700,7 +767,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         onFinish();
       }
     },
-    [getStepMeta, onFinish, onShowPricing, prepareStep, shouldUseMobileLayout, steps.length, subscription.tier],
+    [getStepMeta, markSettingsPanelReadyIfNeeded, onFinish, onShowPricing, prepareStep, shouldUseMobileLayout, steps.length, subscription.tier],
   );
 
   const joyrideStyles = {

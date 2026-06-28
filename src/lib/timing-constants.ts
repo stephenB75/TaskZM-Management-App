@@ -138,13 +138,13 @@ export const TIMING_CONSTANTS = {
       defaultMultiplier: 4,
       dialogMultiplier: 10,
       viewSwitchMultiplier: 8,
-      lazyPanelMultiplier: 20,
+      lazyPanelMultiplier: 12,
     },
     /** Extra advance delay beyond navigationComplete (ms) before showing step */
     advanceExtra: {
       dialogMs: 250,
       viewSwitchMs: 150,
-      lazyPanelMs: 300,
+      lazyPanelMs: 200,
       fixedHeaderMs: 100,
     },
     animation: {

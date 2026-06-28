@@ -835,6 +835,7 @@ export default function AppContent() {
   };
 
   const handleBottomNavInteraction = () => {
+    if (runTour) return;
     setRunTour(false);
   };
 

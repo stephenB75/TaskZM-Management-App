@@ -236,7 +236,32 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [profileAvatar, setProfileAvatar] = useState<string | undefined>(user?.avatar);
   const [showAvatarSelection, setShowAvatarSelection] = useState(false);
   const [serverAIConfigured, setServerAIConfigured] = useState<boolean | null>(null);
+  const [openAccordionSections, setOpenAccordionSections] = useState<string[]>(['user-profile']);
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
+
+  useEffect(() => {
+    const handleTourExpandSection = (event: CustomEvent<{ sectionId: string }>) => {
+      const { sectionId } = event.detail;
+      setOpenAccordionSections((prev) => (
+        prev.includes(sectionId) ? prev : [...prev, sectionId]
+      ));
+      window.requestAnimationFrame(() => {
+        const sectionEl = document.querySelector(`[data-tour="settings-${sectionId}"]`);
+        if (sectionEl instanceof HTMLElement) {
+          sectionEl.scrollIntoView({ behavior: 'instant', block: 'nearest' });
+        }
+      });
+    };
+
+    window.addEventListener('tour-expand-settings-section', handleTourExpandSection as EventListener);
+    window.requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent('settings-panel-tour-ready'));
+    });
+
+    return () => {
+      window.removeEventListener('tour-expand-settings-section', handleTourExpandSection as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -581,7 +606,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 : SETTINGS_PANEL_PADDING_TOP 
             }}
           >
-          <Accordion type="multiple" defaultValue={['user-profile']} className="w-full min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SECTION_GAP }}>
+          <Accordion
+            type="multiple"
+            value={openAccordionSections}
+            onValueChange={setOpenAccordionSections}
+            className="w-full min-w-0"
+            style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SECTION_GAP }}
+          >
         <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.account} />
         <SettingsSection
           value="user-profile"
