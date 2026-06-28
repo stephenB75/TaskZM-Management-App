@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.29';
-export const VERSION_NAME = 'Timeline UX & AI Prep Buffer';
+export const APP_VERSION = '1.0.30';
+export const VERSION_NAME = 'App Tour & Demo Dialogs';
 export const VERSION_DATE = 'June 7, 2026';
-export const BUILD_NUMBER = '20260607-1';
+export const BUILD_NUMBER = '20260607-2';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,20 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.30',
+    date: 'June 7, 2026',
+    name: 'App Tour & Demo Dialogs',
+    changes: [
+      'App tour: AI Scheduler and Re-Schedule steps auto-open example dialogs — advance with tour Next only (no Accept/Reschedule required)',
+      'App tour: TourDemoDialogNotice banner and non-interactive demo dialog content during tour (modal=false, pointer-events-none)',
+      'App tour: Settings section steps target accordion headers, auto placement, and smart scroll so tooltips stay on screen (fixes Calendar Integrations cutoff)',
+      'App tour: Improved floater viewport padding, scroll-parent fix, and settings panel scroll clearance for Next/Back buttons',
+      'App tour: Faster step transitions, controlled step index (no double-click Next), settings fast-path between accordion sections',
+      'Today Agenda: calendar event timeline blocks use timestamp-based duration (matches card time labels)',
+      'Manual scheduling: buildManualSchedulingSlotOptions delegates to shared slot builder (prep buffer on AI paths only)',
+    ],
+  },
   {
     version: '1.0.29',
     date: 'June 7, 2026',
