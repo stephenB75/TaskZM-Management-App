@@ -7,8 +7,8 @@
 
 export const APP_VERSION = '1.0.30';
 export const VERSION_NAME = 'App Tour & Demo Dialogs';
-export const VERSION_DATE = 'June 7, 2026';
-export const BUILD_NUMBER = '20260607-2';
+export const VERSION_DATE = 'June 28, 2026';
+export const BUILD_NUMBER = '20260628-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -85,7 +85,7 @@ export const CORE_FUNCTIONS = [
 export const VERSION_HISTORY = [
   {
     version: '1.0.30',
-    date: 'June 7, 2026',
+    date: 'June 28, 2026',
     name: 'App Tour & Demo Dialogs',
     changes: [
       'App tour: AI Scheduler and Re-Schedule steps auto-open example dialogs — advance with tour Next only (no Accept/Reschedule required)',
