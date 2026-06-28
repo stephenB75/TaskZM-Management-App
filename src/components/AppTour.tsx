@@ -327,6 +327,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
   const [joyrideActive, setJoyrideActive] = useState(false);
   const targetRetryTimeoutRef = useRef<number | null>(null);
   const advanceTimeoutRef = useRef<number | null>(null);
+  const preparedStepIndexRef = useRef<number | null>(null);
 
   const stepDefs = useMemo(
     () => buildAppTourStepDefs(shouldUseMobileLayout),
@@ -351,9 +352,11 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
     if (run) {
       setTourStepIndex(0);
       setJoyrideActive(false);
+      preparedStepIndexRef.current = null;
       window.requestAnimationFrame(() => activateJoyrideForStep(0));
     } else {
       setJoyrideActive(false);
+      preparedStepIndexRef.current = null;
     }
   }, [run, activateJoyrideForStep]);
 
@@ -408,6 +411,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
     (index: number) => {
       const meta = getStepMeta(index);
       if (!meta) return;
+      preparedStepIndexRef.current = index;
 
       const { stepKey, target } = meta;
 
@@ -443,16 +447,21 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulePreview) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
         dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
-        closeAllTourDialogs(shouldUseMobileLayout);
-        if (shouldUseMobileLayout) {
-          dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
-          window.setTimeout(() => {
-            dispatchTourOpenAiDialog('schedule-preview');
-            scrollTourTargetIntoView(APP_TOUR_TARGETS.aiSchedulePreviewMobile);
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        } else {
-          dispatchTourOpenDashboardSchedulePreview();
-          scrollTourTargetIntoView(APP_TOUR_TARGETS.aiSchedulePreview);
+        const previewTarget = shouldUseMobileLayout
+          ? APP_TOUR_TARGETS.aiSchedulePreviewMobile
+          : APP_TOUR_TARGETS.aiSchedulePreview;
+        if (!isTourTargetReady(previewTarget)) {
+          closeAllTourDialogs(shouldUseMobileLayout);
+          if (shouldUseMobileLayout) {
+            dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+            window.setTimeout(() => {
+              dispatchTourOpenAiDialog('schedule-preview');
+              scrollTourTargetIntoView(previewTarget);
+            }, TIMING_CONSTANTS.tour.navigationComplete);
+          } else {
+            dispatchTourOpenDashboardSchedulePreview();
+            scrollTourTargetIntoView(previewTarget);
+          }
         }
       }
 
@@ -471,15 +480,23 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       if (stepKey === APP_TOUR_STEP_KEYS.rescheduleDialog) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
         preloadSettingsPanelForTour();
-        if (shouldUseMobileLayout) {
-          dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
-          window.setTimeout(() => {
-            dispatchTourOpenAiDialog('reschedule-day');
-            scrollTourTargetIntoView(APP_TOUR_TARGETS.rescheduleDialog);
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        } else {
-          dispatchTourOpenDashboardRescheduleDialog();
-          scrollTourTargetIntoView(APP_TOUR_TARGETS.rescheduleDialogOptions);
+        const rescheduleTarget = shouldUseMobileLayout
+          ? APP_TOUR_TARGETS.rescheduleDialog
+          : APP_TOUR_TARGETS.rescheduleDialogOptions;
+        if (!isTourTargetReady(rescheduleTarget)) {
+          if (shouldUseMobileLayout) {
+            closeAllTourDialogs(shouldUseMobileLayout);
+            dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+            window.setTimeout(() => {
+              dispatchTourOpenAiDialog('reschedule-day');
+              scrollTourTargetIntoView(rescheduleTarget);
+            }, TIMING_CONSTANTS.tour.navigationComplete);
+          } else {
+            dispatchTourCloseAiDialog();
+            dispatchTourCloseDashboardDialogs();
+            dispatchTourOpenDashboardRescheduleDialog();
+            scrollTourTargetIntoView(rescheduleTarget);
+          }
         }
       }
 
@@ -516,12 +533,16 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       const meta = getStepMeta(index);
 
       if (type === EVENTS.STEP_BEFORE) {
-        prepareStep(index);
+        if (preparedStepIndexRef.current !== index) {
+          prepareStep(index);
+        }
       }
 
       if (type === EVENTS.TARGET_NOT_FOUND && meta) {
         setJoyrideActive(false);
-        prepareStep(index);
+        if (preparedStepIndexRef.current !== index) {
+          prepareStep(index);
+        }
         if (targetRetryTimeoutRef.current !== null) {
           window.clearTimeout(targetRetryTimeoutRef.current);
         }
@@ -532,7 +553,6 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           }
           waitForTourTargetWithRetry(meta.target, () => {
             setJoyrideActive(true);
-            setTourStepIndex(index);
           }, meta);
         };
         targetRetryTimeoutRef.current = window.setTimeout(
@@ -575,6 +595,8 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
               setTourStepIndex(nextIndex);
               return;
             }
+            // Controlled Joyride requires stepIndex to update on the first Next click.
+            setTourStepIndex(nextIndex);
             setJoyrideActive(false);
             prepareStep(nextIndex);
             if (nextMeta.isFixed) {
@@ -584,7 +606,6 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             const showNextStep = () => {
               advanceTimeoutRef.current = null;
               waitForTourTargetWithRetry(nextMeta.target, () => {
-                setTourStepIndex(nextIndex);
                 setJoyrideActive(true);
               }, nextMeta);
             };
@@ -602,15 +623,14 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         if (action === ACTIONS.PREV) {
           const prevIndex = Math.max(0, index - 1);
           const prevMeta = getStepMeta(prevIndex);
+          setTourStepIndex(prevIndex);
           setJoyrideActive(false);
           if (prevMeta) {
             prepareStep(prevIndex);
             waitForTourTargetWithRetry(prevMeta.target, () => {
-              setTourStepIndex(prevIndex);
               setJoyrideActive(true);
             }, prevMeta);
           } else {
-            setTourStepIndex(prevIndex);
             setJoyrideActive(true);
           }
           return;
