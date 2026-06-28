@@ -282,6 +282,11 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
   const targetRetryTimeoutRef = useRef<number | null>(null);
   const advanceTimeoutRef = useRef<number | null>(null);
 
+  const stepDefs = useMemo(
+    () => buildAppTourStepDefs(shouldUseMobileLayout),
+    [shouldUseMobileLayout],
+  );
+
   const activateJoyrideForStep = useCallback((index: number) => {
     const meta = stepDefs[index];
     if (!meta || meta.target === APP_TOUR_TARGETS.body) {
@@ -329,11 +334,6 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
     };
     fetchPricing();
   }, [user?.id]);
-
-  const stepDefs = useMemo(
-    () => buildAppTourStepDefs(shouldUseMobileLayout),
-    [shouldUseMobileLayout],
-  );
 
   const steps = useMemo((): Step[] => {
     const placementFor = (p?: AppTourStepMeta['placement']): TourPlacement => {
