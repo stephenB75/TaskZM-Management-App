@@ -964,7 +964,7 @@ export function TodayAgendaView({
         <div
           className="flex flex-col w-full relative"
           style={{ zIndex: Z_INDEX.TIMELINE_CONTAINER }}
-          data-agenda-timeline="v25"
+          data-agenda-timeline="v26"
         >
           <div
             className="flex w-full items-stretch"

@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.28';
-export const VERSION_NAME = 'Today Agenda Timeline Content & Duration';
-export const VERSION_DATE = 'June 26, 2026';
-export const BUILD_NUMBER = '20260626-1';
+export const APP_VERSION = '1.0.29';
+export const VERSION_NAME = 'Timeline UX & AI Prep Buffer';
+export const VERSION_DATE = 'June 7, 2026';
+export const BUILD_NUMBER = '20260607-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,21 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.29',
+    date: 'June 7, 2026',
+    name: 'Timeline UX & AI Prep Buffer',
+    changes: [
+      'Today Agenda: content-aware row heights so task/event titles, descriptions, and footers are fully visible (no line-clamp on full-tier timeline cards)',
+      'Today Agenda: 30-min grid lines extend through visually stacked rows; interval labels hide when covered by extended card rows',
+      'Today Agenda: removed hover tooltips and scale rollovers on timeline task and event cards',
+      'Desktop sidebar: persistent panel shell with translateX slide; fast 220ms retract; sidebar icons stay clickable during close',
+      'Mobile Week nav: tour overlay no longer blocks bottom nav; TodayAgendaView tier guard fixes TypeError on Week tap',
+      'AI scheduler: 15-minute prep buffer between consecutive tasks and before/after calendar events (AI_SCHEDULING_PREP_BUFFER_MINUTES)',
+      'Manual scheduling (TaskDialog, drag-drop) unchanged — prep buffer applies to AI scheduler only',
+      'Build marker data-agenda-timeline=v26',
+    ],
+  },
   {
     version: '1.0.28',
     date: 'June 26, 2026',
