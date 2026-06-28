@@ -316,6 +316,74 @@ export function isTodayAgendaMinuteOccupiedByScheduledBlock(
   );
 }
 
+/** True when a 30-min tick falls inside a block's scheduled range or visual row on the timeline. */
+export function isTodayAgendaMinuteOccupiedByVisualTimelineBlock<
+  T extends {
+    displayTopPx: number;
+    scheduledStartTopPx: number;
+    rowHeightPx?: number;
+    scheduledSlotHeightPx: number;
+    actualStartMins: number;
+    actualEndMins: number;
+  },
+>(
+  minutesFromStart: number,
+  blocks: T[],
+  viewStartMins: number,
+  pxPerMinute: number = TODAY_AGENDA_TIMELINE.pxPerMinute,
+): boolean {
+  if (isTodayAgendaMinuteOccupiedByScheduledBlock(minutesFromStart, blocks)) {
+    return true;
+  }
+
+  const gridLineTopPx = (minutesFromStart - viewStartMins) * pxPerMinute;
+  return blocks.some((block) => {
+    const rowTopPx = getTodayAgendaBlockRowTopPx({
+      displayTopPx: block.displayTopPx,
+      scheduledStartTopPx: block.scheduledStartTopPx,
+    });
+    const rowHeightPx = block.rowHeightPx ?? block.scheduledSlotHeightPx;
+    const rowBottomPx = rowTopPx + rowHeightPx;
+    return gridLineTopPx >= rowTopPx && gridLineTopPx < rowBottomPx;
+  });
+}
+
+/** Extend 30-min grid labels through visually stacked rows below the padded viewport end. */
+export function getTodayAgendaTimelineGridLabelEndMins<
+  T extends {
+    displayTopPx: number;
+    scheduledStartTopPx: number;
+    rowHeightPx?: number;
+    scheduledSlotHeightPx: number;
+  },
+>(
+  blocks: T[],
+  viewStartMins: number,
+  viewEndMins: number,
+  totalMinutes: number = TODAY_AGENDA_TIMELINE.totalMinutes,
+  pxPerMinute: number = TODAY_AGENDA_TIMELINE.pxPerMinute,
+  intervalMinutes: number = TODAY_AGENDA_TIMELINE.labelIntervalMinutes,
+): number {
+  let maxVisualBottomPx = 0;
+  for (const block of blocks) {
+    const rowTopPx = getTodayAgendaBlockRowTopPx({
+      displayTopPx: block.displayTopPx,
+      scheduledStartTopPx: block.scheduledStartTopPx,
+    });
+    const rowHeightPx = block.rowHeightPx ?? block.scheduledSlotHeightPx;
+    maxVisualBottomPx = Math.max(maxVisualBottomPx, rowTopPx + rowHeightPx);
+  }
+
+  if (maxVisualBottomPx <= 0) {
+    return viewEndMins;
+  }
+
+  const visualEndMins =
+    viewStartMins +
+    Math.ceil(maxVisualBottomPx / pxPerMinute / intervalMinutes) * intervalMinutes;
+  return Math.min(totalMinutes, Math.max(viewEndMins, visualEndMins));
+}
+
 /** Minimum slot height (px) before start and end labels are shown separately. */
 export function getTodayAgendaCombinedSlotLabelMaxHeightPx(
   lineHeightPx: number = TODAY_AGENDA_TIMELINE.timeLabelLineHeightPx,

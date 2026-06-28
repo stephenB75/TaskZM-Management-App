@@ -333,69 +333,36 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   const timeAndPeriod = !allDay ? getTimeAndPeriod(start) : null;
   const accentDotColor = palette.dotHex;
 
-  const agendaCard = (options: { compact?: boolean; hideTime?: boolean; micro?: boolean; timelineEmbedded?: boolean }) => (
-    <TooltipProvider delayDuration={300}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <AgendaListCard
-            accentColor={accentDotColor}
-            badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
-            title={title}
-            subtitle={options.compact || options.micro ? undefined : (location || undefined)}
-            timePart={timeAndPeriod?.timePart}
-            periodPart={timeAndPeriod?.period}
-            allDayLabel={allDay ? CALENDAR_EVENT_UI_TEXT.allDay : undefined}
-            footerIcon="calendar"
-            footerSourceLabel={providerLabel}
-            durationLabel={formatDuration(durationMinutes)}
-            compact={options.compact}
-            hideTime={options.hideTime}
-            micro={options.micro}
-            embedded={options.timelineEmbedded}
-            hideAccentColumn={options.timelineEmbedded}
-            style={{ height: '100%', minHeight: '100%', maxHeight: '100%' }}
-          />
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <p className="font-semibold">{title}</p>
-          <p className="text-primary-foreground/90 text-xs mt-0.5">
-            {allDay ? CALENDAR_EVENT_UI_TEXT.allDay : `${startTime} – ${endTime}`} · {formatDuration(durationMinutes)}
-            {location && ` · ${location}`}
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
+  const agendaCard = (options: { compact?: boolean; hideTime?: boolean; micro?: boolean; timelineEmbedded?: boolean }) => {
+    const card = (
+      <AgendaListCard
+        accentColor={accentDotColor}
+        badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
+        title={title}
+        subtitle={options.compact || options.micro ? undefined : (location || undefined)}
+        timePart={timeAndPeriod?.timePart}
+        periodPart={timeAndPeriod?.period}
+        allDayLabel={allDay ? CALENDAR_EVENT_UI_TEXT.allDay : undefined}
+        footerIcon="calendar"
+        footerSourceLabel={providerLabel}
+        durationLabel={formatDuration(durationMinutes)}
+        compact={options.compact}
+        hideTime={options.hideTime}
+        micro={options.micro}
+        embedded={options.timelineEmbedded}
+        hideAccentColumn={options.timelineEmbedded}
+        style={options.timelineEmbedded ? undefined : { height: '100%', minHeight: '100%', maxHeight: '100%' }}
+      />
+    );
 
-  // Today Agenda timeline — single AgendaListCard shell (matches task cards)
-  if (variant === 'timeline') {
-    const tier = timelineLayoutTier ?? (compactTimeline ? 'compact' : 'full');
-    const useMicro = tier === 'micro';
-    const useCompact = tier === 'compact' || useMicro;
+    if (options.timelineEmbedded) {
+      return card;
+    }
+
     return (
       <TooltipProvider delayDuration={300}>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <AgendaListCard
-              accentColor={accentDotColor}
-              badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
-              title={title}
-              subtitle={useMicro ? undefined : (location || undefined)}
-              footerIcon="calendar"
-              footerSourceLabel={providerLabel}
-              durationLabel={formatDuration(durationMinutes)}
-              compact={useCompact}
-              micro={useMicro}
-              hideFooter={timelineHideFooter}
-              fitTimelineSlot
-              hideTime
-              hideAccentColumn
-              embedded
-              leftAccentColor={accentDotColor}
-              leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
-              surface="timeline"
-            />
-          </TooltipTrigger>
+          <TooltipTrigger asChild>{card}</TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
             <p className="font-semibold">{title}</p>
             <p className="text-primary-foreground/90 text-xs mt-0.5">
@@ -405,6 +372,34 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+    );
+  };
+
+  // Today Agenda timeline — single AgendaListCard shell (matches task cards)
+  if (variant === 'timeline') {
+    const tier = timelineLayoutTier ?? (compactTimeline ? 'compact' : 'full');
+    const useMicro = tier === 'micro';
+    const useCompact = tier === 'compact' || useMicro;
+    return (
+      <AgendaListCard
+        accentColor={accentDotColor}
+        badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
+        title={title}
+        subtitle={useMicro ? undefined : (location || undefined)}
+        footerIcon="calendar"
+        footerSourceLabel={providerLabel}
+        durationLabel={formatDuration(durationMinutes)}
+        compact={useCompact}
+        micro={useMicro}
+        hideFooter={timelineHideFooter}
+        fitTimelineSlot
+        hideTime
+        hideAccentColumn
+        embedded
+        leftAccentColor={accentDotColor}
+        leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
+        surface="timeline"
+      />
     );
   }
 

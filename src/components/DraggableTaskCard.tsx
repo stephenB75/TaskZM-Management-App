@@ -839,69 +839,54 @@ export const DraggableTaskCard = React.forwardRef<
       const useMicro = tier === 'micro';
       const useCompact = tier === 'compact' || useMicro;
       return (
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                ref={(node) => {
-                  cardRef.current = node;
-                  setNodeRef(node);
-                }}
-                style={{
-                  ...style,
-                  width: '100%',
-                  minHeight: timelineBlockHeightPx,
-                  touchAction: dragDisabled ? 'auto' : 'none',
-                  ...(!dragDisabled && (isDragging || isSortableDragging)
-                    ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 }
-                    : {}),
-                }}
-                {...attributes}
-                {...(dragDisabled ? {} : listeners)}
-                className={cn(
-                  'relative w-full flex flex-col',
-                  !dragDisabled && !(isDragging || isSortableDragging) && 'cursor-grab',
-                  !dragDisabled && (isDragging || isSortableDragging) && 'cursor-grabbing',
-                  task.status === 'done' && 'opacity-60',
-                )}
-                data-task-card="true"
-                data-task-id={task.id}
-                data-sortable-id={sortableId}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!isDragging && !isSortableDragging && !document.body.classList.contains('dragging')) {
-                    requestAnimationFrame(() => onClick());
-                  }
-                }}
-              >
-                {renderAgendaTaskCard({
-                  compact: useCompact,
-                  micro: useMicro,
-                  embedded: true,
-                  fitTimelineSlot: true,
-                  surface: 'timeline',
-                  hideTime: hideTimelineTime,
-                  hideAccentColumn: hideTimelineAccent,
-                  hideFooter: timelineHideFooter,
-                  leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
-                  leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
-                  style: {
-                    minHeight: timelineBlockHeightPx,
-                  },
-                })}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs">
-              <p className="font-semibold">{task.title}</p>
-              {(durationMinutes ?? task.estimatedTime) != null && (
-                <p className="text-primary-foreground/90 text-xs mt-0.5">
-                  {formatDuration(durationMinutes ?? task.estimatedTime ?? null)}
-                  {agendaTaskSubtitle ? ` · ${agendaTaskSubtitle}` : ''}
-                </p>
-              )}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div
+          ref={(node) => {
+            cardRef.current = node;
+            setNodeRef(node);
+          }}
+          style={{
+            ...style,
+            width: '100%',
+            minHeight: timelineBlockHeightPx,
+            touchAction: dragDisabled ? 'auto' : 'none',
+            ...(!dragDisabled && (isDragging || isSortableDragging)
+              ? { opacity: TASK_CARD_OPACITY.draggingKanban / 100 }
+              : {}),
+          }}
+          {...attributes}
+          {...(dragDisabled ? {} : listeners)}
+          className={cn(
+            'relative w-full flex flex-col',
+            !dragDisabled && !(isDragging || isSortableDragging) && 'cursor-grab',
+            !dragDisabled && (isDragging || isSortableDragging) && 'cursor-grabbing',
+            task.status === 'done' && 'opacity-60',
+          )}
+          data-task-card="true"
+          data-task-id={task.id}
+          data-sortable-id={sortableId}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isDragging && !isSortableDragging && !document.body.classList.contains('dragging')) {
+              requestAnimationFrame(() => onClick());
+            }
+          }}
+        >
+          {renderAgendaTaskCard({
+            compact: useCompact,
+            micro: useMicro,
+            embedded: true,
+            fitTimelineSlot: true,
+            surface: 'timeline',
+            hideTime: hideTimelineTime,
+            hideAccentColumn: hideTimelineAccent,
+            hideFooter: timelineHideFooter,
+            leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
+            leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
+            style: {
+              minHeight: timelineBlockHeightPx,
+            },
+          })}
+        </div>
       );
     }
 
@@ -944,7 +929,9 @@ export const DraggableTaskCard = React.forwardRef<
               ? `cursor-grabbing ${TASK_CARD_TIMELINE.scale.draggingKanban} ring-2 ring-primary/50 ring-offset-2`
               : "",
             !dragDisabled && !(isDragging || isSortableDragging)
-              ? `cursor-grab ${TASK_CARD_TIMELINE.scale.hoverKanban} relative z-0 hover:z-20`
+              ? isTodayAgenda
+                ? 'cursor-grab relative z-0'
+                : `cursor-grab ${TASK_CARD_TIMELINE.scale.hoverKanban} relative z-0 hover:z-20`
               : "",
           )}
           data-dnd-kit-dragging={isDragging || isSortableDragging}
@@ -1035,42 +1022,24 @@ export const DraggableTaskCard = React.forwardRef<
           }}
         >
           {isTodayAgenda ? (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  {renderAgendaTaskCard({
-                    compact: false,
-                    embedded: timelineBlockHeightPx != null,
-                    surface: 'timeline',
-                    hideTime: hideTimelineTime,
-                    hideAccentColumn: hideTimelineAccent,
-                    leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
-                    leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
-                    showNextUpBadge: isNextUp && timelineBlockHeightPx == null,
-                    style:
-                      timelineBlockHeightPx != null
-                        ? { minHeight: timelineBlockHeightPx }
-                        : {
-                            height: '100%',
-                            minHeight: '100%',
-                            maxHeight: '100%',
-                          },
-                  })}
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-xs">
-                  <p className="font-semibold">{task.title}</p>
-                  <p className="text-primary-foreground/90 text-xs mt-0.5">
-                    {scheduledTimeLabel && <span>{scheduledTimeLabel}</span>}
-                    {(durationMinutes ?? task.estimatedTime) != null && (
-                      <span> · {formatDuration(durationMinutes ?? task.estimatedTime ?? null)}</span>
-                    )}
-                    {task.priority && task.priority !== 'default' && (
-                      <span> · {task.priority}</span>
-                    )}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            renderAgendaTaskCard({
+              compact: false,
+              embedded: timelineBlockHeightPx != null,
+              surface: 'timeline',
+              hideTime: hideTimelineTime,
+              hideAccentColumn: hideTimelineAccent,
+              leftAccentColor: hideTimelineAccent ? agendaAccentColor : undefined,
+              leftAccentWidthPx: TODAY_AGENDA_TIMELINE.blockAccentWidthPx,
+              showNextUpBadge: isNextUp && timelineBlockHeightPx == null,
+              style:
+                timelineBlockHeightPx != null
+                  ? { minHeight: timelineBlockHeightPx }
+                  : {
+                      height: '100%',
+                      minHeight: '100%',
+                      maxHeight: '100%',
+                    },
+            })
           ) : isKanban ? (
             <div
               className={cn(

@@ -44,7 +44,8 @@ import {
   getTodayAgendaBlockRowTopPx,
   getTodayAgendaTaskTimeRangeMins,
   getTodayAgendaEventTimeRangeMins,
-  isTodayAgendaMinuteOccupiedByScheduledBlock,
+  isTodayAgendaMinuteOccupiedByVisualTimelineBlock,
+  getTodayAgendaTimelineGridLabelEndMins,
   blocksHaveTimeOverlap,
   getTodayAgendaTimelineCardPresentation,
   getTodayAgendaTimelineRowHeightPx,
@@ -836,7 +837,17 @@ export function TodayAgendaView({
         : [];
 
       const hourlyLabels = !isCompactList
-        ? getTodayAgendaIntervalLabels(timelineViewStartMins, timelineViewEndMins)
+        ? getTodayAgendaIntervalLabels(
+            timelineViewStartMins,
+            getTodayAgendaTimelineGridLabelEndMins(
+              stackedDisplayTimelineBlocks,
+              timelineViewStartMins,
+              timelineViewEndMins,
+              totalMinutes,
+              pxPerMinute,
+              labelIntervalMinutes,
+            ),
+          )
         : [];
 
       const getIntervalLabelTopPx = (minutesFromStart: number) =>
@@ -995,9 +1006,11 @@ export function TodayAgendaView({
                 hourlyLabels
                   .filter(
                     ({ minutesFromStart }) =>
-                      !isTodayAgendaMinuteOccupiedByScheduledBlock(
+                      !isTodayAgendaMinuteOccupiedByVisualTimelineBlock(
                         minutesFromStart,
                         stackedDisplayTimelineBlocks,
+                        timelineViewStartMins,
+                        pxPerMinute,
                       ),
                   )
                   .map(({ minutesFromStart, label, isHour }) => (
@@ -1043,10 +1056,7 @@ export function TodayAgendaView({
                           ? 'font-normal text-muted-foreground/75'
                           : 'font-medium text-muted-foreground',
                       )}
-                      style={{
-                        lineHeight: `${timeLabelLineHeightPx}px`,
-                        backgroundColor: isDark ? 'rgba(30,30,40,0.92)' : 'rgba(255,255,255,0.92)',
-                      }}
+                      style={{ lineHeight: `${timeLabelLineHeightPx}px` }}
                       title={text}
                     >
                       {text}
