@@ -53,6 +53,7 @@ import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { useCalendarEventCounts } from "../hooks/useCalendarEvents";
 import { cn, sanitizeHTML, hasHTMLTags, getDateString, getWeekStart } from "../lib/utils";
 import { APP_TOUR_DEMO_SCHEDULE_TASKS } from "../lib/app-tour-constants";
+import { TourDemoDialogNotice } from "./TourDemoDialogNotice";
 import { toast } from "../lib/toast-wrapper";
 import { playTaskCompleteSound } from "../lib/toast-sound";
 import type { Task } from "../types";
@@ -713,9 +714,21 @@ export function DashboardView({
   const [rescheduleDate, setRescheduleDate] = useState<Date | undefined>(undefined);
   const [rescheduleDates, setRescheduleDates] = useState<Date[]>([]); // Multi-day selection (up to 3)
   const [isRescheduling, setIsRescheduling] = useState(false);
+  const [tourDialogsLocked, setTourDialogsLocked] = useState(false);
   const tourDialogsLockedRef = useRef(false);
 
+  const setTourDialogLock = useCallback((active: boolean) => {
+    tourDialogsLockedRef.current = active;
+    setTourDialogsLocked(active);
+  }, []);
+
   const preventTourDialogDismiss = useCallback((event: { preventDefault: () => void }) => {
+    if (tourDialogsLockedRef.current) {
+      event.preventDefault();
+    }
+  }, []);
+
+  const preventTourDialogAutoFocus = useCallback((event: Event) => {
     if (tourDialogsLockedRef.current) {
       event.preventDefault();
     }
@@ -724,7 +737,7 @@ export function DashboardView({
   // Tour demo: open/close dashboard scheduling dialogs without running AI
   useEffect(() => {
     const handleTourActiveChanged = (event: CustomEvent<{ active: boolean }>) => {
-      tourDialogsLockedRef.current = event.detail.active;
+      setTourDialogLock(event.detail.active);
     };
 
     const handleTourOpenSchedulePreview = () => {
@@ -1139,6 +1152,7 @@ export function DashboardView({
   };
 
   const confirmScheduling = () => {
+    if (tourDialogsLockedRef.current) return;
     const toApply = schedulePlan.filter((p) => selectedPlanTaskIds.has(p.task.id));
     if (toApply.length === 0) {
       toast.info("No suggestions selected", {
@@ -1217,6 +1231,7 @@ export function DashboardView({
   }, [isRescheduling, safeHasFeature]);
 
   const handleRandomReschedule = async (type: "day" | "week" | "month", selectedDate?: Date, selectedDates: Date[] = []) => {
+    if (tourDialogsLockedRef.current) return;
     // Check if user has access to AI Scheduler feature
     if (!safeHasFeature('aiScheduler')) {
       toast.error('Re-schedule is a Pro feature', {
@@ -1853,6 +1868,7 @@ export function DashboardView({
       {/* Schedule Preview Dialog */}
       <Dialog
         open={showSchedulePreview}
+        modal={!tourDialogsLocked}
         onOpenChange={(open) => {
           if (!open && tourDialogsLockedRef.current) return;
           setShowSchedulePreview(open);
@@ -1861,10 +1877,14 @@ export function DashboardView({
         <DialogContent
           className="max-w-2xl max-h-[80vh]"
           data-tour="dashboard-ai-schedule-preview-dialog"
+          hideCloseButton={tourDialogsLocked}
           onEscapeKeyDown={preventTourDialogDismiss}
           onPointerDownOutside={preventTourDialogDismiss}
           onInteractOutside={preventTourDialogDismiss}
+          onOpenAutoFocus={preventTourDialogAutoFocus}
         >
+          {tourDialogsLocked && <TourDemoDialogNotice />}
+          <div className={cn(tourDialogsLocked && 'pointer-events-none select-none')}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary" />
@@ -2053,11 +2073,15 @@ export function DashboardView({
               Accept {selectedPlanTaskIds.size > 0 ? `${selectedPlanTaskIds.size} selected` : "selected"}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Re-schedule Dialog */}
-      <Dialog open={showRescheduleDialog} onOpenChange={(open) => {
+      <Dialog
+        open={showRescheduleDialog}
+        modal={!tourDialogsLocked}
+        onOpenChange={(open) => {
         try {
           if (!open && tourDialogsLockedRef.current) return;
           setShowRescheduleDialog(open);
@@ -2073,9 +2097,11 @@ export function DashboardView({
         <DialogContent
           className="sm:max-w-md border border-primary/10"
           data-tour="reschedule-dialog"
+          hideCloseButton={tourDialogsLocked}
           onEscapeKeyDown={preventTourDialogDismiss}
           onPointerDownOutside={preventTourDialogDismiss}
           onInteractOutside={preventTourDialogDismiss}
+          onOpenAutoFocus={preventTourDialogAutoFocus}
           style={{
             backgroundImage: isDark
               ? 'linear-gradient(180deg, rgba(17,24,39,0.96) 0%, rgba(17,24,39,0.9) 100%)'
@@ -2083,6 +2109,8 @@ export function DashboardView({
             backdropFilter: 'blur(10px)',
           }}
         >
+          {tourDialogsLocked && <TourDemoDialogNotice />}
+          <div className={cn(tourDialogsLocked && 'pointer-events-none select-none')}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="refresh-cw" size={ICON_SIZE_LG} className="text-primary" />
@@ -2246,6 +2274,7 @@ export function DashboardView({
               {isRescheduling ? "Rescheduling..." : rescheduleDates.length > 1 ? `Reschedule ${rescheduleDates.length} Days` : "Reschedule"}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

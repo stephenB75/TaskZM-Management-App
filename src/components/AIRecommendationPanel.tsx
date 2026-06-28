@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Icon } from "./Icon";
 import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL, TOAST_DURATION_SHORT_MS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { APP_TOUR_DEMO_SCHEDULE_TASKS } from "../lib/app-tour-constants";
+import { TourDemoDialogNotice } from "./TourDemoDialogNotice";
 import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
@@ -123,9 +124,21 @@ export function AIRecommendationPanel({
   const [suggestionPeriod, setSuggestionPeriod] = useState<'day' | 'week' | 'month' | 'twoWeeks'>('twoWeeks');
   const [suggestionDate, setSuggestionDate] = useState<Date | undefined>(new Date());
   const [suggestionDateOpen, setSuggestionDateOpen] = useState(false);
+  const [tourDialogsLocked, setTourDialogsLocked] = useState(false);
   const tourDialogsLockedRef = React.useRef(false);
 
+  const setTourDialogLock = React.useCallback((active: boolean) => {
+    tourDialogsLockedRef.current = active;
+    setTourDialogsLocked(active);
+  }, []);
+
   const preventTourDialogDismiss = React.useCallback((event: { preventDefault: () => void }) => {
+    if (tourDialogsLockedRef.current) {
+      event.preventDefault();
+    }
+  }, []);
+
+  const preventTourDialogAutoFocus = React.useCallback((event: Event) => {
     if (tourDialogsLockedRef.current) {
       event.preventDefault();
     }
@@ -134,7 +147,7 @@ export function AIRecommendationPanel({
   // Listen for tour events to open/close dialogs
   React.useEffect(() => {
     const handleTourActiveChanged = (event: CustomEvent<{ active: boolean }>) => {
-      tourDialogsLockedRef.current = event.detail.active;
+      setTourDialogLock(event.detail.active);
     };
 
     const handleTourOpenDialog = (event: CustomEvent<{ dialog: 'schedule-preview' | 'reschedule-day' | 'reschedule-week' | 'reschedule-month' }>) => {
@@ -369,6 +382,7 @@ export function AIRecommendationPanel({
   };
 
   const handleReschedule = async () => {
+    if (tourDialogsLockedRef.current) return;
     // Check if user has access to AI Scheduler feature
     if (!hasFeature('aiScheduler')) {
       toast.error('Re-schedule is a Pro feature', {
@@ -465,6 +479,7 @@ export function AIRecommendationPanel({
   };
 
   const confirmScheduling = async () => {
+    if (tourDialogsLockedRef.current) return;
     const toApply = schedulePlan.filter((p) => selectedPlanTaskIds.has(p.task.id));
     if (toApply.length === 0) {
       toast.info("No suggestions selected", {
@@ -606,6 +621,7 @@ export function AIRecommendationPanel({
       {/* Reschedule Dialog */}
       <Dialog
         open={showRescheduleDialog}
+        modal={!tourDialogsLocked}
         onOpenChange={(open) => {
           if (!open && tourDialogsLockedRef.current) return;
           setShowRescheduleDialog(open);
@@ -614,9 +630,11 @@ export function AIRecommendationPanel({
         <DialogContent
           className="max-w-md border border-primary/10"
           data-tour="reschedule-dialog"
+          hideCloseButton={tourDialogsLocked}
           onEscapeKeyDown={preventTourDialogDismiss}
           onPointerDownOutside={preventTourDialogDismiss}
           onInteractOutside={preventTourDialogDismiss}
+          onOpenAutoFocus={preventTourDialogAutoFocus}
           style={{
             backgroundImage: isDark
               ? 'linear-gradient(180deg, rgba(17,24,39,0.96) 0%, rgba(17,24,39,0.9) 100%)'
@@ -624,6 +642,8 @@ export function AIRecommendationPanel({
             backdropFilter: 'blur(10px)',
           }}
         >
+          {tourDialogsLocked && <TourDemoDialogNotice />}
+          <div className={cn(tourDialogsLocked && 'pointer-events-none select-none')}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="refresh-cw" size={ICON_SIZE_LG} className="text-primary" />
@@ -737,12 +757,14 @@ export function AIRecommendationPanel({
               )}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Schedule Preview Dialog */}
       <Dialog
         open={showSchedulePreview}
+        modal={!tourDialogsLocked}
         onOpenChange={(open) => {
           if (!open && tourDialogsLockedRef.current) return;
           setShowSchedulePreview(open);
@@ -751,10 +773,14 @@ export function AIRecommendationPanel({
         <DialogContent
           className="max-w-2xl max-h-[80vh]"
           data-tour="ai-schedule-preview-dialog"
+          hideCloseButton={tourDialogsLocked}
           onEscapeKeyDown={preventTourDialogDismiss}
           onPointerDownOutside={preventTourDialogDismiss}
           onInteractOutside={preventTourDialogDismiss}
+          onOpenAutoFocus={preventTourDialogAutoFocus}
         >
+          {tourDialogsLocked && <TourDemoDialogNotice />}
+          <div className={cn(tourDialogsLocked && 'pointer-events-none select-none')}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="calendar" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
@@ -932,6 +958,7 @@ export function AIRecommendationPanel({
               Accept {selectedPlanTaskIds.size > 0 ? `${selectedPlanTaskIds.size} selected` : "selected"}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -186,34 +186,34 @@ export const APP_TOUR_UI = {
   aiSchedulerButton: {
     title: DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsLong,
     description:
-      'Click this button to run AI Scheduler. It places unscheduled Inbox tasks into open slots using priority, due dates, your hours, and calendar conflicts.',
-    hint: 'On the next step you’ll see the preview dialog before anything is saved.',
+      'Runs AI Scheduler to place unscheduled Inbox tasks into open slots using priority, due dates, your hours, and calendar conflicts.',
+    hint: 'You don’t need to click this button now — the next step opens an example preview automatically.',
   },
   aiSchedulePreview: {
     title: 'Schedule Preview Dialog',
     description:
-      'Review AI’s proposed plan here. Each row shows a task, suggested date/time, and priority.',
+      'After AI Scheduler runs, this dialog lets you review suggestions before anything is saved. Below is an example.',
     bullets: [
-      'Select all / Deselect all to bulk choose suggestions',
-      'Toggle individual tasks with the checkboxes',
-      'Cancel to discard or Accept selected to apply the plan',
+      'Each row shows a task, suggested time, and reason',
+      'In the real app you select which suggestions to keep',
+      'Use Next on the tour to continue — nothing is applied here',
     ] as const,
   },
   aiReschedulerButton: {
     title: DASHBOARD_VIEW_HEADER_LABELS.reschedule,
     description:
-      'Click Re-Schedule when plans change. It reshuffles tasks that already have dates into new open slots.',
-    hint: 'The next step shows the dialog where you pick Day, Week, or Month and a target date.',
+      'Re-Schedule reshuffles tasks that already have dates into new open slots when plans change.',
+    hint: 'You don’t need to click this button now — the next step opens an example dialog automatically.',
   },
   rescheduleDialog: {
     title: 'Re-Schedule Dialog',
     description:
-      'Choose a period type and date, then confirm. Tasks in that range are unscheduled and run through AI again.',
+      'Choose Day, Week, or Month and a target date, then confirm to run AI again on those tasks. An example is shown below.',
     bullets: [
       'Day — move tasks from specific date(s)',
       'Week — redistribute an entire week',
       'Month — rebalance across a month',
-      'Confirm with Re-Schedule to apply (Pro feature)',
+      'Use Next on the tour to continue — no confirmation needed here',
     ] as const,
   },
   settingsIntro: {
@@ -226,6 +226,11 @@ export const APP_TOUR_UI = {
     description:
       'You’ve seen the navigation icons, Week/Month toggle, AI Scheduler & Re-Scheduler flows, and settings sections. Click Get Started to begin.',
   },
+} as const;
+
+/** In-dialog notice while the app tour shows AI scheduler / re-scheduler examples. */
+export const APP_TOUR_DEMO_UI = {
+  dialogNotice: 'Example preview only — click Next on the tour to continue. Nothing is saved or changed.',
 } as const;
 
 export function sidebarNavTarget(id: string): string {
