@@ -325,7 +325,7 @@ export type AppTourStepMeta = {
   settingsId?: string;
   desktopOnly?: boolean;
   mobileOnly?: boolean;
-  placement?: 'center' | 'bottom' | 'bottom-end' | 'top' | 'left' | 'right';
+  placement?: 'center' | 'auto' | 'bottom' | 'bottom-end' | 'bottom-start' | 'top' | 'left' | 'right';
   /** Fixed header targets need isFixed so Joyride positions the spotlight correctly. */
   isFixed?: boolean;
   disableBeacon?: boolean;
@@ -379,46 +379,46 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
     {
       stepKey: APP_TOUR_STEP_KEYS.weekView,
       target: isMobile ? APP_TOUR_TARGETS.kanbanMobile : APP_TOUR_TARGETS.kanbanBoard,
-      placement: isMobile ? 'top' : 'bottom',
+      placement: 'top',
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.aiSchedulerButton,
       target: isMobile ? APP_TOUR_TARGETS.aiSchedulerSection : APP_TOUR_TARGETS.aiScheduler,
-      placement: isMobile ? 'left' : 'bottom-end',
+      placement: isMobile ? 'top' : 'bottom-start',
       isFixed: !isMobile,
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.aiSchedulePreview,
       target: isMobile ? APP_TOUR_TARGETS.aiSchedulePreviewMobile : APP_TOUR_TARGETS.aiSchedulePreview,
-      placement: 'left',
+      placement: 'auto',
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.weekMonthToggle,
       target: APP_TOUR_TARGETS.weekMonthToggle,
-      placement: 'bottom-end',
+      placement: 'bottom-start',
       isFixed: true,
       desktopOnly: true,
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.monthView,
       target: APP_TOUR_TARGETS.monthCalendar,
-      placement: 'bottom',
+      placement: 'top',
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.aiReschedulerButton,
       target: isMobile ? APP_TOUR_TARGETS.aiRescheduleSection : APP_TOUR_TARGETS.aiReschedule,
-      placement: isMobile ? 'left' : 'bottom-end',
+      placement: isMobile ? 'top' : 'bottom-start',
       isFixed: !isMobile,
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.rescheduleDialog,
       target: isMobile ? APP_TOUR_TARGETS.rescheduleDialog : APP_TOUR_TARGETS.rescheduleDialogOptions,
-      placement: 'left',
+      placement: 'auto',
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.settingsIntro,
       target: APP_TOUR_TARGETS.settingsPanel,
-      placement: 'left',
+      placement: isMobile ? 'top' : 'left',
     },
   );
 
@@ -427,7 +427,7 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
       stepKey: APP_TOUR_STEP_KEYS.settingsSection,
       target: settingsSectionTarget(section.id),
       settingsId: section.id,
-      placement: 'left',
+      placement: isMobile ? 'top' : 'left',
     });
   }
 

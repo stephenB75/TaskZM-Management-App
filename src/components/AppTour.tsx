@@ -271,6 +271,40 @@ function stepNeedsNavigationLeadTime(meta: AppTourStepMeta | undefined): boolean
   );
 }
 
+/** Popper options so every step keeps the tooltip (and Next button) inside the viewport. */
+function buildTourFloaterProps() {
+  return {
+    offset: TOUR_CONSTANTS.floater.offset,
+    disableFlip: false,
+    options: {
+      flip: {
+        enabled: true,
+        padding: TOUR_CONSTANTS.floater.viewportPadding,
+      },
+      preventOverflow: {
+        boundariesElement: 'viewport' as const,
+        padding: TOUR_CONSTANTS.floater.viewportPadding,
+      },
+    },
+  };
+}
+
+function resolveTourPlacement(
+  placement: AppTourStepMeta['placement'] | undefined,
+  isMobile: boolean,
+): TourPlacement {
+  if (!placement) return isMobile ? 'top' : 'right';
+  if (placement === 'center') return 'center';
+  if (placement === 'auto') return 'auto';
+  if (
+    isMobile
+    && (placement === 'right' || placement === 'left' || placement === 'bottom-end' || placement === 'bottom-start')
+  ) {
+    return 'top';
+  }
+  return placement;
+}
+
 export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -336,25 +370,19 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
   }, [user?.id]);
 
   const steps = useMemo((): Step[] => {
-    const placementFor = (p?: AppTourStepMeta['placement']): TourPlacement => {
-      if (!p) return shouldUseMobileLayout ? 'top' : 'right';
-      if (p === 'center') return 'center';
-      return shouldUseMobileLayout && (p === 'right' || p === 'left' || p === 'bottom-end') ? 'top' : p;
-    };
+    const tourFloaterProps = buildTourFloaterProps();
 
     return stepDefs.map((meta) => ({
       target: meta.target,
-      placement: placementFor(meta.placement),
+      placement: resolveTourPlacement(meta.placement, shouldUseMobileLayout),
       disableBeacon: meta.disableBeacon ?? false,
       content: renderStepContent(meta, shouldUseMobileLayout),
       data: meta,
       disableScrolling: meta.isFixed ?? false,
       disableScrollParentFix: meta.isFixed ?? false,
       isFixed: meta.isFixed ?? false,
-      offset: meta.isFixed ? 8 : 0,
-      floaterProps: meta.isFixed
-        ? { offset: 12, options: { preventOverflow: { boundariesElement: 'viewport' } } }
-        : undefined,
+      offset: meta.isFixed ? TOUR_CONSTANTS.floater.offset : 0,
+      floaterProps: tourFloaterProps,
       spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
     }));
   }, [shouldUseMobileLayout, stepDefs]);
@@ -369,7 +397,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       const meta = getStepMeta(index);
       if (!meta) return;
 
-      const { stepKey, target, settingsId } = meta;
+      const { stepKey, target } = meta;
 
       if (DASHBOARD_TARGETS.has(target)) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
@@ -453,13 +481,15 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         }
       }
 
+      if (stepKey === APP_TOUR_STEP_KEYS.weekView || stepKey === APP_TOUR_STEP_KEYS.monthView) {
+        scrollTourTargetIntoView(meta.target);
+      }
+
       if (stepKey === APP_TOUR_STEP_KEYS.settingsIntro || stepKey === APP_TOUR_STEP_KEYS.settingsSection) {
         closeAllTourDialogs(shouldUseMobileLayout);
         dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
         onNavigate?.('settings');
-        if (settingsId) {
-          scrollTourTargetIntoView(meta.target);
-        }
+        scrollTourTargetIntoView(meta.target);
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.navIcon) {
@@ -623,13 +653,22 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       overlayColor: isDark ? TOUR_CONSTANTS.colors.overlay.dark : TOUR_CONSTANTS.colors.overlay.light,
       arrowColor: isDark ? TOUR_CONSTANTS.colors.arrow.dark : TOUR_CONSTANTS.colors.arrow.light,
       zIndex: Z_INDEX.APP_TOUR,
+      width: TOUR_CONSTANTS.cardWidth,
     },
     tooltip: {
       borderRadius: TOUR_CONSTANTS.tooltip.borderRadius,
       padding: TOUR_CONSTANTS.tooltip.padding,
+      maxWidth: TOUR_CONSTANTS.cardWidth,
     },
     tooltipContainer: {
       textAlign: 'left' as const,
+    },
+    tooltipContent: {
+      maxHeight: `min(${TOUR_CONSTANTS.tooltip.maxContentHeightVh}vh, calc(100vh - ${TOUR_CONSTANTS.tooltip.footerReservePx}px - ${TOUR_CONSTANTS.floater.viewportPadding * 2}px))`,
+      overflowY: 'auto' as const,
+    },
+    tooltipFooter: {
+      flexShrink: 0,
     },
     buttonNext: {
       backgroundColor: TOUR_CONSTANTS.colors.primary,
@@ -671,9 +710,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         next: TOUR_CONSTANTS.locale.next,
         skip: TOUR_CONSTANTS.locale.skip,
       }}
-      floaterProps={{
-        disableAnimation: false,
-      }}
+      floaterProps={buildTourFloaterProps()}
       disableOverlayClose
       disableScrollParentFix
       disableScrolling={false}

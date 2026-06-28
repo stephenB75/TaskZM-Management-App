@@ -1367,6 +1367,14 @@ export const TOUR_CONSTANTS = {
   tooltip: {
     borderRadius: 12, // px - Border radius for tooltip
     padding: 20, // px - Padding inside tooltip
+    /** Max scrollable content height so Next/Back footer stays on screen */
+    maxContentHeightVh: 55,
+    /** Reserved vertical space (px) for tooltip footer when content scrolls */
+    footerReservePx: 140,
+  },
+  floater: {
+    offset: 12, // px - Distance between spotlight target and tooltip
+    viewportPadding: 16, // px - Min inset from viewport edge (popper preventOverflow / flip)
   },
   button: {
     fontSize: 14, // px - Font size for buttons
