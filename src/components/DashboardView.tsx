@@ -713,6 +713,40 @@ export function DashboardView({
   const [rescheduleDates, setRescheduleDates] = useState<Date[]>([]); // Multi-day selection (up to 3)
   const [isRescheduling, setIsRescheduling] = useState(false);
 
+  // Tour demo: open/close dashboard scheduling dialogs without running AI
+  useEffect(() => {
+    const handleTourOpenSchedulePreview = () => {
+      setSchedulePlan([]);
+      setSelectedPlanTaskIds(new Set());
+      setShowSchedulePreview(true);
+    };
+
+    const handleTourOpenRescheduleDialog = () => {
+      setRescheduleType('day');
+      setRescheduleDate(new Date());
+      setRescheduleDates([]);
+      setShowRescheduleDialog(true);
+    };
+
+    const handleTourCloseDashboardDialogs = () => {
+      setShowSchedulePreview(false);
+      setShowRescheduleDialog(false);
+      setRescheduleType(null);
+      setRescheduleDate(undefined);
+      setRescheduleDates([]);
+    };
+
+    window.addEventListener('tour-open-schedule-preview', handleTourOpenSchedulePreview);
+    window.addEventListener('tour-open-reschedule-dialog', handleTourOpenRescheduleDialog);
+    window.addEventListener('tour-close-dashboard-dialogs', handleTourCloseDashboardDialogs);
+
+    return () => {
+      window.removeEventListener('tour-open-schedule-preview', handleTourOpenSchedulePreview);
+      window.removeEventListener('tour-open-reschedule-dialog', handleTourOpenRescheduleDialog);
+      window.removeEventListener('tour-close-dashboard-dialogs', handleTourCloseDashboardDialogs);
+    };
+  }, []);
+
   // Generate week columns for mobile day selector with week offset
   // Use getWeekStart() to respect user's week start preference (Sunday or Monday)
   const getWeekColumns = (weekOffset = 0) => {
@@ -1388,6 +1422,7 @@ export function DashboardView({
                     TOGGLE_SWITCH_COLORS.container.border.dark
                   )}
                   style={{ transform: `scale(${buttonScale})` }}
+                  data-tour="week-month-toggle"
                 >
               <Icon
                 name="calendar"
@@ -1407,7 +1442,6 @@ export function DashboardView({
                     ? TOGGLE_SWITCH_COLORS.text.active.light + " " + TOGGLE_SWITCH_COLORS.text.active.dark
                     : TOGGLE_SWITCH_COLORS.text.inactive.light + " " + TOGGLE_SWITCH_COLORS.text.inactive.dark,
                 )}
-                data-tour="calendar-month-view-toggle"
               >
                 Week
               </span>
@@ -1777,7 +1811,7 @@ export function DashboardView({
         open={showSchedulePreview}
         onOpenChange={setShowSchedulePreview}
       >
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[80vh]" data-tour="ai-schedule-preview-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary" />
@@ -1984,6 +2018,7 @@ export function DashboardView({
       }}>
         <DialogContent
           className="sm:max-w-md border border-primary/10"
+          data-tour="reschedule-dialog"
           style={{
             backgroundImage: isDark
               ? 'linear-gradient(180deg, rgba(17,24,39,0.96) 0%, rgba(17,24,39,0.9) 100%)'

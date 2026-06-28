@@ -171,6 +171,7 @@ export function BottomNav({
 
       <div 
         className="flex items-center justify-evenly overflow-visible" 
+        data-tour="bottom-nav"
         style={{ 
           paddingTop: NAV_BAR_PADDING_TOP,
           paddingBottom: `calc(${NAV_BAR_PADDING_BOTTOM} + env(safe-area-inset-bottom, 0px))`,

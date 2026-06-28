@@ -1,20 +1,25 @@
 /**
  * App Tour Component
- * Uses React Joyride for a reliable, feature-rich tour experience
+ * Guided walkthrough focused on navigation, Week/Month views, AI scheduling, and settings.
  */
 
-import React, { useState, useEffect, useCallback } from "react";
-import Joyride, { CallBackProps, STATUS, Step, EVENTS, ACTIONS } from "react-joyride";
-import { useTheme } from "../contexts/ThemeContext";
-import { useSubscription } from "../contexts/SubscriptionContext";
-import { useAuth } from "../contexts/AuthContext";
-import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from "../lib/subscription-constants";
-import { getOfferings } from "../lib/revenuecat";
-import { configureRevenueCat } from "../lib/revenuecat";
-import { Z_INDEX, TOUR_CONSTANTS, VIEWPORT_BREAKPOINTS, SETTINGS_PANEL_SPACING_MEDIUM } from "../lib/layout-constants";
-import { TIMING_CONSTANTS } from "../lib/timing-constants";
-import { NOTIFICATION_STORAGE_KEYS } from "../lib/notification-constants";
-import { useMobileLayout } from "../hooks/useMobileLayout";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Joyride, { CallBackProps, STATUS, Step, EVENTS } from 'react-joyride';
+import { useTheme } from '../contexts/ThemeContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
+import { useAuth } from '../contexts/AuthContext';
+import { SUBSCRIPTION_UI_TEXT, DEFAULT_MONTHLY_PRICE } from '../lib/subscription-constants';
+import { getOfferings, configureRevenueCat } from '../lib/revenuecat';
+import { Z_INDEX, TOUR_CONSTANTS } from '../lib/layout-constants';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { NOTIFICATION_STORAGE_KEYS } from '../lib/notification-constants';
+import { useMobileLayout } from '../hooks/useMobileLayout';
+import {
+  APP_TOUR_UI,
+  APP_TOUR_TARGETS,
+  APP_TOUR_STEP_KEYS,
+  type AppTourStepMeta,
+} from '../lib/app-tour-constants';
 
 interface AppTourProps {
   run: boolean;
@@ -23,29 +28,261 @@ interface AppTourProps {
   onShowPricing?: () => void;
 }
 
-export function AppTour({
-  run,
-  onFinish,
-  onNavigate,
-  onShowPricing,
-}: AppTourProps) {
+type TourPlacement = Step['placement'];
+
+function TourBullets({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2 mt-2">
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
+function TourIconDescriptions({
+  items,
+}: {
+  items: readonly { label: string; description: string }[];
+}) {
+  return (
+    <ul className="text-xs text-muted-foreground space-y-1.5 mt-2 ml-1">
+      {items.map((item) => (
+        <li key={item.label}>
+          <span className="font-medium text-foreground">{item.label}</span>
+          {' — '}
+          {item.description}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function renderStepContent(stepKey: AppTourStepMeta['stepKey'], isMobile: boolean): React.ReactNode {
+  switch (stepKey) {
+    case APP_TOUR_STEP_KEYS.welcome:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.welcome.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.welcome.description}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.navigation:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.navigation.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">
+            {isMobile ? APP_TOUR_UI.navigation.mobileIntro : APP_TOUR_UI.navigation.desktopIntro}
+          </p>
+          <TourIconDescriptions
+            items={isMobile ? APP_TOUR_UI.navigation.mobileTabs : APP_TOUR_UI.navigation.desktopIcons}
+          />
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.weekMonthToggle:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.weekMonthToggle.title}</h3>
+          <p className="text-sm text-muted-foreground mb-2">{APP_TOUR_UI.weekMonthToggle.description}</p>
+          <p className="text-xs text-muted-foreground">{APP_TOUR_UI.weekMonthToggle.hint}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.weekView:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.weekView.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.weekView.description}</p>
+          <TourBullets items={APP_TOUR_UI.weekView.bullets} />
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.switchToMonth:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.switchToMonth.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.switchToMonth.description}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.monthView:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.monthView.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.monthView.description}</p>
+          <TourBullets items={APP_TOUR_UI.monthView.bullets} />
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.switchToWeek:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.switchToWeek.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.switchToWeek.description}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.aiScheduler:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.aiScheduler.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.aiScheduler.description}</p>
+          <TourBullets items={APP_TOUR_UI.aiScheduler.bullets} />
+          {isMobile && (
+            <p className="text-xs text-muted-foreground mt-2">{APP_TOUR_UI.aiScheduler.mobileNote}</p>
+          )}
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.aiSchedulePreview:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.aiSchedulePreview.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.aiSchedulePreview.description}</p>
+          <p className="text-xs text-muted-foreground">{APP_TOUR_UI.aiSchedulePreview.hint}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.closeSchedulePreview:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.closeSchedulePreview.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.closeSchedulePreview.description}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.aiRescheduler:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.aiRescheduler.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.aiRescheduler.description}</p>
+          <TourBullets items={APP_TOUR_UI.aiRescheduler.bullets} />
+          {isMobile && (
+            <p className="text-xs text-muted-foreground mt-2">{APP_TOUR_UI.aiRescheduler.mobileNote}</p>
+          )}
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.rescheduleDialog:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.rescheduleDialog.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.rescheduleDialog.description}</p>
+          <p className="text-xs text-muted-foreground">{APP_TOUR_UI.rescheduleDialog.hint}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.openSettings:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.openSettings.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.openSettings.description}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.settingsPanel:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.settingsPanel.title}</h3>
+          <p className="text-sm text-muted-foreground mb-2">{APP_TOUR_UI.settingsPanel.intro}</p>
+          <ul className="text-xs text-muted-foreground space-y-1.5">
+            {APP_TOUR_UI.settingsPanel.sections.map((section) => (
+              <li key={section.title}>
+                <span className="font-medium capitalize">{section.title}</span>
+                {' — '}
+                {section.detail}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.complete:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.complete.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.complete.description}</p>
+        </div>
+      );
+    default:
+      return null;
+  }
+}
+
+const TOUR_STEP_DEFS: AppTourStepMeta[] = [
+  { stepKey: APP_TOUR_STEP_KEYS.welcome, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
+  { stepKey: APP_TOUR_STEP_KEYS.navigation, target: APP_TOUR_TARGETS.sidebar, placement: 'right', desktopOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.navigation, target: APP_TOUR_TARGETS.bottomNav, placement: 'top', mobileOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.weekMonthToggle, target: APP_TOUR_TARGETS.weekMonthToggle, placement: 'bottom', desktopOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.weekView, target: APP_TOUR_TARGETS.kanbanBoard, placement: 'bottom', desktopOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.weekView, target: APP_TOUR_TARGETS.kanbanMobile, placement: 'top', mobileOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.switchToMonth, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
+  { stepKey: APP_TOUR_STEP_KEYS.monthView, target: APP_TOUR_TARGETS.monthCalendar, placement: 'bottom' },
+  { stepKey: APP_TOUR_STEP_KEYS.switchToWeek, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
+  { stepKey: APP_TOUR_STEP_KEYS.aiScheduler, target: APP_TOUR_TARGETS.aiScheduler, placement: 'bottom', desktopOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.aiScheduler, target: APP_TOUR_TARGETS.aiRecommendationsPanel, placement: 'left', mobileOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.aiSchedulePreview, target: APP_TOUR_TARGETS.aiSchedulePreview, placement: 'left' },
+  { stepKey: APP_TOUR_STEP_KEYS.closeSchedulePreview, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
+  { stepKey: APP_TOUR_STEP_KEYS.aiRescheduler, target: APP_TOUR_TARGETS.aiReschedule, placement: 'bottom', desktopOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.aiRescheduler, target: APP_TOUR_TARGETS.aiRecommendationsPanel, placement: 'left', mobileOnly: true },
+  { stepKey: APP_TOUR_STEP_KEYS.rescheduleDialog, target: APP_TOUR_TARGETS.rescheduleDialog, placement: 'left' },
+  { stepKey: APP_TOUR_STEP_KEYS.openSettings, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
+  { stepKey: APP_TOUR_STEP_KEYS.settingsPanel, target: APP_TOUR_TARGETS.settingsPanel, placement: 'left' },
+  { stepKey: APP_TOUR_STEP_KEYS.complete, target: APP_TOUR_TARGETS.body, placement: 'center', disableBeacon: true },
+];
+
+const DASHBOARD_TARGETS = new Set<string>([
+  APP_TOUR_TARGETS.weekMonthToggle,
+  APP_TOUR_TARGETS.kanbanBoard,
+  APP_TOUR_TARGETS.kanbanMobile,
+  APP_TOUR_TARGETS.monthCalendar,
+  APP_TOUR_TARGETS.aiScheduler,
+  APP_TOUR_TARGETS.aiSchedulePreview,
+  APP_TOUR_TARGETS.aiReschedule,
+  APP_TOUR_TARGETS.rescheduleDialog,
+  APP_TOUR_TARGETS.aiSchedulerSection,
+  APP_TOUR_TARGETS.aiRescheduleSection,
+  APP_TOUR_TARGETS.aiRecommendationsPanel,
+]);
+
+function dispatchTourViewMode(mode: 'week' | 'month') {
+  window.dispatchEvent(
+    new CustomEvent('tour-set-view-mode', { detail: { mode } }),
+  );
+}
+
+function dispatchTourOpenPanel(panel: string) {
+  window.dispatchEvent(new CustomEvent('tour-open-panel', { detail: { panel } }));
+}
+
+function dispatchTourClosePanel() {
+  window.dispatchEvent(new CustomEvent('tour-close-panel'));
+}
+
+function dispatchTourOpenAiDialog(dialog: 'schedule-preview' | 'reschedule-day') {
+  window.dispatchEvent(
+    new CustomEvent('tour-open-ai-dialog', { detail: { dialog } }),
+  );
+}
+
+function dispatchTourCloseAiDialog() {
+  window.dispatchEvent(new CustomEvent('tour-close-ai-dialog'));
+}
+
+function dispatchTourOpenDashboardSchedulePreview() {
+  window.dispatchEvent(new CustomEvent('tour-open-schedule-preview'));
+}
+
+function dispatchTourOpenDashboardRescheduleDialog() {
+  window.dispatchEvent(new CustomEvent('tour-open-reschedule-dialog'));
+}
+
+function dispatchTourCloseDashboardDialogs() {
+  window.dispatchEvent(new CustomEvent('tour-close-dashboard-dialogs'));
+}
+
+export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourProps) {
   const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const isDark = theme === 'dark';
   const { user } = useAuth();
   const { subscription } = useSubscription();
   const shouldUseMobileLayout = useMobileLayout();
-  const [monthlyPrice, setMonthlyPrice] = useState<string>(DEFAULT_MONTHLY_PRICE);
-  const [steps, setSteps] = useState<Step[]>([]);
+  const [, setMonthlyPrice] = useState<string>(DEFAULT_MONTHLY_PRICE);
 
-  // Fetch RevenueCat pricing when component mounts or user changes
   useEffect(() => {
     const fetchPricing = async () => {
       if (!user?.id) return;
-      
       try {
         await configureRevenueCat(user.id);
         const offerings = await getOfferings();
-        
         if (offerings.monthly?.priceString) {
           setMonthlyPrice(offerings.monthly.priceString);
         }
@@ -53,460 +290,161 @@ export function AppTour({
         console.warn('Failed to fetch RevenueCat pricing for app tour:', error);
       }
     };
-
     fetchPricing();
   }, [user?.id]);
 
-  // Create tour steps with dynamic pricing and responsive placement
-  useEffect(() => {
-    const createSteps = (): Step[] => {
-      // Determine placement based on device type
-      const getPlacement = (desktopPlacement: string, mobilePlacement: string = desktopPlacement): "auto" | "center" | "top" | "top-start" | "top-end" | "bottom" | "bottom-start" | "bottom-end" | "left" | "left-start" | "left-end" | "right" | "right-start" | "right-end" => {
-        const placement = shouldUseMobileLayout ? mobilePlacement : desktopPlacement;
-        // Type assertion for valid placement values
-        return placement as "auto" | "center" | "top" | "top-start" | "top-end" | "bottom" | "bottom-start" | "bottom-end" | "left" | "left-start" | "left-end" | "right" | "right-start" | "right-end";
-      };
-
-      const baseSteps: Step[] = [
-        {
-          target: 'body',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Welcome to TaskZM! 🎉</h3>
-              <p className="text-sm text-muted-foreground">
-                Your neurodivergent-friendly task management companion designed to reduce overwhelm and boost focus with calming colors and smooth animations.
-              </p>
-            </div>
-          ),
-          placement: 'center',
-          disableBeacon: true,
-        },
-        {
-          target: '[data-tour="sidebar"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Sidebar Navigation</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Access all your tools through the icon sidebar. Click any icon to open a sliding panel with smooth animations.
-              </p>
-              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
-                <li>Today Agenda - Timeline view</li>
-                <li>Inbox - Unscheduled tasks</li>
-                <li>Analytics - Track progress</li>
-                <li>Settings - Customize your experience</li>
-              </ul>
-            </div>
-          ),
-          placement: getPlacement('right', 'bottom'),
-        },
-        {
-          target: '[data-tour="today-panel"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Today Agenda</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                See all your tasks for today in a timeline view. Tasks are arranged chronologically with their scheduled times.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                This panel slides in from the side. Click the X button to close it.
-              </p>
-            </div>
-          ),
-          placement: getPlacement('left', 'top'),
-        },
-        {
-          target: 'body',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Closing Today Agenda</h3>
-              <p className="text-sm text-muted-foreground">
-                Now let's close this panel and move to the next feature. The panel will close automatically.
-              </p>
-            </div>
-          ),
-          placement: 'center',
-          disableBeacon: true,
-        },
-        {
-          target: '[data-tour="inbox-panel"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Inbox</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Capture all your unscheduled tasks in the Inbox. This is your brain dump area where you can quickly add tasks without worrying about scheduling.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Later, use AI Scheduler or manually schedule them to your week.
-              </p>
-            </div>
-          ),
-          placement: getPlacement('left', 'top'),
-        },
-        {
-          target: 'body',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Closing Inbox</h3>
-              <p className="text-sm text-muted-foreground">
-                Great! Now let's explore the main workspace. The panel will close automatically.
-              </p>
-            </div>
-          ),
-          placement: 'center',
-          disableBeacon: true,
-        },
-        {
-          target: shouldUseMobileLayout ? '[data-tour="kanban"]' : '[data-tour="kanban-board"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">7-Day Kanban Board</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Your main workspace showing the upcoming week at a glance. Each day is color-coded with calming pastel colors for easy visual scanning.
-              </p>
-              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
-                <li>Drag tasks between days</li>
-                <li>Click + to add new tasks</li>
-                <li>Use Pomodoro timer for focused work</li>
-              </ul>
-            </div>
-          ),
-          placement: getPlacement('bottom', 'top'),
-        },
-        {
-          target: '[data-tour="calendar-month-view-toggle"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Calendar Month View</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Switch to month view using this toggle button to see your entire month at a glance. This view shows all scheduled tasks across the month, helping you plan ahead.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Toggle between week and month views anytime.
-              </p>
-            </div>
-          ),
-          placement: getPlacement('bottom', 'top'),
-        },
-        {
-          target: shouldUseMobileLayout ? '[data-tour="kanban"]' : '[data-tour="kanban-board"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Back to Week View</h3>
-              <p className="text-sm text-muted-foreground">
-                Let's switch back to week view to see the task cards in detail. The view will change automatically.
-              </p>
-            </div>
-          ),
-          placement: getPlacement('bottom', 'top'),
-        },
-        {
-          target: '[data-tour="add-task"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Task Cards</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Each task card shows priority, category, duration, and description. Click any task to edit details, add subtasks, or start a Pomodoro session.
-              </p>
-              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
-                <li>Drag to reschedule</li>
-                <li>Click to edit</li>
-                <li>Start Pomodoro timer</li>
-              </ul>
-            </div>
-          ),
-          placement: getPlacement('bottom', 'top'),
-        },
-        {
-          target: '[data-tour="ai-recommendations-panel"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">AI Recommendations Panel ✨</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                This panel provides powerful AI-powered scheduling tools. Let's explore the AI Smart Scheduler first.
-              </p>
-            </div>
-          ),
-          placement: getPlacement('left', 'left'),
-        },
-        {
-          target: '[data-tour="ai-schedule-preview-dialog"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">AI Smart Scheduler ✨</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                This dialog shows you how AI will schedule your unscheduled tasks. The AI analyzes:
-              </p>
-              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
-                <li>Task priority (Urgent → High → Medium → Low)</li>
-                <li>Estimated duration and due dates</li>
-                <li>Your working hours and availability</li>
-                <li>Category-based time limits</li>
-              </ul>
-              <p className="text-xs text-muted-foreground mt-2">
-                Review the schedule and click "Schedule" to apply it, or "Cancel" to make changes.
-              </p>
-            </div>
-          ),
-          placement: getPlacement('left', 'left'),
-        },
-        {
-          target: 'body',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Closing Schedule Preview</h3>
-              <p className="text-sm text-muted-foreground">
-                Now let's see the Reschedule feature. The dialog will close automatically.
-              </p>
-            </div>
-          ),
-          placement: 'center',
-          disableBeacon: true,
-        },
-        {
-          target: '[data-tour="reschedule-dialog"]',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Reschedule Tasks 🔄</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Use this dialog to reschedule tasks from a specific day, week, or month to a new date.
-              </p>
-              <div className="space-y-2 mt-3">
-                <div className="text-xs text-muted-foreground">
-                  <p className="font-medium mb-1">Reschedule Options:</p>
-                  <ul className="ml-2 list-disc list-inside space-y-0.5">
-                    <li><strong>Day:</strong> Move all tasks from a specific day to a new date</li>
-                    <li><strong>Week:</strong> Redistribute tasks across a new week</li>
-                    <li><strong>Month:</strong> Reschedule tasks across a new month</li>
-                  </ul>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Select a date using the calendar picker, then click "Reschedule" to let AI redistribute your tasks.
-                </p>
-              </div>
-              {subscription.tier === 'free' && (
-                <p className="text-xs text-primary font-medium mt-2">
-                  💎 {SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeature} - {SUBSCRIPTION_UI_TEXT.upgradePrompt.proFeaturePrice(monthlyPrice)}
-                </p>
-              )}
-            </div>
-          ),
-          placement: getPlacement('left', 'left'),
-        },
-        {
-          target: 'body',
-          content: (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">AI Features Complete! 🎉</h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                You've seen how AI can help schedule and reschedule your tasks intelligently.
-              </p>
-              <p 
-                className="text-xs text-muted-foreground border-t border-border/50 mt-3 pt-3"
-                style={{ 
-                  marginTop: SETTINGS_PANEL_SPACING_MEDIUM,
-                  paddingTop: SETTINGS_PANEL_SPACING_MEDIUM
-                }}
-              >
-                🎉 You've completed the tour! Click "Get Started" to begin using TaskZM.
-              </p>
-            </div>
-          ),
-          placement: 'center',
-          disableBeacon: true,
-        },
-      ];
-
-      return baseSteps;
+  const steps = useMemo((): Step[] => {
+    const placementFor = (p?: AppTourStepMeta['placement']): TourPlacement => {
+      if (!p) return shouldUseMobileLayout ? 'top' : 'right';
+      if (p === 'center') return 'center';
+      return shouldUseMobileLayout && (p === 'right' || p === 'left') ? 'top' : p;
     };
 
-    setSteps(createSteps());
-  }, [monthlyPrice, subscription.tier, shouldUseMobileLayout]);
+    return TOUR_STEP_DEFS.filter((def) => {
+      if (def.desktopOnly && shouldUseMobileLayout) return false;
+      if (def.mobileOnly && !shouldUseMobileLayout) return false;
+      return true;
+    }).map((def) => ({
+      target: def.target,
+      placement: placementFor(def.placement),
+      disableBeacon: def.disableBeacon ?? false,
+      content: renderStepContent(def.stepKey, shouldUseMobileLayout),
+      data: { stepKey: def.stepKey },
+    }));
+  }, [shouldUseMobileLayout]);
 
-  // Handle tour callbacks
-  const handleJoyrideCallback = useCallback((data: CallBackProps) => {
-    const { status, type, action, index } = data;
-
-    // Handle navigation and actions based on step
-    if (onNavigate && (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND)) {
+  const getStepKey = useCallback(
+    (index: number) => {
       const step = steps[index];
-      if (step) {
-        // Handle panel opening
-        if (step.target === '[data-tour="today-panel"]') {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: TOUR_CONSTANTS.panels.today } 
-            }));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        } else if (step.target === '[data-tour="inbox-panel"]') {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: TOUR_CONSTANTS.panels.inbox } 
-            }));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
+      return (step?.data as { stepKey?: AppTourStepMeta['stepKey'] } | undefined)?.stepKey;
+    },
+    [steps],
+  );
 
-        // Handle panel closing (after showing panel content)
-        // Close Today Agenda panel after step 2 (index 2, before step 3)
-        if (step.target === 'body' && index === TOUR_CONSTANTS.stepIndices.closeTodayPanel) {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-close-panel'));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-        // Close Inbox panel after step 4 (index 4, before step 5)
-        else if (step.target === 'body' && index === TOUR_CONSTANTS.stepIndices.closeInboxPanel) {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-close-panel'));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        // Navigate to dashboard for main workspace views
-        if (step.target === '[data-tour="kanban"]' || 
-            step.target === '[data-tour="kanban-board"]' ||
-            step.target === '[data-tour="add-task"]' || 
-            step.target === '[data-tour="ai-scheduler"]' ||
-            step.target === '[data-tour="ai-recommendations-panel"]' ||
-            step.target === '[data-tour="ai-schedule-preview-dialog"]' ||
-            step.target === '[data-tour="reschedule-dialog"]' ||
-            step.target === '[data-tour="calendar-month-view-toggle"]') {
-          onNavigate(TOUR_CONSTANTS.viewModes.dashboard);
-        }
-
-        // Handle view mode changes
-        if (step.target === '[data-tour="calendar-month-view-toggle"]') {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
-              detail: { mode: TOUR_CONSTANTS.viewModes.month } 
-            }));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        } else if ((step.target === '[data-tour="kanban"]' || step.target === '[data-tour="kanban-board"]') && index === TOUR_CONSTANTS.stepIndices.switchToWeekView) {
-          // Switch back to week view (step 8)
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-set-view-mode', { 
-              detail: { mode: TOUR_CONSTANTS.viewModes.week } 
-            }));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        // Handle AI panel opening - open before showing the step
-        if (step.target === '[data-tour="ai-recommendations-panel"]') {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: TOUR_CONSTANTS.panels.ai } 
-            }));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        // Handle AI dialog opening
-        if (step.target === '[data-tour="ai-schedule-preview-dialog"]') {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { 
-              detail: { dialog: 'schedule-preview' } 
-            }));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        // Close schedule preview dialog before showing reschedule dialog
-        const rescheduleDialogIndex = steps.findIndex(s => s.target === '[data-tour="reschedule-dialog"]');
-        if (step.target === 'body' && rescheduleDialogIndex > 0 && index === rescheduleDialogIndex - 1) {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-close-ai-dialog'));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        // Handle reschedule dialog opening
-        if (step.target === '[data-tour="reschedule-dialog"]') {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { 
-              detail: { dialog: 'reschedule-day' } 
-            }));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        // Close reschedule dialog after showing completion step
-        const lastBodyStepIndex = steps.map((s, i) => ({ step: s, index: i }))
-          .filter(({ step }) => step.target === 'body')
-          .pop()?.index;
-        if (step.target === 'body' && lastBodyStepIndex !== undefined && index === lastBodyStepIndex - 1) {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tour-close-ai-dialog'));
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-      }
-    }
-
-    // Also handle step before to prepare for next step
-    if (type === EVENTS.STEP_BEFORE) {
+  const prepareStep = useCallback(
+    (index: number) => {
       const step = steps[index];
-      if (step) {
-        // Ensure we're on dashboard before showing kanban/calendar views
-        // Also open AI panel and dialogs before showing the step
-        if (step.target === '[data-tour="kanban"]' || 
-            step.target === '[data-tour="kanban-board"]' ||
-            step.target === '[data-tour="calendar-month-view-toggle"]' ||
-            step.target === '[data-tour="add-task"]' ||
-            step.target === '[data-tour="ai-scheduler"]' ||
-            step.target === '[data-tour="ai-recommendations-panel"]' ||
-            step.target === '[data-tour="ai-schedule-preview-dialog"]' ||
-            step.target === '[data-tour="reschedule-dialog"]') {
-          onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
-          
-          // Open AI panel before showing panel step
-          if (step.target === '[data-tour="ai-recommendations-panel"]') {
-            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: TOUR_CONSTANTS.panels.ai } 
-            }));
-          }
-          
-          // Open AI dialogs before showing dialog steps
-          if (step.target === '[data-tour="ai-schedule-preview-dialog"]') {
-            // Ensure panel is open first
-            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: TOUR_CONSTANTS.panels.ai } 
-            }));
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { 
-                detail: { dialog: 'schedule-preview' } 
-              }));
-            }, TIMING_CONSTANTS.tour.navigationComplete * 2);
-          }
-          
-          if (step.target === '[data-tour="reschedule-dialog"]') {
-            // Ensure panel is open first
-            window.dispatchEvent(new CustomEvent('tour-open-panel', { 
-              detail: { panel: TOUR_CONSTANTS.panels.ai } 
-            }));
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('tour-open-ai-dialog', { 
-                detail: { dialog: 'reschedule-day' } 
-              }));
-            }, TIMING_CONSTANTS.tour.navigationComplete * 2);
-          }
+      if (!step) return;
+
+      const target = step.target as string;
+      const stepKey = getStepKey(index);
+
+      if (DASHBOARD_TARGETS.has(target)) {
+        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
+      }
+
+      if (stepKey === APP_TOUR_STEP_KEYS.monthView) {
+        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.month);
+      }
+
+      if (stepKey === APP_TOUR_STEP_KEYS.weekView) {
+        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
+      }
+
+      if (stepKey === APP_TOUR_STEP_KEYS.aiScheduler && shouldUseMobileLayout) {
+        dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+      }
+
+      if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulePreview) {
+        if (shouldUseMobileLayout) {
+          dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+          window.setTimeout(() => {
+            dispatchTourOpenAiDialog('schedule-preview');
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        } else {
+          dispatchTourOpenDashboardSchedulePreview();
         }
       }
-    }
 
-    // Handle tour completion or skip
-    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-      // Mark tour as completed
-      try {
-        localStorage.setItem(NOTIFICATION_STORAGE_KEYS.tourCompleted, 'true');
-      } catch (error) {
-        console.warn('Failed to save tour completion:', error);
+      if (stepKey === APP_TOUR_STEP_KEYS.aiRescheduler && shouldUseMobileLayout) {
+        dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
       }
 
-      // Show pricing dialog for new free users
-      const isNewSignup = window?.localStorage?.getItem(NOTIFICATION_STORAGE_KEYS.newSignup) === 'true';
-      if (isNewSignup && subscription.tier === 'free' && onShowPricing) {
-        setTimeout(() => {
-          onShowPricing();
-        }, TIMING_CONSTANTS.tour.pricingDialogDelay);
+      if (stepKey === APP_TOUR_STEP_KEYS.rescheduleDialog) {
+        if (shouldUseMobileLayout) {
+          dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+          window.setTimeout(() => {
+            dispatchTourOpenAiDialog('reschedule-day');
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        } else {
+          dispatchTourOpenDashboardRescheduleDialog();
+        }
       }
 
-      onFinish();
-    }
-  }, [steps, onNavigate, onFinish, onShowPricing, subscription.tier]);
+      if (stepKey === APP_TOUR_STEP_KEYS.settingsPanel) {
+        onNavigate?.('settings');
+      }
+    },
+    [getStepKey, onNavigate, shouldUseMobileLayout, steps],
+  );
 
-  // Custom styles for the tour
+  const handleJoyrideCallback = useCallback(
+    (data: CallBackProps) => {
+      const { status, type, index } = data;
+      const stepKey = getStepKey(index);
+
+      if (type === EVENTS.STEP_BEFORE) {
+        prepareStep(index);
+      }
+
+      if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
+        if (stepKey === APP_TOUR_STEP_KEYS.switchToMonth) {
+          window.setTimeout(() => {
+            dispatchTourViewMode(TOUR_CONSTANTS.viewModes.month);
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+
+        if (stepKey === APP_TOUR_STEP_KEYS.switchToWeek) {
+          window.setTimeout(() => {
+            dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+
+        if (stepKey === APP_TOUR_STEP_KEYS.closeSchedulePreview) {
+          window.setTimeout(() => {
+            if (shouldUseMobileLayout) {
+              dispatchTourCloseAiDialog();
+            } else {
+              dispatchTourCloseDashboardDialogs();
+            }
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+
+        if (stepKey === APP_TOUR_STEP_KEYS.openSettings) {
+          window.setTimeout(() => {
+            dispatchTourClosePanel();
+            dispatchTourCloseAiDialog();
+            dispatchTourCloseDashboardDialogs();
+            onNavigate?.('settings');
+          }, TIMING_CONSTANTS.tour.navigationComplete);
+        }
+      }
+
+      if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+        try {
+          localStorage.setItem(NOTIFICATION_STORAGE_KEYS.tourCompleted, 'true');
+        } catch (error) {
+          console.warn('Failed to save tour completion:', error);
+        }
+
+        dispatchTourClosePanel();
+        dispatchTourCloseAiDialog();
+        dispatchTourCloseDashboardDialogs();
+
+        const isNewSignup =
+          window?.localStorage?.getItem(NOTIFICATION_STORAGE_KEYS.newSignup) === 'true';
+        if (isNewSignup && subscription.tier === 'free' && onShowPricing) {
+          window.setTimeout(() => {
+            onShowPricing();
+          }, TIMING_CONSTANTS.tour.pricingDialogDelay);
+        }
+
+        onFinish();
+      }
+    },
+    [getStepKey, onFinish, onNavigate, onShowPricing, prepareStep, shouldUseMobileLayout, subscription.tier],
+  );
+
   const joyrideStyles = {
     options: {
       primaryColor: TOUR_CONSTANTS.colors.primary,
@@ -548,9 +486,9 @@ export function AppTour({
     <Joyride
       steps={steps}
       run={run}
-      continuous={true}
-      showProgress={true}
-      showSkipButton={true}
+      continuous
+      showProgress
+      showSkipButton
       callback={handleJoyrideCallback}
       styles={joyrideStyles}
       disableOverlay={shouldUseMobileLayout}
@@ -564,7 +502,7 @@ export function AppTour({
       floaterProps={{
         disableAnimation: false,
       }}
-      disableOverlayClose={true}
+      disableOverlayClose
       disableScrolling={false}
       scrollOffset={TOUR_CONSTANTS.scroll.offset}
       spotlightPadding={TOUR_CONSTANTS.spotlight.padding}

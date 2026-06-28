@@ -756,7 +756,7 @@ export function MonthCalendarView({
   ];
 
   return (
-    <div className={cn("flex flex-col", mobileMode ? "flex-1 min-h-0" : "h-full", MAIN_BG_GRADIENT_CLASS)} data-month-calendar="true">
+    <div className={cn("flex flex-col", mobileMode ? "flex-1 min-h-0" : "h-full", MAIN_BG_GRADIENT_CLASS)} data-month-calendar="true" data-tour="month-calendar-view">
       {/* Calendar Header - dark mode: solid dark bar with light text/icons for visibility */}
       <motion.div
         className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-gray-800/95 dark:border-gray-700 backdrop-blur-md"

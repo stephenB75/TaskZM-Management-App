@@ -877,7 +877,7 @@ export function AIRecommendationPanel({
         </DialogContent>
       </Dialog>
 
-      <div className="mt-6 h-[calc(100vh-8rem)]">
+      <div className="mt-6 h-[calc(100vh-8rem)]" data-tour="ai-scheduler-section">
         {/* AI Scheduler Action */}
         {(() => {
           const unscheduledTasks = getUnscheduledTasks();
@@ -981,7 +981,7 @@ export function AIRecommendationPanel({
                     )}
                     
                     {/* Reschedule Options - Always show when AI scheduling is enabled */}
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-tour="ai-reschedule-section">
                       <div className="flex items-center gap-2 mb-1">
                         <Icon name="refresh-cw" size={ICON_SIZE_MD} className="text-primary/70" />
                         <span className="text-xs font-medium text-muted-foreground">Reschedule Tasks</span>

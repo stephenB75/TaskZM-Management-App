@@ -548,6 +548,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       />
       <div
         className="flex-1 overflow-y-auto overflow-x-auto overscroll-y-contain min-w-0 flex flex-col items-stretch"
+        data-tour="settings-panel"
         style={{ 
           WebkitOverflowScrolling: 'touch',
           paddingBottom: shouldUseMobileLayout ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` : undefined, // Add padding to scroll container on mobile/tablet to ensure content can scroll past nav bar
@@ -2540,13 +2541,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
                         <p className="text-xs font-medium">Tour Highlights:</p>
                         <ul className="text-xs text-muted-foreground" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_MEDIUM }}>
-                          <li>• Navigation & panel system</li>
-                          <li>• Today Agenda timeline</li>
-                          <li>• 7-Day Kanban board</li>
-                          <li>• AI Scheduler & Pomodoro timer</li>
-                          <li>• Calendar sync & team collaboration</li>
-                          <li>• Subtle achievements & analytics</li>
-                          <li>• Settings & customization</li>
+                          <li>• Sidebar icons & mobile navigation</li>
+                          <li>• Week view & Month calendar toggle</li>
+                          <li>• AI Scheduler & Re-Scheduler</li>
+                          <li>• Settings — calendars, AI, hours & more</li>
                         </ul>
                       </div>
 

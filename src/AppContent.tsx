@@ -135,7 +135,10 @@ export default function AppContent() {
   useEffect(() => {
     const handleTourSetViewMode = (event: CustomEvent<{ mode: 'week' | 'month' }>) => {
       dashboardViewModeRef.current = event.detail.mode;
-      // Dispatch to DashboardView if it's mounted
+      if (shouldUseMobileLayout) {
+        setCurrentView('dashboard');
+        setMobileView('week');
+      }
       window.dispatchEvent(new CustomEvent('dashboard-set-view-mode', { 
         detail: { mode: event.detail.mode } 
       }));
@@ -144,6 +147,7 @@ export default function AppContent() {
     const handleTourOpenPanel = (event: CustomEvent<{ panel: string }>) => {
       const panel = event.detail.panel;
       if (panel === 'ai') {
+        setCurrentView('dashboard');
         setAiPanelOpen(true);
       } else if (panel === 'analytics') {
         setCurrentView('analytics');
@@ -151,6 +155,8 @@ export default function AppContent() {
         setCurrentView('today');
       } else if (panel === 'inbox') {
         setCurrentView('inbox');
+      } else if (panel === 'settings') {
+        setCurrentView('settings');
       }
     };
 
@@ -767,6 +773,9 @@ export default function AppContent() {
 
   const handleTourNavigate = (view: string) => {
     setCurrentView(view);
+    if (shouldUseMobileLayout && view === 'dashboard') {
+      setMobileView('week');
+    }
   };
 
   const handleTourStart = () => {
