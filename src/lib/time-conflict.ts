@@ -33,11 +33,11 @@ export function buildSchedulingSlotOptions(
   };
 }
 
-/** Manual scheduling (TaskDialog, drag-drop) — no AI prep buffer between tasks/events. */
+/** Manual scheduling (TaskDialog, drag-drop) — same prep buffer as AI scheduler. */
 export function buildManualSchedulingSlotOptions(
   base: Omit<FindSlotOptions, 'schedulingPrepBufferMinutes'> = {},
 ): FindSlotOptions {
-  return { ...base };
+  return buildSchedulingSlotOptions(base);
 }
 
 /** @deprecated Prefer `buildSchedulingSlotOptions` — kept for AI scheduler call sites. */
@@ -458,9 +458,13 @@ export function checkTimeConflict(
   taskDuration: number,
   allTasks: Task[],
   calendarEvents?: ConflictCalendarEvent[],
+  options?: Pick<FindSlotOptions, 'schedulingPrepBufferMinutes'>,
 ): Task | null {
   const targetDate = new Date(scheduledTime);
   targetDate.setHours(0, 0, 0, 0);
+  const prepBufferMs = getSchedulingPrepBufferMs(
+    options ?? { schedulingPrepBufferMinutes: AI_SCHEDULING_PREP_BUFFER_MINUTES },
+  );
 
   // Get all tasks scheduled for the target date (excluding the current task)
   const dateTasks = allTasks.filter((task) => {
@@ -475,13 +479,14 @@ export function checkTimeConflict(
   if (calendarEvents?.length) {
     const calendarBlocks = buildCalendarConflictBlocksForDay(calendarEvents, targetDate);
     for (const event of calendarBlocks) {
-      if (scheduleBlocksConflict(newTaskStart, newTaskEnd, event.start, event.end)) {
+      const expanded = expandCalendarBlockForSchedulingPrep(event.start, event.end, prepBufferMs);
+      if (scheduleBlocksConflict(newTaskStart, newTaskEnd, expanded.start, expanded.end)) {
         return null;
       }
     }
   }
 
-  // Check for overlaps with existing tasks
+  // Check for overlaps with existing tasks (including prep time after each block)
   for (const existingTask of dateTasks) {
     if (!existingTask.scheduledDate) continue;
 
@@ -494,9 +499,10 @@ export function checkTimeConflict(
     // Use at least MIN_TASK_DURATION_MINUTES so we never treat a scheduled block as zero-length (prevents overlaps)
     const existingTaskDuration = getTaskSchedulingMinutes(existingTask, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
     const existingTaskEnd = existingTaskStart + existingTaskDuration;
+    const existingBlockEnd = expandTaskBlockEndForSchedulingPrep(existingTaskEnd, prepBufferMs);
 
-    // Check for overlap: new task overlaps if it starts before existing ends AND ends after existing starts
-    if (newTaskStart < existingTaskEnd && newTaskEnd > existingTaskStart) {
+    // Check for overlap: new task overlaps if it starts before existing block ends AND ends after existing starts
+    if (newTaskStart < existingBlockEnd && newTaskEnd > existingTaskStart) {
       return existingTask;
     }
   }
@@ -721,6 +727,7 @@ export function findNextAvailableSlot(
 
   const maxHour = TASK_CALCULATION_CONSTANTS.timeConflict.maxHour;
   const maxMinute = TASK_CALCULATION_CONSTANTS.timeConflict.maxMinute;
+  const prepBufferMs = getSchedulingPrepBufferMs(options);
 
   // Try to find a slot after the candidate time
   while (candidateTime.getHours() < maxHour || (candidateTime.getHours() === maxHour && candidateTime.getMinutes() <= maxMinute)) {
@@ -772,8 +779,6 @@ export function findNextAvailableSlot(
         }
       }
     }
-
-    const prepBufferMs = getSchedulingPrepBufferMs(options);
 
     // Check if this slot conflicts with any existing task or calendar event
     // IMPORTANT: Check ALL conflicts, not just the first one, to ensure we move past all overlapping tasks
@@ -868,7 +873,6 @@ export function findNextAvailableSlot(
   }
 
   // If no slot found, try gaps before obstacles or after the last calendar block.
-  const prepBufferMs = getSchedulingPrepBufferMs(options);
   const gapSlot = tryFindGapBeforeObstacles(
     targetDate,
     requestedTime.getTime(),
