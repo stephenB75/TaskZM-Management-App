@@ -244,20 +244,61 @@ export const APP_TOUR_TARGETS = {
   body: 'body',
   sidebar: '[data-tour="sidebar"]',
   bottomNav: '[data-tour="bottom-nav"]',
-  weekMonthToggle: '[data-tour="week-month-toggle"]',
+  weekMonthToggle: '[data-tour-header-actions="desktop"] [data-tour="week-month-toggle"]',
   kanbanBoard: '[data-tour="kanban-board"]',
   kanbanMobile: '[data-tour="kanban"]',
   monthCalendar: '[data-tour="month-calendar-view"]',
-  aiScheduler: '[data-tour="ai-scheduler"]',
-  aiSchedulePreview: '[data-tour="ai-schedule-preview-dialog"]',
-  aiReschedule: '[data-tour="re-schedule"]',
+  aiScheduler: '[data-tour-header-actions="desktop"] [data-tour="ai-scheduler"]',
+  aiSchedulePreview: '[data-tour="dashboard-ai-schedule-preview-dialog"]',
+  aiSchedulePreviewMobile: '[data-tour="ai-schedule-preview-dialog"]',
+  aiReschedule: '[data-tour-header-actions="desktop"] [data-tour="re-schedule"]',
   rescheduleDialog: '[data-tour="reschedule-dialog"]',
-  rescheduleDialogOptions: '[data-tour="reschedule-dialog-options"]',
+  rescheduleDialogOptions: '[data-tour="dashboard-reschedule-dialog-options"]',
   aiRecommendationsPanel: '[data-tour="ai-recommendations-panel"]',
   aiSchedulerSection: '[data-tour="ai-scheduler-section"]',
   aiRescheduleSection: '[data-tour="ai-reschedule-section"]',
   settingsPanel: '[data-tour="settings-panel"]',
 } as const;
+
+/** Prefer a visible match when duplicate tour nodes exist (e.g. hidden mobile header copies). */
+export function queryVisibleTourTarget(selector: string): HTMLElement | null {
+  const nodes = document.querySelectorAll(selector);
+  for (const node of nodes) {
+    if (!(node instanceof HTMLElement)) continue;
+    if (!isElementVisibleForTour(node)) continue;
+    return node;
+  }
+  return null;
+}
+
+function isElementVisibleForTour(el: HTMLElement): boolean {
+  const style = window.getComputedStyle(el);
+  if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+    return false;
+  }
+  const rect = el.getBoundingClientRect();
+  if (rect.width <= 4 || rect.height <= 4 || rect.bottom <= 0 || rect.right <= 0) {
+    return false;
+  }
+  let parent: HTMLElement | null = el.parentElement;
+  while (parent) {
+    const parentStyle = window.getComputedStyle(parent);
+    if (parentStyle.display === 'none') return false;
+    if (parent.getAttribute('data-state') === 'closed') return false;
+    if (parent.getAttribute('aria-hidden') === 'true') return false;
+    parent = parent.parentElement;
+  }
+  return true;
+}
+
+/** Dev helper: verify every tour step resolves to a visible DOM node on the current layout. */
+export function auditTourTargets(isMobile: boolean): Array<{ stepKey: string; target: string; ok: boolean }> {
+  return buildAppTourStepDefs(isMobile).map((step) => ({
+    stepKey: step.stepKey,
+    target: step.target,
+    ok: step.target === APP_TOUR_TARGETS.body || queryVisibleTourTarget(step.target) !== null,
+  }));
+}
 
 export const APP_TOUR_STEP_KEYS = {
   welcome: 'welcome',
@@ -348,7 +389,7 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.aiSchedulePreview,
-      target: APP_TOUR_TARGETS.aiSchedulePreview,
+      target: isMobile ? APP_TOUR_TARGETS.aiSchedulePreviewMobile : APP_TOUR_TARGETS.aiSchedulePreview,
       placement: 'left',
     },
     {

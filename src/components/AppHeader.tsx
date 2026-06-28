@@ -228,10 +228,12 @@ export function AppHeader({
           </div>
 
           <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_SMALL }}>
-            {/* Custom Actions */}
-            <div className="flex items-center" style={{ gap: HEADER_GAP_SMALL }}>
-              {actions}
-            </div>
+            {/* Custom Actions — mobile layout only (avoid duplicate data-tour nodes in DOM) */}
+            {shouldUseMobileLayout && (
+              <div className="flex items-center" style={{ gap: HEADER_GAP_SMALL }}>
+                {actions}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -349,7 +351,7 @@ export function AppHeader({
                 )}
               </motion.div>
             </motion.div>
-            {/* Right side: Actions (switch + buttons) */}
+            {/* Right side: Actions (switch + buttons) — side panel headers only */}
             {actions && (
               <motion.div 
                 className="flex items-center flex-shrink-0" 
@@ -460,10 +462,11 @@ export function AppHeader({
                 />
               )}
             </div>
-            {/* Right side: Actions (text is now inside actions component) */}
-            {actions && (
+            {/* Right side: Actions (desktop layout only — avoid duplicate data-tour nodes in DOM) */}
+            {!shouldUseMobileLayout && actions && (
               <div 
                 className="flex items-center min-w-0"
+                data-tour-header-actions="desktop"
                 style={{ 
                   // Responsive gap: smaller for small monitors and landscape
                   gap: isSmallMonitor && isLandscape 

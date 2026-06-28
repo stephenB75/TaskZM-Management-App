@@ -346,7 +346,7 @@ function RescheduleMiniCalendar({
   return (
     <div className="w-full bg-white/80 dark:bg-gray-800/95 dark:border-gray-600 rounded-lg p-3 border-2 border-primary/30 dark:border-primary/20 shadow-lg">
       {/* Toggle Buttons */}
-      <div className="flex gap-2 mb-3" data-tour="reschedule-dialog-options">
+      <div className="flex gap-2 mb-3" data-tour="dashboard-reschedule-dialog-options">
         <Button
           type="button"
           variant={rescheduleType === "day" ? "default" : "outline"}
@@ -1485,7 +1485,6 @@ export function DashboardView({
               className={cn(!shouldUseMobileLayout ? 'flex items-center flex-shrink-0' : 'hidden')}
               style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
             >
-              <div data-tour="ai-scheduler" className="inline-flex flex-shrink-0">
               <DashboardSchedulerActionButton
                 label={
                   showActionText
@@ -1497,9 +1496,8 @@ export function DashboardView({
                 onClick={handleScheduleUnscheduledTasks}
                 isSmallScreen={isSmallScreen}
                 scale={buttonScale}
+                data-tour="ai-scheduler"
               />
-              </div>
-              <div data-tour="re-schedule" className="inline-flex flex-shrink-0">
               <DashboardSchedulerActionButton
                 label={DASHBOARD_VIEW_HEADER_LABELS.reschedule}
                 icon="calendar-dots"
@@ -1509,8 +1507,8 @@ export function DashboardView({
                 iconSpinning={isRescheduling}
                 isSmallScreen={isSmallScreen}
                 scale={buttonScale}
+                data-tour="re-schedule"
               />
-              </div>
             </div>
           </div>
         }
@@ -1816,7 +1814,7 @@ export function DashboardView({
         open={showSchedulePreview}
         onOpenChange={setShowSchedulePreview}
       >
-        <DialogContent className="max-w-2xl max-h-[80vh]" data-tour="ai-schedule-preview-dialog">
+        <DialogContent className="max-w-2xl max-h-[80vh]" data-tour="dashboard-ai-schedule-preview-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary" />

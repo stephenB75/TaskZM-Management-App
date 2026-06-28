@@ -5,7 +5,7 @@ import { useCalendar } from '../contexts/CalendarContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isTaskBlocked, calculateDependencyDepth, getDateString } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
-import { findNextAvailableSlot, filterCalendarEventsForDay, buildCalendarConflictBlocksForDay, scheduleBlocksConflict, buildAISchedulerSlotOptions, expandTaskBlockEndForSchedulingPrep, expandCalendarBlockForSchedulingPrep, aiSchedulingTaskBlockConflicts, reorganizeAllTasksForDate, type ConflictCalendarEvent } from '../lib/time-conflict';
+import { findNextAvailableSlot, filterCalendarEventsForDay, buildCalendarConflictBlocksForDay, scheduleBlocksConflict, buildAISchedulerSlotOptions, expandTaskBlockEndForSchedulingPrep, expandCalendarBlockForSchedulingPrep, aiSchedulingTaskBlockConflicts, enforcePrepBufferUntilStable, type ConflictCalendarEvent } from '../lib/time-conflict';
 import { getCategoryHoursForTask, parseTimeToMinutes } from '../lib/category-hours-utils';
 import { getTaskHours, getTaskMinutes } from '../lib/daily-hours-utils';
 import { logger } from '../lib/logger';
@@ -3755,7 +3755,7 @@ export function useAIScheduler() {
       }
     });
 
-    // Final pass: resolve any remaining same-day overlaps so no two tasks share the same time
+    // Final pass: enforce prep buffer across plan items, existing daily tasks, and calendar events.
     const planByDate = new Map<string, typeof plan>();
     for (const item of plan) {
       if (!item.scheduledDate) continue;
@@ -3764,65 +3764,44 @@ export function useAIScheduler() {
       list.push(item);
       planByDate.set(dateKey, list);
     }
-    for (const [, dayItems] of planByDate) {
-      if (dayItems.length < 2) continue;
-      dayItems.sort((a, b) => {
-        const tA = a.scheduledDate instanceof Date ? a.scheduledDate.getTime() : new Date(a.scheduledDate).getTime();
-        const tB = b.scheduledDate instanceof Date ? b.scheduledDate.getTime() : new Date(b.scheduledDate).getTime();
-        return tA - tB;
-      });
-      const dateKey = getDateKey(dayItems[0].scheduledDate);
+    for (const [dateKey, dayItems] of planByDate) {
+      if (dayItems.length === 0) continue;
+      const targetDate = dayItems[0].scheduledDate instanceof Date
+        ? new Date(dayItems[0].scheduledDate)
+        : new Date(dayItems[0].scheduledDate);
+      targetDate.setHours(0, 0, 0, 0);
       const existingForDay = dailyTasks.get(dateKey) || [];
-      for (let i = 0; i < dayItems.length; i++) {
-        const item = dayItems[i];
-        const itemStart = item.scheduledDate instanceof Date ? item.scheduledDate.getTime() : new Date(item.scheduledDate).getTime();
-        const itemDuration = getTaskMinutes(item.task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
-        const itemEnd = itemStart + itemDuration;
-        const othersForDay: Task[] = [
-          ...existingForDay,
-          ...dayItems.filter((_, j) => j !== i).map(p => ({
-            ...p.task,
-            scheduledDate: p.scheduledDate instanceof Date ? p.scheduledDate.toISOString() : p.scheduledDate,
-          })),
-        ];
-        const hasTaskOverlap = othersForDay.some(t => {
-          if (!t.scheduledDate) return false;
-          const start = new Date(t.scheduledDate).getTime();
-          const dur = getTaskMinutes(t, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
-          const end = expandTaskBlockEndForSchedulingPrep(start + dur, AI_SCHEDULING_PREP_BUFFER_MS);
-          return scheduleBlocksConflict(itemStart, itemEnd, start, end);
-        });
-        const targetDate = item.scheduledDate instanceof Date ? new Date(item.scheduledDate) : new Date(item.scheduledDate);
-        const dayCalendarEventsForOverlap = calendarEventsForDay(targetDate);
-        const hasCalendarOverlap = buildCalendarConflictBlocksForDay(dayCalendarEventsForOverlap, targetDate)
-          .some((block) => {
-            const expanded = expandCalendarBlockForSchedulingPrep(
-              block.start,
-              block.end,
-              AI_SCHEDULING_PREP_BUFFER_MS,
-            );
-            return scheduleBlocksConflict(itemStart, itemEnd, expanded.start, expanded.end);
-          });
-        if (hasTaskOverlap || hasCalendarOverlap) {
-          const categoryHours = getCategoryHoursForTask(item.task, targetDate, hoursSettings);
-          const slot = findNextAvailableSlot(
-            item.task.id,
-            targetDate,
-            Math.round(itemDuration / MILLISECONDS_PER_MINUTE),
-            othersForDay,
-            buildAISchedulerSlotOptions({ ensureAfterCurrentTime: false, categoryHours: categoryHours ?? undefined, calendarEvents: dayCalendarEventsForOverlap })
-          );
-          if (isSlotOnRequestedDay(slot, targetDate) && slot.getTime() !== itemStart) {
-            const newDate = new Date(slot.getTime());
-            item.scheduledDate = newDate;
-            item.task = { ...item.task, scheduledDate: newDate.toISOString() };
-            if (import.meta.env.DEV) {
-              logger.debug('Plan overlap resolved in final pass', {
-                taskId: item.task.id,
-                taskTitle: item.task.title,
-                newTime: newDate.toLocaleTimeString(),
-              });
-            }
+      const planTaskIds = new Set(dayItems.map((item) => item.task.id));
+      const mergedTasks: Task[] = [
+        ...existingForDay.filter((t) => !planTaskIds.has(t.id)),
+        ...dayItems.map((item) => ({
+          ...item.task,
+          scheduledDate: item.scheduledDate instanceof Date
+            ? item.scheduledDate.toISOString()
+            : item.scheduledDate,
+        })),
+      ];
+      const dayCalendarEventsForOverlap = calendarEventsForDay(targetDate);
+      const moves = enforcePrepBufferUntilStable(
+        targetDate,
+        mergedTasks,
+        buildAISchedulerSlotOptions({
+          calendarEvents: dayCalendarEventsForOverlap,
+          ensureAfterCurrentTime: false,
+          onlyFixOverlaps: true,
+        }),
+      );
+      for (const move of moves) {
+        const planItem = dayItems.find((item) => item.task.id === move.taskId);
+        if (planItem) {
+          planItem.scheduledDate = move.newTime;
+          planItem.task = { ...planItem.task, scheduledDate: move.newTime.toISOString() };
+          if (import.meta.env.DEV) {
+            logger.debug('Plan prep buffer enforced in final pass', {
+              taskId: planItem.task.id,
+              taskTitle: planItem.task.title,
+              newTime: move.newTime.toLocaleTimeString(),
+            });
           }
         }
       }
@@ -4039,9 +4018,11 @@ export function useAIScheduler() {
     }
 
     for (const [, date] of dayDates) {
-      const dayCalendarEvents = filterCalendarEventsForDay(calendarEvents, date);
+      const normalizedDate = new Date(date);
+      normalizedDate.setHours(0, 0, 0, 0);
+      const dayCalendarEvents = filterCalendarEventsForDay(calendarEvents, normalizedDate);
       const dayTasks = tasks
-        .filter((t) => t.status !== 'done' && isDateInRecurrence(t, date))
+        .filter((t) => t.status !== 'done' && isDateInRecurrence(t, normalizedDate))
         .filter((t) => scheduledById.has(t.id) || t.scheduledDate)
         .map((t) => {
           const override = scheduledById.get(t.id);
@@ -4050,12 +4031,13 @@ export function useAIScheduler() {
             : t;
         });
 
-      const moves = reorganizeAllTasksForDate(
-        date,
+      const moves = enforcePrepBufferUntilStable(
+        normalizedDate,
         dayTasks,
         buildAISchedulerSlotOptions({
           calendarEvents: dayCalendarEvents,
           ensureAfterCurrentTime: false,
+          onlyFixOverlaps: true,
         }),
       );
 

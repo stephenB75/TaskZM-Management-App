@@ -21,6 +21,7 @@ import {
   buildAppTourStepDefs,
   getNavIconCopy,
   getSettingsSectionCopy,
+  queryVisibleTourTarget,
   type AppTourStepMeta,
 } from '../lib/app-tour-constants';
 
@@ -166,6 +167,7 @@ const DASHBOARD_TARGETS = new Set<string>([
   APP_TOUR_TARGETS.monthCalendar,
   APP_TOUR_TARGETS.aiScheduler,
   APP_TOUR_TARGETS.aiSchedulePreview,
+  APP_TOUR_TARGETS.aiSchedulePreviewMobile,
   APP_TOUR_TARGETS.aiReschedule,
   APP_TOUR_TARGETS.rescheduleDialog,
   APP_TOUR_TARGETS.rescheduleDialogOptions,
@@ -215,17 +217,14 @@ function closeAllTourDialogs(isMobile: boolean) {
 
 function scrollTourTargetIntoView(target: string) {
   window.setTimeout(() => {
-    const el = document.querySelector(target);
+    const el = queryVisibleTourTarget(target);
     el?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
   }, TIMING_CONSTANTS.tour.highlightDelay);
 }
 
 function isTourTargetReady(target: string): boolean {
   if (target === APP_TOUR_TARGETS.body) return true;
-  const el = document.querySelector(target);
-  if (!el) return false;
-  const rect = el.getBoundingClientRect();
-  return rect.width > 4 && rect.height > 4 && rect.bottom > 0 && rect.right > 0;
+  return queryVisibleTourTarget(target) !== null;
 }
 
 function waitForTourTarget(
@@ -247,7 +246,7 @@ function waitForTourTarget(
 function prepareFixedHeaderTourTarget(target: string) {
   window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
   waitForTourTarget(target, () => {
-    const el = document.querySelector(target);
+    const el = queryVisibleTourTarget(target);
     el?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
   });
 }
@@ -324,22 +323,29 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       return shouldUseMobileLayout && (p === 'right' || p === 'left' || p === 'bottom-end') ? 'top' : p;
     };
 
-    return stepDefs.map((meta) => ({
-      target: meta.target,
-      placement: placementFor(meta.placement),
-      disableBeacon: meta.disableBeacon ?? false,
-      content: renderStepContent(meta, shouldUseMobileLayout),
-      data: meta,
-      disableScrolling: meta.isFixed ?? false,
-      disableScrollParentFix: meta.isFixed ?? false,
-      isFixed: meta.isFixed ?? false,
-      offset: meta.isFixed ? 8 : 0,
-      floaterProps: meta.isFixed
-        ? { offset: 12, options: { preventOverflow: { boundariesElement: 'viewport' } } }
-        : undefined,
-      spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
-    }));
-  }, [shouldUseMobileLayout, stepDefs]);
+    return stepDefs.map((meta, index) => {
+      const resolvedTarget =
+        run && index === tourStepIndex && meta.target !== APP_TOUR_TARGETS.body
+          ? queryVisibleTourTarget(meta.target) ?? meta.target
+          : meta.target;
+
+      return {
+        target: resolvedTarget,
+        placement: placementFor(meta.placement),
+        disableBeacon: meta.disableBeacon ?? false,
+        content: renderStepContent(meta, shouldUseMobileLayout),
+        data: meta,
+        disableScrolling: meta.isFixed ?? false,
+        disableScrollParentFix: meta.isFixed ?? false,
+        isFixed: meta.isFixed ?? false,
+        offset: meta.isFixed ? 8 : 0,
+        floaterProps: meta.isFixed
+          ? { offset: 12, options: { preventOverflow: { boundariesElement: 'viewport' } } }
+          : undefined,
+        spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
+      };
+    });
+  }, [shouldUseMobileLayout, stepDefs, run, tourStepIndex]);
 
   const getStepMeta = useCallback(
     (index: number) => steps[index]?.data as AppTourStepMeta | undefined,
@@ -389,12 +395,20 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
           window.setTimeout(() => {
             dispatchTourOpenAiDialog('schedule-preview');
-            scrollTourTargetIntoView(APP_TOUR_TARGETS.aiSchedulePreview);
+            scrollTourTargetIntoView(
+              shouldUseMobileLayout
+                ? APP_TOUR_TARGETS.aiSchedulePreviewMobile
+                : APP_TOUR_TARGETS.aiSchedulePreview,
+            );
           }, TIMING_CONSTANTS.tour.navigationComplete);
         } else {
           window.setTimeout(() => {
             dispatchTourOpenDashboardSchedulePreview();
-            scrollTourTargetIntoView(APP_TOUR_TARGETS.aiSchedulePreview);
+            scrollTourTargetIntoView(
+              shouldUseMobileLayout
+                ? APP_TOUR_TARGETS.aiSchedulePreviewMobile
+                : APP_TOUR_TARGETS.aiSchedulePreview,
+            );
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
       }

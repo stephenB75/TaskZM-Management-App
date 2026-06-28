@@ -715,15 +715,25 @@ export function reorganizeAllTasksForDate(
     lastScheduledEnd = defaultStart.getTime();
   }
 
-  // Reorganize: move a task if it overlaps the previous block or starts before the prep buffer after it.
+  // Reorganize: move a task if it violates prep buffer vs prior tasks or calendar events.
   let nextAllowedStartMs = lastScheduledEnd;
+  const calendarBlocks = buildCalendarConflictBlocksForDay(
+    options?.calendarEvents ?? [],
+    targetDate,
+  );
+  let workingTasks = [...allTasks];
+
   for (const taskInfo of sortedTasks) {
     const task = taskInfo.task;
-    const taskDuration = getTaskMinutes(task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE; // Use AI estimator
+    const taskDurationMinutes = getTaskSchedulingMinutes(task, { useCachedAIAnalysis: true });
+    const taskDuration = taskDurationMinutes * MILLISECONDS_PER_MINUTE;
 
-    if (taskInfo.start < nextAllowedStartMs) {
-      // Task needs to be moved
-      const candidateTime = new Date(nextAllowedStartMs);
+    const needsMove =
+      taskInfo.start < nextAllowedStartMs
+      || taskConflictsCalendarWithPrep(taskInfo.start, taskInfo.end, calendarBlocks, prepBufferMs);
+
+    if (needsMove) {
+      const candidateTime = new Date(Math.max(nextAllowedStartMs, taskInfo.start));
       
       // Round to nearest 15-minute slot
       const minutes = candidateTime.getMinutes();
@@ -737,38 +747,87 @@ export function reorganizeAllTasksForDate(
       candidateTime.setSeconds(0);
       candidateTime.setMilliseconds(0);
 
-      // Find available slot for this task
       const newTime = findNextAvailableSlot(
         task.id,
         candidateTime,
-        getTaskMinutes(task, { useCachedAIAnalysis: true }), // Use AI estimator
-        allTasks,
+        taskDurationMinutes,
+        workingTasks,
         options
       );
 
-      // Check if a valid slot was found
       if (newTime.getHours() < HOURS_PER_DAY) {
         reorganizations.push({
           taskId: task.id,
           newTime,
         });
-        
-        // Update last scheduled end for next iteration
+
+        workingTasks = applyTaskTimeToList(workingTasks, task.id, newTime);
         lastScheduledEnd = newTime.getTime() + taskDuration;
         nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
       } else {
-        // No slot found, keep original time but update lastScheduledEnd if it's later
         lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);
         nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
       }
     } else {
-      // Task doesn't need to be moved, but update lastScheduledEnd
       lastScheduledEnd = Math.max(lastScheduledEnd, taskInfo.end);
       nextAllowedStartMs = expandTaskBlockEndForSchedulingPrep(lastScheduledEnd, prepBufferMs);
     }
   }
 
   return reorganizations;
+}
+
+function taskConflictsCalendarWithPrep(
+  startMs: number,
+  endMs: number,
+  calendarBlocks: CalendarConflictBlock[],
+  prepBufferMs: number,
+): boolean {
+  for (const block of calendarBlocks) {
+    const expanded = expandCalendarBlockForSchedulingPrep(block.start, block.end, prepBufferMs);
+    if (scheduleBlocksConflict(startMs, endMs, expanded.start, expanded.end)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function applyTaskTimeToList(allTasks: Task[], taskId: string, newTime: Date): Task[] {
+  return allTasks.map((task) =>
+    task.id === taskId ? { ...task, scheduledDate: newTime.toISOString() } : task,
+  );
+}
+
+/**
+ * Iteratively reorganize a day until prep-buffer rules are satisfied or no moves remain.
+ */
+export function enforcePrepBufferUntilStable(
+  date: Date,
+  allTasks: Task[],
+  options?: FindSlotOptions,
+  maxPasses: number = 5,
+): Array<{ taskId: string; newTime: Date }> {
+  const prepBufferMs = getSchedulingPrepBufferMs(options);
+  if (prepBufferMs <= 0) {
+    return reorganizeAllTasksForDate(date, allTasks, options);
+  }
+
+  const allMoves: Array<{ taskId: string; newTime: Date }> = [];
+  let workingTasks = [...allTasks];
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    const passMoves = reorganizeAllTasksForDate(date, workingTasks, options);
+    if (passMoves.length === 0) {
+      break;
+    }
+
+    for (const move of passMoves) {
+      allMoves.push(move);
+      workingTasks = applyTaskTimeToList(workingTasks, move.taskId, move.newTime);
+    }
+  }
+
+  return allMoves;
 }
 
 /**
