@@ -261,7 +261,13 @@ export function getTodayAgendaTaskTimeRangeMins(
   return { startMins, endMins, durationMins: endMins - startMins };
 }
 
-/** Timeline minute range for a calendar event (parsed start/end — end label matches event end time). */
+/** Calendar event duration (minutes) from parsed start/end — matches CalendarEventCard labels. */
+export function getCalendarEventDurationMinutes(start: Date, end: Date): number {
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1;
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / MILLISECONDS_PER_MINUTE));
+}
+
+/** Timeline minute range for a calendar event (parsed start/end — slot height matches card duration). */
 export function getTodayAgendaEventTimeRangeMins(
   start: Date,
   end: Date,
@@ -273,13 +279,10 @@ export function getTodayAgendaEventTimeRangeMins(
     start.getHours() * MINUTES_PER_HOUR + start.getMinutes() - timelineStartHour * MINUTES_PER_HOUR;
   if (startMins < 0 || startMins >= totalMinutes) return null;
 
-  let endMins =
-    end.getHours() * MINUTES_PER_HOUR + end.getMinutes() - timelineStartHour * MINUTES_PER_HOUR;
-  if (endMins <= startMins) {
-    endMins = startMins + Math.max(1, Math.round((end.getTime() - start.getTime()) / MILLISECONDS_PER_MINUTE));
-  }
-  endMins = Math.min(totalMinutes, Math.max(startMins + 1, endMins));
-  return { startMins, endMins, durationMins: endMins - startMins };
+  const durationFromTimestamps = getCalendarEventDurationMinutes(start, end);
+  const endMins = Math.min(totalMinutes, startMins + durationFromTimestamps);
+  const durationMins = Math.max(1, endMins - startMins);
+  return { startMins, endMins, durationMins };
 }
 
 /** Row top for a duration block — grid start unless stacked below another item. */

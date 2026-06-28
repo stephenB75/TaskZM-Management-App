@@ -946,6 +946,8 @@ export function TodayAgendaView({
                   variant="timeline"
                   timelineLayoutTier={resolvedPresentation.tier}
                   timelineHideFooter={resolvedPresentation.hideFooter}
+                  timelineBlockHeightPx={blockRowHeightPx}
+                  timelineDurationMinutes={actualDurationMins}
                 />
               </div>
             ) : null}

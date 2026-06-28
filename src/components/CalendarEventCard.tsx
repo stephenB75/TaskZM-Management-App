@@ -53,6 +53,10 @@ interface CalendarEventCardProps {
   timelineLayoutTier?: 'micro' | 'compact' | 'full';
   /** When true, hide footer so title fits in a short timeline slot. */
   timelineHideFooter?: boolean;
+  /** Today Agenda: row height (px) so the card fills the duration slot on the time grid. */
+  timelineBlockHeightPx?: number;
+  /** Today Agenda: duration shown on-card when clipped to the visible timeline (e.g. past midnight). */
+  timelineDurationMinutes?: number;
 }
 
 // Calculate duration in minutes between two ISO date strings (uses parseCalendarEventTime for correct timezone)
@@ -293,13 +297,13 @@ const eventColorPalette = [
   },
 ];
 
-export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring, variant = 'default', compactTimeline, timelineLayoutTier, timelineHideFooter = false }: CalendarEventCardProps) {
+export function CalendarEventCard({ title, start, end, location, provider, calendarColor, isRecurring, variant = 'default', compactTimeline, timelineLayoutTier, timelineHideFooter = false, timelineBlockHeightPx, timelineDurationMinutes }: CalendarEventCardProps) {
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const mode = isDark ? 'dark' : 'light';
   const isMobile = useIsMobile();
   
-  const durationMinutes = getDurationMinutes(start, end);
+  const durationMinutes = timelineDurationMinutes ?? getDurationMinutes(start, end);
   const allDay = isAllDayEvent(start, end);
   const startTime = formatTimeAMPM(start);
   const endTime = formatTimeAMPM(end);
@@ -399,6 +403,11 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         leftAccentColor={accentDotColor}
         leftAccentWidthPx={TODAY_AGENDA_TIMELINE.blockAccentWidthPx}
         surface="timeline"
+        style={
+          timelineBlockHeightPx != null
+            ? { minHeight: timelineBlockHeightPx, height: '100%' }
+            : undefined
+        }
       />
     );
   }
