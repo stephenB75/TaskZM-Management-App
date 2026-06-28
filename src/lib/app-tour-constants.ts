@@ -277,8 +277,15 @@ function isElementVisibleForTour(el: HTMLElement): boolean {
   if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
     return false;
   }
+  if (el.getAttribute('data-slot') === 'dialog-content') {
+    const state = el.getAttribute('data-state');
+    if (state != null && state !== 'open') return false;
+  }
   const rect = el.getBoundingClientRect();
   if (rect.width <= 4 || rect.height <= 4 || rect.bottom <= 0 || rect.right <= 0) {
+    return false;
+  }
+  if (el.getAttribute('data-slot') === 'dialog-content' && (rect.width < 80 || rect.height < 80)) {
     return false;
   }
   let parent: HTMLElement | null = el.parentElement;
@@ -413,7 +420,7 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.rescheduleDialog,
-      target: isMobile ? APP_TOUR_TARGETS.rescheduleDialog : APP_TOUR_TARGETS.rescheduleDialogOptions,
+      target: APP_TOUR_TARGETS.rescheduleDialog,
       placement: 'auto',
     },
     {
@@ -463,6 +470,26 @@ const TOUR_DIALOG_STEP_KEYS = new Set<AppTourStepKey>([
   APP_TOUR_STEP_KEYS.aiSchedulePreview,
   APP_TOUR_STEP_KEYS.rescheduleDialog,
 ]);
+
+export function isAppTourDialogStep(meta: AppTourStepMeta | undefined): boolean {
+  return meta != null && TOUR_DIALOG_STEP_KEYS.has(meta.stepKey);
+}
+
+/** Sample rows for the schedule-preview dialog during the tour (no AI run). */
+export const APP_TOUR_DEMO_SCHEDULE_TASKS = [
+  {
+    id: 'tour-demo-schedule-1',
+    title: 'Review project proposal',
+    priority: 'high' as const,
+    reason: 'Fits your Work hours tomorrow morning',
+  },
+  {
+    id: 'tour-demo-schedule-2',
+    title: 'Prepare team standup notes',
+    priority: 'medium' as const,
+    reason: 'Short task before your first meeting',
+  },
+] as const;
 
 const TOUR_LAZY_PANEL_STEP_KEYS = new Set<AppTourStepKey>([
   APP_TOUR_STEP_KEYS.settingsIntro,

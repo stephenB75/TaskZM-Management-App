@@ -52,6 +52,7 @@ import { useAI } from "../contexts/AIContext";
 import { useAIScheduler, type ScheduleResult } from "../hooks/useAIScheduler";
 import { useCalendarEventCounts } from "../hooks/useCalendarEvents";
 import { cn, sanitizeHTML, hasHTMLTags, getDateString, getWeekStart } from "../lib/utils";
+import { APP_TOUR_DEMO_SCHEDULE_TASKS } from "../lib/app-tour-constants";
 import { toast } from "../lib/toast-wrapper";
 import { playTaskCompleteSound } from "../lib/toast-sound";
 import type { Task } from "../types";
@@ -712,12 +713,36 @@ export function DashboardView({
   const [rescheduleDate, setRescheduleDate] = useState<Date | undefined>(undefined);
   const [rescheduleDates, setRescheduleDates] = useState<Date[]>([]); // Multi-day selection (up to 3)
   const [isRescheduling, setIsRescheduling] = useState(false);
+  const tourDialogsLockedRef = useRef(false);
+
+  const preventTourDialogDismiss = useCallback((event: { preventDefault: () => void }) => {
+    if (tourDialogsLockedRef.current) {
+      event.preventDefault();
+    }
+  }, []);
 
   // Tour demo: open/close dashboard scheduling dialogs without running AI
   useEffect(() => {
+    const handleTourActiveChanged = (event: CustomEvent<{ active: boolean }>) => {
+      tourDialogsLockedRef.current = event.detail.active;
+    };
+
     const handleTourOpenSchedulePreview = () => {
-      setSchedulePlan([]);
-      setSelectedPlanTaskIds(new Set());
+      const baseDate = new Date();
+      baseDate.setDate(baseDate.getDate() + 1);
+      baseDate.setHours(9, 0, 0, 0);
+      const demoPlan: SchedulePlan[] = APP_TOUR_DEMO_SCHEDULE_TASKS.map((item, index) => ({
+        task: {
+          id: item.id,
+          title: item.title,
+          priority: item.priority,
+          status: 'todo',
+        } as Task,
+        scheduledDate: new Date(baseDate.getTime() + index * 60 * 60 * 1000),
+        reason: item.reason,
+      }));
+      setSchedulePlan(demoPlan);
+      setSelectedPlanTaskIds(new Set(demoPlan.map((entry) => entry.task.id)));
       setShowSchedulePreview(true);
     };
 
@@ -736,11 +761,13 @@ export function DashboardView({
       setRescheduleDates([]);
     };
 
+    window.addEventListener('tour-active-changed', handleTourActiveChanged as EventListener);
     window.addEventListener('tour-open-schedule-preview', handleTourOpenSchedulePreview);
     window.addEventListener('tour-open-reschedule-dialog', handleTourOpenRescheduleDialog);
     window.addEventListener('tour-close-dashboard-dialogs', handleTourCloseDashboardDialogs);
 
     return () => {
+      window.removeEventListener('tour-active-changed', handleTourActiveChanged as EventListener);
       window.removeEventListener('tour-open-schedule-preview', handleTourOpenSchedulePreview);
       window.removeEventListener('tour-open-reschedule-dialog', handleTourOpenRescheduleDialog);
       window.removeEventListener('tour-close-dashboard-dialogs', handleTourCloseDashboardDialogs);
@@ -1826,9 +1853,18 @@ export function DashboardView({
       {/* Schedule Preview Dialog */}
       <Dialog
         open={showSchedulePreview}
-        onOpenChange={setShowSchedulePreview}
+        onOpenChange={(open) => {
+          if (!open && tourDialogsLockedRef.current) return;
+          setShowSchedulePreview(open);
+        }}
       >
-        <DialogContent className="max-w-2xl max-h-[80vh]" data-tour="dashboard-ai-schedule-preview-dialog">
+        <DialogContent
+          className="max-w-2xl max-h-[80vh]"
+          data-tour="dashboard-ai-schedule-preview-dialog"
+          onEscapeKeyDown={preventTourDialogDismiss}
+          onPointerDownOutside={preventTourDialogDismiss}
+          onInteractOutside={preventTourDialogDismiss}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary" />
@@ -2023,6 +2059,7 @@ export function DashboardView({
       {/* Re-schedule Dialog */}
       <Dialog open={showRescheduleDialog} onOpenChange={(open) => {
         try {
+          if (!open && tourDialogsLockedRef.current) return;
           setShowRescheduleDialog(open);
           if (!open) {
             setRescheduleType(null);
@@ -2036,6 +2073,9 @@ export function DashboardView({
         <DialogContent
           className="sm:max-w-md border border-primary/10"
           data-tour="reschedule-dialog"
+          onEscapeKeyDown={preventTourDialogDismiss}
+          onPointerDownOutside={preventTourDialogDismiss}
+          onInteractOutside={preventTourDialogDismiss}
           style={{
             backgroundImage: isDark
               ? 'linear-gradient(180deg, rgba(17,24,39,0.96) 0%, rgba(17,24,39,0.9) 100%)'

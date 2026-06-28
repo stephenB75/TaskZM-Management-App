@@ -23,6 +23,7 @@ import {
   getSettingsSectionCopy,
   getTourStepAdvanceDelayMs,
   getTourStepWaitTimeoutMs,
+  isAppTourDialogStep,
   queryVisibleTourTarget,
   type AppTourStepMeta,
 } from '../lib/app-tour-constants';
@@ -209,9 +210,17 @@ function dispatchTourCloseDashboardDialogs() {
   window.dispatchEvent(new CustomEvent('tour-close-dashboard-dialogs'));
 }
 
-function closeAllTourDialogs(isMobile: boolean) {
+function dispatchTourActiveChanged(active: boolean) {
+  window.dispatchEvent(new CustomEvent('tour-active-changed', { detail: { active } }));
+}
+
+function closeTourDashboardDialogs() {
   dispatchTourCloseAiDialog();
   dispatchTourCloseDashboardDialogs();
+}
+
+function closeAllTourDialogs(isMobile: boolean) {
+  closeTourDashboardDialogs();
   if (isMobile) {
     dispatchTourClosePanel();
   }
@@ -220,6 +229,7 @@ function closeAllTourDialogs(isMobile: boolean) {
 function scrollTourTargetIntoView(target: string) {
   window.setTimeout(() => {
     const el = queryVisibleTourTarget(target);
+    if (!el || el.getAttribute('data-slot') === 'dialog-content') return;
     el?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
   }, TIMING_CONSTANTS.tour.navigationComplete);
 }
@@ -349,6 +359,16 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
   }, [stepDefs]);
 
   useEffect(() => {
+    dispatchTourActiveChanged(run);
+    if (!run) {
+      closeAllTourDialogs(shouldUseMobileLayout);
+    }
+    return () => {
+      dispatchTourActiveChanged(false);
+    };
+  }, [run, shouldUseMobileLayout]);
+
+  useEffect(() => {
     if (run) {
       setTourStepIndex(0);
       setJoyrideActive(false);
@@ -393,12 +413,13 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       disableBeacon: meta.disableBeacon ?? false,
       content: renderStepContent(meta, shouldUseMobileLayout),
       data: meta,
-      disableScrolling: meta.isFixed ?? false,
+      disableScrolling: meta.isFixed ?? isAppTourDialogStep(meta),
       disableScrollParentFix: meta.isFixed ?? false,
       isFixed: meta.isFixed ?? false,
       offset: meta.isFixed ? TOUR_CONSTANTS.floater.offset : 0,
       floaterProps: tourFloaterProps,
       spotlightPadding: meta.stepKey === APP_TOUR_STEP_KEYS.navIcon ? 6 : TOUR_CONSTANTS.spotlight.padding,
+      ...(isAppTourDialogStep(meta) ? { spotlightClicks: true } : {}),
     }));
   }, [shouldUseMobileLayout, stepDefs]);
 
@@ -480,9 +501,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       if (stepKey === APP_TOUR_STEP_KEYS.rescheduleDialog) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
         preloadSettingsPanelForTour();
-        const rescheduleTarget = shouldUseMobileLayout
-          ? APP_TOUR_TARGETS.rescheduleDialog
-          : APP_TOUR_TARGETS.rescheduleDialogOptions;
+        const rescheduleTarget = APP_TOUR_TARGETS.rescheduleDialog;
         if (!isTourTargetReady(rescheduleTarget)) {
           if (shouldUseMobileLayout) {
             closeAllTourDialogs(shouldUseMobileLayout);
@@ -587,6 +606,14 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             return;
           }
 
+          if (meta && isAppTourDialogStep(meta)) {
+            setJoyrideActive(false);
+            closeTourDashboardDialogs();
+            if (shouldUseMobileLayout) {
+              dispatchTourClosePanel();
+            }
+          }
+
           const scheduleAdvance = () => {
             if (advanceTimeoutRef.current !== null) {
               window.clearTimeout(advanceTimeoutRef.current);
@@ -643,7 +670,12 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       }
 
       if (status === STATUS.FINISHED) {
-        finishTour();
+        const onLastStep = index >= steps.length - 1;
+        const advancing = action === ACTIONS.NEXT || action === ACTIONS.SKIP;
+        if (onLastStep && advancing) {
+          finishTour();
+        }
+        return;
       }
 
       function finishTour() {
@@ -719,7 +751,6 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
 
   return (
     <Joyride
-      key={`tour-step-${tourStepIndex}`}
       steps={steps}
       run={run && joyrideActive}
       stepIndex={tourStepIndex}
