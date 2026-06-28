@@ -752,6 +752,8 @@ export const SETTINGS_PANEL_ICON_TILE_SIZE = '2.25rem'; // Icon container in set
 export const SETTINGS_PANEL_SECTION_TRIGGER_PADDING_X = '1rem'; // Horizontal padding for section triggers
 export const SETTINGS_PANEL_SECTION_CONTENT_PADDING = '1rem'; // Inner content padding for section bodies
 export const SETTINGS_PANEL_SECTION_GAP = '0.75rem'; // Gap between stacked settings sections
+/** Extra inset after the last settings card so border radius + shadow aren't clipped when scrolled to end */
+export const SETTINGS_PANEL_ACCORDION_LIST_END_PADDING = '0.5rem';
 export const SETTINGS_PANEL_TOGGLE_ROW_PADDING_Y = '0.625rem'; // Vertical padding for toggle rows
 export const SETTINGS_PANEL_CATEGORY_HEADER_FONT_SIZE = '0.6875rem'; // 11px category labels
 export const SETTINGS_PANEL_CATEGORY_HEADER_LETTER_SPACING_EM = 0.08;

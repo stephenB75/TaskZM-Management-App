@@ -63,6 +63,8 @@ interface BottomNavProps {
   onNavInteraction?: () => void;
   /** Single handler for Week tab — sets dashboard + week view together. */
   onWeekPress?: () => void;
+  /** When true, ignore nav taps so the guided tour is not interrupted. */
+  tourActive?: boolean;
   unscheduledCount?: number;
   upcomingAndDueNowCount?: number;
 }
@@ -74,6 +76,7 @@ export function BottomNav({
   onMobileViewChange,
   onNavInteraction,
   onWeekPress,
+  tourActive = false,
   unscheduledCount = 0,
   upcomingAndDueNowCount = 0,
 }: BottomNavProps) {
@@ -95,6 +98,7 @@ export function BottomNav({
       label: NAVIGATION_UI_TEXT.today,
       iconName: "calendar",
       onClick: () => {
+        if (tourActive) return;
         triggerHaptic();
         onNavInteraction?.();
         onViewChange("today");
@@ -107,6 +111,7 @@ export function BottomNav({
       label: NAVIGATION_UI_TEXT.week,
       iconName: "calendar-days",
       onClick: () => {
+        if (tourActive) return;
         triggerHaptic();
         onNavInteraction?.();
         if (onWeekPress) {
@@ -125,6 +130,7 @@ export function BottomNav({
       label: NAVIGATION_UI_TEXT.inbox,
       iconName: "inbox",
       onClick: () => {
+        if (tourActive) return;
         triggerHaptic();
         onNavInteraction?.();
         onViewChange("inbox");
@@ -137,6 +143,7 @@ export function BottomNav({
       label: NAVIGATION_UI_TEXT.settings,
       iconName: "settings",
       onClick: () => {
+        if (tourActive) return;
         triggerHaptic();
         onNavInteraction?.();
         onViewChange("settings");

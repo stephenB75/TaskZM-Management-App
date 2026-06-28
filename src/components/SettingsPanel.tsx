@@ -197,6 +197,7 @@ import {
   PANEL_GAP_MEDIUM,
   PANEL_FIELD_SPACING,
   SETTINGS_PANEL_SECTION_GAP,
+  SETTINGS_PANEL_ACCORDION_LIST_END_PADDING,
   SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
   SETTINGS_PANEL_LIST_ROW_PADDING_Y,
 } from '../lib/layout-constants';
@@ -609,7 +610,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
             value={openAccordionSections}
             onValueChange={setOpenAccordionSections}
             className="w-full min-w-0"
-            style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SECTION_GAP }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: SETTINGS_PANEL_SECTION_GAP,
+              paddingBottom: SETTINGS_PANEL_ACCORDION_LIST_END_PADDING,
+            }}
           >
         <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.account} />
         <SettingsSection

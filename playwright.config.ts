@@ -13,6 +13,15 @@ export default defineConfig({
       use: { storageState: authFile },
       dependencies: ['setup'],
     },
+    {
+      name: 'mobile-tour',
+      testMatch: /mobile-app-tour\.spec\.ts/,
+      use: {
+        storageState: authFile,
+        viewport: { width: 390, height: 844 },
+      },
+      dependencies: ['setup'],
+    },
   ],
   use: {
     browserName: 'chromium',

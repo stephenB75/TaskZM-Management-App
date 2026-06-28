@@ -1012,6 +1012,7 @@ export default function AppContent() {
           onMobileViewChange={setMobileView}
           onNavInteraction={handleBottomNavInteraction}
           onWeekPress={handleMobileWeekPress}
+          tourActive={runTour}
           unscheduledCount={unscheduledCount}
           upcomingAndDueNowCount={upcomingAndDueNowCount}
         />
