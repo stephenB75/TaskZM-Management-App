@@ -23,14 +23,21 @@ export interface FindSlotOptions {
   schedulingPrepBufferMinutes?: number;
 }
 
-/** Slot options for AI scheduler calls — includes prep time between tasks and around events. */
-export function buildAISchedulerSlotOptions(
+/** Slot options for all scheduling — prep time between tasks and around calendar events. */
+export function buildSchedulingSlotOptions(
   base: Omit<FindSlotOptions, 'schedulingPrepBufferMinutes'> = {},
 ): FindSlotOptions {
   return {
     ...base,
     schedulingPrepBufferMinutes: AI_SCHEDULING_PREP_BUFFER_MINUTES,
   };
+}
+
+/** @deprecated Prefer `buildSchedulingSlotOptions` — kept for AI scheduler call sites. */
+export function buildAISchedulerSlotOptions(
+  base: Omit<FindSlotOptions, 'schedulingPrepBufferMinutes'> = {},
+): FindSlotOptions {
+  return buildSchedulingSlotOptions(base);
 }
 
 export function getSchedulingPrepBufferMs(options?: FindSlotOptions): number {

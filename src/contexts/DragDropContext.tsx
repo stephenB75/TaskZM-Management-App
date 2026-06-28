@@ -4,7 +4,7 @@ import { useTasks } from './TaskContext';
 import { useCalendarEventsByDate } from '../hooks/useCalendarEvents';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { isTaskBlocked, getIncompleteDependencies, cn, getDateString } from '../lib/utils';
-import { checkTimeConflict, findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate } from '../lib/time-conflict';
+import { findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate, buildSchedulingSlotOptions } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from '../lib/daily-hours-utils';
 import { useAI } from './AIContext';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
@@ -625,11 +625,11 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
         requestedTime,
         taskDuration,
         tasks,
-        {
+        buildSchedulingSlotOptions({
           ensureAfterCurrentTime: isToday,
           categoryHours: categoryHours,
           calendarEvents: calendarEventsForConflict,
-        }
+        })
       );
       
       // Check if a valid slot was found on the requested day
@@ -1011,11 +1011,11 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       effectiveRequested,
       taskDuration,
       tasks,
-      {
+      buildSchedulingSlotOptions({
         ensureAfterCurrentTime: isTargetToday,
         categoryHours: categoryHours,
         calendarEvents: calendarEventsForConflict,
-      }
+      })
     );
     
     if (isNaN(newDate.getTime())) {

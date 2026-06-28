@@ -70,7 +70,7 @@ import { playSubtaskCompleteSound } from "../lib/toast-sound";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_MEDIUM_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
-import { findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate } from "../lib/time-conflict";
+import { findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate, buildSchedulingSlotOptions } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../lib/daily-hours-utils";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
@@ -1442,7 +1442,7 @@ export function TaskDialog({
           } else {
             // Invalid or missing time: use next available slot so tasks/events are not assigned the same default time
             dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
+            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], buildSchedulingSlotOptions({ calendarEvents: defaultSlotCalendarEvents }));
             dateWithTime.setTime(slot.getTime());
           }
         } else if (scheduledTime) {
@@ -1455,13 +1455,13 @@ export function TaskDialog({
             dateWithTime.setHours(hours, minutes, 0, 0);
           } else {
             dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
+            const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], buildSchedulingSlotOptions({ calendarEvents: defaultSlotCalendarEvents }));
             dateWithTime.setTime(slot.getTime());
           }
         } else {
           // No time set: use next available slot so tasks are not assigned the same time as another task or calendar event
           dateWithTime.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-          const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
+          const slot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], buildSchedulingSlotOptions({ calendarEvents: defaultSlotCalendarEvents }));
           dateWithTime.setTime(slot.getTime());
         }
 
@@ -1486,7 +1486,7 @@ export function TaskDialog({
 
         if (!isEditingWithoutTimeChange) {
           // Resolve to next available slot so we never save a time that conflicts with another task or calendar event
-          const conflictFreeSlot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], { calendarEvents: defaultSlotCalendarEvents });
+          const conflictFreeSlot = findNextAvailableSlot(task?.id ?? null, dateWithTime, durationForSlot, tasks ?? [], buildSchedulingSlotOptions({ calendarEvents: defaultSlotCalendarEvents }));
           dateWithTime.setTime(conflictFreeSlot.getTime());
         }
 
@@ -1741,16 +1741,16 @@ export function TaskDialog({
             firstOccurrenceDate.setHours(hours, minutes, 0, 0);
           } else {
             firstOccurrenceDate.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-            const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], { calendarEvents: firstOccurrenceCalendarEvents });
+            const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], buildSchedulingSlotOptions({ calendarEvents: firstOccurrenceCalendarEvents }));
             firstOccurrenceDate.setTime(slot.getTime());
           }
         } else {
           firstOccurrenceDate.setHours(defaultScheduledHour, defaultScheduledMin, 0, 0);
-          const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], { calendarEvents: firstOccurrenceCalendarEvents });
+          const slot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], buildSchedulingSlotOptions({ calendarEvents: firstOccurrenceCalendarEvents }));
           firstOccurrenceDate.setTime(slot.getTime());
         }
         // Always resolve to next available slot so we never save a time that conflicts with another task or calendar event
-        const recurringConflictFreeSlot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], { calendarEvents: firstOccurrenceCalendarEvents });
+        const recurringConflictFreeSlot = findNextAvailableSlot(task?.id ?? null, firstOccurrenceDate, taskDuration, tasks ?? [], buildSchedulingSlotOptions({ calendarEvents: firstOccurrenceCalendarEvents }));
         firstOccurrenceDate.setTime(recurringConflictFreeSlot.getTime());
         finalScheduledDate = firstOccurrenceDate.toISOString();
       }
@@ -1897,11 +1897,11 @@ export function TaskDialog({
           now,
           taskDuration,
           tasks,
-          {
+          buildSchedulingSlotOptions({
             ensureAfterCurrentTime: true,
             categoryHours: categoryHours,
             calendarEvents: calendarEventsForDate(scheduledDateTime),
-          }
+          })
         );
         
         // findNextAvailableSlot returns next-day 00:00 (12 AM) when no slot found; detect by calendar day
@@ -1935,11 +1935,11 @@ export function TaskDialog({
           scheduledDateTime,
           taskDuration,
           tasks,
-          {
+          buildSchedulingSlotOptions({
             ensureAfterCurrentTime: isToday,
             categoryHours: categoryHours,
             calendarEvents: calendarEventsForSlot,
-          }
+          })
         );
 
         if (alternativeTime.getTime() !== scheduledDateTime.getTime()) {
@@ -2008,11 +2008,11 @@ export function TaskDialog({
                 finalScheduledTime,
                 taskDuration,
                 tasks,
-                {
+                buildSchedulingSlotOptions({
                   ensureAfterCurrentTime: isToday,
                   categoryHours: categoryHours,
                   calendarEvents: calendarEventsForDate(finalScheduledTime),
-                }
+                })
               );
               
               // Check if alternative time would also exceed limit
@@ -2233,9 +2233,9 @@ export function TaskDialog({
           const dateStr = getDateString(date);
           const requestedTime = new Date(date.getFullYear(), date.getMonth(), date.getDate());
           requestedTime.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds());
-          const slot = findNextAvailableSlot(null, requestedTime, durationForSlot, allTasksForSlots, {
+          const slot = findNextAvailableSlot(null, requestedTime, durationForSlot, allTasksForSlots, buildSchedulingSlotOptions({
             calendarEvents: calendarEventsForDate(date),
-          });
+          }));
           const scheduledAt = new Date(slot.getTime());
           return {
             id: `${baseId}${RECURRENCE_SERIES_OCCURRENCE_SEPARATOR}${dateStr}`,
