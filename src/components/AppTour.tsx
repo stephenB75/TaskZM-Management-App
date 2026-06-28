@@ -3,8 +3,8 @@
  * Highlights each nav icon, Week/Month toggle, AI buttons + dialogs, and settings sections.
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import Joyride, { CallBackProps, STATUS, Step, EVENTS } from 'react-joyride';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import Joyride, { ACTIONS, CallBackProps, STATUS, Step, EVENTS } from 'react-joyride';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -50,6 +50,17 @@ function renderStepContent(meta: AppTourStepMeta, isMobile: boolean): React.Reac
         <div>
           <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.welcome.title}</h3>
           <p className="text-sm text-muted-foreground">{APP_TOUR_UI.welcome.description}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.navIntro:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">
+            {isMobile ? APP_TOUR_UI.bottomNavIntro.title : APP_TOUR_UI.sidebarIconIntro.title}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isMobile ? APP_TOUR_UI.bottomNavIntro.description : APP_TOUR_UI.sidebarIconIntro.description}
+          </p>
         </div>
       );
     case APP_TOUR_STEP_KEYS.navIcon: {
@@ -209,12 +220,49 @@ function scrollTourTargetIntoView(target: string) {
   }, TIMING_CONSTANTS.tour.highlightDelay);
 }
 
+function isTourTargetReady(target: string): boolean {
+  if (target === APP_TOUR_TARGETS.body) return true;
+  const el = document.querySelector(target);
+  if (!el) return false;
+  const rect = el.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
+function stepNeedsNavigationLeadTime(meta: AppTourStepMeta | undefined): boolean {
+  if (!meta) return false;
+  return (
+    DASHBOARD_TARGETS.has(meta.target)
+    || meta.stepKey === APP_TOUR_STEP_KEYS.settingsIntro
+    || meta.stepKey === APP_TOUR_STEP_KEYS.settingsSection
+  );
+}
+
 export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { user } = useAuth();
   const { subscription } = useSubscription();
   const shouldUseMobileLayout = useMobileLayout();
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+  const targetRetryTimeoutRef = useRef<number | null>(null);
+  const advanceTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (run) {
+      setTourStepIndex(0);
+    }
+  }, [run]);
+
+  useEffect(() => {
+    return () => {
+      if (targetRetryTimeoutRef.current !== null) {
+        window.clearTimeout(targetRetryTimeoutRef.current);
+      }
+      if (advanceTimeoutRef.current !== null) {
+        window.clearTimeout(advanceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchPricing = async () => {
@@ -356,14 +404,31 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
 
   const handleJoyrideCallback = useCallback(
     (data: CallBackProps) => {
-      const { status, type, index } = data;
+      const { action, status, type, index } = data;
       const meta = getStepMeta(index);
 
       if (type === EVENTS.STEP_BEFORE) {
         prepareStep(index);
       }
 
-      if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
+      if (type === EVENTS.TARGET_NOT_FOUND && meta) {
+        prepareStep(index);
+        if (targetRetryTimeoutRef.current !== null) {
+          window.clearTimeout(targetRetryTimeoutRef.current);
+        }
+        targetRetryTimeoutRef.current = window.setTimeout(() => {
+          targetRetryTimeoutRef.current = null;
+          if (isTourTargetReady(meta.target)) {
+            setTourStepIndex(index);
+          } else {
+            prepareStep(index);
+            setTourStepIndex(index);
+          }
+        }, TIMING_CONSTANTS.tour.highlightDelay);
+        return;
+      }
+
+      if (type === EVENTS.STEP_AFTER) {
         if (meta?.stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle) {
           window.setTimeout(() => {
             dispatchTourViewMode(TOUR_CONSTANTS.viewModes.month);
@@ -375,9 +440,52 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
             dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
           }, TIMING_CONSTANTS.tour.navigationComplete);
         }
+
+        const nextMeta = getStepMeta(index + 1);
+        if (nextMeta && stepNeedsNavigationLeadTime(nextMeta)) {
+          prepareStep(index + 1);
+        }
+
+        if (action === ACTIONS.NEXT || action === ACTIONS.SKIP) {
+          const nextIndex = index + 1;
+          if (nextIndex >= steps.length) {
+            finishTour();
+            return;
+          }
+
+          const scheduleAdvance = () => {
+            if (advanceTimeoutRef.current !== null) {
+              window.clearTimeout(advanceTimeoutRef.current);
+            }
+            const delay = stepNeedsNavigationLeadTime(nextMeta)
+              ? TIMING_CONSTANTS.tour.highlightDelay
+              : 0;
+            advanceTimeoutRef.current = window.setTimeout(() => {
+              advanceTimeoutRef.current = null;
+              setTourStepIndex(nextIndex);
+            }, delay);
+          };
+
+          scheduleAdvance();
+          return;
+        }
+
+        if (action === ACTIONS.PREV) {
+          setTourStepIndex(Math.max(0, index - 1));
+          return;
+        }
       }
 
-      if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+      if (action === ACTIONS.CLOSE || status === STATUS.SKIPPED) {
+        finishTour();
+        return;
+      }
+
+      if (status === STATUS.FINISHED) {
+        finishTour();
+      }
+
+      function finishTour() {
         try {
           localStorage.setItem(NOTIFICATION_STORAGE_KEYS.tourCompleted, 'true');
         } catch (error) {
@@ -394,10 +502,11 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           }, TIMING_CONSTANTS.tour.pricingDialogDelay);
         }
 
+        setTourStepIndex(0);
         onFinish();
       }
     },
-    [getStepMeta, onFinish, onShowPricing, prepareStep, shouldUseMobileLayout, subscription.tier],
+    [getStepMeta, onFinish, onShowPricing, prepareStep, shouldUseMobileLayout, steps.length, subscription.tier],
   );
 
   const joyrideStyles = {
@@ -441,6 +550,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
     <Joyride
       steps={steps}
       run={run}
+      stepIndex={tourStepIndex}
       continuous
       showProgress
       showSkipButton

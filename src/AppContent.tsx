@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { flushSync } from 'react-dom';
 import { lazyWithRetry } from './lib/lazy-with-retry';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from './lib/toast-wrapper';
@@ -772,10 +773,12 @@ export default function AppContent() {
   };
 
   const handleTourNavigate = (view: string) => {
-    setCurrentView(view);
-    if (shouldUseMobileLayout && view === 'dashboard') {
-      setMobileView('week');
-    }
+    flushSync(() => {
+      setCurrentView(view);
+      if (shouldUseMobileLayout && view === 'dashboard') {
+        setMobileView('week');
+      }
+    });
   };
 
   const handleTourStart = () => {

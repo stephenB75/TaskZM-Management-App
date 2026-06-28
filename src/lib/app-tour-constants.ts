@@ -392,7 +392,11 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
     disableBeacon: true,
   });
 
-  return steps;
+  return steps.filter((step) => {
+    if (isMobile && step.desktopOnly) return false;
+    if (!isMobile && step.mobileOnly) return false;
+    return true;
+  });
 }
 
 export function getNavIconCopy(
