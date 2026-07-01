@@ -816,8 +816,9 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
 // Platform-specific initialization
 if (isNative) {
   // NATIVE PLATFORM (iOS/Android)
-  // Set status bar style
-  StatusBar.setStyle({ style: Style.Light }).catch(console.error);                                                                
+  // Edge-to-edge webview with viewport-fit=cover; safe-area CSS handles Dynamic Island / notch
+  StatusBar.setOverlaysWebView({ overlay: true }).catch(console.error);
+  StatusBar.setStyle({ style: Style.Light }).catch(console.error);
   StatusBar.setBackgroundColor({ color: COLOR_BACKGROUND_LIGHT }).catch(console.error);
   
   // Hide Capacitor native splash screen after app loads

@@ -42,7 +42,7 @@ import {
 } from '../lib/kanban-constants';
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
-import { NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, ICON_SIZE_SM } from '../lib/layout-constants';
+import { NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_SCROLL_PADDING_MOBILE, getMobileViewportContentMinHeight, ICON_SIZE_SM } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
@@ -889,7 +889,7 @@ export function SevenDayKanban({
             // Remove transparent background override to allow parent gradient to show through
             // Add minimum height to fill space between header and nav bar when no tasks
             minHeight: shouldUseMobileLayout
-              ? `calc(100vh - ${HEADER_HEIGHT}px - ${NAV_BAR_HEIGHT}px - ${mobileAboveChromeOffsetPx}px)`
+              ? getMobileViewportContentMinHeight(mobileAboveChromeOffsetPx)
               : 'auto',
             // Add bottom padding to ensure content is not hidden by nav bar
             // Use the same calculation as App.tsx scroll container for consistency

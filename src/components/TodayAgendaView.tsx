@@ -1341,13 +1341,11 @@ export function TodayAgendaView({
       {/* Header */}
       {!hideHeader && (
         <>
-          {/* Header wrapper - fixed height to prevent shifting */}
+          {/* Header wrapper — desktop only in-flow spacer; mobile uses AppContent scroll padding */}
           <div 
             className="relative flex-shrink-0"
             style={{ 
-              // Use fixed height on both mobile and desktop to prevent shifting
-              // On mobile, header is fixed at top, so height should be consistent
-              height: `${HEADER_HEIGHT}px`,
+              height: shouldUseMobileLayout ? 0 : `${HEADER_HEIGHT}px`,
             }}
           >
           <AppHeader

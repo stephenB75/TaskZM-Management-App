@@ -904,6 +904,13 @@ export const DESKTOP_PADDING_TOP = '3rem'; // padding-top: 3rem for desktop view
 // Mobile scroll container padding to ensure content is not hidden by fixed header when scrolling up
 // Header height already includes safe area inset in its padding, so we match that total height
 export const MOBILE_SCROLL_CONTAINER_PADDING_TOP = `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // Header height + safe area for top padding on scroll container (matches header's actual height)
+/** Min height for mobile scroll/content areas between fixed header and bottom nav (includes safe areas). */
+export const MOBILE_SCROLL_CONTAINER_MIN_HEIGHT = `calc(var(--viewport-height, 100vh) - ${HEADER_HEIGHT}px - env(safe-area-inset-top, 0px) - ${NAV_BAR_HEIGHT}px - env(safe-area-inset-bottom, 0px))`;
+/** Min height for mobile content below optional chrome (e.g. week carousel) between header and nav. */
+export function getMobileViewportContentMinHeight(extraChromeOffsetPx = 0): string {
+  const extra = extraChromeOffsetPx > 0 ? ` - ${extraChromeOffsetPx}px` : '';
+  return `calc(var(--viewport-height, 100vh) - ${HEADER_HEIGHT}px - env(safe-area-inset-top, 0px) - ${NAV_BAR_HEIGHT}px - env(safe-area-inset-bottom, 0px)${extra})`;
+}
 export const SETTINGS_PANEL_AVATAR_SIZE_VALUE = '2rem'; // width/height: 2rem for avatar
 export const SETTINGS_PANEL_START_TOUR_BUTTON_HEIGHT = '1.6rem'; // 20% smaller than default h-8 (2rem)
 export const SETTINGS_PANEL_START_TOUR_BUTTON_PADDING_X = '0.6rem'; // 20% smaller than default px-3 (0.75rem)
