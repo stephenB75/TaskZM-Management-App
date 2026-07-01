@@ -29,6 +29,9 @@ def configure_pod_target_settings(config, suppress_third_party_warnings: false)
   config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
   config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
   config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+  # Xcode 14.3+ module verifier fails on Capacitor/Cordova headers (@import Cordova, quoted includes).
+  config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
+  config.build_settings['CLANG_ENABLE_MODULE_VERIFIER'] = 'NO'
   config.build_settings['CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
   config.build_settings['GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS'] = 'NO'
   other_cflags = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
@@ -73,6 +76,39 @@ def patch_capacitor_cordova_framework_headers
       else
         Regexp.last_match(0)
       end
+    end
+
+    File.write(path, patched) if patched != content
+  end
+end
+
+def patch_capacitor_framework_headers
+  marker = 'TASKZM_CAPACITOR_ANGLE_INCLUDES'
+  capacitor_dir = File.expand_path(
+    '../../node_modules/@capacitor/ios/Capacitor/Capacitor',
+    __dir__,
+  )
+  return unless Dir.exist?(capacitor_dir)
+
+  public_headers = Dir.glob(File.join(capacitor_dir, '*.h')).map { |path| File.basename(path) }
+
+  Dir.glob(File.join(capacitor_dir, '*.h')).each do |path|
+    content = File.read(path)
+    next if content.include?(marker)
+
+    patched = content.gsub(/#import\s+"([^"]+\.h)"/) do
+      header = Regexp.last_match(1)
+      if public_headers.include?(header)
+        "#import <Capacitor/#{header}> /* #{marker} */"
+      else
+        Regexp.last_match(0)
+      end
+    end
+
+    if File.basename(path) == 'CAPInstanceDescriptor.h'
+      patched = patched
+        .gsub('@import UIKit;', "#import <UIKit/UIKit.h> /* #{marker} */")
+        .gsub('@import Cordova;', "#import <Cordova/CDVConfigParser.h> /* #{marker} */")
     end
 
     File.write(path, patched) if patched != content
@@ -124,7 +160,13 @@ end
 post_install do |installer|
   assertDeploymentTarget(installer)
   patch_capacitor_cordova_framework_headers
+  patch_capacitor_framework_headers
   silence_capacitor_cordova_wkprocesspool_deprecations
+
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
+    config.build_settings['CLANG_ENABLE_MODULE_VERIFIER'] = 'NO'
+  end
 
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
