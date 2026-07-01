@@ -128,19 +128,33 @@ def patch_capacitor_framework_headers
     if basename == 'CAPBridgeViewController+CDVScreenOrientationDelegate.h'
       patched = patched
         .gsub(
-          "#import <Cordova/CDVScreenOrientationDelegate.h> /* #{orientation_marker} */",
           "@protocol CDVScreenOrientationDelegate; /* #{orientation_marker} */",
+          "#import <Cordova/CDVScreenOrientationDelegate.h> /* #{orientation_marker} */",
         )
-      unless patched.include?(orientation_marker)
+      unless patched.include?('CDVScreenOrientationDelegate.h')
         patched = patched.sub(
           "#import <Capacitor/Capacitor-Swift.h>\n",
           "#import <Capacitor/Capacitor-Swift.h>\n" \
-          "@protocol CDVScreenOrientationDelegate; /* #{orientation_marker} */\n",
+          "#import <Cordova/CDVScreenOrientationDelegate.h> /* #{orientation_marker} */\n",
         )
       end
     end
 
     File.write(path, patched) if patched != content
+  end
+
+  orientation_impl_marker = 'TASKZM_CDV_SCREEN_ORIENTATION_IMPL'
+  orientation_impl = File.join(capacitor_dir, 'CAPBridgeViewController+CDVScreenOrientationDelegate.m')
+  if File.exist?(orientation_impl)
+    impl = File.read(orientation_impl)
+    unless impl.include?(orientation_impl_marker)
+      patched_impl = impl.sub(
+        "#import \"CAPBridgeViewController+CDVScreenOrientationDelegate.h\"\n",
+        "#import \"CAPBridgeViewController+CDVScreenOrientationDelegate.h\"\n" \
+        "#import <Cordova/CDVScreenOrientationDelegate.h> /* #{orientation_impl_marker} */\n",
+      )
+      File.write(orientation_impl, patched_impl) if patched_impl != impl
+    end
   end
 
   descriptor_impl = File.join(capacitor_dir, 'CAPInstanceDescriptor.m')
