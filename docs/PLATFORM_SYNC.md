@@ -1,14 +1,44 @@
 # Platform sync — Web, iOS, and Android
 
-TaskZM ships one React codebase (`src/`) to three targets:
+## Cloud-first (recommended — no local app server)
 
-| Platform | How users get updates | After you change `src/` |
-|----------|----------------------|-------------------------|
-| **Web** | [app.taskzm.com](https://app.taskzm.com) via Railway | Push to `main` (Railway builds automatically) |
-| **iOS** | App Store / TestFlight | Run sync → Archive in Xcode |
-| **Android** | Google Play | Run sync → Signed AAB in Android Studio |
+TaskZM is designed to run from the cloud on your devices. You do **not** need `npm run dev` or a local build for day-to-day use.
 
-Capacitor copies the **same** Vite `dist/` bundle into `ios/` and `android/`. If you skip sync, native apps run stale UI.
+| Where you use it | What loads the UI | How updates reach you |
+|------------------|-------------------|------------------------|
+| **Phone / tablet browser** | [app.taskzm.com](https://app.taskzm.com) | Automatic after `git push origin main` (Railway) |
+| **Installed iOS / Android app** | Same — native shell opens **app.taskzm.com** in a WebView | Same — reopen the app after Railway deploys |
+| **Backend (calendar, auth, AI)** | Supabase Edge Functions | `npm run deploy-functions` |
+
+Native apps use **cloud WebView mode** (`MOBILE_USE_CLOUD_WEB_APP` in [`mobile-constants.ts`](../src/lib/mobile-constants.ts)): Capacitor sets `server.url` to `https://app.taskzm.com`, so UI fixes ship with Railway only. Rebuild the native shell (TestFlight / Play) only when you change Capacitor plugins, entitlements, or bundle ID.
+
+**Your workflow:**
+
+```bash
+# 1. Ship web + in-app UI (cloud)
+git push origin main                    # Railway → app.taskzm.com (~5–7 min)
+
+# 2. Ship server/calendar fixes
+npm run deploy-functions
+
+# 3. On device — close and reopen the app (or refresh in browser)
+```
+
+**One-time native shell setup** (after changing `capacitor.config.ts` or adding a native plugin):
+
+```bash
+npm run sync:cloud-shell              # cap sync with server.url → production
+cd src && npm run cap:ios             # Archive → TestFlight (or Android Studio)
+```
+
+To force bundled offline UI (rare): `CAPACITOR_USE_BUNDLED_WEB=1 npm run sync:platforms`
+
+---
+
+## Bundled mode (legacy — local dist copy)
+
+TaskZM can still bundle `dist/` into the native app (previous default). Only use this if you need fully offline UI.
+
 
 ## Daily workflow (code changes, no store release)
 

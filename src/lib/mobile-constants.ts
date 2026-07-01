@@ -6,6 +6,16 @@
 /** Apple / Google bundle identifier (must match App Store Connect and capacitor.config). */
 export const MOBILE_APP_ID = 'com.app.taskzm.com';
 
+/** Production web app URL (Railway). Native shells load this when MOBILE_USE_CLOUD_WEB_APP is true. */
+export const MOBILE_PRODUCTION_WEB_URL = 'https://app.taskzm.com';
+
+/**
+ * When true, iOS/Android Capacitor WebViews load MOBILE_PRODUCTION_WEB_URL instead of bundled dist/.
+ * UI updates ship via git push → Railway; rebuild the native shell only for plugin or native config changes.
+ * Set CAPACITOR_USE_BUNDLED_WEB=1 before cap sync to force bundled dist/ (offline dev only).
+ */
+export const MOBILE_USE_CLOUD_WEB_APP = true;
+
 /** Custom URL scheme for deep links (matches MOBILE_APP_ID). */
 export const MOBILE_DEEP_LINK_SCHEME = MOBILE_APP_ID;
 

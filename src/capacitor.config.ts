@@ -4,13 +4,27 @@ import {
   MOBILE_DEEP_LINK_SCHEME,
   MOBILE_NOTIFICATION_SMALL_ICON,
   MOBILE_NOTIFICATION_ICON_COLOR,
+  MOBILE_PRODUCTION_WEB_URL,
+  MOBILE_USE_CLOUD_WEB_APP,
 } from './lib/mobile-constants';
+
+const useBundledWeb =
+  process.env.CAPACITOR_USE_BUNDLED_WEB === '1' ||
+  process.env.CAPACITOR_USE_BUNDLED_WEB === 'true';
+
+const loadUiFromCloud = MOBILE_USE_CLOUD_WEB_APP && !useBundledWeb;
 
 const config: CapacitorConfig = {
   appId: MOBILE_APP_ID,
   appName: 'TaskZM',
   webDir: 'dist',
   server: {
+    ...(loadUiFromCloud
+      ? {
+          url: MOBILE_PRODUCTION_WEB_URL,
+          cleartext: false,
+        }
+      : {}),
     androidScheme: 'https',
   },
   plugins: {
