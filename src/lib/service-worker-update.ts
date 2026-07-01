@@ -214,21 +214,21 @@ function showUpdateAvailableNotification() {
 }
 
 /**
- * When APP_VERSION changes, purge Cache Storage and unregister service workers so
- * immutable /assets/* HTTP cache and RUNTIME_CACHE cannot serve stale Today Agenda chunks.
+ * When APP_VERSION or BUILD_NUMBER changes, purge Cache Storage and unregister service workers so
+ * immutable /assets/* HTTP cache and RUNTIME_CACHE cannot serve stale chunks.
  * Returns true if caches were purged (caller may want a reload on next paint).
  */
-export async function purgeAppCachesIfVersionChanged(currentVersion: string): Promise<boolean> {
+export async function purgeAppCachesIfVersionChanged(releaseStamp: string): Promise<boolean> {
   if (typeof window === 'undefined') return false;
 
   const versionKey = NOTIFICATION_STORAGE_KEYS.appVersion;
   const storedVersion = localStorage.getItem(versionKey);
 
-  if (storedVersion === currentVersion) {
+  if (storedVersion === releaseStamp) {
     return false;
   }
 
-  localStorage.setItem(versionKey, currentVersion);
+  localStorage.setItem(versionKey, releaseStamp);
 
   if (storedVersion == null) {
     return false;

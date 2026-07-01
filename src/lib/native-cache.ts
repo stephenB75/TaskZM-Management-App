@@ -4,7 +4,7 @@
  */
 
 import { Capacitor } from '@capacitor/core';
-import { APP_VERSION, BUILD_NUMBER } from './version';
+import { getAppReleaseStamp, APP_VERSION, BUILD_NUMBER } from './version';
 import { MOBILE_STORAGE_KEYS } from './mobile-constants';
 import { purgeAppCachesIfVersionChanged } from './service-worker-update';
 import { logger } from './logger';
@@ -38,7 +38,7 @@ export async function ensureNativeBuildIsCurrent(): Promise<boolean> {
     return false;
   }
 
-  const versionPurged = await purgeAppCachesIfVersionChanged(APP_VERSION);
+  const versionPurged = await purgeAppCachesIfVersionChanged(getAppReleaseStamp());
 
   const bundled = await fetchBundledBuildInfo();
   const bundledBuild = bundled?.buildNumber?.trim();

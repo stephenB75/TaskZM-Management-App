@@ -47,6 +47,7 @@ const STATIC_PATHS = [
   '/icon-192.png',
   '/icon-512.png',
   '/service-worker.js',
+  '/build-info.json',
   '/robots.txt',
   '/sitemap.xml',
 ];

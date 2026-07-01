@@ -7,7 +7,7 @@ import { logger } from './lib/logger';
 import { checkBrowserAIStatus } from './lib/browser-ai-api';
 import { BROWSER_AI_CONFIG } from './lib/ai-config';
 import { COLOR_BACKGROUND_LIGHT } from './lib/color-theme';
-import { APP_VERSION } from './lib/version';
+import { getAppReleaseStamp } from './lib/version';
 import { purgeAppCachesIfVersionChanged } from './lib/service-worker-update';
 
 // Suppress browser extension errors that are not from our code
@@ -495,9 +495,10 @@ if ('serviceWorker' in navigator && import.meta.env.DEV) {
 // Only register in production — dev HMR must not serve stale cached chunks from RUNTIME_CACHE
 if ('serviceWorker' in navigator && import.meta.env.PROD && !isNative) {
   window.addEventListener('load', async () => {
-    const didPurgeCaches = await purgeAppCachesIfVersionChanged(APP_VERSION);
+    const releaseStamp = getAppReleaseStamp();
+    const didPurgeCaches = await purgeAppCachesIfVersionChanged(releaseStamp);
     if (didPurgeCaches) {
-      logger.info(`[App] Purged stale caches after version change → ${APP_VERSION}`);
+      logger.info(`[App] Purged stale caches after release change → ${releaseStamp}`);
     }
 
     let registration: ServiceWorkerRegistration | null = null;

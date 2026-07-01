@@ -5,10 +5,15 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.32';
-export const VERSION_NAME = 'Mobile Nav & Toast Safe Area';
+export const APP_VERSION = '1.0.33';
+export const VERSION_NAME = 'Calendar, Notifications & Deploy';
 export const VERSION_DATE = 'July 1, 2026';
-export const BUILD_NUMBER = '20260701-3';
+export const BUILD_NUMBER = '20260701-4';
+
+/** Stable release stamp for cache purge (version + build). */
+export function getAppReleaseStamp(): string {
+  return `${APP_VERSION}:${BUILD_NUMBER}`;
+}
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +88,17 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.33',
+    date: 'July 1, 2026',
+    name: 'Calendar, Notifications & Deploy',
+    changes: [
+      'Calendar: fix imported events not appearing (cache refetch, provider sync, server overlap filtering)',
+      'Notifications: fix enable toggle from Settings on web and iOS',
+      'Deploy: Railway build now bumps service worker cache and writes build-info.json',
+      'Deploy: app cache purge uses version + build number so patch deploys reach users',
+    ],
+  },
   {
     version: '1.0.32',
     date: 'July 1, 2026',
