@@ -377,9 +377,12 @@ npm run deploy-functions
 
 ### Deployment Workflow
 
-1. Push to `main` branch (or run `deploy.sh`).
-2. Railway auto-builds and deploys (~5–7 minutes).
-3. Deploy the Edge Function separately with the command above.
+See **[docs/PLATFORM_SYNC.md](docs/PLATFORM_SYNC.md)** for web + iOS + Android sync.
+
+1. After `src/` changes: `npm run sync:platforms` (build + Capacitor sync).
+2. Push to `main` branch for Railway web deploy (~5–7 minutes).
+3. For App Store / Play builds: bump `src/lib/version.ts`, run `npm run mobile:build`, then archive in Xcode / Android Studio.
+4. Deploy Edge Functions separately: `npm run deploy-functions`
 
 ---
 

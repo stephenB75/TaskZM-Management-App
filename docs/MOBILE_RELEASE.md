@@ -38,6 +38,15 @@ Add to **Supabase Dashboard → Authentication → URL Configuration**:
 
 ## Build commands
 
+See **[Platform sync (web + iOS + Android)](./PLATFORM_SYNC.md)** for the full workflow.
+
+From repo root (recommended):
+
+```bash
+npm run sync:platforms   # after src/ changes — build + cap sync
+npm run mobile:build     # store release — version sync + build + cap sync
+```
+
 From the `src/` directory:
 
 ```bash

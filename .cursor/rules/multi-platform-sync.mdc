@@ -1,0 +1,36 @@
+---
+description: After src/ app changes, sync web build to iOS/Android and remind about Railway deploy; version bump rules for store releases.
+alwaysApply: true
+---
+
+# Multi-platform sync (Web + iOS + Android)
+
+TaskZM uses one codebase in `src/` for web (Railway), iOS, and Android (Capacitor). **Native apps do not pick up `src/` edits until `cap sync` runs after a Vite build.**
+
+## After completing user-facing changes under `src/`
+
+1. Run from repo root: **`npm run sync:platforms`**
+   - Builds `src/dist/` and copies into iOS/Android.
+   - Do this before marking UI/layout/behavior tasks done when the change ships to users on any platform.
+
+2. **Web production:** changes deploy when the user pushes to `main` (Railway). Mention push if they want app.taskzm.com updated.
+
+3. **Native device builds:** after sync, user opens Xcode / Android Studio (`npm run cap:ios` / `cap:android` from `src/`). Do not claim native is updated without running sync.
+
+## Version and store releases
+
+When bumping [`src/lib/version.ts`](src/lib/version.ts) for a store build:
+
+- Update `APP_VERSION`, `BUILD_NUMBER`, `VERSION_NAME`, `VERSION_DATE`, and add a `VERSION_HISTORY` entry.
+- Keep root [`package.json`](package.json) and [`src/package.json`](src/package.json) `version` in sync with `APP_VERSION`.
+- Run **`npm run mobile:build`** (includes `sync-mobile-version`, service worker, build, cap sync).
+- For same semver, new upload only: **`npm run bump:build`** then **`npm run mobile:build`**.
+
+## Do not skip sync when changing
+
+- React components, CSS, hooks, contexts, `lib/` business logic consumed by the app shell
+- Capacitor-related behavior in `main.tsx`, notification/native helpers
+
+## Reference
+
+Full workflow: [`docs/PLATFORM_SYNC.md`](docs/PLATFORM_SYNC.md)
