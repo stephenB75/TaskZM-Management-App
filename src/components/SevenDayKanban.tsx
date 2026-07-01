@@ -42,7 +42,7 @@ import {
 } from '../lib/kanban-constants';
 import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
-import { NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, ICON_SIZE_SM } from '../lib/layout-constants';
+import { NAV_BAR_BOTTOM_PADDING_MOBILE, HEADER_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, ICON_SIZE_SM } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
@@ -894,7 +894,7 @@ export function SevenDayKanban({
             // Add bottom padding to ensure content is not hidden by nav bar
             // Use the same calculation as App.tsx scroll container for consistency
             paddingBottom: shouldUseMobileLayout
-              ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`
+              ? NAV_BAR_SCROLL_PADDING_MOBILE
               : undefined,
           } as React.CSSProperties}
         >

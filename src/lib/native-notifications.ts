@@ -5,6 +5,10 @@
 
 import type { Task } from '../types';
 import { getPlatform } from './platform';
+import {
+  MOBILE_NOTIFICATION_SMALL_ICON,
+  MOBILE_NOTIFICATION_ICON_COLOR,
+} from './mobile-constants';
 import { logger } from './logger';
 import {
   NOTIFICATION_TITLES,
@@ -185,8 +189,8 @@ export async function showNotification(options: NotificationOptions): Promise<vo
             extra: options.data ?? {},
             ...(platform.isIOS && { summary: options.title }),
             ...(platform.isAndroid && {
-              smallIcon: 'ic_stat_icon_config_sample',
-              iconColor: '#9D87C3',
+              smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
+              iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
             }),
           },
         ],
@@ -295,8 +299,8 @@ export async function syncScheduledTaskNotifications(
             extra: { taskId: task.id, type: 'reminder' },
             ...(platform.isIOS && { summary: copy.title }),
             ...(platform.isAndroid && {
-              smallIcon: 'ic_stat_icon_config_sample',
-              iconColor: '#9D87C3',
+              smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
+              iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
             }),
           });
         }
@@ -315,8 +319,8 @@ export async function syncScheduledTaskNotifications(
             extra: { taskId: task.id, type: 'overdue' },
             ...(platform.isIOS && { summary: NOTIFICATION_TITLES.taskOverdue }),
             ...(platform.isAndroid && {
-              smallIcon: 'ic_stat_icon_config_sample',
-              iconColor: '#9D87C3',
+              smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
+              iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
             }),
           });
         }

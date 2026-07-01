@@ -168,8 +168,7 @@ import {
   SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL,
   NAV_BAR_BOTTOM_PADDING_MOBILE,
   NAV_BAR_SPACER_HEIGHT,
-  NAV_BAR_HEIGHT,
-  NAV_BAR_SCROLL_BUFFER_REM,
+  NAV_BAR_SCROLL_PADDING_MOBILE,
   SETTINGS_PANEL_PADDING_Y_SMALL,
   SETTINGS_PANEL_ROW_PADDING_Y,
   SETTINGS_PANEL_START_TOUR_BUTTON_GAP,
@@ -576,7 +575,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         data-tour="settings-panel"
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          paddingBottom: shouldUseMobileLayout ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` : undefined, // Add padding to scroll container on mobile/tablet to ensure content can scroll past nav bar
+          paddingBottom: shouldUseMobileLayout ? NAV_BAR_SCROLL_PADDING_MOBILE : undefined, // Add padding to scroll container on mobile/tablet to ensure content can scroll past nav bar
         } as React.CSSProperties}
       >
         <div 
@@ -592,7 +591,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               ? SETTINGS_PANEL_PADDING_MEDIUM // 0.75rem (12px) - minimal spacing after fixed header
               : SETTINGS_PANEL_CONTAINER_PADDING_LARGE, // 2rem - larger spacing for desktop relative header
             paddingBottom: shouldUseMobileLayout
-              ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer to ensure last item is fully visible and scrollable
+              ? NAV_BAR_SCROLL_PADDING_MOBILE // Full nav bar height + safe area + extra buffer to ensure last item is fully visible and scrollable
               : SETTINGS_PANEL_CONTAINER_PADDING_LARGE,
           }}
         >

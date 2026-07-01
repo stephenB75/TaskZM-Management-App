@@ -46,6 +46,12 @@ export function buildCalendarOAuthDeepLink(
   return url.toString();
 }
 
+/** Android status-bar notification icon (drawable name). */
+export const MOBILE_NOTIFICATION_SMALL_ICON = 'ic_stat_icon_config_sample';
+
+/** Accent color for Android notification icon. */
+export const MOBILE_NOTIFICATION_ICON_COLOR = '#9D87C3';
+
 /** Build deep link for Supabase auth (password reset, magic link). */
 export function buildAuthCallbackDeepLink(path: string, hashOrQuery: string): string {
   const normalizedPath = path.replace(/^\//, '');

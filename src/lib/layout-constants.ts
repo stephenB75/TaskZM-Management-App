@@ -467,23 +467,25 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 };
 
 // Bottom Navigation Bar constants
-export const NAV_BAR_HEIGHT = 112; // Increased by 30% from 86px to 112px (30% increase: 86 * 1.3 = 111.8, rounded to 112)
-export const NAV_BAR_SPACER_HEIGHT = 65; // Spacer height - optimized to match actual visible nav bar content area (reduces excessive spacing)
-export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`; // 65px + safe area - use this constant instead of hardcoding
-export const NAV_BAR_SCROLL_BUFFER = 16; // Extra buffer padding (1rem = 16px) to ensure last item is fully visible when scrolling past nav bar
-export const NAV_BAR_SCROLL_BUFFER_REM = '1rem'; // Extra buffer padding in rem units for CSS calc
-export const NAV_BAR_PADDING_TOP = '0.5rem'; // Balanced top padding
-export const NAV_BAR_PADDING_BOTTOM = '0.5rem'; // Balanced bottom padding (safe area handled separately)
-export const NAV_BAR_BUTTON_PADDING_TOP = '0.375rem'; // Button top padding
-export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.375rem'; // Button bottom padding
-export const NAV_BAR_ICON_SIZE = '2rem'; // w-8 h-8 = 2rem
-export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '2.25rem'; // Center icons vertically within nav bar
-export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '2.25rem'; // Center icons vertically within nav bar
+export const NAV_BAR_HEIGHT = 68; // Compact bar: icon + label + padding (safe area added separately)
+export const NAV_BAR_SPACER_HEIGHT = NAV_BAR_HEIGHT; // Match scroll spacer to visible nav content height
+export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_SPACER_HEIGHT}px + env(safe-area-inset-bottom, 0px))`;
+export const NAV_BAR_SCROLL_BUFFER = 8; // Small buffer so last list item clears the nav bar when scrolled
+export const NAV_BAR_SCROLL_BUFFER_REM = '0.5rem';
+/** Scroll container padding above fixed nav (height + safe area + buffer). */
+export const NAV_BAR_SCROLL_PADDING_MOBILE = `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER}px)`;
+export const NAV_BAR_PADDING_TOP = '0.25rem';
+export const NAV_BAR_PADDING_BOTTOM = '0.25rem'; // Safe area handled separately on the nav element
+export const NAV_BAR_BUTTON_PADDING_TOP = '0.25rem';
+export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.25rem';
+export const NAV_BAR_ICON_SIZE = '1.75rem'; // Slightly smaller for compact bar
+export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0';
+export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0';
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
 export const NAV_BAR_INDICATOR_TOP = '-0.5rem'; // Keep indicator above icon (moves with icon)
 export const NAV_BAR_INDICATOR_MARGIN_LEFT = '-1rem';
 export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
-export const NAV_BAR_LABEL_MARGIN_TOP = '0.375rem'; // Increased margin for better spacing between icon and label
+export const NAV_BAR_LABEL_MARGIN_TOP = '0.25rem';
 export const NAV_BAR_BADGE_SIZE = '1rem'; // w-4 h-4 = 1rem
 export const NAV_BAR_BADGE_TEXT_SIZE = '8px';
 export const NAV_BAR_BADGE_BORDER_WIDTH = '2px';

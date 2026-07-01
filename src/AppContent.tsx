@@ -43,7 +43,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { NOTIFICATION_OPEN_TASK_EVENT } from './lib/notification-constants';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 import logoImageGray from './assets/taskzm-logo-gray.png';
@@ -889,9 +889,7 @@ export default function AppContent() {
                 paddingTop: shouldUseMobileLayout
                   ? MOBILE_SCROLL_CONTAINER_PADDING_TOP
                   : undefined,
-                paddingBottom: shouldUseMobileLayout
-                  ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`
-                  : undefined,
+                paddingBottom: shouldUseMobileLayout ? NAV_BAR_SCROLL_PADDING_MOBILE : undefined,
                 backgroundImage: shouldUseMobileLayout
                   ? isDark
                     ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`

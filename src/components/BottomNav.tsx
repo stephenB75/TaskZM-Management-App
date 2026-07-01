@@ -154,7 +154,7 @@ export function BottomNav({
 
   return (
     <motion.nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900 backdrop-blur-lg border-t border-primary/10 dark:border-gray-700/50 shadow-2xl overflow-visible"
+      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-primary/10 dark:border-gray-700/50 shadow-2xl overflow-visible"
       initial={{ y: NAV_BAR_INITIAL_Y_OFFSET }}
       animate={{ y: 0 }}
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
@@ -179,13 +179,12 @@ export function BottomNav({
       <div 
         className="flex items-center justify-evenly overflow-visible" 
         data-tour="bottom-nav"
-        style={{ 
+        style={{
           paddingTop: NAV_BAR_PADDING_TOP,
           paddingBottom: `calc(${NAV_BAR_PADDING_BOTTOM} + env(safe-area-inset-bottom, 0px))`,
           paddingLeft: NAV_BAR_HORIZONTAL_PADDING,
           paddingRight: NAV_BAR_HORIZONTAL_PADDING,
-          height: `${NAV_BAR_HEIGHT}px`,
-          minHeight: `${NAV_BAR_HEIGHT}px`
+          minHeight: `${NAV_BAR_HEIGHT}px`,
         }}
       >
         {navItems.map((item) => {

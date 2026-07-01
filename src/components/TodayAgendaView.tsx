@@ -53,7 +53,7 @@ import {
   getTodayAgendaTimelineBlockTextContent,
   type TodayAgendaLayoutMode,
 } from "../lib/today-agenda-layout";
-import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
+import { HEADER_HEIGHT, TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, MOBILE_SPACING, Z_INDEX, COMPONENT_DIMENSIONS, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_SCROLL_PADDING_MOBILE, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, HEADER_DATE_SIZE, HEADER_DATE_SIZE_MOBILE, HEADER_DATE_NUMBER_SIZE, HEADER_DATE_NUMBER_SIZE_MOBILE, HEADER_DATE_MARGIN_TOP, MOBILE_PADDING_BOTTOM, DESKTOP_PADDING_TOP, TODAY_AGENDA_MIN_HEIGHT, HEADER_GAP_SMALL, HEADER_GAP_LARGE, PANEL_EMPTY_STATE_PADDING_Y, EMPTY_STATE_ICON_SIZE_SMALL, EMPTY_STATE_ICON_INNER_SIZE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_PADDING_X, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS, CONFETTI_RESET_DELAY_MS, TODAY_AGENDA_TIMELINE } from "../lib/layout-constants";
 import { TEXT_SIZES } from "../lib/text-size-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { KANBAN_MOBILE } from "../lib/kanban-constants";
@@ -1420,7 +1420,7 @@ export function TodayAgendaView({
                   ? 0 // No top padding on mobile - header spacer in App.tsx handles spacing
                   : DESKTOP_PADDING_TOP,
                 paddingBottom: shouldUseMobileLayout
-                  ? `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})` // Full nav bar height + safe area + extra buffer
+                  ? NAV_BAR_SCROLL_PADDING_MOBILE // Full nav bar height + safe area + extra buffer
                   : undefined,
                 // Ensure transparent background to show parent gradient
                 backgroundColor: 'transparent',
@@ -1628,7 +1628,7 @@ export function TodayAgendaView({
                     : DESKTOP_PADDING_TOP,
                   paddingBottom: shouldUseMobileLayout
                     ? KANBAN_MOBILE.bottomPaddingCalc
-                    : `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
+                    : NAV_BAR_SCROLL_PADDING_MOBILE,
                 }}
               >
               {isLoading && combinedItems.length === 0 ? (
@@ -1829,7 +1829,7 @@ export function TodayAgendaView({
                 className={cn("px-5 sm:pb-safe md:pt-12 md:pb-4 w-full relative min-w-0")}
                 style={{
                   paddingTop: DESKTOP_PADDING_TOP,
-                  paddingBottom: `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
+                  paddingBottom: NAV_BAR_SCROLL_PADDING_MOBILE,
                   backgroundColor: 'transparent',
                   background: 'transparent',
                 } as React.CSSProperties}
@@ -1994,7 +1994,7 @@ export function TodayAgendaView({
             className="px-5 w-full relative"
             style={{
               paddingTop: `${Math.max(TIMELINE_PADDING.mobile, TIMELINE_PADDING.minMobilePadding)}px`,
-              paddingBottom: `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER_REM})`,
+              paddingBottom: NAV_BAR_SCROLL_PADDING_MOBILE,
               backgroundColor: 'transparent',
               background: 'transparent',
             } as React.CSSProperties}
