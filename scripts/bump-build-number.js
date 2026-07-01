@@ -6,6 +6,7 @@
  *
  * Usage: node scripts/bump-build-number.js
  *        node scripts/bump-build-number.js --date  # reset date to today YYYYMMDD-1
+ *        node scripts/bump-build-number.js --ci    # Railway CI — skip native sync
  */
 
 const fs = require('fs');
@@ -18,6 +19,7 @@ const ROOT_PKG = path.join(ROOT, 'package.json');
 const SRC_PKG = path.join(ROOT, 'src/package.json');
 
 const useToday = process.argv.includes('--date');
+const ciMode = process.argv.includes('--ci');
 
 let source = fs.readFileSync(VERSION_TS, 'utf8');
 const appVersionMatch = source.match(/export const APP_VERSION = '([^']+)'/);
@@ -61,9 +63,13 @@ for (const pkgPath of [ROOT_PKG, SRC_PKG]) {
   }
 }
 
-execSync('node scripts/sync-ios-xcode-version.js', { cwd: ROOT, stdio: 'inherit' });
-execSync('node scripts/sync-android-version.js', { cwd: ROOT, stdio: 'inherit' });
+if (!ciMode) {
+  execSync('node scripts/sync-ios-xcode-version.js', { cwd: ROOT, stdio: 'inherit' });
+  execSync('node scripts/sync-android-version.js', { cwd: ROOT, stdio: 'inherit' });
+}
 execSync('node scripts/update-service-worker-cache.js', { cwd: ROOT, stdio: 'inherit' });
 
 console.log(`BUILD_NUMBER: ${current} → ${nextBuild} (APP_VERSION ${appVersion})`);
-console.log('Run npm run mobile:build to produce native bundles, or npm run sync:platforms for dist-only sync.');
+if (!ciMode) {
+  console.log('Run npm run mobile:build to produce native bundles, or npm run sync:platforms for dist-only sync.');
+}

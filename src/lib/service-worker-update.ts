@@ -7,6 +7,7 @@
 import { toast } from './toast-wrapper';
 import { TIMING_CONSTANTS } from './timing-constants';
 import { NOTIFICATION_STORAGE_KEYS, NOTIFICATION_TOAST_MESSAGES } from './notification-constants';
+import { purgeBrowserAppCaches } from './app-release-cache';
 
 const UPDATE_CHECK_INTERVAL = TIMING_CONSTANTS.serviceWorker.updateCheckInterval;
 const UPDATE_NOTIFICATION_COOLDOWN = TIMING_CONSTANTS.serviceWorker.notificationCooldown;
@@ -234,16 +235,7 @@ export async function purgeAppCachesIfVersionChanged(releaseStamp: string): Prom
     return false;
   }
 
-  if ('caches' in window) {
-    const keys = await caches.keys();
-    await Promise.all(keys.map((key) => caches.delete(key)));
-  }
-
-  if ('serviceWorker' in navigator) {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map((registration) => registration.unregister()));
-  }
-
+  await purgeBrowserAppCaches();
   return true;
 }
 

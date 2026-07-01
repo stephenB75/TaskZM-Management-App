@@ -5,68 +5,31 @@
  */
 
 import { Capacitor } from '@capacitor/core';
-import { getAppReleaseStamp, APP_VERSION, BUILD_NUMBER } from './version';
+import { getAppReleaseStamp } from './version';
+import { MOBILE_STORAGE_KEYS, MOBILE_USE_CLOUD_WEB_APP } from './mobile-constants';
 import {
-  MOBILE_STORAGE_KEYS,
-  MOBILE_USE_CLOUD_WEB_APP,
-  MOBILE_PRODUCTION_WEB_URL,
-} from './mobile-constants';
-import { purgeAppCachesIfVersionChanged } from './service-worker-update';
+  fetchDeployedBuildInfo,
+  getReleaseStampFromBuildInfo,
+} from './app-release-cache';
 import { logger } from './logger';
-
-interface BuildInfo {
-  version?: string;
-  buildNumber?: string;
-}
-
-function buildStamp(version: string, buildNumber: string): string {
-  return `${version}:${buildNumber}`;
-}
-
-function resolveStampFromBuildInfo(info: BuildInfo | null): string {
-  const buildNumber = info?.buildNumber?.trim();
-  const version = info?.version?.trim() ?? APP_VERSION;
-  if (buildNumber) {
-    return buildStamp(version, buildNumber);
-  }
-  return getAppReleaseStamp();
-}
-
-async function fetchCloudBuildInfo(): Promise<BuildInfo | null> {
-  try {
-    const response = await fetch(`${MOBILE_PRODUCTION_WEB_URL}/build-info.json`, {
-      cache: 'no-store',
-    });
-    if (!response.ok) {
-      return null;
-    }
-    return (await response.json()) as BuildInfo;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchBundledBuildInfo(): Promise<BuildInfo | null> {
-  try {
-    const response = await fetch('/build-info.json', { cache: 'no-store' });
-    if (!response.ok) {
-      return null;
-    }
-    return (await response.json()) as BuildInfo;
-  } catch {
-    return null;
-  }
-}
 
 async function resolveNativeReleaseStamp(): Promise<string> {
   if (MOBILE_USE_CLOUD_WEB_APP) {
-    const cloud = await fetchCloudBuildInfo();
+    const cloud = await fetchDeployedBuildInfo();
     if (cloud?.buildNumber) {
-      return resolveStampFromBuildInfo(cloud);
+      return getReleaseStampFromBuildInfo(cloud);
     }
   }
-  const bundled = await fetchBundledBuildInfo();
-  return resolveStampFromBuildInfo(bundled);
+  try {
+    const response = await fetch('/build-info.json', { cache: 'no-store' });
+    if (response.ok) {
+      const bundled = await response.json();
+      return getReleaseStampFromBuildInfo(bundled);
+    }
+  } catch {
+    // fall through
+  }
+  return getAppReleaseStamp();
 }
 
 /**
@@ -79,19 +42,17 @@ export async function ensureNativeBuildIsCurrent(): Promise<boolean> {
   }
 
   const stamp = await resolveNativeReleaseStamp();
-  const versionPurged = await purgeAppCachesIfVersionChanged(stamp);
-
   const storageKey = MOBILE_STORAGE_KEYS.nativeBuildStamp;
   const storedStamp = localStorage.getItem(storageKey);
 
   if (storedStamp === stamp) {
-    return versionPurged;
+    return false;
   }
 
   localStorage.setItem(storageKey, stamp);
 
   if (storedStamp == null) {
-    return versionPurged;
+    return false;
   }
 
   // Cloud UI lives on app.taskzm.com — reload only; do not wipe Cache Storage here

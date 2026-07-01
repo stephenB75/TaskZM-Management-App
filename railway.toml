@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "node scripts/update-service-worker-cache.js && cd src && npm ci && npm run build && cd .. && node scripts/write-build-info.js"
+buildCommand = "node scripts/bump-build-number.js --ci && node scripts/update-service-worker-cache.js && cd src && npm ci && npm run build && cd .. && node scripts/write-build-info.js"
 
 [deploy]
 startCommand = "cd src && node server.js"

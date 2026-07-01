@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Updates the service worker CACHE_NAME to match package.json version.
+ * Updates the service worker CACHE_NAME to match package.json version + BUILD_NUMBER.
  * Run before build (prebuild) so each deploy gets a new cache and users get fresh assets.
  */
 
@@ -10,6 +10,7 @@ const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
 const pkgPath = path.join(rootDir, 'package.json');
+const versionTsPath = path.join(rootDir, 'src/lib/version.ts');
 const swPath = path.join(rootDir, 'src', 'public', 'service-worker.js');
 
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
@@ -19,11 +20,17 @@ if (!version) {
   process.exit(1);
 }
 
-const cacheName = `taskzm-v${version}`;
-const runtimeCacheName = `taskzm-runtime-v${version}`;
+const versionSource = fs.readFileSync(versionTsPath, 'utf8');
+const buildNumber = versionSource.match(/export const BUILD_NUMBER = '([^']+)'/)?.[1];
+if (!buildNumber) {
+  console.error('update-service-worker-cache: could not read BUILD_NUMBER from version.ts');
+  process.exit(1);
+}
+
+const cacheName = `taskzm-v${version}-b${buildNumber}`;
+const runtimeCacheName = `taskzm-runtime-v${version}-b${buildNumber}`;
 let sw = fs.readFileSync(swPath, 'utf8');
 
-// Match CACHE_NAME = 'taskzm-vX.Y.Z' (any version) and replace with current package version
 const cacheNameRegex = /(const CACHE_NAME = ')taskzm-v[^']+(';)/;
 if (!cacheNameRegex.test(sw)) {
   console.error('update-service-worker-cache: could not find CACHE_NAME in service-worker.js');
@@ -31,7 +38,6 @@ if (!cacheNameRegex.test(sw)) {
 }
 sw = sw.replace(cacheNameRegex, `$1${cacheName}$2`);
 
-// Version-scoped runtime cache — stale hashed JS chunks must not survive across deploys
 const runtimeCacheRegex = /(const RUNTIME_CACHE = ')taskzm-runtime(?:-v[^']+)?(';)/;
 if (!runtimeCacheRegex.test(sw)) {
   console.error('update-service-worker-cache: could not find RUNTIME_CACHE in service-worker.js');

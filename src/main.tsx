@@ -463,6 +463,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { initNativeAppHandlers } from './lib/native-app';
 import { initNativeNotificationHandlers } from './lib/native-notifications';
 import { ensureNativeBuildIsCurrent } from './lib/native-cache';
+import { ensureWebReleaseIsCurrent } from './lib/app-release-cache';
 
 // Platform detection
 const isNative = Capacitor.isNativePlatform();
@@ -994,6 +995,17 @@ async function bootstrapApp(): Promise<void> {
       }
     } catch (error) {
       logger.warn('[Native] Build cache check failed — continuing startup', error);
+    }
+  } else {
+    try {
+      const needsReload = await ensureWebReleaseIsCurrent();
+      if (needsReload) {
+        (window as any).__userInitiatedReload = true;
+        window.location.reload();
+        return;
+      }
+    } catch (error) {
+      logger.warn('[Web] Release cache check failed — continuing startup', error);
     }
   }
 
