@@ -103,3 +103,21 @@ Sync with [`src/lib/version.ts`](../../lib/version.ts):
 |---------------|--------|
 | Marketing Version | `APP_VERSION` (e.g. 1.0.30) |
 | Current Project Version | `BUILD_NUMBER` without dashes (e.g. 202606281) |
+
+## Xcode build notes
+
+After changing npm dependencies (especially RevenueCat), refresh pods:
+
+```bash
+cd App
+pod update RevenuecatPurchasesCapacitor PurchasesHybridCommon RevenueCat
+```
+
+**Expected third-party warnings:** Capacitor 6 Cordova still references deprecated `WKProcessPool` APIs. `pod install` applies a local pragma patch to those files and sets `-Wno-deprecated-declarations` on Pod targets. Re-run `pod install` after `npm install` if the warning reappears. A full fix requires upgrading to Capacitor 8+.
+
+**RevenueCat / StoreKit:** Use `@revenuecat/purchases-capacitor` **13.2+** (pulls RevenueCat **5.78+**) for Xcode 26 compatibility. Older 5.67.x triggers “Switch must be exhaustive” errors with newer StoreKit SDKs.
+
+**`[CP] Embed Pods Frameworks`:** The Podfile sets CocoaPods script phases to use dependency analysis so this phase is not forced to run on every build.
+
+**“Update to recommended settings” on Pods.xcodeproj:** Safe to ignore, or apply in Xcode — it only affects the generated Pods project, not your app code.
+

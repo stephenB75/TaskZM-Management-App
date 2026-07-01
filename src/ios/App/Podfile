@@ -3,11 +3,6 @@ require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 platform :ios, '15.0'
 use_frameworks!
 
-# workaround to avoid Xcode caching of Pods that requires
-# Product -> Clean Build Folder after new Cordova plugins installed
-# Requires CocoaPods 1.6 or newer
-install! 'cocoapods', :disable_input_output_paths => true
-
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
@@ -23,23 +18,97 @@ end
 
 target 'App' do
   capacitor_pods
-  # Add your Pods here
+end
+
+def configure_pod_target_settings(config, suppress_third_party_warnings: false)
+  config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+  config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+  return unless suppress_third_party_warnings
+
+  # Capacitor/Cordova/RevenueCat ship SDK deprecations we cannot patch in node_modules.
+  config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+  config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+  config.build_settings['CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
+  config.build_settings['GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS'] = 'NO'
+  other_cflags = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
+  other_cflags = [other_cflags] unless other_cflags.is_a?(Array)
+  unless other_cflags.any? { |flag| flag.include?('-Wno-deprecated-declarations') }
+    other_cflags << '-Wno-deprecated-declarations'
+  end
+  config.build_settings['OTHER_CFLAGS'] = other_cflags
+end
+
+def fix_cocoapods_script_phases(project)
+  project.native_targets.each do |target|
+    target.shell_script_build_phases.each do |phase|
+      next unless phase.name&.start_with?('[CP]')
+
+      # Allow Xcode dependency analysis instead of running every build.
+      phase.always_out_of_date = '0'
+    end
+  end
+end
+
+def silence_capacitor_cordova_wkprocesspool_deprecations
+  marker = 'TASKZM_SUPPRESS_WKPROCESSPOOL_DEPRECATION'
+  base = File.expand_path(
+    '../../node_modules/@capacitor/ios/CapacitorCordova/CapacitorCordova/Classes/Public',
+    __dir__,
+  )
+
+  header = File.join(base, 'CDVWebViewProcessPoolFactory.h')
+  impl = File.join(base, 'CDVWebViewProcessPoolFactory.m')
+
+  if File.exist?(header) && !File.read(header).include?(marker)
+    File.write(
+      header,
+      File.read(header).sub(
+        "#import <WebKit/WebKit.h>\n\n@interface",
+        "#import <WebKit/WebKit.h>\n\n#pragma clang diagnostic push\n" \
+        "#pragma clang diagnostic ignored \"-Wdeprecated-declarations\"\n" \
+        "/* #{marker} */\n\n@interface",
+      ).sub(
+        "@end\n",
+        "@end\n\n#pragma clang diagnostic pop\n",
+      ),
+    )
+  end
+
+  if File.exist?(impl) && !File.read(impl).include?(marker)
+    File.write(
+      impl,
+      File.read(impl).sub(
+        "#import <Cordova/CDVWebViewProcessPoolFactory.h>\n\nstatic",
+        "#import <Cordova/CDVWebViewProcessPoolFactory.h>\n\n" \
+        "#pragma clang diagnostic push\n" \
+        "#pragma clang diagnostic ignored \"-Wdeprecated-declarations\"\n" \
+        "/* #{marker} */\n\nstatic",
+      ).sub(
+        "@end\n",
+        "@end\n\n#pragma clang diagnostic pop\n",
+      ),
+    )
+  end
 end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+  silence_capacitor_cordova_wkprocesspool_deprecations
+
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # Required for CocoaPods "[CP] Embed Pods Frameworks" script (Xcode 15+)
-      config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      configure_pod_target_settings(config, suppress_third_party_warnings: true)
     end
   end
+
   installer.aggregate_targets.each do |aggregate_target|
+    fix_cocoapods_script_phases(aggregate_target.user_project)
     aggregate_target.user_project.native_targets.each do |target|
       target.build_configurations.each do |config|
-        config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        configure_pod_target_settings(
+          config,
+          suppress_third_party_warnings: target.name != 'App',
+        )
       end
     end
     aggregate_target.user_project.save
