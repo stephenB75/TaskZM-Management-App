@@ -21,6 +21,25 @@ const globalCache: CalendarEventsCache = {};
 // In-flight requests cache to prevent duplicate simultaneous requests
 const inFlightRequests = new Map<string, Promise<unknown[]>>();
 
+/** Bumped whenever clearCalendarEventsCache runs so hooks refetch immediately. */
+let invalidationEpoch = 0;
+
+const invalidationListeners = new Set<() => void>();
+
+/**
+ * Subscribe to cache invalidation (for useSyncExternalStore in useCalendarEvents).
+ */
+export function subscribeCalendarEventsInvalidation(listener: () => void): () => void {
+  invalidationListeners.add(listener);
+  return () => {
+    invalidationListeners.delete(listener);
+  };
+}
+
+export function getCalendarEventsInvalidationEpoch(): number {
+  return invalidationEpoch;
+}
+
 /**
  * Clear the global cache (useful after calendar sync)
  */
@@ -29,6 +48,8 @@ export function clearCalendarEventsCache() {
     delete globalCache[key];
   });
   inFlightRequests.clear();
+  invalidationEpoch += 1;
+  invalidationListeners.forEach((listener) => listener());
 }
 
 /**

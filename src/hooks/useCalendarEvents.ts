@@ -1,9 +1,15 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCalendar } from '../contexts/CalendarContext';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { logger } from '../lib/logger';
-import { getCalendarEventsCache, getInFlightRequests, clearCalendarEventsCache } from '../lib/calendar-events-cache';
+import {
+  getCalendarEventsCache,
+  getInFlightRequests,
+  clearCalendarEventsCache,
+  subscribeCalendarEventsInvalidation,
+  getCalendarEventsInvalidationEpoch,
+} from '../lib/calendar-events-cache';
 import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay } from '../lib/utils';
 import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
@@ -170,6 +176,11 @@ export function useCalendarEvents(
 ) {
   const { user, accessToken } = useAuth();
   const { calendarStatus, checkCalendarStatus } = useCalendar();
+  const invalidationEpoch = useSyncExternalStore(
+    subscribeCalendarEventsInvalidation,
+    getCalendarEventsInvalidationEpoch,
+    getCalendarEventsInvalidationEpoch,
+  );
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -312,6 +323,15 @@ export function useCalendarEvents(
     }
     checkCalendarStatus();
   }, [enabled, accessToken, user?.id, providers.length, checkCalendarStatus]);
+
+  // Refetch immediately when cache is invalidated (e.g. after calendar import/sync)
+  const prevInvalidationEpochRef = useRef(invalidationEpoch);
+  useEffect(() => {
+    if (invalidationEpoch === prevInvalidationEpochRef.current) return;
+    prevInvalidationEpochRef.current = invalidationEpoch;
+    if (!enabled || !accessToken || providers.length === 0) return;
+    fetchEvents();
+  }, [invalidationEpoch, enabled, accessToken, providers.length, fetchEvents]);
 
   // Debounced fetch effect
   useEffect(() => {

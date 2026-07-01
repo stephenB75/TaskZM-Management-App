@@ -1052,8 +1052,7 @@ function generateRecurringOccurrences(
 
   if (!baseEvent.rrule) {
     // Not a recurring event, return single occurrence if in range
-    const eventStart = new Date(baseEvent.start_time);
-    if (eventStart >= rangeStart && eventStart <= rangeEnd) {
+    if (eventOverlapsQueryRange(baseEvent.start_time, baseEvent.end_time, rangeStart, rangeEnd)) {
       // Determine provider from source or external_id format
       let provider: CalendarProvider = 'apple';
       if (baseEvent.source === 'google' || baseEvent.external_id?.startsWith('google_')) {
@@ -1201,6 +1200,27 @@ function generateRecurringOccurrences(
   return occurrences;
 }
 
+/** True when an event interval overlaps the query range (inclusive), not only when start is inside. */
+function eventOverlapsQueryRange(
+  startTime: string,
+  endTime: string | null | undefined,
+  rangeStart: Date,
+  rangeEnd: Date,
+): boolean {
+  const eventStart = new Date(startTime);
+  if (isNaN(eventStart.getTime())) return false;
+
+  let eventEnd = endTime ? new Date(endTime) : eventStart;
+  if (isNaN(eventEnd.getTime())) {
+    eventEnd = eventStart;
+  }
+  if (eventEnd.getTime() < eventStart.getTime()) {
+    eventEnd = eventStart;
+  }
+
+  return eventStart <= rangeEnd && eventEnd >= rangeStart;
+}
+
 /**
  * Get Apple Calendar events from the database (new CalDAV sync)
  */
@@ -1258,9 +1278,8 @@ async function getAppleEventsFromDatabase(
         );
         result.push(...occurrences);
       } else {
-        // Regular non-recurring event - only include if within date range
-        const eventStart = new Date(event.start_time);
-        if (eventStart >= startDateObj && eventStart <= endDateObj) {
+        // Regular non-recurring event - include if it overlaps the date range
+        if (eventOverlapsQueryRange(event.start_time, event.end_time, startDateObj, endDateObj)) {
           result.push({
             id: event.id,
             title: event.title,
@@ -1342,9 +1361,8 @@ async function getGoogleEventsFromDatabase(
         );
         result.push(...occurrences);
       } else {
-        // Regular non-recurring event - only include if within date range
-        const eventStart = new Date(event.start_time);
-        if (eventStart >= startDateObj && eventStart <= endDateObj) {
+        // Regular non-recurring event - include if it overlaps the date range
+        if (eventOverlapsQueryRange(event.start_time, event.end_time, startDateObj, endDateObj)) {
           result.push({
             id: event.id,
             title: event.title,
@@ -1426,9 +1444,8 @@ async function getOutlookEventsFromDatabase(
         );
         result.push(...occurrences);
       } else {
-        // Regular non-recurring event - only include if within date range
-        const eventStart = new Date(event.start_time);
-        if (eventStart >= startDateObj && eventStart <= endDateObj) {
+        // Regular non-recurring event - include if it overlaps the date range
+        if (eventOverlapsQueryRange(event.start_time, event.end_time, startDateObj, endDateObj)) {
           result.push({
             id: event.id,
             title: event.title,

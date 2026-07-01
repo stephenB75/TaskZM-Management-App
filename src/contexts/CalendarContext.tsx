@@ -86,6 +86,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   const lastAutoSyncRef = useRef<number>(0);
   const autoSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const syncAppleCalendarInternalRef = useRef<((silent?: boolean) => Promise<boolean>) | null>(null);
+  const syncGoogleCalendarInternalRef = useRef<((silent?: boolean) => Promise<boolean>) | null>(null);
   const calendarStatusRetryRef = useRef(false);
   /** When we optimistically or successfully set a provider to true, store timestamp so checkCalendarStatus does not overwrite with stale false. */
   const lastConnectAtRef = useRef<Partial<Record<CalendarProvider, number>>>({});
@@ -664,6 +665,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
                     if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
                     return next;
                   });
+                  if (connectedProvider === CALENDAR_PROVIDERS.google && syncGoogleCalendarInternalRef.current) {
+                    syncGoogleCalendarInternalRef.current(true);
+                  }
                   console.log('[Calendar OAuth] Calendar status checked after success message');
                 }).catch((err) => {
                   console.error('[Calendar OAuth] Error checking calendar status:', err);
@@ -947,10 +951,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         setLastSync(new Date());
         lastAutoSyncRef.current = Date.now();
         
-        // Clear calendar events cache only when sync reports changes (avoids extra Edge calls when nothing changed)
-        if ((data.created || 0) + (data.updated || 0) + (data.deleted || 0) > 0) {
-          clearCalendarEventsCache();
-        }
+        // Always invalidate cached events so views refetch after import/sync
+        clearCalendarEventsCache();
         
         console.log(`[Apple Calendar Sync] Success: ${data.created} created, ${data.updated} updated, ${data.deleted} deleted`);
         
@@ -1054,10 +1056,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (data.success) {
         setLastSync(new Date());
         
-        // Clear calendar events cache only when sync reports changes (avoids extra Edge calls when nothing changed)
-        if ((data.created || 0) + (data.updated || 0) + (data.deleted || 0) > 0) {
-          clearCalendarEventsCache();
-        }
+        // Always invalidate cached events so views refetch after import/sync
+        clearCalendarEventsCache();
         
         console.log(`[Google Calendar Sync] Success: ${data.created} created, ${data.updated} updated, ${data.deleted} deleted`);
         
@@ -1106,6 +1106,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [user, accessToken]);
+
+  useEffect(() => {
+    syncGoogleCalendarInternalRef.current = syncGoogleCalendarInternal;
+  }, [syncGoogleCalendarInternal]);
 
   // Sync all tasks to calendar
   const syncAllTasks = useCallback(async (provider: CalendarProvider) => {
