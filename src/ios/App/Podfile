@@ -28,12 +28,15 @@ def configure_pod_target_settings(config, suppress_third_party_warnings: false)
   # Capacitor/Cordova/RevenueCat ship SDK deprecations we cannot patch in node_modules.
   config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
   config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+  config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
   config.build_settings['CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
   config.build_settings['GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS'] = 'NO'
   other_cflags = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
   other_cflags = [other_cflags] unless other_cflags.is_a?(Array)
-  unless other_cflags.any? { |flag| flag.include?('-Wno-deprecated-declarations') }
-    other_cflags << '-Wno-deprecated-declarations'
+  %w[-Wno-deprecated-declarations -Wno-quoted-include-in-framework-header].each do |flag|
+    next if other_cflags.any? { |existing| existing.include?(flag.sub('-Wno-', '-W')) }
+
+    other_cflags << flag
   end
   config.build_settings['OTHER_CFLAGS'] = other_cflags
 end
