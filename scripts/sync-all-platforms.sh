@@ -20,16 +20,22 @@ npm run build --prefix src
 echo "🏷️  Writing build-info.json for native cache detection..."
 node scripts/write-build-info.js
 
+if [[ -f src/ios/App/Gemfile ]]; then
+  echo "🍎 Installing iOS Ruby gems (required before cap sync)..."
+  (cd src/ios/App && bundle install)
+fi
+
 echo "📱 Syncing Capacitor (iOS + Android)..."
 npm run cap:sync --prefix src
 
 if [[ -f src/ios/App/Gemfile ]]; then
-  echo "🍎 Ensuring iOS CocoaPods are up to date..."
+  echo "🍎 Verifying iOS CocoaPods..."
   if (cd src/ios/App && bundle exec pod install); then
     echo "   pod install OK"
   else
-    echo "⚠️  pod install failed. If cap sync failed on iOS, run:"
+    echo "⚠️  pod install failed. Run manually:"
     echo "   cd src/ios/App && bundle install && bundle exec pod install"
+    echo "   Or: cd src/ios/App && ./setup-xcode.sh"
   fi
 fi
 

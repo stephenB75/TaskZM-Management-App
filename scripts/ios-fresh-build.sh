@@ -14,8 +14,8 @@ npm run sync-mobile-version
 npm run sync:platforms
 
 if [[ -f src/ios/App/Gemfile ]]; then
-  echo "📦 pod install..."
-  (cd src/ios/App && bundle exec pod install)
+  echo "📦 bundle install + pod install..."
+  (cd src/ios/App && bundle install && bundle exec pod install)
 fi
 
 echo ""

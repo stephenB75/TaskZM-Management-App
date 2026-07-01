@@ -36,6 +36,14 @@ ensure_cocoapods() {
 }
 
 install_pods() {
+  if [[ -f Gemfile ]]; then
+    echo "Installing Ruby gems from Gemfile..."
+    bundle install
+    echo "Running pod install via Bundler..."
+    bundle exec pod install
+    return
+  fi
+
   ensure_cocoapods
   pod install
 }

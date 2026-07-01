@@ -12,6 +12,8 @@
     "clean": "rm -rf dist node_modules && npm install",
     "organize": "chmod +x cleanup-docs.sh && ./cleanup-docs.sh",
     "mobile:build": "vite build && cap sync",
+    "sync:platforms": "npm run sync:platforms --prefix ..",
+    "ios:fresh": "npm run ios:fresh --prefix ..",
     "mobile:assets": "capacitor-assets generate --assetPath assets --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#1a1a1a' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#1a1a1a'",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
