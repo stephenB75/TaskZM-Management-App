@@ -34,8 +34,10 @@ const DEFAULT_CALENDAR_TIMEZONE = 'America/New_York';
 const GOOGLE_CALENDAR_MAX_RESULTS = 2500;
 /** Max rows pulled from calendar_events per request (safety cap). */
 const CALENDAR_DB_QUERY_MAX_ROWS = 5000;
+/** Cap expanded occurrences returned per request (avoids Supabase 546 resource limits). */
+const MAX_EXPANDED_CALENDAR_EVENTS = 800;
 const CALENDAR_DB_EVENT_COLUMNS =
-  'id,title,description,start_time,end_time,location,external_id,source,calendar_color,rrule';
+  'id,title,start_time,end_time,location,external_id,source,calendar_color,rrule';
 
 type CalendarEventSource = 'google' | 'icloud' | 'outlook';
 
@@ -52,12 +54,13 @@ async function fetchCalendarEventRowsForUser(
 ): Promise<CalendarEventRow[]> {
   const overlapFilter =
     `and(rrule.is.null,start_time.lte.${endDate},or(end_time.gte.${startDate},end_time.is.null))`;
+  const recurringFilter = `and(rrule.not.is.null,start_time.lte.${endDate})`;
   const { data: events, error } = await supabase
     .from('calendar_events')
     .select(CALENDAR_DB_EVENT_COLUMNS)
     .eq('user_id', userId)
     .eq('source', source)
-    .or(`rrule.not.is.null,${overlapFilter}`)
+    .or(`${recurringFilter},${overlapFilter}`)
     .order('start_time', { ascending: true })
     .limit(CALENDAR_DB_QUERY_MAX_ROWS);
 
@@ -1163,7 +1166,12 @@ function generateRecurringOccurrences(
     );
   }
 
-  const maxIterations = count || MAX_RECURRENCE_ITERATIONS;
+  const rangeDays = Math.ceil((rangeEnd.getTime() - rangeStart.getTime()) / MILLISECONDS_PER_DAY);
+  const rangeBasedMax = Math.min(
+    MAX_RECURRENCE_ITERATIONS,
+    Math.max(rangeDays + DAYS_PER_WEEK, DAYS_PER_WEEK * 4),
+  );
+  const maxIterations = count ? Math.min(count, rangeBasedMax) : rangeBasedMax;
   let iterations = 0;
 
   // Preserve local wall-clock time from the base event (handles DST on each occurrence)
@@ -1303,6 +1311,7 @@ function expandCalendarEventRowsForRange(
 
   for (const event of rows) {
     if (!event?.start_time) continue;
+    if (result.length >= MAX_EXPANDED_CALENDAR_EVENTS) break;
 
     if (event.rrule) {
       const baseKey = event.external_id || event.id || event.start_time;
@@ -1310,7 +1319,8 @@ function expandCalendarEventRowsForRange(
       processedBaseEvents.add(baseKey);
 
       const occurrences = generateRecurringOccurrences(event, startDateObj, endDateObj, timeZone);
-      result.push(...occurrences);
+      const remaining = MAX_EXPANDED_CALENDAR_EVENTS - result.length;
+      result.push(...occurrences.slice(0, remaining));
       continue;
     }
 
