@@ -406,6 +406,8 @@ export function createDefaultNotificationContext() {
     },
     badgeCount: 0,
     requestPermission: async () => false,
+    refreshPermission: async () => 'default' as NotificationPermission,
+    enableNotifications: async () => false,
     updateSettings: () => {},
     updateBadge: () => {},
     addToastNotification: () => {},

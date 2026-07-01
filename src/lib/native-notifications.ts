@@ -98,6 +98,15 @@ async function loadLocalNotifications() {
   return LocalNotifications;
 }
 
+/** Map Capacitor permission states to browser NotificationPermission. */
+export function normalizeNotificationPermission(
+  state: string,
+): 'granted' | 'denied' | 'default' {
+  if (state === 'granted') return 'granted';
+  if (state === 'denied') return 'denied';
+  return 'default';
+}
+
 /**
  * Check if native notifications are available (Capacitor Local Notifications)
  */
@@ -124,9 +133,7 @@ export async function requestNotificationPermission(): Promise<'granted' | 'deni
     try {
       const LocalNotifications = await loadLocalNotifications();
       const result = await LocalNotifications.requestPermissions();
-      if (result.display === 'granted') return 'granted';
-      if (result.display === 'denied') return 'denied';
-      return 'default';
+      return normalizeNotificationPermission(result.display);
     } catch (error) {
       logger.error('Error requesting native notification permission:', error);
       return 'default';
@@ -156,7 +163,7 @@ export async function getNotificationPermission(): Promise<'granted' | 'denied' 
     try {
       const LocalNotifications = await loadLocalNotifications();
       const result = await LocalNotifications.checkPermissions();
-      return result.display as 'granted' | 'denied' | 'default';
+      return normalizeNotificationPermission(result.display);
     } catch (error) {
       logger.debug('Could not check native notification permission:', error);
       return 'default';

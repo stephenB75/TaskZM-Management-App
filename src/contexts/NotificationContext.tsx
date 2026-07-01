@@ -52,6 +52,8 @@ interface NotificationContextType {
   settings: NotificationSettings;
   badgeCount: number;
   requestPermission: () => Promise<boolean>;
+  refreshPermission: () => Promise<NotificationPermission>;
+  enableNotifications: () => Promise<boolean>;
   updateSettings: (settings: Partial<NotificationSettings>) => void;
   updateBadge: () => void;
   addToastNotification: (type: 'success' | 'error' | 'info' | 'warning', title: string, description?: string) => void;
@@ -85,6 +87,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setPermission(currentPermission);
     };
     checkPermission();
+  }, []);
+
+  const refreshPermission = useCallback(async (): Promise<NotificationPermission> => {
+    const currentPermission = await getNativePermission();
+    setPermission(currentPermission);
+    return currentPermission;
   }, []);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
@@ -191,6 +199,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return updated;
     });
   }, [isBadgeAPIAvailable]);
+
+  const enableNotifications = useCallback(async (): Promise<boolean> => {
+    const granted = await requestPermission();
+    if (granted) {
+      updateSettings({ enabled: true });
+      return true;
+    }
+    return false;
+  }, [requestPermission, updateSettings]);
 
   useEffect(() => {
     updateBadge();
@@ -313,37 +330,34 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [tasks, settings, updateBadge]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        if ('requestIdleCallback' in window) {
-          (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void }).requestIdleCallback(
-            () => updateBadge(),
-            { timeout: TIMING_CONSTANTS.timeouts.idleCallback },
-          );
-        } else {
-          setTimeout(() => updateBadge(), TIMING_CONSTANTS.delays.badgeUpdateFallback);
-        }
-      }
-    };
-
-    const handleFocus = () => {
+    const refreshOnResume = () => {
+      const run = () => {
+        void refreshPermission();
+        updateBadge();
+      };
       if ('requestIdleCallback' in window) {
         (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void }).requestIdleCallback(
-          () => updateBadge(),
+          run,
           { timeout: TIMING_CONSTANTS.timeouts.idleCallback },
         );
       } else {
-        setTimeout(() => updateBadge(), TIMING_CONSTANTS.delays.badgeUpdateFallback);
+        setTimeout(run, TIMING_CONSTANTS.delays.badgeUpdateFallback);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshOnResume();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener('focus', refreshOnResume);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('focus', refreshOnResume);
     };
-  }, [updateBadge]);
+  }, [refreshPermission, updateBadge]);
 
   useEffect(() => {
     if (!settings.enabled || permission !== 'granted' || !user) return;
@@ -406,6 +420,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         settings,
         badgeCount,
         requestPermission,
+        refreshPermission,
+        enableNotifications,
         updateSettings,
         updateBadge,
         addToastNotification,

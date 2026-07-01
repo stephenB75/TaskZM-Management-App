@@ -176,8 +176,6 @@ import {
   SETTINGS_PANEL_START_TOUR_BUTTON_PADDING_X,
   SETTINGS_PANEL_START_TOUR_FONT_SIZE,
   SETTINGS_PANEL_START_TOUR_ICON_SIZE,
-  SETTINGS_PANEL_TOAST_DURATION_MS,
-  SETTINGS_PANEL_TIMEOUT_DELAY_MS,
   SETTINGS_PANEL_PROFILE_BANNER_HEIGHT,
   SETTINGS_PANEL_PROFILE_AVATAR_SIZE,
   SETTINGS_PANEL_PROFILE_AVATAR_FONT_SIZE,
@@ -201,7 +199,7 @@ import {
   SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
   SETTINGS_PANEL_LIST_ROW_PADDING_Y,
 } from '../lib/layout-constants';
-import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS, NOTIFICATION_CHECK_INTERVAL_OPTIONS } from '../lib/notification-constants';
+import { NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS, NOTIFICATION_CHECK_INTERVAL_OPTIONS } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { isNativePurchasedSubscriptionStore, openNativeSubscriptionManagement } from '../lib/subscription-billing';
@@ -225,7 +223,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
   const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectingProvider, disconnectingProvider, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
   const { awards, earnedAwards, getAwardProgress } = useAwards();
-  const { permission, settings: notificationSettings, badgeCount, requestPermission, updateSettings: updateNotificationSettings } = useNotifications();
+  const { permission, settings: notificationSettings, badgeCount, enableNotifications, refreshPermission, updateSettings: updateNotificationSettings } = useNotifications();
   const [dayType, setDayType] = useState<'weekday' | 'weekend'>('weekday');
   const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
@@ -262,6 +260,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       window.removeEventListener('tour-expand-settings-section', handleTourExpandSection as EventListener);
     };
   }, []);
+
+  useEffect(() => {
+    if (openAccordionSections.includes('notifications')) {
+      void refreshPermission();
+    }
+  }, [openAccordionSections, refreshPermission]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1259,16 +1263,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                               className="w-full text-xs md:text-sm"
                               style={{ marginTop: SETTINGS_PANEL_SPACING_SMALL }}
                               onClick={() => {
-                                requestAnimationFrame(() => {
-                                  requestPermission().then((granted) => {
-                                    if (!granted && permission === 'default') {
-                                      toast.info(NOTIFICATION_TOAST_MESSAGES.permissionDeniedInfo, {
-                                        description: NOTIFICATION_TOAST_MESSAGES.permissionDeniedDescription,
-                                        duration: SETTINGS_PANEL_TOAST_DURATION_MS,
-                                      });
-                                    }
-                                  });
-                                });
+                                void enableNotifications();
                               }}
                               disabled={permission === 'denied'}
                             >
@@ -1373,13 +1368,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             description="Turn on all notification features"
                             checked={notificationSettings.enabled}
                             disabled={permission === 'denied'}
-                            onCheckedChange={async (checked) => {
-                              updateNotificationSettings({ enabled: checked });
-                              if (checked && permission === 'default') {
-                                setTimeout(async () => {
-                                  await requestPermission();
-                                }, SETTINGS_PANEL_TIMEOUT_DELAY_MS);
+                            onCheckedChange={(checked) => {
+                              if (!checked) {
+                                updateNotificationSettings({ enabled: false });
+                                return;
                               }
+                              void enableNotifications();
                             }}
                           />
                           <SettingsToggleRow
