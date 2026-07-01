@@ -16,7 +16,7 @@ import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils
 import { resolveCalendarProvidersForFetch, getActiveCalendarProviders, type CalendarProviderKey } from '../lib/calendar-status';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
-const CALENDAR_EVENTS_CACHE_VERSION = 'v4-status-refetch-end-default';
+const CALENDAR_EVENTS_CACHE_VERSION = 'v5-no-empty-cache-provider-refetch';
 
 export interface CalendarEvent {
   id: string;
@@ -201,7 +201,6 @@ export function useCalendarEvents(
   const [error, setError] = useState<Error | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const prevProvidersLengthRef = useRef(0);
   const enabled = options?.enabled !== false;
 
   // Normalize dates to ISO strings
@@ -262,11 +261,16 @@ export function useCalendarEvents(
 
     const fetchPromise = fetchAllEvents(activeProviders, startIso, endIso, accessToken, userTimezone)
       .then((fetchedEvents) => {
-        globalCache[runtimeCacheKey] = {
-          events: fetchedEvents,
-          timestamp: Date.now(),
-          dateRange: { start: startIso, end: endIso },
-        };
+        // Do not cache empty results — avoids locking views into "no events" before sync finishes
+        if (fetchedEvents.length > 0) {
+          globalCache[runtimeCacheKey] = {
+            events: fetchedEvents,
+            timestamp: Date.now(),
+            dateRange: { start: startIso, end: endIso },
+          };
+        } else {
+          delete globalCache[runtimeCacheKey];
+        }
 
         const cacheEntries = Object.entries(globalCache);
         if (cacheEntries.length > 50) {
@@ -298,18 +302,26 @@ export function useCalendarEvents(
     return fetchEventsForProviders(providersRef.current);
   }, [fetchEventsForProviders]);
 
-  // When providers goes from empty to non-empty, clear cache and trigger an immediate fetch so events show without waiting for debounce
+  const providersKey = providers.join(',');
+
+  // When connected providers change, clear cache and refetch immediately
+  const prevProvidersKeyRef = useRef(providersKey);
   useEffect(() => {
-    const prevLen = prevProvidersLengthRef.current;
-    const currLen = providers.length;
-    prevProvidersLengthRef.current = currLen;
-    if (prevLen === 0 && currLen > 0) {
-      clearCalendarEventsCache();
-      if (enabled && accessToken) {
-        fetchEvents();
-      }
+    const prevKey = prevProvidersKeyRef.current;
+    prevProvidersKeyRef.current = providersKey;
+    if (prevKey === providersKey) return;
+
+    if (providers.length === 0) {
+      setEvents([]);
+      setIsLoading(false);
+      return;
     }
-  }, [providers.length, enabled, accessToken, fetchEvents]);
+
+    clearCalendarEventsCache();
+    if (enabled && accessToken) {
+      fetchEvents();
+    }
+  }, [providersKey, providers.length, enabled, accessToken, fetchEvents]);
 
   // When a view that needs calendar events mounts with no providers, force a fresh status check once so we pick up connections from another tab or recent connect
   const didRefreshStatusRef = useRef(false);
@@ -364,25 +376,29 @@ export function useCalendarEvents(
     fetchEvents();
   }, [lastSyncMs, enabled, accessToken, fetchEvents]);
 
-  // Debounced fetch effect
+  // Debounced fetch when date range, providers, or auth changes
   useEffect(() => {
-    // Clear any existing timer
+    if (!enabled || !accessToken || providers.length === 0) {
+      if (providers.length === 0) {
+        setEvents([]);
+      }
+      return;
+    }
+
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set up debounced fetch
     debounceTimerRef.current = setTimeout(() => {
       fetchEvents();
     }, options?.debounceMs ?? DEBOUNCE_DELAY);
 
-    // Cleanup
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [fetchEvents, options?.debounceMs]);
+  }, [fetchEvents, options?.debounceMs, providersKey, startIso, endIso, enabled, accessToken, providers.length]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -405,7 +421,6 @@ export function useCalendarEvents(
   }, [enabled, accessToken, providers.length, fetchEvents]);
 
   // Dev-only: log when enabled, providers, or events change to confirm flow
-  const providersKey = providers.join(',');
   useEffect(() => {
     if (import.meta.env.DEV) {
       logger.debug('Calendar events state', {

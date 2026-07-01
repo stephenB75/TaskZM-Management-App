@@ -17,6 +17,7 @@ import { openNativeOAuthUrl, setCalendarOAuthCallback } from '../lib/native-app'
 import { MOBILE_CALENDAR_AUTH_PLATFORM_PARAM } from '../lib/mobile-constants';
 import {
   normalizeCalendarStatus,
+  resolveCalendarProvidersForFetch,
   type CalendarConnectionStatus,
 } from '../lib/calendar-status';
 
@@ -1273,10 +1274,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }, TIMING_CONSTANTS.intervals.taskContext); // Use task context delay constant (1 second)
   }, [user, calendarStatus]); // Removed syncAppleCalendarInternal from dependencies
 
-  // Automatic Apple Calendar sync on mount (if connected)
+  // Automatic Apple Calendar sync on mount (if connected — includes persisted status fallback)
   // Defer to idle time to avoid blocking initial render and causing performance violations
   useEffect(() => {
-    if (!user || !accessToken || !calendarStatus.apple) return;
+    if (!user || !accessToken) return;
+    if (!resolveCalendarProvidersForFetch(calendarStatus, user.id).includes(CALENDAR_PROVIDERS.apple)) return;
     
     // Use requestIdleCallback if available, otherwise use longer timeout
     // This ensures sync happens when browser is idle, not blocking critical rendering
@@ -1311,11 +1313,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         clearTimeout(initialSyncTimer as NodeJS.Timeout);
       }
     };
-  }, [user, accessToken, calendarStatus.apple]); // Removed syncAppleCalendarInternal from dependencies
+  }, [user, accessToken, calendarStatus.google, calendarStatus.outlook, calendarStatus.apple, user?.id]);
 
-  // Automatic Google Calendar sync on mount (if connected) - populates DB so events show in views
+  // Automatic Google Calendar sync on mount (if connected — includes persisted status fallback)
   useEffect(() => {
-    if (!user || !accessToken || !calendarStatus.google) return;
+    if (!user || !accessToken) return;
+    if (!resolveCalendarProvidersForFetch(calendarStatus, user.id).includes(CALENDAR_PROVIDERS.google)) return;
 
     const scheduleSync = () => {
       console.debug('Auto-syncing Google Calendar on app load...');
@@ -1341,11 +1344,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         clearTimeout(timer as NodeJS.Timeout);
       }
     };
-  }, [user, accessToken, calendarStatus.google]); // syncGoogleCalendarInternal omitted to avoid re-running on callback identity change
+  }, [user, accessToken, calendarStatus.google, calendarStatus.outlook, calendarStatus.apple, user?.id]);
 
   // Periodic automatic sync for Apple Calendar
   useEffect(() => {
-    if (!user || !accessToken || !calendarStatus.apple) {
+    if (!user || !accessToken || !resolveCalendarProvidersForFetch(calendarStatus, user.id).includes(CALENDAR_PROVIDERS.apple)) {
       // Clear interval if calendar is disconnected
       if (autoSyncIntervalRef.current) {
         clearInterval(autoSyncIntervalRef.current);
@@ -1370,7 +1373,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         autoSyncIntervalRef.current = null;
       }
     };
-  }, [user, accessToken, calendarStatus.apple]); // Removed syncAppleCalendarInternal and CALENDAR_SYNC_INTERVAL from dependencies
+  }, [user, accessToken, calendarStatus.google, calendarStatus.outlook, calendarStatus.apple, user?.id]);
 
   // REMOVED: Visibility change handlers that trigger syncs on tab switch
   // These were causing app refreshes when users switched tabs/apps

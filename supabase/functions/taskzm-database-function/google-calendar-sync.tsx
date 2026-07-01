@@ -16,6 +16,7 @@ const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000; // 86400000 ms
 const GOOGLE_CALENDAR_MAX_RESULTS = 2500; // Google Calendar API max results limit
 const GOOGLE_CALENDAR_PRIMARY = 'primary'; // Google Calendar default calendar identifier
 const TOKEN_EXPIRY_ASSUMPTION_MS = 3600 * 1000; // 1 hour in milliseconds - assumed token expiry (will refresh if needed) - using calculation for clarity (3600 seconds * 1000 ms)
+const DEFAULT_SYNC_EVENT_DURATION_MS = 30 * 60 * 1000; // Default end when provider omits end time
 
 // Google Calendar event colorId 1-11 to hex (predefined palette)
 const GOOGLE_EVENT_COLOR_ID_TO_HEX: Record<string, string> = {
@@ -36,6 +37,13 @@ function googleColorIdToHex(colorId: string | number | undefined): string | unde
   if (colorId == null || colorId === '') return undefined;
   const key = String(colorId);
   return GOOGLE_EVENT_COLOR_ID_TO_HEX[key];
+}
+
+function resolveSyncEventEnd(start: string, end?: string): string {
+  if (end) return end;
+  const startDate = new Date(start);
+  if (isNaN(startDate.getTime())) return start;
+  return new Date(startDate.getTime() + DEFAULT_SYNC_EVENT_DURATION_MS).toISOString();
 }
 
 export interface SyncResult {
@@ -179,7 +187,7 @@ export async function syncGoogleCalendarsToDatabase(
     console.log(`[Google Calendar Sync] Processing ${allEvents.length} events for database sync...`);
     for (const event of allEvents) {
       // Validate event has required fields before processing
-      if (!event.providerEventId || !event.title || !event.start || !event.end) {
+      if (!event.providerEventId || !event.title || !event.start) {
         console.warn('[Google Calendar Sync] Skipping event with missing required fields:', {
           hasProviderEventId: !!event.providerEventId,
           hasTitle: !!event.title,
@@ -190,6 +198,8 @@ export async function syncGoogleCalendarsToDatabase(
         result.errors.push(`Event missing required fields: ${event.providerEventId || 'unknown'}`);
         continue;
       }
+
+      const eventEnd = resolveSyncEventEnd(event.start, event.end);
       
       // For recurring events, match by base UID (the event.providerEventId for base events)
       // For non-recurring events, match by event.providerEventId
@@ -204,7 +214,7 @@ export async function syncGoogleCalendarsToDatabase(
             title: event.title,
             description: event.description,
             start_time: event.start,
-            end_time: event.end,
+            end_time: eventEnd,
             location: event.location,
             calendar_color: event.calendarColor,
             external_updated_at: event.start, // Use start time as updated_at since Google doesn't provide lastModified
@@ -236,7 +246,7 @@ export async function syncGoogleCalendarsToDatabase(
             title: event.title,
             description: event.description,
             start_time: event.start,
-            end_time: event.end,
+            end_time: eventEnd,
             location: event.location,
             source: 'google',
             calendar_href: GOOGLE_CALENDAR_PRIMARY, // Google Calendar uses 'primary' as the default calendar

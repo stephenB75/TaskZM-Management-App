@@ -1014,22 +1014,38 @@ export async function getCalendarEvents(
   
   if (provider === 'google') {
     events = await getGoogleEventsFromDatabase(userId, startDate, endDate, resolvedTimezone);
-    // If no events in database, fetch from API
     if (events.length === 0) {
       const tokens = await getCalendarTokens(userId, provider);
       if (tokens) {
         const refreshedTokens = await refreshAccessToken(userId, provider, tokens);
-        events = await getGoogleCalendarEvents(refreshedTokens, startDate, endDate, resolvedTimezone);
+        const apiEvents = await getGoogleCalendarEvents(refreshedTokens, startDate, endDate, resolvedTimezone);
+        const startDateObj = new Date(startDate);
+        const endDateObj = new Date(endDate);
+        events = expandCalendarEventRowsForRange(
+          apiEvents.map((event) => apiCalendarEventToRow(event, 'google')),
+          startDateObj,
+          endDateObj,
+          resolvedTimezone,
+          'google',
+        );
       }
     }
   } else if (provider === 'outlook') {
     events = await getOutlookEventsFromDatabase(userId, startDate, endDate, resolvedTimezone);
-    // If no events in database, fetch from API
     if (events.length === 0) {
       const tokens = await getCalendarTokens(userId, provider);
       if (tokens) {
         const refreshedTokens = await refreshAccessToken(userId, provider, tokens);
-        events = await getOutlookCalendarEvents(refreshedTokens, startDate, endDate, resolvedTimezone);
+        const apiEvents = await getOutlookCalendarEvents(refreshedTokens, startDate, endDate, resolvedTimezone);
+        const startDateObj = new Date(startDate);
+        const endDateObj = new Date(endDate);
+        events = expandCalendarEventRowsForRange(
+          apiEvents.map((event) => apiCalendarEventToRow(event, 'outlook')),
+          startDateObj,
+          endDateObj,
+          resolvedTimezone,
+          'outlook',
+        );
       }
     }
   }
@@ -1228,6 +1244,88 @@ function ensureEventEndTime(startTime: string, endTime: string | null | undefine
   return new Date(start.getTime() + DEFAULT_EVENT_DURATION_MINUTES * 60 * 1000).toISOString();
 }
 
+interface CalendarEventRow {
+  id?: string;
+  title: string;
+  description?: string | null;
+  start_time: string;
+  end_time?: string | null;
+  location?: string | null;
+  external_id?: string | null;
+  source?: string | null;
+  calendar_color?: string | null;
+  rrule?: string | null;
+}
+
+function resolveProviderFromRow(row: CalendarEventRow, defaultProvider: CalendarProvider): CalendarProvider {
+  if (row.source === 'google' || row.external_id?.startsWith('google_')) return 'google';
+  if (row.source === 'outlook' || row.external_id?.startsWith('outlook_')) return 'outlook';
+  if (row.source === 'icloud' || row.source === 'apple') return 'apple';
+  return defaultProvider;
+}
+
+/** Expand DB/API calendar rows (including RRULE series) into occurrences for a date range. */
+function expandCalendarEventRowsForRange(
+  rows: CalendarEventRow[],
+  startDateObj: Date,
+  endDateObj: Date,
+  timeZone: string,
+  defaultProvider: CalendarProvider,
+): CalendarEvent[] {
+  const result: CalendarEvent[] = [];
+  const processedBaseEvents = new Set<string>();
+
+  for (const event of rows) {
+    if (!event?.start_time) continue;
+
+    if (event.rrule) {
+      const baseKey = event.external_id || event.id || event.start_time;
+      if (processedBaseEvents.has(baseKey)) continue;
+      processedBaseEvents.add(baseKey);
+
+      const occurrences = generateRecurringOccurrences(event, startDateObj, endDateObj, timeZone);
+      result.push(...occurrences);
+      continue;
+    }
+
+    if (eventOverlapsQueryRange(event.start_time, event.end_time, startDateObj, endDateObj)) {
+      const provider = resolveProviderFromRow(event, defaultProvider);
+      result.push({
+        id: event.id || `${provider}-${event.external_id || event.start_time}`,
+        title: event.title,
+        description: event.description ?? undefined,
+        start: event.start_time,
+        end: ensureEventEndTime(event.start_time, event.end_time),
+        location: event.location ?? undefined,
+        provider,
+        providerEventId: event.external_id ?? undefined,
+        calendarColor: event.calendar_color ?? undefined,
+        rrule: event.rrule ?? undefined,
+        recurrenceBaseId: undefined,
+        isRecurring: false,
+      });
+    }
+  }
+
+  result.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+  return result;
+}
+
+function apiCalendarEventToRow(event: CalendarEvent, source: CalendarProvider): CalendarEventRow {
+  return {
+    id: event.id,
+    title: event.title,
+    description: event.description,
+    start_time: event.start,
+    end_time: event.end,
+    location: event.location,
+    external_id: event.providerEventId,
+    source,
+    calendar_color: event.calendarColor,
+    rrule: event.rrule ?? null,
+  };
+}
+
 /**
  * Get Apple Calendar events from the database (new CalDAV sync)
  */
@@ -1258,8 +1356,6 @@ async function getAppleEventsFromDatabase(
       return [];
     }
 
-    const result: CalendarEvent[] = [];
-    const processedBaseEvents = new Set<string>();
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
     if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
@@ -1267,50 +1363,7 @@ async function getAppleEventsFromDatabase(
       return [];
     }
 
-    for (const event of events || []) {
-      // If this is a base recurring event (has RRULE)
-      if (event.rrule) {
-        // Only process each base event once
-        if (processedBaseEvents.has(event.external_id)) {
-          continue;
-        }
-        processedBaseEvents.add(event.external_id);
-
-        // Generate occurrences for this recurring event within the date range
-        const occurrences = generateRecurringOccurrences(
-          event,
-          startDateObj,
-          endDateObj,
-          timeZone,
-        );
-        result.push(...occurrences);
-      } else {
-        // Regular non-recurring event - include if it overlaps the date range
-        if (eventOverlapsQueryRange(event.start_time, event.end_time, startDateObj, endDateObj)) {
-          result.push({
-            id: event.id,
-            title: event.title,
-            description: event.description,
-            start: event.start_time,
-            end: ensureEventEndTime(event.start_time, event.end_time),
-            location: event.location,
-            provider: 'apple' as CalendarProvider,
-            providerEventId: event.external_id,
-            calendarColor: event.calendar_color,
-            // Include recurrence metadata
-            rrule: event.rrule,
-            recurrenceBaseId: undefined, // Not storing instances, so no base ID
-            isRecurring: !!event.rrule,
-          });
-        }
-      }
-      // Skip expanded instances (they're handled by base event expansion)
-    }
-
-    // Sort by start time
-    result.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-
-    return result;
+    return expandCalendarEventRowsForRange(events || [], startDateObj, endDateObj, timeZone, 'apple');
   } catch (error) {
     console.log('Failed to fetch Apple events from database:', error);
     return [];
@@ -1345,55 +1398,10 @@ async function getGoogleEventsFromDatabase(
       return [];
     }
 
-    const result: CalendarEvent[] = [];
-    const processedBaseEvents = new Set<string>();
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
-    for (const event of events || []) {
-      // If this is a base recurring event (has RRULE)
-      if (event.rrule) {
-        // Only process each base event once
-        if (processedBaseEvents.has(event.external_id)) {
-          continue;
-        }
-        processedBaseEvents.add(event.external_id);
-
-        // Generate occurrences for this recurring event within the date range
-        const occurrences = generateRecurringOccurrences(
-          event,
-          startDateObj,
-          endDateObj,
-          timeZone,
-        );
-        result.push(...occurrences);
-      } else {
-        // Regular non-recurring event - include if it overlaps the date range
-        if (eventOverlapsQueryRange(event.start_time, event.end_time, startDateObj, endDateObj)) {
-          result.push({
-            id: event.id,
-            title: event.title,
-            description: event.description,
-            start: event.start_time,
-            end: ensureEventEndTime(event.start_time, event.end_time),
-            location: event.location,
-            provider: 'google' as const,
-            providerEventId: event.external_id,
-            calendarColor: event.calendar_color,
-            // Include recurrence metadata
-            rrule: event.rrule,
-            recurrenceBaseId: undefined, // Not storing instances, so no base ID
-            isRecurring: !!event.rrule,
-          });
-        }
-      }
-      // Skip expanded instances (they're handled by base event expansion)
-    }
-
-    // Sort by start time
-    result.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-
-    return result;
+    return expandCalendarEventRowsForRange(events || [], startDateObj, endDateObj, timeZone, 'google');
   } catch (error) {
     console.log('Failed to fetch Google events from database:', error);
     return [];
@@ -1428,55 +1436,10 @@ async function getOutlookEventsFromDatabase(
       return [];
     }
 
-    const result: CalendarEvent[] = [];
-    const processedBaseEvents = new Set<string>();
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
-    for (const event of events || []) {
-      // If this is a base recurring event (has RRULE)
-      if (event.rrule) {
-        // Only process each base event once
-        if (processedBaseEvents.has(event.external_id)) {
-          continue;
-        }
-        processedBaseEvents.add(event.external_id);
-
-        // Generate occurrences for this recurring event within the date range
-        const occurrences = generateRecurringOccurrences(
-          event,
-          startDateObj,
-          endDateObj,
-          timeZone,
-        );
-        result.push(...occurrences);
-      } else {
-        // Regular non-recurring event - include if it overlaps the date range
-        if (eventOverlapsQueryRange(event.start_time, event.end_time, startDateObj, endDateObj)) {
-          result.push({
-            id: event.id,
-            title: event.title,
-            description: event.description,
-            start: event.start_time,
-            end: ensureEventEndTime(event.start_time, event.end_time),
-            location: event.location,
-            provider: 'outlook' as const,
-            providerEventId: event.external_id,
-            calendarColor: event.calendar_color,
-            // Include recurrence metadata
-            rrule: event.rrule,
-            recurrenceBaseId: undefined, // Not storing instances, so no base ID
-            isRecurring: !!event.rrule,
-          });
-        }
-      }
-      // Skip expanded instances (they're handled by base event expansion)
-    }
-
-    // Sort by start time
-    result.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-
-    return result;
+    return expandCalendarEventRowsForRange(events || [], startDateObj, endDateObj, timeZone, 'outlook');
   } catch (error) {
     console.log('Failed to fetch Outlook events from database:', error);
     return [];
