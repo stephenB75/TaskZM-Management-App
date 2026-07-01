@@ -867,6 +867,7 @@ export async function getSubscription() {
       endDate: subscription.endDate || null,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
       billingPeriod: subscription.billingPeriod || null,
+      purchaseStore: subscription.purchaseStore || null,
     };
   }
   

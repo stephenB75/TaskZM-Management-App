@@ -114,6 +114,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       endDate: data?.endDate || null,
       cancelAtPeriodEnd: data?.cancelAtPeriodEnd || false,
       billingPeriod: data?.billingPeriod || null, // monthly, yearly, or null
+      purchaseStore: data?.purchaseStore || null,
     };
   };
 

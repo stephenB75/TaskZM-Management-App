@@ -31,7 +31,7 @@ import {
   FEATURES_DISPLAY_LIMIT,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
-import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured, isNativeStoreBilling } from "../lib/revenuecat";
+import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured, isNativeStoreBilling, supportsBillingChannelChoice, getSubscriptionBillingChannel, setSubscriptionBillingChannel, type SubscriptionBillingChannel } from "../lib/revenuecat";
 import { logger } from "../lib/logger";
 
 interface DialogOffering {
@@ -76,6 +76,9 @@ export function PricingDialog({
   }>({ monthly: null, yearly: null });
   const [isLoadingOfferings, setIsLoadingOfferings] = React.useState(false);
   const [offeringsError, setOfferingsError] = React.useState<string | null>(null);
+  const [billingChannel, setBillingChannel] = React.useState<SubscriptionBillingChannel>(() =>
+    getSubscriptionBillingChannel()
+  );
 
   const platform = getPlatform();
   const { user } = useAuth();
@@ -156,12 +159,27 @@ export function PricingDialog({
   React.useEffect(() => {
     if (open && user?.id) {
       loadOfferings();
-      // Pre-configure RevenueCat when dialog opens to avoid delays during purchase
       configureRevenueCat(user.id).catch((error) => {
         logger.debug('RevenueCat pre-configuration failed (non-blocking):', error);
       });
     }
   }, [open, user?.id, loadOfferings]);
+
+  React.useEffect(() => {
+    if (!open || !user?.id || !supportsBillingChannelChoice()) return;
+
+    let cancelled = false;
+    void (async () => {
+      await setSubscriptionBillingChannel(user.id, billingChannel);
+      if (!cancelled) {
+        await loadOfferings();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [billingChannel, open, user?.id, loadOfferings]);
 
   const handleRestore = async () => {
     try {
@@ -569,6 +587,32 @@ export function PricingDialog({
             </div>
           )}
 
+          {supportsBillingChannelChoice() && (
+          <div className="mb-3 md:mb-4">
+            <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-muted-foreground mb-2 font-medium`}>
+              {SUBSCRIPTION_UI_TEXT.native.billingMethodTitle}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={billingChannel === 'native-store' ? 'default' : 'outline'}
+                className="w-full"
+                onClick={() => setBillingChannel('native-store')}
+              >
+                {SUBSCRIPTION_UI_TEXT.native.billingMethodNative}
+              </Button>
+              <Button
+                type="button"
+                variant={billingChannel === 'web' ? 'default' : 'outline'}
+                className="w-full"
+                onClick={() => setBillingChannel('web')}
+              >
+                {SUBSCRIPTION_UI_TEXT.native.billingMethodWeb}
+              </Button>
+            </div>
+          </div>
+          )}
+
           {/* Payment form country selection hint - web Stripe checkout only */}
           {!isNativeStoreBilling() && (
           <div className="mb-3 md:mb-4">
@@ -585,6 +629,16 @@ export function PricingDialog({
             <div className="p-2.5 md:p-3 bg-blue-50/90 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800/60 shadow-sm">
               <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-blue-900 dark:text-blue-100 leading-snug`}>
                 {SUBSCRIPTION_UI_TEXT.native.billingNotice}
+              </p>
+            </div>
+          </div>
+          )}
+
+          {!isNativeStoreBilling() && supportsBillingChannelChoice() && (
+          <div className="mb-3 md:mb-4">
+            <div className="p-2.5 md:p-3 bg-slate-50/90 dark:bg-slate-900/30 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow-sm">
+              <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-slate-800 dark:text-slate-100 leading-snug`}>
+                {SUBSCRIPTION_UI_TEXT.native.webBillingNotice}
               </p>
             </div>
           </div>
@@ -906,7 +960,22 @@ export function PricingDialog({
             )}
           </div>
 
-          <div className="mt-2 md:mt-3">
+          <div className="mt-2 md:mt-3 space-y-2">
+            {(user?.id) && (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  disabled={isRestoring}
+                  onClick={handleRestore}
+                >
+                  {isRestoring ? SUBSCRIPTION_UI_TEXT.messages.restoringPurchases : SUBSCRIPTION_UI_TEXT.native.restorePurchases}
+                </Button>
+              </div>
+            )}
+
             <div className="p-2 md:p-2.5 rounded-lg border shadow-md backdrop-blur-sm dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60" style={{ backgroundImage: `linear-gradient(to right, ${COLOR_PASTEL_LAVENDER}66, ${COLOR_PASTEL_SKY}66, ${COLOR_PASTEL_MINT}66)`, borderColor: `${COLOR_PRIMARY}4D` }}>
               <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-gray-700 dark:text-foreground leading-snug`}>
                 {SUBSCRIPTION_UI_TEXT.footer.message}{' '}

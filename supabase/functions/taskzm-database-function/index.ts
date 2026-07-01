@@ -1878,6 +1878,7 @@ app.get("/taskzm-database-function/subscription", async (c) => {
       endDate: expiresAt || legacySubscription?.endDate || null,
       cancelAtPeriodEnd: cancelAtPeriodEnd || legacySubscription?.cancelAtPeriodEnd || false,
       billingPeriod: billingPeriod || legacySubscription?.billingPeriod || null,
+      purchaseStore: normalizeRevenueCatSubscriptionStore(store) || legacySubscription?.purchaseStore || null,
     };
 
     return c.json({ subscription });
@@ -4410,6 +4411,15 @@ function inferBillingPeriodFromEntitlementIds(entitlementIds: string[]): 'monthl
   return null;
 }
 
+function normalizeRevenueCatSubscriptionStore(raw: string | null | undefined): string {
+  if (!raw) return 'revenuecat';
+  const lower = raw.toLowerCase().replace(/-/g, '_');
+  if (lower.includes('app_store') || lower === 'appstore') return 'app_store';
+  if (lower.includes('play_store') || lower === 'playstore') return 'play_store';
+  if (lower.includes('stripe')) return 'stripe';
+  return lower;
+}
+
 app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
   try {
     const webhookSecret = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
@@ -4618,8 +4628,8 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       }
     }
 
-    // Determine subscription store
-    const store = eventData.store || event.store || 'revenuecat';
+    // Determine subscription store (normalize RevenueCat APP_STORE / PLAY_STORE / STRIPE values)
+    const store = normalizeRevenueCatSubscriptionStore(eventData.store || event.store || 'revenuecat');
 
     const webhookProductId = eventData.product_id || event.product_id || '';
     const billingPeriod =
@@ -4636,6 +4646,7 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       endDate,
       cancelAtPeriodEnd,
       billingPeriod,
+      purchaseStore: store,
     };
 
     // Save in both formats for compatibility with error handling
@@ -4890,7 +4901,8 @@ app.post("/taskzm-database-function/create-billing-portal", async (c) => {
     const subscriptionStore = await kv.get(`user:${userId}:subscription_store`);
     
     // If subscription is from App Store or Play Store, redirect to appropriate store
-    if (subscriptionStore === 'app_store' || subscriptionStore === 'play_store') {
+    const normalizedStore = normalizeRevenueCatSubscriptionStore(subscriptionStore);
+    if (normalizedStore === 'app_store' || normalizedStore === 'play_store') {
       return c.json({ 
         error: 'This subscription is managed through the App Store or Play Store. Please manage it through your device\'s subscription settings.',
         store: subscriptionStore 

@@ -204,6 +204,7 @@ import {
 import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS, NOTIFICATION_CHECK_INTERVAL_OPTIONS } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
+import { isNativePurchasedSubscriptionStore, openNativeSubscriptionManagement } from '../lib/subscription-billing';
 import { CALENDAR_PROVIDERS, CALENDAR_SETTINGS_LABELS, CALENDAR_SETTINGS_UI } from '../lib/calendar-integration-constants';
 import { getBrowserTimezone } from '../lib/timing-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
@@ -1043,13 +1044,29 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 </Button>
 
                                 {!subscription.cancelAtPeriodEnd && (
+                                  isNativePurchasedSubscriptionStore(subscription.purchaseStore) ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="flex-1 text-muted-foreground hover:text-foreground"
+                                      onClick={() => {
+                                        void openNativeSubscriptionManagement().catch(() => {
+                                          toast.error(SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailed, {
+                                            description: SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailedDesc,
+                                          });
+                                        });
+                                      }}
+                                    >
+                                      <Icon name="external-link" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                                      {SUBSCRIPTION_UI_TEXT.native.manageInStore}
+                                    </Button>
+                                  ) : (
                                   <Button 
                                     variant="ghost" 
                                     size="sm" 
                                     className="flex-1 text-muted-foreground hover:text-destructive"
                                     onClick={() => {
                                       if (confirm(SUBSCRIPTION_UI_TEXT.confirmations.cancel.title + '\n\n' + SUBSCRIPTION_UI_TEXT.confirmations.cancel.message)) {
-                                        // Defer async operation to avoid blocking click handler
                                         requestAnimationFrame(() => {
                                           cancelSubscription()
                                             .then(() => {
@@ -1069,6 +1086,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                     <Icon name="x-circle" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                                     {SUBSCRIPTION_UI_TEXT.settings.cancel}
                                   </Button>
+                                  )
                                 )}
                               </div>
                             </div>

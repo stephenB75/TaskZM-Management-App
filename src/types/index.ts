@@ -281,6 +281,8 @@ export interface SubscriptionInfo {
   endDate: string | null;
   cancelAtPeriodEnd: boolean;
   billingPeriod?: 'monthly' | 'yearly' | null; // Track billing period for Pro tier
+  /** Where the subscription was purchased (stripe, app_store, play_store, etc.). */
+  purchaseStore?: string | null;
 }
 
 // Award Types

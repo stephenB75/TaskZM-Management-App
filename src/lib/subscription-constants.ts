@@ -3,8 +3,6 @@
  * Centralized configuration for subscription features, pricing, and UI text
  */
 
-import { MILLISECONDS_PER_MINUTE } from './business-constants';
-
 // Default pricing
 export const DEFAULT_MONTHLY_PRICE = "$3.99";
 export const DEFAULT_YEARLY_PRICE = "$39.99";
@@ -251,7 +249,16 @@ export const SUBSCRIPTION_UI_TEXT = {
   native: {
     billingNotice:
       'Payment is processed securely through the App Store or Google Play. Manage or cancel your subscription in your device settings.',
+    webBillingNotice:
+      'Payment is processed securely through our web checkout (card). You can also subscribe via the App Store or Google Play when available.',
     restorePurchasesHint: 'Already subscribed? Use Restore Purchases below.',
+    restorePurchases: 'Restore Purchases',
+    billingMethodTitle: 'Choose payment method',
+    billingMethodNative: 'App Store / Google Play',
+    billingMethodWeb: 'Pay with card (web)',
+    manageInStore: 'Manage in App Store / Google Play',
+    manageInStoreHint:
+      'This subscription is billed through your device store. Cancel or change plan in your Apple or Google subscription settings.',
   },
 } as const;
 
