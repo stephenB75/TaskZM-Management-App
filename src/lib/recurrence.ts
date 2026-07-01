@@ -1,5 +1,22 @@
 import type { Task, RecurrenceConfig } from '../types';
 import { TIMING_CONSTANTS } from './timing-constants';
+import {
+  RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED,
+  RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS,
+  RECURRENCE_SERIES_OCCURRENCE_SEPARATOR,
+} from './business-constants';
+import { getDateString, getOccurrenceDateString } from './utils';
+
+/**
+ * Normalize a completed-occurrence id suffix to YYYY-MM-DD.
+ */
+function completedOccurrenceSuffixToDateString(suffix: string): string | null {
+  const trimmed = (suffix || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return null;
+  return getDateString(d);
+}
 
 /**
  * Parse a scheduledDate string to local date-only.
@@ -23,6 +40,27 @@ function parseToLocalDateOnly(dateString: string): Date {
  * Check if a date matches a task's recurrence pattern
  */
 export function isDateInRecurrence(task: Task, checkDate: Date): boolean {
+  const taskId = task.id ?? '';
+  const checkDateString = getDateString(checkDate);
+
+  // Per-occurrence subtask records are merged into cards elsewhere — never a calendar day row.
+  if (taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)) {
+    return false;
+  }
+
+  // Completed occurrence: only on the day encoded in the id (baseId_completed_YYYY-MM-DD).
+  if (taskId.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)) {
+    const datePart = taskId.split(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)[1];
+    const normalized = datePart ? completedOccurrenceSuffixToDateString(datePart) : null;
+    return normalized === checkDateString;
+  }
+
+  // Series occurrence (baseId__YYYY-MM-DD): only that day — do not expand via recurrence pattern.
+  if (taskId.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR)) {
+    const occurrenceDate = getOccurrenceDateString(taskId);
+    return occurrenceDate === checkDateString;
+  }
+
   const recurrenceType = task.recurrence ? String(task.recurrence.type || 'none').toLowerCase() : 'none';
   if (!task.recurrence || recurrenceType === 'none') {
     if (!task.scheduledDate) return false;
