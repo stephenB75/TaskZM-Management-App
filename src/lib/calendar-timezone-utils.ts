@@ -114,3 +114,83 @@ export function wallClockInTimeZoneToUtcIso(
 
   return new Date(naiveUtcMs).toISOString();
 }
+
+/** Days in a civil calendar month (timezone-agnostic month lengths). */
+export function calendarDaysInMonth(year: number, monthIndex: number): number {
+  return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+}
+
+/** Convert wall-clock parts in `timeZone` to a UTC Date instant. */
+export function wallClockPartsToUtcDate(parts: WallClockParts, timeZone: string): Date {
+  return new Date(
+    wallClockInTimeZoneToUtcIso(
+      parts.year,
+      parts.monthIndex,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+      timeZone,
+    ),
+  );
+}
+
+/** Advance a civil calendar date by `days`, preserving time-of-day. */
+export function addCalendarDays(parts: WallClockParts, days: number): WallClockParts {
+  const d = new Date(Date.UTC(parts.year, parts.monthIndex, parts.day + days));
+  return {
+    year: d.getUTCFullYear(),
+    monthIndex: d.getUTCMonth(),
+    day: d.getUTCDate(),
+    hour: parts.hour,
+    minute: parts.minute,
+    second: parts.second,
+  };
+}
+
+/** Advance a civil calendar date by `months`, preserving time-of-day (handles BYMONTHDAY clamp). */
+export function addCalendarMonths(
+  parts: WallClockParts,
+  months: number,
+  byMonthDay?: number,
+): WallClockParts {
+  let monthIndex = parts.monthIndex + months;
+  let year = parts.year;
+  while (monthIndex > 11) {
+    monthIndex -= 12;
+    year++;
+  }
+  while (monthIndex < 0) {
+    monthIndex += 12;
+    year--;
+  }
+  const day = byMonthDay ?? parts.day;
+  const maxDay = calendarDaysInMonth(year, monthIndex);
+  return {
+    year,
+    monthIndex,
+    day: Math.min(day, maxDay),
+    hour: parts.hour,
+    minute: parts.minute,
+    second: parts.second,
+  };
+}
+
+/** Advance a civil calendar date by `years`, preserving time-of-day. */
+export function addCalendarYears(
+  parts: WallClockParts,
+  years: number,
+  byMonthDay?: number,
+): WallClockParts {
+  const year = parts.year + years;
+  const day = byMonthDay ?? parts.day;
+  const maxDay = calendarDaysInMonth(year, parts.monthIndex);
+  return {
+    year,
+    monthIndex: parts.monthIndex,
+    day: Math.min(day, maxDay),
+    hour: parts.hour,
+    minute: parts.minute,
+    second: parts.second,
+  };
+}

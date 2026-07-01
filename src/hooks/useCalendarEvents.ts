@@ -13,10 +13,11 @@ import {
 import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay, toCalendarQueryRangeIso } from '../lib/utils';
 import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
+import { expandCalendarEventsForRange } from '../lib/calendar-rrule-expansion';
 import { resolveCalendarProvidersForFetch, getActiveCalendarProviders, type CalendarProviderKey } from '../lib/calendar-status';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
-const CALENDAR_EVENTS_CACHE_VERSION = 'v8-batched-fetch-expansion-cap';
+const CALENDAR_EVENTS_CACHE_VERSION = 'v9-client-apple-rrule-expansion';
 
 export interface CalendarEvent {
   id: string;
@@ -386,6 +387,19 @@ async function fetchAllEvents(
 
   const results = await Promise.all(promises);
   const combined = results.flat();
+
+  if (providers.includes('apple')) {
+    const appleEvents = combined.filter((event) => event.provider === 'apple');
+    const otherEvents = combined.filter((event) => event.provider !== 'apple');
+    const expandedApple = expandCalendarEventsForRange(
+      appleEvents,
+      startDate,
+      endDate,
+      userTimezone,
+    );
+    return applyRecurrenceTimeCorrections([...otherEvents, ...expandedApple], userTimezone);
+  }
+
   return applyRecurrenceTimeCorrections(combined, userTimezone);
 }
 

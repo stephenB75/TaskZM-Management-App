@@ -1347,6 +1347,56 @@ function expandCalendarEventRowsForRange(
   return result;
 }
 
+/** Map DB rows to API events without RRULE expansion (client expands Apple series). */
+function mapAppleCalendarRowsWithoutExpansion(
+  rows: CalendarEventRow[],
+  startDateObj: Date,
+  endDateObj: Date,
+): CalendarEvent[] {
+  const result: CalendarEvent[] = [];
+
+  for (const event of rows) {
+    if (!event?.start_time) continue;
+
+    const endIso = ensureEventEndTime(event.start_time, event.end_time);
+
+    if (event.rrule) {
+      result.push({
+        id: event.id || `apple-${event.external_id || event.start_time}`,
+        title: event.title,
+        start: event.start_time,
+        end: endIso,
+        location: event.location ?? undefined,
+        provider: 'apple',
+        providerEventId: event.external_id ?? undefined,
+        calendarColor: event.calendar_color ?? undefined,
+        rrule: event.rrule,
+        recurrenceBaseId: event.external_id ?? event.id,
+        isRecurring: true,
+        recurrenceAnchorStart: event.start_time,
+        recurrenceAnchorEnd: endIso,
+      });
+      continue;
+    }
+
+    if (eventOverlapsQueryRange(event.start_time, event.end_time, startDateObj, endDateObj)) {
+      result.push({
+        id: event.id || `apple-${event.external_id || event.start_time}`,
+        title: event.title,
+        start: event.start_time,
+        end: endIso,
+        location: event.location ?? undefined,
+        provider: 'apple',
+        providerEventId: event.external_id ?? undefined,
+        calendarColor: event.calendar_color ?? undefined,
+        isRecurring: false,
+      });
+    }
+  }
+
+  return result;
+}
+
 function apiCalendarEventToRow(event: CalendarEvent, source: CalendarProvider): CalendarEventRow {
   return {
     id: event.id,
@@ -1392,7 +1442,7 @@ async function getAppleEventsFromDatabase(
       return [];
     }
 
-    return expandCalendarEventRowsForRange(events, startDateObj, endDateObj, timeZone, 'apple');
+    return mapAppleCalendarRowsWithoutExpansion(events, startDateObj, endDateObj);
   } catch (error) {
     console.log('Failed to fetch Apple events from database:', error);
     return [];
