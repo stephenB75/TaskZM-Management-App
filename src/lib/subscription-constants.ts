@@ -245,6 +245,11 @@ export const SUBSCRIPTION_UI_TEXT = {
     proFeature: "Pro Feature",
     proFeaturePrice: (price: string) => `${price}/month`,
   },
+  native: {
+    billingNotice:
+      'Payment is processed securely through the App Store or Google Play. Manage or cancel your subscription in your device settings.',
+    restorePurchasesHint: 'Already subscribed? Use Restore Purchases below.',
+  },
 } as const;
 
 // Feature definitions

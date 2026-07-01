@@ -460,9 +460,14 @@ if (typeof window !== 'undefined') {
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
+import { initNativeAppHandlers } from './lib/native-app';
 
 // Platform detection
 const isNative = Capacitor.isNativePlatform();
+
+if (isNative) {
+  initNativeAppHandlers();
+}
 
 // In dev, unregister any existing service worker and clear runtime caches so Vite HMR
 // always serves the latest Today Agenda (and other) chunks — stale SW caused "no change" reports.
@@ -485,7 +490,7 @@ if ('serviceWorker' in navigator && import.meta.env.DEV) {
 // Background updates: Checks for updates periodically without disrupting sessions
 // Shows notification when updates are available, letting users refresh when ready
 // Only register in production — dev HMR must not serve stale cached chunks from RUNTIME_CACHE
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if ('serviceWorker' in navigator && import.meta.env.PROD && !isNative) {
   window.addEventListener('load', async () => {
     const didPurgeCaches = await purgeAppCachesIfVersionChanged(APP_VERSION);
     if (didPurgeCaches) {

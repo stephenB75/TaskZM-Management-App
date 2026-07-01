@@ -31,7 +31,7 @@ import {
   FEATURES_DISPLAY_LIMIT,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
-import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured } from "../lib/revenuecat";
+import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured, isNativeStoreBilling } from "../lib/revenuecat";
 import { logger } from "../lib/logger";
 
 interface DialogOffering {
@@ -569,7 +569,8 @@ export function PricingDialog({
             </div>
           )}
 
-          {/* Payment form country selection hint - shown prominently before plan cards */}
+          {/* Payment form country selection hint - web Stripe checkout only */}
+          {!isNativeStoreBilling() && (
           <div className="mb-3 md:mb-4">
             <div className="p-2.5 md:p-3 bg-amber-50/90 dark:bg-amber-900/30 rounded-lg border-2 border-amber-300 dark:border-amber-700/60 shadow-sm">
               <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-amber-800 dark:text-amber-200 leading-snug font-medium`}>
@@ -577,6 +578,17 @@ export function PricingDialog({
               </p>
             </div>
           </div>
+          )}
+
+          {isNativeStoreBilling() && (
+          <div className="mb-3 md:mb-4">
+            <div className="p-2.5 md:p-3 bg-blue-50/90 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800/60 shadow-sm">
+              <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-blue-900 dark:text-blue-100 leading-snug`}>
+                {SUBSCRIPTION_UI_TEXT.native.billingNotice}
+              </p>
+            </div>
+          </div>
+          )}
 
           <div className={cn("grid gap-2.5 md:gap-3 max-w-full", "grid-cols-1 md:grid-cols-3")}>
             {/* Free Tier */}

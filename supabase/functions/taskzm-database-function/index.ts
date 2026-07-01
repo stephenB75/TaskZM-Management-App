@@ -15,6 +15,7 @@ import {
   getGoogleRedirectUri,
   mapGoogleTokenExchangeError,
 } from "./google-oauth-config.ts";
+import { buildOAuthState, parseOAuthState, calendarOAuthResultHtml } from "./mobile-oauth-helpers.ts";
 
 // ============================================================================
 // APP INITIALIZATION
@@ -2677,7 +2678,8 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
     authUrl.searchParams.set('scope', scopes.join(' '));
     authUrl.searchParams.set('access_type', 'offline');
     authUrl.searchParams.set('prompt', 'consent');
-    authUrl.searchParams.set('state', encodeURIComponent(userId)); // Pass userId in state (encoded for reserved chars)
+    const platform = c.req.query('platform');
+    authUrl.searchParams.set('state', buildOAuthState(userId, platform));
 
     console.log('Google OAuth URL generated successfully for user:', userId, 'redirect_uri:', oauthConfig.redirectUri);
     return c.json({ authUrl: authUrl.toString() });
@@ -2745,8 +2747,9 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
   try {
     const code = c.req.query('code');
     const stateParam = c.req.query('state');
-    const userId = stateParam ? decodeURIComponent(stateParam) : '';
+    const { userId, isNative } = parseOAuthState(stateParam);
     const error = c.req.query('error');
+    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
 
     console.log('Google OAuth callback received:', { 
       hasCode: !!code, 
@@ -2756,83 +2759,36 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
     });
 
     if (error) {
-      // Return HTML page that closes popup and notifies parent of error
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
+      return c.html(calendarOAuthResultHtml({
         provider: 'google',
-        error: '${error.replace(/'/g, "\\'")}'
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
-    }
-  </script>
-  <p>Connection failed: ${error}. This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(html);
+        success: false,
+        error,
+        isNative,
+        appUrl,
+      }));
     }
 
     if (!code || !userId) {
-      // Return HTML page that closes popup and notifies parent of error
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
+      return c.html(calendarOAuthResultHtml({
         provider: 'google',
-        error: 'Missing authorization code or user ID'
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
-    }
-  </script>
-  <p>Connection failed: Missing authorization code or user ID. This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(html);
+        success: false,
+        error: 'Missing authorization code or user ID',
+        isNative,
+        appUrl,
+      }));
     }
 
     const oauthConfig = getGoogleOAuthConfig();
     console.log('Google OAuth callback token exchange redirect_uri:', oauthConfig?.redirectUri ?? 'null');
 
     if (!oauthConfig) {
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
+      return c.html(calendarOAuthResultHtml({
         provider: 'google',
-        error: 'Google OAuth not configured'
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
-    }
-  </script>
-  <p>Connection failed: Google OAuth not configured. This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(html);
+        success: false,
+        error: 'Google OAuth not configured',
+        isNative,
+        appUrl,
+      }));
     }
 
     // Exchange code for tokens
@@ -2896,83 +2852,25 @@ app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
       provider: 'google',
     };
 
-    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
-    
-    // CRITICAL FIX: Wrap token storage in try-catch to ensure we always return HTML with postMessage
     try {
       await calendarSync.storeCalendarTokens(userId, 'google', tokens);
       console.log('Google Calendar tokens stored successfully for user:', userId);
 
-      // Return HTML page that closes popup and notifies parent
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connected</title>
-</head>
-<body>
-  <script>
-    // ENHANCED: Ensure message is sent before closing popup
-    // Add small delay to ensure postMessage is processed by parent window
-    if (window.opener) {
-      try {
-        // Send success message to parent window
-        window.opener.postMessage({ 
-          type: 'calendar-oauth-success', 
-          provider: 'google' 
-        }, '*');
-        
-        // Log for debugging
-        console.log('[Google Calendar OAuth] Success message sent to parent window');
-        
-        // Wait a bit before closing to ensure message is received
-        setTimeout(() => {
-          window.close();
-        }, 200);
-      } catch (error) {
-        console.error('[Google Calendar OAuth] Error sending message:', error);
-        // Fallback: redirect to app
-        setTimeout(() => {
-          window.location.href = '${appUrl}';
-        }, 500);
-      }
-    } else {
-      // No opener (popup was blocked or closed) - redirect to app
-      window.location.href = '${appUrl}';
-    }
-  </script>
-  <p>Calendar connected successfully! This window will close automatically.</p>
-</body>
-</html>`;
-      
-      return c.html(html);
-    } catch (storageError) {
-      // CRITICAL FIX: If token storage fails, still return HTML with error message
-      // This ensures the parent window receives notification instead of showing JSON error
-      console.error('Error storing Google Calendar tokens:', storageError);
-      const errorHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
+      return c.html(calendarOAuthResultHtml({
         provider: 'google',
-        error: 'Failed to store calendar tokens. Please try again.'
-      }, '*');
-      setTimeout(() => {
-        window.close();
-      }, 200);
-    } else {
-      window.location.href = '${appUrl}';
-    }
-  </script>
-  <p>Connection failed: Failed to store calendar tokens. This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(errorHtml);
+        success: true,
+        isNative,
+        appUrl,
+      }));
+    } catch (storageError) {
+      console.error('Error storing Google Calendar tokens:', storageError);
+      return c.html(calendarOAuthResultHtml({
+        provider: 'google',
+        success: false,
+        error: 'Failed to store calendar tokens. Please try again.',
+        isNative,
+        appUrl,
+      }));
     }
   } catch (error) {
     // CRITICAL FIX: Catch all errors and return HTML with postMessage instead of JSON
@@ -3083,7 +2981,8 @@ app.get("/taskzm-database-function/calendar/outlook/auth", async (c) => {
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', scopes.join(' '));
     authUrl.searchParams.set('response_mode', 'query');
-    authUrl.searchParams.set('state', userId);
+    const platform = c.req.query('platform');
+    authUrl.searchParams.set('state', buildOAuthState(userId, platform));
 
     return c.json({ authUrl: authUrl.toString() });
   } catch (error) {
@@ -3096,59 +2995,29 @@ app.get("/taskzm-database-function/calendar/outlook/auth", async (c) => {
 app.get("/taskzm-database-function/calendar/outlook/callback", async (c) => {
   try {
     const code = c.req.query('code');
-    const userId = c.req.query('state');
+    const stateParam = c.req.query('state');
+    const { userId, isNative } = parseOAuthState(stateParam);
     const error = c.req.query('error');
+    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
 
     if (error) {
-      // Return HTML page that closes popup and notifies parent of error
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
+      return c.html(calendarOAuthResultHtml({
         provider: 'outlook',
-        error: '${error}'
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
-    }
-  </script>
-  <p>Connection failed: ${error}. This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(html);
+        success: false,
+        error,
+        isNative,
+        appUrl,
+      }));
     }
 
     if (!code || !userId) {
-      // Return HTML page that closes popup and notifies parent of error
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
+      return c.html(calendarOAuthResultHtml({
         provider: 'outlook',
-        error: 'Missing authorization code or user ID'
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
-    }
-  </script>
-  <p>Connection failed: Missing authorization code or user ID. This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(html);
+        success: false,
+        error: 'Missing authorization code or user ID',
+        isNative,
+        appUrl,
+      }));
     }
 
     const clientId = Deno.env.get('OUTLOOK_CLIENT_ID');
@@ -3156,28 +3025,13 @@ app.get("/taskzm-database-function/calendar/outlook/callback", async (c) => {
     const redirectUri = Deno.env.get('OUTLOOK_REDIRECT_URI');
 
     if (!clientId || !clientSecret || !redirectUri) {
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
+      return c.html(calendarOAuthResultHtml({
         provider: 'outlook',
-        error: 'Outlook OAuth not configured'
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
-    }
-  </script>
-  <p>Connection failed: Outlook OAuth not configured. This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(html);
+        success: false,
+        error: 'Outlook OAuth not configured',
+        isNative,
+        appUrl,
+      }));
     }
 
     // Exchange code for tokens
@@ -3195,35 +3049,17 @@ app.get("/taskzm-database-function/calendar/outlook/callback", async (c) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      // Return HTML page that closes popup and notifies parent of error
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
+      return c.html(calendarOAuthResultHtml({
         provider: 'outlook',
-        error: 'Failed to exchange authorization code'
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
-    }
-  </script>
-  <p>Connection failed: Failed to exchange authorization code. This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(html);
+        success: false,
+        error: 'Failed to exchange authorization code',
+        isNative,
+        appUrl,
+      }));
     }
 
     const data = await response.json();
 
-    // Store tokens
     const tokens: calendarSync.CalendarTokens = {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
@@ -3233,30 +3069,12 @@ app.get("/taskzm-database-function/calendar/outlook/callback", async (c) => {
 
     await calendarSync.storeCalendarTokens(userId, 'outlook', tokens);
 
-    // Return HTML page that closes popup and notifies parent
-    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connected</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-success', 
-        provider: 'outlook' 
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${appUrl}';
-    }
-  </script>
-  <p>Calendar connected successfully! This window will close automatically.</p>
-</body>
-</html>`;
-    
-    return c.html(html);
+    return c.html(calendarOAuthResultHtml({
+      provider: 'outlook',
+      success: true,
+      isNative,
+      appUrl,
+    }));
   } catch (error) {
     console.log('Error in Outlook OAuth callback:', error);
     return c.json({ error: getErrorMessage(error) }, 500);

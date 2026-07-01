@@ -53,6 +53,9 @@ import { useIsMobile } from './ui/use-mobile';
 import { AvatarSelection } from './AvatarSelection';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import { pickAvatarFromPool } from '../lib/avatar-utils';
+import { getPlatform } from '../lib/platform';
+import { getNativePasswordResetRedirectUrl } from '../lib/native-app';
+import { APP_STORE_URL, PLAY_STORE_URL } from '../lib/mobile-constants';
 
 // Password strength calculation
 function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 'strong'; score: number; feedback: string[] } {
@@ -175,8 +178,11 @@ export function AuthScreen() {
 
     setIsSendingReset(true);
     try {
+      const resetRedirect = getPlatform().isNative
+        ? getNativePasswordResetRedirectUrl()
+        : `${window.location.origin}/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: resetRedirect,
       });
 
       if (error) {
@@ -1090,15 +1096,21 @@ export function AuthScreen() {
                   className="pb-3 sm:pb-4 md:pb-5 pt-2 sm:pt-3 border-t border-gray-200/50 dark:border-border/50 flex-shrink-0 px-3 sm:px-4 md:px-6"
                 >
                 <p className="text-center text-[10px] sm:text-xs text-gray-500 dark:text-muted-foreground mb-2 sm:mb-3">
-                  {AUTH_UI_TEXT.mobileApps.comingSoon}
+                  {APP_STORE_URL || PLAY_STORE_URL
+                    ? AUTH_UI_TEXT.mobileApps.available
+                    : AUTH_UI_TEXT.mobileApps.comingSoon}
                 </p>
                 <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
                   {/* App Store Badge */}
-                  <motion.div
-                    className="cursor-not-allowed opacity-70 hover:opacity-80 transition-opacity"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  {APP_STORE_URL ? (
+                    <motion.a
+                      href={APP_STORE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-90 hover:opacity-100 transition-opacity"
+                      whileHover={{ scale: 1.02 }}
+                      transition={{ duration: 0.2 }}
+                    >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="120"
@@ -1225,11 +1237,29 @@ export function AuthScreen() {
                         </g>
                       </g>
                     </svg>
-                  </motion.div>
-
-                  {/* Google Play Badge */}
+                  </motion.a>
+                  ) : (
                   <motion.div
                     className="cursor-not-allowed opacity-70 hover:opacity-80 transition-opacity"
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                    aria-hidden
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 119.66407 40" className="h-7 sm:h-8 md:h-10 w-auto">
+                      <rect width="119.66407" height="40" rx="6" fill="#a6a6a6" />
+                      <rect x="1" y="1" width="117.66407" height="38" rx="5" fill="#000" />
+                      <text x="36" y="26" fill="#fff" fontSize="11" fontFamily="system-ui,sans-serif">App Store</text>
+                    </svg>
+                  </motion.div>
+                  )}
+
+                  {/* Google Play Badge */}
+                  {PLAY_STORE_URL ? (
+                  <motion.a
+                    href={PLAY_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="opacity-90 hover:opacity-100 transition-opacity"
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.2 }}
                   >
@@ -1281,7 +1311,21 @@ export function AuthScreen() {
                         Google Play
                       </text>
                     </svg>
+                  </motion.a>
+                  ) : (
+                  <motion.div
+                    className="cursor-not-allowed opacity-70 hover:opacity-80 transition-opacity"
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                    aria-hidden
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="155" height="40" viewBox="0 0 155 40" className="h-7 sm:h-8 md:h-10 w-auto">
+                      <rect width="155" height="40" rx="6" fill="#a6a6a6" />
+                      <rect x="1" y="1" width="153" height="38" rx="5" fill="#000" />
+                      <text x="38" y="26" fill="#fff" fontSize="11" fontFamily="system-ui,sans-serif">Google Play</text>
+                    </svg>
                   </motion.div>
+                  )}
                 </div>
               </div>
               </Card>

@@ -12,6 +12,9 @@ import { TIMING_CONSTANTS, DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-const
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
 import { clearCalendarEventsCache } from '../lib/calendar-events-cache';
 import { createDefaultCalendarContext } from '../lib/context-defaults';
+import { getPlatform } from '../lib/platform';
+import { openNativeOAuthUrl, setCalendarOAuthCallback } from '../lib/native-app';
+import { MOBILE_CALENDAR_AUTH_PLATFORM_PARAM } from '../lib/mobile-constants';
 
 type CalendarProvider = CalendarProviderId;
 
@@ -203,6 +206,55 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return undefined;
     }
   }, [user, accessToken, mergeStatusWithGraceRefs]);
+
+  const finalizeOAuthSuccess = useCallback((connectedProvider: CalendarProvider) => {
+    lastConnectAtRef.current[connectedProvider] = Date.now();
+    lastDisconnectAtRef.current[connectedProvider] = undefined;
+    setCalendarStatus(prev => {
+      const next = { ...prev, [connectedProvider]: true };
+      if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
+      return next;
+    });
+    clearCalendarEventsCache();
+    if (user?.id) {
+      localStorage.removeItem(`calendar_status_cache_${user.id}`);
+      localStorage.removeItem(`calendar_status_cache_time_${user.id}`);
+    }
+    const delayMs = TIMING_CONSTANTS.delays.calendarStatusAfterOAuthMs ?? 1500;
+    setTimeout(() => {
+      checkCalendarStatus().then(() => {
+        setCalendarStatus(prev => {
+          const next = { ...prev, [connectedProvider]: true };
+          if (user?.id) localStorage.setItem(`calendar_status_${user.id}`, JSON.stringify(next));
+          return next;
+        });
+      }).catch((err) => {
+        console.error('[Calendar OAuth] Error checking calendar status:', err);
+      });
+    }, delayMs);
+    setConnectingProvider(null);
+    toast.success(`${CALENDAR_PROVIDER_DISPLAY_NAMES[connectedProvider]} Calendar connected successfully!`);
+  }, [user?.id, checkCalendarStatus]);
+
+  const finalizeOAuthError = useCallback((provider: CalendarProvider, errorMsg?: string) => {
+    setConnectingProvider(null);
+    checkCalendarStatus();
+    toast.error(`Failed to connect ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar`, {
+      description: errorMsg || 'An error occurred during authorization',
+    });
+  }, [checkCalendarStatus]);
+
+  useEffect(() => {
+    if (!getPlatform().isNative) return;
+    setCalendarOAuthCallback((result) => {
+      if (result.type === CALENDAR_OAUTH_MESSAGE_TYPES.success) {
+        finalizeOAuthSuccess(result.provider);
+      } else {
+        finalizeOAuthError(result.provider, result.error);
+      }
+    });
+    return () => setCalendarOAuthCallback(null);
+  }, [finalizeOAuthSuccess, finalizeOAuthError]);
 
   // Load calendar status from localStorage on mount; re-run when accessToken becomes available so server status is fetched
   useEffect(() => {
@@ -411,7 +463,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
     try {
       // Get OAuth URL from server (fallback or if Supabase tokens not available)
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/${provider}/auth`, {
+      const authQuery = getPlatform().isNative
+        ? `?platform=${MOBILE_CALENDAR_AUTH_PLATFORM_PARAM}`
+        : '';
+      const response = await fetch(`${CALENDAR_API_BASE}/calendar/${provider}/auth${authQuery}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
@@ -458,7 +513,15 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // Open OAuth flow in popup
+      if (getPlatform().isNative) {
+        await openNativeOAuthUrl(authUrl);
+        toast.success(`Connecting to ${CALENDAR_PROVIDER_DISPLAY_NAMES[provider]} Calendar...`, {
+          description: 'Complete authorization in your browser, then return to TaskZM.',
+        });
+        return;
+      }
+
+      // Open OAuth flow in popup (web)
       const width = TIMING_CONSTANTS.calendar.popupWidth;
       const height = TIMING_CONSTANTS.calendar.popupHeight;
       const left = window.screen.width / 2 - width / 2;

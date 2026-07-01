@@ -3,10 +3,10 @@
   "version": "1.0.30",
   "private": true,
   "dependencies": {
-    "@capacitor/core": "*",
-    "@capacitor/local-notifications": "^7.0.4",
-    "@capacitor/splash-screen": "*",
-    "@capacitor/status-bar": "*",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/local-notifications": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
     "@dnd-kit/core": "*",
     "@dnd-kit/sortable": "*",
     "@dnd-kit/utilities": "*",
@@ -81,6 +81,8 @@
     "deploy-functions": "./scripts/deploy-functions.sh",
     "setup:google-calendar": "bash scripts/setup-google-calendar-secrets.sh",
     "generate-icons": "node scripts/generate-icons-with-padding.js",
+    "mobile:build": "npm run build --prefix src && npm run cap:sync --prefix src",
+    "mobile:assets": "npm run mobile:assets --prefix src",
     "check-keys": "node scripts/check-supabase-keys.cjs",
     "check-user-awards": "node scripts/check-user-awards-table.cjs"
   }

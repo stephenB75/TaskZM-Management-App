@@ -102,6 +102,7 @@ export const AUTH_UI_TEXT = {
   // Mobile Apps
   mobileApps: {
     comingSoon: 'Mobile apps coming soon',
+    available: 'Get TaskZM on your device',
   },
   
   // General

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TaskZM</string>
+    <string name="title_activity_main">TaskZM</string>
+    <string name="package_name">com.taskzm.app</string>
+    <string name="custom_url_scheme">com.taskzm.app</string>
+</resources>

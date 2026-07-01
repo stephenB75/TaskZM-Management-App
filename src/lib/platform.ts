@@ -4,6 +4,7 @@
  */
 
 import { logger } from './logger';
+import { APP_VERSION } from './version';
 
 export interface PlatformInfo {
   isNative: boolean;
@@ -117,23 +118,8 @@ export function isTouchDevice(): boolean {
 }
 
 /**
- * Get app version based on platform
+ * Get app version based on platform (sync; uses centralized APP_VERSION).
  */
 export function getAppVersion(): string {
-  const platform = getPlatform();
-  
-  // On native, get version from Capacitor
-  if (platform.isNative) {
-    try {
-      const App = (window as any).Capacitor?.Plugins?.App;
-      if (App && App.getInfo) {
-        return App.getInfo().version || '2.10.0';
-      }
-    } catch (error) {
-      logger.warn('Could not get native app version:', error);
-    }
-  }
-  
-  // Fallback to web version
-  return '2.10.0';
+  return APP_VERSION;
 }
