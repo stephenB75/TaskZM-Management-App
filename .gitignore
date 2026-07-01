@@ -50,3 +50,6 @@ Thumbs.db
 *.pem
 .cache/
 
+# iOS CocoaPods (local bundle — do not commit)
+src/ios/App/vendor/bundle/
+
