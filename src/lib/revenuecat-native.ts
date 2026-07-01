@@ -5,11 +5,13 @@
 import { Purchases, LOG_LEVEL, type PurchasesPackage } from '@revenuecat/purchases-capacitor';
 import { getPlatform } from './platform';
 import { logger } from './logger';
-import {
-  REVENUECAT_MONTHLY_PRODUCT_ID,
-  REVENUECAT_YEARLY_PRODUCT_ID,
-} from './subscription-constants';
 import { REVENUECAT_PRO_ENTITLEMENT_ID } from './mobile-constants';
+import {
+  collectAllOfferingPackages,
+  getPackageProductId,
+  resolveSubscriptionPackage,
+  type RevenueCatOfferingsLike,
+} from './revenuecat-package-resolver';
 
 let isConfigured = false;
 let isInitializing = false;
@@ -29,30 +31,6 @@ function getNativeApiKey(): string | undefined {
     return import.meta.env.VITE_REVENUECAT_ANDROID_API_KEY;
   }
   return undefined;
-}
-
-function findNativePackage(
-  packages: PurchasesPackage[],
-  type: 'monthly' | 'yearly'
-): PurchasesPackage | null {
-  const productId =
-    type === 'monthly' ? REVENUECAT_MONTHLY_PRODUCT_ID : REVENUECAT_YEARLY_PRODUCT_ID;
-  const keywords =
-    type === 'monthly'
-      ? ['month', 'monthly', 'rc_monthly', '$rc_monthly']
-      : ['year', 'yearly', 'annual', 'rc_annual', '$rc_annual', '$rc_yearly'];
-
-  const byProduct = packages.find((pkg) => {
-    const id = pkg.product?.identifier ?? '';
-    return id === productId || keywords.some((kw) => id.toLowerCase().includes(kw));
-  });
-  if (byProduct) return byProduct;
-
-  const byIdentifier = packages.find((pkg) => {
-    const id = (pkg.identifier ?? '').toLowerCase();
-    return keywords.some((kw) => id.includes(kw));
-  });
-  return byIdentifier ?? null;
 }
 
 function packageToOfferingDetails(pkg: PurchasesPackage | null): OfferingDetails {
@@ -118,9 +96,9 @@ export async function getOfferings(): Promise<{
 
   try {
     const offerings = await Purchases.getOfferings();
-    const packages = offerings.current?.availablePackages ?? [];
-    const monthlyPkg = findNativePackage(packages, 'monthly');
-    const yearlyPkg = findNativePackage(packages, 'yearly');
+    const offeringsLike = offerings as unknown as RevenueCatOfferingsLike;
+    const monthlyPkg = resolveSubscriptionPackage(offeringsLike, 'monthly') as PurchasesPackage | null;
+    const yearlyPkg = resolveSubscriptionPackage(offeringsLike, 'yearly') as PurchasesPackage | null;
     return {
       monthly: packageToOfferingDetails(monthlyPkg),
       yearly: packageToOfferingDetails(yearlyPkg),
@@ -168,18 +146,25 @@ export async function purchaseProSubscription(
 
   try {
     const offerings = await Purchases.getOfferings();
-    const packages = offerings.current?.availablePackages ?? [];
-    if (packages.length === 0) {
+    const offeringsLike = offerings as unknown as RevenueCatOfferingsLike;
+    const allPackages = collectAllOfferingPackages(offeringsLike);
+
+    if (allPackages.length === 0) {
       return { success: false, error: 'No subscription packages available.' };
     }
 
-    const selectedPackage = findNativePackage(packages, packageType);
+    const selectedPackage = resolveSubscriptionPackage(offeringsLike, packageType) as PurchasesPackage | null;
     if (!selectedPackage) {
       return {
         success: false,
         error: `${packageType === 'monthly' ? 'Monthly' : 'Yearly'} subscription not found.`,
       };
     }
+
+    logger.debug(`RevenueCat native purchase ${packageType}`, {
+      packageIdentifier: selectedPackage.identifier,
+      productId: getPackageProductId(selectedPackage),
+    });
 
     const { customerInfo } = await Purchases.purchasePackage({ aPackage: selectedPackage });
     const entitlements = (customerInfo as { entitlements?: { active?: Record<string, unknown> } })

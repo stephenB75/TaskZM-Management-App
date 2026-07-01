@@ -7,7 +7,9 @@ import { SUBSCRIPTION_UI_TEXT, SUBSCRIPTION_STORAGE_KEY_PREFIX, SUBSCRIPTION_SYN
 import { configureRevenueCat, resetRevenueCat, getCustomerInfo as getRevenueCatCustomerInfo, isRevenueCatConfigured } from '../lib/revenuecat';
 import { DAYS_IN_MONTH_APPROX } from '../lib/business-constants';
 import { createDefaultSubscriptionContext } from '../lib/context-defaults';
-import { REVENUECAT_YEARLY_PRODUCT_ID, REVENUECAT_MONTHLY_PRODUCT_ID } from '../lib/subscription-constants';
+import {
+  inferBillingPeriodFromProductId,
+} from '../lib/revenuecat-package-resolver';
 
 interface SubscriptionContextType {
   subscription: SubscriptionInfo;
@@ -169,39 +171,41 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       }
 
       // Determine billing period from product identifier
-      // Check active subscriptions to see if it's monthly or yearly
       let billingPeriod: 'monthly' | 'yearly' | null = current.billingPeriod || null;
-      
-      // Try to detect from product identifier in active subscriptions
-      const activeSubscriptions = customerInfo?.activeSubscriptions || {};
-      const productIdentifiers = Object.keys(activeSubscriptions);
-      
-      for (const productId of productIdentifiers) {
-        if (productId === REVENUECAT_YEARLY_PRODUCT_ID) {
-          billingPeriod = 'yearly';
+
+      const activeSubscriptionsRaw = customerInfo?.activeSubscriptions;
+      const productIdentifiers: string[] = Array.isArray(activeSubscriptionsRaw)
+        ? activeSubscriptionsRaw.filter((id): id is string => typeof id === 'string')
+        : activeSubscriptionsRaw && typeof activeSubscriptionsRaw === 'object'
+          ? Object.values(activeSubscriptionsRaw)
+              .map((sub: unknown) => {
+                if (typeof sub === 'string') return sub;
+                if (sub && typeof sub === 'object' && 'productIdentifier' in sub) {
+                  return String((sub as { productIdentifier?: string }).productIdentifier ?? '');
+                }
+                return '';
+              })
+              .filter(Boolean)
+          : [];
+
+      const entitlementProductId =
+        typeof entitlement === 'object' && entitlement !== null && 'productIdentifier' in entitlement
+          ? String((entitlement as { productIdentifier?: string }).productIdentifier ?? '')
+          : '';
+
+      const idsToCheck = [
+        ...productIdentifiers,
+        entitlementProductId,
+        typeof entitlement === 'object' && entitlement !== null && 'productPlanIdentifier' in entitlement
+          ? String((entitlement as { productPlanIdentifier?: string }).productPlanIdentifier ?? '')
+          : '',
+      ].filter(Boolean);
+
+      for (const productId of idsToCheck) {
+        const inferred = inferBillingPeriodFromProductId(productId);
+        if (inferred) {
+          billingPeriod = inferred;
           break;
-        } else if (productId === REVENUECAT_MONTHLY_PRODUCT_ID) {
-          billingPeriod = 'monthly';
-          break;
-        }
-      }
-      
-      // Fallback: check if product identifier contains "yearly" or "annual"
-      if (!billingPeriod) {
-        const allProductIds = [
-          ...productIdentifiers,
-          ...Object.values(activeSubscriptions).map((sub: any) => sub.productIdentifier).filter(Boolean),
-        ];
-        
-        for (const productId of allProductIds) {
-          const productIdLower = String(productId).toLowerCase();
-          if (productIdLower.includes('yearly') || productIdLower.includes('annual') || productIdLower.includes('year')) {
-            billingPeriod = 'yearly';
-            break;
-          } else if (productIdLower.includes('monthly') || productIdLower.includes('month')) {
-            billingPeriod = 'monthly';
-            break;
-          }
         }
       }
 

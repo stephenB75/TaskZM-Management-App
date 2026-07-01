@@ -20,6 +20,9 @@ export const DEFAULT_YEARLY_TITLE = "Yearly Pro";
 export const REVENUECAT_MONTHLY_PRODUCT_ID = 'prodb18a767009';
 export const REVENUECAT_YEARLY_PRODUCT_ID = 'prod7fa9c154cb';
 
+/** Supplemental RevenueCat offering that may host the yearly package (Web Billing). */
+export const REVENUECAT_YEARLY_OFFERING_ID = 'ofrnga3a1440e88';
+
 // Number of PRO features (for UI display)
 export const PRO_FEATURES_COUNT = 7;
 

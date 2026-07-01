@@ -4380,6 +4380,36 @@ app.post("/taskzm-database-function/create-checkout-session", async (c) => {
 // ============================================================================
 // Handle RevenueCat webhook events for subscription updates
 
+const REVENUECAT_MONTHLY_PRODUCT_ID = 'prodb18a767009';
+const REVENUECAT_YEARLY_PRODUCT_ID = 'prod7fa9c154cb';
+
+function inferBillingPeriodFromProductId(productId: string | null | undefined): 'monthly' | 'yearly' | null {
+  if (!productId) return null;
+  const lower = productId.toLowerCase();
+  if (lower === REVENUECAT_YEARLY_PRODUCT_ID || lower.includes('yearly') || lower.includes('annual')) {
+    return 'yearly';
+  }
+  if (lower === REVENUECAT_MONTHLY_PRODUCT_ID || lower.includes('monthly')) {
+    return 'monthly';
+  }
+  if (lower.includes('year') && !lower.includes('month')) {
+    return 'yearly';
+  }
+  if (lower.includes('month')) {
+    return 'monthly';
+  }
+  return null;
+}
+
+function inferBillingPeriodFromEntitlementIds(entitlementIds: string[]): 'monthly' | 'yearly' | null {
+  for (const id of entitlementIds) {
+    const lower = String(id).toLowerCase();
+    if (lower.includes('yearly') || lower.includes('annual')) return 'yearly';
+    if (lower.includes('monthly')) return 'monthly';
+  }
+  return null;
+}
+
 app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
   try {
     const webhookSecret = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
@@ -4591,6 +4621,13 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
     // Determine subscription store
     const store = eventData.store || event.store || 'revenuecat';
 
+    const webhookProductId = eventData.product_id || event.product_id || '';
+    const billingPeriod =
+      tier === 'pro'
+        ? inferBillingPeriodFromProductId(webhookProductId) ??
+          inferBillingPeriodFromEntitlementIds(entitlementIds)
+        : null;
+
     // Save subscription data
     const subscriptionData = {
       tier,
@@ -4598,6 +4635,7 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       startDate,
       endDate,
       cancelAtPeriodEnd,
+      billingPeriod,
     };
 
     // Save in both formats for compatibility with error handling
@@ -4606,6 +4644,11 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       await kv.set(`user:${userId}:tier`, tier);
       await kv.set(`user:${userId}:subscription_status`, status);
       await kv.set(`user:${userId}:subscription_store`, store);
+      if (billingPeriod) {
+        await kv.set(`user:${userId}:billing_period`, billingPeriod);
+      } else {
+        await kv.set(`user:${userId}:billing_period`, '');
+      }
       if (startDate) {
         await kv.set(`user:${userId}:subscription_start`, startDate);
       }
@@ -4620,7 +4663,7 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
 
     console.log(`✅ RevenueCat webhook processed: ${eventType} - User ${userId} -> ${tier} (${status})`);
     console.log(`   Entitlements: ${JSON.stringify(entitlementIds.slice(0, 10))}`); // Limit log size
-    console.log(`   Store: ${store}, Start: ${startDate}, End: ${endDate}`);
+    console.log(`   Store: ${store}, Billing: ${billingPeriod ?? 'n/a'}, Start: ${startDate}, End: ${endDate}`);
     console.log(`   Subscription Data:`, JSON.stringify(subscriptionData));
 
     return c.json({ 

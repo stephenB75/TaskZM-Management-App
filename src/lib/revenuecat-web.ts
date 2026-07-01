@@ -3,10 +3,11 @@
  * Native platforms use revenuecat-native.ts via the revenuecat.ts facade.
  */
 
-import { REVENUECAT_MONTHLY_PRODUCT_ID, REVENUECAT_YEARLY_PRODUCT_ID } from './subscription-constants';
-
-// Track if we've already warned about product ID mismatch to avoid duplicate warnings
-let hasWarnedAboutProductIdMismatch = false;
+import { REVENUECAT_YEARLY_OFFERING_ID } from './subscription-constants';
+import {
+  collectAllOfferingPackages,
+  resolveSubscriptionPackage,
+} from './revenuecat-package-resolver';
 
 let PurchasesModule: any = null;
 let purchasesInstance: any = null;
@@ -267,345 +268,6 @@ type OfferingDetails = {
   description: string;
 } | null;
 
-/**
- * Find a package by type (monthly or yearly)
- * Uses multiple strategies: product ID, identifier keywords, and offering shortcuts
- */
-function findPackageByType(
-  availablePackages: any[],
-  offerings: any,
-  type: 'monthly' | 'yearly'
-): any | null {
-  const productId = type === 'monthly' 
-    ? REVENUECAT_MONTHLY_PRODUCT_ID 
-    : REVENUECAT_YEARLY_PRODUCT_ID;
-  
-  // Expanded keywords to match various identifier formats
-  // RevenueCat packages can have identifiers like: $rc_monthly, rc_monthly, monthly, $monthly, etc.
-  // Also supports formats like "Yearly Subscription - ofrnga3a1440e88" (contains "yearly")
-  const keywords = type === 'monthly' 
-    ? ['month', 'monthly', 'rc_monthly', '$rc_monthly'] 
-    : ['year', 'yearly', 'annual', 'annually', 'rc_yearly', 'rc_annual', '$rc_yearly', '$rc_annual'];
-  
-  // Log all available packages for debugging with full details
-  console.log(`🔍 Searching for ${type} package among ${availablePackages.length} packages:`);
-  console.log(`   Expected Product ID: ${productId}`);
-  console.log(`   Expected Keywords: ${keywords.join(', ')}`);
-  
-  // Special check for rc_annual and yearly product ID connection
-  if (type === 'yearly' && productId === REVENUECAT_YEARLY_PRODUCT_ID) {
-    console.log(`   🔗 Checking for rc_annual identifier matching product ID: ${productId}`);
-  }
-  
-  console.log(`   Available packages (full details):`, 
-    availablePackages.map((pkg: any) => {
-      const storeProductId = pkg?.storeProduct?.identifier;
-      const rcBillingProductId = pkg?.rcBillingProduct?.identifier;
-      const pkgProductId = pkg?.product?.identifier;
-      const identifier = pkg?.identifier || 'N/A';
-      const identifierLower = identifier.toLowerCase();
-      
-      // Check if this package has rc_annual identifier and matches the expected product ID
-      const isRcAnnual = identifierLower === 'rc_annual' || identifierLower === '$rc_annual';
-      const matchesExpectedProductId = storeProductId === productId || rcBillingProductId === productId || pkgProductId === productId;
-      const isRcAnnualWithCorrectProduct = isRcAnnual && matchesExpectedProductId;
-      
-      return {
-        identifier: identifier,
-        identifierLower: identifierLower,
-        productIds: {
-          storeProduct: storeProductId || 'N/A',
-          rcBillingProduct: rcBillingProductId || 'N/A',
-          product: pkgProductId || 'N/A',
-        },
-        title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title || 'N/A',
-        matchesProductId: matchesExpectedProductId,
-        matchesKeywords: keywords.some(kw => identifierLower.includes(kw.toLowerCase())),
-        keywordMatches: keywords.filter(kw => identifierLower.includes(kw.toLowerCase())),
-        // Special verification for rc_annual
-        isRcAnnual: isRcAnnual,
-        isRcAnnualWithCorrectProduct: isRcAnnualWithCorrectProduct,
-        // Show all possible identifier variations
-        allIdentifiers: {
-          packageIdentifier: identifier,
-          storeProductIdentifier: storeProductId,
-          rcBillingProductIdentifier: rcBillingProductId,
-          productIdentifier: pkgProductId,
-        },
-      };
-    })
-  );
-  
-  // Log confirmation if rc_annual matches yearly product ID
-  if (type === 'yearly' && productId === REVENUECAT_YEARLY_PRODUCT_ID) {
-    const rcAnnualPackage = availablePackages.find((pkg: any) => {
-      const identifier = (pkg?.identifier || '').toLowerCase();
-      return identifier === 'rc_annual' || identifier === '$rc_annual';
-    });
-    
-    if (rcAnnualPackage) {
-      const storeProductId = rcAnnualPackage?.storeProduct?.identifier;
-      const rcBillingProductId = rcAnnualPackage?.rcBillingProduct?.identifier;
-      const pkgProductId = rcAnnualPackage?.product?.identifier;
-      const matchesProductId = storeProductId === productId || rcBillingProductId === productId || pkgProductId === productId;
-      
-      console.log(`🔗 Found package with rc_annual identifier:`, {
-        packageIdentifier: rcAnnualPackage.identifier,
-        productIds: {
-          storeProduct: storeProductId,
-          rcBillingProduct: rcBillingProductId,
-          product: pkgProductId,
-        },
-        expectedProductId: productId,
-        matchesExpectedProductId: matchesProductId,
-      });
-      
-      if (matchesProductId) {
-        console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${productId} (${REVENUECAT_YEARLY_PRODUCT_ID})`);
-      } else {
-        // For Web Billing, "Yearly" is a valid identifier - only warn if it's neither expected ID nor "Yearly"
-        const isWebBillingYearly = rcBillingProductId === 'Yearly' || rcBillingProductId === 'yearly';
-        if (!isWebBillingYearly) {
-          console.warn(`⚠️ rc_annual package product ID mismatch:`, {
-            actual: rcBillingProductId || storeProductId || pkgProductId,
-            expected: productId,
-            note: 'Package will still work, but consider linking to product ' + productId + ' in RevenueCat Dashboard'
-          });
-        }
-      }
-    } else {
-      console.log(`ℹ️ No package with rc_annual identifier found in available packages`);
-    }
-  }
-  
-  // Strategy 1: Match by identifier first (especially for rc_annual)
-  // This is important because the package identifier is what we're looking for
-  // The product ID might be different due to RevenueCat configuration
-  if (type === 'yearly') {
-    const byRcAnnualIdentifier = availablePackages.find((pkg: any) => {
-      const identifier = (pkg?.identifier || '').toLowerCase();
-      return identifier === 'rc_annual' || identifier === '$rc_annual';
-    });
-    
-    if (byRcAnnualIdentifier) {
-      const pkgProductId = byRcAnnualIdentifier?.storeProduct?.identifier ?? 
-                          byRcAnnualIdentifier?.rcBillingProduct?.identifier ?? 
-                          byRcAnnualIdentifier?.product?.identifier ?? '';
-      
-      console.log(`✅ Found yearly package by rc_annual identifier:`, {
-        packageIdentifier: byRcAnnualIdentifier.identifier,
-        productId: pkgProductId,
-        expectedProductId: productId,
-        matchesExpectedProductId: pkgProductId === productId,
-      });
-      
-      if (pkgProductId === productId) {
-        console.log(`✅ CONFIRMED: rc_annual identifier matches expected product ID ${productId}`);
-      } else {
-        // For Web Billing, "Yearly" is a valid identifier - only warn if it's neither expected ID nor "Yearly"
-        const isWebBillingYearly = pkgProductId === 'Yearly' || pkgProductId === 'yearly';
-        if (!isWebBillingYearly) {
-          console.warn(`⚠️ rc_annual package product ID differs:`, {
-            actual: pkgProductId,
-            expected: productId,
-            note: 'Package will still work, but consider linking to product ' + productId + ' in RevenueCat Dashboard'
-          });
-        }
-      }
-      
-      return byRcAnnualIdentifier;
-    }
-  }
-  
-  // Strategy 2: Match by exact product ID
-  const byProductId = availablePackages.find((pkg: any) => {
-    const pkgProductId = pkg?.storeProduct?.identifier ?? 
-                        pkg?.rcBillingProduct?.identifier ?? 
-                        pkg?.product?.identifier ?? '';
-    return pkgProductId === productId;
-  });
-  
-  if (byProductId) {
-    const packageIdentifier = byProductId.identifier?.toLowerCase() || '';
-    const isRcAnnual = packageIdentifier === 'rc_annual' || packageIdentifier === '$rc_annual';
-    
-    console.log(`✅ Found ${type} package by product ID: ${productId}`, byProductId.identifier);
-    
-    // Confirm rc_annual matches yearly product ID
-    if (type === 'yearly' && productId === REVENUECAT_YEARLY_PRODUCT_ID && isRcAnnual) {
-      console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${REVENUECAT_YEARLY_PRODUCT_ID}`);
-      console.log(`   Package identifier: ${byProductId.identifier}`);
-      console.log(`   Product ID: ${productId}`);
-    }
-    
-    return byProductId;
-  }
-  
-  // Strategy 3: Match by identifier keywords (case-insensitive)
-  // Check package identifier, product identifiers, and titles
-  const byIdentifier = availablePackages.find((pkg: any) => {
-    const packageIdentifier = (pkg?.identifier ?? '').toLowerCase();
-    const storeProductId = (pkg?.storeProduct?.identifier ?? '').toLowerCase();
-    const rcBillingProductId = (pkg?.rcBillingProduct?.identifier ?? '').toLowerCase();
-    const productId = (pkg?.product?.identifier ?? '').toLowerCase();
-    
-    // Check all identifier locations
-    const matches = keywords.some(keyword => {
-      const keywordLower = keyword.toLowerCase();
-      return packageIdentifier.includes(keywordLower) ||
-             storeProductId.includes(keywordLower) ||
-             rcBillingProductId.includes(keywordLower) ||
-             productId.includes(keywordLower);
-    });
-    
-    if (matches) {
-      const matchedKeywords = keywords.filter(kw => {
-        const kwLower = kw.toLowerCase();
-        return packageIdentifier.includes(kwLower) ||
-               storeProductId.includes(kwLower) ||
-               rcBillingProductId.includes(kwLower) ||
-               productId.includes(kwLower);
-      });
-      
-      console.log(`🔍 ${type} package candidate found by identifier:`, {
-        packageIdentifier: pkg?.identifier,
-        packageIdentifierLower: packageIdentifier,
-        storeProductId: pkg?.storeProduct?.identifier,
-        rcBillingProductId: pkg?.rcBillingProduct?.identifier,
-        productId: pkg?.product?.identifier,
-        matchedKeywords: matchedKeywords,
-        isRcAnnual: matchedKeywords.some(kw => kw.toLowerCase() === 'rc_annual') || 
-                   packageIdentifier === 'rc_annual' ||
-                   storeProductId === 'rc_annual' ||
-                   rcBillingProductId === 'rc_annual' ||
-                   productId === 'rc_annual',
-      });
-      
-      // Special confirmation for rc_annual
-      if (type === 'yearly' && (matchedKeywords.some(kw => kw.toLowerCase() === 'rc_annual') || 
-                                packageIdentifier === 'rc_annual' ||
-                                storeProductId === 'rc_annual' ||
-                                rcBillingProductId === 'rc_annual' ||
-                                productId === 'rc_annual')) {
-        console.log('✅ CONFIRMED: Yearly subscription package is using identifier "rc_annual"');
-        console.log('   Package identifier:', pkg?.identifier);
-        console.log('   Store Product ID:', pkg?.storeProduct?.identifier);
-        console.log('   RC Billing Product ID:', pkg?.rcBillingProduct?.identifier);
-        console.log('   Product ID:', pkg?.product?.identifier);
-      }
-    }
-    
-    return matches;
-  });
-  
-  if (byIdentifier) {
-    const matchedIdentifier = byIdentifier.identifier;
-    const isRcAnnual = matchedIdentifier?.toLowerCase() === 'rc_annual' || 
-                       matchedIdentifier?.toLowerCase() === '$rc_annual';
-    
-    // Get the product ID from the matched package
-    const packageProductId = byIdentifier?.storeProduct?.identifier ?? 
-                            byIdentifier?.rcBillingProduct?.identifier ?? 
-                            byIdentifier?.product?.identifier ?? '';
-    
-    console.log(`✅ Found ${type} package by identifier: ${matchedIdentifier}`);
-    console.log(`   Matched using identifier pattern from: ${keywords.join(', ')}`);
-    console.log(`   Package product ID: ${packageProductId}`);
-    console.log(`   Expected product ID: ${productId}`);
-    
-    if (type === 'yearly' && isRcAnnual) {
-      console.log('✅ CONFIRMED: Yearly subscription is using identifier "rc_annual"');
-      
-      // Verify it matches the expected product ID
-      if (packageProductId === productId && productId === REVENUECAT_YEARLY_PRODUCT_ID) {
-        console.log(`✅ CONFIRMED: rc_annual identifier matches product ID ${REVENUECAT_YEARLY_PRODUCT_ID}`);
-        console.log(`   Package identifier: ${matchedIdentifier}`);
-        console.log(`   Package product ID: ${packageProductId}`);
-        console.log(`   Expected product ID: ${productId}`);
-      } else if (packageProductId && packageProductId !== productId) {
-        // For Web Billing, "Yearly" is a valid identifier - only warn if it's neither expected ID nor "Yearly"
-        const isWebBillingYearly = packageProductId === 'Yearly' || packageProductId === 'yearly';
-        if (!isWebBillingYearly) {
-          console.warn(`⚠️ rc_annual package product ID differs:`, {
-            actual: packageProductId,
-            expected: productId,
-            note: 'Package will still work, but consider linking to product ' + productId + ' in RevenueCat Dashboard'
-          });
-        }
-      }
-    }
-    
-    return byIdentifier;
-  }
-  
-  // Strategy 3: Match by product title keywords
-  const byTitle = availablePackages.find((pkg: any) => {
-    const title = (pkg?.storeProduct?.title ?? 
-                   pkg?.rcBillingProduct?.title ?? 
-                   pkg?.product?.title ?? '').toLowerCase();
-    const matches = keywords.some(keyword => title.includes(keyword.toLowerCase()));
-    
-    if (matches) {
-      console.log(`🔍 ${type} package candidate found by title:`, {
-        title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title,
-        titleLower: title,
-        matchedKeywords: keywords.filter(kw => title.includes(kw.toLowerCase())),
-      });
-    }
-    
-    return matches;
-  });
-  
-  if (byTitle) {
-    console.log(`✅ Found ${type} package by title: ${byTitle.storeProduct?.title || byTitle.rcBillingProduct?.title}`);
-    return byTitle;
-  }
-  
-  // Strategy 4: Use offering shortcuts (monthly/annual properties)
-  if (type === 'monthly' && offerings?.current?.monthly) {
-    console.log('✅ Found monthly package via offering.monthly');
-    return offerings.current.monthly;
-  }
-  
-  if (type === 'yearly' && offerings?.current?.annual) {
-    console.log('✅ Found yearly package via offering.annual');
-    return offerings.current.annual;
-  }
-  
-  // Strategy 5: Try all packages if only one matches the type
-  // BUT: Don't use monthly package for yearly or vice versa
-  if (availablePackages.length === 1) {
-    const singlePackage = availablePackages[0];
-    const singleIdentifier = (singlePackage?.identifier || '').toLowerCase();
-    const singleTitle = (singlePackage?.storeProduct?.title || 
-                        singlePackage?.rcBillingProduct?.title || 
-                        singlePackage?.product?.title || '').toLowerCase();
-    
-    // Check if the single package matches the requested type
-    const isMonthly = singleIdentifier.includes('month') || singleTitle.includes('month');
-    const isYearly = singleIdentifier.includes('year') || 
-                    singleIdentifier.includes('annual') ||
-                    singleTitle.includes('year') ||
-                    singleTitle.includes('annual');
-    
-    if (type === 'monthly' && isMonthly) {
-      console.log(`✅ Only one package available and it matches monthly: ${singlePackage.identifier}`);
-      return singlePackage;
-    } else if (type === 'yearly' && isYearly) {
-      console.log(`✅ Only one package available and it matches yearly: ${singlePackage.identifier}`);
-      return singlePackage;
-    } else {
-      console.warn(`⚠️ Only one package available (${singlePackage.identifier}) but it doesn't match ${type} type`);
-      console.warn(`   Package appears to be: ${isMonthly ? 'monthly' : isYearly ? 'yearly' : 'unknown'}`);
-      return null; // Don't use wrong package type
-    }
-  }
-  
-  console.warn(`⚠️ ${type} package not found. Available packages:`, 
-    availablePackages.map((p: any) => p?.identifier).join(', '));
-  return null;
-}
-
 export async function getOfferings(): Promise<{
   monthly: OfferingDetails;
   yearly: OfferingDetails;
@@ -616,262 +278,27 @@ export async function getOfferings(): Promise<{
 
   try {
     const offerings = await purchasesInstance.getOfferings();
-    const availablePackages = offerings?.current?.availablePackages ?? [];
-    
-    // Search all offerings for rc_annual package and validate product ID
-    const YEARLY_OFFERING_ID = 'ofrnga3a1440e88';
-    const yearlyOfferingValidation = offerings?.all?.[YEARLY_OFFERING_ID];
-    
-    // Log all available offerings
-    if (offerings?.all) {
-      console.log(`📋 All available offerings:`, Object.keys(offerings.all));
-      for (const offeringKey in offerings.all) {
-        const offering = offerings.all[offeringKey];
-        console.log(`   Offering "${offeringKey}":`, {
-          identifier: offering.identifier,
-          packageCount: offering.availablePackages?.length || 0,
-          packages: offering.availablePackages?.map((pkg: any) => ({
-            identifier: pkg?.identifier,
-            productId: pkg?.storeProduct?.identifier || pkg?.rcBillingProduct?.identifier || pkg?.product?.identifier,
-            title: pkg?.storeProduct?.title || pkg?.rcBillingProduct?.title || pkg?.product?.title,
-          })) || [],
-        });
-      }
-    }
-    
-    // Search all offerings for rc_annual package
-    let rcAnnualPkg: any = null;
-    let rcAnnualOfferingKey: string | null = null;
-    
-    if (offerings?.all) {
-      for (const offeringKey in offerings.all) {
-        const offering = offerings.all[offeringKey];
-        const foundPkg = offering?.availablePackages?.find((pkg: any) => {
-          const identifier = (pkg?.identifier || '').toLowerCase();
-          return identifier === 'rc_annual' || identifier === '$rc_annual';
-        });
-        
-        if (foundPkg) {
-          rcAnnualPkg = foundPkg;
-          rcAnnualOfferingKey = offeringKey;
-          break;
-        }
-      }
-    }
-    
-    if (rcAnnualPkg) {
-      const productId = rcAnnualPkg?.storeProduct?.identifier || 
-                       rcAnnualPkg?.rcBillingProduct?.identifier || 
-                       rcAnnualPkg?.product?.identifier;
-      
-      console.log(`✅ Found rc_annual package in offering "${rcAnnualOfferingKey}":`, {
-        packageIdentifier: rcAnnualPkg?.identifier,
-        productId: productId,
-        expectedProductId: REVENUECAT_YEARLY_PRODUCT_ID,
-        matchesExpected: productId === REVENUECAT_YEARLY_PRODUCT_ID,
-        price: rcAnnualPkg?.storeProduct?.priceString || rcAnnualPkg?.rcBillingProduct?.priceString || 'N/A',
-        allProductIds: {
-          storeProduct: rcAnnualPkg?.storeProduct?.identifier,
-          rcBillingProduct: rcAnnualPkg?.rcBillingProduct?.identifier,
-          product: rcAnnualPkg?.product?.identifier,
-        },
+    const allPackages = collectAllOfferingPackages(offerings);
+    const currentPackages = offerings?.current?.availablePackages ?? [];
+
+    if (import.meta.env.DEV) {
+      console.log('📦 RevenueCat offerings received:', {
+        hasCurrent: !!offerings?.current,
+        currentOfferingId: offerings?.current?.identifier,
+        currentPackageCount: currentPackages.length,
+        searchablePackageCount: allPackages.length,
+        allOfferings: offerings?.all ? Object.keys(offerings.all) : [],
+        yearlyOfferingId: REVENUECAT_YEARLY_OFFERING_ID,
       });
-      
-      if (productId === REVENUECAT_YEARLY_PRODUCT_ID) {
-        console.log(`✅ CONFIRMED: rc_annual package has correct product ID (${REVENUECAT_YEARLY_PRODUCT_ID})`);
-      } else {
-        // For Web Billing, "Yearly" is a valid identifier - only warn if it's neither expected ID nor "Yearly"
-        const isWebBillingYearly = productId === 'Yearly' || productId === 'yearly';
-        if (!isWebBillingYearly && !hasWarnedAboutProductIdMismatch) {
-          hasWarnedAboutProductIdMismatch = true;
-          console.warn(`⚠️ rc_annual package product ID mismatch:`, {
-            actual: productId,
-            expected: REVENUECAT_YEARLY_PRODUCT_ID,
-            note: 'Package will still work. To fix: RevenueCat Dashboard → Packages → rc_annual → Link to product ' + REVENUECAT_YEARLY_PRODUCT_ID
-          });
-        } else if (isWebBillingYearly && !hasWarnedAboutProductIdMismatch) {
-          hasWarnedAboutProductIdMismatch = true;
-          console.log(`ℹ️ rc_annual package using Web Billing identifier "Yearly" (this is valid for Web Billing)`);
-        }
-      }
-    } else {
-      console.warn(`⚠️ rc_annual package not found in any offering`);
-      if (yearlyOfferingValidation) {
-        console.warn(`   Offering "${YEARLY_OFFERING_ID}" exists but doesn't contain rc_annual`);
-        console.warn(`   Packages in "${YEARLY_OFFERING_ID}":`, yearlyOfferingValidation.availablePackages?.map((p: any) => p?.identifier) || []);
-      } else {
-        console.warn(`   Offering "${YEARLY_OFFERING_ID}" not found in RevenueCat offerings`);
-      }
-    }
-
-    console.log('📦 RevenueCat offerings received:', {
-      hasCurrent: !!offerings?.current,
-      currentOfferingId: offerings?.current?.identifier,
-      packageCount: availablePackages.length,
-      allOfferings: offerings?.all ? Object.keys(offerings.all) : [],
-      yearlyOfferingId: YEARLY_OFFERING_ID,
-      hasYearlyOffering: !!yearlyOfferingValidation,
-      rcAnnualFound: !!rcAnnualPkg,
-      rcAnnualOffering: rcAnnualOfferingKey,
-      packages: availablePackages.map((pkg: any) => {
-        const product = pkg?.storeProduct || pkg?.rcBillingProduct || pkg?.product;
-        const priceObj = product?.price;
-        return {
-          identifier: pkg?.identifier,
-          productIds: {
-            storeProduct: pkg?.storeProduct?.identifier || 'N/A',
-            rcBillingProduct: pkg?.rcBillingProduct?.identifier || 'N/A',
-            product: pkg?.product?.identifier || 'N/A',
-          },
-          hasStoreProduct: !!pkg?.storeProduct,
-          hasRcBillingProduct: !!pkg?.rcBillingProduct,
-          hasProduct: !!pkg?.product,
-          priceInfo: {
-            priceString: product?.priceString || 'N/A',
-            formattedPrice: product?.formattedPrice || 'N/A',
-            priceObject: priceObj ? {
-              amount: priceObj.amount,
-              amountMicros: priceObj.amountMicros,
-              currency: priceObj.currency,
-            } : 'N/A',
-            displayName: product?.displayName || 'N/A',
-          },
-          title: product?.title || product?.displayName || 'N/A',
-        };
-      }),
-    });
-    
-    // Warn if only one package found when we expect two
-    if (availablePackages.length === 1) {
-      const foundPackage = availablePackages[0];
-      const foundIdentifier = foundPackage?.identifier || 'unknown';
-      const foundProductId = foundPackage?.storeProduct?.identifier || 
-                            foundPackage?.rcBillingProduct?.identifier || 
-                            foundPackage?.product?.identifier || 'unknown';
-      
-      console.warn('⚠️ Only ONE package found in RevenueCat offering, but TWO products exist in dashboard!');
-      console.warn(`   Found package: ${foundIdentifier} (Product ID: ${foundProductId})`);
-      console.warn('   This usually means:');
-      console.warn('   1. Only one package is added to the current offering');
-      console.warn('   2. The second package needs to be added to the offering');
-      console.warn('   3. Check RevenueCat Dashboard → Offerings → Current Offering → Packages');
-      console.warn('   4. Both "Monthly Subscription" and "Yearly Subscription" packages must be in the offering');
-      console.warn('');
-      console.warn('   📋 SPECIFIC INSTRUCTIONS FOR YEARLY PACKAGE:');
-      console.warn('   - The yearly package should have identifier: "rc_annual" (or "$rc_annual")');
-      console.warn(`   - The yearly package should use product ID: "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
-      console.warn(`   - Go to RevenueCat Dashboard → Products → Find product "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
-      console.warn('   - Create a package with identifier "rc_annual" for this product');
-      console.warn('   - Add this package to your Current Offering');
-    }
-    
-    // Check other offerings for the missing package
-    if (availablePackages.length === 1 && offerings?.all) {
-      console.log('🔍 Checking other offerings for missing package...');
-      const allOfferingKeys = Object.keys(offerings.all);
-      console.log(`   Found ${allOfferingKeys.length} other offering(s): ${allOfferingKeys.join(', ')}`);
-      
-      for (const offeringKey of allOfferingKeys) {
-        const offering = offerings.all[offeringKey];
-        const otherPackages = offering?.availablePackages ?? [];
-        console.log(`   Offering "${offeringKey}" has ${otherPackages.length} package(s):`, 
-          otherPackages.map((p: any) => ({
-            identifier: p?.identifier,
-            productId: p?.storeProduct?.identifier || p?.rcBillingProduct?.identifier || p?.product?.identifier,
-          }))
+      if (currentPackages.length === 1 && allPackages.length > 1) {
+        console.warn(
+          '⚠️ Yearly/monthly package resolved from a supplemental offering — add both packages to the Current Offering in RevenueCat when possible.'
         );
-        
-        // Check if this offering has rc_annual
-        const hasRcAnnual = otherPackages.some((p: any) => {
-          const identifier = (p?.identifier || '').toLowerCase();
-          return identifier === 'rc_annual' || identifier === '$rc_annual';
-        });
-        
-        if (hasRcAnnual) {
-          console.warn(`   ⚠️ Found "rc_annual" package in offering "${offeringKey}", but it's not in the current offering!`);
-          console.warn(`   → You need to add the "rc_annual" package to your Current Offering`);
-        }
       }
     }
 
-    // If only one package found, try to find the missing one in other offerings
-    let allPackagesToSearch = [...availablePackages];
-    if (availablePackages.length === 1 && offerings?.all) {
-      console.log('🔍 Searching other offerings for missing package...');
-      
-      // Prioritize checking the specific yearly offering ID
-      const YEARLY_OFFERING_ID = 'ofrnga3a1440e88';
-      if (offerings.all[YEARLY_OFFERING_ID]) {
-        const yearlyOffering = offerings.all[YEARLY_OFFERING_ID];
-        const yearlyPackages = yearlyOffering?.availablePackages ?? [];
-        console.log(`   🔍 Checking specific yearly offering "${YEARLY_OFFERING_ID}":`, {
-          packageCount: yearlyPackages.length,
-          packages: yearlyPackages.map((p: any) => ({
-            identifier: p?.identifier,
-            productId: p?.storeProduct?.identifier || p?.rcBillingProduct?.identifier || p?.product?.identifier,
-          })),
-        });
-        
-        // Add packages from the yearly offering
-        for (const pkg of yearlyPackages) {
-          const pkgId = pkg?.identifier;
-          if (pkgId && !allPackagesToSearch.some(p => p?.identifier === pkgId)) {
-            console.log(`   ✅ Found package "${pkgId}" in yearly offering "${YEARLY_OFFERING_ID}"`);
-            allPackagesToSearch.push(pkg);
-          }
-        }
-      }
-      
-      // Also check other offerings
-      for (const offeringKey in offerings.all) {
-        if (offeringKey === YEARLY_OFFERING_ID) continue; // Already checked
-        const offering = offerings.all[offeringKey];
-        const otherPackages = offering?.availablePackages ?? [];
-        // Add packages from other offerings that aren't already in the list
-        for (const pkg of otherPackages) {
-          const pkgId = pkg?.identifier;
-          if (pkgId && !allPackagesToSearch.some(p => p?.identifier === pkgId)) {
-            console.log(`   Found package "${pkgId}" in offering "${offeringKey}"`);
-            allPackagesToSearch.push(pkg);
-          }
-        }
-      }
-      console.log(`   Total packages to search: ${allPackagesToSearch.length} (${availablePackages.length} from current, ${allPackagesToSearch.length - availablePackages.length} from other offerings)`);
-    }
-    
-    // Use the same package finding logic as purchase flow for consistency
-    // Search in all available packages (current + other offerings)
-    const monthlyPkg = findPackageByType(allPackagesToSearch, offerings, 'monthly');
-    const yearlyPkg = findPackageByType(allPackagesToSearch, offerings, 'yearly');
-    
-    // If yearly package was found in another offering, warn about it
-    if (yearlyPkg && availablePackages.length === 1) {
-      const yearlyInCurrent = availablePackages.some(p => p?.identifier === yearlyPkg?.identifier);
-      if (!yearlyInCurrent) {
-        console.warn('⚠️ Yearly package (rc_annual) was found in another offering, but not in the current offering!');
-        console.warn('   → You need to add the "rc_annual" package to your Current Offering');
-        console.warn('   → RevenueCat Dashboard → Offerings → Current Offering → Add Package');
-        console.warn(`   → Select the package with identifier "rc_annual" and product ID "${REVENUECAT_YEARLY_PRODUCT_ID}"`);
-      }
-    }
-
-    // Log package finding results
-    console.log('📦 Package finding results:', {
-      monthly: monthlyPkg ? {
-        identifier: monthlyPkg.identifier,
-        found: true,
-      } : { found: false },
-      yearly: yearlyPkg ? {
-        identifier: yearlyPkg.identifier,
-        found: true,
-      } : { 
-        found: false,
-        availablePackages: availablePackages.map((p: any) => ({
-          identifier: p.identifier,
-          title: p.storeProduct?.title || p.rcBillingProduct?.title || p.product?.title,
-        })),
-      },
-    });
+    const monthlyPkg = resolveSubscriptionPackage(offerings, 'monthly');
+    const yearlyPkg = resolveSubscriptionPackage(offerings, 'yearly');
 
     const mapPackage = (pkg: any, type: 'monthly' | 'yearly', fallbackTitle: string, fallbackDesc: string): OfferingDetails => {
       if (!pkg) {
@@ -1067,7 +494,7 @@ export async function getOfferings(): Promise<{
         packageFound: !!yearlyPkg,
         offeringMapped: !!yearlyOffering,
         priceString: yearlyOffering?.priceString || 'N/A',
-        reason: !yearlyPkg ? 'Package not found by findPackageByType' : 
+        reason: !yearlyPkg ? 'Package not found by resolveSubscriptionPackage' : 
                 !yearlyOffering ? 'Package found but mapPackage returned null (likely invalid price)' : 
                 'Success',
       },
@@ -1173,24 +600,21 @@ export async function purchaseProSubscription(
   }
 
   try {
-    // Get current offerings to find the package
+    // Get current offerings to find the package (same resolver as getOfferings)
     const offerings = await purchasesInstance.getOfferings();
-    const availablePackages = offerings?.current?.availablePackages ?? [];
-    
-    if (availablePackages.length === 0) {
-      return { 
-        success: false, 
-        error: 'No subscription packages available. Please contact support.' 
-      };
-    }
+    const selectedPackage = resolveSubscriptionPackage(offerings, packageType);
 
-    // Find the correct package
-    const selectedPackage = findPackageByType(availablePackages, offerings, packageType);
-    
     if (!selectedPackage) {
-      return { 
-        success: false, 
-        error: `${packageType === 'monthly' ? 'Monthly' : 'Yearly'} subscription package not found. Please contact support.` 
+      const packageCount = collectAllOfferingPackages(offerings).length;
+      if (packageCount === 0) {
+        return {
+          success: false,
+          error: 'No subscription packages available. Please contact support.',
+        };
+      }
+      return {
+        success: false,
+        error: `${packageType === 'monthly' ? 'Monthly' : 'Yearly'} subscription package not found. Please contact support.`,
       };
     }
 
