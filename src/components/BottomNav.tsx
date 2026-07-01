@@ -14,6 +14,7 @@ import {
   NAV_BAR_LABEL_LINE_HEIGHT,
   NAV_BAR_INDICATOR_WIDTH,
   NAV_BAR_INDICATOR_HEIGHT,
+  NAV_BAR_INDICATOR_TOP,
   NAV_BAR_LABEL_TEXT_SIZE,
   NAV_BAR_BADGE_SIZE,
   NAV_BAR_BADGE_TEXT_SIZE,
@@ -223,28 +224,27 @@ export function BottomNav({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              {item.active && (
-                <div
-                  className="absolute z-0 rounded-full bg-primary"
-                  style={{
-                    width: NAV_BAR_INDICATOR_WIDTH,
-                    height: NAV_BAR_INDICATOR_HEIGHT,
-                    top: NAV_BAR_PADDING_TOP,
-                    left: 0,
-                    right: 0,
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                  }}
-                />
-              )}
-
               <div
-                className="relative flex shrink-0 items-center justify-center"
+                className="relative flex shrink-0 items-center justify-center overflow-visible"
                 style={{
                   width: NAV_BAR_ICON_SLOT_SIZE,
                   height: NAV_BAR_ICON_SLOT_SIZE,
                 }}
               >
+                {item.active && (
+                  <div
+                    className="absolute z-0 rounded-full bg-primary"
+                    style={{
+                      width: NAV_BAR_INDICATOR_WIDTH,
+                      height: NAV_BAR_INDICATOR_HEIGHT,
+                      top: NAV_BAR_INDICATOR_TOP,
+                      left: 0,
+                      right: 0,
+                      marginLeft: 'auto',
+                      marginRight: 'auto',
+                    }}
+                  />
+                )}
                 <Icon 
                   name={item.iconName}
                   size={NAV_BAR_ICON_SIZE}

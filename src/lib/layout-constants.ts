@@ -490,8 +490,11 @@ export const NAV_BAR_ICON_SLOT_SIZE = NAV_BAR_ICON_SIZE; // Square hit target; k
 export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0';
 export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0';
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
-/** Sits just above the icon slot; absolute so it does not shift vertical alignment. */
-export const NAV_BAR_INDICATOR_TOP = '-0.375rem';
+export const NAV_BAR_INDICATOR_HEIGHT = '0.375rem'; // h-1.5 = 0.375rem
+/** Gap between indicator line and top of icon. */
+export const NAV_BAR_INDICATOR_GAP = '0.125rem';
+/** Positions indicator fully above the icon slot (relative to icon wrapper). */
+export const NAV_BAR_INDICATOR_TOP = `calc(-1 * (${NAV_BAR_INDICATOR_HEIGHT} + ${NAV_BAR_INDICATOR_GAP}))`;
 export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
 export const NAV_BAR_LABEL_LINE_HEIGHT = '1.2';
 export const NAV_BAR_LABEL_MARGIN_TOP = '0'; // use NAV_BAR_ICON_LABEL_GAP on button flex instead
@@ -500,7 +503,6 @@ export const NAV_BAR_BADGE_TEXT_SIZE = '8px';
 export const NAV_BAR_BADGE_BORDER_WIDTH = '2px';
 export const NAV_BAR_BADGE_TOP_OFFSET = '-0.25rem'; // -top-1 = -0.25rem
 export const NAV_BAR_BADGE_RIGHT_OFFSET = '-0.25rem'; // -right-1 = -0.25rem
-export const NAV_BAR_INDICATOR_HEIGHT = '0.375rem'; // h-1.5 = 0.375rem
 export const NAV_BAR_SYNC_INDICATOR_HEIGHT = '0.125rem'; // h-0.5 = 0.125rem
 export const NAV_BAR_HORIZONTAL_PADDING = '0.25rem'; // px-1 = 0.25rem
 /** Horizontal insets so nav tabs stay centered on notched devices. */
