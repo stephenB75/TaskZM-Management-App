@@ -23,6 +23,8 @@ const DEFAULT_TIMEZONE = DEFAULT_CALENDAR_TIMEZONE;
 const MAX_RECURRENCE_ITERATIONS = 365; // Maximum iterations for recurring event expansion (1 year)
 const CALENDAR_SYNC_PAST_DAYS = 365; // Days to look back when syncing calendar (to capture recurring events)
 const CALENDAR_SYNC_FUTURE_DAYS = 90; // Days to look ahead when syncing calendar
+/** Batch size for calendar_events upsert during CalDAV sync (reduces edge 546 timeouts). */
+const CALDAV_DB_UPSERT_BATCH_SIZE = 50;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000; // 86400000 ms
 
 // Module-level variable to store user's timezone (set during sync)
@@ -1085,13 +1087,23 @@ export async function testConnection(
  * Sync events from selected calendars to database
  * @param userTimezone - User's timezone from browser (e.g., 'America/New_York', 'America/Los_Angeles')
  */
+export interface SyncCalendarsOptions {
+  /** Sync only this calendar href (one CalDAV REPORT per edge request). */
+  singleCalendarHref?: string;
+  /** Skip deletion pass (use on per-calendar sync; run once on final calendar). */
+  skipDeletions?: boolean;
+  /** Pre-known calendar colors from stored credentials (skips discovery when provided). */
+  calendarColors?: Record<string, string>;
+}
+
 export async function syncCalendarsToDatabase(
   supabase: any,
   userId: string,
   workspaceId: string,
   credentials: AppleCalDAVCredentials,
   selectedCalendarHrefs: string[],
-  userTimezone: string = DEFAULT_TIMEZONE
+  userTimezone: string = DEFAULT_TIMEZONE,
+  options: SyncCalendarsOptions = {},
 ): Promise<SyncResult> {
   // Store the user timezone for use in date parsing
   currentUserTimezone = userTimezone;
@@ -1106,17 +1118,15 @@ export async function syncCalendarsToDatabase(
   };
 
   try {
-    // First, discover all calendars to get their colors
-    const allCalendars = await discoverCalendars(credentials);
     const calendarColorMap = new Map<string, string>();
-    for (const cal of allCalendars) {
-      if (cal.color) {
-        calendarColorMap.set(cal.href, cal.color);
+    if (options.calendarColors) {
+      for (const [href, color] of Object.entries(options.calendarColors)) {
+        if (href && color) {
+          calendarColorMap.set(href, color);
+        }
       }
     }
 
-    // Exclude calendar-home URLs (e.g. .../218434715/calendars/). Stored credentials from before we
-    // filtered discovery may still contain it; REPORT on the home returns 403.
     let hrefsToFetch = selectedCalendarHrefs.filter((href) => {
       if (isCalendarHomeUrl(href)) {
         console.warn('[Calendar Sync] Skipping calendar home URL (REPORT not allowed):', href);
@@ -1124,6 +1134,19 @@ export async function syncCalendarsToDatabase(
       }
       return true;
     });
+
+    if (options.singleCalendarHref) {
+      hrefsToFetch = [options.singleCalendarHref];
+    }
+
+    if (calendarColorMap.size === 0) {
+      const allCalendars = await discoverCalendars(credentials);
+      for (const cal of allCalendars) {
+        if (cal.color) {
+          calendarColorMap.set(cal.href, cal.color);
+        }
+      }
+    }
     if (hrefsToFetch.length === 0) {
       // Stored selection was only the calendar home; re-discover to get real calendars (caller should persist)
       console.log('[Calendar Sync] Stored selection was invalid; re-discovering calendars');
@@ -1195,93 +1218,59 @@ export async function syncCalendarsToDatabase(
       return e.recurrenceBaseId || e.uid;
     }));
 
-    // Process each fetched event (using deduplicated list)
-    console.log(`[Calendar Sync] Processing ${deduplicatedEvents.length} events for database sync...`);
+    // Build rows and upsert in batches (avoids 170 sequential DB round-trips → edge 546).
+    console.log(`[Calendar Sync] Upserting ${deduplicatedEvents.length} events in batches...`);
+    const rowsToUpsert: Record<string, unknown>[] = [];
+    const nowIso = new Date().toISOString();
+
     for (const event of deduplicatedEvents) {
-      // Validate event has required fields before processing
       if (!event.uid || !event.summary || !event.dtstart || !event.dtend) {
-        console.warn('[Calendar Sync] Skipping event with missing required fields:', {
-          hasUid: !!event.uid,
-          hasSummary: !!event.summary,
-          hasDtstart: !!event.dtstart,
-          hasDtend: !!event.dtend,
-          eventUid: event.uid,
-        });
         result.errors.push(`Event missing required fields: ${event.uid || 'unknown'}`);
         continue;
       }
-      // For recurring events, match by base UID (the event.uid for base events)
-      // For non-recurring events, match by event.uid
-      // Since we're not expanding during sync anymore, all events should be base events
+
       const matchKey = event.recurrenceBaseId || event.uid;
-      const existing = existingMap.get(matchKey);
-      
-      if (existing) {
-        // Always update to ensure latest parsing is applied
-        const { error: updateError } = await supabase
-          .from('calendar_events')
-          .update({
-            title: event.summary,
-            description: event.description,
-            start_time: event.dtstart,
-            end_time: event.dtend,
-            location: event.location,
-            calendar_color: event.calendarColor,
-            external_updated_at: event.lastModified,
-            rrule: event.rrule ?? null,
-            recurrence_base_id: event.recurrenceBaseId ?? null,
-            is_recurring: event.isRecurring ?? false,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-
-        if (updateError) {
-          console.error(`[Calendar Sync] Failed to update event ${event.uid}:`, updateError);
-          result.errors.push(`Failed to update event ${event.uid}: ${updateError.message}`);
-        } else {
-          result.updated++;
-          console.debug(`[Calendar Sync] Updated event: ${event.uid} - ${event.summary}`);
-        }
+      const externalId = matchKey;
+      if (existingMap.has(matchKey)) {
+        result.updated++;
       } else {
-        // Create new event
-        // For base recurring events, use event.uid as external_id
-        // For instances (shouldn't happen now), use base UID
-        // Since we're not expanding during sync, event.uid is always the base UID
-        const externalId = event.recurrenceBaseId || event.uid;
-        const { error: insertError } = await supabase
-          .from('calendar_events')
-          .insert({
-            user_id: userId,
-            workspace_id: workspaceId,
-            external_id: externalId,
-            title: event.summary,
-            description: event.description,
-            start_time: event.dtstart,
-            end_time: event.dtend,
-            location: event.location,
-            source: 'icloud',
-            calendar_href: event.calendarHref,
-            calendar_color: event.calendarColor,
-            external_updated_at: event.lastModified,
-            rrule: event.rrule ?? null,
-            recurrence_base_id: event.recurrenceBaseId ?? null,
-            is_recurring: event.isRecurring ?? false,
-            is_readonly: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
+        result.created++;
+      }
 
-        if (insertError) {
-          console.error(`[Calendar Sync] Failed to create event ${event.uid}:`, insertError);
-          result.errors.push(`Failed to create event ${event.uid}: ${insertError.message}`);
-        } else {
-          result.created++;
-          console.debug(`[Calendar Sync] Created event: ${event.uid} - ${event.summary}`);
-        }
+      rowsToUpsert.push({
+        user_id: userId,
+        workspace_id: workspaceId,
+        external_id: externalId,
+        title: event.summary,
+        description: event.description ?? null,
+        start_time: event.dtstart,
+        end_time: event.dtend,
+        location: event.location ?? null,
+        source: 'icloud',
+        calendar_href: event.calendarHref,
+        calendar_color: event.calendarColor ?? null,
+        external_updated_at: event.lastModified ?? null,
+        rrule: event.rrule ?? null,
+        recurrence_base_id: event.recurrenceBaseId ?? null,
+        is_recurring: event.isRecurring ?? false,
+        is_readonly: true,
+        updated_at: nowIso,
+      });
+    }
+
+    for (let i = 0; i < rowsToUpsert.length; i += CALDAV_DB_UPSERT_BATCH_SIZE) {
+      const batch = rowsToUpsert.slice(i, i + CALDAV_DB_UPSERT_BATCH_SIZE);
+      const { error: upsertError } = await supabase
+        .from('calendar_events')
+        .upsert(batch, { onConflict: 'user_id,source,external_id' });
+
+      if (upsertError) {
+        result.errors.push(`Batch upsert failed: ${upsertError.message}`);
+        console.error('[Calendar Sync] Batch upsert error:', upsertError);
       }
     }
 
-    // Handle deletions - events that exist in DB but not in iCloud
+    if (!options.skipDeletions) {
     // Only delete events from calendars that were synced (selectedCalendarHrefs)
     // This prevents deleting events from calendars that weren't included in this sync
     const syncedCalendarHrefs = new Set(selectedCalendarHrefs);
@@ -1311,6 +1300,7 @@ export async function syncCalendarsToDatabase(
           console.debug(`Skipping deletion of event ${externalId} - not from synced calendar (href: ${existing.calendar_href})`);
         }
       }
+    }
     }
 
     if (result.errors.length > 0) {

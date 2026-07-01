@@ -4076,6 +4076,9 @@ const appleCalDAVSyncHandler = async (c: any) => {
 
     // Get user's timezone from request body (auto-detected from browser)
     let userTimezone = 'America/New_York'; // Default fallback
+    let singleCalendarHref: string | undefined;
+    let skipDeletions = false;
+    let calendarColors: Record<string, string> | undefined;
     try {
       const body = await c.req.json();
       console.log('Sync request body:', JSON.stringify(body));
@@ -4084,6 +4087,15 @@ const appleCalDAVSyncHandler = async (c: any) => {
         console.log(`Using user timezone: ${userTimezone}`);
       } else {
         console.log('No userTimezone in body, using default:', userTimezone);
+      }
+      if (typeof body?.calendarHref === 'string' && body.calendarHref.trim()) {
+        singleCalendarHref = body.calendarHref.trim();
+      }
+      if (body?.skipDeletions === true) {
+        skipDeletions = true;
+      }
+      if (body?.calendarColors && typeof body.calendarColors === 'object') {
+        calendarColors = body.calendarColors as Record<string, string>;
       }
     } catch (error) {
       // No body or invalid JSON - use default timezone
@@ -4142,13 +4154,29 @@ const appleCalDAVSyncHandler = async (c: any) => {
     }
 
     const supabase = getSupabaseClient();
+
+    const colorMap: Record<string, string> = { ...(calendarColors ?? {}) };
+    if (credentialsRaw) {
+      const storedCredentials = typeof credentialsRaw === 'string' ? JSON.parse(credentialsRaw) : credentialsRaw;
+      for (const cal of storedCredentials.selectedCalendars ?? []) {
+        if (cal?.href && cal?.color && !colorMap[cal.href]) {
+          colorMap[cal.href] = cal.color;
+        }
+      }
+    }
+
     const result = await appleCaldavSync.syncCalendarsToDatabase(
       supabase,
       userId,
       workspaceId,
       credentials,
       selectedCalendarHrefs,
-      userTimezone
+      userTimezone,
+      {
+        singleCalendarHref,
+        skipDeletions,
+        calendarColors: Object.keys(colorMap).length > 0 ? colorMap : undefined,
+      },
     );
 
     // If sync corrected stored calendar list (e.g. removed calendar-home URL), persist for next time

@@ -921,32 +921,121 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       
       // Auto-detect user's timezone from browser
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_FALLBACK_TIMEZONE;
-      
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userTimezone }),
-      });
 
-      let data: { success?: boolean; error?: string; errors?: string[]; created?: number; updated?: number; deleted?: number };
-      try {
-        data = await response.json();
-      } catch {
-        const fallbackMessage = response.status === 401
-          ? 'Please sign in again and try syncing.'
-          : response.status >= 500
-            ? 'Calendar service is temporarily unavailable. Please try again in a few minutes.'
-            : 'Could not read server response. Please try again.';
-        if (!silent) {
-          toast.error('Apple Calendar sync failed', { description: fallbackMessage });
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      const syncOneCalendar = async (
+        calendarHref?: string,
+        skipDeletions?: boolean,
+      ): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> => {
+        const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userTimezone,
+            ...(calendarHref ? { calendarHref, skipDeletions: skipDeletions ?? true } : {}),
+          }),
+        });
+
+        let data: Record<string, unknown> = {};
+        try {
+          data = await response.json();
+        } catch {
+          data = {};
         }
-        return false;
+        return { ok: response.ok, status: response.status, data };
+      };
+
+      let statusCalendars: Array<{ href?: string }> = [];
+      try {
+        const statusResp = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/status`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (statusResp.ok) {
+          const statusJson = await statusResp.json();
+          statusCalendars = Array.isArray(statusJson.selectedCalendars)
+            ? statusJson.selectedCalendars
+            : [];
+        }
+      } catch {
+        // fall back to single full sync
       }
 
-      const serverMessage = data.error || (Array.isArray(data.errors) && data.errors.length > 0 ? data.errors.join(' ') : undefined);
+      const calendarHrefs = statusCalendars
+        .map((cal) => cal.href)
+        .filter((href): href is string => Boolean(href));
+
+      const aggregated = {
+        success: true,
+        created: 0,
+        updated: 0,
+        deleted: 0,
+        errors: [] as string[],
+      };
+      let authFailed = false;
+
+      const runSync = async (href?: string, skipDeletions?: boolean) => {
+        let result = await syncOneCalendar(href, skipDeletions);
+        if (result.status === 546 || result.status === 502 || result.status === 503) {
+          await sleep(TIMING_CONSTANTS.calendar.eventsFetchRetryDelayMs);
+          result = await syncOneCalendar(href, skipDeletions);
+        }
+        return result;
+      };
+
+      if (calendarHrefs.length > 1) {
+        for (let i = 0; i < calendarHrefs.length; i++) {
+          const href = calendarHrefs[i];
+          const result = await runSync(href, true);
+          if (!result.ok) {
+            if (result.status === 401) authFailed = true;
+            aggregated.success = false;
+            const err =
+              (typeof result.data.error === 'string' && result.data.error) ||
+              `Sync failed for calendar (${result.status})`;
+            aggregated.errors.push(err);
+          } else {
+            aggregated.created += Number(result.data.created) || 0;
+            aggregated.updated += Number(result.data.updated) || 0;
+            aggregated.deleted += Number(result.data.deleted) || 0;
+            if (result.data.success === false) {
+              aggregated.success = false;
+              if (Array.isArray(result.data.errors)) {
+                aggregated.errors.push(...result.data.errors.map(String));
+              }
+            }
+          }
+          if (i < calendarHrefs.length - 1) {
+            await sleep(TIMING_CONSTANTS.calendar.caldavSyncCalendarDelayMs);
+          }
+        }
+      } else {
+        const result = await runSync(calendarHrefs[0], false);
+        if (!result.ok) {
+          if (result.status === 401) authFailed = true;
+          aggregated.success = false;
+          aggregated.errors.push(
+            (typeof result.data.error === 'string' && result.data.error) ||
+              `Apple Calendar sync failed (${result.status})`,
+          );
+        } else {
+          aggregated.created = Number(result.data.created) || 0;
+          aggregated.updated = Number(result.data.updated) || 0;
+          aggregated.deleted = Number(result.data.deleted) || 0;
+          aggregated.success = result.data.success !== false;
+          if (Array.isArray(result.data.errors)) {
+            aggregated.errors.push(...result.data.errors.map(String));
+          }
+        }
+      }
+
+      const data = aggregated;
+      const response = { ok: aggregated.success, status: aggregated.success ? 200 : 500 };
+      const serverMessage =
+        aggregated.errors.length > 0 ? aggregated.errors.join(' ') : undefined;
 
       if (data.success) {
         setLastSync(new Date());
@@ -967,7 +1056,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           console.debug(`Apple Calendar auto-sync complete: ${data.created} new, ${data.updated} updated, ${data.deleted} removed`);
         }
         return true;
-      } else if (response.status === 401) {
+      } else if (authFailed) {
         if (!silent) {
           toast.error('Session expired', {
             description: 'Please sign in again and try syncing Apple Calendar.',

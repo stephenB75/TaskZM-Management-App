@@ -115,6 +115,10 @@ export const TIMING_CONSTANTS = {
     eventsFetchMaxRetries: 2,
     /** Coalesce parallel calendar fetches from multiple views into one widest-range request (ms). */
     eventsFetchBatchCoalesceMs: 100,
+    /** Max calendar_events rows loaded per Apple DB query (client direct read). */
+    dbQueryMaxRows: 5000,
+    /** Delay between per-calendar CalDAV sync requests (ms). */
+    caldavSyncCalendarDelayMs: 500,
     /** Grace period (ms) after a connect during which checkCalendarStatus will not overwrite that provider to false (avoids visibility/tab race). */
     statusConnectGraceMs: 10 * 1000,
     popupCheckInterval: 500, // 500ms - OAuth popup check interval

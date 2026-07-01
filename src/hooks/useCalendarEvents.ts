@@ -14,10 +14,11 @@ import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay, toCalendarQueryRangeIso } from '../lib/utils';
 import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
 import { expandCalendarEventsForRange } from '../lib/calendar-rrule-expansion';
+import { fetchAppleCalendarEventsFromDb } from '../lib/apple-calendar-db';
 import { resolveCalendarProvidersForFetch, getActiveCalendarProviders, type CalendarProviderKey } from '../lib/calendar-status';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
-const CALENDAR_EVENTS_CACHE_VERSION = 'v9-client-apple-rrule-expansion';
+const CALENDAR_EVENTS_CACHE_VERSION = 'v10-apple-direct-db-read';
 
 export interface CalendarEvent {
   id: string;
@@ -297,6 +298,16 @@ async function fetchProviderEventsOnce(
   accessToken: string,
   userTimezone: string
 ): Promise<CalendarEvent[]> {
+  if (provider === 'apple') {
+    try {
+      const rows = await fetchAppleCalendarEventsFromDb(startDate, endDate);
+      return expandCalendarEventsForRange(rows, startDate, endDate, userTimezone);
+    } catch (error) {
+      logger.warn('Apple Calendar direct DB fetch failed:', error);
+      return [];
+    }
+  }
+
   const maxRetries = TIMING_CONSTANTS.calendar.eventsFetchMaxRetries;
   const retryDelayMs = TIMING_CONSTANTS.calendar.eventsFetchRetryDelayMs;
 
@@ -387,19 +398,6 @@ async function fetchAllEvents(
 
   const results = await Promise.all(promises);
   const combined = results.flat();
-
-  if (providers.includes('apple')) {
-    const appleEvents = combined.filter((event) => event.provider === 'apple');
-    const otherEvents = combined.filter((event) => event.provider !== 'apple');
-    const expandedApple = expandCalendarEventsForRange(
-      appleEvents,
-      startDate,
-      endDate,
-      userTimezone,
-    );
-    return applyRecurrenceTimeCorrections([...otherEvents, ...expandedApple], userTimezone);
-  }
-
   return applyRecurrenceTimeCorrections(combined, userTimezone);
 }
 
