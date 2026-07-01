@@ -126,6 +126,34 @@ export function parseCalendarEventTime(isoString: string | number | null | undef
   return new Date(s);
 }
 
+/** Normalize calendar fetch bounds: start at local midnight, end at local end-of-day (inclusive). */
+export function toCalendarQueryRangeIso(
+  startDate: Date | string,
+  endDate: Date | string,
+): { startIso: string; endIso: string } {
+  if (typeof startDate === 'string' && typeof endDate === 'string') {
+    return { startIso: startDate, endIso: endDate };
+  }
+
+  const start =
+    typeof startDate === 'string'
+      ? new Date(startDate)
+      : new Date(startDate.getTime());
+  if (typeof startDate !== 'string') {
+    start.setHours(0, 0, 0, 0);
+  }
+
+  const end =
+    typeof endDate === 'string'
+      ? new Date(endDate)
+      : new Date(endDate.getTime());
+  if (typeof endDate !== 'string') {
+    end.setHours(23, 59, 59, 999);
+  }
+
+  return { startIso: start.toISOString(), endIso: end.toISOString() };
+}
+
 /** Parse a task or calendar ISO timestamp for display/sort (shared rules with parseCalendarEventTime). */
 export function parseChronologicalTimeSource(timeSource: string | number | Date | null | undefined): Date {
   if (timeSource == null || timeSource === '') return new Date(Number.NaN);

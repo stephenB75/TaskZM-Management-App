@@ -31,6 +31,7 @@ const END_OF_DAY_MINUTE = 59; // Minute for end of day normalization
 const END_OF_DAY_SECOND = 59; // Second for end of day normalization
 const END_OF_DAY_MILLISECOND = 999; // Millisecond for end of day normalization
 const DEFAULT_CALENDAR_TIMEZONE = 'America/New_York';
+const GOOGLE_CALENDAR_MAX_RESULTS = 2500;
 
 function resolveUserTimezone(userTimezone?: string): string {
   const candidate = (userTimezone || '').trim();
@@ -1018,16 +1019,7 @@ export async function getCalendarEvents(
       const tokens = await getCalendarTokens(userId, provider);
       if (tokens) {
         const refreshedTokens = await refreshAccessToken(userId, provider, tokens);
-        const apiEvents = await getGoogleCalendarEvents(refreshedTokens, startDate, endDate, resolvedTimezone);
-        const startDateObj = new Date(startDate);
-        const endDateObj = new Date(endDate);
-        events = expandCalendarEventRowsForRange(
-          apiEvents.map((event) => apiCalendarEventToRow(event, 'google')),
-          startDateObj,
-          endDateObj,
-          resolvedTimezone,
-          'google',
-        );
+        events = await getGoogleCalendarEvents(refreshedTokens, startDate, endDate, resolvedTimezone);
       }
     }
   } else if (provider === 'outlook') {
@@ -1117,7 +1109,7 @@ function generateRecurringOccurrences(
   const byMonthDay = parts['BYMONTHDAY'] ? parseInt(parts['BYMONTHDAY'], 10) : undefined;
 
   const baseStart = new Date(baseEvent.start_time);
-  const baseEnd = new Date(baseEvent.end_time);
+  const baseEnd = new Date(ensureEventEndTime(baseEvent.start_time, baseEvent.end_time));
   const duration = baseEnd.getTime() - baseStart.getTime();
 
   let untilDate = rangeEnd;
@@ -1532,6 +1524,14 @@ function googleColorIdToHex(colorId: string | number | undefined): string | unde
 /**
  * Get Google Calendar events
  */
+function resolveGoogleApiEventTimes(event: any): { start: string; end: string } | null {
+  const start = event?.start?.dateTime || event?.start?.date;
+  if (!start) return null;
+  const rawEnd = event?.end?.dateTime || event?.end?.date;
+  const end = rawEnd ? rawEnd : ensureEventEndTime(start, rawEnd);
+  return { start, end };
+}
+
 async function getGoogleCalendarEvents(
   tokens: CalendarTokens,
   startDate: string,
@@ -1539,13 +1539,14 @@ async function getGoogleCalendarEvents(
   userTimezone: string = DEFAULT_CALENDAR_TIMEZONE
 ): Promise<CalendarEvent[]> {
   const resolvedTimezone = resolveUserTimezone(userTimezone);
-  // Fetch base recurring events (not expanded)
+  // Expanded instances for display fallback — Google filters to the requested window
   const baseUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
   baseUrl.searchParams.set('timeMin', startDate);
   baseUrl.searchParams.set('timeMax', endDate);
-  baseUrl.searchParams.set('singleEvents', 'false'); // Get base recurring events
+  baseUrl.searchParams.set('singleEvents', 'true');
   baseUrl.searchParams.set('orderBy', 'startTime');
   baseUrl.searchParams.set('timeZone', resolvedTimezone);
+  baseUrl.searchParams.set('maxResults', String(GOOGLE_CALENDAR_MAX_RESULTS));
 
   const response = await fetch(baseUrl.toString(), {
     headers: {
@@ -1558,18 +1559,25 @@ async function getGoogleCalendarEvents(
   }
 
   const data = await response.json();
-  
-  return (data.items || []).map((event: any) => {
-    const isRecurring = !!(event.recurrence && event.recurrence.length > 0);
-    const rrule = isRecurring ? convertGoogleRecurrenceToRRULE(event.recurrence) : undefined;
+  const results: CalendarEvent[] = [];
+
+  for (const event of data.items || []) {
+    const times = resolveGoogleApiEventTimes(event);
+    if (!times) continue;
+
+    const isSeriesInstance = Boolean(event.recurringEventId);
+    const isRecurring = isSeriesInstance || !!(event.recurrence && event.recurrence.length > 0);
+    const rrule = !isSeriesInstance && event.recurrence?.length
+      ? convertGoogleRecurrenceToRRULE(event.recurrence)
+      : undefined;
     const recurrenceBaseId = event.recurringEventId || (isRecurring ? event.id : undefined);
-    
-    return {
+
+    results.push({
       id: `google_${event.id}`,
-      title: event.summary,
+      title: event.summary || 'Calendar Event',
       description: event.description,
-      start: event.start.dateTime || event.start.date,
-      end: event.end.dateTime || event.end.date,
+      start: times.start,
+      end: times.end,
       location: event.location,
       provider: 'google',
       providerEventId: event.id,
@@ -1577,8 +1585,10 @@ async function getGoogleCalendarEvents(
       rrule,
       recurrenceBaseId,
       isRecurring,
-    };
-  });
+    });
+  }
+
+  return results;
 }
 
 /**
@@ -1686,7 +1696,11 @@ async function getOutlookCalendarEvents(
   // Fetch base recurring events (not expanded instances)
   // Use /events endpoint with $filter to get series masters
   const url = new URL('https://graph.microsoft.com/v1.0/me/calendar/events');
-  url.searchParams.set('$filter', `start/dateTime ge '${startDate}' and end/dateTime le '${endDate}'`);
+  // Overlap filter — events that span the query window, not only those fully inside it
+  url.searchParams.set(
+    '$filter',
+    `start/dateTime le '${endDate}' and end/dateTime ge '${startDate}'`,
+  );
   url.searchParams.set('$select', 'id,subject,body,start,end,location,recurrence,seriesMasterId,type');
   url.searchParams.set('$orderby', 'start/dateTime');
 
@@ -1706,18 +1720,24 @@ async function getOutlookCalendarEvents(
   // Default Outlook/Microsoft 365 calendar color (no per-event color in Graph)
   const OUTLOOK_DEFAULT_CALENDAR_COLOR = '#0078D4';
 
-  return (data.value || []).map((event: any) => {
-    // Only process series masters (base recurring events) or single events
+  const results: CalendarEvent[] = [];
+  for (const event of data.value || []) {
+    const start = event?.start?.dateTime;
+    if (!start) continue;
+    const end = event?.end?.dateTime
+      ? event.end.dateTime
+      : ensureEventEndTime(start, event?.end?.dateTime);
+
     const isRecurring = event.type === 'seriesMaster' || !!event.recurrence;
     const rrule = isRecurring ? convertOutlookRecurrenceToRRULE(event.recurrence) : undefined;
     const recurrenceBaseId = event.seriesMasterId || (isRecurring ? event.id : undefined);
-    
-    return {
+
+    results.push({
       id: `outlook_${event.id}`,
-      title: event.subject,
+      title: event.subject || 'Calendar Event',
       description: event.body?.content,
-      start: event.start.dateTime,
-      end: event.end.dateTime,
+      start,
+      end,
       location: event.location?.displayName,
       provider: 'outlook',
       providerEventId: event.id,
@@ -1725,8 +1745,10 @@ async function getOutlookCalendarEvents(
       rrule,
       recurrenceBaseId,
       isRecurring,
-    };
-  });
+    });
+  }
+
+  return results;
 }
 
 /**

@@ -11,12 +11,12 @@ import {
   getCalendarEventsInvalidationEpoch,
 } from '../lib/calendar-events-cache';
 import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
-import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay } from '../lib/utils';
+import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay, toCalendarQueryRangeIso } from '../lib/utils';
 import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
 import { resolveCalendarProvidersForFetch, getActiveCalendarProviders, type CalendarProviderKey } from '../lib/calendar-status';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
-const CALENDAR_EVENTS_CACHE_VERSION = 'v5-no-empty-cache-provider-refetch';
+const CALENDAR_EVENTS_CACHE_VERSION = 'v6-api-fallback-end-of-day';
 
 export interface CalendarEvent {
   id: string;
@@ -201,18 +201,13 @@ export function useCalendarEvents(
   const [error, setError] = useState<Error | null>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const emptyResultRetryRef = useRef(false);
   const enabled = options?.enabled !== false;
 
-  // Normalize dates to ISO strings
-  const startIso = useMemo(() => {
-    if (typeof startDate === 'string') return startDate;
-    return startDate.toISOString();
-  }, [startDate]);
-
-  const endIso = useMemo(() => {
-    if (typeof endDate === 'string') return endDate;
-    return endDate.toISOString();
-  }, [endDate]);
+  const { startIso, endIso } = useMemo(
+    () => toCalendarQueryRangeIso(startDate, endDate),
+    [startDate, endDate],
+  );
 
   // Determine which providers to fetch (context + persisted fallback when API cache is stale)
   const providers = useMemo(
@@ -281,6 +276,20 @@ export function useCalendarEvents(
 
         setEvents(fetchedEvents);
         setIsLoading(false);
+
+        // One retry when connected but empty — covers in-flight sync or stale edge cache
+        if (
+          fetchedEvents.length === 0 &&
+          activeProviders.length > 0 &&
+          !emptyResultRetryRef.current
+        ) {
+          emptyResultRetryRef.current = true;
+          delete globalCache[runtimeCacheKey];
+          window.setTimeout(() => {
+            fetchEventsForProviders(activeProviders);
+          }, TIMING_CONSTANTS.delays.calendarCheck);
+        }
+
         return fetchedEvents;
       })
       .catch((err) => {
@@ -303,6 +312,11 @@ export function useCalendarEvents(
   }, [fetchEventsForProviders]);
 
   const providersKey = providers.join(',');
+
+  // Reset empty-result retry when range or providers change
+  useEffect(() => {
+    emptyResultRetryRef.current = false;
+  }, [providersKey, startIso, endIso]);
 
   // When connected providers change, clear cache and refetch immediately
   const prevProvidersKeyRef = useRef(providersKey);

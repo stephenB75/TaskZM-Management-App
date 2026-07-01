@@ -1346,6 +1346,23 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     };
   }, [user, accessToken, calendarStatus.google, calendarStatus.outlook, calendarStatus.apple, user?.id]);
 
+  // Periodic automatic sync for Google Calendar
+  useEffect(() => {
+    if (!user || !accessToken || !resolveCalendarProvidersForFetch(calendarStatus, user.id).includes(CALENDAR_PROVIDERS.google)) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+      console.debug('Periodic Google Calendar sync triggered...');
+      if (syncGoogleCalendarInternalRef.current) {
+        syncGoogleCalendarInternalRef.current(true);
+      }
+    }, CALENDAR_SYNC_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [user, accessToken, calendarStatus.google, calendarStatus.outlook, calendarStatus.apple, user?.id]);
+
   // Periodic automatic sync for Apple Calendar
   useEffect(() => {
     if (!user || !accessToken || !resolveCalendarProvidersForFetch(calendarStatus, user.id).includes(CALENDAR_PROVIDERS.apple)) {
