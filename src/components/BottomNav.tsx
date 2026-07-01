@@ -29,8 +29,6 @@ import {
   NAV_BAR_ACTIVE_SCALE,
   NAV_BAR_INITIAL_Y_OFFSET,
   NAV_BAR_ANIMATION_DURATION,
-  NAV_BAR_ANIMATION_STIFFNESS,
-  NAV_BAR_ANIMATION_DAMPING,
   NAV_BAR_HAPTIC_DURATION,
   NAV_BAR_BUTTON_TRANSITION_DURATION,
   NAV_BAR_SHADOW_OPACITY_LIGHT,
@@ -161,6 +159,8 @@ export function BottomNav({
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
       style={{
         zIndex: Z_INDEX.NAV_BAR,
+        paddingLeft: NAV_BAR_HORIZONTAL_PADDING_LEFT,
+        paddingRight: NAV_BAR_HORIZONTAL_PADDING_RIGHT,
         boxShadow: isDark
           ? `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity('#000000', 0.3)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity('#000000', 0.2)}`
           : `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_LIGHT)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_DARK)}`,
@@ -178,15 +178,12 @@ export function BottomNav({
       )}
 
       <div
-        className="grid overflow-visible bg-white dark:bg-gray-900"
+        className="relative grid overflow-visible bg-white dark:bg-gray-900"
         data-tour="bottom-nav"
         style={{
           gridTemplateColumns: `repeat(${NAV_BAR_TAB_COUNT}, minmax(0, 1fr))`,
           height: `${NAV_BAR_HEIGHT}px`,
-          paddingLeft: NAV_BAR_HORIZONTAL_PADDING_LEFT,
-          paddingRight: NAV_BAR_HORIZONTAL_PADDING_RIGHT,
           alignItems: 'center',
-          justifyItems: 'stretch',
         }}
       >
         {navItems.map((item) => {
@@ -196,7 +193,7 @@ export function BottomNav({
               data-tour={`bottom-nav-${item.id}`}
               onClick={item.onClick}
               className={cn(
-                "flex h-full w-full min-h-0 flex-col items-center justify-center rounded-xl relative overflow-visible",
+                "flex h-full w-full min-w-0 flex-col items-center justify-center rounded-xl relative overflow-visible",
                 "touch-manipulation transition-transform ease-out",
                 item.active && "text-primary dark:text-primary-foreground",
                 !item.active &&
@@ -222,7 +219,7 @@ export function BottomNav({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              {/* Icon — fixed square slot, centered horizontally in tab column */}
+              {/* Icon — fixed square slot, centered in equal-width column */}
               <div
                 className="relative flex shrink-0 items-center justify-center"
                 style={{
@@ -230,22 +227,17 @@ export function BottomNav({
                   height: NAV_BAR_ICON_SLOT_SIZE,
                 }}
               >
-                {/* Active indicator - centered above icon */}
                 {item.active && (
-                  <motion.div
-                    layoutId="bottomNavIndicator"
-                    className="absolute bg-primary rounded-full z-0"
+                  <div
+                    className="absolute z-0 rounded-full bg-primary"
                     style={{
                       width: NAV_BAR_INDICATOR_WIDTH,
                       height: NAV_BAR_INDICATOR_HEIGHT,
                       top: NAV_BAR_INDICATOR_TOP,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: NAV_BAR_ANIMATION_STIFFNESS,
-                      damping: NAV_BAR_ANIMATION_DAMPING,
+                      left: 0,
+                      right: 0,
+                      marginLeft: 'auto',
+                      marginRight: 'auto',
                     }}
                   />
                 )}
@@ -274,10 +266,10 @@ export function BottomNav({
                 )}
               </div>
 
-              {/* Label */}
+              {/* Label — centered in equal-width tab column */}
               <span 
                 className={cn(
-                  "shrink-0 font-medium text-center w-full truncate px-0.5",
+                  "w-full min-w-0 shrink-0 truncate text-center font-medium",
                   item.active 
                     ? "text-primary dark:text-primary-foreground" 
                     : "text-muted-foreground dark:text-gray-400"
