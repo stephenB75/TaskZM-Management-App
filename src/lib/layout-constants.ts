@@ -1108,8 +1108,8 @@ export const AUTH_SCREEN = {
   mobile: {
     padding: {
       horizontal: '1rem', // px-4 = 1rem (16px) - comfortable side padding
-      vertical: '0.25rem', // py-1 = 0.25rem (4px) - reduced top padding to move dialog up
-      bottom: '1.5rem', // pb-6 = 1.5rem (24px) - increased bottom padding to prevent touching screen
+      vertical: '1rem', // balanced inset when vertically centered
+      bottom: '1rem', // balanced inset when vertically centered
     },
     logo: {
       width: '180px', // w-[180px] - increased by 50% from 120px (120 * 1.5 = 180)
@@ -1147,8 +1147,8 @@ export const AUTH_SCREEN = {
   tablet: {
     padding: {
       horizontal: '1.5rem', // px-6 = 1.5rem (24px)
-      vertical: '0.5rem', // py-2 = 0.5rem (8px) - further reduced to move dialog up
-      bottom: '2rem', // pb-8 = 2rem (32px) - increased bottom padding to prevent touching screen
+      vertical: '1rem', // balanced inset when vertically centered
+      bottom: '1.25rem',
     },
     logo: {
       width: '270px', // w-[270px] - increased by 50% from 180px (180 * 1.5 = 270)
@@ -1179,8 +1179,8 @@ export const AUTH_SCREEN = {
   desktop: {
     padding: {
       horizontal: '1.5rem', // px-6 = 1.5rem (24px)
-      vertical: '0.75rem', // py-3 = 0.75rem (12px) - further reduced to move dialog up
-      bottom: '2rem', // pb-8 = 2rem (32px) - increased bottom padding to prevent touching screen
+      vertical: '1.25rem',
+      bottom: '1.5rem',
     },
     logo: {
       width: '330px', // w-[330px] - increased by 50% from 220px (220 * 1.5 = 330)
@@ -1209,6 +1209,14 @@ export const AUTH_SCREEN = {
       height: '2.75rem', // h-11 = 2.75rem (44px) - desktop primary button
     },
   },
+} as const;
+
+/** Safe-area-aware auth screen padding (pair with AUTH_SCREEN.*.padding base values). */
+export const AUTH_SCREEN_SAFE_AREA = {
+  top: (base: string) => `max(${base}, env(safe-area-inset-top, 0px))`,
+  bottom: (base: string) => `max(${base}, env(safe-area-inset-bottom, 0px))`,
+  left: (base: string) => `max(${base}, env(safe-area-inset-left, 0px))`,
+  right: (base: string) => `max(${base}, env(safe-area-inset-right, 0px))`,
 } as const;
 
 // Dialog Close Button Constants

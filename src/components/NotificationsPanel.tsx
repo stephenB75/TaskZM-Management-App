@@ -157,9 +157,11 @@ export function NotificationsPanel() {
         });
     }
 
-    // Pomodoro timer completions - detect new session completions
+    // Pomodoro timer completions - detect new session completions (skip completed tasks)
     const updatedLastSeen: Record<string, number> = { ...lastSeenSessions };
     tasks.forEach(task => {
+      if (task.status === 'done') return;
+
       const timerState = getTimerState(task.id);
       const lastSeen = lastSeenSessions[task.id] || 0;
       

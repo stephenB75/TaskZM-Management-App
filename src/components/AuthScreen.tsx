@@ -48,7 +48,7 @@ import {
   AUTH_REMEMBER_EMAIL_KEY,
 } from '../lib/auth-constants';
 import { getUserFriendlyErrorMessage } from '../lib/error-utils';
-import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS, PANEL_GAP_MEDIUM, PANEL_GAP_SMALL, PANEL_FIELD_SPACING } from '../lib/layout-constants';
+import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS, PANEL_GAP_MEDIUM, PANEL_GAP_SMALL, PANEL_FIELD_SPACING, AUTH_SCREEN_SAFE_AREA } from '../lib/layout-constants';
 import { useIsMobile } from './ui/use-mobile';
 import { AvatarSelection } from './AvatarSelection';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
@@ -435,12 +435,12 @@ export function AuthScreen() {
 
   return (
     <div 
-      className="min-h-screen w-full overflow-x-hidden relative flex items-start sm:items-center justify-center"
+      className="min-h-viewport-safe w-full overflow-x-hidden overflow-y-auto relative flex items-center justify-center"
       style={{
-        paddingTop: padding.vertical,
-        paddingBottom: padding.bottom,
-        paddingLeft: padding.horizontal,
-        paddingRight: padding.horizontal,
+        paddingTop: AUTH_SCREEN_SAFE_AREA.top(padding.vertical),
+        paddingBottom: AUTH_SCREEN_SAFE_AREA.bottom(padding.bottom),
+        paddingLeft: AUTH_SCREEN_SAFE_AREA.left(padding.horizontal),
+        paddingRight: AUTH_SCREEN_SAFE_AREA.right(padding.horizontal),
       } as React.CSSProperties}
     >
       {/* Background Image with Overlay - Full viewport coverage */}
@@ -482,7 +482,7 @@ export function AuthScreen() {
 
       {/* Main Content */}
       <motion.div
-        className="relative z-10 w-full mx-auto"
+        className="relative z-10 w-full mx-auto my-auto"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -491,15 +491,10 @@ export function AuthScreen() {
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          maxHeight: '100vh',
         } as React.CSSProperties}
       >
         <div 
           className="flex flex-col items-center justify-center w-full"
-          style={{
-            maxHeight: '100vh',
-            overflow: 'hidden',
-          } as React.CSSProperties}
         >
           {/* Branding Section - Above form */}
           <motion.div

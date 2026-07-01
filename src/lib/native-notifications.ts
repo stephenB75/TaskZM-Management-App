@@ -254,17 +254,25 @@ export async function syncScheduledTaskNotifications(
   try {
     const LocalNotifications = await loadLocalNotifications();
     const now = new Date();
-    const cancelIds: { id: number }[] = [];
 
-    for (const task of tasks) {
-      cancelIds.push(
-        { id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.reminder, task.id) },
-        { id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.overdue, task.id) },
-      );
-    }
-
-    if (cancelIds.length > 0) {
-      await LocalNotifications.cancel({ notifications: cancelIds });
+    try {
+      const pending = await LocalNotifications.getPending();
+      const pendingIds = pending.notifications?.map((notification) => ({ id: notification.id })) ?? [];
+      if (pendingIds.length > 0) {
+        await LocalNotifications.cancel({ notifications: pendingIds });
+      }
+    } catch (cancelError) {
+      logger.debug('Could not cancel pending native notifications, falling back to per-task cancel:', cancelError);
+      const cancelIds: { id: number }[] = [];
+      for (const task of tasks) {
+        cancelIds.push(
+          { id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.reminder, task.id) },
+          { id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.overdue, task.id) },
+        );
+      }
+      if (cancelIds.length > 0) {
+        await LocalNotifications.cancel({ notifications: cancelIds });
+      }
     }
 
     if (!settings.enabled || permission !== 'granted') return;

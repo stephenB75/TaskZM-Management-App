@@ -26,7 +26,7 @@ import {
   getOverdueTasks,
   getDueSoonTasks,
 } from '../lib/native-notifications';
-import { isEligibleForTaskNotification, isTaskOverdue, isTaskDueSoon } from '../lib/notification-task-filters';
+import { isEligibleForTaskNotification, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -197,6 +197,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [tasks, settings, updateBadge]);
 
   useEffect(() => {
+    const dismissed = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, []);
+    const notified = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.notifiedTasks, []);
+    const prunedDismissed = pruneStaleTaskNotificationKeys(dismissed, tasks);
+    const prunedNotified = pruneStaleTaskNotificationKeys(notified, tasks);
+    if (prunedDismissed.length !== dismissed.length) {
+      saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, prunedDismissed);
+    }
+    if (prunedNotified.length !== notified.length) {
+      saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.notifiedTasks, prunedNotified);
+    }
+  }, [tasks]);
+
+  useEffect(() => {
     void syncNativeSchedule();
   }, [syncNativeSchedule]);
 
@@ -211,12 +224,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const now = new Date();
     const notifiedTasksArray = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.notifiedTasks, []);
     const notifiedTasks = new Set(notifiedTasksArray);
+    const dismissedNotificationsArray = getFromLocalStorage<string[]>(
+      NOTIFICATION_STORAGE_KEYS.dismissedNotifications,
+      [],
+    );
+    const dismissedNotifications = new Set(dismissedNotificationsArray);
 
     let overdueCount = 0;
     let dueSoonCount = 0;
 
     if (settings.overdueAlerts) {
-      const overdueTasks = getOverdueTasks(tasks, { now }).filter(
+      const overdueTasks = getOverdueTasks(tasks, { dismissedNotificationIds: dismissedNotifications, now }).filter(
         task => !notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`),
       );
 
@@ -237,7 +255,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     if (settings.dueDateReminders) {
-      const dueSoonTasks = getDueSoonTasks(tasks, settings.reminderTime, { now }).filter(
+      const dueSoonTasks = getDueSoonTasks(tasks, settings.reminderTime, {
+        dismissedNotificationIds: dismissedNotifications,
+        now,
+      }).filter(
         task => !notifiedTasks.has(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`),
       );
 
@@ -264,6 +285,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         const taskId = parts.slice(1).join('_');
         const task = tasks.find(t => t.id === taskId);
         if (!task || task.status === 'done' || !isEligibleForTaskNotification(task)) return;
+        if (dismissedNotifications.has(`overdue_${taskId}`) || dismissedNotifications.has(`due-soon_${taskId}`)) {
+          return;
+        }
         if (taskKey.startsWith(NOTIFICATION_TAG_PREFIXES.overdue) && !isTaskOverdue(task, now)) return;
         if (taskKey.startsWith(NOTIFICATION_TAG_PREFIXES.reminder) && !isTaskDueSoon(task, settings.reminderTime, now)) {
           return;

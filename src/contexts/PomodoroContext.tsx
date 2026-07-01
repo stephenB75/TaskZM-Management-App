@@ -77,7 +77,7 @@ interface PersistedTimerState {
 const STORAGE_KEY = STORAGE_KEY_POMODORO;
 
 export function PomodoroProvider({ children }: { children: React.ReactNode }) {
-  const { updateTask } = useTasks();
+  const { updateTask, tasks } = useTasks();
   const [timers, setTimers] = useState<Record<string, TimerState>>({});
   const [timerTick, setTimerTick] = useState(0);
   const globalIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -553,6 +553,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
   async function handleTimerComplete(taskId: string) {
     const current = timersRef.current[taskId];
     if (!current) return;
+
+    const taskRecord = tasks.find((task) => task.id === taskId);
+    if (taskRecord?.status === 'done') {
+      return;
+    }
 
     const taskTitle = taskTitlesRef.current[taskId] || NOTIFICATION_MESSAGES.defaultTaskTitle;
 
