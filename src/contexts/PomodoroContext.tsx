@@ -10,7 +10,8 @@ import {
   SECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
 } from '../lib/business-constants';
-import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES, NOTIFICATION_POMODORO_TOAST, NOTIFICATION_ICONS } from '../lib/notification-constants';
+import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES, NOTIFICATION_POMODORO_TOAST } from '../lib/notification-constants';
+import { showNotification, getNotificationPermission, requestNotificationPermission } from '../lib/native-notifications';
 import { TOAST_DURATION_EXTRA_LONG_MS } from '../lib/layout-constants';
 import { useTasks } from './TaskContext';
 import { createDefaultPomodoroContext } from '../lib/context-defaults';
@@ -215,9 +216,11 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       logger.error('Failed to update task status to in-progress:', err);
     });
 
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    void getNotificationPermission().then((perm) => {
+      if (perm === 'default') {
+        void requestNotificationPermission();
+      }
+    });
 
     runGlobalTick(taskId, !isResume);
   };
@@ -598,11 +601,15 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       lastUpdateTimeRef.current[taskId] = 0;
       sessionStartTimeRef.current[taskId] = 0;
 
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(NOTIFICATION_TITLES.pomodoroComplete, {
+      try {
+        await showNotification({
+          title: NOTIFICATION_TITLES.pomodoroComplete,
           body: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
-          icon: NOTIFICATION_ICONS.pomodoroBrowser,
+          tag: `pomodoro_${taskId}_${newSessions}`,
+          data: { taskId, type: 'pomodoro' },
         });
+      } catch (err) {
+        logger.debug('Pomodoro completion notification skipped:', err);
       }
 
       toast.success(NOTIFICATION_TITLES.pomodoroComplete, {

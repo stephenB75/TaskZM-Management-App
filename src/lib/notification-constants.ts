@@ -25,9 +25,35 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   showBadge: true,
   dueDateReminders: true,
   overdueAlerts: true,
+  soundEnabled: true,
   reminderTime: DEFAULT_NOTIFICATION_REMINDER_TIME,
   checkInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL,
 } as const;
+
+/** Custom event dispatched when a notification is tapped (native or web). */
+export const NOTIFICATION_OPEN_TASK_EVENT = 'taskzm-open-task';
+
+/** Scheduled local notification ID prefixes (hashed to integers for Capacitor). */
+export const SCHEDULED_NOTIFICATION_PREFIXES = {
+  overdue: 'overdue',
+  reminder: 'reminder',
+} as const;
+
+/** Settings UI options for reminder lead time (minutes). */
+export const NOTIFICATION_REMINDER_TIME_OPTIONS = [
+  { value: 15, label: '15 minutes before' },
+  { value: 30, label: '30 minutes before' },
+  { value: 60, label: '1 hour before' },
+  { value: 120, label: '2 hours before' },
+] as const;
+
+/** Settings UI options for foreground poll interval (minutes). */
+export const NOTIFICATION_CHECK_INTERVAL_OPTIONS = [
+  { value: 5, label: 'Every 5 minutes' },
+  { value: 15, label: 'Every 15 minutes' },
+  { value: 30, label: 'Every 30 minutes' },
+  { value: 60, label: 'Every hour' },
+] as const;
 
 // LocalStorage keys
 export const NOTIFICATION_STORAGE_KEYS = {
@@ -131,6 +157,18 @@ export const NOTIFICATION_PANEL_TEXT = {
     currentBadgeCount: 'Current Badge Count',
     taskNeedsAttention: 'task needs attention',
     tasksNeedAttention: 'tasks need attention',
+  },
+  sound: {
+    label: 'Sound',
+    description: 'Play a chime for task reminders',
+  },
+  reminderTime: {
+    label: 'Reminder Lead Time',
+    description: 'How far ahead to alert before a task is due',
+  },
+  checkInterval: {
+    label: 'Check While App Is Open',
+    description: 'How often to check for due tasks when the app is active',
   },
 } as const;
 

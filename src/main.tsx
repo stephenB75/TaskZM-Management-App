@@ -461,12 +461,14 @@ import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { initNativeAppHandlers } from './lib/native-app';
+import { initNativeNotificationHandlers } from './lib/native-notifications';
 
 // Platform detection
 const isNative = Capacitor.isNativePlatform();
 
 if (isNative) {
   initNativeAppHandlers();
+  initNativeNotificationHandlers();
 }
 
 // In dev, unregister any existing service worker and clear runtime caches so Vite HMR

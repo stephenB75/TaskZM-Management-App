@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Separator } from './ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { CheckboxSwitch as Switch } from './ui/checkbox-switch';
 import { Input } from './ui/input';
@@ -201,7 +202,7 @@ import {
   SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
   SETTINGS_PANEL_LIST_ROW_PADDING_Y,
 } from '../lib/layout-constants';
-import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT } from '../lib/notification-constants';
+import { NOTIFICATION_TOAST_MESSAGES, NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS, NOTIFICATION_CHECK_INTERVAL_OPTIONS } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { CALENDAR_PROVIDERS, CALENDAR_SETTINGS_LABELS, CALENDAR_SETTINGS_UI } from '../lib/calendar-integration-constants';
@@ -1383,35 +1384,73 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           <SettingsToggleRow
                             id="notifications-reminders"
                             label="Due Date Reminders"
-                            description="Notify 1 hour before tasks are due"
+                            description={
+                              NOTIFICATION_REMINDER_TIME_OPTIONS.find(
+                                (option) => option.value === notificationSettings.reminderTime,
+                              )?.label ?? NOTIFICATION_PANEL_TEXT.reminderTime.description
+                            }
                             checked={notificationSettings.dueDateReminders}
                             disabled={!notificationSettings.enabled || permission !== 'granted'}
                             onCheckedChange={(checked) => updateNotificationSettings({ dueDateReminders: checked })}
                           />
                           <SettingsToggleRow
-                            id="push-notif"
-                            label="Push Notifications"
-                            description="Desktop and mobile alerts"
-                            checked={notificationSettings.enabled && permission === 'granted'}
-                            disabled={!notificationSettings.enabled || permission !== 'granted'}
-                            onCheckedChange={() => {}}
-                          />
-                          <SettingsToggleRow
-                            id="email-notif"
-                            label="Email Notifications"
-                            description="Daily task summary emails"
-                            checked={false}
-                            disabled={!notificationSettings.enabled || permission !== 'granted'}
-                            onCheckedChange={() => {}}
-                          />
-                          <SettingsToggleRow
                             id="sound-notif"
-                            label="Sound"
-                            description="Play sound for notifications"
-                            checked
+                            label={NOTIFICATION_PANEL_TEXT.sound.label}
+                            description={NOTIFICATION_PANEL_TEXT.sound.description}
+                            checked={notificationSettings.soundEnabled}
                             disabled={!notificationSettings.enabled || permission !== 'granted'}
-                            onCheckedChange={() => {}}
+                            onCheckedChange={(checked) => updateNotificationSettings({ soundEnabled: checked })}
                           />
+                          <div
+                            className="flex flex-col gap-2 border-t border-border/40 px-4 py-3"
+                            style={{ opacity: !notificationSettings.enabled || permission !== 'granted' ? 0.5 : 1 }}
+                          >
+                            <Label htmlFor="notification-reminder-time" className="text-sm font-medium">
+                              {NOTIFICATION_PANEL_TEXT.reminderTime.label}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">{NOTIFICATION_PANEL_TEXT.reminderTime.description}</p>
+                            <Select
+                              value={String(notificationSettings.reminderTime)}
+                              disabled={!notificationSettings.enabled || permission !== 'granted'}
+                              onValueChange={(value) => updateNotificationSettings({ reminderTime: Number(value) })}
+                            >
+                              <SelectTrigger id="notification-reminder-time" className="h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {NOTIFICATION_REMINDER_TIME_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={String(option.value)}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div
+                            className="flex flex-col gap-2 border-t border-border/40 px-4 py-3"
+                            style={{ opacity: !notificationSettings.enabled || permission !== 'granted' ? 0.5 : 1 }}
+                          >
+                            <Label htmlFor="notification-check-interval" className="text-sm font-medium">
+                              {NOTIFICATION_PANEL_TEXT.checkInterval.label}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">{NOTIFICATION_PANEL_TEXT.checkInterval.description}</p>
+                            <Select
+                              value={String(notificationSettings.checkInterval)}
+                              disabled={!notificationSettings.enabled || permission !== 'granted'}
+                              onValueChange={(value) => updateNotificationSettings({ checkInterval: Number(value) })}
+                            >
+                              <SelectTrigger id="notification-check-interval" className="h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {NOTIFICATION_CHECK_INTERVAL_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={String(option.value)}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </SettingsControlGroup>
                       </SettingsGroup>
 

@@ -42,6 +42,7 @@ import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
+import { NOTIFICATION_OPEN_TASK_EVENT } from './lib/notification-constants';
 import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_MOBILE_SPACER_HEIGHT, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_SPACER_HEIGHT, NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_HEIGHT, NAV_BAR_SCROLL_BUFFER_REM, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
@@ -130,6 +131,19 @@ export default function AppContent() {
     updatePanelWidth();
     window.addEventListener('resize', updatePanelWidth);
     return () => window.removeEventListener('resize', updatePanelWidth);
+  }, []);
+
+  // Open notifications panel when user taps a system notification
+  useEffect(() => {
+    const handleOpenTaskFromNotification = (_event: CustomEvent<{ taskId?: string }>) => {
+      setCurrentView('notifications');
+      setAiPanelOpen(false);
+    };
+
+    window.addEventListener(NOTIFICATION_OPEN_TASK_EVENT, handleOpenTaskFromNotification as EventListener);
+    return () => {
+      window.removeEventListener(NOTIFICATION_OPEN_TASK_EVENT, handleOpenTaskFromNotification as EventListener);
+    };
   }, []);
 
   // Handle tour events for view mode changes and panel opening

@@ -400,6 +400,7 @@ export function createDefaultNotificationContext() {
       showBadge: true,
       dueDateReminders: true,
       overdueAlerts: true,
+      soundEnabled: true,
       reminderTime: DEFAULT_NOTIFICATION_REMINDER_TIME,
       checkInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL,
     },
