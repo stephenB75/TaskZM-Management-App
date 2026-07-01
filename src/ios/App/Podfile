@@ -111,6 +111,17 @@ def patch_capacitor_framework_headers
         .gsub('@import Cordova;', "#import <Cordova/CDVConfigParser.h> /* #{marker} */")
     end
 
+    if File.basename(path) == 'CAPBridgeViewController+CDVScreenOrientationDelegate.h'
+      orientation_marker = 'TASKZM_CDV_SCREEN_ORIENTATION_IMPORT'
+      unless patched.include?(orientation_marker)
+        patched = patched.sub(
+          "#import <Capacitor/Capacitor-Swift.h>\n",
+          "#import <Capacitor/Capacitor-Swift.h>\n" \
+          "#import <Cordova/CDVScreenOrientationDelegate.h> /* #{orientation_marker} */\n",
+        )
+      end
+    end
+
     File.write(path, patched) if patched != content
   end
 end
