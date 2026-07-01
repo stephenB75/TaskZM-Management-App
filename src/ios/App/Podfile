@@ -52,6 +52,33 @@ def fix_cocoapods_script_phases(project)
   end
 end
 
+def patch_capacitor_cordova_framework_headers
+  marker = 'TASKZM_CORDOVA_ANGLE_INCLUDES'
+  public_dir = File.expand_path(
+    '../../node_modules/@capacitor/ios/CapacitorCordova/CapacitorCordova/Classes/Public',
+    __dir__,
+  )
+  return unless Dir.exist?(public_dir)
+
+  public_headers = Dir.glob(File.join(public_dir, '*.h')).map { |path| File.basename(path) }
+
+  Dir.glob(File.join(public_dir, '*.h')).each do |path|
+    content = File.read(path)
+    next if content.include?(marker)
+
+    patched = content.gsub(/#import\s+"([^"]+\.h)"/) do
+      header = Regexp.last_match(1)
+      if public_headers.include?(header)
+        "#import <Cordova/#{header}> /* #{marker} */"
+      else
+        Regexp.last_match(0)
+      end
+    end
+
+    File.write(path, patched) if patched != content
+  end
+end
+
 def silence_capacitor_cordova_wkprocesspool_deprecations
   marker = 'TASKZM_SUPPRESS_WKPROCESSPOOL_DEPRECATION'
   base = File.expand_path(
@@ -96,6 +123,7 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+  patch_capacitor_cordova_framework_headers
   silence_capacitor_cordova_wkprocesspool_deprecations
 
   installer.pods_project.targets.each do |target|
