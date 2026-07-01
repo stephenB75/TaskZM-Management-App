@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.31';
-export const VERSION_NAME = 'Auth Layout & Notification Fixes';
+export const APP_VERSION = '1.0.32';
+export const VERSION_NAME = 'Mobile Nav & Toast Safe Area';
 export const VERSION_DATE = 'July 1, 2026';
-export const BUILD_NUMBER = '20260701-1';
+export const BUILD_NUMBER = '20260701-2';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,17 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.32',
+    date: 'July 1, 2026',
+    name: 'Mobile Nav & Toast Safe Area',
+    changes: [
+      'Bottom nav: icons centered in equal-width tabs; safe area separated from content row',
+      'Sonner toasts: positioned below Dynamic Island / status bar with safe-area insets on iOS',
+      'Today Agenda sidebar badge: due-now/upcoming only (excludes stale overdue counts)',
+      'Notification bell vs calendar badge behavior clarified and aligned',
+    ],
+  },
   {
     version: '1.0.31',
     date: 'July 1, 2026',
