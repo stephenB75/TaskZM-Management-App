@@ -3,6 +3,8 @@
  * Centralized configuration for subscription features, pricing, and UI text
  */
 
+import { MILLISECONDS_PER_MINUTE } from './business-constants';
+
 // Default pricing
 export const DEFAULT_MONTHLY_PRICE = "$3.99";
 export const DEFAULT_YEARLY_PRICE = "$39.99";
