@@ -79,7 +79,7 @@ cd App && pod install && open App.xcworkspace
 
 3. In Xcode:
    - Select your **Team** under Signing & Capabilities
-   - Confirm **Bundle Identifier**: `com.taskzm.app`
+   - Confirm **Bundle Identifier**: `com.app.taskzm.com`
    - Enable **In-App Purchase** capability (for RevenueCat / App Store subscriptions)
 
 ## Archive & upload

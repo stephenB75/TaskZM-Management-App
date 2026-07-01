@@ -2,7 +2,7 @@
  * Mobile OAuth helpers for calendar callback pages (native deep link redirect).
  */
 
-const DEFAULT_DEEP_LINK_SCHEME = 'com.taskzm.app';
+const DEFAULT_DEEP_LINK_SCHEME = 'com.app.taskzm.com';
 
 export function getMobileDeepLinkScheme(): string {
   return Deno.env.get('MOBILE_DEEP_LINK_SCHEME') || DEFAULT_DEEP_LINK_SCHEME;

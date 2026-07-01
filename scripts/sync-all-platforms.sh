@@ -17,6 +17,9 @@ node scripts/update-service-worker-cache.js
 echo "🏗️  Building web (Vite → src/dist)..."
 npm run build --prefix src
 
+echo "🏷️  Writing build-info.json for native cache detection..."
+node scripts/write-build-info.js
+
 echo "📱 Syncing Capacitor (iOS + Android)..."
 npm run cap:sync --prefix src
 

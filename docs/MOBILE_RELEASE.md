@@ -13,7 +13,7 @@ This guide covers building and submitting TaskZM for the **App Store** (iOS) and
 
 ## Bundle ID
 
-- **App ID:** `com.taskzm.app` (defined in [`src/lib/mobile-constants.ts`](../src/lib/mobile-constants.ts))
+- **App ID:** `com.app.taskzm.com` (defined in [`src/lib/mobile-constants.ts`](../src/lib/mobile-constants.ts))
 
 ## Environment variables
 
@@ -29,12 +29,12 @@ Copy [`.env.example`](../.env.example) to `.env` in the project root and set:
 
 Add to **Supabase Dashboard → Authentication → URL Configuration**:
 
-- `com.taskzm.app://reset-password`
-- `com.taskzm.app://auth-callback`
+- `com.app.taskzm.com://reset-password`
+- `com.app.taskzm.com://auth-callback`
 
 ### Edge Function secret (optional)
 
-- `MOBILE_DEEP_LINK_SCHEME=com.taskzm.app` — used by calendar OAuth callback redirects on native
+- `MOBILE_DEEP_LINK_SCHEME=com.app.taskzm.com` — used by calendar OAuth callback redirects on native
 
 ## Build commands
 
@@ -91,7 +91,7 @@ cd src/ios/App && bundle install && bundle exec pod install
 2. `npm run cap:ios`
 3. In Xcode:
    - Select your **Team** and enable **Automatic Signing**
-   - Set **Bundle Identifier** to `com.taskzm.app`
+   - Set **Bundle Identifier** to `com.app.taskzm.com`
    - Enable **In-App Purchase** capability
 4. **Product → Archive → Distribute App → App Store Connect**
 5. In **App Store Connect**:
@@ -105,7 +105,7 @@ cd src/ios/App && bundle install && bundle exec pod install
 When live, set URLs in [`src/lib/mobile-constants.ts`](../src/lib/mobile-constants.ts):
 
 - `APP_STORE_URL` — e.g. `https://apps.apple.com/app/idXXXXXXXXX`
-- `PLAY_STORE_URL` — e.g. `https://play.google.com/store/apps/details?id=com.taskzm.app`
+- `PLAY_STORE_URL` — e.g. `https://play.google.com/store/apps/details?id=com.app.taskzm.com`
 
 ## Android — Play Console
 
@@ -122,7 +122,7 @@ keytool -genkey -v -keystore taskzm-upload.keystore -alias taskzm -keyalg RSA -k
 
 ## RevenueCat setup (native)
 
-1. Add **iOS app** in RevenueCat with bundle ID `com.taskzm.app`
+1. Add **iOS app** in RevenueCat with bundle ID `com.app.taskzm.com`
 2. Create **auto-renewable subscriptions** in App Store Connect (monthly + yearly)
 3. Link products in RevenueCat → map to **`pro`** entitlement
 4. Add App Store Connect API key or shared secret in RevenueCat

@@ -4,7 +4,7 @@ android {
     namespace "com.taskzm.app"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.taskzm.app"
+        applicationId "com.app.taskzm.com"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 202607012

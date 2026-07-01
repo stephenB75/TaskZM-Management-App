@@ -77,3 +77,46 @@ cd src/ios/App && bundle install && bundle exec pod install
 ```
 
 See also [MOBILE_RELEASE.md](./MOBILE_RELEASE.md).
+
+## iOS not showing latest UI?
+
+Native apps load the **bundled** `dist/` copy, not app.taskzm.com. After `src/` changes you must sync and rebuild in Xcode.
+
+### Checklist
+
+1. **Sync web assets into the iOS project**
+   ```bash
+   npm run sync:platforms
+   ```
+   Or for a store build:
+   ```bash
+   npm run mobile:build
+   ```
+
+2. **Rebuild in Xcode** (WKWebView caches aggressively)
+   - Product → **Clean Build Folder** (⇧⌘K)
+   - Delete the TaskZM app from the device/simulator
+   - Product → **Run** (⌘R)
+
+3. **One-command prep** (sync + pods + reminders):
+   ```bash
+   bash scripts/ios-fresh-build.sh
+   ```
+
+4. **Confirm you are running the right app**
+   - Bundle ID must be **`com.app.taskzm.com`** (see [`mobile-constants.ts`](../src/lib/mobile-constants.ts))
+   - `npm run sync-mobile-version` keeps Xcode aligned with [`mobile-constants.ts`](../src/lib/mobile-constants.ts)
+
+5. **Verify the build loaded**
+   - Settings → About shows the current `APP_VERSION` from [`version.ts`](../src/lib/version.ts)
+   - After sync, `src/dist/build-info.json` is copied into the iOS bundle; the app clears WKWebView cache when that build stamp changes
+
+### Why web updates but iOS does not
+
+| Web | iOS |
+|-----|-----|
+| Railway rebuilds on push to `main` | Requires local `cap sync` + Xcode run/archive |
+| Service worker purges stale JS on version bump | No service worker on native; uses `build-info.json` + AppDelegate WK cache purge |
+| Always serves latest deploy | `ios/App/App/public/` is gitignored — only updated by `cap sync` on your machine |
+
+TestFlight/App Store builds only update after you archive and upload a new build.

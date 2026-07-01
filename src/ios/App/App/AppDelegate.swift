@@ -1,14 +1,57 @@
 import UIKit
 import Capacitor
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
+    private let nativeBuildDefaultsKey = "TaskZMNativeBuildNumber"
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        purgeWebViewCacheIfBuildChanged()
         return true
+    }
+
+    /// Clear WKWebView / URL cache when cap sync copies a new web bundle (build-info.json stamp).
+    private func purgeWebViewCacheIfBuildChanged() {
+        guard let bundledBuild = readBundledBuildNumber() else {
+            return
+        }
+
+        let storedBuild = UserDefaults.standard.string(forKey: nativeBuildDefaultsKey)
+        if storedBuild == bundledBuild {
+            return
+        }
+
+        UserDefaults.standard.set(bundledBuild, forKey: nativeBuildDefaultsKey)
+
+        guard storedBuild != nil else {
+            return
+        }
+
+        let dataStore = WKWebsiteDataStore.default()
+        let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+        dataStore.removeData(ofTypes: dataTypes, modifiedSince: Date(timeIntervalSince1970: 0)) { }
+        URLCache.shared.removeAllCachedResponses()
+    }
+
+    private func readBundledBuildNumber() -> String? {
+        let resourceNames = ["public/build-info", "build-info"]
+        for resourceName in resourceNames {
+            let parts = resourceName.split(separator: "/")
+            let subdirectory = parts.count > 1 ? String(parts[0]) : nil
+            let name = parts.count > 1 ? String(parts[1]) : resourceName
+
+            if let url = Bundle.main.url(forResource: name, withExtension: "json", subdirectory: subdirectory),
+               let data = try? Data(contentsOf: url),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let buildNumber = json["buildNumber"] as? String {
+                return buildNumber
+            }
+        }
+        return nil
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

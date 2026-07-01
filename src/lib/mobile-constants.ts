@@ -4,12 +4,12 @@
  */
 
 /** Apple / Google bundle identifier (must match App Store Connect and capacitor.config). */
-export const MOBILE_APP_ID = 'com.taskzm.app';
+export const MOBILE_APP_ID = 'com.app.taskzm.com';
 
 /** Custom URL scheme for deep links (matches MOBILE_APP_ID). */
 export const MOBILE_DEEP_LINK_SCHEME = MOBILE_APP_ID;
 
-/** Prefix for deep link URLs, e.g. com.taskzm.app://calendar-oauth */
+/** Prefix for deep link URLs, e.g. com.app.taskzm.com://calendar-oauth */
 export const MOBILE_DEEP_LINK_PREFIX = `${MOBILE_DEEP_LINK_SCHEME}://`;
 
 /** Deep link path segments */
@@ -51,6 +51,12 @@ export const MOBILE_NOTIFICATION_SMALL_ICON = 'ic_stat_icon_config_sample';
 
 /** Accent color for Android notification icon. */
 export const MOBILE_NOTIFICATION_ICON_COLOR = '#9D87C3';
+
+/** LocalStorage keys used only on Capacitor native platforms. */
+export const MOBILE_STORAGE_KEYS = {
+  /** Last loaded native web bundle stamp (APP_VERSION:BUILD_NUMBER from build-info.json). */
+  nativeBuildStamp: 'taskzm_native_build_stamp',
+} as const;
 
 /** Build deep link for Supabase auth (password reset, magic link). */
 export function buildAuthCallbackDeepLink(path: string, hashOrQuery: string): string {

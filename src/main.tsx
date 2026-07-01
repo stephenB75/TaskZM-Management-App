@@ -462,6 +462,7 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { initNativeAppHandlers } from './lib/native-app';
 import { initNativeNotificationHandlers } from './lib/native-notifications';
+import { ensureNativeBuildIsCurrent } from './lib/native-cache';
 
 // Platform detection
 const isNative = Capacitor.isNativePlatform();
@@ -957,11 +958,10 @@ const ensureAppReady = () => {
   }
 };
 
-try {
+function renderApp(): void {
   const rootElement = document.getElementById('root');
   if (!rootElement) {
     console.error('Root element not found! Make sure index.html has a <div id="root"></div> element.');
-    // Create root element if it doesn't exist (fallback)
     const fallbackRoot = document.createElement('div');
     fallbackRoot.id = 'root';
     document.body.appendChild(fallbackRoot);
@@ -971,22 +971,39 @@ try {
         <App />
       </React.StrictMode>
     );
-  } else {
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>
-    );
+    return;
   }
-} catch (error) {
-  console.error('Fatal error during app initialization:', error);
-  // Always enable body scrolling even on error
-  ensureAppReady();
-  
-  // Show a user-friendly error message
-  const rootElement = document.getElementById('root') || document.body;
-  rootElement.innerHTML = `
+
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
+
+async function bootstrapApp(): Promise<void> {
+  if (isNative) {
+    try {
+      const needsReload = await ensureNativeBuildIsCurrent();
+      if (needsReload) {
+        (window as any).__userInitiatedReload = true;
+        window.location.reload();
+        return;
+      }
+    } catch (error) {
+      logger.warn('[Native] Build cache check failed — continuing startup', error);
+    }
+  }
+
+  try {
+    renderApp();
+  } catch (error) {
+    console.error('Fatal error during app initialization:', error);
+    ensureAppReady();
+
+    const rootElement = document.getElementById('root') || document.body;
+    rootElement.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; font-family: system-ui, -apple-system, sans-serif;">
       <div style="max-width: 500px; text-align: center;">
         <h1 style="color: #ef4444; margin-bottom: 1rem;">Application Error</h1>
@@ -1003,7 +1020,10 @@ try {
       </div>
     </div>
   `;
+  }
 }
+
+void bootstrapApp();
 
 // Ensure body is ready after React renders (web only)
 if (!isNative) {
