@@ -8,7 +8,7 @@
 export const APP_VERSION = '1.0.32';
 export const VERSION_NAME = 'Mobile Nav & Toast Safe Area';
 export const VERSION_DATE = 'July 1, 2026';
-export const BUILD_NUMBER = '20260701-2';
+export const BUILD_NUMBER = '20260701-3';
 
 export const CORE_FUNCTIONS = [
   {

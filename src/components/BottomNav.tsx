@@ -7,14 +7,16 @@ import { cn } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
 import {
-  NAV_BAR_HEIGHT_WITH_SAFE_AREA,
+  NAV_BAR_HEIGHT,
+  NAV_BAR_LAYOUT_VERSION,
   NAV_BAR_ICON_SIZE,
   NAV_BAR_ICON_SLOT_SIZE,
   NAV_BAR_ICON_LABEL_GAP,
   NAV_BAR_LABEL_LINE_HEIGHT,
   NAV_BAR_INDICATOR_WIDTH,
   NAV_BAR_INDICATOR_HEIGHT,
-  NAV_BAR_INDICATOR_TOP,
+  NAV_BAR_INDICATOR_GAP,
+  NAV_BAR_LAYOUT_VERSION,
   NAV_BAR_LABEL_TEXT_SIZE,
   NAV_BAR_BADGE_SIZE,
   NAV_BAR_BADGE_TEXT_SIZE,
@@ -24,8 +26,7 @@ import {
   NAV_BAR_SYNC_INDICATOR_HEIGHT,
   NAV_BAR_HORIZONTAL_PADDING_LEFT,
   NAV_BAR_HORIZONTAL_PADDING_RIGHT,
-  NAV_BAR_PADDING_TOP,
-  NAV_BAR_PADDING_BOTTOM,
+  NAV_BAR_SAFE_AREA_BOTTOM,
   NAV_BAR_TAB_COUNT,
   NAV_BAR_ACTIVE_SCALE,
   NAV_BAR_INITIAL_Y_OFFSET,
@@ -162,6 +163,8 @@ export function BottomNav({
         zIndex: Z_INDEX.NAV_BAR,
         paddingLeft: NAV_BAR_HORIZONTAL_PADDING_LEFT,
         paddingRight: NAV_BAR_HORIZONTAL_PADDING_RIGHT,
+        paddingBottom: NAV_BAR_SAFE_AREA_BOTTOM,
+        boxSizing: 'border-box',
         boxShadow: isDark
           ? `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity('#000000', 0.3)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity('#000000', 0.2)}`
           : `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_LIGHT)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_DARK)}`,
@@ -181,12 +184,10 @@ export function BottomNav({
       <div
         className="relative grid w-full overflow-visible bg-white dark:bg-gray-900"
         data-tour="bottom-nav"
+        data-nav-layout={NAV_BAR_LAYOUT_VERSION}
         style={{
           gridTemplateColumns: `repeat(${NAV_BAR_TAB_COUNT}, minmax(0, 1fr))`,
-          height: NAV_BAR_HEIGHT_WITH_SAFE_AREA,
-          boxSizing: 'border-box',
-          paddingTop: NAV_BAR_PADDING_TOP,
-          paddingBottom: NAV_BAR_PADDING_BOTTOM,
+          height: `${NAV_BAR_HEIGHT}px`,
           alignItems: 'center',
           justifyItems: 'center',
         }}
@@ -237,7 +238,8 @@ export function BottomNav({
                     style={{
                       width: NAV_BAR_INDICATOR_WIDTH,
                       height: NAV_BAR_INDICATOR_HEIGHT,
-                      top: NAV_BAR_INDICATOR_TOP,
+                      bottom: '100%',
+                      marginBottom: NAV_BAR_INDICATOR_GAP,
                       left: 0,
                       right: 0,
                       marginLeft: 'auto',

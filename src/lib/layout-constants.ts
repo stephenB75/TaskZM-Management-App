@@ -491,10 +491,8 @@ export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0';
 export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0';
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
 export const NAV_BAR_INDICATOR_HEIGHT = '0.375rem'; // h-1.5 = 0.375rem
-/** Gap between indicator line and top of icon. */
+/** Gap between indicator line and top edge of icon. */
 export const NAV_BAR_INDICATOR_GAP = '0.125rem';
-/** Positions indicator fully above the icon slot (relative to icon wrapper). */
-export const NAV_BAR_INDICATOR_TOP = `calc(-1 * (${NAV_BAR_INDICATOR_HEIGHT} + ${NAV_BAR_INDICATOR_GAP}))`;
 export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
 export const NAV_BAR_LABEL_LINE_HEIGHT = '1.2';
 export const NAV_BAR_LABEL_MARGIN_TOP = '0'; // use NAV_BAR_ICON_LABEL_GAP on button flex instead
@@ -509,6 +507,8 @@ export const NAV_BAR_HORIZONTAL_PADDING = '0.25rem'; // px-1 = 0.25rem
 export const NAV_BAR_HORIZONTAL_PADDING_LEFT = `max(${NAV_BAR_HORIZONTAL_PADDING}, env(safe-area-inset-left, 0px))`;
 export const NAV_BAR_HORIZONTAL_PADDING_RIGHT = `max(${NAV_BAR_HORIZONTAL_PADDING}, env(safe-area-inset-right, 0px))`;
 export const NAV_BAR_SAFE_AREA_BOTTOM = 'env(safe-area-inset-bottom, 0px)';
+/** Nav layout stamp — bump when changing BottomNav structure (visible in DOM for device verification). */
+export const NAV_BAR_LAYOUT_VERSION = 'v3';
 export const NAV_BAR_TAB_COUNT = 4;
 export const NAV_BAR_ACTIVE_SCALE = 0.95; // scale-95 = 0.95
 export const NAV_BAR_INITIAL_Y_OFFSET = 100; // Initial animation offset in pixels
