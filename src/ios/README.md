@@ -2,16 +2,31 @@
 
 ## Open in Xcode
 
-Always open the **workspace** (includes CocoaPods), not the project alone:
+**Important:** Always open the **workspace**, never the `.xcodeproj` alone:
 
 ```bash
 open App/App.xcworkspace
 ```
 
-Or from `src/`:
+Opening `App.xcodeproj` directly causes:
+
+> Unable to open base configuration reference file ... Pods-App.debug.xcconfig
+
+### One-command setup (recommended)
+
+From `src/`:
 
 ```bash
-npm run cap:ios
+npm run cap:ios:setup
+```
+
+This runs `pod install` and opens `App.xcworkspace`.
+
+Or manually:
+
+```bash
+cd App
+./setup-xcode.sh
 ```
 
 ## First-time setup
@@ -29,10 +44,37 @@ cd App
 pod install
 ```
 
-If `pod` is not found, install CocoaPods:
+### No Homebrew? Install CocoaPods with Ruby
+
+If `pod` and `brew` are both missing, run from `src/ios/App`:
+
+```bash
+cd /Users/stephen/Desktop/TaskZM-Management-App/src/ios/App
+chmod +x setup-xcode.sh
+./setup-xcode.sh
+```
+
+The script installs CocoaPods via `gem` (works with macOS system Ruby) and opens the workspace.
+
+**Manual install** (same steps the script runs):
+
+```bash
+export PATH="$HOME/.gem/ruby/$(ruby -e 'print RUBY_VERSION[/\d+\.\d+/]')/0/bin:$PATH"
+gem install ffi -v 1.15.5 --user-install
+gem install i18n -v 1.14.8 --user-install
+gem install cocoapods -v 1.10.2 --user-install
+cd /Users/stephen/Desktop/TaskZM-Management-App/src/ios/App
+pod install
+open App.xcworkspace
+```
+
+Add the `export PATH=...` line to `~/.zshrc` so `pod` works in new terminals.
+
+### With Homebrew (optional)
 
 ```bash
 brew install cocoapods
+cd App && pod install && open App.xcworkspace
 ```
 
 3. In Xcode:

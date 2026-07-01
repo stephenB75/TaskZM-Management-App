@@ -380,7 +380,7 @@
 				);
 				MARKETING_VERSION = 1.0.30;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
-				PRODUCT_BUNDLE_IDENTIFIER = com.app.taskzm.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.app.taskzm.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -408,7 +408,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.30;
-				PRODUCT_BUNDLE_IDENTIFIER = com.app.taskzm.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.app.taskzm.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;

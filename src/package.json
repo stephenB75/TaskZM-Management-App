@@ -15,6 +15,7 @@
     "mobile:assets": "capacitor-assets generate --assetPath assets --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#1a1a1a' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#1a1a1a'",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
+    "cap:ios:setup": "cd ios/App && chmod +x setup-xcode.sh && ./setup-xcode.sh",
     "cap:android": "cap open android"
   },
   "dependencies": {

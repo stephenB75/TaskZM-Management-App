@@ -1,0 +1,5 @@
+source 'https://rubygems.org'
+
+# Pinned for macOS system Ruby 2.6 compatibility
+gem 'cocoapods', '1.10.2'
+gem 'ffi', '1.15.5'
