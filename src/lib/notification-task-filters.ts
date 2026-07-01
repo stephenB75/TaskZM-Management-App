@@ -74,8 +74,25 @@ export function isTaskDueNow(
   if (!isEligibleForTaskNotification(task)) return false;
   const targetDate = getTaskNotificationTargetDate(task);
   if (!targetDate) return false;
+  if (!isSameCalendarDay(targetDate, now)) return false;
   const minutesUntil = Math.round((targetDate.getTime() - now.getTime()) / MILLISECONDS_PER_MINUTE);
   return minutesUntil >= 0 && minutesUntil <= TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes;
+}
+
+/** Scheduled later today (after due-now window, within dueSoonMaxMinutes). Excludes overdue. */
+export function isTaskUpcomingToday(task: Task, now: Date = new Date()): boolean {
+  if (!isEligibleForTaskNotification(task)) return false;
+  const targetDate = getTaskNotificationTargetDate(task);
+  if (!targetDate) return false;
+  if (!isSameCalendarDay(targetDate, now)) return false;
+  const minutesUntil = (targetDate.getTime() - now.getTime()) / MILLISECONDS_PER_MINUTE;
+  const { dueNowMinutes, dueSoonMaxMinutes } = TIMING_CONSTANTS.todayAgendaBadge;
+  return minutesUntil > dueNowMinutes && minutesUntil <= dueSoonMaxMinutes;
+}
+
+/** Sidebar / bottom-nav Today badge: due now or starting soon today — not overdue past tasks. */
+export function getTodayAgendaBadgeCount(tasks: Task[], now: Date = new Date()): number {
+  return tasks.filter((task) => isTaskDueNow(task, now) || isTaskUpcomingToday(task, now)).length;
 }
 
 export function getOverdueTasks(

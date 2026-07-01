@@ -79,7 +79,10 @@ export function AppSidebar({
       id: "today", 
       label: NAVIGATION_UI_TEXT.todayAgenda, 
       iconName: "calendar",
-      badge: upcomingAndDueNowCount > 0 ? upcomingAndDueNowCount : undefined,
+      badge:
+        currentView !== 'today' && upcomingAndDueNowCount > 0
+          ? upcomingAndDueNowCount
+          : undefined,
     },
     {
       id: "inbox",

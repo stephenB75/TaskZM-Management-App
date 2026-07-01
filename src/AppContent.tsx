@@ -43,6 +43,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { NOTIFICATION_OPEN_TASK_EVENT } from './lib/notification-constants';
+import { getTodayAgendaBadgeCount } from './lib/notification-task-filters';
 import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, MOBILE_SCROLL_CONTAINER_MIN_HEIGHT, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
@@ -197,128 +198,8 @@ export default function AppContent() {
   
   const { scheduleAllTasks, unscheduledCount, isScheduling } = useAIScheduler();
   const { settings: notificationSettings } = useNotifications();
-  
-  // Calculate count of overdue and due now tasks for mobile badge
-  const getUpcomingAndDueNowCount = () => {
-    const now = new Date();
-    const dueNowMs = TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes * TIMING_CONSTANTS.timeConversions.minutesToMs;
-    const dueNowThreshold = new Date(now.getTime() + dueNowMs);
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    const allTasksWithDates = tasks.filter((t: { dueDate?: string | null; scheduledDate?: string | null; status: string }) => (t.dueDate || t.scheduledDate) && t.status !== 'done');
-    
-    const dueTasks = tasks.filter((task: { id: string; title: string; status: string; dueDate?: string | null; scheduledDate?: string | null; recurrence?: { type: string } }) => {
-      if (task.status === 'done') return false;
-      if (task.scheduledDate === null || task.scheduledDate === undefined) {
-        return false;
-      }
-      if (task.recurrence && task.recurrence.type !== 'none') return false;
-      
-      let targetDate: Date | null = null;
-      let dateType: 'dueDate' | 'scheduledDate' | null = null;
-      
-      if (task.scheduledDate) {
-        targetDate = new Date(task.scheduledDate);
-        dateType = 'scheduledDate';
-      } else {
-        return false;
-      }
-      
-      if (!targetDate || isNaN(targetDate.getTime())) return false;
-      
-      const targetDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-      const todayDateOnly = new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate());
-      
-      if (targetDateOnly > todayDateOnly) {
-        return false;
-      }
-      
-      const targetTime = targetDate.getTime();
-      const nowTime = now.getTime();
-      const thresholdTime = dueNowThreshold.getTime();
-      const isDue = targetTime <= thresholdTime;
-      
-      if (isDue) {
-        const timeDiff = (targetTime - nowTime) / TIMING_CONSTANTS.timeConversions.minutesToMs;
-        console.log(`🔔 [Today Agenda Badge] Task "${task.title}" is counted as due:`, {
-          taskId: task.id,
-          dateType,
-          targetDateUTC: targetDate.toISOString(),
-          targetDateLocal: targetDate.toLocaleString(),
-          targetDateOnly: targetDateOnly.toLocaleDateString(),
-          todayDateOnly: todayDateOnly.toLocaleDateString(),
-          isTodayOrPast: targetDateOnly <= todayDateOnly,
-          targetTime: targetTime,
-          nowUTC: now.toISOString(),
-          nowLocal: now.toLocaleString(),
-          nowTime: nowTime,
-          thresholdTime: thresholdTime,
-          timeDiffMinutes: Math.round(timeDiff * 10) / 10,
-          isOverdue: targetTime < nowTime,
-          isDueSoon: targetTime >= nowTime && targetTime <= thresholdTime,
-          taskStatus: task.status,
-          taskDueDate: task.dueDate,
-          taskScheduledDate: task.scheduledDate,
-          note: 'Only tasks with scheduledDate are counted (rolled-over tasks excluded)',
-        });
-      } else {
-        const timeDiff = (targetTime - nowTime) / TIMING_CONSTANTS.timeConversions.minutesToMs;
-        const isFutureDate = targetDateOnly > todayDateOnly;
-        const dueNowMin = TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes;
-        const dueSoonMax = TIMING_CONSTANTS.todayAgendaBadge.dueSoonMaxMinutes;
-        if (isFutureDate || (timeDiff > dueNowMin && timeDiff < dueSoonMax)) {
-          console.debug(`⏭️ [Today Agenda Badge] Task "${task.title}" NOT counted:`, {
-            taskId: task.id,
-            reason: isFutureDate ? 'Future date (tomorrow or later)' : `Scheduled for later today (${Math.round(timeDiff)} minutes from now)`,
-            targetDateOnly: targetDateOnly.toLocaleDateString(),
-            todayDateOnly: todayDateOnly.toLocaleDateString(),
-            timeDiffMinutes: Math.round(timeDiff * 10) / 10,
-            isFutureDate,
-            taskScheduledDate: task.scheduledDate,
-            taskDueDate: task.dueDate,
-          });
-        }
-      }
-      
-      return isDue;
-    });
-    
-    if (dueTasks.length > 0) {
-      console.group(`🔔 [Today Agenda Badge] BADGE SHOWING: ${dueTasks.length} task(s) counted as due`);
-      console.log('Current Time:', {
-        UTC: now.toISOString(),
-        Local: now.toLocaleString(),
-        Timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      });
-      console.log(`Threshold (${TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes} minutes from now):`, {
-        UTC: dueNowThreshold.toISOString(),
-        Local: dueNowThreshold.toLocaleString(),
-      });
-      console.log('Tasks being counted:', dueTasks.map((t: { id: string; title: string; status: string; dueDate?: string | null; scheduledDate?: string | null }) => {
-        const targetDate = t.dueDate ? new Date(t.dueDate) : (t.scheduledDate ? new Date(t.scheduledDate) : null);
-        const timeDiff = targetDate ? (targetDate.getTime() - now.getTime()) / TIMING_CONSTANTS.timeConversions.minutesToMs : null;
-        const dueNowMin = TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes;
-        return {
-          id: t.id,
-          title: t.title,
-          status: t.status,
-          dateType: t.dueDate ? 'dueDate' : 'scheduledDate',
-          targetDateUTC: targetDate?.toISOString(),
-          targetDateLocal: targetDate?.toLocaleString(),
-          timeDiffMinutes: timeDiff ? Math.round(timeDiff * 10) / 10 : null,
-          isOverdue: timeDiff ? timeDiff < 0 : false,
-          isDueSoon: timeDiff ? timeDiff >= 0 && timeDiff <= dueNowMin : false,
-        };
-      }));
-      console.groupEnd();
-    } else {
-      console.log(`✅ [Today Agenda Badge] No badge - ${allTasksWithDates.length} task(s) with dates, but none are due within ${TIMING_CONSTANTS.todayAgendaBadge.dueNowMinutes} minutes`);
-    }
-    
-    return dueTasks.length;
-  };
-  
-  const upcomingAndDueNowCount = getUpcomingAndDueNowCount();
+
+  const upcomingAndDueNowCount = getTodayAgendaBadgeCount(tasks);
   
   useAwardChecker();
   

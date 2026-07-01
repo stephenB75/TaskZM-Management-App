@@ -104,7 +104,10 @@ export function BottomNav({
         onViewChange("today");
       },
       active: currentView === "today",
-      badge: upcomingAndDueNowCount > 0 ? upcomingAndDueNowCount : undefined,
+      badge:
+        currentView !== "today" && upcomingAndDueNowCount > 0
+          ? upcomingAndDueNowCount
+          : undefined,
     },
     {
       id: "week",
