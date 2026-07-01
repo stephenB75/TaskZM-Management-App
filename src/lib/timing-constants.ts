@@ -157,6 +157,12 @@ export const TIMING_CONSTANTS = {
     },
   },
   
+  // Native Capacitor (cloud WebView + bundled shell)
+  native: {
+    /** Min interval between foreground release checks (native cloud WebView). */
+    cloudForegroundReleaseCheckMs: 30 * 1000,
+  },
+
   // Service Worker update checking
   serviceWorker: {
     updateCheckInterval: 4 * 60 * 60 * 1000, // 4 hours - Check for updates in background (increased to prevent random refreshes)

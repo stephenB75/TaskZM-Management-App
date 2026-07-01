@@ -14,8 +14,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
-    /// Clear WKWebView / URL cache when cap sync copies a new web bundle (build-info.json stamp).
+    /// Clear WKWebView cache when the bundled shell changes.
+    /// Cloud WebView mode (server.url in capacitor.config.json) must NOT wipe website data —
+    /// that would erase localStorage for app.taskzm.com (auth, calendar status, notification settings).
     private func purgeWebViewCacheIfBuildChanged() {
+        if loadsRemoteWebApp() {
+            URLCache.shared.removeAllCachedResponses()
+            return
+        }
+
         guard let bundledBuild = readBundledBuildNumber() else {
             return
         }
@@ -35,6 +42,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
         dataStore.removeData(ofTypes: dataTypes, modifiedSince: Date(timeIntervalSince1970: 0)) { }
         URLCache.shared.removeAllCachedResponses()
+    }
+
+    /// True when Capacitor loads UI from server.url (cloud) instead of bundled dist/.
+    private func loadsRemoteWebApp() -> Bool {
+        guard let config = readBundledCapacitorConfig(),
+              let server = config["server"] as? [String: Any],
+              let url = server["url"] as? String else {
+            return false
+        }
+        return !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func readBundledCapacitorConfig() -> [String: Any]? {
+        let resourceNames = ["public/capacitor.config", "capacitor.config"]
+        for resourceName in resourceNames {
+            let parts = resourceName.split(separator: "/")
+            let subdirectory = parts.count > 1 ? String(parts[0]) : nil
+            let name = parts.count > 1 ? String(parts[1]) : resourceName
+
+            if let url = Bundle.main.url(forResource: name, withExtension: "json", subdirectory: subdirectory),
+               let data = try? Data(contentsOf: url),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                return json
+            }
+        }
+        return nil
     }
 
     private func readBundledBuildNumber() -> String? {

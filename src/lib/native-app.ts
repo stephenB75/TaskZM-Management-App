@@ -9,9 +9,17 @@ import { logger } from './logger';
 import {
   MOBILE_DEEP_LINK_PREFIX,
   MOBILE_DEEP_LINK_PATHS,
+  MOBILE_USE_CLOUD_WEB_APP,
+  MOBILE_STORAGE_KEYS,
 } from './mobile-constants';
 import { CALENDAR_OAUTH_MESSAGE_TYPES } from './calendar-integration-constants';
 import type { CalendarProviderId } from './calendar-integration-constants';
+import { clearCalendarEventsCache } from './calendar-events-cache';
+import {
+  ensureNativeBuildIsCurrent,
+  nativeCloudReleaseChangedSince,
+} from './native-cache';
+import { TIMING_CONSTANTS } from './timing-constants';
 
 type CalendarOAuthCallback = (result: {
   type: typeof CALENDAR_OAUTH_MESSAGE_TYPES.success | typeof CALENDAR_OAUTH_MESSAGE_TYPES.error;
@@ -112,6 +120,44 @@ export function initNativeAppHandlers(): void {
     if (result?.url) {
       handleDeepLink(result.url);
     }
+  });
+
+  let lastForegroundReleaseCheck = 0;
+
+  void App.addListener('appStateChange', ({ isActive }) => {
+    if (!isActive) return;
+
+    const now = Date.now();
+    if (
+      now - lastForegroundReleaseCheck <
+      TIMING_CONSTANTS.native.cloudForegroundReleaseCheckMs
+    ) {
+      return;
+    }
+    lastForegroundReleaseCheck = now;
+
+    void (async () => {
+      try {
+        const storedStamp = localStorage.getItem(MOBILE_STORAGE_KEYS.nativeBuildStamp);
+        const releaseChanged = await nativeCloudReleaseChangedSince(storedStamp);
+        if (releaseChanged) {
+          const needsReload = await ensureNativeBuildIsCurrent();
+          if (needsReload) {
+            (window as unknown as { __userInitiatedReload?: boolean }).__userInitiatedReload = true;
+            window.location.reload();
+          }
+          return;
+        }
+
+        // No new Railway deploy — refresh calendar event cache (visibility API often
+        // does not fire on native resume; keeps imports in sync with notifications).
+        if (MOBILE_USE_CLOUD_WEB_APP) {
+          clearCalendarEventsCache();
+        }
+      } catch (error) {
+        logger.warn('[Native] Foreground release/calendar refresh failed', error);
+      }
+    })();
   });
 }
 
