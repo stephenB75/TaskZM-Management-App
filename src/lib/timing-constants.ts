@@ -113,6 +113,8 @@ export const TIMING_CONSTANTS = {
     eventsFetchRetryDelayMs: 1000,
     /** Max retries per provider calendar fetch after transient edge errors. */
     eventsFetchMaxRetries: 2,
+    /** Coalesce parallel calendar fetches from multiple views into one widest-range request (ms). */
+    eventsFetchBatchCoalesceMs: 100,
     /** Grace period (ms) after a connect during which checkCalendarStatus will not overwrite that provider to false (avoids visibility/tab race). */
     statusConnectGraceMs: 10 * 1000,
     popupCheckInterval: 500, // 500ms - OAuth popup check interval

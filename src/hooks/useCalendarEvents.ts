@@ -16,7 +16,7 @@ import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils
 import { resolveCalendarProvidersForFetch, getActiveCalendarProviders, type CalendarProviderKey } from '../lib/calendar-status';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
-const CALENDAR_EVENTS_CACHE_VERSION = 'v7-db-range-query-serialized-fetch';
+const CALENDAR_EVENTS_CACHE_VERSION = 'v8-batched-fetch-expansion-cap';
 
 export interface CalendarEvent {
   id: string;
@@ -110,6 +110,123 @@ function runSerializedProviderFetch<T>(
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+interface CalendarFetchBatchWaiter {
+  startIso: string;
+  endIso: string;
+  providers: CalendarProviderKey[];
+  resolve: (events: CalendarEvent[]) => void;
+  reject: (error: unknown) => void;
+}
+
+interface CalendarFetchBatch {
+  startIso: string;
+  endIso: string;
+  providers: Set<CalendarProviderKey>;
+  accessToken: string;
+  userTimezone: string;
+  waiters: CalendarFetchBatchWaiter[];
+}
+
+let pendingCalendarFetchBatch: CalendarFetchBatch | null = null;
+let calendarFetchBatchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function mergeCalendarFetchBatch(
+  startIso: string,
+  endIso: string,
+  providers: CalendarProviderKey[],
+  accessToken: string,
+  userTimezone: string,
+  waiter: CalendarFetchBatchWaiter,
+): void {
+  if (!pendingCalendarFetchBatch) {
+    pendingCalendarFetchBatch = {
+      startIso,
+      endIso,
+      providers: new Set(providers),
+      accessToken,
+      userTimezone,
+      waiters: [waiter],
+    };
+    return;
+  }
+
+  const batch = pendingCalendarFetchBatch;
+  if (startIso < batch.startIso) batch.startIso = startIso;
+  if (endIso > batch.endIso) batch.endIso = endIso;
+  providers.forEach((provider) => batch.providers.add(provider));
+  batch.waiters.push(waiter);
+}
+
+async function flushCalendarFetchBatch(): Promise<void> {
+  const batch = pendingCalendarFetchBatch;
+  pendingCalendarFetchBatch = null;
+  calendarFetchBatchTimer = null;
+  if (!batch) return;
+
+  const mergedProviders = [...batch.providers];
+  try {
+    const fetchedEvents = await fetchAllEvents(
+      mergedProviders,
+      batch.startIso,
+      batch.endIso,
+      batch.accessToken,
+      batch.userTimezone,
+    );
+
+    if (fetchedEvents.length > 0) {
+      const wideCacheKey = getCacheKey(
+        batch.startIso,
+        batch.endIso,
+        mergedProviders,
+        batch.userTimezone,
+      );
+      globalCache[wideCacheKey] = {
+        events: fetchedEvents,
+        timestamp: Date.now(),
+        dateRange: { start: batch.startIso, end: batch.endIso },
+        providers: mergedProviders,
+      };
+    }
+
+    for (const waiter of batch.waiters) {
+      const needed = new Set(waiter.providers);
+      const filtered = fetchedEvents.filter(
+        (event) => needed.has(event.provider) && eventOverlapsIsoRange(event, waiter.startIso, waiter.endIso),
+      );
+      waiter.resolve(filtered);
+    }
+  } catch (error) {
+    for (const waiter of batch.waiters) {
+      waiter.reject(error);
+    }
+  }
+}
+
+function scheduleBatchedCalendarFetch(
+  startIso: string,
+  endIso: string,
+  providers: CalendarProviderKey[],
+  accessToken: string,
+  userTimezone: string,
+): Promise<CalendarEvent[]> {
+  return new Promise((resolve, reject) => {
+    mergeCalendarFetchBatch(startIso, endIso, providers, accessToken, userTimezone, {
+      startIso,
+      endIso,
+      providers,
+      resolve,
+      reject,
+    });
+
+    if (calendarFetchBatchTimer != null) {
+      clearTimeout(calendarFetchBatchTimer);
+    }
+    calendarFetchBatchTimer = setTimeout(() => {
+      void flushCalendarFetchBatch();
+    }, TIMING_CONSTANTS.calendar.eventsFetchBatchCoalesceMs);
+  });
 }
 
 interface CalendarEventsCache {
@@ -363,7 +480,7 @@ export function useCalendarEvents(
     setIsLoading(true);
     setError(null);
 
-    const fetchPromise = fetchAllEvents(activeProviders, startIso, endIso, accessToken, userTimezone)
+    const fetchPromise = scheduleBatchedCalendarFetch(startIso, endIso, activeProviders, accessToken, userTimezone)
       .then((fetchedEvents) => {
         // Do not cache empty results — avoids locking views into "no events" before sync finishes
         if (fetchedEvents.length > 0) {
