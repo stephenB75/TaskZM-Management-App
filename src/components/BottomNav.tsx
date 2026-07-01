@@ -7,14 +7,13 @@ import { cn } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
 import {
-  NAV_BAR_HEIGHT,
+  NAV_BAR_HEIGHT_WITH_SAFE_AREA,
   NAV_BAR_ICON_SIZE,
   NAV_BAR_ICON_SLOT_SIZE,
   NAV_BAR_ICON_LABEL_GAP,
   NAV_BAR_LABEL_LINE_HEIGHT,
   NAV_BAR_INDICATOR_WIDTH,
   NAV_BAR_INDICATOR_HEIGHT,
-  NAV_BAR_INDICATOR_TOP,
   NAV_BAR_LABEL_TEXT_SIZE,
   NAV_BAR_BADGE_SIZE,
   NAV_BAR_BADGE_TEXT_SIZE,
@@ -24,7 +23,8 @@ import {
   NAV_BAR_SYNC_INDICATOR_HEIGHT,
   NAV_BAR_HORIZONTAL_PADDING_LEFT,
   NAV_BAR_HORIZONTAL_PADDING_RIGHT,
-  NAV_BAR_SAFE_AREA_BOTTOM,
+  NAV_BAR_PADDING_TOP,
+  NAV_BAR_PADDING_BOTTOM,
   NAV_BAR_TAB_COUNT,
   NAV_BAR_ACTIVE_SCALE,
   NAV_BAR_INITIAL_Y_OFFSET,
@@ -178,12 +178,16 @@ export function BottomNav({
       )}
 
       <div
-        className="relative grid overflow-visible bg-white dark:bg-gray-900"
+        className="relative grid w-full overflow-visible bg-white dark:bg-gray-900"
         data-tour="bottom-nav"
         style={{
           gridTemplateColumns: `repeat(${NAV_BAR_TAB_COUNT}, minmax(0, 1fr))`,
-          height: `${NAV_BAR_HEIGHT}px`,
+          height: NAV_BAR_HEIGHT_WITH_SAFE_AREA,
+          boxSizing: 'border-box',
+          paddingTop: NAV_BAR_PADDING_TOP,
+          paddingBottom: NAV_BAR_PADDING_BOTTOM,
           alignItems: 'center',
+          justifyItems: 'center',
         }}
       >
         {navItems.map((item) => {
@@ -193,7 +197,7 @@ export function BottomNav({
               data-tour={`bottom-nav-${item.id}`}
               onClick={item.onClick}
               className={cn(
-                "flex h-full w-full min-w-0 flex-col items-center justify-center rounded-xl relative overflow-visible",
+                "relative flex h-full w-full min-w-0 max-w-full flex-col items-center justify-center overflow-visible rounded-xl",
                 "touch-manipulation transition-transform ease-out",
                 item.active && "text-primary dark:text-primary-foreground",
                 !item.active &&
@@ -219,7 +223,21 @@ export function BottomNav({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              {/* Icon — fixed square slot, centered in equal-width column */}
+              {item.active && (
+                <div
+                  className="absolute z-0 rounded-full bg-primary"
+                  style={{
+                    width: NAV_BAR_INDICATOR_WIDTH,
+                    height: NAV_BAR_INDICATOR_HEIGHT,
+                    top: NAV_BAR_PADDING_TOP,
+                    left: 0,
+                    right: 0,
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                  }}
+                />
+              )}
+
               <div
                 className="relative flex shrink-0 items-center justify-center"
                 style={{
@@ -227,20 +245,6 @@ export function BottomNav({
                   height: NAV_BAR_ICON_SLOT_SIZE,
                 }}
               >
-                {item.active && (
-                  <div
-                    className="absolute z-0 rounded-full bg-primary"
-                    style={{
-                      width: NAV_BAR_INDICATOR_WIDTH,
-                      height: NAV_BAR_INDICATOR_HEIGHT,
-                      top: NAV_BAR_INDICATOR_TOP,
-                      left: 0,
-                      right: 0,
-                      marginLeft: 'auto',
-                      marginRight: 'auto',
-                    }}
-                  />
-                )}
                 <Icon 
                   name={item.iconName}
                   size={NAV_BAR_ICON_SIZE}
@@ -266,7 +270,6 @@ export function BottomNav({
                 )}
               </div>
 
-              {/* Label — centered in equal-width tab column */}
               <span 
                 className={cn(
                   "w-full min-w-0 shrink-0 truncate text-center font-medium",
@@ -285,12 +288,6 @@ export function BottomNav({
           );
         })}
       </div>
-      {/* Home-indicator safe area — separate from tab content so icons stay centered */}
-      <div
-        aria-hidden
-        className="bg-white dark:bg-gray-900"
-        style={{ height: NAV_BAR_SAFE_AREA_BOTTOM, minHeight: 0 }}
-      />
     </motion.nav>
   );
 }
