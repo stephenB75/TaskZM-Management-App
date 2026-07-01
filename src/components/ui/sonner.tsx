@@ -2,36 +2,43 @@
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { Toaster as Sonner, ToasterProps } from "sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TOAST_DURATION_DEFAULT_MS, VIEWPORT_BREAKPOINTS, Z_INDEX } from "../../lib/layout-constants";
 import { AGENDA_LIST_CARD } from "../../lib/agenda-list-card-constants";
+import { TOAST_LAYOUT } from "../../lib/toast-constants";
+import { getPlatform } from "../../lib/platform";
+import { useMobileLayout } from "../../hooks/useMobileLayout";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { actualTheme } = useTheme();
   const theme = actualTheme === 'dark' ? 'dark' : 'light';
-  const [position, setPosition] = useState<ToasterProps["position"]>("bottom-right");
+  const shouldUseMobileLayout = useMobileLayout();
+  const platform = useMemo(() => getPlatform(), []);
+  const useTopCenter = shouldUseMobileLayout || (platform.isNative && platform.isIOS);
+  const [position, setPosition] = useState<ToasterProps["position"]>(
+    useTopCenter ? "top-center" : "bottom-right",
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const checkMobile = () => {
+    const checkPosition = () => {
       try {
-        if (window.innerWidth < VIEWPORT_BREAKPOINTS.mobile) {
+        const nativeIos = getPlatform().isNative && getPlatform().isIOS;
+        if (window.innerWidth < VIEWPORT_BREAKPOINTS.mobile || nativeIos) {
           setPosition("top-center");
         } else {
           setPosition("bottom-right");
         }
       } catch (error) {
-        console.error('Error checking mobile size:', error);
+        console.error('Error checking toast position:', error);
       }
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
+    checkPosition();
+    window.addEventListener("resize", checkPosition);
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener("resize", checkMobile);
-      }
+      window.removeEventListener("resize", checkPosition);
     };
   }, []);
 
@@ -78,6 +85,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
+          "--toast-top-offset": TOAST_LAYOUT.topWithSafeArea,
+          "--toast-gap": `${TOAST_LAYOUT.toastGapPx}px`,
           zIndex: Z_INDEX.TOAST,
         } as React.CSSProperties
       }

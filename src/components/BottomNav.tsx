@@ -18,7 +18,6 @@ import {
   NAV_BAR_INDICATOR_WIDTH,
   NAV_BAR_INDICATOR_HEIGHT,
   NAV_BAR_INDICATOR_TOP,
-  NAV_BAR_INDICATOR_MARGIN_LEFT,
   NAV_BAR_LABEL_TEXT_SIZE,
   NAV_BAR_LABEL_MARGIN_TOP,
   NAV_BAR_BADGE_SIZE,
@@ -28,6 +27,10 @@ import {
   NAV_BAR_BADGE_RIGHT_OFFSET,
   NAV_BAR_SYNC_INDICATOR_HEIGHT,
   NAV_BAR_HORIZONTAL_PADDING,
+  NAV_BAR_HORIZONTAL_PADDING_LEFT,
+  NAV_BAR_HORIZONTAL_PADDING_RIGHT,
+  NAV_BAR_SAFE_AREA_BOTTOM,
+  NAV_BAR_TAB_COUNT,
   NAV_BAR_ACTIVE_SCALE,
   NAV_BAR_INITIAL_Y_OFFSET,
   NAV_BAR_ANIMATION_DURATION,
@@ -179,15 +182,16 @@ export function BottomNav({
         />
       )}
 
-      <div 
-        className="flex items-center justify-evenly overflow-visible" 
+      <div
+        className="grid items-center justify-items-center overflow-visible bg-white dark:bg-gray-900"
         data-tour="bottom-nav"
         style={{
+          gridTemplateColumns: `repeat(${NAV_BAR_TAB_COUNT}, minmax(0, 1fr))`,
+          height: `${NAV_BAR_HEIGHT}px`,
           paddingTop: NAV_BAR_PADDING_TOP,
-          paddingBottom: `calc(${NAV_BAR_PADDING_BOTTOM} + env(safe-area-inset-bottom, 0px))`,
-          paddingLeft: NAV_BAR_HORIZONTAL_PADDING,
-          paddingRight: NAV_BAR_HORIZONTAL_PADDING,
-          minHeight: `${NAV_BAR_HEIGHT}px`,
+          paddingBottom: NAV_BAR_PADDING_BOTTOM,
+          paddingLeft: NAV_BAR_HORIZONTAL_PADDING_LEFT,
+          paddingRight: NAV_BAR_HORIZONTAL_PADDING_RIGHT,
         }}
       >
         {navItems.map((item) => {
@@ -197,7 +201,7 @@ export function BottomNav({
               data-tour={`bottom-nav-${item.id}`}
               onClick={item.onClick}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 rounded-xl relative overflow-visible",
+                "flex w-full flex-col items-center justify-center rounded-xl relative overflow-visible",
                 "touch-manipulation transition-transform ease-out",
                 item.active && "text-primary dark:text-primary-foreground",
                 !item.active &&
@@ -206,8 +210,6 @@ export function BottomNav({
               style={{
                 paddingTop: NAV_BAR_BUTTON_PADDING_TOP,
                 paddingBottom: NAV_BAR_BUTTON_PADDING_BOTTOM,
-                paddingLeft: NAV_BAR_HORIZONTAL_PADDING,
-                paddingRight: NAV_BAR_HORIZONTAL_PADDING,
                 transitionDuration: `${NAV_BAR_BUTTON_TRANSITION_DURATION}ms`,
               }}
               onMouseDown={(e) => {
@@ -226,8 +228,15 @@ export function BottomNav({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              {/* Icon - 30% bigger (w-6 h-6 -> w-8 h-8) */}
-              <div className="relative flex items-center justify-center" style={{ marginTop: item.active ? NAV_BAR_ICON_MARGIN_TOP_ACTIVE : NAV_BAR_ICON_MARGIN_TOP_INACTIVE }}>
+              {/* Icon - centered in fixed slot so badges do not shift alignment */}
+              <div
+                className="relative flex items-center justify-center"
+                style={{
+                  width: NAV_BAR_ICON_SIZE,
+                  height: NAV_BAR_ICON_SIZE,
+                  marginTop: item.active ? NAV_BAR_ICON_MARGIN_TOP_ACTIVE : NAV_BAR_ICON_MARGIN_TOP_INACTIVE,
+                }}
+              >
                 {/* Active indicator - centered above icon */}
                 {item.active && (
                   <motion.div
@@ -238,7 +247,7 @@ export function BottomNav({
                       height: NAV_BAR_INDICATOR_HEIGHT,
                       top: NAV_BAR_INDICATOR_TOP,
                       left: '50%',
-                      marginLeft: NAV_BAR_INDICATOR_MARGIN_LEFT,
+                      transform: 'translateX(-50%)',
                     }}
                     transition={{
                       type: "spring",
@@ -263,9 +272,8 @@ export function BottomNav({
                       width: NAV_BAR_BADGE_SIZE,
                       height: NAV_BAR_BADGE_SIZE,
                       borderWidth: NAV_BAR_BADGE_BORDER_WIDTH,
-                      top: '0px', // Position at top of icon container
-                      right: '0px', // Position at right edge of icon container
-                      transform: 'translate(25%, -25%)', // Shift badge outward to be clearly visible in front of icon
+                      top: NAV_BAR_BADGE_TOP_OFFSET,
+                      right: NAV_BAR_BADGE_RIGHT_OFFSET,
                     }}
                   >
                     {item.badge > 9 ? "9+" : item.badge}
@@ -276,7 +284,7 @@ export function BottomNav({
               {/* Label */}
               <span 
                 className={cn(
-                  "font-medium leading-tight",
+                  "font-medium leading-tight text-center w-full",
                   item.active 
                     ? "text-primary dark:text-primary-foreground" 
                     : "text-muted-foreground dark:text-gray-400"
@@ -289,6 +297,12 @@ export function BottomNav({
           );
         })}
       </div>
+      {/* Home-indicator safe area — separate from tab content so icons stay centered */}
+      <div
+        aria-hidden
+        className="bg-white dark:bg-gray-900"
+        style={{ height: NAV_BAR_SAFE_AREA_BOTTOM, minHeight: 0 }}
+      />
     </motion.nav>
   );
 }

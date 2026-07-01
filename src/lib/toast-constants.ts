@@ -41,3 +41,12 @@ export const TOAST_STORAGE_ID_PREFIX = 'toast_';
 
 /** Maximum number of toasts to keep in storage (newest first) */
 export const MAX_STORED_TOASTS = 100;
+
+/** Toaster placement — pair with env(safe-area-inset-*) for native notch / Dynamic Island. */
+export const TOAST_LAYOUT = {
+  topOffsetRem: '1rem',
+  toastGapPx: 8,
+  topWithSafeArea: 'calc(1rem + env(safe-area-inset-top, 0px))',
+  horizontalSafeAreaLeft: 'env(safe-area-inset-left, 0px)',
+  horizontalSafeAreaRight: 'env(safe-area-inset-right, 0px)',
+} as const;

@@ -494,6 +494,11 @@ export const NAV_BAR_BADGE_RIGHT_OFFSET = '-0.25rem'; // -right-1 = -0.25rem
 export const NAV_BAR_INDICATOR_HEIGHT = '0.375rem'; // h-1.5 = 0.375rem
 export const NAV_BAR_SYNC_INDICATOR_HEIGHT = '0.125rem'; // h-0.5 = 0.125rem
 export const NAV_BAR_HORIZONTAL_PADDING = '0.25rem'; // px-1 = 0.25rem
+/** Horizontal insets so nav tabs stay centered on notched devices. */
+export const NAV_BAR_HORIZONTAL_PADDING_LEFT = `max(${NAV_BAR_HORIZONTAL_PADDING}, env(safe-area-inset-left, 0px))`;
+export const NAV_BAR_HORIZONTAL_PADDING_RIGHT = `max(${NAV_BAR_HORIZONTAL_PADDING}, env(safe-area-inset-right, 0px))`;
+export const NAV_BAR_SAFE_AREA_BOTTOM = 'env(safe-area-inset-bottom, 0px)';
+export const NAV_BAR_TAB_COUNT = 4;
 export const NAV_BAR_ACTIVE_SCALE = 0.95; // scale-95 = 0.95
 export const NAV_BAR_INITIAL_Y_OFFSET = 100; // Initial animation offset in pixels
 export const NAV_BAR_ANIMATION_DURATION = 0.3;
