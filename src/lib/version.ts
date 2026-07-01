@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.30';
-export const VERSION_NAME = 'App Tour & Demo Dialogs';
-export const VERSION_DATE = 'June 28, 2026';
-export const BUILD_NUMBER = '20260628-1';
+export const APP_VERSION = '1.0.31';
+export const VERSION_NAME = 'Auth Layout & Notification Fixes';
+export const VERSION_DATE = 'July 1, 2026';
+export const BUILD_NUMBER = '20260701-1';
 
 export const CORE_FUNCTIONS = [
   {
@@ -83,6 +83,17 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.31',
+    date: 'July 1, 2026',
+    name: 'Auth Layout & Notification Fixes',
+    changes: [
+      'Auth screen: vertically centered sign-in/sign-up on mobile with safe-area-aware padding',
+      'Notifications: due-soon alerts limited to tasks scheduled today; dismissed alerts no longer re-fire',
+      'Notifications: stale native schedules cancelled on sync; completed tasks excluded from Pomodoro alerts',
+      'Subscriptions: RevenueCat package resolver and web/native billing channel improvements',
+    ],
+  },
   {
     version: '1.0.30',
     date: 'June 28, 2026',

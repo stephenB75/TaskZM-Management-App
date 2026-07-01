@@ -61,10 +61,20 @@ When releasing a new version, update **all** of:
 1. [`src/lib/version.ts`](../src/lib/version.ts) — `APP_VERSION`, `BUILD_NUMBER`
 2. [`src/package.json`](../src/package.json) — `version`
 3. Root [`package.json`](../package.json) — `version`
-4. iOS: Xcode → Target → **Version** / **Build** (or `ios/App/App.xcodeproj`)
-5. Android: `android/app/build.gradle` — `versionName` / `versionCode`
+4. iOS / Android native versions — run from repo root: `npm run sync-mobile-version` (reads `src/lib/version.ts`)
+5. Service worker cache — updated automatically by `npm run mobile:build`
 
-Then run `npm run mobile:build`.
+Then from repo root:
+
+```bash
+npm run mobile:build
+```
+
+First-time iOS CocoaPods (if `cap sync` fails on pod install):
+
+```bash
+cd src/ios/App && bundle install && bundle exec pod install
+```
 
 ## iOS — TestFlight & App Store
 
