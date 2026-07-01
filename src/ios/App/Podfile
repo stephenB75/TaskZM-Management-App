@@ -20,18 +20,23 @@ target 'App' do
   capacitor_pods
 end
 
+def disable_module_verifier!(config)
+  config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
+  config.build_settings['CLANG_ENABLE_MODULE_VERIFIER'] = 'NO'
+  config.build_settings.delete('MODULE_VERIFIER_SUPPORTED_LANGUAGES')
+  config.build_settings.delete('MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS')
+end
+
 def configure_pod_target_settings(config, suppress_third_party_warnings: false)
   config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
   config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+  disable_module_verifier!(config)
   return unless suppress_third_party_warnings
 
   # Capacitor/Cordova/RevenueCat ship SDK deprecations we cannot patch in node_modules.
   config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
   config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
   config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
-  # Xcode 14.3+ module verifier fails on Capacitor/Cordova headers (@import Cordova, quoted includes).
-  config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
-  config.build_settings['CLANG_ENABLE_MODULE_VERIFIER'] = 'NO'
   config.build_settings['CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
   config.build_settings['GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS'] = 'NO'
   other_cflags = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
@@ -84,6 +89,8 @@ end
 
 def patch_capacitor_framework_headers
   marker = 'TASKZM_CAPACITOR_ANGLE_INCLUDES'
+  cordova_impl_marker = 'TASKZM_CAPACITOR_CORDOVA_IMPL'
+  orientation_marker = 'TASKZM_CDV_SCREEN_ORIENTATION_IMPORT'
   capacitor_dir = File.expand_path(
     '../../node_modules/@capacitor/ios/Capacitor/Capacitor',
     __dir__,
@@ -94,35 +101,58 @@ def patch_capacitor_framework_headers
 
   Dir.glob(File.join(capacitor_dir, '*.h')).each do |path|
     content = File.read(path)
-    next if content.include?(marker)
+    patched = content
 
-    patched = content.gsub(/#import\s+"([^"]+\.h)"/) do
-      header = Regexp.last_match(1)
-      if public_headers.include?(header)
-        "#import <Capacitor/#{header}> /* #{marker} */"
-      else
-        Regexp.last_match(0)
+    unless content.include?(marker)
+      patched = patched.gsub(/#import\s+"([^"]+\.h)"/) do
+        header = Regexp.last_match(1)
+        if public_headers.include?(header)
+          "#import <Capacitor/#{header}> /* #{marker} */"
+        else
+          Regexp.last_match(0)
+        end
       end
     end
 
-    if File.basename(path) == 'CAPInstanceDescriptor.h'
+    basename = File.basename(path)
+    if basename == 'CAPInstanceDescriptor.h'
       patched = patched
-        .gsub('@import UIKit;', "#import <UIKit/UIKit.h> /* #{marker} */")
-        .gsub('@import Cordova;', "#import <Cordova/CDVConfigParser.h> /* #{marker} */")
+        .gsub("#import <UIKit/UIKit.h> /* #{marker} */", "@import UIKit; /* #{marker} */")
+        .gsub("#import <Cordova/CDVConfigParser.h> /* #{marker} */", "@class CDVConfigParser; /* #{marker} */")
+        .gsub('@import Cordova;', "@class CDVConfigParser; /* #{marker} */")
+      unless patched.include?('@class CDVConfigParser')
+        patched = patched.sub(/@import UIKit;\s*\n/, "@import UIKit;\n@class CDVConfigParser; /* #{marker} */\n")
+      end
     end
 
-    if File.basename(path) == 'CAPBridgeViewController+CDVScreenOrientationDelegate.h'
-      orientation_marker = 'TASKZM_CDV_SCREEN_ORIENTATION_IMPORT'
+    if basename == 'CAPBridgeViewController+CDVScreenOrientationDelegate.h'
+      patched = patched
+        .gsub(
+          "#import <Cordova/CDVScreenOrientationDelegate.h> /* #{orientation_marker} */",
+          "@protocol CDVScreenOrientationDelegate; /* #{orientation_marker} */",
+        )
       unless patched.include?(orientation_marker)
         patched = patched.sub(
           "#import <Capacitor/Capacitor-Swift.h>\n",
           "#import <Capacitor/Capacitor-Swift.h>\n" \
-          "#import <Cordova/CDVScreenOrientationDelegate.h> /* #{orientation_marker} */\n",
+          "@protocol CDVScreenOrientationDelegate; /* #{orientation_marker} */\n",
         )
       end
     end
 
     File.write(path, patched) if patched != content
+  end
+
+  descriptor_impl = File.join(capacitor_dir, 'CAPInstanceDescriptor.m')
+  if File.exist?(descriptor_impl)
+    impl = File.read(descriptor_impl)
+    unless impl.include?(cordova_impl_marker)
+      patched_impl = impl.sub(
+        "#import \"CAPInstanceDescriptor.h\"\n",
+        "#import \"CAPInstanceDescriptor.h\"\n#import <Cordova/CDVConfigParser.h> /* #{cordova_impl_marker} */\n",
+      )
+      File.write(descriptor_impl, patched_impl) if patched_impl != impl
+    end
   end
 end
 
@@ -175,8 +205,7 @@ post_install do |installer|
   silence_capacitor_cordova_wkprocesspool_deprecations
 
   installer.pods_project.build_configurations.each do |config|
-    config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
-    config.build_settings['CLANG_ENABLE_MODULE_VERIFIER'] = 'NO'
+    disable_module_verifier!(config)
   end
 
   installer.pods_project.targets.each do |target|

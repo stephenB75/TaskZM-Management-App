@@ -1066,7 +1066,7 @@ function generateRecurringOccurrences(
         title: baseEvent.title,
         description: baseEvent.description,
         start: normalizeStart(baseEvent.start_time),
-        end: normalizeEnd(baseEvent.end_time),
+        end: normalizeEnd(ensureEventEndTime(baseEvent.start_time, baseEvent.end_time)),
         location: baseEvent.location,
         provider,
         providerEventId: baseEvent.external_id,
@@ -1221,6 +1221,13 @@ function eventOverlapsQueryRange(
   return eventStart <= rangeEnd && eventEnd >= rangeStart;
 }
 
+function ensureEventEndTime(startTime: string, endTime: string | null | undefined): string {
+  if (endTime) return endTime;
+  const start = new Date(startTime);
+  if (isNaN(start.getTime())) return startTime;
+  return new Date(start.getTime() + DEFAULT_EVENT_DURATION_MINUTES * 60 * 1000).toISOString();
+}
+
 /**
  * Get Apple Calendar events from the database (new CalDAV sync)
  */
@@ -1285,7 +1292,7 @@ async function getAppleEventsFromDatabase(
             title: event.title,
             description: event.description,
             start: event.start_time,
-            end: event.end_time,
+            end: ensureEventEndTime(event.start_time, event.end_time),
             location: event.location,
             provider: 'apple' as CalendarProvider,
             providerEventId: event.external_id,
@@ -1368,7 +1375,7 @@ async function getGoogleEventsFromDatabase(
             title: event.title,
             description: event.description,
             start: event.start_time,
-            end: event.end_time,
+            end: ensureEventEndTime(event.start_time, event.end_time),
             location: event.location,
             provider: 'google' as const,
             providerEventId: event.external_id,
@@ -1451,7 +1458,7 @@ async function getOutlookEventsFromDatabase(
             title: event.title,
             description: event.description,
             start: event.start_time,
-            end: event.end_time,
+            end: ensureEventEndTime(event.start_time, event.end_time),
             location: event.location,
             provider: 'outlook' as const,
             providerEventId: event.external_id,

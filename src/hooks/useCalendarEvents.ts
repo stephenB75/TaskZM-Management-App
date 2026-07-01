@@ -13,9 +13,10 @@ import {
 import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalendarEventSortTimeOnDay } from '../lib/utils';
 import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
+import { resolveCalendarProvidersForFetch, getActiveCalendarProviders, type CalendarProviderKey } from '../lib/calendar-status';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
-const CALENDAR_EVENTS_CACHE_VERSION = 'v3-db-recurrence-anchor';
+const CALENDAR_EVENTS_CACHE_VERSION = 'v4-status-refetch-end-default';
 
 export interface CalendarEvent {
   id: string;
@@ -72,6 +73,18 @@ function isCacheValid(entry: CacheEntry): boolean {
   return Date.now() - entry.timestamp < CACHE_DURATION;
 }
 
+const DEFAULT_EVENT_DURATION_MS =
+  TIMING_CONSTANTS.calendar.defaultEventDurationMinutes *
+  TIMING_CONSTANTS.timeConversions.secondsToMs *
+  60;
+
+function resolveEventEndIso(start: string, end: string | null | undefined): string {
+  if (end != null && end !== '') return end;
+  const startDate = parseCalendarEventTime(start);
+  if (isNaN(startDate.getTime())) return start;
+  return new Date(startDate.getTime() + DEFAULT_EVENT_DURATION_MS).toISOString();
+}
+
 /**
  * Fetch calendar events from a single provider
  */
@@ -109,15 +122,17 @@ async function fetchProviderEvents(
 
     const events: CalendarEvent[] = [];
     for (const event of data.events) {
-      if (!event?.start || !event?.end) continue;
+      if (!event?.start) continue;
       const eventStart = parseCalendarEventTime(event.start);
       if (isNaN(eventStart.getTime())) continue;
+
+      const endIso = resolveEventEndIso(event.start, event.end);
 
       events.push({
         id: event.id || `${provider}-${event.providerEventId || event.start}-${events.length}`,
         title: event.title || 'Calendar Event',
         start: event.start,
-        end: event.end,
+        end: endIso,
         location: event.location,
         provider,
         calendarColor: event.calendarColor,
@@ -175,7 +190,7 @@ export function useCalendarEvents(
   }
 ) {
   const { user, accessToken } = useAuth();
-  const { calendarStatus, checkCalendarStatus } = useCalendar();
+  const { calendarStatus, checkCalendarStatus, lastSync } = useCalendar();
   const invalidationEpoch = useSyncExternalStore(
     subscribeCalendarEventsInvalidation,
     getCalendarEventsInvalidationEpoch,
@@ -200,53 +215,44 @@ export function useCalendarEvents(
     return endDate.toISOString();
   }, [endDate]);
 
-  // Determine which providers to fetch (must be declared before cacheKey which depends on it)
-  const providers = useMemo(() => {
-    const active: Array<'google' | 'apple' | 'outlook'> = [];
-    if (calendarStatus.google) active.push('google');
-    if (calendarStatus.apple) active.push('apple');
-    if (calendarStatus.outlook) active.push('outlook');
-    return active;
-  }, [calendarStatus.google, calendarStatus.apple, calendarStatus.outlook]);
+  // Determine which providers to fetch (context + persisted fallback when API cache is stale)
+  const providers = useMemo(
+    () => resolveCalendarProvidersForFetch(calendarStatus, user?.id),
+    [calendarStatus.google, calendarStatus.outlook, calendarStatus.apple, user?.id],
+  );
+
+  const providersRef = useRef(providers);
+  providersRef.current = providers;
 
   const userTimezone = useMemo(() => getBrowserTimezone(), []);
 
-  const cacheKey = useMemo(
-    () => getCacheKey(startIso, endIso, providers, userTimezone),
-    [startIso, endIso, providers, userTimezone]
-  );
-
-  // Fetch events with caching and deduplication
-  const fetchEvents = useCallback(async () => {
-    if (!enabled || !accessToken || providers.length === 0) {
+  const fetchEventsForProviders = useCallback(async (activeProviders: CalendarProviderKey[]) => {
+    if (!enabled || !accessToken || activeProviders.length === 0) {
       setEvents([]);
       setIsLoading(false);
       return;
     }
 
-    // Check cache first
-    const cached = globalCache[cacheKey];
+    const runtimeCacheKey = getCacheKey(startIso, endIso, activeProviders, userTimezone);
+
+    const cached = globalCache[runtimeCacheKey];
     if (cached && isCacheValid(cached)) {
-      // Verify date range matches (in case of cache collision)
       if (cached.dateRange.start === startIso && cached.dateRange.end === endIso) {
         setEvents(cached.events);
         setIsLoading(false);
-        logger.debug(`Calendar events: Using cached data for ${cacheKey}`);
+        logger.debug(`Calendar events: Using cached data for ${runtimeCacheKey}`);
         return;
       }
     }
 
-    // Check if request is already in flight (cacheKey already includes providers)
-    const inFlightKey = cacheKey;
-    if (inFlightRequests.has(inFlightKey)) {
-      logger.debug(`Calendar events: Waiting for in-flight request for ${cacheKey}`);
+    if (inFlightRequests.has(runtimeCacheKey)) {
+      logger.debug(`Calendar events: Waiting for in-flight request for ${runtimeCacheKey}`);
       try {
-        const cachedEvents = await inFlightRequests.get(inFlightKey)!;
+        const cachedEvents = await inFlightRequests.get(runtimeCacheKey)!;
         setEvents(cachedEvents);
         setIsLoading(false);
         return;
       } catch (err) {
-        // If in-flight request fails, continue to fetch
         logger.warn('In-flight request failed, fetching fresh:', err);
       }
     }
@@ -254,20 +260,16 @@ export function useCalendarEvents(
     setIsLoading(true);
     setError(null);
 
-    // Create and store the promise
-    const fetchPromise = fetchAllEvents(providers, startIso, endIso, accessToken, userTimezone)
+    const fetchPromise = fetchAllEvents(activeProviders, startIso, endIso, accessToken, userTimezone)
       .then((fetchedEvents) => {
-        // Update cache
-        globalCache[cacheKey] = {
+        globalCache[runtimeCacheKey] = {
           events: fetchedEvents,
           timestamp: Date.now(),
           dateRange: { start: startIso, end: endIso },
         };
 
-        // Clean up old cache entries (keep last 50 entries)
         const cacheEntries = Object.entries(globalCache);
         if (cacheEntries.length > 50) {
-          // Sort by timestamp and remove oldest
           const sorted = cacheEntries.sort((a, b) => a[1].timestamp - b[1].timestamp);
           const toRemove = sorted.slice(0, sorted.length - 50);
           toRemove.forEach(([key]) => delete globalCache[key]);
@@ -284,14 +286,17 @@ export function useCalendarEvents(
         throw err;
       })
       .finally(() => {
-        // Remove from in-flight requests
-        inFlightRequests.delete(inFlightKey);
+        inFlightRequests.delete(runtimeCacheKey);
       });
 
-    inFlightRequests.set(inFlightKey, fetchPromise);
+    inFlightRequests.set(runtimeCacheKey, fetchPromise);
 
     return fetchPromise;
-  }, [enabled, accessToken, providers, startIso, endIso, cacheKey, userTimezone]);
+  }, [enabled, accessToken, startIso, endIso, userTimezone]);
+
+  const fetchEvents = useCallback(async () => {
+    return fetchEventsForProviders(providersRef.current);
+  }, [fetchEventsForProviders]);
 
   // When providers goes from empty to non-empty, clear cache and trigger an immediate fetch so events show without waiting for debounce
   useEffect(() => {
@@ -329,9 +334,35 @@ export function useCalendarEvents(
   useEffect(() => {
     if (invalidationEpoch === prevInvalidationEpochRef.current) return;
     prevInvalidationEpochRef.current = invalidationEpoch;
-    if (!enabled || !accessToken || providers.length === 0) return;
+    if (!enabled || !accessToken) return;
+
+    const refreshAfterInvalidation = async () => {
+      try {
+        if (user?.id) {
+          localStorage.removeItem(`calendar_status_cache_${user.id}`);
+          localStorage.removeItem(`calendar_status_cache_time_${user.id}`);
+        }
+        const status = await checkCalendarStatus();
+        const activeProviders = status
+          ? getActiveCalendarProviders(status)
+          : resolveCalendarProvidersForFetch(calendarStatus, user?.id);
+        await fetchEventsForProviders(activeProviders);
+      } catch {
+        await fetchEvents();
+      }
+    };
+    refreshAfterInvalidation();
+  }, [invalidationEpoch, enabled, accessToken, user?.id, calendarStatus, checkCalendarStatus, fetchEvents, fetchEventsForProviders]);
+
+  // Refetch when a calendar sync completes (lastSync updates even when cache was already cleared)
+  const lastSyncMs = lastSync?.getTime() ?? 0;
+  const prevLastSyncMsRef = useRef(0);
+  useEffect(() => {
+    if (!lastSyncMs || lastSyncMs === prevLastSyncMsRef.current) return;
+    prevLastSyncMsRef.current = lastSyncMs;
+    if (!enabled || !accessToken) return;
     fetchEvents();
-  }, [invalidationEpoch, enabled, accessToken, providers.length, fetchEvents]);
+  }, [lastSyncMs, enabled, accessToken, fetchEvents]);
 
   // Debounced fetch effect
   useEffect(() => {
@@ -411,22 +442,40 @@ export function useCalendarEventsByDate(
 
     for (const event of events) {
       if (!event?.start) continue;
-      // Use parseCalendarEventTime so UTC (with or without Z) converts to correct local date for grouping.
       const eventStart = parseCalendarEventTime(event.start);
       if (isNaN(eventStart.getTime())) continue;
 
-      // Normalize to local date string (YYYY-MM-DD) using getDateString for consistency
-      const normalizedDate = new Date(
-        eventStart.getFullYear(),
-        eventStart.getMonth(),
-        eventStart.getDate()
+      const eventEnd = parseCalendarEventTime(event.end || event.start);
+      const startDay = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate());
+      let endDay = new Date(
+        eventEnd.getFullYear(),
+        eventEnd.getMonth(),
+        eventEnd.getDate(),
       );
-      const dateKey = getDateString(normalizedDate);
 
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
+      // Exclusive midnight end (common for all-day) — don't add an extra column day
+      if (
+        eventEnd.getHours() === 0 &&
+        eventEnd.getMinutes() === 0 &&
+        eventEnd.getSeconds() === 0 &&
+        eventEnd.getTime() > eventStart.getTime() &&
+        endDay.getTime() > startDay.getTime()
+      ) {
+        endDay.setDate(endDay.getDate() - 1);
       }
-      grouped[dateKey].push(event);
+      if (endDay.getTime() < startDay.getTime()) {
+        endDay = new Date(startDay);
+      }
+
+      const cursor = new Date(startDay);
+      while (cursor.getTime() <= endDay.getTime()) {
+        const dateKey = getDateString(cursor);
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = [];
+        }
+        grouped[dateKey].push(event);
+        cursor.setDate(cursor.getDate() + 1);
+      }
     }
 
     for (const dateKey of Object.keys(grouped)) {

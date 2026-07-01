@@ -107,6 +107,8 @@ export const TIMING_CONSTANTS = {
     syncInterval: 5 * 60 * 1000, // 5 minutes - Calendar sync interval
     minAutoSyncInterval: 2 * 60 * 1000, // 2 minutes - Minimum time between auto syncs
     cacheDuration: 5 * 60 * 1000, // 5 minutes - Calendar status cache duration
+    /** Default duration when an imported event has no end time (minutes). */
+    defaultEventDurationMinutes: 30,
     /** Grace period (ms) after a connect during which checkCalendarStatus will not overwrite that provider to false (avoids visibility/tab race). */
     statusConnectGraceMs: 10 * 1000,
     popupCheckInterval: 500, // 500ms - OAuth popup check interval

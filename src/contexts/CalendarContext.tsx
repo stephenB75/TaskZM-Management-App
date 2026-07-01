@@ -15,27 +15,14 @@ import { createDefaultCalendarContext } from '../lib/context-defaults';
 import { getPlatform } from '../lib/platform';
 import { openNativeOAuthUrl, setCalendarOAuthCallback } from '../lib/native-app';
 import { MOBILE_CALENDAR_AUTH_PLATFORM_PARAM } from '../lib/mobile-constants';
+import {
+  normalizeCalendarStatus,
+  type CalendarConnectionStatus,
+} from '../lib/calendar-status';
 
 type CalendarProvider = CalendarProviderId;
 
-interface CalendarStatus {
-  google: boolean;
-  outlook: boolean;
-  apple: boolean;
-}
-
-/** Normalize backend response to CalendarStatus so setCalendarStatus always receives the expected shape. */
-function normalizeCalendarStatus(data: unknown): CalendarStatus {
-  if (data && typeof data === 'object' && !Array.isArray(data)) {
-    const o = data as Record<string, unknown>;
-    return {
-      google: Boolean(o.google === true || o.google_connected === true),
-      outlook: Boolean(o.outlook === true || o.outlook_connected === true),
-      apple: Boolean(o.apple === true || o.apple_connected === true),
-    };
-  }
-  return { google: false, outlook: false, apple: false };
-}
+interface CalendarStatus extends CalendarConnectionStatus {}
 
 interface AppleCalendarTestResult {
   success: boolean;
@@ -140,8 +127,21 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           try {
             const data = JSON.parse(cached);
             const merged = mergeStatusWithGraceRefs(normalizeCalendarStatus(data));
-            setCalendarStatus(merged);
-            return merged;
+            const persisted = user.id ? localStorage.getItem(`calendar_status_${user.id}`) : null;
+            const persistedStatus = persisted
+              ? mergeStatusWithGraceRefs(normalizeCalendarStatus(JSON.parse(persisted)))
+              : null;
+            const cachedConnected = merged.google || merged.outlook || merged.apple;
+            const persistedConnected = persistedStatus
+              ? persistedStatus.google || persistedStatus.outlook || persistedStatus.apple
+              : false;
+            // Stale API cache can say "disconnected" while persisted status is connected — refetch server.
+            if (!cachedConnected && persistedConnected) {
+              // fall through to network fetch
+            } else {
+              setCalendarStatus(merged);
+              return merged;
+            }
           } catch (e) {
             // Cache parse error, continue to fetch
           }
