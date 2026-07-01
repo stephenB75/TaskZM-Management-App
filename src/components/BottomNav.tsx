@@ -8,25 +8,20 @@ import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
 import {
   NAV_BAR_HEIGHT,
-  NAV_BAR_PADDING_TOP,
-  NAV_BAR_PADDING_BOTTOM,
-  NAV_BAR_BUTTON_PADDING_TOP,
-  NAV_BAR_BUTTON_PADDING_BOTTOM,
   NAV_BAR_ICON_SIZE,
-  NAV_BAR_ICON_MARGIN_TOP_ACTIVE,
-  NAV_BAR_ICON_MARGIN_TOP_INACTIVE,
+  NAV_BAR_ICON_SLOT_SIZE,
+  NAV_BAR_ICON_LABEL_GAP,
+  NAV_BAR_LABEL_LINE_HEIGHT,
   NAV_BAR_INDICATOR_WIDTH,
   NAV_BAR_INDICATOR_HEIGHT,
   NAV_BAR_INDICATOR_TOP,
   NAV_BAR_LABEL_TEXT_SIZE,
-  NAV_BAR_LABEL_MARGIN_TOP,
   NAV_BAR_BADGE_SIZE,
   NAV_BAR_BADGE_TEXT_SIZE,
   NAV_BAR_BADGE_BORDER_WIDTH,
   NAV_BAR_BADGE_TOP_OFFSET,
   NAV_BAR_BADGE_RIGHT_OFFSET,
   NAV_BAR_SYNC_INDICATOR_HEIGHT,
-  NAV_BAR_HORIZONTAL_PADDING,
   NAV_BAR_HORIZONTAL_PADDING_LEFT,
   NAV_BAR_HORIZONTAL_PADDING_RIGHT,
   NAV_BAR_SAFE_AREA_BOTTOM,
@@ -183,15 +178,15 @@ export function BottomNav({
       )}
 
       <div
-        className="grid items-center justify-items-center overflow-visible bg-white dark:bg-gray-900"
+        className="grid overflow-visible bg-white dark:bg-gray-900"
         data-tour="bottom-nav"
         style={{
           gridTemplateColumns: `repeat(${NAV_BAR_TAB_COUNT}, minmax(0, 1fr))`,
           height: `${NAV_BAR_HEIGHT}px`,
-          paddingTop: NAV_BAR_PADDING_TOP,
-          paddingBottom: NAV_BAR_PADDING_BOTTOM,
           paddingLeft: NAV_BAR_HORIZONTAL_PADDING_LEFT,
           paddingRight: NAV_BAR_HORIZONTAL_PADDING_RIGHT,
+          alignItems: 'center',
+          justifyItems: 'stretch',
         }}
       >
         {navItems.map((item) => {
@@ -201,15 +196,14 @@ export function BottomNav({
               data-tour={`bottom-nav-${item.id}`}
               onClick={item.onClick}
               className={cn(
-                "flex w-full flex-col items-center justify-center rounded-xl relative overflow-visible",
+                "flex h-full w-full min-h-0 flex-col items-center justify-center rounded-xl relative overflow-visible",
                 "touch-manipulation transition-transform ease-out",
                 item.active && "text-primary dark:text-primary-foreground",
                 !item.active &&
                   "text-muted-foreground dark:text-gray-400 hover:text-foreground dark:hover:text-gray-200",
               )}
               style={{
-                paddingTop: NAV_BAR_BUTTON_PADDING_TOP,
-                paddingBottom: NAV_BAR_BUTTON_PADDING_BOTTOM,
+                gap: NAV_BAR_ICON_LABEL_GAP,
                 transitionDuration: `${NAV_BAR_BUTTON_TRANSITION_DURATION}ms`,
               }}
               onMouseDown={(e) => {
@@ -228,13 +222,12 @@ export function BottomNav({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              {/* Icon - centered in fixed slot so badges do not shift alignment */}
+              {/* Icon — fixed square slot, centered horizontally in tab column */}
               <div
-                className="relative flex items-center justify-center"
+                className="relative flex shrink-0 items-center justify-center"
                 style={{
-                  width: NAV_BAR_ICON_SIZE,
-                  height: NAV_BAR_ICON_SIZE,
-                  marginTop: item.active ? NAV_BAR_ICON_MARGIN_TOP_ACTIVE : NAV_BAR_ICON_MARGIN_TOP_INACTIVE,
+                  width: NAV_BAR_ICON_SLOT_SIZE,
+                  height: NAV_BAR_ICON_SLOT_SIZE,
                 }}
               >
                 {/* Active indicator - centered above icon */}
@@ -284,12 +277,15 @@ export function BottomNav({
               {/* Label */}
               <span 
                 className={cn(
-                  "font-medium leading-tight text-center w-full",
+                  "shrink-0 font-medium text-center w-full truncate px-0.5",
                   item.active 
                     ? "text-primary dark:text-primary-foreground" 
                     : "text-muted-foreground dark:text-gray-400"
                 )} 
-                style={{ fontSize: NAV_BAR_LABEL_TEXT_SIZE, marginTop: NAV_BAR_LABEL_MARGIN_TOP }}
+                style={{
+                  fontSize: NAV_BAR_LABEL_TEXT_SIZE,
+                  lineHeight: NAV_BAR_LABEL_LINE_HEIGHT,
+                }}
               >
                 {item.label}
               </span>

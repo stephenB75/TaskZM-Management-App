@@ -474,18 +474,24 @@ export const NAV_BAR_SCROLL_BUFFER = 8; // Small buffer so last list item clears
 export const NAV_BAR_SCROLL_BUFFER_REM = '0.5rem';
 /** Scroll container padding above fixed nav (height + safe area + buffer). */
 export const NAV_BAR_SCROLL_PADDING_MOBILE = `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER}px)`;
-export const NAV_BAR_PADDING_TOP = '0.25rem';
-export const NAV_BAR_PADDING_BOTTOM = '0.25rem'; // Safe area handled separately on the nav element
-export const NAV_BAR_BUTTON_PADDING_TOP = '0.25rem';
-export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0.25rem';
+/** Equal vertical inset for tab content within the nav content row (above/below icon+label block). */
+export const NAV_BAR_CONTENT_VERTICAL_PADDING = '0.375rem';
+/** Gap between icon and label — keep smaller than vertical padding for balanced look. */
+export const NAV_BAR_ICON_LABEL_GAP = '0.125rem';
+export const NAV_BAR_PADDING_TOP = NAV_BAR_CONTENT_VERTICAL_PADDING;
+export const NAV_BAR_PADDING_BOTTOM = NAV_BAR_CONTENT_VERTICAL_PADDING;
+export const NAV_BAR_BUTTON_PADDING_TOP = '0';
+export const NAV_BAR_BUTTON_PADDING_BOTTOM = '0';
 export const NAV_BAR_ICON_SIZE = '1.75rem'; // Slightly smaller for compact bar
+export const NAV_BAR_ICON_SLOT_SIZE = NAV_BAR_ICON_SIZE; // Square hit target; keeps icons horizontally centered
 export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0';
 export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0';
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
-export const NAV_BAR_INDICATOR_TOP = '-0.5rem'; // Keep indicator above icon (moves with icon)
-export const NAV_BAR_INDICATOR_MARGIN_LEFT = '-1rem';
+/** Sits just above the icon slot; absolute so it does not shift vertical alignment. */
+export const NAV_BAR_INDICATOR_TOP = '-0.375rem';
 export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
-export const NAV_BAR_LABEL_MARGIN_TOP = '0.25rem';
+export const NAV_BAR_LABEL_LINE_HEIGHT = '1.2';
+export const NAV_BAR_LABEL_MARGIN_TOP = '0'; // use NAV_BAR_ICON_LABEL_GAP on button flex instead
 export const NAV_BAR_BADGE_SIZE = '1rem'; // w-4 h-4 = 1rem
 export const NAV_BAR_BADGE_TEXT_SIZE = '8px';
 export const NAV_BAR_BADGE_BORDER_WIDTH = '2px';
