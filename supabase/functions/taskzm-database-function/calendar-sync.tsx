@@ -32,6 +32,40 @@ const END_OF_DAY_SECOND = 59; // Second for end of day normalization
 const END_OF_DAY_MILLISECOND = 999; // Millisecond for end of day normalization
 const DEFAULT_CALENDAR_TIMEZONE = 'America/New_York';
 const GOOGLE_CALENDAR_MAX_RESULTS = 2500;
+/** Max rows pulled from calendar_events per request (safety cap). */
+const CALENDAR_DB_QUERY_MAX_ROWS = 5000;
+const CALENDAR_DB_EVENT_COLUMNS =
+  'id,title,description,start_time,end_time,location,external_id,source,calendar_color,rrule';
+
+type CalendarEventSource = 'google' | 'icloud' | 'outlook';
+
+/**
+ * Load calendar rows that may produce occurrences in [startDate, endDate]:
+ * recurring series masters (rrule) plus non-recurring rows overlapping the window.
+ */
+async function fetchCalendarEventRowsForUser(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  source: CalendarEventSource,
+  startDate: string,
+  endDate: string,
+): Promise<CalendarEventRow[]> {
+  const overlapFilter =
+    `and(rrule.is.null,start_time.lte.${endDate},or(end_time.gte.${startDate},end_time.is.null))`;
+  const { data: events, error } = await supabase
+    .from('calendar_events')
+    .select(CALENDAR_DB_EVENT_COLUMNS)
+    .eq('user_id', userId)
+    .eq('source', source)
+    .or(`rrule.not.is.null,${overlapFilter}`)
+    .order('start_time', { ascending: true })
+    .limit(CALENDAR_DB_QUERY_MAX_ROWS);
+
+  if (error) {
+    throw error;
+  }
+  return (events || []) as CalendarEventRow[];
+}
 
 function resolveUserTimezone(userTimezone?: string): string {
   const candidate = (userTimezone || '').trim();
@@ -1333,18 +1367,11 @@ async function getAppleEventsFromDatabase(
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     );
 
-    // Fetch all events (including base recurring events)
-    // We'll expand recurring events on-demand
-    // Fetch all events for this user - we'll filter and expand in code
-    const { data: events, error } = await supabase
-      .from('calendar_events')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('source', 'icloud')
-      .order('start_time', { ascending: true });
-
-    if (error) {
-      console.warn('Apple events fetch failed (table may not exist or RLS):', error.message);
+    let events: CalendarEventRow[];
+    try {
+      events = await fetchCalendarEventRowsForUser(supabase, userId, 'icloud', startDate, endDate);
+    } catch (error) {
+      console.warn('Apple events fetch failed (table may not exist or RLS):', error);
       return [];
     }
 
@@ -1355,7 +1382,7 @@ async function getAppleEventsFromDatabase(
       return [];
     }
 
-    return expandCalendarEventRowsForRange(events || [], startDateObj, endDateObj, timeZone, 'apple');
+    return expandCalendarEventRowsForRange(events, startDateObj, endDateObj, timeZone, 'apple');
   } catch (error) {
     console.log('Failed to fetch Apple events from database:', error);
     return [];
@@ -1377,15 +1404,10 @@ async function getGoogleEventsFromDatabase(
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     );
 
-    // Fetch all events (including base recurring events)
-    const { data: events, error } = await supabase
-      .from('calendar_events')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('source', 'google')
-      .order('start_time', { ascending: true });
-
-    if (error) {
+    let events: CalendarEventRow[];
+    try {
+      events = await fetchCalendarEventRowsForUser(supabase, userId, 'google', startDate, endDate);
+    } catch (error) {
       console.log('Error fetching Google events from database:', error);
       return [];
     }
@@ -1393,7 +1415,7 @@ async function getGoogleEventsFromDatabase(
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
-    return expandCalendarEventRowsForRange(events || [], startDateObj, endDateObj, timeZone, 'google');
+    return expandCalendarEventRowsForRange(events, startDateObj, endDateObj, timeZone, 'google');
   } catch (error) {
     console.log('Failed to fetch Google events from database:', error);
     return [];
@@ -1415,15 +1437,10 @@ async function getOutlookEventsFromDatabase(
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     );
 
-    // Fetch all events (including base recurring events)
-    const { data: events, error } = await supabase
-      .from('calendar_events')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('source', 'outlook')
-      .order('start_time', { ascending: true });
-
-    if (error) {
+    let events: CalendarEventRow[];
+    try {
+      events = await fetchCalendarEventRowsForUser(supabase, userId, 'outlook', startDate, endDate);
+    } catch (error) {
       console.log('Error fetching Outlook events from database:', error);
       return [];
     }
@@ -1431,7 +1448,7 @@ async function getOutlookEventsFromDatabase(
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
-    return expandCalendarEventRowsForRange(events || [], startDateObj, endDateObj, timeZone, 'outlook');
+    return expandCalendarEventRowsForRange(events, startDateObj, endDateObj, timeZone, 'outlook');
   } catch (error) {
     console.log('Failed to fetch Outlook events from database:', error);
     return [];

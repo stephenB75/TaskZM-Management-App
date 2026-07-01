@@ -109,6 +109,10 @@ export const TIMING_CONSTANTS = {
     cacheDuration: 5 * 60 * 1000, // 5 minutes - Calendar status cache duration
     /** Default duration when an imported event has no end time (minutes). */
     defaultEventDurationMinutes: 30,
+    /** Retry delay when edge calendar fetch returns 502/503/546 (ms). */
+    eventsFetchRetryDelayMs: 1000,
+    /** Max retries per provider calendar fetch after transient edge errors. */
+    eventsFetchMaxRetries: 2,
     /** Grace period (ms) after a connect during which checkCalendarStatus will not overwrite that provider to false (avoids visibility/tab race). */
     statusConnectGraceMs: 10 * 1000,
     popupCheckInterval: 500, // 500ms - OAuth popup check interval

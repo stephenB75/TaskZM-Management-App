@@ -16,7 +16,7 @@ import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils
 import { resolveCalendarProvidersForFetch, getActiveCalendarProviders, type CalendarProviderKey } from '../lib/calendar-status';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
-const CALENDAR_EVENTS_CACHE_VERSION = 'v6-api-fallback-end-of-day';
+const CALENDAR_EVENTS_CACHE_VERSION = 'v7-db-range-query-serialized-fetch';
 
 export interface CalendarEvent {
   id: string;
@@ -38,6 +38,78 @@ interface CacheEntry {
   events: CalendarEvent[];
   timestamp: number;
   dateRange: { start: string; end: string };
+  providers: CalendarProviderKey[];
+}
+
+// Serialize per-provider API calls so parallel views don't stampede the edge function (546).
+const providerFetchChains = new Map<CalendarProviderKey, Promise<unknown>>();
+
+const TRANSIENT_CALENDAR_HTTP_STATUSES = new Set([502, 503, 546]);
+
+function eventOverlapsIsoRange(event: CalendarEvent, startIso: string, endIso: string): boolean {
+  const rangeStart = new Date(startIso).getTime();
+  const rangeEnd = new Date(endIso).getTime();
+  const eventStart = parseCalendarEventTime(event.start).getTime();
+  const eventEnd = parseCalendarEventTime(event.end || event.start).getTime();
+  if (Number.isNaN(eventStart)) return false;
+  const end = Number.isNaN(eventEnd) ? eventStart : eventEnd;
+  return eventStart <= rangeEnd && end >= rangeStart;
+}
+
+function findSupersetCachedEvents(
+  startIso: string,
+  endIso: string,
+  activeProviders: CalendarProviderKey[],
+): CalendarEvent[] | null {
+  const reqStart = new Date(startIso).getTime();
+  const reqEnd = new Date(endIso).getTime();
+  if (Number.isNaN(reqStart) || Number.isNaN(reqEnd)) return null;
+
+  const needed = new Set(activeProviders);
+  let best: CacheEntry | null = null;
+  let bestSpan = Number.POSITIVE_INFINITY;
+
+  for (const entry of Object.values(globalCache) as CacheEntry[]) {
+    if (!isCacheValid(entry) || entry.events.length === 0) continue;
+    if (
+      !entry.providers ||
+      entry.providers.length !== needed.size ||
+      !entry.providers.every((p) => needed.has(p))
+    ) {
+      continue;
+    }
+    const cacheStart = new Date(entry.dateRange.start).getTime();
+    const cacheEnd = new Date(entry.dateRange.end).getTime();
+    if (Number.isNaN(cacheStart) || Number.isNaN(cacheEnd)) continue;
+    if (cacheStart > reqStart || cacheEnd < reqEnd) continue;
+
+    const span = cacheEnd - cacheStart;
+    if (span < bestSpan) {
+      bestSpan = span;
+      best = entry;
+    }
+  }
+
+  if (!best) return null;
+  return best.events.filter((event) => eventOverlapsIsoRange(event, startIso, endIso));
+}
+
+function runSerializedProviderFetch<T>(
+  provider: CalendarProviderKey,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const previous = providerFetchChains.get(provider) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(fn);
+  providerFetchChains.set(provider, next);
+  return next.finally(() => {
+    if (providerFetchChains.get(provider) === next) {
+      providerFetchChains.delete(provider);
+    }
+  });
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 interface CalendarEventsCache {
@@ -95,60 +167,89 @@ async function fetchProviderEvents(
   accessToken: string,
   userTimezone: string
 ): Promise<CalendarEvent[]> {
-  try {
-    const params = new URLSearchParams({
-      startDate,
-      endDate,
-      userTimezone,
-    });
-    const resp = await fetch(
-      `${CALENDAR_API_BASE}/calendar/events/${provider}?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
+  return runSerializedProviderFetch(provider, () =>
+    fetchProviderEventsOnce(provider, startDate, endDate, accessToken, userTimezone),
+  );
+}
 
-    if (!resp.ok) {
-      logger.warn(`Failed to fetch ${provider} events: ${resp.status}`);
-      return [];
-    }
+async function fetchProviderEventsOnce(
+  provider: 'google' | 'apple' | 'outlook',
+  startDate: string,
+  endDate: string,
+  accessToken: string,
+  userTimezone: string
+): Promise<CalendarEvent[]> {
+  const maxRetries = TIMING_CONSTANTS.calendar.eventsFetchMaxRetries;
+  const retryDelayMs = TIMING_CONSTANTS.calendar.eventsFetchRetryDelayMs;
 
-    const data = await resp.json();
-    if (!Array.isArray(data.events)) {
-      return [];
-    }
-
-    const events: CalendarEvent[] = [];
-    for (const event of data.events) {
-      if (!event?.start) continue;
-      const eventStart = parseCalendarEventTime(event.start);
-      if (isNaN(eventStart.getTime())) continue;
-
-      const endIso = resolveEventEndIso(event.start, event.end);
-
-      events.push({
-        id: event.id || `${provider}-${event.providerEventId || event.start}-${events.length}`,
-        title: event.title || 'Calendar Event',
-        start: event.start,
-        end: endIso,
-        location: event.location,
-        provider,
-        calendarColor: event.calendarColor,
-        rrule: event.rrule,
-        recurrenceBaseId: event.recurrenceBaseId,
-        isRecurring: Boolean(event.isRecurring || event.rrule || event.recurrenceBaseId),
-        recurrenceAnchorStart: event.recurrenceAnchorStart,
-        recurrenceAnchorEnd: event.recurrenceAnchorEnd,
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
+        userTimezone,
       });
-    }
+      const resp = await fetch(
+        `${CALENDAR_API_BASE}/calendar/events/${provider}?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
 
-    return events;
-  } catch (error) {
-    logger.warn(`Error fetching ${provider} events:`, error);
-    return [];
+      if (!resp.ok) {
+        if (TRANSIENT_CALENDAR_HTTP_STATUSES.has(resp.status) && attempt < maxRetries) {
+          logger.warn(`Calendar ${provider} fetch ${resp.status} — retry ${attempt + 1}/${maxRetries}`);
+          await sleep(retryDelayMs * (attempt + 1));
+          continue;
+        }
+        logger.warn(`Failed to fetch ${provider} events: ${resp.status}`);
+        return [];
+      }
+
+      const data = await resp.json();
+      if (!Array.isArray(data.events)) {
+        return [];
+      }
+
+      const events: CalendarEvent[] = [];
+      for (const event of data.events) {
+        if (!event?.start) continue;
+        const eventStart = parseCalendarEventTime(event.start);
+        if (isNaN(eventStart.getTime())) continue;
+
+        const endIso = resolveEventEndIso(event.start, event.end);
+
+        events.push({
+          id: event.id || `${provider}-${event.providerEventId || event.start}-${events.length}`,
+          title: event.title || 'Calendar Event',
+          start: event.start,
+          end: endIso,
+          location: event.location,
+          provider,
+          calendarColor: event.calendarColor,
+          rrule: event.rrule,
+          recurrenceBaseId: event.recurrenceBaseId,
+          isRecurring: Boolean(event.isRecurring || event.rrule || event.recurrenceBaseId),
+          recurrenceAnchorStart: event.recurrenceAnchorStart,
+          recurrenceAnchorEnd: event.recurrenceAnchorEnd,
+        });
+      }
+
+      return events;
+    } catch (error) {
+      if (attempt < maxRetries) {
+        logger.warn(`Error fetching ${provider} events — retry ${attempt + 1}/${maxRetries}:`, error);
+        await sleep(retryDelayMs * (attempt + 1));
+        continue;
+      }
+      logger.warn(`Error fetching ${provider} events:`, error);
+      return [];
+    }
   }
+
+  return [];
 }
 
 /**
@@ -239,6 +340,14 @@ export function useCalendarEvents(
       }
     }
 
+    const supersetEvents = findSupersetCachedEvents(startIso, endIso, activeProviders);
+    if (supersetEvents) {
+      setEvents(supersetEvents);
+      setIsLoading(false);
+      logger.debug('Calendar events: Using superset cache for requested range');
+      return;
+    }
+
     if (inFlightRequests.has(runtimeCacheKey)) {
       logger.debug(`Calendar events: Waiting for in-flight request for ${runtimeCacheKey}`);
       try {
@@ -262,6 +371,7 @@ export function useCalendarEvents(
             events: fetchedEvents,
             timestamp: Date.now(),
             dateRange: { start: startIso, end: endIso },
+            providers: [...activeProviders],
           };
         } else {
           delete globalCache[runtimeCacheKey];
