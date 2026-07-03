@@ -32,6 +32,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
 
 /** Custom event dispatched when a notification is tapped (native or web). */
 export const NOTIFICATION_OPEN_TASK_EVENT = 'taskzm-open-task';
+/** Fired when a scheduled native notification arrives while the app is in the foreground (iOS silent delivery). */
+export const NOTIFICATION_FOREGROUND_DELIVERED_EVENT = 'taskzm-foreground-notification-delivered';
 
 /** Scheduled local notification ID prefixes (hashed to integers for Capacitor). */
 export const SCHEDULED_NOTIFICATION_PREFIXES = {

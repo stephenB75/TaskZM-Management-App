@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useTasks } from './TaskContext';
 import { useAuth } from './AuthContext';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import { playDueReminderChime } from '../lib/toast-sound';
 import { logger } from '../lib/logger';
@@ -12,6 +12,7 @@ import {
   NOTIFICATION_TAG_PREFIXES,
   NOTIFICATION_ERRORS,
   NOTIFICATION_INTERVALS,
+  NOTIFICATION_FOREGROUND_DELIVERED_EVENT,
 } from '../lib/notification-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { createDefaultNotificationContext } from '../lib/context-defaults';
@@ -28,6 +29,7 @@ import {
   getDueSoonTasks,
 } from '../lib/native-notifications';
 import { getPlatform } from '../lib/platform';
+import { isAppInForeground } from '../lib/app-visibility';
 import { isEligibleForTaskNotification, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
 
 interface NotificationSettings {
@@ -237,6 +239,42 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     void syncNativeSchedule();
   }, [syncNativeSchedule]);
 
+  useEffect(() => {
+    const handleForegroundNativeDelivery = (event: Event) => {
+      const { title, body, variant } = (event as CustomEvent<{ title: string; body: string; variant: 'overdue' | 'reminder' }>).detail;
+      if (!settings.enabled) return;
+      if (settings.soundEnabled) playDueReminderChime();
+      if (variant === 'overdue') {
+        toast.warning(title, { description: body });
+      } else {
+        toast.info(title, { description: body });
+      }
+    };
+
+    window.addEventListener(NOTIFICATION_FOREGROUND_DELIVERED_EVENT, handleForegroundNativeDelivery);
+    return () => {
+      window.removeEventListener(NOTIFICATION_FOREGROUND_DELIVERED_EVENT, handleForegroundNativeDelivery);
+    };
+  }, [settings.enabled, settings.soundEnabled]);
+
+  const deliverTaskAlert = useCallback(
+    async (payload: ReturnType<typeof buildOverdueNotificationPayload>, variant: 'overdue' | 'reminder') => {
+      if (settings.soundEnabled) playDueReminderChime();
+
+      if (isAppInForeground()) {
+        if (variant === 'overdue') {
+          toast.warning(payload.title, { description: payload.body });
+        } else {
+          toast.info(payload.title, { description: payload.body });
+        }
+        return;
+      }
+
+      await showNativeNotification(payload);
+    },
+    [settings.soundEnabled],
+  );
+
   const checkAndNotify = useCallback(async () => {
     if (!settings.enabled) return;
     if (permission !== 'granted') return;
@@ -267,8 +305,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       await Promise.allSettled(
         overdueTasks.map(async (task) => {
           try {
-            if (settings.soundEnabled) playDueReminderChime();
-            await showNativeNotification(buildOverdueNotificationPayload(task));
+            await deliverTaskAlert(buildOverdueNotificationPayload(task), 'overdue');
             notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`);
           } catch (error) {
             logger.error('Failed to show notification:', error);
@@ -291,8 +328,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       await Promise.allSettled(
         dueSoonTasks.map(async (task) => {
           try {
-            if (settings.soundEnabled) playDueReminderChime();
-            await showNativeNotification(buildDueSoonNotificationPayload(task, now));
+            await deliverTaskAlert(buildDueSoonNotificationPayload(task, now), 'reminder');
             notifiedTasks.add(`${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`);
           } catch (error) {
             logger.error('Failed to show notification:', error);
@@ -329,7 +365,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         dueSoon: dueSoonCount,
       });
     }
-  }, [tasks, settings, permission, user]);
+  }, [tasks, settings, permission, user, deliverTaskAlert]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => updateBadge(), TIMING_CONSTANTS.delays.notificationCheck);

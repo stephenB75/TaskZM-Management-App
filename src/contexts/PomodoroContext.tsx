@@ -12,6 +12,7 @@ import {
 } from '../lib/business-constants';
 import { NOTIFICATION_TITLES, NOTIFICATION_MESSAGES, NOTIFICATION_POMODORO_TOAST } from '../lib/notification-constants';
 import { showNotification, getNotificationPermission, requestNotificationPermission } from '../lib/native-notifications';
+import { isAppInForeground } from '../lib/app-visibility';
 import { TOAST_DURATION_EXTRA_LONG_MS } from '../lib/layout-constants';
 import { useTasks } from './TaskContext';
 import { createDefaultPomodoroContext } from '../lib/context-defaults';
@@ -606,30 +607,36 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       lastUpdateTimeRef.current[taskId] = 0;
       sessionStartTimeRef.current[taskId] = 0;
 
-      try {
-        await showNotification({
-          title: NOTIFICATION_TITLES.pomodoroComplete,
-          body: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
-          tag: `pomodoro_${taskId}_${newSessions}`,
-          data: { taskId, type: 'pomodoro' },
-        });
-      } catch (err) {
-        logger.debug('Pomodoro completion notification skipped:', err);
+      const inForeground = isAppInForeground();
+
+      if (!inForeground) {
+        try {
+          await showNotification({
+            title: NOTIFICATION_TITLES.pomodoroComplete,
+            body: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
+            tag: `pomodoro_${taskId}_${newSessions}`,
+            data: { taskId, type: 'pomodoro' },
+          });
+        } catch (err) {
+          logger.debug('Pomodoro completion notification skipped:', err);
+        }
       }
 
-      toast.success(NOTIFICATION_TITLES.pomodoroComplete, {
-        description: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
-        duration: TOAST_DURATION_EXTRA_LONG_MS,
-        action: {
-          label: NOTIFICATION_POMODORO_TOAST.markTaskCompleteLabel,
-          onClick: () => {
-            updateTask(taskId, { status: 'done', completedAt: new Date().toISOString() }).catch(err => {
-              logger.error('Failed to mark task complete after Pomodoro:', err);
-              toast.error(NOTIFICATION_POMODORO_TOAST.markTaskCompleteError);
-            });
+      if (inForeground) {
+        toast.success(NOTIFICATION_TITLES.pomodoroComplete, {
+          description: NOTIFICATION_MESSAGES.pomodoroComplete(taskTitle),
+          duration: TOAST_DURATION_EXTRA_LONG_MS,
+          action: {
+            label: NOTIFICATION_POMODORO_TOAST.markTaskCompleteLabel,
+            onClick: () => {
+              updateTask(taskId, { status: 'done', completedAt: new Date().toISOString() }).catch(err => {
+                logger.error('Failed to mark task complete after Pomodoro:', err);
+                toast.error(NOTIFICATION_POMODORO_TOAST.markTaskCompleteError);
+              });
+            },
           },
-        },
-      });
+        });
+      }
 
       const workDuration = getWorkDuration(taskId);
       setTimers(prev => ({

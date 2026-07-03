@@ -18,9 +18,11 @@ import {
   NOTIFICATION_TAG_PREFIXES,
   NOTIFICATION_STORAGE_KEYS,
   NOTIFICATION_OPEN_TASK_EVENT,
+  NOTIFICATION_FOREGROUND_DELIVERED_EVENT,
   SCHEDULED_NOTIFICATION_PREFIXES,
 } from './notification-constants';
 import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR } from './business-constants';
+import { isAppInForeground, shouldUseSystemNotification } from './app-visibility';
 import { TIMING_CONSTANTS } from './timing-constants';
 import {
   getDueSoonTasks,
@@ -188,6 +190,11 @@ export async function getNotificationPermission(): Promise<'granted' | 'denied' 
  * Show a notification (uses native on iOS/Android, browser on web)
  */
 export async function showNotification(options: NotificationOptions): Promise<void> {
+  if (!shouldUseSystemNotification()) {
+    logger.debug('Skipping system notification while app is in foreground:', options.title);
+    return;
+  }
+
   const platform = getPlatform();
 
   if (platform.isNative) {
@@ -322,7 +329,7 @@ export async function syncScheduledTaskNotifications(
             schedule: { at: reminderAt, allowWhileIdle: true },
             sound: 'default',
             extra: { taskId: task.id, type: 'reminder' },
-            ...(platform.isIOS && { summary: copy.title }),
+            ...(platform.isIOS && { summary: copy.title, silent: true }),
             ...(platform.isAndroid && {
               smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
               iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
@@ -342,7 +349,7 @@ export async function syncScheduledTaskNotifications(
             schedule: { at: overdueAt, allowWhileIdle: true },
             sound: 'default',
             extra: { taskId: task.id, type: 'overdue' },
-            ...(platform.isIOS && { summary: NOTIFICATION_TITLES.taskOverdue }),
+            ...(platform.isIOS && { summary: NOTIFICATION_TITLES.taskOverdue, silent: true }),
             ...(platform.isAndroid && {
               smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
               iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
@@ -371,9 +378,21 @@ export function initNativeNotificationHandlers(): void {
       const LocalNotifications = await loadLocalNotifications();
 
       await LocalNotifications.addListener('localNotificationReceived', (event) => {
-        const extra = event.notification.extra as { taskId?: string; type?: 'overdue' | 'reminder' } | undefined;
-        if (extra?.taskId && extra.type) {
-          markTaskNotified(extra.taskId, extra.type);
+        const extra = event.notification.extra as { taskId?: string; type?: string } | undefined;
+        const notifyType = extra?.type === 'overdue' ? 'overdue' : 'reminder';
+        if (extra?.taskId) {
+          markTaskNotified(extra.taskId, notifyType);
+        }
+        if (isAppInForeground()) {
+          window.dispatchEvent(
+            new CustomEvent(NOTIFICATION_FOREGROUND_DELIVERED_EVENT, {
+              detail: {
+                title: event.notification.title,
+                body: event.notification.body,
+                variant: notifyType,
+              },
+            }),
+          );
         }
       });
 
