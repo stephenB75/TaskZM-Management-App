@@ -12,7 +12,7 @@
  */
 
 import { detectDomain, type Domain, getDomainTerminology, getDomainTerminologyAsync, getBatchSharedTerminologyAsync, DOMAIN_TERMINOLOGIES } from './domain-terminology';
-import { extractTermsFromTaskNameWithBrowserAI, extractTermsFromTaskName, validateAndEnhanceTermsWithDictionary } from './description-generator';
+import { extractTermsFromTaskNameWithBrowserAI, validateAndEnhanceTermsWithDictionary, extractEnhancedTermsFromUserInputSync, saveNovelUserInputTermsToLibrary } from './description-generator';
 import { DESCRIPTION_GENERATION_CONFIG, DOMAIN_DETECTION_THRESHOLDS, LOGGING_CONFIG } from './ai-config';
 import { buildUserKeywordContext } from './user-keyword-context';
 import { DEFAULT_TASK_DOMAIN } from './task-constants';
@@ -251,6 +251,8 @@ export async function createAIContext(
     domain: finalDomain,
   });
 
+  saveNovelUserInputTermsToLibrary(title.trim(), description.trim(), finalDomain);
+
   return {
     domain: finalDomain,
     domainConfidence: domainDetection?.confidence || DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
@@ -285,12 +287,14 @@ export function createAIContextSync(
   title: string,
   description: string
 ): AIContext {
-  const fullText = `${title} ${description}`.trim();
-  
+  const trimmedTitle = title.trim();
+  const trimmedDescription = description.trim();
+  const fullText = `${trimmedTitle} ${trimmedDescription}`.trim();
+
   if (!fullText || fullText.length === 0) {
     const defaultDomain = DEFAULT_TASK_DOMAIN;
     const defaultTerms = getDomainTerminology(defaultDomain);
-    
+
     return {
       domain: defaultDomain,
       domainConfidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
@@ -312,149 +316,46 @@ export function createAIContextSync(
         pronouns: [],
       },
       fullText: '',
-      title: title.trim(),
-      description: description.trim(),
+      title: trimmedTitle,
+      description: trimmedDescription,
     };
   }
 
-  // Detect domain with error handling to ensure domain is always defined
-  // Initialize domain so it is never uninitialized (avoids "Can't find variable: domain" in any code path)
-  let domain: Domain = DEFAULT_TASK_DOMAIN;
-  let domainDetection: { domain: Domain; confidence: number; keywords: string[]; matchedTerms: { business: number; home: number; personal: number; world: number } } = {
-    domain: DEFAULT_TASK_DOMAIN,
-    confidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
-    keywords: [],
-    matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
-  };
-  try {
-    const detected = detectDomain(title, description);
-    domainDetection = detected;
-    domain = detected?.domain ?? DEFAULT_TASK_DOMAIN;
-  } catch (error) {
-    logger.error('Error detecting domain in createAIContextSync, defaulting to default domain:', error);
-    domain = DEFAULT_TASK_DOMAIN;
-    domainDetection = {
-      domain: DEFAULT_TASK_DOMAIN,
-      confidence: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
-      keywords: [],
-      matchedTerms: DOMAIN_DETECTION_THRESHOLDS.DEFAULT_MATCHED_TERMS,
-    };
-  }
-
-  // Ensure domain is valid (fallback if somehow still undefined)
-  if (!domain || (domain !== 'business' && domain !== 'home' && domain !== 'personal' && domain !== 'world' && domain !== 'mixed')) {
-    logger.warn('Invalid domain detected, defaulting to default domain', { domain, title, description });
-    domain = DEFAULT_TASK_DOMAIN;
-  }
-
-  // Capture for use in return and nested scope (avoids ReferenceError: domain is not defined when minified)
-  const domainVal: Domain = domain;
-  const domainTerms = getDomainTerminology(domainVal);
-
-  // Extract terms
-  // NOTE: extractTermsFromTaskNameWithBrowserAI is now async (uses Browser AI API if available)
-  // For sync version, we'll do a quick local extraction
-  const titleExtracted = (() => {
-    // Quick local extraction for sync version (fallback)
-    const localExtracted = extractTermsFromTaskName(title, domainTerms);
-    return {
-      keywords: localExtracted.keywords,
-      phrases: localExtracted.phrases,
-      verbs: localExtracted.verbs,
-      nouns: localExtracted.nouns,
-      pronouns: localExtracted.pronouns,
-      context: title,
-    };
-  })();
-  const descriptionExtracted = description.trim().length > 0
-    ? (() => {
-        const localExtracted = extractTermsFromTaskName(description, domainTerms);
-        return {
-          keywords: localExtracted.keywords,
-          phrases: localExtracted.phrases,
-          verbs: localExtracted.verbs,
-          nouns: localExtracted.nouns,
-          pronouns: localExtracted.pronouns,
-          context: description,
-        };
-      })()
-    : { keywords: [], phrases: [], verbs: [], nouns: [], pronouns: [], context: '' };
-
-  const combinedExtracted = {
-    keywords: [...titleExtracted.keywords, ...descriptionExtracted.keywords],
-    phrases: [...titleExtracted.phrases, ...descriptionExtracted.phrases],
-    verbs: [...titleExtracted.verbs, ...descriptionExtracted.verbs],
-    nouns: [...titleExtracted.nouns, ...descriptionExtracted.nouns],
-    pronouns: [...titleExtracted.pronouns, ...descriptionExtracted.pronouns],
-    context: `${titleExtracted.context} ${descriptionExtracted.context}`.trim(),
-  };
-
-  // Enhance terms
-  const enhancedTerms = validateAndEnhanceTermsWithDictionary(
-    combinedExtracted,
-    fullText,
-    domainTerms
-  );
-
-  // Remove duplicates and limit to reasonable counts (using config constants)
-  const uniqueKeywords = Array.from(new Set(enhancedTerms.keywords.map(k => k.toLowerCase())))
-    .map(k => enhancedTerms.keywords.find(ek => ek.toLowerCase() === k)!)
-    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords);
-  
-  const uniquePhrases = Array.from(new Set(enhancedTerms.phrases.map(p => p.toLowerCase())))
-    .map(p => enhancedTerms.phrases.find(ep => ep.toLowerCase() === p)!)
-    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases);
-  
-  const uniqueVerbs = Array.from(new Set(enhancedTerms.verbs.map(v => v.toLowerCase())))
-    .map(v => enhancedTerms.verbs.find(ev => ev.toLowerCase() === v)!)
-    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs);
-  
-  const uniqueNouns = Array.from(new Set(enhancedTerms.nouns.map(n => n.toLowerCase())))
-    .map(n => enhancedTerms.nouns.find(en => en.toLowerCase() === n)!)
-    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns);
-  
-  const uniquePronouns = Array.from(new Set(enhancedTerms.pronouns.map(p => p.toLowerCase())))
-    .map(p => enhancedTerms.pronouns.find(ep => ep.toLowerCase() === p)!)
-    .slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns);
-
-  // CRITICAL: Final validation - ensure domain is always a valid Domain type
-  const finalDomain: Domain = (domainVal && 
-    (domainVal === 'business' || domainVal === 'home' || 
-     domainVal === 'personal' || domainVal === 'world' || 
-     domainVal === 'mixed'))
-    ? domainVal
-    : DEFAULT_TASK_DOMAIN;
+  const extracted = extractEnhancedTermsFromUserInputSync(trimmedTitle, trimmedDescription);
+  const domainVal: Domain = extracted.domain;
+  const domainTerms = extracted.domainTerms;
+  const combinedExtracted = extracted.combinedExtracted;
 
   const keywordContext = buildUserKeywordContext({
     taskText: fullText,
-    allKeywords: uniqueKeywords,
-    allPhrases: uniquePhrases,
-    verbs: uniqueVerbs,
-    nouns: uniqueNouns,
+    allKeywords: extracted.keywords,
+    allPhrases: extracted.phrases,
+    verbs: extracted.verbs,
+    nouns: extracted.nouns,
     libraryKeywords: domainTerms.keywords,
     libraryPhrases: domainTerms.phrases,
     externalSummary: combinedExtracted.context,
-    domain: finalDomain,
+    domain: domainVal,
   });
 
   return {
-    domain: finalDomain,
-    domainConfidence: domainDetection?.confidence || DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
-    domainKeywords: domainDetection?.keywords || [],
+    domain: domainVal,
+    domainConfidence: extracted.domainConfidence ?? DOMAIN_DETECTION_THRESHOLDS.DEFAULT_CONFIDENCE,
+    domainKeywords: extracted.domainKeywords || [],
     domainTerms,
     extractedTerms: {
       ...combinedExtracted,
       context: keywordContext.contextSummary,
     },
     enhancedTerms: {
-      keywords: uniqueKeywords,
-      phrases: uniquePhrases,
-      verbs: uniqueVerbs,
-      nouns: uniqueNouns,
-      pronouns: uniquePronouns,
+      keywords: extracted.keywords,
+      phrases: extracted.phrases,
+      verbs: extracted.verbs,
+      nouns: extracted.nouns,
+      pronouns: extracted.pronouns,
     },
     fullText,
-    title: title.trim(),
-    description: description.trim(),
+    title: trimmedTitle,
+    description: trimmedDescription,
   };
 }

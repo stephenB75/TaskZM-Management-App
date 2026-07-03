@@ -1536,7 +1536,8 @@ export function validateAndEnhanceTermsWithDictionary(
  */
 export function extractTermsFromTaskName(
   taskName: string,
-  domainTerms: ReturnType<typeof getDomainTerminology>
+  domainTerms: ReturnType<typeof getDomainTerminology>,
+  options?: { skipLibrarySave?: boolean },
 ): {
   keywords: string[];
   phrases: string[];
@@ -1673,7 +1674,10 @@ export function extractTermsFromTaskName(
   });
 
   // Save new keywords and phrases to library
-  if (newKeywords.length > 0 || newPhrases.length > 0) {
+  if (
+    !options?.skipLibrarySave &&
+    (newKeywords.length > 0 || newPhrases.length > 0 || newVerbs.length > 0 || newNouns.length > 0)
+  ) {
     saveNewTerminologyToLibrary(
       detectedDomain,
       newKeywords,
@@ -3977,8 +3981,7 @@ export async function generateDescriptionOptions(
     }
 
     // Guaranteed fallback so new-task AI Assist always offers at least one option
-    const { phrases, keywords, verbs, nouns } = getSuggestivePhrases(taskName, existingDescription);
-    const built = buildCompleteDescriptionFromPhrases(taskName, phrases, keywords, verbs, nouns);
+    const built = buildDescriptionFromUserPhrases(taskName, existingDescription);
     if (built) {
       return [{
         description: built,
@@ -4028,6 +4031,186 @@ function calculateDescriptionSimilarity(desc1: string, desc2: string): number {
   const union = new Set([...words1, ...words2]);
   
   return intersection.size / union.size;
+}
+
+/** Terms extracted from user title/description and enhanced with the domain library */
+export interface SuggestiveTermSet {
+  phrases: string[];
+  keywords: string[];
+  verbs: string[];
+  nouns: string[];
+}
+
+export interface EnhancedUserInputTerms extends SuggestiveTermSet {
+  domain: Domain;
+  domainConfidence: number;
+  domainKeywords: string[];
+  domainTerms: ReturnType<typeof getDomainTerminology>;
+  fullText: string;
+  pronouns: string[];
+  combinedExtracted: {
+    keywords: string[];
+    phrases: string[];
+    verbs: string[];
+    nouns: string[];
+    pronouns: string[];
+    context: string;
+  };
+}
+
+function limitUniqueExtractedTerms<T extends string>(terms: T[], max: number): T[] {
+  return Array.from(new Set(terms.map((term) => term.toLowerCase())))
+    .map((lower) => terms.find((term) => term.toLowerCase() === lower)!)
+    .slice(0, max);
+}
+
+/**
+ * Save user-typed keywords, phrases, verbs, and nouns that are not already in the library.
+ * Uses identifyUserKeywords for user-origin terms and extractTermsFromText for verbs/nouns.
+ */
+export function saveNovelUserInputTermsToLibrary(
+  title: string,
+  description: string,
+  domain: Domain,
+): void {
+  if (domain === 'mixed') {
+    return;
+  }
+
+  const fullText = `${(title || '').trim()} ${(description || '').trim()}`.trim();
+  if (!fullText) {
+    return;
+  }
+
+  const userTerms = identifyUserKeywords(fullText);
+  const extractedFromText = extractTermsFromText(fullText, [
+    ...DESCRIPTION_GENERATION_CONFIG.stopWords,
+  ]);
+
+  saveNewTerminologyToLibrary(
+    domain,
+    userTerms.keywords,
+    userTerms.phrases,
+    extractedFromText.verbs,
+    extractedFromText.nouns,
+  );
+}
+
+/**
+ * Extract and enhance terms from title and description (sync).
+ * Matches createAIContextSync / analyzeDescription so AI Assist uses one consistent pipeline.
+ */
+export function extractEnhancedTermsFromUserInputSync(
+  title: string,
+  description: string = '',
+): EnhancedUserInputTerms {
+  const trimmedTitle = (title || '').trim();
+  const trimmedDescription = (description || '').trim();
+  const fullText = `${trimmedTitle} ${trimmedDescription}`.trim();
+  const emptyTerms: EnhancedUserInputTerms = {
+    domain: DEFAULT_TASK_DOMAIN,
+    domainConfidence: 0,
+    domainKeywords: [],
+    domainTerms: getDomainTerminology(DEFAULT_TASK_DOMAIN),
+    fullText: '',
+    keywords: [],
+    phrases: [],
+    verbs: [],
+    nouns: [],
+    pronouns: [],
+    combinedExtracted: {
+      keywords: [],
+      phrases: [],
+      verbs: [],
+      nouns: [],
+      pronouns: [],
+      context: '',
+    },
+  };
+
+  if (!fullText) {
+    return emptyTerms;
+  }
+
+  let domain: Domain = DEFAULT_TASK_DOMAIN;
+  let domainDetection: ReturnType<typeof detectDomain> = {
+    domain: DEFAULT_TASK_DOMAIN,
+    confidence: 0,
+    keywords: [],
+    matchedTerms: { business: 0, home: 0, personal: 0, world: 0 },
+  };
+
+  try {
+    domainDetection = detectDomain(trimmedTitle, trimmedDescription);
+    domain = domainDetection?.domain ?? DEFAULT_TASK_DOMAIN;
+  } catch (error) {
+    logger.error('Error detecting domain in extractEnhancedTermsFromUserInputSync:', error);
+  }
+
+  if (
+    !domain ||
+    (domain !== 'business' &&
+      domain !== 'home' &&
+      domain !== 'personal' &&
+      domain !== 'world' &&
+      domain !== 'mixed')
+  ) {
+    domain = DEFAULT_TASK_DOMAIN;
+  }
+
+  const domainTerms = getDomainTerminology(domain);
+  const extractOptions = { skipLibrarySave: true };
+  const titleExtracted = extractTermsFromTaskName(trimmedTitle, domainTerms, extractOptions);
+  const descriptionExtracted =
+    trimmedDescription.length > 0
+      ? extractTermsFromTaskName(trimmedDescription, domainTerms, extractOptions)
+      : { keywords: [], phrases: [], verbs: [], nouns: [], pronouns: [], context: '' };
+
+  const combinedExtracted = {
+    keywords: [...titleExtracted.keywords, ...descriptionExtracted.keywords],
+    phrases: [...titleExtracted.phrases, ...descriptionExtracted.phrases],
+    verbs: [...titleExtracted.verbs, ...descriptionExtracted.verbs],
+    nouns: [...titleExtracted.nouns, ...descriptionExtracted.nouns],
+    pronouns: [...titleExtracted.pronouns, ...descriptionExtracted.pronouns],
+    context: `${titleExtracted.context} ${descriptionExtracted.context}`.trim(),
+  };
+
+  const enhancedTerms = validateAndEnhanceTermsWithDictionary(
+    combinedExtracted,
+    fullText,
+    domainTerms,
+  );
+
+  saveNovelUserInputTermsToLibrary(trimmedTitle, trimmedDescription, domain);
+
+  return {
+    domain,
+    domainConfidence: domainDetection?.confidence ?? 0,
+    domainKeywords: domainDetection?.keywords ?? [],
+    domainTerms,
+    fullText,
+    keywords: limitUniqueExtractedTerms(
+      enhancedTerms.keywords,
+      DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords,
+    ),
+    phrases: limitUniqueExtractedTerms(
+      enhancedTerms.phrases,
+      DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases,
+    ),
+    verbs: limitUniqueExtractedTerms(
+      enhancedTerms.verbs,
+      DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs,
+    ),
+    nouns: limitUniqueExtractedTerms(
+      enhancedTerms.nouns,
+      DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns,
+    ),
+    pronouns: limitUniqueExtractedTerms(
+      enhancedTerms.pronouns,
+      DESCRIPTION_GENERATION_CONFIG.maxExtractedPronouns,
+    ),
+    combinedExtracted,
+  };
 }
 
 /**
@@ -4113,25 +4296,42 @@ export function buildCompleteDescriptionFromPhrases(
 }
 
 /**
+ * Build a description from user input using the same terms as AI Analysis.
+ * Prefer precomputed terms from breakdown.descriptionAnalysis when available.
+ */
+export function buildDescriptionFromUserPhrases(
+  taskName: string,
+  existingDescription?: string | null,
+  precomputedTerms?: SuggestiveTermSet | null,
+): string {
+  const terms =
+    precomputedTerms ??
+    getSuggestivePhrases(taskName, existingDescription);
+  return buildCompleteDescriptionFromPhrases(
+    taskName,
+    terms.phrases,
+    terms.keywords,
+    terms.verbs,
+    terms.nouns,
+  );
+}
+
+/**
  * AI Analysis: Provides suggestive phrases for manual description writing
  * Returns contextual phrases, keywords, verbs, and nouns that users can use to write their own descriptions
  * This function is called when users want to manually write descriptions with AI assistance
  * 
  * @param taskName - The task title/name
- * @param existingDescription - Optional existing description
+ * @param existingDescription - Optional existing description (extracted together with title)
  */
 export function getSuggestivePhrases(
   taskName: string,
   existingDescription?: string | null
-): {
-  phrases: string[];
-  keywords: string[];
-  verbs: string[];
-  nouns: string[];
-  domain: Domain;
-} {
+): SuggestiveTermSet & { domain: Domain } {
   try {
-    if (!taskName || taskName.trim().length === 0) {
+    const trimmedTitle = (taskName || '').trim();
+    const trimmedDescription = (existingDescription || '').trim();
+    if (!trimmedTitle && !trimmedDescription) {
       return {
         phrases: [],
         keywords: [],
@@ -4141,34 +4341,14 @@ export function getSuggestivePhrases(
       };
     }
 
-    // Detect domain
-    const descriptionForDetection = existingDescription?.trim() || '';
-    const domainResult = detectDomain(taskName, descriptionForDetection);
-    const domain = domainResult.domain;
-    const domainTerms = getDomainTerminology(domain);
+    const enhanced = extractEnhancedTermsFromUserInputSync(trimmedTitle, trimmedDescription);
 
-    // Extract terms using Browser AI (async, but this function needs to be sync for now)
-    // Use local extraction as fallback for sync version
-    const localExtracted = extractTermsFromTaskName(taskName, domainTerms);
-    const extracted = {
-      keywords: localExtracted.keywords,
-      phrases: localExtracted.phrases,
-      verbs: localExtracted.verbs,
-      nouns: localExtracted.nouns,
-      pronouns: localExtracted.pronouns,
-      context: taskName,
-    };
-    
-    // Enhance with Local Terminology (proactively provides additional keywords)
-    const enhanced = validateAndEnhanceTermsWithDictionary(extracted, taskName, domainTerms);
-    
-    // Return suggestive phrases, keywords, verbs, and nouns for manual writing
     return {
-      phrases: enhanced.phrases.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedPhrases),
-      keywords: enhanced.keywords.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedKeywords),
-      verbs: enhanced.verbs.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedVerbs),
-      nouns: enhanced.nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.maxExtractedNouns),
-      domain,
+      phrases: enhanced.phrases,
+      keywords: enhanced.keywords,
+      verbs: enhanced.verbs,
+      nouns: enhanced.nouns,
+      domain: enhanced.domain,
     };
   } catch (error) {
     logger.error(`Error getting suggestive phrases for "${taskName}":`, error);

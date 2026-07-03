@@ -76,7 +76,7 @@ import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../l
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
-import { generateDescription, generateDescriptionOptions, getSuggestivePhrases, buildCompleteDescriptionFromPhrases } from "../lib/description-generator";
+import { generateDescription, generateDescriptionOptions, buildDescriptionFromUserPhrases, type SuggestiveTermSet } from "../lib/description-generator";
 import {
   DESCRIPTION_GENERATION_CONFIG,
   DESCRIPTION_OPTIONS_DEBOUNCE_MS,
@@ -3099,8 +3099,20 @@ export function TaskDialog({
                               size="sm"
                               className="h-7 text-xs text-muted-foreground hover:text-foreground w-fit"
                               onClick={() => {
-                                const { phrases, keywords, verbs, nouns } = getSuggestivePhrases(title, description);
-                                const desc = buildCompleteDescriptionFromPhrases(title, phrases, keywords, verbs, nouns);
+                                const precomputedTerms: SuggestiveTermSet | undefined =
+                                  breakdown.descriptionAnalysis
+                                    ? {
+                                        phrases: breakdown.descriptionAnalysis.phrases,
+                                        keywords: breakdown.descriptionAnalysis.keywords,
+                                        verbs: breakdown.descriptionAnalysis.verbs,
+                                        nouns: breakdown.descriptionAnalysis.nouns,
+                                      }
+                                    : undefined;
+                                const desc = buildDescriptionFromUserPhrases(
+                                  title,
+                                  description,
+                                  precomputedTerms,
+                                );
                                 if (desc) {
                                   setDescription(desc);
                                   setDescriptionOptions([]);
