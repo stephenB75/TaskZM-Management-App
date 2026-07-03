@@ -769,19 +769,29 @@ body {
   z-index: 10001 !important;
 }
 
-/* Top toasts: below status bar / Dynamic Island (viewport-fit=cover + StatusBar overlay) */
-[data-sonner-toaster][data-position="top-center"] {
-  top: var(--toast-top-offset, calc(1rem + env(safe-area-inset-top, 0px))) !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  right: auto !important;
-  bottom: auto !important;
+/* Top toasts: below status bar / Dynamic Island (viewport-fit=cover + StatusBar overlay).
+   Sonner v2 uses data-y-position + --offset-top / --mobile-offset-top (set via Toaster offset prop). */
+[data-sonner-toaster][data-y-position="top"] {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   box-sizing: border-box;
-  width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+}
+
+[data-sonner-toaster][data-x-position="center"] {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto !important;
   max-width: 420px;
-  z-index: 10001 !important;
+}
+
+@media (max-width: 600px) {
+  [data-sonner-toaster][data-x-position="center"] {
+    left: var(--mobile-offset-left, env(safe-area-inset-left, 0px)) !important;
+    right: var(--mobile-offset-right, env(safe-area-inset-right, 0px)) !important;
+    transform: none !important;
+    width: calc(100% - var(--mobile-offset-left, 0px) - var(--mobile-offset-right, 0px));
+    max-width: none;
+  }
 }
 
 [data-sonner-toast] {
@@ -789,7 +799,7 @@ body {
   margin-bottom: var(--toast-gap, 8px) !important;
 }
 
-[data-sonner-toast][data-position="top-center"] {
+[data-sonner-toast][data-y-position="top"] {
   margin-top: 0 !important;
   margin-bottom: var(--toast-gap, 8px) !important;
 }

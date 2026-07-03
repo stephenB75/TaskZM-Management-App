@@ -5,7 +5,7 @@ import { Toaster as Sonner, ToasterProps } from "sonner";
 import { useEffect, useMemo, useState } from "react";
 import { TOAST_DURATION_DEFAULT_MS, VIEWPORT_BREAKPOINTS, Z_INDEX } from "../../lib/layout-constants";
 import { AGENDA_LIST_CARD } from "../../lib/agenda-list-card-constants";
-import { TOAST_LAYOUT } from "../../lib/toast-constants";
+import { getToastViewportOffset, TOAST_LAYOUT } from "../../lib/toast-constants";
 import { getPlatform } from "../../lib/platform";
 import { useMobileLayout } from "../../hooks/useMobileLayout";
 
@@ -15,6 +15,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const shouldUseMobileLayout = useMobileLayout();
   const platform = useMemo(() => getPlatform(), []);
   const useTopCenter = shouldUseMobileLayout || (platform.isNative && platform.isIOS);
+  const toastViewportOffset = useMemo(
+    () => getToastViewportOffset(
+      platform.isNative && platform.isIOS
+        ? TOAST_LAYOUT.topNativeIosWithFallback
+        : TOAST_LAYOUT.topWithSafeArea,
+    ),
+    [platform.isIOS, platform.isNative],
+  );
   const [position, setPosition] = useState<ToasterProps["position"]>(
     useTopCenter ? "top-center" : "bottom-right",
   );
@@ -50,6 +58,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       visibleToasts={3}
       expand={true}
       position={position}
+      offset={toastViewportOffset}
+      mobileOffset={toastViewportOffset}
       richColors={false}
       closeButton={true}
       toastOptions={{
@@ -85,7 +95,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          "--toast-top-offset": TOAST_LAYOUT.topWithSafeArea,
           "--toast-gap": `${TOAST_LAYOUT.toastGapPx}px`,
           zIndex: Z_INDEX.TOAST,
         } as React.CSSProperties

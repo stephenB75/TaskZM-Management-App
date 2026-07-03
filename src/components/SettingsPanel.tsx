@@ -238,7 +238,18 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [showAvatarSelection, setShowAvatarSelection] = useState(false);
   const [serverAIConfigured, setServerAIConfigured] = useState<boolean | null>(null);
   const [openAccordionSections, setOpenAccordionSections] = useState<string[]>(['user-profile']);
+  const [isRequestingNotificationPermission, setIsRequestingNotificationPermission] = useState(false);
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
+
+  const handleEnableNotifications = useCallback(async () => {
+    if (isRequestingNotificationPermission) return;
+    setIsRequestingNotificationPermission(true);
+    try {
+      await enableNotifications();
+    } finally {
+      setIsRequestingNotificationPermission(false);
+    }
+  }, [enableNotifications, isRequestingNotificationPermission]);
 
   useEffect(() => {
     const handleTourExpandSection = (event: CustomEvent<{ sectionId: string }>) => {
@@ -1263,13 +1274,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                               className="w-full text-xs md:text-sm"
                               style={{ marginTop: SETTINGS_PANEL_SPACING_SMALL }}
                               onClick={() => {
-                                void enableNotifications();
+                                void handleEnableNotifications();
                               }}
-                              disabled={permission === 'denied'}
+                              disabled={permission === 'denied' || isRequestingNotificationPermission}
                             >
                               <Icon name="bell" size={ICON_SIZE_SM} className="mr-1.5 md:mr-2" />
                               <span className="truncate">
-                                {permission === 'denied' 
+                                {isRequestingNotificationPermission
+                                  ? NOTIFICATION_PANEL_TEXT.permission.requesting
+                                  : permission === 'denied' 
                                   ? NOTIFICATION_PANEL_TEXT.permission.blocked
                                   : NOTIFICATION_PANEL_TEXT.permission.enable}
                               </span>
@@ -1367,13 +1380,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             label="Enable Notifications"
                             description="Turn on all notification features"
                             checked={notificationSettings.enabled}
-                            disabled={permission === 'denied'}
+                            disabled={permission === 'denied' || isRequestingNotificationPermission}
                             onCheckedChange={(checked) => {
                               if (!checked) {
                                 updateNotificationSettings({ enabled: false });
                                 return;
                               }
-                              void enableNotifications();
+                              void handleEnableNotifications();
                             }}
                           />
                           <SettingsToggleRow

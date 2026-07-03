@@ -149,6 +149,7 @@ export const NOTIFICATION_PANEL_TEXT = {
     denied: 'Denied',
     notSet: 'Not Set',
     enable: 'Enable Notifications',
+    requesting: 'Requesting…',
     blocked: 'Notifications Blocked (Enable in Browser Settings)',
   },
   badge: {

@@ -4,6 +4,7 @@
  */
 
 import type { Task } from '../types';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { getPlatform } from './platform';
 import {
   MOBILE_NOTIFICATION_SMALL_ICON,
@@ -94,8 +95,15 @@ function buildDueSoonCopy(task: Task, now: Date): { title: string; body: string;
 }
 
 async function loadLocalNotifications() {
-  const { LocalNotifications } = await import('@capacitor/local-notifications');
   return LocalNotifications;
+}
+
+/** Synchronous browser permission read (use before any await in click handlers). */
+export function getWebNotificationPermission(): NotificationPermission | null {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return null;
+  }
+  return Notification.permission;
 }
 
 /** Map Capacitor permission states to browser NotificationPermission. */
@@ -124,14 +132,14 @@ export async function isNativeNotificationsAvailable(): Promise<boolean> {
 }
 
 /**
- * Request notification permission (works for both browser and native)
+ * Request notification permission (works for both browser and native).
+ * Must not await unrelated work before calling the OS/browser prompt (user-gesture requirement).
  */
 export async function requestNotificationPermission(): Promise<'granted' | 'denied' | 'default'> {
   const platform = getPlatform();
 
   if (platform.isNative) {
     try {
-      const LocalNotifications = await loadLocalNotifications();
       const result = await LocalNotifications.requestPermissions();
       return normalizeNotificationPermission(result.display);
     } catch (error) {
@@ -141,12 +149,14 @@ export async function requestNotificationPermission(): Promise<'granted' | 'deni
   }
 
   if (!('Notification' in window)) return 'default';
-  if (Notification.permission === 'granted') return 'granted';
-  if (Notification.permission === 'denied') return 'denied';
+
+  const syncPermission = Notification.permission;
+  if (syncPermission === 'granted') return 'granted';
+  if (syncPermission === 'denied') return 'denied';
 
   try {
     const result = await Notification.requestPermission();
-    return result as 'granted' | 'denied' | 'default';
+    return normalizeNotificationPermission(result);
   } catch (error) {
     logger.error('Error requesting browser notification permission:', error);
     return 'default';

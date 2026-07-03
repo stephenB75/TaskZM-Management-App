@@ -18,6 +18,7 @@ import { createDefaultNotificationContext } from '../lib/context-defaults';
 import {
   requestNotificationPermission as requestNativePermission,
   getNotificationPermission as getNativePermission,
+  getWebNotificationPermission,
   showNotification as showNativeNotification,
   isNativeNotificationsAvailable,
   syncScheduledTaskNotifications,
@@ -26,6 +27,7 @@ import {
   getOverdueTasks,
   getDueSoonTasks,
 } from '../lib/native-notifications';
+import { getPlatform } from '../lib/platform';
 import { isEligibleForTaskNotification, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
 
 interface NotificationSettings {
@@ -96,23 +98,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
-    const isNative = await isNativeNotificationsAvailable();
+    const platform = getPlatform();
 
-    if (!isNative && !('Notification' in window)) {
+    if (!platform.isNative && !('Notification' in window)) {
       toast.error(NOTIFICATION_TOAST_MESSAGES.notSupported);
       return false;
     }
 
-    const currentPermission = await getNativePermission();
-    if (currentPermission === 'granted') {
-      setPermission('granted');
-      return true;
-    }
-
-    if (currentPermission === 'denied') {
-      toast.error(NOTIFICATION_TOAST_MESSAGES.blocked);
-      setPermission('denied');
-      return false;
+    if (!platform.isNative) {
+      const syncPermission = getWebNotificationPermission();
+      if (syncPermission === 'granted') {
+        setPermission('granted');
+        return true;
+      }
+      if (syncPermission === 'denied') {
+        toast.error(NOTIFICATION_TOAST_MESSAGES.blocked);
+        setPermission('denied');
+        return false;
+      }
     }
 
     try {
@@ -123,7 +126,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         toast.success(NOTIFICATION_TOAST_MESSAGES.enabled);
         return true;
       }
-      toast.error(NOTIFICATION_TOAST_MESSAGES.permissionDenied);
+      if (result === 'denied') {
+        toast.error(NOTIFICATION_TOAST_MESSAGES.blocked);
+      } else {
+        toast.error(NOTIFICATION_TOAST_MESSAGES.permissionDenied);
+      }
       return false;
     } catch (error) {
       logger.error('Error requesting notification permission:', error);

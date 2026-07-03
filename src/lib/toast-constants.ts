@@ -3,6 +3,10 @@
  * Used by toast-wrapper and Toaster; no hardcoded values in toast logic.
  */
 
+import {
+  IOS_NATIVE_TOAST_TOP_MIN_PX,
+} from './layout-constants';
+
 /** Notification sound when user creates a task (Web Audio API params) */
 export const NOTIFICATION_SOUND = {
   frequencyHz: 880,
@@ -47,6 +51,17 @@ export const TOAST_LAYOUT = {
   topOffsetRem: '1rem',
   toastGapPx: 8,
   topWithSafeArea: 'calc(1rem + env(safe-area-inset-top, 0px))',
+  /** Native iOS: ensure clearance below status bar / Dynamic Island when env() reports 0. */
+  topNativeIosWithFallback: `max(calc(1rem + env(safe-area-inset-top, 0px)), calc(1rem + ${IOS_NATIVE_TOAST_TOP_MIN_PX}px))`,
   horizontalSafeAreaLeft: 'env(safe-area-inset-left, 0px)',
   horizontalSafeAreaRight: 'env(safe-area-inset-right, 0px)',
 } as const;
+
+/** Sonner `offset` / `mobileOffset` props (Sonner v2 uses --offset-top / --mobile-offset-top). */
+export function getToastViewportOffset(top: string = TOAST_LAYOUT.topWithSafeArea) {
+  return {
+    top,
+    left: TOAST_LAYOUT.horizontalSafeAreaLeft,
+    right: TOAST_LAYOUT.horizontalSafeAreaRight,
+  } as const;
+}

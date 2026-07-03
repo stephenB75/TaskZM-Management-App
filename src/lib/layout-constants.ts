@@ -44,6 +44,9 @@ export const HEADER_HEIGHT = 73;
 export const HEADER_MOBILE_SPACER_HEIGHT = 73; // Matches header height exactly (73px total with border-box) - must be exact to prevent content from being hidden
 export const HEADER_MOBILE_SAFE_AREA_SPACER = `calc(${HEADER_MOBILE_SPACER_HEIGHT}px + env(safe-area-inset-top, 0px))`; // 73px + safe area
 
+/** Dynamic Island / status-bar clearance when env() is unavailable on native iOS toasts. */
+export const IOS_NATIVE_TOAST_TOP_MIN_PX = 59;
+
 // Header-specific constants
 export const HEADER_PADDING_X_MOBILE = '0.75rem'; // px-3 = 0.75rem (12px) - right padding only
 export const HEADER_PADDING_Y_MOBILE = '1rem'; // py-4 = 1rem (16px)
