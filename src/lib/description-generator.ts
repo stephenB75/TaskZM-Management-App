@@ -1722,6 +1722,17 @@ export function extractTermsFromTaskName(
 /** Verbs that end in 's' (so we don't treat plural nouns like "articles" or "reports" as verbs). */
 const KNOWN_VERBS_ENDING_S = new Set(['focus', 'address', 'discuss', 'process', 'access', 'progress', 'assess', 'express', 'compress']);
 
+function verbStemMatches(term: string, verb: string): boolean {
+  const termLower = (term || '').toLowerCase().trim();
+  const verbLower = (verb || '').toLowerCase().trim();
+  if (!termLower || !verbLower) return false;
+  if (termLower === verbLower) return true;
+  if (termLower === `${verbLower}ing` || verbLower === `${termLower}ing`) return true;
+  if (verbLower.endsWith('e') && termLower === verbLower.slice(0, -1)) return true;
+  if (termLower.endsWith('e') && verbLower === termLower.slice(0, -1)) return true;
+  return false;
+}
+
 /**
  * Get proper verb form based on template type
  * Templates like "enables", "requires", "allows" can use gerund (preferred) or "to" + infinitive
@@ -2847,7 +2858,7 @@ function buildElaborateContextualDescription(
     // Use action verb from extracted verbs or domain terminology
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
     
-    const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
+    const verbForm = actionVerb ? getVerbFormForTemplate(actionVerb, selectedTemplate) : '';
     if (relevantKeywords.length > 0) {
       const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       const nkConnector = getConnectorForTemplate(selectedTemplate, variationSeed);
@@ -2880,7 +2891,7 @@ function buildElaborateContextualDescription(
       .slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywordsExtended);
     const actionVerb = verbs.length > 0 ? verbs[0] : (elaboratingVerbs.length > 0 ? elaboratingVerbs[0] : '');
     
-    const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
+    const verbForm = actionVerb ? getVerbFormForTemplate(actionVerb, selectedTemplate) : '';
     if (actionVerb && relevantKeywords.length > 0) {
       const keywordsList = relevantKeywords.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${keywordsList}.`;
@@ -2907,7 +2918,7 @@ function buildElaborateContextualDescription(
       const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle);
       
       const cleanedBestPhrase = cleanText(bestPhrase);
-      const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
+      const verbForm = actionVerb ? getVerbFormForTemplate(actionVerb, selectedTemplate) : '';
       if (actionVerb && contextNouns.length > 0) {
         description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${cleanedBestPhrase.toLowerCase()} ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.for} ${contextNouns[0]}.`;
       } else if (actionVerb) {
@@ -2919,13 +2930,13 @@ function buildElaborateContextualDescription(
       }
     } else if (elaboratingVerbs.length > 0 && elaboratingNouns.length > 0) {
       const actionVerb = elaboratingVerbs[0];
-      const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+      const verbForm = getVerbFormForTemplate(actionVerb, 'involves');
       const contextNouns = elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nouns);
       const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${nounsList}.`;
     } else if (elaboratingVerbs.length > 0) {
       const actionVerb = elaboratingVerbs[0];
-      const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+      const verbForm = getVerbFormForTemplate(actionVerb, 'involves');
       const domainGuidance = DESCRIPTION_GENERATION_CONFIG.domainGuidance[domainForGuidance];
       description = `${DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves} ${verbForm} ${domainGuidance.toLowerCase()}.`;
     } else if (elaboratingNouns.length > 0) {
@@ -2995,7 +3006,7 @@ function buildElaborateContextualDescription(
       
       // Build complete sentence with proper sentence opener
       const cleanedBestPhrase = cleanText(bestPhrase);
-      const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
+      const verbForm = actionVerb ? getVerbFormForTemplate(actionVerb, selectedTemplate) : '';
       
       if (actionVerb && !bestPhraseLower.includes(actionVerb.toLowerCase())) {
         if (contextNouns.length > 0) {
@@ -3027,7 +3038,7 @@ function buildElaborateContextualDescription(
         !taskNameLower.includes(kw.toLowerCase())
       ).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
-      const verbForm = actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing';
+      const verbForm = getVerbFormForTemplate(actionVerb, 'involves');
       const nounsList = contextNouns.join(` ${DESCRIPTION_GENERATION_CONFIG.descriptionConnectors.and} `);
       
       if (relevantKeywords.length > 0) {
@@ -3042,7 +3053,7 @@ function buildElaborateContextualDescription(
       const contextNouns = nouns.length > 0 ? nouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : (elaboratingNouns.length > 0 ? elaboratingNouns.slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.nounsSingle) : []);
       const relevantKeywords = keywords.filter(kw => !taskNameLower.includes(kw.toLowerCase())).slice(0, DESCRIPTION_GENERATION_CONFIG.sliceLimits.keywords);
       
-      const verbForm = actionVerb ? (actionVerb.endsWith('e') ? actionVerb.slice(0, -1) + 'ing' : actionVerb + 'ing') : '';
+      const verbForm = actionVerb ? getVerbFormForTemplate(actionVerb, selectedTemplate) : '';
       
       if (actionVerb) {
         if (contextNouns.length > 0) {
@@ -4238,50 +4249,95 @@ export function buildCompleteDescriptionFromPhrases(
   const maxWordsPerSentence = rules?.maxWordsPerSentence ?? 25;
   const templateOpener = DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves;
   const taskNameLower = (taskName || '').toLowerCase().trim();
-  const phrase1 = (phrases[0] || '').trim();
-  const phrase2 = (phrases[1] || '').trim();
-  const keyword1 = (keywords[0] || '').trim();
+  const taskWords = taskNameLower.split(/\s+/).filter((w) => w.length >= DESCRIPTION_GENERATION_CONFIG.minWordLength);
+
+  if (!taskNameLower && phrases.length === 0 && keywords.length === 0 && verbs.length === 0) {
+    return '';
+  }
+
   const verb = (verbs[0] || '').trim();
-  const noun = (nouns[0] || '').trim();
+  const verbForm = verb ? getVerbFormForTemplate(verb, 'involves') : '';
 
-  if (!phrase1 && !keyword1 && !verb) return '';
+  const rankedPhrases = [...phrases]
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .sort((a, b) => b.split(/\s+/).length - a.split(/\s+/).length || b.length - a.length);
+  const phrase1 = rankedPhrases[0] || '';
+  const phrase2 = rankedPhrases.find((p) => p !== phrase1) || '';
 
-  const verbForm = verb ? (verb.endsWith('e') ? verb + 'ing' : verb + 'ing') : '';
-  const sentences: string[] = [];
+  const keyword1 =
+    keywords
+      .map((k) => k.trim())
+      .find((k) => k && !verbStemMatches(k, verb) && k.toLowerCase() !== phrase1.toLowerCase()) || '';
 
-  if (phrase1 && !taskNameLower.includes(phrase1.toLowerCase())) {
-    if (verbForm) {
-      sentences.push(`${templateOpener} ${verbForm} ${phrase1.toLowerCase()}.`);
-    } else {
-      sentences.push(`${templateOpener} ${phrase1.toLowerCase()}.`);
-    }
-  } else if (keyword1 && !taskNameLower.includes(keyword1.toLowerCase())) {
-    if (verbForm) {
-      sentences.push(`${templateOpener} ${verbForm} ${keyword1.toLowerCase()}.`);
-    } else {
-      sentences.push(`${templateOpener} ${keyword1.toLowerCase()}.`);
-    }
+  const noun =
+    nouns
+      .map((n) => n.trim())
+      .find((n) => n && !verbStemMatches(n, verb)) || '';
+
+  const actionWordList = DESCRIPTION_GENERATION_CONFIG.actionWordList ?? [];
+  const firstWord = taskWords[0] ?? '';
+  const hasLeadingVerb = actionWordList.some((v) => firstWord === v || firstWord.startsWith(v));
+
+  let primarySentence = '';
+
+  if (hasLeadingVerb) {
+    const gerund = getVerbFormForTemplate(firstWord, 'involves');
+    const taskPhrase = gerund
+      ? `${gerund} ${taskWords.slice(1).join(' ')}`.trim()
+      : taskNameLower;
+    primarySentence = `${templateOpener} ${taskPhrase}.`;
+  } else if (verbForm && verb && taskNameLower.includes(verb.toLowerCase())) {
+    const taskPhrase = taskNameLower.replace(new RegExp(`\\b${verb.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'), verbForm);
+    primarySentence = `${templateOpener} ${taskPhrase}.`;
+  } else if (phrase1 && phrase1.split(/\s+/).length >= 2) {
+    primarySentence = verbForm
+      ? `${templateOpener} ${verbForm} ${phrase1.toLowerCase()}.`
+      : `${templateOpener} ${phrase1.toLowerCase()}.`;
+  } else if (keyword1) {
+    primarySentence = verbForm
+      ? `${templateOpener} ${verbForm} ${keyword1.toLowerCase()}.`
+      : `${templateOpener} ${keyword1.toLowerCase()}.`;
+  } else if (verbForm && noun) {
+    primarySentence = `${templateOpener} ${verbForm} ${noun.toLowerCase()}.`;
   } else if (verbForm) {
-    sentences.push(noun
-      ? `${templateOpener} ${verbForm} ${noun.toLowerCase()}.`
-      : `${templateOpener} ${verbForm} the task.`);
+    primarySentence = `${templateOpener} ${verbForm} the task.`;
+  } else if (taskNameLower) {
+    primarySentence = `${templateOpener} ${taskNameLower}.`;
   } else {
     return '';
   }
 
-  if (phrase2 && phrase2 !== phrase1 && !taskNameLower.includes(phrase2.toLowerCase()) && sentences.length < maxSentences) {
+  const sentences: string[] = [primarySentence];
+
+  if (
+    phrase2 &&
+    phrase2 !== phrase1 &&
+    !primarySentence.toLowerCase().includes(phrase2.toLowerCase()) &&
+    sentences.length < maxSentences
+  ) {
     const second = `It also covers ${phrase2.toLowerCase()}.`;
-    if ((sentences.join(' ').length + second.length) <= maxCharsTotal) sentences.push(second);
-  } else if (keyword1 && phrase1 && sentences.length === 1 && (keywords[1] || '').trim() && sentences[0].length < 120) {
+    if ((sentences.join(' ').length + second.length) <= maxCharsTotal) {
+      sentences.push(second);
+    }
+  } else if (
+    keyword1 &&
+    phrase1 &&
+    sentences.length === 1 &&
+    (keywords[1] || '').trim() &&
+    sentences[0].length < 120
+  ) {
     const kw2 = (keywords[1] || '').trim();
-    if (kw2 && !taskNameLower.includes(kw2.toLowerCase()) && !phrase1.toLowerCase().includes(kw2.toLowerCase())) {
+    if (kw2 && !verbStemMatches(kw2, verb) && !primarySentence.toLowerCase().includes(kw2.toLowerCase())) {
       const second = `This includes ${kw2}.`;
-      if ((sentences.join(' ').length + second.length) <= maxCharsTotal) sentences.push(second);
+      if ((sentences.join(' ').length + second.length) <= maxCharsTotal) {
+        sentences.push(second);
+      }
     }
   }
 
   let out = sentences.join(' ');
-  const words = out.split(/\s+/).filter(w => w.length > 0);
+  const words = out.split(/\s+/).filter((w) => w.length > 0);
   if (words.length > maxWordsPerSentence * maxSentences) {
     out = words.slice(0, maxWordsPerSentence * maxSentences).join(' ').trim();
     if (!out.endsWith('.')) out += '.';
@@ -4307,10 +4363,23 @@ export function buildDescriptionFromUserPhrases(
   const terms =
     precomputedTerms ??
     getSuggestivePhrases(taskName, existingDescription);
-  return buildCompleteDescriptionFromPhrases(
+  const built = buildCompleteDescriptionFromPhrases(
     taskName,
     terms.phrases,
     terms.keywords,
+    terms.verbs,
+    terms.nouns,
+  );
+  if (built) {
+    return built;
+  }
+
+  const domainTerms = getDomainTerminology(terms.domain);
+  return buildTaskNameWithEnrichment(
+    taskName,
+    DESCRIPTION_GENERATION_CONFIG.descriptionTemplates.involves,
+    domainTerms,
+    terms.domain,
     terms.verbs,
     terms.nouns,
   );
