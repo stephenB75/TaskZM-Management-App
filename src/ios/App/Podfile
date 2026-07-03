@@ -171,6 +171,12 @@ def patch_capacitor_framework_headers
 end
 
 def silence_capacitor_cordova_wkprocesspool_deprecations
+  patch_script = File.expand_path('../../../scripts/patch-capacitor-wkprocesspool.cjs', __dir__)
+  if File.exist?(patch_script)
+    system('node', patch_script, File.expand_path('../..', __dir__)) || warn('WKProcessPool patch script failed')
+    return
+  end
+
   marker = 'TASKZM_SUPPRESS_WKPROCESSPOOL_DEPRECATION'
   base = File.expand_path(
     '../../node_modules/@capacitor/ios/CapacitorCordova/CapacitorCordova/Classes/Public',
@@ -199,11 +205,11 @@ def silence_capacitor_cordova_wkprocesspool_deprecations
     File.write(
       impl,
       File.read(impl).sub(
-        "#import <Cordova/CDVWebViewProcessPoolFactory.h>\n\nstatic",
+        /(#import <Cordova\/CDVWebViewProcessPoolFactory\.h>\n\n)/,
         "#import <Cordova/CDVWebViewProcessPoolFactory.h>\n\n" \
         "#pragma clang diagnostic push\n" \
         "#pragma clang diagnostic ignored \"-Wdeprecated-declarations\"\n" \
-        "/* #{marker} */\n\nstatic",
+        "/* #{marker} */\n\n",
       ).sub(
         "@end\n",
         "@end\n\n#pragma clang diagnostic pop\n",

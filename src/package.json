@@ -18,7 +18,8 @@
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
     "cap:ios:setup": "cd ios/App && chmod +x setup-xcode.sh && ./setup-xcode.sh",
-    "cap:android": "cap open android"
+    "cap:android": "cap open android",
+    "postinstall": "node ../scripts/patch-capacitor-wkprocesspool.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
