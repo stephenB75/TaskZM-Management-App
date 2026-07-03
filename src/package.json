@@ -15,7 +15,6 @@
     "sync:platforms": "npm run sync:platforms --prefix ..",
     "sync:cloud-shell": "npm run sync:cloud-shell --prefix ..",
     "ios:fresh": "npm run ios:fresh --prefix ..",
-    "mobile:assets": "capacitor-assets generate --assetPath assets --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#1a1a1a' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#1a1a1a'",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
     "cap:ios:setup": "cd ios/App && chmod +x setup-xcode.sh && ./setup-xcode.sh",
@@ -75,7 +74,6 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.2.0",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.18",
