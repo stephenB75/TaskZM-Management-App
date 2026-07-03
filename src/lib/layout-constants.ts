@@ -467,20 +467,21 @@ export const getMainHeaderWidth = (panelOpen: boolean): string => {
 };
 
 // Bottom Navigation Bar constants
-export const NAV_BAR_HEIGHT = 68; // Tab content zone height (icon + label + padding)
+export const NAV_BAR_HEIGHT = 72; // Tab content zone height (indicator + icon + label + vertical padding)
 export const NAV_BAR_SPACER_HEIGHT = NAV_BAR_HEIGHT; // Legacy: content row only; scroll uses NAV_BAR_BOTTOM_PADDING_MOBILE
-export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`;
+/** Equal vertical inset for tab content within the nav content row (above/below icon+label block). */
+export const NAV_BAR_CONTENT_VERTICAL_PADDING = '0.625rem';
+/** Top/bottom inset — splits home-indicator safe area so icon+label sit centered in full nav footprint. */
+export const NAV_BAR_PADDING_TOP = `calc(${NAV_BAR_CONTENT_VERTICAL_PADDING} + env(safe-area-inset-bottom, 0px) / 2)`;
+export const NAV_BAR_PADDING_BOTTOM = `calc(${NAV_BAR_CONTENT_VERTICAL_PADDING} + env(safe-area-inset-bottom, 0px) / 2)`;
+/** Full fixed nav footprint: top inset + content row + home-indicator safe area. */
+export const NAV_BAR_BOTTOM_PADDING_MOBILE = `calc(${NAV_BAR_PADDING_TOP} + ${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`;
 /** Full fixed nav footprint: content row + home-indicator safe area (single centered block). */
 export const NAV_BAR_HEIGHT_WITH_SAFE_AREA = NAV_BAR_BOTTOM_PADDING_MOBILE;
 export const NAV_BAR_SCROLL_BUFFER = 8; // Small buffer so last list item clears the nav bar when scrolled
 export const NAV_BAR_SCROLL_BUFFER_REM = '0.5rem';
-/** Scroll container padding above fixed nav (height + safe area + buffer). */
-export const NAV_BAR_SCROLL_PADDING_MOBILE = `calc(${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER}px)`;
-/** Equal vertical inset for tab content within the nav content row (above/below icon+label block). */
-export const NAV_BAR_CONTENT_VERTICAL_PADDING = '0.375rem';
-/** Top/bottom inset — splits home-indicator safe area so icon+label sit centered in full nav footprint. */
-export const NAV_BAR_PADDING_TOP = `calc(${NAV_BAR_CONTENT_VERTICAL_PADDING} + env(safe-area-inset-bottom, 0px) / 2)`;
-export const NAV_BAR_PADDING_BOTTOM = `calc(${NAV_BAR_CONTENT_VERTICAL_PADDING} + env(safe-area-inset-bottom, 0px) / 2)`;
+/** Scroll container padding above fixed nav (top inset + height + safe area + buffer). */
+export const NAV_BAR_SCROLL_PADDING_MOBILE = `calc(${NAV_BAR_PADDING_TOP} + ${NAV_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + ${NAV_BAR_SCROLL_BUFFER}px)`;
 /** Gap between icon and label — keep smaller than vertical padding for balanced look. */
 export const NAV_BAR_ICON_LABEL_GAP = '0.125rem';
 export const NAV_BAR_BUTTON_PADDING_TOP = '0';
@@ -491,8 +492,12 @@ export const NAV_BAR_ICON_MARGIN_TOP_ACTIVE = '0';
 export const NAV_BAR_ICON_MARGIN_TOP_INACTIVE = '0';
 export const NAV_BAR_INDICATOR_WIDTH = '2rem';
 export const NAV_BAR_INDICATOR_HEIGHT = '0.375rem'; // h-1.5 = 0.375rem
-/** Gap between indicator line and top edge of icon. */
-export const NAV_BAR_INDICATOR_GAP = '0.125rem';
+/** Distance from top of tab button to active indicator (below nav top padding). */
+export const NAV_BAR_INDICATOR_TOP_OFFSET = '0.25rem';
+/** Gap between indicator line and icon (when indicator is above icon stack). */
+export const NAV_BAR_INDICATOR_GAP = '0.375rem';
+/** Reserved top inset on every tab so icons align whether active or not. */
+export const NAV_BAR_TAB_TOP_INSET = `calc(${NAV_BAR_INDICATOR_TOP_OFFSET} + ${NAV_BAR_INDICATOR_HEIGHT} + ${NAV_BAR_INDICATOR_GAP})`;
 export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
 export const NAV_BAR_LABEL_LINE_HEIGHT = '1.2';
 export const NAV_BAR_LABEL_MARGIN_TOP = '0'; // use NAV_BAR_ICON_LABEL_GAP on button flex instead
@@ -508,7 +513,7 @@ export const NAV_BAR_HORIZONTAL_PADDING_LEFT = `max(${NAV_BAR_HORIZONTAL_PADDING
 export const NAV_BAR_HORIZONTAL_PADDING_RIGHT = `max(${NAV_BAR_HORIZONTAL_PADDING}, env(safe-area-inset-right, 0px))`;
 export const NAV_BAR_SAFE_AREA_BOTTOM = 'env(safe-area-inset-bottom, 0px)';
 /** Nav layout stamp — bump when changing BottomNav structure (visible in DOM for device verification). */
-export const NAV_BAR_LAYOUT_VERSION = 'v3';
+export const NAV_BAR_LAYOUT_VERSION = 'v4';
 export const NAV_BAR_TAB_COUNT = 4;
 export const NAV_BAR_ACTIVE_SCALE = 0.95; // scale-95 = 0.95
 export const NAV_BAR_INITIAL_Y_OFFSET = 100; // Initial animation offset in pixels

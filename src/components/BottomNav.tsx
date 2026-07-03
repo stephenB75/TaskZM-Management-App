@@ -2,7 +2,6 @@ import React from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
 import { motion } from "motion/react";
-import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -15,8 +14,8 @@ import {
   NAV_BAR_LABEL_LINE_HEIGHT,
   NAV_BAR_INDICATOR_WIDTH,
   NAV_BAR_INDICATOR_HEIGHT,
-  NAV_BAR_INDICATOR_GAP,
-  NAV_BAR_LAYOUT_VERSION,
+  NAV_BAR_INDICATOR_TOP_OFFSET,
+  NAV_BAR_TAB_TOP_INSET,
   NAV_BAR_LABEL_TEXT_SIZE,
   NAV_BAR_BADGE_SIZE,
   NAV_BAR_BADGE_TEXT_SIZE,
@@ -27,6 +26,7 @@ import {
   NAV_BAR_HORIZONTAL_PADDING_LEFT,
   NAV_BAR_HORIZONTAL_PADDING_RIGHT,
   NAV_BAR_SAFE_AREA_BOTTOM,
+  NAV_BAR_PADDING_TOP,
   NAV_BAR_TAB_COUNT,
   NAV_BAR_ACTIVE_SCALE,
   NAV_BAR_INITIAL_Y_OFFSET,
@@ -163,6 +163,7 @@ export function BottomNav({
         zIndex: Z_INDEX.NAV_BAR,
         paddingLeft: NAV_BAR_HORIZONTAL_PADDING_LEFT,
         paddingRight: NAV_BAR_HORIZONTAL_PADDING_RIGHT,
+        paddingTop: NAV_BAR_PADDING_TOP,
         paddingBottom: NAV_BAR_SAFE_AREA_BOTTOM,
         boxSizing: 'border-box',
         boxShadow: isDark
@@ -207,6 +208,7 @@ export function BottomNav({
               )}
               style={{
                 gap: NAV_BAR_ICON_LABEL_GAP,
+                paddingTop: NAV_BAR_TAB_TOP_INSET,
                 transitionDuration: `${NAV_BAR_BUTTON_TRANSITION_DURATION}ms`,
               }}
               onMouseDown={(e) => {
@@ -225,6 +227,17 @@ export function BottomNav({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
+              {item.active && (
+                <div
+                  className="absolute left-0 right-0 mx-auto rounded-full bg-primary"
+                  style={{
+                    top: NAV_BAR_INDICATOR_TOP_OFFSET,
+                    width: NAV_BAR_INDICATOR_WIDTH,
+                    height: NAV_BAR_INDICATOR_HEIGHT,
+                  }}
+                />
+              )}
+
               <div
                 className="relative flex shrink-0 items-center justify-center overflow-visible"
                 style={{
@@ -232,21 +245,6 @@ export function BottomNav({
                   height: NAV_BAR_ICON_SLOT_SIZE,
                 }}
               >
-                {item.active && (
-                  <div
-                    className="absolute z-0 rounded-full bg-primary"
-                    style={{
-                      width: NAV_BAR_INDICATOR_WIDTH,
-                      height: NAV_BAR_INDICATOR_HEIGHT,
-                      bottom: '100%',
-                      marginBottom: NAV_BAR_INDICATOR_GAP,
-                      left: 0,
-                      right: 0,
-                      marginLeft: 'auto',
-                      marginRight: 'auto',
-                    }}
-                  />
-                )}
                 <Icon 
                   name={item.iconName}
                   size={NAV_BAR_ICON_SIZE}
