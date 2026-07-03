@@ -162,6 +162,17 @@ export const HEADER_SIDE_PANEL_GAP_RIGHT = '0.375rem'; // gap-1.5 = 0.375rem (6p
 export const HEADER_Z_INDEX = 40; // z-40 = 40
 /** Desktop icon sidebar — above side panel so icons stay clickable while panel retracts. */
 export const SIDEBAR_Z_INDEX = HEADER_Z_INDEX + 2;
+
+/** Slide-out sheet (mobile nav, side panels) — inset below status bar / Dynamic Island. */
+export const SHEET_CLOSE_BUTTON_INSET = '1rem';
+export const SHEET_SAFE_AREA = {
+  top: 'env(safe-area-inset-top, 0px)',
+  bottom: 'env(safe-area-inset-bottom, 0px)',
+  left: 'env(safe-area-inset-left, 0px)',
+  right: 'env(safe-area-inset-right, 0px)',
+  closeButtonTop: `calc(${SHEET_CLOSE_BUTTON_INSET} + env(safe-area-inset-top, 0px))`,
+  closeButtonRight: `calc(${SHEET_CLOSE_BUTTON_INSET} + env(safe-area-inset-right, 0px))`,
+} as const;
 export const HEADER_BACKGROUND_OPACITY = 0.88; // Slightly translucent bar — visible but not heavy
 export const HEADER_BACKGROUND_LIGHT_COLOR = '#FFFFFF';
 export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.92)';
