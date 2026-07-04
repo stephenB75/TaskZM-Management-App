@@ -12,6 +12,7 @@ import { SidebarProvider } from './contexts/SidebarContext';
 import { PomodoroProvider } from './contexts/PomodoroContext';
 import { DragDropProvider } from './contexts/DragDropContext';
 import { DocumentHead } from './components/DocumentHead';
+import { BiometricLockScreen } from './components/BiometricLockScreen';
 import AppContent from './AppContent';
 
 /**
@@ -33,6 +34,7 @@ export default function AuthenticatedAppProviders() {
                       <PomodoroProvider>
                         <DragDropProvider>
                           <DocumentHead />
+                          <BiometricLockScreen />
                           <AppContent />
                           <Toaster />
                         </DragDropProvider>

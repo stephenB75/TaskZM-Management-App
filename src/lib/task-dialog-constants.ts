@@ -79,6 +79,10 @@ export const TASK_DIALOG_UI_TEXT = {
     desktop: 'Duplicate',
     mobile: 'Dup',
   },
+  share: {
+    desktop: 'Share',
+    mobile: 'Share',
+  },
   delete: {
     desktop: 'Delete',
     mobile: 'Del',
@@ -88,6 +92,7 @@ export const TASK_DIALOG_UI_TEXT = {
   // Button Tooltips (for icon-only mobile buttons)
   buttonTooltips: {
     duplicate: 'Duplicate',
+    share: 'Share task',
     delete: 'Delete',
     cancel: 'Cancel',
     createTask: 'Create Task',

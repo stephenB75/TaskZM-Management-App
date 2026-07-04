@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NativePlatformChrome } from './components/NativePlatformChrome';
 import { lazyWithRetry } from './lib/lazy-with-retry';
 import { SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, LOADING_SCREEN_GRADIENT_CLASS } from './lib/layout-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
@@ -76,6 +77,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
+        <NativePlatformChrome />
         <Suspense fallback={<AppLoadingFallback />}>
           <AuthenticatedApp />
         </Suspense>

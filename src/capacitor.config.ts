@@ -41,6 +41,9 @@ const config: CapacitorConfig = {
       iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
       sound: 'default',
     },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'banner', 'list'],
+    },
   },
   ios: {
     scheme: MOBILE_DEEP_LINK_SCHEME,

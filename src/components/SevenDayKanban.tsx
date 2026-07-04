@@ -46,6 +46,7 @@ import { NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_SCROLL_PADDING_MOBILE, getMobile
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
+import { useTaskDeepLinkOpener } from '../hooks/useTaskDeepLinkOpener';
 import type { Task } from '../types';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
@@ -748,6 +749,10 @@ export function SevenDayKanban({
       setDialogOpen(true);
     });
   };
+
+  useTaskDeepLinkOpener((task) => {
+    handleTaskClick(task);
+  });
 
   const handleAddTask = (dateString: string) => {
     setSelectedDate(dateString);

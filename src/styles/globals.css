@@ -324,6 +324,13 @@ body {
   }
 }
 
+/* Native iOS/Android: hide bottom tab bar while keyboard is open */
+html[data-keyboard-open="true"] .native-hide-with-keyboard {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Better scrollbar styling for mobile */
 @supports (scrollbar-width: thin) {
   * {

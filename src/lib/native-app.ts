@@ -11,7 +11,9 @@ import {
   MOBILE_DEEP_LINK_PATHS,
   MOBILE_USE_CLOUD_WEB_APP,
   MOBILE_STORAGE_KEYS,
+  MOBILE_UNIVERSAL_LINK_HOST,
 } from './mobile-constants';
+import { NOTIFICATION_OPEN_TASK_EVENT } from './notification-constants';
 import { CALENDAR_OAUTH_MESSAGE_TYPES } from './calendar-integration-constants';
 import type { CalendarProviderId } from './calendar-integration-constants';
 import { clearCalendarEventsCache } from './calendar-events-cache';
@@ -40,10 +42,29 @@ function parseDeepLinkUrl(url: string): URL | null {
       const pathAndQuery = url.slice(MOBILE_DEEP_LINK_PREFIX.length);
       return new URL(`https://localhost/${pathAndQuery}`);
     }
-    return new URL(url);
+    const parsed = new URL(url);
+    if (parsed.hostname === MOBILE_UNIVERSAL_LINK_HOST) {
+      return parsed;
+    }
+    return parsed;
   } catch {
     return null;
   }
+}
+
+function handleTaskDeepLink(parsed: URL): void {
+  const path = parsed.pathname.replace(/^\//, '');
+  const segments = path.split('/').filter(Boolean);
+  const taskId =
+    segments[0] === MOBILE_DEEP_LINK_PATHS.task && segments[1]
+      ? decodeURIComponent(segments[1])
+      : parsed.searchParams.get('taskId') ?? parsed.searchParams.get('id') ?? undefined;
+
+  if (!taskId) return;
+
+  window.dispatchEvent(
+    new CustomEvent(NOTIFICATION_OPEN_TASK_EVENT, { detail: { taskId } }),
+  );
 }
 
 function handleCalendarOAuthDeepLink(parsed: URL): void {
@@ -84,6 +105,11 @@ function handleDeepLink(url: string): void {
   if (!parsed) return;
 
   const path = parsed.pathname.replace(/^\//, '');
+
+  if (path === MOBILE_DEEP_LINK_PATHS.task || path.startsWith(`${MOBILE_DEEP_LINK_PATHS.task}/`)) {
+    handleTaskDeepLink(parsed);
+    return;
+  }
 
   if (path === MOBILE_DEEP_LINK_PATHS.calendarOAuth) {
     handleCalendarOAuthDeepLink(parsed);

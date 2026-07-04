@@ -49,6 +49,17 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { useMobileLayout } from '../hooks/useMobileLayout';
+import { Capacitor } from '@capacitor/core';
+import {
+  disableBiometricLock,
+  enableBiometricLockWithVerification,
+  isBiometricHardwareAvailable,
+  isBiometricLockEnabled,
+} from '../lib/native-biometrics';
+import {
+  isPushNotificationsPreferenceEnabled,
+  setPushNotificationsEnabled,
+} from '../lib/native-push-notifications';
 import { toast } from 'sonner';
 import { Icon } from './Icon';
 import { SettingsSection } from './settings/SettingsSection';
@@ -239,6 +250,12 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const [serverAIConfigured, setServerAIConfigured] = useState<boolean | null>(null);
   const [openAccordionSections, setOpenAccordionSections] = useState<string[]>(['user-profile']);
   const [isRequestingNotificationPermission, setIsRequestingNotificationPermission] = useState(false);
+  const isNativeApp = Capacitor.isNativePlatform();
+  const [biometricLockEnabled, setBiometricLockEnabledState] = useState(isBiometricLockEnabled());
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [pushNotificationsEnabled, setPushNotificationsEnabledState] = useState(
+    isPushNotificationsPreferenceEnabled(),
+  );
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
 
   const handleEnableNotifications = useCallback(async () => {
@@ -250,6 +267,36 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
       setIsRequestingNotificationPermission(false);
     }
   }, [enableNotifications, isRequestingNotificationPermission]);
+
+  useEffect(() => {
+    if (!isNativeApp) return;
+    void isBiometricHardwareAvailable().then(setBiometricAvailable);
+  }, [isNativeApp]);
+
+  const handleBiometricLockToggle = async (checked: boolean) => {
+    if (checked) {
+      const enabled = await enableBiometricLockWithVerification();
+      if (!enabled) {
+        toast.error(SETTINGS_PANEL_UI_TEXT.security.biometricLock.unavailable);
+        setBiometricLockEnabledState(false);
+        return;
+      }
+      setBiometricLockEnabledState(true);
+      toast.success(SETTINGS_PANEL_UI_TEXT.security.biometricLock.enabled);
+      return;
+    }
+
+    disableBiometricLock();
+    setBiometricLockEnabledState(false);
+  };
+
+  const handlePushNotificationsToggle = async (checked: boolean) => {
+    const success = await setPushNotificationsEnabled(checked);
+    setPushNotificationsEnabledState(checked);
+    if (checked && !success && isNativeApp) {
+      toast.error(SETTINGS_PANEL_UI_TEXT.security.pushNotifications.permissionDenied);
+    }
+  };
 
   useEffect(() => {
     const handleTourExpandSection = (event: CustomEvent<{ sectionId: string }>) => {
@@ -669,6 +716,43 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       />
           
         </SettingsSection>
+
+        {isNativeApp ? (
+        <SettingsSection
+          value="app-security"
+          icon="lock"
+          title={SETTINGS_PANEL_UI_TEXT.security.sectionTitle}
+          description={SETTINGS_PANEL_UI_TEXT.sections.security.description}
+        >
+          <SettingsControlGroup>
+            <SettingsToggleRow
+              id="biometric-lock"
+              label={SETTINGS_PANEL_UI_TEXT.security.biometricLock.label}
+              description={
+                biometricAvailable
+                  ? SETTINGS_PANEL_UI_TEXT.security.biometricLock.description
+                  : SETTINGS_PANEL_UI_TEXT.security.biometricLock.unavailable
+              }
+              checked={biometricLockEnabled}
+              onCheckedChange={(checked) => {
+                void handleBiometricLockToggle(checked);
+              }}
+              disabled={!biometricAvailable}
+              touchTarget
+            />
+            <SettingsToggleRow
+              id="push-notifications-remote"
+              label={SETTINGS_PANEL_UI_TEXT.security.pushNotifications.label}
+              description={SETTINGS_PANEL_UI_TEXT.security.pushNotifications.description}
+              checked={pushNotificationsEnabled}
+              onCheckedChange={(checked) => {
+                void handlePushNotificationsToggle(checked);
+              }}
+              touchTarget
+            />
+          </SettingsControlGroup>
+        </SettingsSection>
+        ) : null}
 
         <SettingsSection
           value="subscription"

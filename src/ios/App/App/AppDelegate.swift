@@ -14,6 +14,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
+
     /// Clear WKWebView cache when the bundled shell changes.
     /// Cloud WebView mode (server.url in capacitor.config.json) must NOT wipe website data —
     /// that would erase localStorage for app.taskzm.com (auth, calendar status, notification settings).

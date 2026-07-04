@@ -67,6 +67,9 @@ import { useCalendarEventsByDate } from "../hooks/useCalendarEvents";
 import * as api from "../lib/api";
 import { toast } from "sonner";
 import { playSubtaskCompleteSound } from "../lib/toast-sound";
+import { shareWithNativeSheet } from "../lib/native-share";
+import { buildTaskWebUrl } from "../lib/mobile-constants";
+import { triggerSuccessHaptic } from "../lib/native-haptics";
 import { logger } from "../lib/logger";
 import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_MEDIUM_MS, TOAST_DURATION_LONG_MS } from "../lib/layout-constants";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
@@ -2567,6 +2570,20 @@ export function TaskDialog({
     }
   };
 
+  const handleShare = async () => {
+    if (!task?.id) return;
+
+    const shared = await shareWithNativeSheet({
+      title: task.title || TASK_DIALOG_UI_TEXT.taskName,
+      text: task.description?.trim() || task.title || undefined,
+      url: buildTaskWebUrl(task.id),
+    });
+
+    if (shared) {
+      void triggerSuccessHaptic();
+    }
+  };
+
   // Get available tasks for dependencies (exclude self and completed tasks)
   const availableTasksForDependencies = Array.isArray(tasks) ? tasks.filter(
     (t) => t && t.id && t.id !== task?.id && t.status !== "done",
@@ -4546,6 +4563,17 @@ export function TaskDialog({
             {/* Secondary row: Duplicate / Delete - icon-only below lg for spacing */}
             {task && (
               <div className="flex gap-1 sm:gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void handleShare()}
+                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
+                  title={TASK_DIALOG_UI_TEXT.buttonTooltips.share}
+                >
+                  <Icon name="link" size={16} className="shrink-0 lg:mr-1.5" />
+                  <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.share.desktop}</span>
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"

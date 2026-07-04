@@ -50,9 +50,12 @@ export const SETTINGS_PANEL_UI_TEXT = {
     preferences: 'Display & preferences',
     engagement: 'Achievements & help',
   },
-  sections: {
+    sections: {
     userProfile: {
       description: 'Your name, avatar, email, and team details',
+    },
+    security: {
+      description: 'Face ID, Touch ID, and remote notifications',
     },
     subscription: {
       description: 'Current plan, billing, and included features',
@@ -89,6 +92,21 @@ export const SETTINGS_PANEL_UI_TEXT = {
     },
     about: {
       description: 'Version info, policies, and account actions',
+    },
+  },
+  security: {
+    sectionTitle: 'App Security',
+    biometricLock: {
+      label: 'Require Face ID / Touch ID',
+      description: 'Lock TaskZM when you leave the app and return from the home screen.',
+      unavailable: 'Biometric unlock is not available on this device.',
+      enabled: 'App lock enabled',
+      verifyFailed: 'Could not verify your identity. Try again.',
+    },
+    pushNotifications: {
+      label: 'Remote push notifications',
+      description: 'Receive task alerts from TaskZM even when the app is closed (requires server setup).',
+      permissionDenied: 'Push permission denied. Enable notifications in iOS Settings.',
     },
   },
 } as const;

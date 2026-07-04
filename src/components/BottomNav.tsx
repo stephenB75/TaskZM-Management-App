@@ -31,7 +31,6 @@ import {
   NAV_BAR_ACTIVE_SCALE,
   NAV_BAR_INITIAL_Y_OFFSET,
   NAV_BAR_ANIMATION_DURATION,
-  NAV_BAR_HAPTIC_DURATION,
   NAV_BAR_BUTTON_TRANSITION_DURATION,
   NAV_BAR_SHADOW_OPACITY_LIGHT,
   NAV_BAR_SHADOW_OPACITY_DARK,
@@ -43,6 +42,7 @@ import {
 } from "../lib/layout-constants";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
+import { triggerSelectionHaptic } from "../lib/native-haptics";
 import {
   COLOR_PRIMARY,
   COLOR_PASTEL_MINT,
@@ -83,11 +83,8 @@ export function BottomNav({
   const isDark = actualTheme === 'dark';
   const isDashboard = currentView === "dashboard";
 
-  // Haptic feedback for modern mobile devices
   const triggerHaptic = () => {
-    if ("vibrate" in navigator) {
-      navigator.vibrate(NAV_BAR_HAPTIC_DURATION);
-    }
+    void triggerSelectionHaptic();
   };
 
   const navItems = [
@@ -155,7 +152,7 @@ export function BottomNav({
 
   return (
     <motion.nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-primary/10 dark:border-gray-700/50 shadow-2xl overflow-visible"
+      className="native-hide-with-keyboard lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-primary/10 dark:border-gray-700/50 shadow-2xl overflow-visible transition-transform duration-200 ease-out"
       initial={{ y: NAV_BAR_INITIAL_Y_OFFSET }}
       animate={{ y: 0 }}
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}

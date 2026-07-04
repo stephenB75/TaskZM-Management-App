@@ -6,8 +6,9 @@ import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { logger } from './lib/logger';
 import { checkBrowserAIStatus } from './lib/browser-ai-api';
 import { BROWSER_AI_CONFIG } from './lib/ai-config';
-import { COLOR_BACKGROUND_LIGHT } from './lib/color-theme';
 import { getAppReleaseStamp } from './lib/version';
+import { configureNativeStatusBarOverlay } from './lib/native-status-bar';
+import { initNativeKeyboardHandlers } from './lib/native-keyboard';
 import { purgeAppCachesIfVersionChanged } from './lib/service-worker-update';
 
 // Suppress browser extension errors that are not from our code
@@ -458,10 +459,10 @@ if (typeof window !== 'undefined') {
 
 // Capacitor
 import { Capacitor } from '@capacitor/core';
-import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { initNativeAppHandlers } from './lib/native-app';
 import { initNativeNotificationHandlers } from './lib/native-notifications';
+import { initNativePushNotifications } from './lib/native-push-notifications';
 import { ensureNativeBuildIsCurrent } from './lib/native-cache';
 import { ensureWebReleaseIsCurrent } from './lib/app-release-cache';
 
@@ -471,6 +472,8 @@ const isNative = Capacitor.isNativePlatform();
 if (isNative) {
   initNativeAppHandlers();
   initNativeNotificationHandlers();
+  initNativeKeyboardHandlers();
+  void initNativePushNotifications();
 }
 
 // In dev, unregister any existing service worker and clear runtime caches so Vite HMR
@@ -820,10 +823,8 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
 if (isNative) {
   // NATIVE PLATFORM (iOS/Android)
   // Edge-to-edge webview with viewport-fit=cover; safe-area CSS handles Dynamic Island / notch
-  StatusBar.setOverlaysWebView({ overlay: true }).catch(console.error);
-  StatusBar.setStyle({ style: Style.Light }).catch(console.error);
-  StatusBar.setBackgroundColor({ color: COLOR_BACKGROUND_LIGHT }).catch(console.error);
-  
+  void configureNativeStatusBarOverlay();
+
   // Hide Capacitor native splash screen after app loads
   setTimeout(() => {
     SplashScreen.hide().catch(console.error);

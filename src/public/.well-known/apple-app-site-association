@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "BGGBNMD49N.com.app.taskzm.com",
+        "paths": [
+          "/task/*",
+          "/calendar-oauth*",
+          "/auth-callback*",
+          "/reset-password*"
+        ]
+      }
+    ]
+  }
+}

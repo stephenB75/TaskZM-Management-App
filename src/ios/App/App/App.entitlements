@@ -3,6 +3,10 @@
 <plist version="1.0">
 <dict>
 	<key>com.apple.developer.associated-domains</key>
-	<array/>
+	<array>
+		<string>applinks:app.taskzm.com</string>
+	</array>
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

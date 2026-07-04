@@ -6,6 +6,7 @@ import { Icon } from "./Icon";
 import { useTasks } from "../contexts/TaskContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useMobileLayout } from "../hooks/useMobileLayout";
+import { useTaskDeepLinkOpener } from "../hooks/useTaskDeepLinkOpener";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useAuth } from "../contexts/AuthContext";
 import { CalendarEventCard } from "./CalendarEventCard";
@@ -718,6 +719,8 @@ export function TodayAgendaView({
       setDialogOpen(true);
     });
   };
+
+  useTaskDeepLinkOpener(handleTaskClick);
 
   // Handle task completion - play sound and trigger confetti at card position (or center if no element)
   const handleTaskComplete = useCallback((originElement?: HTMLElement | null) => {

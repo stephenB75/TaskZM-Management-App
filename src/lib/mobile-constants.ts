@@ -16,6 +16,12 @@ export const MOBILE_PRODUCTION_WEB_URL = 'https://app.taskzm.com';
  */
 export const MOBILE_USE_CLOUD_WEB_APP = true;
 
+/** Apple Developer Team ID (Xcode DEVELOPMENT_TEAM). Used for Universal Links AASA. */
+export const MOBILE_APPLE_TEAM_ID = 'BGGBNMD49N';
+
+/** Hostname for Universal Links and share URLs (no trailing slash). */
+export const MOBILE_UNIVERSAL_LINK_HOST = 'app.taskzm.com';
+
 /** Custom URL scheme for deep links (matches MOBILE_APP_ID). */
 export const MOBILE_DEEP_LINK_SCHEME = MOBILE_APP_ID;
 
@@ -27,6 +33,7 @@ export const MOBILE_DEEP_LINK_PATHS = {
   calendarOAuth: 'calendar-oauth',
   authCallback: 'auth-callback',
   resetPassword: 'reset-password',
+  task: 'task',
 } as const;
 
 /** Query param sent to calendar auth API when initiating OAuth from native. */
@@ -66,7 +73,30 @@ export const MOBILE_NOTIFICATION_ICON_COLOR = '#9D87C3';
 export const MOBILE_STORAGE_KEYS = {
   /** Last loaded native web bundle stamp (APP_VERSION:BUILD_NUMBER from build-info.json). */
   nativeBuildStamp: 'taskzm_native_build_stamp',
+  /** When true, require Face ID / Touch ID after returning from background. */
+  biometricLockEnabled: 'taskzm_biometric_lock_enabled',
+  /** Last registered APNs/FCM device token (client-side cache). */
+  pushDeviceToken: 'taskzm_push_device_token',
+  /** User preference for remote push registration. */
+  pushNotificationsEnabled: 'taskzm_push_notifications_enabled',
 } as const;
+
+/** Pull-to-refresh gesture thresholds (native mobile). */
+export const MOBILE_PULL_TO_REFRESH = {
+  thresholdPx: 72,
+  maxPullPx: 120,
+  resistance: 0.45,
+} as const;
+
+/** Build a shareable HTTPS URL for a task (Universal Links + web). */
+export function buildTaskWebUrl(taskId: string): string {
+  return `${MOBILE_PRODUCTION_WEB_URL}/${MOBILE_DEEP_LINK_PATHS.task}/${encodeURIComponent(taskId)}`;
+}
+
+/** Build custom-scheme deep link for a task. */
+export function buildTaskDeepLink(taskId: string): string {
+  return `${MOBILE_DEEP_LINK_PREFIX}${MOBILE_DEEP_LINK_PATHS.task}/${encodeURIComponent(taskId)}`;
+}
 
 /** Build deep link for Supabase auth (password reset, magic link). */
 export function buildAuthCallbackDeepLink(path: string, hashOrQuery: string): string {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { lazyWithRetry } from './lib/lazy-with-retry';
 import { motion, AnimatePresence } from 'motion/react';
@@ -22,6 +22,7 @@ import { AwardCelebration } from './components/AwardCelebration';
 import { AppSidebar } from './components/AppSidebar';
 import { AppTour } from './components/AppTour';
 import { BottomNav } from './components/BottomNav';
+import { NativePullToRefresh } from './components/NativePullToRefresh';
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
 import { PricingDialog } from './components/PricingDialog';
 import { UpgradePrompt } from './components/UpgradePrompt';
@@ -43,6 +44,8 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { NOTIFICATION_OPEN_TASK_EVENT } from './lib/notification-constants';
+import { clearCalendarEventsCache } from './lib/calendar-events-cache';
+import { MOBILE_DEEP_LINK_PATHS } from './lib/mobile-constants';
 import { getTodayAgendaBadgeCount } from './lib/notification-task-filters';
 import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, MOBILE_SCROLL_CONTAINER_MIN_HEIGHT, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
 import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
@@ -109,6 +112,16 @@ export default function AppContent() {
   const hasInitializedView = useRef(false);
   const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
   const dashboardViewModeRef = useRef<'week' | 'month'>('week');
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+
+  const handleMobilePullRefresh = useCallback(async () => {
+    clearCalendarEventsCache();
+    await syncWithServer();
+  }, [syncWithServer]);
+
+  const pullToRefreshEnabled =
+    shouldUseMobileLayout &&
+    (currentView === 'today' || (currentView === 'dashboard' && mobileView === 'week'));
   
   // When mobile layout is shown and user is authenticated, trigger a sync so mobile gets latest tasks from server
   const mobileSyncDoneRef = useRef(false);
@@ -134,9 +147,16 @@ export default function AppContent() {
     return () => window.removeEventListener('resize', updatePanelWidth);
   }, []);
 
-  // Open notifications panel when user taps a system notification
+  // Open task or notifications panel when user taps a notification / deep link
   useEffect(() => {
-    const handleOpenTaskFromNotification = (_event: CustomEvent<{ taskId?: string }>) => {
+    const handleOpenTaskFromNotification = (event: CustomEvent<{ taskId?: string }>) => {
+      const taskId = event.detail?.taskId;
+      if (taskId) {
+        setCurrentView('today');
+        setMobileView('today');
+        setAiPanelOpen(false);
+        return;
+      }
       setCurrentView('notifications');
       setAiPanelOpen(false);
     };
@@ -145,6 +165,20 @@ export default function AppContent() {
     return () => {
       window.removeEventListener(NOTIFICATION_OPEN_TASK_EVENT, handleOpenTaskFromNotification as EventListener);
     };
+  }, []);
+
+  // Handle /task/:id URLs opened in the web app (Universal Links fallback in browser)
+  useEffect(() => {
+    const path = window.location.pathname.replace(/^\//, '');
+    if (!path.startsWith(`${MOBILE_DEEP_LINK_PATHS.task}/`)) return;
+
+    const taskId = decodeURIComponent(path.split('/')[1] ?? '');
+    if (!taskId) return;
+
+    window.dispatchEvent(
+      new CustomEvent(NOTIFICATION_OPEN_TASK_EVENT, { detail: { taskId } }),
+    );
+    window.history.replaceState({}, '', '/');
   }, []);
 
   // Handle tour events for view mode changes and panel opening
@@ -758,7 +792,13 @@ export default function AppContent() {
         <main className="flex-1 overflow-hidden relative flex">
           {shouldUseMobileLayout && (
           <div className="flex-1 flex flex-col min-h-0 w-full max-w-full min-w-0">
-            <div 
+            <NativePullToRefresh
+              scrollRef={mobileScrollRef}
+              enabled={pullToRefreshEnabled}
+              onRefresh={handleMobilePullRefresh}
+            >
+            <div
+              ref={mobileScrollRef}
               className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 relative min-w-0 w-full max-w-full"
               style={{
                 scrollBehavior: 'smooth',
@@ -813,6 +853,7 @@ export default function AppContent() {
                 )}
               </Suspense>
             </div>
+            </NativePullToRefresh>
           </div>
           )}
 
