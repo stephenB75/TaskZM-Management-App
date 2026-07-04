@@ -658,6 +658,36 @@ export const TEAM_PANEL_TAB_HEIGHT = '2.5rem'; // Height for team tabs
 export const TEAM_PANEL_TAB_PADDING = '0.75rem'; // Padding for team tabs
 export const TEAM_PANEL_HEADER_ICON_GAP = '1rem'; // gap-4 = 1rem (16px) - increased spacing between header icons for better mobile touch targets
 
+/** Team overview bar — panel is narrow (~360–440px) on desktop; stack vertically, never viewport-based side-by-side rows. */
+export const TEAM_PANEL_OVERVIEW = {
+  paddingX: PANEL_PADDING,
+  paddingY: PANEL_PADDING,
+  sectionGapPx: 16,
+  titleDescriptionGapPx: 4,
+  statsGridGapPx: 8,
+  statsCardPaddingX: '0.75rem',
+  statsCardPaddingY: '0.625rem',
+  actionGridGapPx: 8,
+  actionPrimarySpan: 2,
+} as const;
+
+/** Section nav tab strip — min width per tab so labels do not crush in narrow panels. */
+export const TEAM_PANEL_SECTION_NAV = {
+  paddingX: PANEL_PADDING,
+  paddingY: '0.5rem',
+  tabMinWidthPx: 96,
+  tabPaddingX: '0.5rem',
+  tabPaddingY: '0.5rem',
+} as const;
+
+/** Member / invite list row spacing */
+export const TEAM_PANEL_ROW = {
+  paddingX: '0.75rem',
+  paddingY: '0.875rem',
+  gapPx: 12,
+  avatarSize: '2.75rem',
+} as const;
+
 // Folder Panel specific constants
 export const FOLDER_PANEL_MOBILE_HEADER_SPACER = '10px'; // h-[10px]
 export const FOLDER_PANEL_SEARCH_PADDING_TOP = '1.25rem'; // pt-5 = 1.25rem

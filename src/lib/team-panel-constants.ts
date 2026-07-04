@@ -130,6 +130,12 @@ export const TEAM_PANEL_UI_TEXT = {
     assignedTasks: 'Assigned tasks',
     invites: 'Invites',
   },
+  /** Shorter tab labels for narrow team panel (~360–440px) and mobile */
+  sectionsShort: {
+    members: 'Members',
+    assignedTasks: 'Tasks',
+    invites: 'Invites',
+  },
   overview: {
     yourTeam: 'Your team',
     workspaceDescription: 'Everyone in your workspace who can collaborate on tasks.',

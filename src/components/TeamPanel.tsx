@@ -954,7 +954,7 @@ export function TeamPanel() {
       }
 
       return (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {pendingMembers.map((member) => (
             <TeamInviteRow
               key={member.id}
@@ -995,7 +995,7 @@ export function TeamPanel() {
     }
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         {filteredAcceptedMembers.map((member) => (
           <TeamMemberRow
             key={member.id}
@@ -1015,7 +1015,7 @@ export function TeamPanel() {
   return (
     <div
       className={cn(
-        'flex flex-col bg-background',
+        'flex min-w-0 w-full flex-col overflow-x-hidden bg-background',
         shouldUseMobileLayout ? 'min-h-full' : 'h-full',
       )}
     >

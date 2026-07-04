@@ -84,7 +84,7 @@ export function TeamAssignedTasksList({ tasks, members, onViewMember }: TeamAssi
   const memberById = new Map(members.map((member) => [member.id, member]));
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {tasks.map((task) => {
         const assignees = (task.assignedTo ?? [])
           .map((id) => memberById.get(id))
