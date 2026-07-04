@@ -3,6 +3,7 @@ import { cn } from '../lib/utils';
 import {
   USER_PROFILE_AVATAR_RING_CLASS,
   USER_PROFILE_AVATAR_BG_CLASS,
+  AVATAR_DISPLAY_IMAGE_SCALE,
 } from '../lib/avatar-constants';
 import { getAvatarDisplayUrl } from '../lib/avatar-utils';
 
@@ -42,7 +43,11 @@ export function UserProfileAvatar({
       <img
         src={imageUrl}
         alt={alt || `${name} avatar`}
-        className="h-full w-full object-cover"
+        className="block h-full w-full object-cover object-center"
+        style={{
+          transform: `scale(${AVATAR_DISPLAY_IMAGE_SCALE})`,
+          transformOrigin: 'center center',
+        }}
         loading="lazy"
         draggable={false}
       />

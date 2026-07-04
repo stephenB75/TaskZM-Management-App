@@ -8,11 +8,15 @@ import {
   AVATAR_SELECTION_SIZE,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
+  AVATAR_SELECTION_IMAGE_SCALE,
+  AVATAR_SELECTION_RING_CLASS,
+  AVATAR_SELECTION_SELECTED_CLASS,
+  AVATAR_SELECTION_UNSELECTED_CLASS,
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
   AVATAR_UI_TEXT,
   DEFAULT_AVATAR_GENDER,
-  USER_PROFILE_AVATAR_RING_CLASS,
+  USER_PROFILE_AVATAR_BG_CLASS,
   getAvatarGenderById,
   getAvatarImageUrl,
   getAvatarOptionsByGender,
@@ -85,9 +89,9 @@ export function AvatarSelection({
       </Tabs>
 
       <div
-        className="grid rounded-xl border border-border/40 bg-muted/20 p-3"
+        className="grid justify-center rounded-xl border border-border/40 bg-muted/20 p-3"
         style={{
-          gridTemplateColumns: `repeat(${AVATAR_SELECTION_GRID_COLS}, 1fr)`,
+          gridTemplateColumns: `repeat(${AVATAR_SELECTION_GRID_COLS}, ${AVATAR_SELECTION_SIZE})`,
           gap: AVATAR_SELECTION_GAP,
         }}
       >
@@ -99,11 +103,10 @@ export function AvatarSelection({
               type="button"
               onClick={() => onAvatarSelect(option.id)}
               className={cn(
-                'relative cursor-pointer overflow-hidden rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
-                isSelected
-                  ? 'border-primary ring-2 ring-primary ring-offset-2'
-                  : 'border-border/50 hover:border-primary/40',
-                USER_PROFILE_AVATAR_RING_CLASS,
+                'relative shrink-0 cursor-pointer overflow-hidden rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+                AVATAR_SELECTION_RING_CLASS,
+                USER_PROFILE_AVATAR_BG_CLASS,
+                isSelected ? AVATAR_SELECTION_SELECTED_CLASS : AVATAR_SELECTION_UNSELECTED_CLASS,
               )}
               style={{
                 width: AVATAR_SELECTION_SIZE,
@@ -115,7 +118,11 @@ export function AvatarSelection({
               <img
                 src={getAvatarImageUrl(option)}
                 alt={option.label}
-                className="h-full w-full object-cover"
+                className="block h-full w-full object-cover object-center"
+                style={{
+                  transform: `scale(${AVATAR_SELECTION_IMAGE_SCALE})`,
+                  transformOrigin: 'center center',
+                }}
                 loading="lazy"
                 draggable={false}
               />

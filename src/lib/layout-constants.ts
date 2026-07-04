@@ -612,6 +612,10 @@ export const TEAM_PANEL_PROFILE_BANNER_HEIGHT = '80px'; // Height of profile car
 export const TEAM_PANEL_PROFILE_AVATAR_SIZE = '80px'; // Size of profile avatar (overlapping banner)
 export const TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE = '24px'; // Font size for profile avatar initials
 export const TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET = '-2.5rem'; // Negative margin to overlap avatar with banner (-mt-10)
+export const TEAM_PANEL_MEMBER_PROFILE_DIALOG_MAX_HEIGHT =
+  'calc(var(--viewport-height, 100dvh) - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))';
+export const TEAM_PANEL_MEMBER_PROFILE_DIALOG_CLASS =
+  'flex max-h-[calc(var(--viewport-height,100dvh)-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg';
 
 // Compact Team Card Constants (for showing multiple team members)
 export const TEAM_PANEL_COMPACT_BANNER_HEIGHT = '48px'; // Height of compact card banner

@@ -6,9 +6,10 @@ TaskZM uses **[Craftwork Userpics](https://userpics.craftwork.design/)** — 30 
 
 ## Bundled pack (`userpics/`)
 
-- **30 PNG single portraits** from the Craftwork Userpics pack (`s-5-img-*.png`)
+- **30 PNG single portraits** from the Craftwork Userpics pack (`s-5-img-*.png`), normalized to 256×256 on download
 - Files: `src/public/avatars/userpics/01.png` … `30.png`
 - App IDs: `taskzm:userpics:01` … `taskzm:userpics:30`
+- URLs include `?v=` cache-busting (`AVATAR_ASSET_VERSION` in `avatar-constants.ts`)
 - Male / female filters in the picker use tags in `src/lib/avatar-constants.ts`
 
 Refresh assets:

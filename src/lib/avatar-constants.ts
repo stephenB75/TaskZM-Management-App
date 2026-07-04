@@ -30,6 +30,11 @@ export const AVATAR_PACK = {
 
 export const AVATAR_COUNT = 30;
 
+/** Bump when avatar PNGs change so browsers drop stale collage caches */
+export const AVATAR_ASSET_VERSION = '2';
+
+export const AVATAR_RENDER_SIZE = 256;
+
 export type AvatarGender = 'male' | 'female';
 
 export const DEFAULT_AVATAR_GENDER: AvatarGender = 'male';
@@ -93,6 +98,15 @@ export const DEFAULT_AVATAR = AVATAR_OPTIONS[0].id;
 export const AVATAR_SELECTION_GRID_COLS = 5;
 export const AVATAR_SELECTION_SIZE = '72px';
 export const AVATAR_SELECTION_GAP = '0.5rem';
+/** Zoom past square letterboxing so circular masks show one face */
+export const AVATAR_SELECTION_IMAGE_SCALE = 1.12;
+export const AVATAR_DISPLAY_IMAGE_SCALE = 1.1;
+
+export const AVATAR_SELECTION_RING_CLASS = 'shadow-sm';
+export const AVATAR_SELECTION_SELECTED_CLASS =
+  'border-primary ring-2 ring-primary ring-offset-1 ring-offset-background';
+export const AVATAR_SELECTION_UNSELECTED_CLASS =
+  'border-border/60 hover:border-primary/50';
 
 export const AVATAR_UI_TEXT = {
   chooseYourAvatar: 'Choose Your Avatar',
@@ -128,7 +142,7 @@ export function getAvatarOptionsByGender(gender: AvatarGender): readonly AvatarO
 }
 
 export function getAvatarImageUrl(option: AvatarOption): string {
-  return `${AVATAR_PACK.publicPath}/${option.file}`;
+  return `${AVATAR_PACK.publicPath}/${option.file}?v=${AVATAR_ASSET_VERSION}`;
 }
 
 export function getAvatarOptionIndex(option: AvatarOption): number {
