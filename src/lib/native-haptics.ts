@@ -56,3 +56,33 @@ export async function triggerSuccessHaptic(): Promise<void> {
     navigator.vibrate([10, 30, 10]);
   }
 }
+
+/** Haptic feedback scaled to achievement rarity (native + web vibrate fallback). */
+export async function triggerCelebrationHaptic(rarity: 'common' | 'rare' | 'epic' | 'legendary'): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      if (rarity === 'legendary') {
+        await Haptics.impact({ style: ImpactStyle.Heavy });
+        await Haptics.notification({ type: NotificationType.Success });
+      } else if (rarity === 'epic') {
+        await Haptics.impact({ style: ImpactStyle.Medium });
+        await Haptics.notification({ type: NotificationType.Success });
+      } else {
+        await Haptics.notification({ type: NotificationType.Success });
+      }
+    } catch {
+      await triggerSelectionHaptic();
+    }
+    return;
+  }
+
+  if ('vibrate' in navigator) {
+    if (rarity === 'legendary') {
+      navigator.vibrate([15, 40, 15, 40, 20]);
+    } else if (rarity === 'epic') {
+      navigator.vibrate([10, 35, 15]);
+    } else {
+      navigator.vibrate([10, 30, 10]);
+    }
+  }
+}

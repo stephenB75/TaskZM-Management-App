@@ -218,13 +218,8 @@ export function NotificationsPanel() {
       // Find award details from awards array
       const award = awards.find((a: Award) => a.id === userAward.awardId);
       if (award) {
-        // Check if this is a new award (not in lastSeenAwards) - mark as unread
         const isNew = !lastSeenAwards.has(userAward.awardId);
-        if (isNew) {
-          // Mark as seen
-          setLastSeenAwards(prev => new Set([...prev, userAward.awardId]));
-        }
-        
+
         newNotifications.push({
           id: notificationId,
           type: NOTIFICATION_TYPES.awardEarned as NotificationCardItem['type'],
@@ -264,6 +259,7 @@ export function NotificationsPanel() {
         overdue: newNotifications.filter(n => n.type === 'task-overdue').length,
         dueSoon: newNotifications.filter(n => n.type === 'task-due-soon').length,
         pomodoro: newNotifications.filter(n => n.type === 'pomodoro-complete').length,
+        awards: newNotifications.filter(n => n.type === NOTIFICATION_TYPES.awardEarned).length,
         toast: newNotifications.filter(n => n.type.startsWith('toast-')).length,
         unread: newNotifications.filter(n => !n.read).length,
       });
@@ -296,16 +292,27 @@ export function NotificationsPanel() {
 
   const markAsRead = (id: string) => {
     setReadNotifications(prev => new Set([...prev, id]));
-    // Also mark toast notifications as read if it's a toast notification
     if (id.startsWith('toast_')) {
       markToastAsRead(id);
+    }
+    if (id.startsWith('award_')) {
+      const awardId = id.replace('award_', '');
+      setLastSeenAwards(prev => new Set([...prev, awardId]));
+      setTimeout(() => updateBadge(), TIMING_CONSTANTS.delays.badgeUpdateFallback);
     }
   };
 
   const markAllAsRead = () => {
     const allIds = notifications.map(n => n.id);
     setReadNotifications(prev => new Set([...prev, ...allIds]));
-    // Also mark all toast notifications as read
+
+    const awardIdsToMarkSeen = notifications
+      .filter((n) => n.id.startsWith('award_') && n.awardId)
+      .map((n) => n.awardId as string);
+    if (awardIdsToMarkSeen.length > 0) {
+      setLastSeenAwards((prev) => new Set([...prev, ...awardIdsToMarkSeen]));
+    }
+
     notifications.forEach(n => {
       if (n.id.startsWith('toast_')) {
         markToastAsRead(n.id);

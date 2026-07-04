@@ -1,153 +1,89 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAwards } from "../contexts/AwardContext";
+import { useNotifications } from "../contexts/NotificationContext";
 import { useIsMobile } from "./ui/use-mobile";
-// Icons migrated to Icon component
 import { Icon } from "./Icon";
+import {
+  deliverAchievementUnlock,
+  getCelebrationTier,
+  type CelebrationTier,
+} from "../lib/achievement-notifications";
+import {
+  TOAST_DURATION_EXTRA_LONG_MS,
+  TOAST_DURATION_LONG_MS,
+} from "../lib/layout-constants";
+import type { Award } from "../types";
 
 export function AwardCelebration() {
   const { celebrationQueue, dismissCelebration } = useAwards();
+  const {
+    settings,
+    permission,
+    requestPermission,
+    updateBadge,
+  } = useNotifications();
   const currentAward = celebrationQueue[0];
   const isMobile = useIsMobile();
-  const processingRef = React.useRef(false);
+  const processingRef = useRef(false);
 
-  useEffect(() => {
-    if (currentAward && !processingRef.current) {
-      processingRef.current = true;
+  const playCelebrationSound = useCallback(() => {
+    const userHasInteracted =
+      typeof navigator !== "undefined" && !!(navigator as Navigator & { userActivation?: { hasBeenActive?: boolean } }).userActivation?.hasBeenActive;
 
-      const userHasInteracted = typeof navigator !== 'undefined' && !!(navigator as any).userActivation?.hasBeenActive;
+    if (!userHasInteracted || !settings.soundEnabled) return;
 
-      // Play gentle success chime sound (Web Audio API)
-      // Only play if AudioContext state is allowed (requires user interaction)
-      if (userHasInteracted) {
-        (async () => {
-          try {
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            if (!AudioContextClass) {
-              throw new Error('AudioContext not supported');
-            }
-            
-            const audioContext = new AudioContextClass();
-            
-            // Resume AudioContext if suspended (required after user interaction)
-            if (audioContext.state === 'suspended') {
-              try {
-                await audioContext.resume();
-              } catch {
-                throw new Error('AudioContext resume rejected');
-              }
-            }
-            
-            // Only proceed if context is running
-            if (audioContext.state !== 'running') {
-              throw new Error('AudioContext not running');
-            }
-            
-            const now = audioContext.currentTime;
+    void (async () => {
+      try {
+        const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!AudioContextClass) return;
 
-            // Create gentle ascending notes (C5, E5, G5) - a pleasant success chime
-            const frequencies = [523.25, 659.25, 783.99];
-            frequencies.forEach((freq, i) => {
-              try {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+        const audioContext = new AudioContextClass();
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+        if (audioContext.state !== "running") return;
 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-
-                oscillator.frequency.value = freq;
-                oscillator.type = "sine"; // Soft, pleasant tone
-
-                // Gentle envelope for smooth sound
-                const startTime = now + i * 0.1;
-                gainNode.gain.setValueAtTime(0, startTime);
-                gainNode.gain.linearRampToValueAtTime(
-                  0.12,
-                  startTime + 0.02,
-                );
-                gainNode.gain.exponentialRampToValueAtTime(
-                  0.01,
-                  startTime + 0.3,
-                );
-
-                oscillator.start(startTime);
-                oscillator.stop(startTime + 0.3);
-              } catch (oscError) {
-                // Ignore individual oscillator errors
-              }
-            });
-          } catch (error) {
-            // Silently ignore audio errors (browser may not support or user denied permissions)
-            // This prevents console warnings when AudioContext cannot be created
-          }
-        })();
+        const now = audioContext.currentTime;
+        const frequencies = [523.25, 659.25, 783.99];
+        frequencies.forEach((freq, i) => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          oscillator.frequency.value = freq;
+          oscillator.type = "sine";
+          const startTime = now + i * 0.1;
+          gainNode.gain.setValueAtTime(0, startTime);
+          gainNode.gain.linearRampToValueAtTime(0.12, startTime + 0.02);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+          oscillator.start(startTime);
+          oscillator.stop(startTime + 0.3);
+        });
+      } catch {
+        // Audio unavailable — skip silently
       }
+    })();
+  }, [settings.soundEnabled]);
 
-      // Show subtle toast notification
-      showAwardToast(currentAward);
-
-      // Dismiss after 5 seconds and process next award in queue
-      const timer = setTimeout(() => {
-        dismissCelebration();
-        // Reset processing flag after a short delay to allow next award to show
-        setTimeout(() => {
-          processingRef.current = false;
-        }, 200);
-      }, 5000);
-
-      return () => {
-        clearTimeout(timer);
-        processingRef.current = false;
-      };
-    } else if (!currentAward) {
-      // Reset processing flag when queue is empty
-      processingRef.current = false;
-    }
-  }, [currentAward, dismissCelebration]);
-
-  const getCategoryIconName = (category: string): string => {
-    switch (category) {
-      case "completion":
-        return "target";
-      case "streak":
-        return "trending-up";
-      case "focus":
-        return "zap";
-      case "special":
-      case "speed":
-        return "sparkles";
-      default:
-        return "award";
-    }
-  };
-
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case "legendary":
-        return "rgb(245, 158, 11)"; // amber-500
-      case "epic":
-        return "rgb(168, 85, 247)"; // purple-500
-      case "rare":
-        return "rgb(59, 130, 246)"; // blue-500
-      default:
-        return "rgb(100, 116, 139)"; // slate-500
-    }
-  };
-
-  const showAwardToast = (award: any) => {
+  const showAwardToast = useCallback((award: Award, tier: CelebrationTier) => {
     const iconName = getCategoryIconName(award.category);
     const color = getRarityColor(award.rarity);
+    const isElevated = tier === "elevated";
+    const duration = isElevated ? TOAST_DURATION_EXTRA_LONG_MS : TOAST_DURATION_LONG_MS;
 
     toast.custom(
       (t) => (
         <div
-          className="w-full max-w-sm bg-white dark:bg-card rounded-2xl shadow-xl border border-gray-200 dark:border-border overflow-hidden"
+          className={`w-full bg-white dark:bg-card rounded-2xl shadow-xl border border-gray-200 dark:border-border overflow-hidden ${
+            isElevated ? "max-w-md ring-2 ring-offset-2 ring-offset-background" : "max-w-sm"
+          }`}
           style={{
-            boxShadow: `0 4px 20px ${color}20`,
+            boxShadow: `0 ${isElevated ? 8 : 4}px ${isElevated ? 28 : 20}px ${color}${isElevated ? "35" : "20"}`,
+            ...(isElevated ? { borderColor: `${color}40` } : {}),
           }}
         >
-          <div className="relative p-4">
-            {/* Subtle gradient background */}
+          <div className={`relative ${isElevated ? "p-5" : "p-4"}`}>
             <div
               className="absolute inset-0 opacity-5"
               style={{
@@ -155,35 +91,38 @@ export function AwardCelebration() {
               }}
             />
 
-            {/* Content */}
             <div className="relative flex items-start gap-3">
-              {/* Icon */}
               <div
-                className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{
-                  backgroundColor: `${color}15`,
-                }}
+                className={`flex-shrink-0 rounded-xl flex items-center justify-center ${
+                  isElevated ? "w-12 h-12" : "w-10 h-10"
+                }`}
+                style={{ backgroundColor: `${color}15` }}
               >
-                <Icon name={iconName} size={20} weight="duotone" style={{ color }} />
+                <Icon
+                  name={iconName}
+                  size={isElevated ? 24 : 20}
+                  weight="duotone"
+                  style={{ color }}
+                />
               </div>
 
-              {/* Text content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-semibold uppercase tracking-wider opacity-60">
-                    Achievement
+                    {isElevated ? "Major achievement" : "Achievement"}
                   </span>
                   <span
                     className="text-xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                    style={{
-                      backgroundColor: `${color}20`,
-                      color,
-                    }}
+                    style={{ backgroundColor: `${color}20`, color }}
                   >
                     {award.rarity}
                   </span>
                 </div>
-                <div className="font-semibold text-gray-900 dark:text-white mb-0.5">
+                <div
+                  className={`font-semibold text-gray-900 dark:text-white mb-0.5 ${
+                    isElevated ? "text-lg" : ""
+                  }`}
+                >
                   {award.name}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-muted-foreground">
@@ -193,22 +132,94 @@ export function AwardCelebration() {
             </div>
           </div>
 
-          {/* Subtle bottom accent */}
           <div
-            className="h-1"
+            className={`${isElevated ? "h-1.5" : "h-1"}`}
             style={{
               background: `linear-gradient(90deg, ${color} 0%, transparent 100%)`,
-              opacity: 0.3,
+              opacity: isElevated ? 0.5 : 0.3,
             }}
           />
         </div>
       ),
       {
-        duration: 5000,
+        duration,
         position: isMobile ? "top-center" : "bottom-right",
       },
     );
-  };
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!currentAward || processingRef.current) {
+      if (!currentAward) {
+        processingRef.current = false;
+      }
+      return;
+    }
+
+    processingRef.current = true;
+    const tier = getCelebrationTier(currentAward.rarity);
+    const dismissDelay = tier === "elevated" ? TOAST_DURATION_EXTRA_LONG_MS : TOAST_DURATION_LONG_MS;
+
+    void deliverAchievementUnlock({
+      award: currentAward,
+      settings,
+      permission,
+      requestPermission,
+      updateBadge,
+      playCelebrationSound,
+      onInAppCelebration: showAwardToast,
+    });
+
+    const timer = setTimeout(() => {
+      dismissCelebration();
+      setTimeout(() => {
+        processingRef.current = false;
+      }, 200);
+    }, dismissDelay);
+
+    return () => {
+      clearTimeout(timer);
+      processingRef.current = false;
+    };
+  }, [
+    currentAward,
+    dismissCelebration,
+    settings,
+    permission,
+    requestPermission,
+    updateBadge,
+    playCelebrationSound,
+    showAwardToast,
+  ]);
 
   return null;
+}
+
+function getCategoryIconName(category: string): string {
+  switch (category) {
+    case "completion":
+      return "target";
+    case "streak":
+      return "trending-up";
+    case "focus":
+      return "zap";
+    case "special":
+    case "speed":
+      return "sparkles";
+    default:
+      return "award";
+  }
+}
+
+function getRarityColor(rarity: string): string {
+  switch (rarity) {
+    case "legendary":
+      return "rgb(245, 158, 11)";
+    case "epic":
+      return "rgb(168, 85, 247)";
+    case "rare":
+      return "rgb(59, 130, 246)";
+    default:
+      return "rgb(100, 116, 139)";
+  }
 }

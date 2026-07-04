@@ -131,6 +131,17 @@ export const AWARD_STREAK_THRESHOLDS = {
   YEAR: 365,
 };
 
+/** Minutes of tracked focus time that count as one Pomodoro session for awards. */
+export const AWARD_POMODORO_SESSION_MINUTES = POMODORO_WORK_DURATION / SECONDS_PER_MINUTE;
+
+/** Speed / special award thresholds */
+export const AWARD_DAILY_COMPLETION_THRESHOLD = 12;
+export const AWARD_WEEKEND_COMPLETION_THRESHOLD = 10;
+export const AWARD_PERFECTIONIST_TASK_THRESHOLD = 10;
+export const AWARD_POMODORO_MASTER_THRESHOLD = 250;
+export const AWARD_QUICK_FINISH_MAX_MINUTES = MINUTES_PER_HOUR;
+export const AWARD_STREAK_LOOKBACK_DAYS = 365;
+
 // Storage Keys
 export const STORAGE_KEY_POMODORO = 'pomodoro-timers';
 export const STORAGE_KEY_NOTIFICATION_SETTINGS = 'notificationSettings';

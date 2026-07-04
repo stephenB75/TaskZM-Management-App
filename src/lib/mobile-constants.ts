@@ -69,6 +69,18 @@ export const MOBILE_NOTIFICATION_SMALL_ICON = 'ic_stat_icon_config_sample';
 /** Accent color for Android notification icon. */
 export const MOBILE_NOTIFICATION_ICON_COLOR = '#9D87C3';
 
+/** Android notification channel IDs (Local Notifications). */
+export const MOBILE_NOTIFICATION_CHANNELS = {
+  tasks: 'task_alerts',
+  achievements: 'achievements',
+} as const;
+
+/** Android notification channel display names. */
+export const MOBILE_NOTIFICATION_CHANNEL_LABELS = {
+  tasks: 'Task reminders',
+  achievements: 'Achievements',
+} as const;
+
 /** LocalStorage keys used only on Capacitor native platforms. */
 export const MOBILE_STORAGE_KEYS = {
   /** Last loaded native web bundle stamp (APP_VERSION:BUILD_NUMBER from build-info.json). */

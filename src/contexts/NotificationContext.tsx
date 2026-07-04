@@ -13,7 +13,9 @@ import {
   NOTIFICATION_ERRORS,
   NOTIFICATION_INTERVALS,
   NOTIFICATION_FOREGROUND_DELIVERED_EVENT,
+  type NotificationSettings,
 } from '../lib/notification-constants';
+import { getUnreadAwardCount } from '../lib/achievement-notifications';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import { createDefaultNotificationContext } from '../lib/context-defaults';
 import {
@@ -31,16 +33,6 @@ import {
 import { getPlatform } from '../lib/platform';
 import { isAppInForeground } from '../lib/app-visibility';
 import { isEligibleForTaskNotification, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
-
-interface NotificationSettings {
-  enabled: boolean;
-  showBadge: boolean;
-  dueDateReminders: boolean;
-  overdueAlerts: boolean;
-  soundEnabled: boolean;
-  reminderTime: number;
-  checkInterval: number;
-}
 
 interface ToastNotification {
   id: string;
@@ -81,6 +73,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       ...DEFAULT_NOTIFICATION_SETTINGS,
       ...stored,
       soundEnabled: stored.soundEnabled ?? DEFAULT_NOTIFICATION_SETTINGS.soundEnabled,
+      achievementCelebrations:
+        stored.achievementCelebrations ?? DEFAULT_NOTIFICATION_SETTINGS.achievementCelebrations,
+      achievementHaptics:
+        stored.achievementHaptics ?? DEFAULT_NOTIFICATION_SETTINGS.achievementHaptics,
+      achievementBackgroundAlerts:
+        stored.achievementBackgroundAlerts ?? DEFAULT_NOTIFICATION_SETTINGS.achievementBackgroundAlerts,
+      includeAchievementsInBadge:
+        stored.includeAchievementsInBadge ?? DEFAULT_NOTIFICATION_SETTINGS.includeAchievementsInBadge,
     };
   });
   const [badgeCount, setBadgeCount] = useState(0);
@@ -166,8 +166,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       const dueSoonCount = settings.dueDateReminders
         ? getDueSoonTasks(tasks, settings.reminderTime, { dismissedNotificationIds: dismissedNotifications, now }).length
         : 0;
+      const unreadAwardCount =
+        settings.includeAchievementsInBadge ? getUnreadAwardCount(user?.id) : 0;
 
-      return overdueCount + dueSoonCount;
+      return overdueCount + dueSoonCount + unreadAwardCount;
     })();
 
     setBadgeCount(count);
@@ -185,7 +187,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         logger.debug('Badge API error:', error);
       }
     }
-  }, [tasks, settings, isBadgeAPIAvailable]);
+  }, [tasks, settings, user, isBadgeAPIAvailable]);
 
   const syncNativeSchedule = useCallback(async () => {
     await syncScheduledTaskNotifications(tasks, settings, permission);

@@ -28,7 +28,25 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   soundEnabled: true,
   reminderTime: DEFAULT_NOTIFICATION_REMINDER_TIME,
   checkInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL,
+  achievementCelebrations: true,
+  achievementHaptics: true,
+  achievementBackgroundAlerts: true,
+  includeAchievementsInBadge: true,
 } as const;
+
+export type NotificationSettings = {
+  enabled: boolean;
+  showBadge: boolean;
+  dueDateReminders: boolean;
+  overdueAlerts: boolean;
+  soundEnabled: boolean;
+  reminderTime: number;
+  checkInterval: number;
+  achievementCelebrations: boolean;
+  achievementHaptics: boolean;
+  achievementBackgroundAlerts: boolean;
+  includeAchievementsInBadge: boolean;
+};
 
 /** Custom event dispatched when a notification is tapped (native or web). */
 export const NOTIFICATION_OPEN_TASK_EVENT = 'taskzm-open-task';
@@ -65,6 +83,7 @@ export const NOTIFICATION_STORAGE_KEYS = {
   dismissedNotifications: 'dismissedNotifications',
   lastSeenPomodoroSessions: 'lastSeenPomodoroSessions',
   lastSeenAwards: 'lastSeenAwards',
+  achievementPermissionPromptShown: 'achievementPermissionPromptShown',
   toastNotifications: 'toastNotifications',
   updateAvailable: 'taskzm_update_available', // Service worker update notification key
   appVersion: 'taskzm_app_version', // Last loaded APP_VERSION — triggers cache purge when bumped
@@ -115,6 +134,8 @@ export const NOTIFICATION_MESSAGES = {
   pomodoroSessionsCompleted: (count: number, taskTitle: string) => 
     `Completed ${count} session${count > 1 ? 's' : ''} for "${taskTitle}"`,
   awardEarned: (awardName: string) => `You earned "${awardName}"! 🎉`,
+  achievementPermissionPrompt: 'Get notified when you unlock achievements, even when TaskZM is in the background?',
+  achievementPermissionEnable: 'Enable alerts',
   unreadCount: (count: number) => `${count} unread notification${count === 1 ? '' : 's'}`,
   defaultTaskTitle: 'Task', // Fallback task title when task title is missing
 } as const;
@@ -156,10 +177,20 @@ export const NOTIFICATION_PANEL_TEXT = {
   },
   badge: {
     showAppIconBadge: 'Show App Icon Badge',
-    displayTaskCount: 'Display task count on app icon',
+    displayTaskCount: 'Display task and achievement count on app icon',
     currentBadgeCount: 'Current Badge Count',
-    taskNeedsAttention: 'task needs attention',
-    tasksNeedAttention: 'tasks need attention',
+    taskNeedsAttention: 'item needs attention',
+    tasksNeedAttention: 'items need attention',
+  },
+  achievements: {
+    celebrations: 'Achievement celebrations',
+    celebrationsDescription: 'Show in-app toast when you unlock an achievement',
+    haptics: 'Achievement haptics',
+    hapticsDescription: 'Vibrate on unlock (native) when the app is open',
+    backgroundAlerts: 'Background achievement alerts',
+    backgroundAlertsDescription: 'Send a system notification when unlocked while the app is in the background',
+    includeInBadge: 'Include achievements in badge',
+    includeInBadgeDescription: 'Count unread achievements on the app icon badge',
   },
   sound: {
     label: 'Sound',
@@ -191,6 +222,7 @@ export const NOTIFICATION_TAG_PREFIXES = {
   overdue: 'overdue_',
   reminder: 'reminder_',
   pomodoro: 'pomodoro_',
+  award: 'award_',
 } as const;
 
 // Time formatting constants

@@ -381,6 +381,7 @@ export function createDefaultAwardContext() {
   return {
     awards: [],
     earnedAwards: [],
+    awardsLoaded: false,
     checkAndAwardAchievements: async () => [],
     getAwardProgress: () => null,
     celebrationQueue: [],
@@ -403,6 +404,10 @@ export function createDefaultNotificationContext() {
       soundEnabled: true,
       reminderTime: DEFAULT_NOTIFICATION_REMINDER_TIME,
       checkInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL,
+      achievementCelebrations: true,
+      achievementHaptics: true,
+      achievementBackgroundAlerts: true,
+      includeAchievementsInBadge: true,
     },
     badgeCount: 0,
     requestPermission: async () => false,

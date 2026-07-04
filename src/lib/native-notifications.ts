@@ -9,6 +9,8 @@ import { getPlatform } from './platform';
 import {
   MOBILE_NOTIFICATION_SMALL_ICON,
   MOBILE_NOTIFICATION_ICON_COLOR,
+  MOBILE_NOTIFICATION_CHANNELS,
+  MOBILE_NOTIFICATION_CHANNEL_LABELS,
 } from './mobile-constants';
 import { logger } from './logger';
 import {
@@ -40,6 +42,13 @@ interface NotificationOptions {
   tag?: string;
   requireInteraction?: boolean;
   data?: Record<string, unknown>;
+  channelId?: string;
+}
+
+export interface AchievementNotificationPayload {
+  awardId: string;
+  awardName: string;
+  tag: string;
 }
 
 export interface TaskNotificationSyncSettings {
@@ -98,6 +107,49 @@ function buildDueSoonCopy(task: Task, now: Date): { title: string; body: string;
 
 async function loadLocalNotifications() {
   return LocalNotifications;
+}
+
+type LocalNotificationsPlugin = Awaited<ReturnType<typeof loadLocalNotifications>>;
+
+async function ensureAndroidNotificationChannels(
+  LocalNotifications: LocalNotificationsPlugin,
+): Promise<void> {
+  const platform = getPlatform();
+  if (!platform.isAndroid) return;
+
+  const createChannel = (
+    LocalNotifications as LocalNotificationsPlugin & {
+      createChannel?: (channel: {
+        id: string;
+        name: string;
+        description: string;
+        importance?: number;
+        visibility?: number;
+        sound?: string;
+      }) => Promise<void>;
+    }
+  ).createChannel;
+
+  if (typeof createChannel !== 'function') return;
+
+  await Promise.allSettled([
+    createChannel.call(LocalNotifications, {
+      id: MOBILE_NOTIFICATION_CHANNELS.tasks,
+      name: MOBILE_NOTIFICATION_CHANNEL_LABELS.tasks,
+      description: 'Due date reminders and overdue task alerts',
+      importance: 4,
+      visibility: 1,
+      sound: 'default',
+    }),
+    createChannel.call(LocalNotifications, {
+      id: MOBILE_NOTIFICATION_CHANNELS.achievements,
+      name: MOBILE_NOTIFICATION_CHANNEL_LABELS.achievements,
+      description: 'Achievement unlocked alerts',
+      importance: 4,
+      visibility: 1,
+      sound: 'default',
+    }),
+  ]);
 }
 
 /** Synchronous browser permission read (use before any await in click handlers). */
@@ -215,6 +267,7 @@ export async function showNotification(options: NotificationOptions): Promise<vo
             ...(platform.isAndroid && {
               smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
               iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
+              ...(options.channelId ? { channelId: options.channelId } : {}),
             }),
           },
         ],
@@ -250,9 +303,14 @@ export async function showNotification(options: NotificationOptions): Promise<vo
       window.focus();
       notification.close();
       const taskId = options.data?.taskId;
+      const awardId = options.data?.awardId;
       if (typeof taskId === 'string') {
         window.dispatchEvent(
           new CustomEvent(NOTIFICATION_OPEN_TASK_EVENT, { detail: { taskId } }),
+        );
+      } else if (typeof awardId === 'string') {
+        window.dispatchEvent(
+          new CustomEvent(NOTIFICATION_OPEN_TASK_EVENT, { detail: { view: 'notifications', awardId } }),
         );
       }
     };
@@ -262,6 +320,17 @@ export async function showNotification(options: NotificationOptions): Promise<vo
     logger.error('Failed to show browser notification:', error);
     throw error;
   }
+}
+
+/** Show an immediate achievement notification (background delivery). */
+export async function showAchievementNotification(payload: AchievementNotificationPayload): Promise<void> {
+  await showNotification({
+    title: NOTIFICATION_TITLES.awardEarned,
+    body: NOTIFICATION_MESSAGES.awardEarned(payload.awardName),
+    tag: payload.tag,
+    channelId: MOBILE_NOTIFICATION_CHANNELS.achievements,
+    data: { type: 'award', awardId: payload.awardId },
+  });
 }
 
 /**
@@ -376,6 +445,7 @@ export function initNativeNotificationHandlers(): void {
   void (async () => {
     try {
       const LocalNotifications = await loadLocalNotifications();
+      await ensureAndroidNotificationChannels(LocalNotifications);
 
       await LocalNotifications.addListener('localNotificationReceived', (event) => {
         const extra = event.notification.extra as { taskId?: string; type?: string } | undefined;
@@ -397,10 +467,20 @@ export function initNativeNotificationHandlers(): void {
       });
 
       await LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
-        const extra = event.notification.extra as { taskId?: string; type?: string } | undefined;
+        const extra = event.notification.extra as {
+          taskId?: string;
+          awardId?: string;
+          type?: string;
+        } | undefined;
         if (extra?.taskId) {
           window.dispatchEvent(
             new CustomEvent(NOTIFICATION_OPEN_TASK_EVENT, { detail: { taskId: extra.taskId } }),
+          );
+        } else if (extra?.type === 'award' && extra.awardId) {
+          window.dispatchEvent(
+            new CustomEvent(NOTIFICATION_OPEN_TASK_EVENT, {
+              detail: { view: 'notifications', awardId: extra.awardId },
+            }),
           );
         } else {
           window.dispatchEvent(new CustomEvent(NOTIFICATION_OPEN_TASK_EVENT, { detail: {} }));

@@ -1509,6 +1509,38 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             disabled={!notificationSettings.enabled || permission !== 'granted'}
                             onCheckedChange={(checked) => updateNotificationSettings({ soundEnabled: checked })}
                           />
+                          <SettingsToggleRow
+                            id="achievement-celebrations"
+                            label={NOTIFICATION_PANEL_TEXT.achievements.celebrations}
+                            description={NOTIFICATION_PANEL_TEXT.achievements.celebrationsDescription}
+                            checked={notificationSettings.achievementCelebrations}
+                            disabled={!notificationSettings.enabled}
+                            onCheckedChange={(checked) => updateNotificationSettings({ achievementCelebrations: checked })}
+                          />
+                          <SettingsToggleRow
+                            id="achievement-haptics"
+                            label={NOTIFICATION_PANEL_TEXT.achievements.haptics}
+                            description={NOTIFICATION_PANEL_TEXT.achievements.hapticsDescription}
+                            checked={notificationSettings.achievementHaptics}
+                            disabled={!notificationSettings.enabled || !notificationSettings.achievementCelebrations}
+                            onCheckedChange={(checked) => updateNotificationSettings({ achievementHaptics: checked })}
+                          />
+                          <SettingsToggleRow
+                            id="achievement-background"
+                            label={NOTIFICATION_PANEL_TEXT.achievements.backgroundAlerts}
+                            description={NOTIFICATION_PANEL_TEXT.achievements.backgroundAlertsDescription}
+                            checked={notificationSettings.achievementBackgroundAlerts}
+                            disabled={!notificationSettings.enabled || permission !== 'granted'}
+                            onCheckedChange={(checked) => updateNotificationSettings({ achievementBackgroundAlerts: checked })}
+                          />
+                          <SettingsToggleRow
+                            id="achievement-badge"
+                            label={NOTIFICATION_PANEL_TEXT.achievements.includeInBadge}
+                            description={NOTIFICATION_PANEL_TEXT.achievements.includeInBadgeDescription}
+                            checked={notificationSettings.includeAchievementsInBadge}
+                            disabled={!notificationSettings.enabled || !notificationSettings.showBadge}
+                            onCheckedChange={(checked) => updateNotificationSettings({ includeAchievementsInBadge: checked })}
+                          />
                           <div
                             className="flex flex-col gap-2 border-t border-border/40 px-4 py-3"
                             style={{ opacity: !notificationSettings.enabled || permission !== 'granted' ? 0.5 : 1 }}
