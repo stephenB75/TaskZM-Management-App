@@ -16,8 +16,7 @@ import { TaskDialog } from './TaskDialog';
 import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
-import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, dateStringToLocalDate, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, compareTasksByScheduledTimeOnDay, buildSortedKanbanDayItems } from '../lib/utils';
-import { isDateInRecurrence } from '../lib/recurrence';
+import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, getTasksForDayView, buildSortedKanbanDayItems } from '../lib/utils';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
 import { useCalendarEventsByDate } from '../hooks/useCalendarEvents';
@@ -44,7 +43,6 @@ import { COLOR_BACKGROUND_WHITE } from '../lib/color-theme';
 import { TASK_CARD_TIMELINE } from '../lib/task-card-constants';
 import { NAV_BAR_BOTTOM_PADDING_MOBILE, NAV_BAR_SCROLL_PADDING_MOBILE, getMobileViewportContentMinHeight, ICON_SIZE_SM } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
-import { RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { useMobileLayout } from '../hooks/useMobileLayout';
 import { useTaskDeepLinkOpener } from '../hooks/useTaskDeepLinkOpener';
 import type { Task } from '../types';
@@ -633,100 +631,7 @@ export function SevenDayKanban({
   }, [tasks, mobileMode, viewMode, weekOffset, calendarEventsByDate]);
 
   // Get tasks for a specific day (dateString = YYYY-MM-DD parsed as local; tasks sorted by time-of-day chronologically)
-  const getTasksForDay = (dateString: string) => {
-    // Defensive check: ensure tasks is an array
-    if (!Array.isArray(tasks)) {
-      logger.warn('getTasksForDay: tasks is not an array', tasks);
-      return [];
-    }
-
-    try {
-      const checkDate = dateStringToLocalDate(dateString);
-      if (isNaN(checkDate.getTime())) {
-        logger.warn('getTasksForDay: Invalid date string', dateString);
-        return [];
-      }
-
-      const sorted = tasks
-        .filter(task => {
-          // Defensive check: ensure task is valid
-          if (!task || typeof task !== 'object') {
-            return false;
-          }
-          // Exclude _subtasks_ occurrence records: they are merged into the base/completed task via getTaskWithOccurrenceSubtasks, not shown as separate cards
-          if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)) {
-            return false;
-          }
-          // Show base only when no occurrence for this day; hide base when an occurrence exists (no duplicate).
-          if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
-          // Second line of defense: if this task's id is a base (no __) and an occurrence exists for this day, hide it. Catches base when recurrence was stripped after load/sync.
-          if (!task.id.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
-          // Include completed occurrences for the day they belong to (id = baseId_completed_YYYY-MM-DD) so they show grayed on kanban
-          if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)) {
-            const suffix = RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED;
-            const datePart = task.id.split(suffix)[1];
-            return datePart === dateString;
-          }
-          
-          // CRITICAL: For recurring tasks, ensure they have a scheduledDate
-          // Recurring tasks need a scheduledDate (base date) for isDateInRecurrence to work
-          if (task.recurrence && task.recurrence.type !== 'none' && !task.scheduledDate) {
-            if (import.meta.env.DEV) {
-              logger.warn('Recurring task missing scheduledDate, cannot determine recurrence dates', {
-                taskId: task.id,
-                taskTitle: task.title,
-                recurrenceType: task.recurrence.type,
-                dateString
-              });
-            }
-            return false;
-          }
-          
-          try {
-            // Check if task matches this date (either exact match or recurrence pattern)
-            const matches = isDateInRecurrence(task, checkDate);
-            
-            // Debug logging for recurring tasks
-            if (import.meta.env.DEV && task.recurrence && task.recurrence.type !== 'none') {
-              if (matches) {
-                logger.debug('Recurring task matches date', {
-                  taskId: task.id,
-                  taskTitle: task.title,
-                  scheduledDate: task.scheduledDate,
-                  checkDate: dateString,
-                  recurrenceType: task.recurrence.type,
-                  recurrenceInterval: task.recurrence.interval,
-                  daysOfWeek: task.recurrence.daysOfWeek
-                });
-              }
-            }
-            
-            if (!matches) return false;
-            // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence (grayed)
-            if (task.recurrence && task.recurrence.type !== 'none') {
-              const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${dateString}`;
-              if (tasks.some(t => t.id === completedOccurrenceId)) return false;
-            }
-            return true;
-          } catch (error) {
-            logger.error('Error checking date in recurrence:', error, task);
-            return false;
-          }
-        })
-        .sort((a, b) => {
-          try {
-            return compareTasksByScheduledTimeOnDay(a, b, checkDate);
-          } catch (error) {
-            logger.error('Error sorting tasks:', error, a, b);
-            return 0;
-          }
-        });
-      return dedupeTasksForDay(sorted, dateString);
-    } catch (error) {
-      logger.error('Error in getTasksForDay:', error);
-      return [];
-    }
-  };
+  const getTasksForDay = (dateString: string) => getTasksForDayView(tasks, dateString);
 
 
 

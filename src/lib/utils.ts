@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge"
 import { logger } from './logger';
 import type { Task, TaskPriority, TaskStatus, RecurrenceConfig } from '../types';
 import { MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_DAY, MINUTES_PER_HOUR, HOURS_PER_DAY, DAYS_IN_WEEK, PERCENTAGE_MULTIPLIER, SECONDS_PER_MINUTE, SECONDS_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from './business-constants';
+import { isDateInRecurrence } from './recurrence';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -453,6 +454,60 @@ export function dedupeTasksForDay(tasks: Task[], dateString: string): Task[] {
     result.push(list[0]);
   }
   return result;
+}
+
+/**
+ * Tasks scheduled on a calendar day (YYYY-MM-DD local), matching week/kanban day columns.
+ * Includes recurring, series occurrences, and completed occurrences; sorted by time-of-day.
+ */
+export function getTasksForDayView(tasks: Task[], dateString: string): Task[] {
+  if (!Array.isArray(tasks)) return [];
+
+  try {
+    const checkDate = dateStringToLocalDate(dateString);
+    if (isNaN(checkDate.getTime())) return [];
+
+    const sorted = tasks
+      .filter((task) => {
+        if (!task || typeof task !== 'object') return false;
+        if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS)) return false;
+        if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
+        if (!task.id.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) {
+          return false;
+        }
+        if (task.id.includes(RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED)) {
+          const suffix = RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED;
+          const datePart = task.id.split(suffix)[1];
+          return datePart === dateString;
+        }
+        if (task.recurrence && task.recurrence.type !== 'none' && !task.scheduledDate) return false;
+
+        try {
+          if (!isDateInRecurrence(task, checkDate)) return false;
+          if (task.recurrence && task.recurrence.type !== 'none') {
+            const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${dateString}`;
+            if (tasks.some((t) => t.id === completedOccurrenceId)) return false;
+          }
+          return true;
+        } catch (error) {
+          logger.error('Error checking date in recurrence:', error, task);
+          return false;
+        }
+      })
+      .sort((a, b) => {
+        try {
+          return compareTasksByScheduledTimeOnDay(a, b, checkDate);
+        } catch (error) {
+          logger.error('Error sorting tasks for day view:', error, a, b);
+          return 0;
+        }
+      });
+
+    return dedupeTasksForDay(sorted, dateString);
+  } catch (error) {
+    logger.error('Error in getTasksForDayView:', error);
+    return [];
+  }
 }
 
 /**

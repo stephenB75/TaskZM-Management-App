@@ -12,11 +12,8 @@ import {
   END_OF_DAY_MILLISECOND,
   TWO_WEEKS_DAYS,
   DAYS_IN_WEEK,
-  RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED,
-  RECURRENCE_SERIES_OCCURRENCE_SEPARATOR,
 } from "../lib/business-constants";
-import { isDateInRecurrence } from "../lib/recurrence";
-import { isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay } from "../lib/utils";
+import { getTasksForDayView } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
@@ -84,6 +81,11 @@ import {
   CALENDAR_CAROUSEL_DONE_DOT_OPACITY,
   CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX,
   CALENDAR_CAROUSEL_DOT_SIZE_PX,
+  CALENDAR_CAROUSEL_TASK_DOT_CLASS,
+  CALENDAR_CAROUSEL_TASK_DOT_CLASS_SELECTED,
+  CALENDAR_CAROUSEL_TASK_DOT_CLASS_DONE,
+  CALENDAR_CAROUSEL_EVENT_DOT_CLASS,
+  CALENDAR_CAROUSEL_EVENT_DOT_CLASS_SELECTED,
   CALENDAR_CAROUSEL_DAYS_PER_WEEK,
   CALENDAR_CAROUSEL_DAY_ABBREV_LENGTH,
   CALENDAR_DAY_NAMES,
@@ -986,82 +988,10 @@ export function DashboardView({
     setTouchEnd(null);
   };
 
-  const getTasksForDay = useCallback((dateString: string) => {
-    // Parse the date string to a Date object for recurring task check
-    // dateString is in format "YYYY-MM-DD", parse it to local midnight
-    const [year, month, day] = dateString.split('-').map(Number);
-    if (isNaN(year) || isNaN(month) || isNaN(day)) {
-      console.warn(`Invalid dateString format: ${dateString}`);
-      return [];
-    }
-    // Create date in local timezone to match task scheduledDate normalization
-    const checkDate = new Date(year, month - 1, day, 0, 0, 0, 0); // month is 0-indexed, set to midnight
-    
-    if (isNaN(checkDate.getTime())) {
-      console.warn(`Invalid date created from dateString: ${dateString}`);
-      return [];
-    }
-    
-    const matchingTasks = tasks.filter((task) => {
-      // Skip tasks without scheduled dates
-      if (!task.scheduledDate) return false;
-      
-      try {
-        // Use isDateInRecurrence to handle both recurring and non-recurring tasks
-        // This ensures recurring tasks are counted on all days they occur
-        // Include all tasks (including done) for dot display
-        const matches = isDateInRecurrence(task, checkDate);
-        
-        // Debug: Log why tasks are/aren't matching
-        if (import.meta.env.DEV && task.scheduledDate) {
-          const taskDate = new Date(task.scheduledDate);
-          const taskDateOnly = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
-          const checkDateOnly = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
-          if (taskDateOnly.getTime() === checkDateOnly.getTime() && !matches) {
-            console.warn(`[getTasksForDay] Task ${task.id} scheduledDate matches ${dateString} but isDateInRecurrence returned false`, {
-              taskDate: task.scheduledDate,
-              checkDate: dateString,
-              taskRecurrence: task.recurrence,
-              taskStatus: task.status
-            });
-          }
-        }
-        
-        if (!matches) return false;
-        // Show base only when no occurrence for this day; hide base when an occurrence exists (no duplicate).
-        if (isSeriesBaseTask(task) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
-        // Second line of defense: if this task's id is a base (no __) and an occurrence exists for this day, hide it. Catches base when recurrence was stripped after load/sync.
-        if (!task.id.includes(RECURRENCE_SERIES_OCCURRENCE_SEPARATOR) && hasSeriesOccurrenceForDate(tasks, task.id, dateString)) return false;
-        // Avoid duplicate: if this is a base recurring task and we have a completed occurrence for this day, show only the completed occurrence
-        if (task.recurrence && task.recurrence.type !== 'none') {
-          const completedOccurrenceId = `${task.id}${RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED}${dateString}`;
-          if (tasks.some((t) => t.id === completedOccurrenceId)) return false;
-        }
-        return true;
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error(`Error checking task ${task.id} for date ${dateString}:`, error, task);
-        }
-        return false;
-      }
-    });
-    
-    // Debug logging (remove in production)
-    if (import.meta.env.DEV) {
-      if (matchingTasks.length > 0) {
-        console.log(`Date ${dateString}: Found ${matchingTasks.length} task(s):`, 
-          matchingTasks.map(t => ({ id: t.id, title: t.title, scheduledDate: t.scheduledDate, status: t.status }))
-        );
-      }
-      // Also log total tasks for debugging
-      const tasksWithScheduledDate = tasks.filter(t => t.scheduledDate);
-      if (tasksWithScheduledDate.length > 0 && matchingTasks.length === 0) {
-        console.log(`Date ${dateString}: No tasks matched. Total tasks with scheduledDate: ${tasksWithScheduledDate.length}`);
-      }
-    }
-    
-    return dedupeTasksForDay(matchingTasks, dateString);
-  }, [tasks]);
+  const getTasksForDay = useCallback(
+    (dateString: string) => getTasksForDayView(tasks, dateString),
+    [tasks],
+  );
 
   const handleScheduleUnscheduledTasks = async () => {
     if (!safeHasFeature('aiScheduler')) {
@@ -1738,8 +1668,12 @@ export function DashboardView({
                                   className={cn(
                                     "rounded-full flex-shrink-0",
                                     isSelected
-                                      ? isDone ? "bg-primary/70" : "bg-primary"
-                                      : isDone ? "bg-primary/60" : "bg-primary/80",
+                                      ? isDone
+                                        ? CALENDAR_CAROUSEL_TASK_DOT_CLASS_DONE
+                                        : CALENDAR_CAROUSEL_TASK_DOT_CLASS_SELECTED
+                                      : isDone
+                                        ? CALENDAR_CAROUSEL_TASK_DOT_CLASS_DONE
+                                        : CALENDAR_CAROUSEL_TASK_DOT_CLASS,
                                   )}
                                   style={{ 
                                     display: 'block', 
@@ -1752,13 +1686,15 @@ export function DashboardView({
                                 />
                               );
                             })}
-                            {/* Event dots (blue) - one per calendar event */}
+                            {/* Event dots (sky blue) - one per calendar event */}
                             {dayEventCount > 0 && Array.from({ length: dayEventCount }).map((_, eventIndex) => (
                               <div
                                 key={`event-${column.dateString}-${eventIndex}`}
                                 className={cn(
                                   "rounded-full flex-shrink-0",
-                                  isSelected ? "bg-blue-500" : "bg-blue-500/70",
+                                  isSelected
+                                    ? CALENDAR_CAROUSEL_EVENT_DOT_CLASS_SELECTED
+                                    : CALENDAR_CAROUSEL_EVENT_DOT_CLASS,
                                 )}
                                 style={{
                                   width: CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX,
