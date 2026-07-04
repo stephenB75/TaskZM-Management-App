@@ -1,9 +1,243 @@
 /**
  * Analytics Panel Constants
- * Centralized configuration for analytics panel styling and PDF export
+ * Centralized configuration for analytics panel styling, charts, and PDF export
  */
 
-import { HEADER_BUTTON_SIZE, SETTINGS_PANEL_ICON_SIZE_MEDIUM, HEADER_GAP_SMALL } from "./layout-constants";
+import {
+  DAYS_IN_WEEK,
+  HOURS_PER_DAY,
+  MINUTES_PER_HOUR,
+  PERCENTAGE_MULTIPLIER,
+} from "./business-constants";
+import {
+  COLOR_ANALYTICS_BLUE,
+  COLOR_ANALYTICS_GREEN,
+  COLOR_ANALYTICS_ORANGE,
+  COLOR_BACKGROUND_DARK_COLOR,
+  COLOR_BACKGROUND_GRAY,
+  COLOR_BACKGROUND_WHITE,
+  COLOR_BORDER_LIGHT,
+  COLOR_INFO,
+  COLOR_PASTEL_LAVENDER,
+  COLOR_PASTEL_LILAC,
+  COLOR_PASTEL_MINT,
+  COLOR_PASTEL_PEACH,
+  COLOR_PASTEL_PINK,
+  COLOR_PASTEL_SKY,
+  COLOR_PRIMARY,
+  COLOR_SUCCESS,
+  COLOR_TEXT_MUTED,
+  COLOR_TEXT_PRIMARY,
+  COLOR_TEXT_SECONDARY,
+  COLOR_WARNING,
+} from "./color-theme";
+import {
+  HEADER_BUTTON_SIZE,
+  HEADER_GAP_SMALL,
+  MOBILE_PADDING_BOTTOM,
+  SETTINGS_PANEL_ICON_SIZE_MEDIUM,
+} from "./layout-constants";
+
+/** Default chart window when subscription has unlimited history */
+export const ANALYTICS_DEFAULT_CHART_DAYS = DAYS_IN_WEEK;
+
+/** Hour buckets for completion-by-time chart (HOURS_PER_DAY must be divisible) */
+export const ANALYTICS_HOUR_BUCKET_HOURS = 4;
+export const ANALYTICS_HOUR_BUCKET_COUNT = HOURS_PER_DAY / ANALYTICS_HOUR_BUCKET_HOURS;
+
+export const ANALYTICS_LIMITS = {
+  maxProjects: 5,
+  maxTags: 5,
+  maxTagNameLength: 18,
+} as const;
+
+export const ANALYTICS_STATUS = {
+  completed: { label: "Completed", color: COLOR_SUCCESS },
+  inProgress: { label: "In Progress", color: COLOR_WARNING },
+  todo: { label: "Todo", color: COLOR_INFO },
+  onHold: { label: "On Hold", color: COLOR_ANALYTICS_ORANGE },
+} as const;
+
+export const ANALYTICS_TAG_BAR_COLORS = [
+  COLOR_PRIMARY,
+  COLOR_ANALYTICS_BLUE,
+  COLOR_ANALYTICS_GREEN,
+  COLOR_ANALYTICS_ORANGE,
+  COLOR_PASTEL_LAVENDER,
+  COLOR_PASTEL_SKY,
+  COLOR_PASTEL_MINT,
+  COLOR_PASTEL_PEACH,
+  COLOR_PASTEL_LILAC,
+  COLOR_PASTEL_PINK,
+] as const;
+
+export const ANALYTICS_CHART_SERIES = {
+  created: { name: "Created", color: COLOR_INFO },
+  completed: { name: "Completed", color: COLOR_SUCCESS },
+  hours: { name: "Hours", color: COLOR_PRIMARY },
+  tasksCompleted: { name: "Tasks completed", color: COLOR_TEXT_SECONDARY },
+} as const;
+
+export const ANALYTICS_THEME = {
+  dark: {
+    textMuted: COLOR_TEXT_MUTED,
+    textPrimary: "#E8E6F0",
+    border: "rgba(155, 135, 232, 0.2)",
+    panelGradient:
+      "linear-gradient(180deg, rgba(17,24,39,0.94) 0%, rgba(17,24,39,0.90) 40%, rgba(31,41,55,0.88) 100%)",
+  },
+  light: {
+    textMuted: COLOR_TEXT_SECONDARY,
+    textPrimary: COLOR_TEXT_PRIMARY,
+    border: COLOR_BORDER_LIGHT,
+    panelGradient:
+      "linear-gradient(180deg, rgba(248,245,255,0.96) 0%, rgba(244,240,255,0.94) 40%, rgba(255,255,255,0.92) 100%)",
+  },
+} as const;
+
+export const ANALYTICS_CHART_LAYOUT = {
+  pie: {
+    outerRadiusMobilePx: 52,
+    outerRadiusDesktopPx: 68,
+    innerRadiusPx: 42,
+    heightMobilePx: 240,
+    heightDesktopPx: 224,
+    centerCyPercent: 45,
+    legendHeightPx: 36,
+    legendPaddingTopPx: 10,
+    margin: { top: 10, right: 10, bottom: 40, left: 10 },
+  },
+  line: {
+    heightMobilePx: 192,
+    heightDesktopPx: 160,
+    strokeWidthPx: 2,
+    dotRadiusPx: 3,
+    activeDotRadiusPx: 5,
+    areaFillOpacity: 0.15,
+    margin: { top: 5, right: 10, left: 0, bottom: 0 },
+  },
+  composed: {
+    heightMobilePx: 192,
+    heightDesktopPx: 160,
+    barRadiusPx: 4,
+    margin: { top: 5, right: 10, left: 0, bottom: 0 },
+  },
+  bar: {
+    heightMobilePx: 192,
+    heightDesktopPx: 160,
+    barRadiusPx: 6,
+    margin: { top: 5, right: 10, left: 0, bottom: 0 },
+  },
+  tagBar: {
+    heightMobilePx: 192,
+    heightDesktopPx: 160,
+    yAxisWidthMobilePx: 72,
+    yAxisWidthDesktopPx: 88,
+    barRadiusEndPx: 6,
+    margin: { top: 5, right: 10, left: 60, bottom: 0 },
+  },
+  axisTickFontSizePx: 10,
+  gridStrokeDasharray: "3 3",
+  cartesianVertical: false,
+} as const;
+
+export const ANALYTICS_KPI = {
+  gridCols: 2,
+  gridGapClass: "gap-3",
+  iconSizePx: 16,
+  cardPaddingClass: "p-4",
+  titleClass: "text-xs font-medium mb-1 text-muted-foreground",
+  valueClass: "text-xl font-bold mb-0.5 text-foreground",
+  subtitleClass: "text-[11px] text-muted-foreground",
+  trendPositiveClass: "text-xs font-medium",
+  trendNegativeClass: "text-xs font-medium",
+} as const;
+
+export const ANALYTICS_ANIMATION = {
+  cardDelaySeconds: 0.1,
+  cardDurationSeconds: 0.5,
+  cardInitialY: 20,
+  cardInitialScale: 0.95,
+  intersectionThreshold: 0.1,
+  intersectionRootMarginPx: 50,
+  observeDelayMs: 300,
+  visibilityTriggerDelayMs: 200,
+} as const;
+
+export const ANALYTICS_LABELS = {
+  panelTitle: "Analytics",
+  panelDescriptionPrefix: "Productivity insights",
+  allTimeRange: "All time",
+  lastDaysRange: (days: number) => `Last ${days} days`,
+  dateRangeSeparator: " · ",
+  noData: "No data available",
+  chartError: "Error loading chart",
+  emptyPanelHint: "Complete tasks and track time to see insights here.",
+  peakPeriodPrefix: "Peak period:",
+  avgCompletionDays: "Avg to complete",
+  avgCompletionDaysUnit: "days",
+  tasksCompletedAxis: "Tasks completed",
+  completionCenterLabel: "done",
+  projectTasksSuffix: "tasks",
+  pdfGenerating: "Generating PDF...",
+  downloadPdfTitle: "Download PDF Report",
+  chartTimeTracked: (days: number) => `Time Tracked (${days} Days)`,
+  chartTasksCreatedCompleted: "Tasks Created vs Completed",
+  chartCompletionByTimeOfDay: "Completion by Time of Day",
+  chartTopTaskTags: "Top Task Tags",
+  chartTaskStatus: "Task Status",
+  chartProjectProgress: "Project Progress",
+  trendVsLastWeek: "vs last week",
+} as const;
+
+export const ANALYTICS_METRIC_TITLES = {
+  totalTasks: "Total Tasks",
+  completed: "Completed",
+  inProgress: "In Progress",
+  timeTracked: "Time Tracked",
+  thisWeek: "This Week",
+  tasksWithTime: (count: number) => `${count} tasks with time`,
+  completedThisWeek: (count: number) => `${count} completed`,
+  completionRateSuffix: " rate",
+} as const;
+
+export const ANALYTICS_METRIC_ICONS = {
+  totalTasks: "target",
+  completed: "check-circle",
+  inProgress: "play",
+  timeTracked: "timer",
+  thisWeek: "calendar",
+  avgCompletion: "clock",
+} as const;
+
+export const ANALYTICS_METRIC_COLORS = {
+  totalTasks: COLOR_PRIMARY,
+  completed: COLOR_SUCCESS,
+  inProgress: COLOR_WARNING,
+  timeTracked: COLOR_INFO,
+  thisWeek: COLOR_ANALYTICS_ORANGE,
+  avgCompletion: COLOR_ANALYTICS_BLUE,
+} as const;
+
+export const ANALYTICS_TREND = {
+  /** Treat |change| below this as flat (no arrow) */
+  flatThresholdPercent: 1,
+  decimalPlaces: 0,
+} as const;
+
+export const ANALYTICS_TIME_FORMAT = {
+  locale: "en-US",
+  monthStyle: "short" as const,
+  hour12: true,
+  noonHour: 12,
+  midnightLabel: "12 AM",
+  noonLabel: "12 PM",
+} as const;
+
+export const ANALYTICS_COMPLETION_RATE = {
+  decimalPlaces: 0,
+  centerDecimalPlaces: 0,
+} as const;
 
 // PDF Export Configuration
 export const ANALYTICS_PDF_CONFIG = {
@@ -24,81 +258,83 @@ export const ANALYTICS_PDF_CONFIG = {
     small: 8,
   },
   colors: {
-    primary: "#9B87E8",
-    text: "#111827", // Darker for better contrast
-    textSecondary: "#4B5563", // Darker for better readability
-    border: "#9CA3AF", // Medium gray - more visible than light gray
-    boxBackground: "#F9FAFB", // Light background for metric boxes
-    boxBorder: "#9B87E8", // Primary color for box borders - more visible
+    primary: COLOR_PRIMARY,
+    text: COLOR_TEXT_PRIMARY,
+    textSecondary: COLOR_TEXT_SECONDARY,
+    border: COLOR_TEXT_MUTED,
+    boxBackground: COLOR_BACKGROUND_GRAY,
+    boxBorder: COLOR_PRIMARY,
+    success: COLOR_SUCCESS,
   },
   spacing: {
     afterTitle: 10,
-    afterTitleExtra: 2, // Additional spacing after title (mm)
+    afterTitleExtra: 2,
     afterDate: 15,
-    afterDateExtra: 5, // Additional spacing after date (mm)
+    afterDateExtra: 5,
     afterHeading: 8,
-    afterHeadingExtra: 3, // Additional spacing after heading (mm)
+    afterHeadingExtra: 3,
     betweenItems: 6,
     afterSection: 8,
-    afterSectionExtra: 5, // Additional spacing after section (mm)
-    boxSpacing: 5, // Spacing between metric boxes (mm)
+    afterSectionExtra: 5,
+    boxSpacing: 5,
+    projectRowExtra: 3,
   },
   pageBreak: {
-    threshold: 20, // Minimum space from bottom before adding new page
+    threshold: 20,
   },
   limits: {
-    maxProjects: 5,
+    maxProjects: ANALYTICS_LIMITS.maxProjects,
   },
   chart: {
-    width: 170, // Chart width in mm (fits A4 with margins)
-    height: 100, // Increased height for better visibility
-    spacing: 12, // Spacing between charts in mm
-    quality: 3, // Increased quality multiplier for html2canvas (prevents warping)
+    width: 170,
+    height: 100,
+    spacing: 12,
+    quality: 3,
     backgroundColor: {
-      dark: '#1a1a1a', // Dark theme background color for chart capture
-      light: '#ffffff', // Light theme background color for chart capture
+      dark: COLOR_BACKGROUND_DARK_COLOR,
+      light: COLOR_BACKGROUND_WHITE,
     },
-    imageFormat: 'image/png', // Image format for chart capture
-    pdfImageFormat: 'PNG', // Image format for PDF (jsPDF format)
-    waitForRender: 1000, // Wait time in ms for charts to render before capture (increased for better SVG rendering)
-    fallbackWaitForRender: 500, // Fallback wait time in ms if waitForRender is not available
-    reflowDelay: 200, // Delay in ms for forcing reflow to ensure charts are rendered
+    imageFormat: "image/png",
+    pdfImageFormat: "PNG",
+    waitForRender: 1000,
+    fallbackWaitForRender: 500,
+    reflowDelay: 200,
   },
   progress: {
-    initial: 10, // Initial progress percentage when PDF generation starts
-    afterTitle: 15, // Progress percentage after title is added
-    chartStart: 20, // Starting progress percentage for chart capture phase
-    chartEnd: 80, // Ending progress percentage for chart capture phase
-    beforeSave: 90, // Progress percentage before saving PDF
-    complete: 100, // Progress percentage when PDF generation is complete
-    resetDelay: 500, // Delay in ms before resetting progress state after completion
+    initial: 10,
+    afterTitle: 15,
+    chartStart: 20,
+    chartEnd: 80,
+    beforeSave: 90,
+    complete: 100,
+    resetDelay: 500,
   },
   pdfSpacing: {
-    textOffset: 3, // Horizontal offset for text in PDF (mm)
-    verticalOffset: 4, // Vertical offset for text in PDF (mm)
-    metricBoxHeight: 16, // Height of metric boxes in PDF (mm)
-    metricBoxLabelY: 5.5, // Y position for metric box label text (mm from top of box)
-    metricBoxValueY: 12, // Y position for metric box value text (mm from top of box)
-    metricBoxRowSpacing: 18, // Spacing between metric box rows in PDF (mm)
-    chartBoxPadding: 18, // Additional padding for chart boxes (chart height + title + padding) in PDF (mm)
-    chartTitleOffset: 2, // Additional spacing after chart title (mm)
-    chartBottomSpacing: 6, // Additional spacing after chart image (mm)
-    projectRowHeight: 12, // Height of project progress rows in PDF (mm)
-    projectRowOffset: 2, // Vertical offset for project row positioning (mm)
-    separatorThreshold: 5, // Minimum space needed for separator (mm)
+    textOffset: 3,
+    verticalOffset: 4,
+    metricBoxHeight: 16,
+    metricBoxLabelY: 5.5,
+    metricBoxValueY: 12,
+    metricBoxRowSpacing: 18,
+    chartBoxPadding: 18,
+    chartTitleOffset: 2,
+    chartBottomSpacing: 6,
+    projectRowHeight: 12,
+    projectRowOffset: 2,
+    separatorThreshold: 5,
   },
   pdfStyling: {
-    borderWidth: 1, // Border width for boxes and charts in PDF (mm)
-    separatorWidthMultiplier: 0.5, // Multiplier for separator line width (half of border width)
-    titleFontSizeIncrease: 2, // Additional font size increase for title (points)
+    borderWidth: 1,
+    separatorWidthMultiplier: 0.5,
+    titleFontSizeIncrease: 2,
   },
   labels: {
     title: "TaskZM Analytics Report",
     generated: "Generated:",
     summary: "Summary",
     timeTracking: "Time Tracking",
-    statusDistribution: "Status Distribution",
-    projectProgress: "Project Progress",
+    statusDistribution: "Task Status",
+    projectProgress: ANALYTICS_LABELS.chartProjectProgress,
     totalTasks: "Total Tasks:",
     completed: "Completed:",
     inProgress: "In Progress:",
@@ -106,21 +342,50 @@ export const ANALYTICS_PDF_CONFIG = {
     totalTime: "Total Time:",
     thisWeek: "This Week:",
     avgPerTask: "Avg per Task:",
+    avgCompletion: "Avg to Complete:",
     hours: "h",
     minutes: "m",
+    days: "d",
     fallbackPercentage: "0.0",
-    // Chart titles
-    chartTimeTracked: "Time Tracked (7 Days)",
-    chartTasksCreatedCompleted: "Tasks Created vs Completed",
-    chartCompletionByTimeOfDay: "Completion by Time of Day",
-    chartTopTaskTags: "Top Task Tags",
+    chartTimeTracked: ANALYTICS_LABELS.chartTimeTracked(ANALYTICS_DEFAULT_CHART_DAYS),
+    chartTasksCreatedCompleted: ANALYTICS_LABELS.chartTasksCreatedCompleted,
+    chartCompletionByTimeOfDay: ANALYTICS_LABELS.chartCompletionByTimeOfDay,
+    chartTopTaskTags: ANALYTICS_LABELS.chartTopTaskTags,
   },
 } as const;
 
-// Button Configuration
 export const ANALYTICS_PDF_BUTTON = {
   size: HEADER_BUTTON_SIZE,
   iconSize: SETTINGS_PANEL_ICON_SIZE_MEDIUM,
   gap: HEADER_GAP_SMALL,
 } as const;
 
+export const ANALYTICS_PANEL_LAYOUT = {
+  contentPaddingClass: "p-4 space-y-4 pt-4 md:pt-4",
+  mobilePaddingBottom: MOBILE_PADDING_BOTTOM,
+  progressBarHeightClass: "h-1.5",
+  headerCloseIconSizePx: 16,
+  headerActionButtonClass: "h-8 w-8",
+} as const;
+
+export function getAnalyticsChartDays(dateRangeLimit: number | undefined): number {
+  if (dateRangeLimit === undefined) {
+    return ANALYTICS_DEFAULT_CHART_DAYS;
+  }
+  return Math.min(dateRangeLimit, ANALYTICS_DEFAULT_CHART_DAYS);
+}
+
+export function getAnalyticsDateRangeLabel(dateRangeLimit: number | undefined): string {
+  if (dateRangeLimit === undefined) {
+    return ANALYTICS_LABELS.allTimeRange;
+  }
+  return ANALYTICS_LABELS.lastDaysRange(dateRangeLimit);
+}
+
+export function formatAnalyticsHoursAxis(value: number): string {
+  return `${value}${ANALYTICS_PDF_CONFIG.labels.hours}`;
+}
+
+export function formatAnalyticsPercent(value: number, decimalPlaces = ANALYTICS_COMPLETION_RATE.decimalPlaces): string {
+  return `${value.toFixed(decimalPlaces)}%`;
+}
