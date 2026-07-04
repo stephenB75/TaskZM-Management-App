@@ -5,7 +5,7 @@ import {
   RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS,
   RECURRENCE_SERIES_OCCURRENCE_SEPARATOR,
 } from './business-constants';
-import { getDateString, getOccurrenceDateString } from './utils';
+import { getDateString, getOccurrenceDateString, parseTaskScheduledDate } from './utils';
 
 /**
  * Normalize a completed-occurrence id suffix to YYYY-MM-DD.
@@ -32,7 +32,8 @@ function parseToLocalDateOnly(dateString: string): Date {
       return new Date(y, m - 1, d);
     }
   }
-  const d = new Date(dateString);
+  const d = parseTaskScheduledDate(dateString);
+  if (Number.isNaN(d.getTime())) return new Date(Number.NaN);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 

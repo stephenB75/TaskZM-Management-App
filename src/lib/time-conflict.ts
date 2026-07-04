@@ -1,6 +1,6 @@
 import type { Task } from '../types';
 import { isDateInRecurrence } from './recurrence';
-import { parseCalendarEventTime, getDateString } from './utils';
+import { parseCalendarEventTime, getDateString, parseTaskScheduledDate } from './utils';
 import { TASK_CALCULATION_CONSTANTS } from './task-calculation-constants';
 import { getTaskMinutes, getTaskSchedulingMinutes } from './daily-hours-utils';
 import { DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MINUTES_PER_HOUR, HOURS_PER_DAY } from './business-constants';
@@ -248,9 +248,7 @@ export function resolveSchedulingSlot(
   });
   const sortedTasks = dateTasks
     .map((task) => {
-      const scheduledDate = typeof task.scheduledDate === 'string'
-        ? new Date(task.scheduledDate)
-        : new Date(task.scheduledDate);
+      const scheduledDate = parseTaskScheduledDate(task.scheduledDate);
       if (isNaN(scheduledDate.getTime())) return null;
       const start = scheduledDate.getTime();
       const end = start + getTaskSchedulingMinutes(task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
@@ -491,9 +489,7 @@ export function checkTimeConflict(
     if (!existingTask.scheduledDate) continue;
 
     // Parse scheduledDate - handle both ISO strings and Date objects
-    const existingTaskScheduledDate = typeof existingTask.scheduledDate === 'string'
-      ? new Date(existingTask.scheduledDate)
-      : new Date(existingTask.scheduledDate);
+    const existingTaskScheduledDate = parseTaskScheduledDate(existingTask.scheduledDate);
     
     const existingTaskStart = existingTaskScheduledDate.getTime();
     // Use at least MIN_TASK_DURATION_MINUTES so we never treat a scheduled block as zero-length (prevents overlaps)
@@ -549,9 +545,7 @@ export function findNextAvailableSlot(
     
     // CRITICAL: Parse scheduledDate to check if it's for the target date
     // Handle both ISO strings and Date objects
-    const taskScheduledDate = typeof task.scheduledDate === 'string'
-      ? new Date(task.scheduledDate)
-      : new Date(task.scheduledDate);
+    const taskScheduledDate = parseTaskScheduledDate(task.scheduledDate);
     
     // CRITICAL: Only include tasks with valid scheduled times (not midnight/00:00:00)
     // This ensures we only check conflicts with tasks that have actual scheduled times
@@ -621,9 +615,7 @@ export function findNextAvailableSlot(
     .filter((task) => task.scheduledDate)
     .map((task) => {
       // Parse scheduledDate - handle both ISO strings and Date objects
-      const scheduledDate = typeof task.scheduledDate === 'string'
-        ? new Date(task.scheduledDate)
-        : new Date(task.scheduledDate);
+      const scheduledDate = parseTaskScheduledDate(task.scheduledDate);
 
       // Validate date is not invalid
       if (isNaN(scheduledDate.getTime())) {
@@ -931,9 +923,7 @@ export function reorganizeAllTasksForDate(
     .filter((task) => task.scheduledDate)
     .map((task) => {
       // Parse scheduledDate - handle both ISO strings and Date objects
-      const scheduledDate = typeof task.scheduledDate === 'string' 
-        ? new Date(task.scheduledDate)
-        : new Date(task.scheduledDate);
+      const scheduledDate = parseTaskScheduledDate(task.scheduledDate);
       
       // Validate date is not invalid
       if (isNaN(scheduledDate.getTime())) {
@@ -1162,9 +1152,7 @@ export function reorganizeConflictingTasks(
     if (!task.scheduledDate) continue;
     
     // Parse scheduledDate - handle both ISO strings and Date objects
-    const existingTaskScheduledDate = typeof task.scheduledDate === 'string'
-      ? new Date(task.scheduledDate)
-      : new Date(task.scheduledDate);
+    const existingTaskScheduledDate = parseTaskScheduledDate(task.scheduledDate);
     
     const existingTaskStart = existingTaskScheduledDate.getTime();
     const existingTaskDuration = getTaskSchedulingMinutes(task, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;

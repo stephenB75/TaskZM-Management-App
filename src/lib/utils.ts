@@ -169,6 +169,21 @@ export function parseChronologicalTimeSource(timeSource: string | number | Date 
 }
 
 /**
+ * Parse task scheduledDate for scheduling, conflict detection, and display.
+ * Uses the same timezone rules as calendar events (naive ISO from DB = UTC instant).
+ */
+export function parseTaskScheduledDate(value: string | Date | null | undefined): Date {
+  return parseChronologicalTimeSource(value);
+}
+
+/** Local calendar day key (YYYY-MM-DD) for a task scheduledDate. */
+export function getTaskScheduledDateKey(value: string | Date | null | undefined): string | null {
+  const parsed = parseTaskScheduledDate(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return getDateString(parsed);
+}
+
+/**
  * Parse YYYY-MM-DD string as local midnight (not UTC).
  * Use this when comparing to "today" or column dates so tasks appear on the correct day in all timezones.
  */

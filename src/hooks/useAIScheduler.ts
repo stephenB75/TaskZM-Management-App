@@ -3,7 +3,7 @@ import { useTasks } from '../contexts/TaskContext';
 import { useAI } from '../contexts/AIContext';
 import { useCalendar } from '../contexts/CalendarContext';
 import { useAuth } from '../contexts/AuthContext';
-import { isTaskBlocked, calculateDependencyDepth, getDateString } from '../lib/utils';
+import { isTaskBlocked, calculateDependencyDepth, getDateString, parseTaskScheduledDate } from '../lib/utils';
 import { KANBAN_TIME } from '../lib/kanban-constants';
 import { findNextAvailableSlot, filterCalendarEventsForDay, buildCalendarConflictBlocksForDay, scheduleBlocksConflict, buildAISchedulerSlotOptions, expandTaskBlockEndForSchedulingPrep, expandCalendarBlockForSchedulingPrep, aiSchedulingTaskBlockConflicts, enforcePrepBufferUntilStable, type ConflictCalendarEvent } from '../lib/time-conflict';
 import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
@@ -397,16 +397,16 @@ export function useAIScheduler() {
           if (cat !== category) return false;
           if (!t.scheduledDate) return false;
           const scheduledDate = typeof t.scheduledDate === 'string' 
-            ? new Date(t.scheduledDate)
-            : new Date(t.scheduledDate);
+            ? parseTaskScheduledDate(t.scheduledDate)
+            : parseTaskScheduledDate(t.scheduledDate);
           return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
         });
         
         // If there are existing tasks, find gaps or place after last task
         if (sameCategoryTasks.length > 0) {
           const sortedCategoryTasks = [...sameCategoryTasks].sort((a, b) => {
-            const aDate = typeof a.scheduledDate === 'string' ? new Date(a.scheduledDate) : new Date(a.scheduledDate);
-            const bDate = typeof b.scheduledDate === 'string' ? new Date(b.scheduledDate) : new Date(b.scheduledDate);
+            const aDate = parseTaskScheduledDate(a.scheduledDate);
+            const bDate = parseTaskScheduledDate(b.scheduledDate);
             return aDate.getTime() - bDate.getTime();
           });
           
@@ -416,8 +416,8 @@ export function useAIScheduler() {
             if (!currentTask.scheduledDate) continue;
             
             const currentTaskStart = typeof currentTask.scheduledDate === 'string'
-              ? new Date(currentTask.scheduledDate)
-              : new Date(currentTask.scheduledDate);
+              ? parseTaskScheduledDate(currentTask.scheduledDate)
+              : parseTaskScheduledDate(currentTask.scheduledDate);
             const currentTaskDuration = getTaskMinutes(currentTask, { useCachedAIAnalysis: true });
             const currentTaskEnd = new Date(currentTaskStart);
             currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
@@ -429,8 +429,8 @@ export function useAIScheduler() {
               const prevTask = sortedCategoryTasks[i - 1];
               if (!prevTask.scheduledDate) continue;
               const prevTaskStart = typeof prevTask.scheduledDate === 'string'
-                ? new Date(prevTask.scheduledDate)
-                : new Date(prevTask.scheduledDate);
+                ? parseTaskScheduledDate(prevTask.scheduledDate)
+                : parseTaskScheduledDate(prevTask.scheduledDate);
               const prevTaskDuration = getTaskMinutes(prevTask, { useCachedAIAnalysis: true });
               gapStart = new Date(prevTaskStart);
               gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
@@ -456,8 +456,8 @@ export function useAIScheduler() {
           const lastTask = sortedCategoryTasks[sortedCategoryTasks.length - 1];
           if (lastTask.scheduledDate) {
             const lastTaskStart = typeof lastTask.scheduledDate === 'string' 
-              ? new Date(lastTask.scheduledDate)
-              : new Date(lastTask.scheduledDate);
+              ? parseTaskScheduledDate(lastTask.scheduledDate)
+              : parseTaskScheduledDate(lastTask.scheduledDate);
             const lastTaskDuration = getTaskMinutes(lastTask, { useCachedAIAnalysis: true });
             const nextAvailableTime = new Date(lastTaskStart);
             nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
@@ -550,8 +550,8 @@ export function useAIScheduler() {
       if (!t.scheduledDate) return false;
       // Parse and verify the scheduled time is valid (not just midnight)
       const scheduledDate = typeof t.scheduledDate === 'string' 
-        ? new Date(t.scheduledDate)
-        : new Date(t.scheduledDate);
+        ? parseTaskScheduledDate(t.scheduledDate)
+        : parseTaskScheduledDate(t.scheduledDate);
       // Only include tasks with valid times (not just midnight/00:00:00)
       // This is critical - we must see tasks from the plan that have been scheduled!
       return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
@@ -578,8 +578,8 @@ export function useAIScheduler() {
       // This is especially important for tasks from the plan which are ISO strings
       const sortedCategoryTasks = [...sameCategoryTasks].sort((a, b) => {
         if (!a.scheduledDate || !b.scheduledDate) return 0;
-        const aDate = typeof a.scheduledDate === 'string' ? new Date(a.scheduledDate) : new Date(a.scheduledDate);
-        const bDate = typeof b.scheduledDate === 'string' ? new Date(b.scheduledDate) : new Date(b.scheduledDate);
+        const aDate = parseTaskScheduledDate(a.scheduledDate);
+        const bDate = parseTaskScheduledDate(b.scheduledDate);
         return aDate.getTime() - bDate.getTime();
       });
       
@@ -591,8 +591,8 @@ export function useAIScheduler() {
         // CRITICAL: Parse scheduledDate correctly (could be ISO string or Date object)
         // This is especially important for tasks from the plan which are ISO strings
         const currentTaskStart = typeof currentTask.scheduledDate === 'string'
-          ? new Date(currentTask.scheduledDate)
-          : new Date(currentTask.scheduledDate);
+          ? parseTaskScheduledDate(currentTask.scheduledDate)
+          : parseTaskScheduledDate(currentTask.scheduledDate);
         const currentTaskDuration = getTaskMinutes(currentTask); // Use AI estimator for existing tasks
         const currentTaskEnd = new Date(currentTaskStart);
         currentTaskEnd.setMinutes(currentTaskEnd.getMinutes() + currentTaskDuration);
@@ -608,8 +608,8 @@ export function useAIScheduler() {
           if (!prevTask.scheduledDate) continue;
           // CRITICAL: Parse scheduledDate correctly (could be ISO string or Date object)
           const prevTaskStart = typeof prevTask.scheduledDate === 'string'
-            ? new Date(prevTask.scheduledDate)
-            : new Date(prevTask.scheduledDate);
+            ? parseTaskScheduledDate(prevTask.scheduledDate)
+            : parseTaskScheduledDate(prevTask.scheduledDate);
           const prevTaskDuration = getTaskMinutes(prevTask); // Use AI estimator for existing tasks
           gapStart = new Date(prevTaskStart);
           gapStart.setMinutes(gapStart.getMinutes() + prevTaskDuration);
@@ -642,8 +642,8 @@ export function useAIScheduler() {
       const lastTask = sortedCategoryTasks[sortedCategoryTasks.length - 1];
       if (lastTask.scheduledDate) {
         const lastTaskStart = typeof lastTask.scheduledDate === 'string' 
-          ? new Date(lastTask.scheduledDate)
-          : new Date(lastTask.scheduledDate);
+          ? parseTaskScheduledDate(lastTask.scheduledDate)
+          : parseTaskScheduledDate(lastTask.scheduledDate);
         const lastTaskDuration = getTaskMinutes(lastTask); // Use AI estimator for existing tasks
         let nextAvailableTime = new Date(lastTaskStart);
         nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
@@ -666,8 +666,8 @@ export function useAIScheduler() {
           
           // Only check tasks with valid scheduled times (not midnight)
           const existingTaskScheduledDate = typeof existingTask.scheduledDate === 'string'
-            ? new Date(existingTask.scheduledDate)
-            : new Date(existingTask.scheduledDate);
+            ? parseTaskScheduledDate(existingTask.scheduledDate)
+            : parseTaskScheduledDate(existingTask.scheduledDate);
           const hasValidTime = !isNaN(existingTaskScheduledDate.getTime()) && 
             (existingTaskScheduledDate.getHours() !== 0 || existingTaskScheduledDate.getMinutes() !== 0);
           if (!hasValidTime) continue;
@@ -783,15 +783,15 @@ export function useAIScheduler() {
         // This matches the gap-finding logic at lines 368-379 which excludes midnight-time tasks
         // This prevents false conflicts with tasks that have dates but no actual scheduled times
         const scheduledDate = typeof t.scheduledDate === 'string'
-          ? new Date(t.scheduledDate)
-          : new Date(t.scheduledDate);
+          ? parseTaskScheduledDate(t.scheduledDate)
+          : parseTaskScheduledDate(t.scheduledDate);
         const hasValidTime = !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
         return hasValidTime;
       })
       .map(t => {
         const existingTaskStart = typeof t.scheduledDate === 'string'
-          ? new Date(t.scheduledDate).getTime()
-          : new Date(t.scheduledDate).getTime();
+          ? parseTaskScheduledDate(t.scheduledDate).getTime()
+          : parseTaskScheduledDate(t.scheduledDate).getTime();
         const existingTaskDuration = getTaskMinutes(t, { useCachedAIAnalysis: true }) * MILLISECONDS_PER_MINUTE;
         const existingTaskEnd = existingTaskStart + existingTaskDuration;
         return {
@@ -1473,7 +1473,7 @@ export function useAIScheduler() {
         // If the task already has a scheduledDate, use it as the base, but ensure it's not in the past
         let baseDateForCalculation = fromDate;
         if (task.scheduledDate) {
-          const existingScheduledDate = new Date(task.scheduledDate);
+          const existingScheduledDate = parseTaskScheduledDate(task.scheduledDate);
           existingScheduledDate.setHours(0, 0, 0, 0);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
@@ -1823,16 +1823,16 @@ export function useAIScheduler() {
               if (!t.scheduledDate) return false;
               // Parse the base scheduledDate to get the time
               const baseScheduledDate = typeof t.scheduledDate === 'string' 
-                ? new Date(t.scheduledDate)
-                : new Date(t.scheduledDate);
+                ? parseTaskScheduledDate(t.scheduledDate)
+                : parseTaskScheduledDate(t.scheduledDate);
               // Only include if it has a valid time (not just midnight/00:00:00)
               return !isNaN(baseScheduledDate.getTime()) && (baseScheduledDate.getHours() !== 0 || baseScheduledDate.getMinutes() !== 0);
             } else {
               // For non-recurring tasks, check if scheduledDate matches this date and has a valid time
               if (!t.scheduledDate) return false;
               const scheduledDate = typeof t.scheduledDate === 'string' 
-                ? new Date(t.scheduledDate)
-                : new Date(t.scheduledDate);
+                ? parseTaskScheduledDate(t.scheduledDate)
+                : parseTaskScheduledDate(t.scheduledDate);
               // Check if the scheduled date matches the target date
               const scheduledDateKey = getDateKey(scheduledDate);
               if (scheduledDateKey !== dateKey) return false;
@@ -1846,8 +1846,8 @@ export function useAIScheduler() {
             const isRecurring = t.recurrence && t.recurrence.type !== 'none';
             if (isRecurring && t.scheduledDate) {
               const baseScheduledDate = typeof t.scheduledDate === 'string' 
-                ? new Date(t.scheduledDate)
-                : new Date(t.scheduledDate);
+                ? parseTaskScheduledDate(t.scheduledDate)
+                : parseTaskScheduledDate(t.scheduledDate);
               // Create a date for the target day (scheduleDate) but with the time from the base scheduledDate
               const occurrenceDate = new Date(scheduleDate);
               occurrenceDate.setHours(baseScheduledDate.getHours(), baseScheduledDate.getMinutes(), baseScheduledDate.getSeconds(), baseScheduledDate.getMilliseconds());
@@ -1891,7 +1891,7 @@ export function useAIScheduler() {
             // Only include tasks that have a scheduled time set (not just the date at midnight)
             // This ensures we only count tasks that have been fully scheduled
             // CRITICAL: Parse the scheduledDate to ensure we're checking the actual time
-            const scheduledTime = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+            const scheduledTime = p.scheduledDate instanceof Date ? p.scheduledDate : parseTaskScheduledDate(p.scheduledDate);
             const hasTimeSet = scheduledTime.getHours() !== 0 || scheduledTime.getMinutes() !== 0;
             if (!hasTimeSet && import.meta.env.DEV) {
               logger.debug('Plan item has no time set (midnight)', { 
@@ -1907,7 +1907,7 @@ export function useAIScheduler() {
             // Create a task object with scheduledDate set from the plan
             // CRITICAL FIX: For recurring tasks, we need to adjust the scheduledDate to the target date
             // while preserving the time from the first occurrence. This ensures conflict detection works correctly.
-            const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+            const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : parseTaskScheduledDate(p.scheduledDate);
             const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
             
             let taskScheduledDate: string;
@@ -1937,8 +1937,8 @@ export function useAIScheduler() {
                 planTaskTitle: taskWithDate.title,
                 planTaskIsRecurring: isPlanTaskRecurring,
                 planTaskScheduledDate: taskWithDate.scheduledDate,
-                planTaskScheduledTime: new Date(taskWithDate.scheduledDate).toLocaleTimeString(),
-                planTaskScheduledDateKey: getDateKey(new Date(taskWithDate.scheduledDate)),
+                planTaskScheduledTime: parseTaskScheduledDate(taskWithDate.scheduledDate).toLocaleTimeString(),
+                planTaskScheduledDateKey: getDateKey(parseTaskScheduledDate(taskWithDate.scheduledDate)),
                 targetDateKey: dateKey,
                 originalPlanScheduledDate: p.scheduledDate,
                 originalPlanScheduledDateType: typeof p.scheduledDate,
@@ -1960,7 +1960,7 @@ export function useAIScheduler() {
               id: t.id,
               title: t.title,
               scheduledDate: t.scheduledDate,
-              scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+              scheduledTime: t.scheduledDate ? parseTaskScheduledDate(t.scheduledDate).toLocaleTimeString() : 'none',
               category: getTaskCategory(t),
             })),
           });
@@ -1988,7 +1988,7 @@ export function useAIScheduler() {
         // This includes both recurring and regular tasks
         const existingAllTasksCount = existingTasksForDay.filter(t => {
           return t.scheduledDate && (typeof t.scheduledDate === 'string' 
-            ? new Date(t.scheduledDate).getHours() !== 0 || new Date(t.scheduledDate).getMinutes() !== 0
+            ? parseTaskScheduledDate(t.scheduledDate).getHours() !== 0 || parseTaskScheduledDate(t.scheduledDate).getMinutes() !== 0
             : t.scheduledDate.getHours() !== 0 || t.scheduledDate.getMinutes() !== 0);
         }).length;
         
@@ -1996,7 +1996,7 @@ export function useAIScheduler() {
         // This includes both recurring and regular tasks being scheduled in the same batch
         const planAllTasksCount = tasksInPlanSameDay.filter(t => {
           return t.scheduledDate && (typeof t.scheduledDate === 'string' 
-            ? new Date(t.scheduledDate).getHours() !== 0 || new Date(t.scheduledDate).getMinutes() !== 0
+            ? parseTaskScheduledDate(t.scheduledDate).getHours() !== 0 || parseTaskScheduledDate(t.scheduledDate).getMinutes() !== 0
             : t.scheduledDate.getHours() !== 0 || t.scheduledDate.getMinutes() !== 0);
         }).length;
         
@@ -2053,7 +2053,7 @@ export function useAIScheduler() {
               isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
               category: getTaskCategory(t),
               scheduledDate: t.scheduledDate,
-              scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+              scheduledTime: t.scheduledDate ? parseTaskScheduledDate(t.scheduledDate).toLocaleTimeString() : 'none',
             })),
             existingTasksForDay: existingTasksForDay.map(t => ({
               id: t.id,
@@ -2061,7 +2061,7 @@ export function useAIScheduler() {
               isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
               category: getTaskCategory(t),
               scheduledDate: t.scheduledDate,
-              scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+              scheduledTime: t.scheduledDate ? parseTaskScheduledDate(t.scheduledDate).toLocaleTimeString() : 'none',
             })),
           });
         }
@@ -2128,8 +2128,8 @@ export function useAIScheduler() {
           if (!t.scheduledDate) return false;
           // Parse and verify the scheduled time is valid
           const scheduledDate = typeof t.scheduledDate === 'string' 
-            ? new Date(t.scheduledDate)
-            : new Date(t.scheduledDate);
+            ? parseTaskScheduledDate(t.scheduledDate)
+            : parseTaskScheduledDate(t.scheduledDate);
           // Only include tasks with valid times (not just midnight/00:00:00)
           // This ensures we see all scheduled tasks regardless of category
           return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
@@ -2206,7 +2206,7 @@ export function useAIScheduler() {
                 title: t.title,
                 category: getTaskCategory(t),
                 scheduledDate: t.scheduledDate,
-                scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+                scheduledTime: t.scheduledDate ? parseTaskScheduledDate(t.scheduledDate).toLocaleTimeString() : 'none',
               })),
             });
           }
@@ -2224,7 +2224,7 @@ export function useAIScheduler() {
                 id: t.id,
                 title: t.title,
                 scheduledDate: t.scheduledDate,
-                scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+                scheduledTime: t.scheduledDate ? parseTaskScheduledDate(t.scheduledDate).toLocaleTimeString() : 'none',
                 category: getTaskCategory(t),
               })),
             });
@@ -2260,14 +2260,14 @@ export function useAIScheduler() {
                       if (!isDateInRecurrence(t, occurrenceDay)) return false;
                       if (!t.scheduledDate) return false;
                       const baseScheduledDate = typeof t.scheduledDate === 'string' 
-                        ? new Date(t.scheduledDate)
-                        : new Date(t.scheduledDate);
+                        ? parseTaskScheduledDate(t.scheduledDate)
+                        : parseTaskScheduledDate(t.scheduledDate);
                       return !isNaN(baseScheduledDate.getTime()) && (baseScheduledDate.getHours() !== 0 || baseScheduledDate.getMinutes() !== 0);
                     } else {
                       if (!t.scheduledDate) return false;
                       const scheduledDate = typeof t.scheduledDate === 'string' 
-                        ? new Date(t.scheduledDate)
-                        : new Date(t.scheduledDate);
+                        ? parseTaskScheduledDate(t.scheduledDate)
+                        : parseTaskScheduledDate(t.scheduledDate);
                       const scheduledDateKey = getDateKey(scheduledDate);
                       if (scheduledDateKey !== occurrenceDateKey) return false;
                       return !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
@@ -2278,8 +2278,8 @@ export function useAIScheduler() {
                     const isRecurring = t.recurrence && t.recurrence.type !== 'none';
                     if (isRecurring && t.scheduledDate) {
                       const baseScheduledDate = typeof t.scheduledDate === 'string' 
-                        ? new Date(t.scheduledDate)
-                        : new Date(t.scheduledDate);
+                        ? parseTaskScheduledDate(t.scheduledDate)
+                        : parseTaskScheduledDate(t.scheduledDate);
                       const occurrenceDate = new Date(occurrenceDay);
                       occurrenceDate.setHours(baseScheduledDate.getHours(), baseScheduledDate.getMinutes(), baseScheduledDate.getSeconds(), baseScheduledDate.getMilliseconds());
                       return {
@@ -2298,12 +2298,12 @@ export function useAIScheduler() {
                     if (isPlanTaskRecurring) {
                       return isDateInRecurrence(p.task, occurrenceDay);
                     } else {
-                      const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+                      const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : parseTaskScheduledDate(p.scheduledDate);
                       return getDateKey(planDate) === occurrenceDateKey;
                     }
                   })
                   .map(p => {
-                    const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+                    const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : parseTaskScheduledDate(p.scheduledDate);
                     const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
                     if (isPlanTaskRecurring) {
                       const occurrenceDate = new Date(occurrenceDay);
@@ -2377,7 +2377,7 @@ export function useAIScheduler() {
                         id: t.id,
                         title: t.title,
                         scheduledDate: t.scheduledDate,
-                        scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+                        scheduledTime: t.scheduledDate ? parseTaskScheduledDate(t.scheduledDate).toLocaleTimeString() : 'none',
                         isRecurring: !!(t.recurrence && t.recurrence.type !== 'none'),
                       })),
                     });
@@ -2829,8 +2829,8 @@ export function useAIScheduler() {
             // Sort existing tasks by scheduled time
             // Use allTasksForDay (includes tasks from current plan) to avoid scheduling conflicts
             const sortedTasks = [...allTasksForDay].sort((a, b) => {
-              const timeA = new Date(a.scheduledDate!).getTime();
-              const timeB = new Date(b.scheduledDate!).getTime();
+              const timeA = parseTaskScheduledDate(a.scheduledDate!).getTime();
+              const timeB = parseTaskScheduledDate(b.scheduledDate!).getTime();
               return timeA - timeB;
             });
             
@@ -2840,7 +2840,7 @@ export function useAIScheduler() {
             // Check gap before first task
             if (sortedTasks.length > 0) {
               const firstTask = sortedTasks[0];
-              const firstTaskStart = new Date(firstTask.scheduledDate!);
+              const firstTaskStart = parseTaskScheduledDate(firstTask.scheduledDate!);
               let gapStart = new Date(earliestTime);
               if (gapStart < firstTaskStart) {
                 const gapDuration = (firstTaskStart.getTime() - gapStart.getTime()) / MILLISECONDS_PER_MINUTE;
@@ -2859,12 +2859,12 @@ export function useAIScheduler() {
               const prevTask = sortedTasks[i - 1];
               const currentTask = sortedTasks[i];
               
-              const prevTaskStart = new Date(prevTask.scheduledDate!);
+              const prevTaskStart = parseTaskScheduledDate(prevTask.scheduledDate!);
               const prevTaskDuration = getTaskMinutes(prevTask, { useCachedAIAnalysis: true }); // Use AI estimator for existing tasks
               const prevTaskEnd = new Date(prevTaskStart);
               prevTaskEnd.setMinutes(prevTaskEnd.getMinutes() + prevTaskDuration);
               
-              const currentTaskStart = new Date(currentTask.scheduledDate!);
+              const currentTaskStart = parseTaskScheduledDate(currentTask.scheduledDate!);
               
               // Calculate gap
               const gapStart = new Date(prevTaskEnd);
@@ -2883,7 +2883,7 @@ export function useAIScheduler() {
             // Check gap after last task (if there's room before work end)
             if (sortedTasks.length > 0) {
               const lastTask = sortedTasks[sortedTasks.length - 1];
-              const lastTaskStart = new Date(lastTask.scheduledDate!);
+              const lastTaskStart = parseTaskScheduledDate(lastTask.scheduledDate!);
               const lastTaskDuration = getTaskMinutes(lastTask, { useCachedAIAnalysis: true }); // Use AI estimator for existing tasks
               const lastTaskEnd = new Date(lastTaskStart);
               lastTaskEnd.setMinutes(lastTaskEnd.getMinutes() + lastTaskDuration);
@@ -2954,7 +2954,7 @@ export function useAIScheduler() {
             // No gaps found - place after last task or at earliest time
             if (sortedTasks.length > 0) {
               const lastTask = sortedTasks[sortedTasks.length - 1];
-              const lastTaskStart = new Date(lastTask.scheduledDate!);
+              const lastTaskStart = parseTaskScheduledDate(lastTask.scheduledDate!);
               const lastTaskDuration = getTaskMinutes(lastTask, { useCachedAIAnalysis: true }); // Use AI estimator for existing tasks
               const nextAvailableTime = new Date(lastTaskStart);
               nextAvailableTime.setMinutes(nextAvailableTime.getMinutes() + lastTaskDuration);
@@ -3225,18 +3225,18 @@ export function useAIScheduler() {
               }
             } else {
               // For regular tasks, check if scheduledDate matches the target date
-              const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+              const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : parseTaskScheduledDate(p.scheduledDate);
               const pDateKey = getDateKey(planDate);
               if (pDateKey !== dateKey) return false;
             }
             
             // Only include tasks that have a scheduled time set (not just midnight)
-            const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+            const planDate = p.scheduledDate instanceof Date ? p.scheduledDate : parseTaskScheduledDate(p.scheduledDate);
             const hasTimeSet = planDate.getHours() !== 0 || planDate.getMinutes() !== 0;
             return hasTimeSet;
           })
           .map(p => {
-            const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : new Date(p.scheduledDate);
+            const planScheduledDate = p.scheduledDate instanceof Date ? p.scheduledDate : parseTaskScheduledDate(p.scheduledDate);
             const isPlanTaskRecurring = p.task.recurrence && p.task.recurrence.type !== 'none';
             
             // CRITICAL FIX: For recurring tasks, adjust scheduledDate to the target date while preserving time
@@ -3292,8 +3292,8 @@ export function useAIScheduler() {
         const updatedValidTasksForDay = Array.from(taskMap.values()).filter(t => {
           if (!t.scheduledDate) return false;
           const scheduledDate = typeof t.scheduledDate === 'string' 
-            ? new Date(t.scheduledDate)
-            : new Date(t.scheduledDate);
+            ? parseTaskScheduledDate(t.scheduledDate)
+            : parseTaskScheduledDate(t.scheduledDate);
           const isValid = !isNaN(scheduledDate.getTime()) && (scheduledDate.getHours() !== 0 || scheduledDate.getMinutes() !== 0);
           if (!isValid && import.meta.env.DEV) {
             logger.debug('Filtered out task with invalid scheduledDate in final safeguard', {
@@ -3318,7 +3318,7 @@ export function useAIScheduler() {
               id: t.id,
               title: t.title,
               scheduledDate: t.scheduledDate,
-              scheduledTime: t.scheduledDate ? new Date(t.scheduledDate).toLocaleTimeString() : 'none',
+              scheduledTime: t.scheduledDate ? parseTaskScheduledDate(t.scheduledDate).toLocaleTimeString() : 'none',
               category: getTaskCategory(t),
             })),
           });
@@ -3399,7 +3399,7 @@ export function useAIScheduler() {
           
           const planScheduledDate = planItem.scheduledDate instanceof Date 
             ? planItem.scheduledDate 
-            : new Date(planItem.scheduledDate);
+            : parseTaskScheduledDate(planItem.scheduledDate);
           
           // Check if this task applies to the target date
           const isPlanItemRecurring = planItem.task.recurrence && planItem.task.recurrence.type !== 'none';
@@ -3508,7 +3508,7 @@ export function useAIScheduler() {
             
             const planScheduledDate = planItem.scheduledDate instanceof Date 
               ? planItem.scheduledDate 
-              : new Date(planItem.scheduledDate);
+              : parseTaskScheduledDate(planItem.scheduledDate);
             
             // CRITICAL FIX: Check if this task applies to the target date (same logic as first pass)
             const isPlanItemRecurring = planItem.task.recurrence && planItem.task.recurrence.type !== 'none';
@@ -3628,7 +3628,7 @@ export function useAIScheduler() {
         
         for (const planItem of plan) {
           if (!planItem.scheduledDate) continue;
-          const planDate = planItem.scheduledDate instanceof Date ? planItem.scheduledDate : new Date(planItem.scheduledDate);
+          const planDate = planItem.scheduledDate instanceof Date ? planItem.scheduledDate : parseTaskScheduledDate(planItem.scheduledDate);
           
           // Check if same day
           const planDateKey = getDateKey(planDate);
@@ -3781,9 +3781,7 @@ export function useAIScheduler() {
     }
     for (const [dateKey, dayItems] of planByDate) {
       if (dayItems.length === 0) continue;
-      const targetDate = dayItems[0].scheduledDate instanceof Date
-        ? new Date(dayItems[0].scheduledDate)
-        : new Date(dayItems[0].scheduledDate);
+      const targetDate = parseTaskScheduledDate(dayItems[0].scheduledDate);
       targetDate.setHours(0, 0, 0, 0);
       const existingForDay = dailyTasks.get(dateKey) || [];
       const planTaskIds = new Set(dayItems.map((item) => item.task.id));
@@ -3969,7 +3967,7 @@ export function useAIScheduler() {
     const dateKey = getDateString(date);
     return tasks.filter(task => {
       if (!task.scheduledDate || task.status === 'done') return false;
-      const taskDate = getDateString(new Date(task.scheduledDate));
+      const taskDate = getDateString(parseTaskScheduledDate(task.scheduledDate));
       return taskDate === dateKey;
     });
   };
@@ -3990,7 +3988,7 @@ export function useAIScheduler() {
     
     return tasks.filter(task => {
       if (!task.scheduledDate || task.status === 'done') return false;
-      const taskDate = new Date(task.scheduledDate);
+      const taskDate = parseTaskScheduledDate(task.scheduledDate);
       taskDate.setHours(0, 0, 0, 0);
       return taskDate >= weekStart && taskDate <= endDate;
     });
@@ -4005,7 +4003,7 @@ export function useAIScheduler() {
     
     return tasks.filter(task => {
       if (!task.scheduledDate || task.status === 'done') return false;
-      const taskDate = new Date(task.scheduledDate);
+      const taskDate = parseTaskScheduledDate(task.scheduledDate);
       return taskDate >= startDate && taskDate <= endDate;
     });
   };
@@ -4029,7 +4027,7 @@ export function useAIScheduler() {
     );
     const dayDates = new Map<string, Date>();
     for (const { scheduledDate } of scheduledPlans) {
-      dayDates.set(getDateKey(scheduledDate), new Date(scheduledDate));
+      dayDates.set(getDateKey(scheduledDate), parseTaskScheduledDate(scheduledDate));
     }
 
     for (const [, date] of dayDates) {
