@@ -85,6 +85,44 @@ export function roundTimeUpToSchedulingSlot(time: Date): Date {
   return rounded;
 }
 
+function isTargetDateToday(targetDate: Date): boolean {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return targetDate.getTime() === todayStart.getTime();
+}
+
+/** Earliest allowed start (ms) — never before now when scheduling for today. */
+function getSchedulingEarliestStartMs(
+  requestedTime: Date,
+  targetDate: Date,
+  options?: FindSlotOptions,
+): number {
+  let earliest = requestedTime.getTime();
+  if (options?.ensureAfterCurrentTime && isTargetDateToday(targetDate)) {
+    earliest = Math.max(earliest, roundTimeUpToSchedulingSlot(new Date()).getTime());
+  }
+  return earliest;
+}
+
+function taskFitsInCategoryHours(
+  startMs: number,
+  taskDurationMinutes: number,
+  categoryHours: { start: number; end: number },
+): boolean {
+  const startDate = new Date(startMs);
+  const startTotalMinutes = startDate.getHours() * MINUTES_PER_HOUR + startDate.getMinutes();
+  return (
+    startTotalMinutes >= categoryHours.start &&
+    startTotalMinutes + taskDurationMinutes <= categoryHours.end
+  );
+}
+
+function buildNoSlotOnDayTime(requestedTime: Date): Date {
+  const noSlotTime = new Date(requestedTime);
+  noSlotTime.setHours(HOURS_PER_DAY, 0, 0, 0);
+  return noSlotTime;
+}
+
 /** If a start time falls inside a calendar prep window, advance to after that window. */
 export function advancePastCalendarPrepWindows(
   startMs: number,
@@ -265,9 +303,17 @@ export function resolveSchedulingSlot(
     taskId,
   );
 
+  const earliestStartMs = getSchedulingEarliestStartMs(requestedTime, targetDate, options);
+  if (
+    options?.categoryHours &&
+    !taskFitsInCategoryHours(earliestStartMs, taskDurationMinutes, options.categoryHours)
+  ) {
+    return buildNoSlotOnDayTime(requestedTime);
+  }
+
   const gapSlot = tryFindGapBeforeObstacles(
     targetDate,
-    requestedTime.getTime(),
+    earliestStartMs,
     taskDurationMinutes,
     obstacles,
     options?.categoryHours ?? null,
@@ -656,27 +702,11 @@ export function findNextAvailableSlot(
   // Determine start time: ensure after current time if scheduling for today
   let candidateTime = new Date(requestedTime);
   const now = new Date();
-  const isToday = targetDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const isToday = isTargetDateToday(targetDate);
+  const earliestStartMs = getSchedulingEarliestStartMs(requestedTime, targetDate, options);
   
   if (options?.ensureAfterCurrentTime && isToday) {
-    // Start from current time (rounded up to next 15-minute slot)
-    const currentMinutes = now.getMinutes();
-    const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-    const currentTimeRounded = new Date(now);
-    if (roundedMinutes >= MINUTES_PER_HOUR) {
-      currentTimeRounded.setHours(currentTimeRounded.getHours() + 1);
-      currentTimeRounded.setMinutes(0);
-    } else {
-      currentTimeRounded.setMinutes(roundedMinutes);
-    }
-    currentTimeRounded.setSeconds(0);
-    currentTimeRounded.setMilliseconds(0);
-    
-    // Use the later of: current time rounded up, or requested time
-    // This ensures we never schedule in the past, but also respects the drop position if it's in the future
-    candidateTime = currentTimeRounded.getTime() > requestedTime.getTime() 
-      ? currentTimeRounded 
-      : new Date(requestedTime);
+    candidateTime = new Date(earliestStartMs);
   }
 
   // Apply category hours constraint if provided
@@ -690,16 +720,9 @@ export function findNextAvailableSlot(
     // The effective start is the later of: current time or category start
     let effectiveStart = start;
     if (isToday && options?.ensureAfterCurrentTime) {
-      const currentMinutes = now.getMinutes();
-      const roundedMinutes = Math.ceil(currentMinutes / TIME_ROUNDING_INTERVAL_MINUTES) * TIME_ROUNDING_INTERVAL_MINUTES;
-      const currentTimeRounded = new Date(now);
-      if (roundedMinutes >= MINUTES_PER_HOUR) {
-        currentTimeRounded.setHours(currentTimeRounded.getHours() + 1);
-        currentTimeRounded.setMinutes(0);
-      } else {
-        currentTimeRounded.setMinutes(roundedMinutes);
-      }
-      const currentTotalMinutes = currentTimeRounded.getHours() * MINUTES_PER_HOUR + currentTimeRounded.getMinutes();
+      const currentTimeRounded = roundTimeUpToSchedulingSlot(now);
+      const currentTotalMinutes =
+        currentTimeRounded.getHours() * MINUTES_PER_HOUR + currentTimeRounded.getMinutes();
       effectiveStart = Math.max(start, currentTotalMinutes);
     }
     
@@ -748,10 +771,14 @@ export function findNextAvailableSlot(
           }
           continue; // Retry with new candidate time
         } else {
-          // Task end exceeds category hours — try an earlier gap before calendar/task obstacles.
+          // Task end exceeds category hours — only search gaps at or after the earliest allowed start.
+          // Never fall back to an earlier gap (e.g. 8 PM) when current time is already past category hours.
+          if (!taskFitsInCategoryHours(earliestStartMs, taskDuration, options.categoryHours)) {
+            return buildNoSlotOnDayTime(requestedTime);
+          }
           const gapSlot = tryFindGapBeforeObstacles(
             targetDate,
-            requestedTime.getTime(),
+            earliestStartMs,
             taskDuration,
             buildSchedulingObstaclesForDay(
               targetDate,
@@ -765,9 +792,7 @@ export function findNextAvailableSlot(
           if (gapSlot) {
             return gapSlot;
           }
-          const noSlotTime = new Date(requestedTime);
-          noSlotTime.setHours(HOURS_PER_DAY, 0, 0, 0);
-          return noSlotTime;
+          return buildNoSlotOnDayTime(requestedTime);
         }
       }
     }
@@ -865,9 +890,16 @@ export function findNextAvailableSlot(
   }
 
   // If no slot found, try gaps before obstacles or after the last calendar block.
+  if (
+    options?.categoryHours &&
+    !taskFitsInCategoryHours(earliestStartMs, taskDuration, options.categoryHours)
+  ) {
+    return buildNoSlotOnDayTime(requestedTime);
+  }
+
   const gapSlot = tryFindGapBeforeObstacles(
     targetDate,
-    requestedTime.getTime(),
+    earliestStartMs,
     taskDuration,
     buildSchedulingObstaclesForDay(targetDate, sortedTasks, calendarConflicts, prepBufferMs, taskId),
     options?.categoryHours ?? null,
@@ -889,9 +921,7 @@ export function findNextAvailableSlot(
 
   // If no slot found, return a time that indicates failure (24:00 or later)
   // This allows the caller to detect that no slot was found
-  const failureTime = new Date(requestedTime);
-  failureTime.setHours(HOURS_PER_DAY, 0, 0, 0);
-  return failureTime;
+  return buildNoSlotOnDayTime(requestedTime);
 }
 
 /**

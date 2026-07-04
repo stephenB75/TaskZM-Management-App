@@ -46,6 +46,19 @@ import {
 import { useTeam } from "../contexts/TeamContext";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useMobileLayout } from "../hooks/useMobileLayout";
+import { TeamOverviewBar } from "./team/TeamOverviewBar";
+import { TeamSectionNav, type TeamPanelSection } from "./team/TeamSectionNav";
+import { TeamMemberRow } from "./team/TeamMemberRow";
+import { TeamInviteRow } from "./team/TeamInviteRow";
+import { TeamAssignedTasksList } from "./team/TeamAssignedTasksList";
+import { TeamMemberProfileDialog } from "./team/TeamMemberProfileDialog";
+import {
+  getAcceptedMembers,
+  getAssignedTasksForMembers,
+  getMemberTaskStats,
+  getPendingMembers,
+} from "../lib/team-utils";
 import { toast } from "sonner";
 import { cn, getAbbreviatedDisplayName } from "../lib/utils";
 import type { User, Team } from "../types";
@@ -163,7 +176,6 @@ export function TeamPanel() {
     removeTeamMember,
     updateTeamMember,
     markMemberAsViewed,
-    acceptInvitation,
     resendInvitation,
     declineInvitation,
     isLoading,
@@ -213,6 +225,8 @@ export function TeamPanel() {
   const [isDeletingTeam, setIsDeletingTeam] = useState(false);
   /** Target team when adding members (null = workspace team). */
   const [inviteTargetTeamId, setInviteTargetTeamId] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<TeamPanelSection>('members');
+  const shouldUseMobileLayout = useMobileLayout();
 
   const openAddMemberDialog = () => {
     setInviteTargetTeamId(currentTeamId);
@@ -587,27 +601,7 @@ export function TeamPanel() {
     }
   };
 
-  const getTaskStats = (memberId: string) => {
-    const assignedTasks = tasks.filter((t) =>
-      t.assignedTo.includes(memberId),
-    );
-    const completed = assignedTasks.filter(
-      (t) => t.status === "done",
-    ).length;
-    const inProgress = assignedTasks.filter(
-      (t) => t.status === "in-progress",
-    ).length;
-    const todo = assignedTasks.filter(
-      (t) => t.status === "todo",
-    ).length;
-
-    return {
-      total: assignedTasks.length,
-      completed,
-      inProgress,
-      todo,
-    };
-  };
+  const getTaskStats = (memberId: string) => getMemberTaskStats(memberId, tasks);
 
   const handleCardClick = (member: User) => {
     if (
@@ -631,20 +625,31 @@ export function TeamPanel() {
     return teams.find((t) => t.id === teamId)?.name ?? null;
   }, [editingMember, currentTeamId, teams]);
 
-  // Use current team members if a team is selected, otherwise use legacy workspace team
   const activeMembers = currentTeamId ? currentTeamMembers : teamMembers;
+  const acceptedMembers = useMemo(() => getAcceptedMembers(activeMembers), [activeMembers]);
+  const pendingMembers = useMemo(() => getPendingMembers(activeMembers), [activeMembers]);
+  const assignedTasksForTeam = useMemo(
+    () => getAssignedTasksForMembers(activeMembers, tasks),
+    [activeMembers, tasks],
+  );
+  const selectedTeam = currentTeamId ? teams.find((team) => team.id === currentTeamId) : null;
 
-  // Filter members based on search query
-  const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return activeMembers;
-    
+  const filteredAcceptedMembers = useMemo(() => {
+    if (!searchQuery.trim()) return acceptedMembers;
+
     const query = searchQuery.toLowerCase();
-    return activeMembers.filter(member =>
-      member.name.toLowerCase().includes(query) ||
-      member.email.toLowerCase().includes(query) ||
-      member.role.toLowerCase().includes(query)
+    return acceptedMembers.filter(
+      (member) =>
+        member.name.toLowerCase().includes(query) ||
+        member.email.toLowerCase().includes(query) ||
+        member.role.toLowerCase().includes(query),
     );
-  }, [activeMembers, searchQuery]);
+  }, [acceptedMembers, searchQuery]);
+
+  const profileAssignedTasks = useMemo(() => {
+    if (!editingMember) return [];
+    return tasks.filter((task) => task.assignedTo?.includes(editingMember.id));
+  }, [editingMember, tasks]);
 
   // Format expiration date
   const formatExpirationDate = (expiresAt?: string) => {
@@ -750,320 +755,6 @@ export function TeamPanel() {
       // Error already handled in declineInvitation
     }
   };
-
-  // Team Member Card Component with dropdown state
-  const TeamMemberCard = React.memo(({ 
-    member, 
-    stats, 
-    isCurrentUser,
-    allTeamMembers: _allTeamMembers,
-    onCardClick,
-    onResendInvitation,
-    onDeclineInvitation,
-    onUpdateRole,
-    onRemoveMember,
-    getRoleIcon,
-    getRoleBadgeVariant,
-    getInviteStatusBadge,
-    formatExpirationDate,
-    acceptInvitation
-  }: {
-    member: User;
-    stats: ReturnType<typeof getTaskStats>;
-    isCurrentUser: boolean;
-    allTeamMembers: User[];
-    onCardClick: (member: User) => void;
-    onResendInvitation: (member: User) => void;
-    onDeclineInvitation: (member: User) => void;
-    onUpdateRole: (member: User, role: "admin" | "member" | "viewer") => void;
-    onRemoveMember: (member: User) => void;
-    getRoleIcon: (role: string) => React.ReactNode;
-    getRoleBadgeVariant: (role: string) => "default" | "secondary" | "outline";
-    getInviteStatusBadge: (member: User) => React.ReactNode;
-    formatExpirationDate: (expiresAt?: string) => { text: string; isExpired: boolean } | null;
-    acceptInvitation: (id: string) => void;
-  }) => {
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-
-    const roleDisplayText = member.role === 'admin' 
-      ? TEAM_PANEL_UI_TEXT.roles.admin 
-      : member.role === 'member' 
-      ? TEAM_PANEL_UI_TEXT.roles.member 
-      : TEAM_PANEL_UI_TEXT.roles.viewer;
-
-    const roleTabColor =
-      member.role === 'admin'
-        ? COLOR_ROLE_ADMIN
-        : member.role === 'viewer'
-          ? COLOR_ROLE_VIEWER
-          : COLOR_ROLE_MEMBER;
-    
-    return (
-      <div
-        className="relative min-w-0"
-        style={{ paddingTop: TEAM_PANEL_ROLODEX_CARD_OFFSET_TOP }}
-      >
-        {/* Rolodex index tab */}
-        <div
-          className="absolute left-1/2 z-10 -translate-x-1/2 rounded-full"
-          style={{
-            top: 0,
-            width: TEAM_PANEL_ROLODEX_TAB_WIDTH,
-            height: TEAM_PANEL_ROLODEX_TAB_HEIGHT,
-            backgroundColor: roleTabColor,
-          }}
-          aria-hidden
-        />
-
-        <div
-          className={cn(
-            'group relative flex min-w-0 cursor-pointer flex-col items-center overflow-hidden border border-border/50 bg-card/95 text-foreground shadow-sm transition-all',
-            'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/30 hover:shadow-md',
-            'active:scale-[0.97] active:shadow-sm',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2',
-            HEADER_BACKDROP_BLUR_CLASS,
-            isCurrentUser && 'ring-1 ring-primary/20',
-          )}
-          style={{
-            borderRadius: TEAM_PANEL_ROLODEX_BORDER_RADIUS,
-            padding: TEAM_PANEL_ROLODEX_CARD_PADDING,
-            paddingTop: TEAM_PANEL_ROLODEX_CARD_PADDING_TOP,
-          }}
-          role="button"
-          tabIndex={0}
-          aria-label={`View profile for ${member.name}`}
-          onClick={(e) => {
-            const target = e.target as HTMLElement;
-            if (!dropdownOpen && !target.closest(PANEL_DROPDOWN_MENU_TRIGGER_SELECTOR)) {
-              onCardClick(member);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (dropdownOpen) return;
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onCardClick(member);
-            }
-          }}
-        >
-          {member.hasUnreadNotification && member.inviteStatus === 'accepted' && (
-            <div
-              className="absolute animate-pulse rounded-full bg-primary"
-              style={{
-                top: TEAM_PANEL_NOTIFICATION_BADGE_TOP,
-                right: TEAM_PANEL_NOTIFICATION_BADGE_RIGHT,
-                width: TEAM_PANEL_NOTIFICATION_BADGE_SIZE,
-                height: TEAM_PANEL_NOTIFICATION_BADGE_SIZE,
-                zIndex: TEAM_PANEL_NOTIFICATION_Z_INDEX,
-              }}
-            />
-          )}
-
-          <div
-            className="pointer-events-none absolute top-0 right-0"
-            style={{ zIndex: TEAM_PANEL_DROPDOWN_TRIGGER_Z_INDEX }}
-          >
-            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen} modal={false}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="pointer-events-auto h-auto w-auto flex-shrink-0 opacity-50 transition-opacity hover:bg-muted/80 hover:opacity-100 focus:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
-                  style={{
-                    height: TEAM_PANEL_ROLODEX_MENU_BUTTON_SIZE,
-                    width: TEAM_PANEL_ROLODEX_MENU_BUTTON_SIZE,
-                    minHeight: TEAM_PANEL_ROLODEX_MENU_BUTTON_SIZE,
-                    minWidth: TEAM_PANEL_ROLODEX_MENU_BUTTON_SIZE,
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  data-slot={PANEL_DROPDOWN_MENU_TRIGGER_DATA_SLOT}
-                >
-                  <Icon name="more-vertical" size={TEAM_PANEL_ICON_SIZE_SMALL} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                style={{
-                  zIndex: TEAM_PANEL_DROPDOWN_Z_INDEX,
-                  width: TEAM_PANEL_DROPDOWN_WIDTH,
-                }}
-                onCloseAutoFocus={(e) => {
-                  e.preventDefault();
-                }}
-              >
-                {member.inviteStatus === 'pending' && (
-                  <>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => onResendInvitation(member), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <Icon name="paper-plane-tilt" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Resend Invitation
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => {
-                          acceptInvitation(member.id);
-                          toast.success(`${member.name} accepted the invitation!`);
-                        }, PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <Icon name="bell" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Accept Invite (Demo)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        setDropdownOpen(false);
-                        setTimeout(() => onDeclineInvitation(member), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                      }}
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                    >
-                      <Icon name="x-circle" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      Decline Invitation
-                    </DropdownMenuItem>
-                    <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
-                  </>
-                )}
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setDropdownOpen(false);
-                    setTimeout(() => onUpdateRole(member, 'admin'), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                  }}
-                  disabled={member.role === 'admin'}
-                  className="cursor-pointer"
-                >
-                  <Icon name="shield-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                  Make Admin
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setDropdownOpen(false);
-                    setTimeout(() => onUpdateRole(member, 'member'), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                  }}
-                  disabled={member.role === 'member'}
-                  className="cursor-pointer"
-                >
-                  <Icon name="shield" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                  Make Member
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setDropdownOpen(false);
-                    setTimeout(() => onUpdateRole(member, 'viewer'), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                  }}
-                  disabled={member.role === 'viewer'}
-                  className="cursor-pointer"
-                >
-                  <Icon name="eye" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                  Make Viewer
-                </DropdownMenuItem>
-                <Separator style={{ marginTop: TEAM_PANEL_MARGIN_BOTTOM_SMALL, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }} />
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setDropdownOpen(false);
-                    setTimeout(() => onRemoveMember(member), PANEL_DROPDOWN_TIMEOUT_DELAY_MS);
-                  }}
-                  className="text-destructive focus:text-destructive cursor-pointer"
-                  disabled={isCurrentUser}
-                >
-                  <Icon name="trash-2" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                  Remove
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="relative flex-shrink-0" style={{ marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}>
-            <UserProfileAvatar
-              src={member.avatar}
-              name={member.name}
-              size={TEAM_PANEL_ROLODEX_AVATAR_SIZE}
-              fontSize={TEAM_PANEL_ROLODEX_AVATAR_FONT_SIZE}
-              showRing={false}
-              className="ring-1 ring-border/60 ring-offset-1 ring-offset-card"
-            />
-            {member.hasUnreadNotification && member.inviteStatus === 'accepted' && (
-              <div
-                className="absolute rounded-full border border-card bg-primary"
-                style={{
-                  width: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                  height: TEAM_PANEL_NOTIFICATION_DOT_SIZE,
-                  bottom: TEAM_PANEL_NOTIFICATION_DOT_BOTTOM_OFFSET,
-                  right: TEAM_PANEL_NOTIFICATION_DOT_RIGHT_OFFSET,
-                }}
-              />
-            )}
-          </div>
-
-          <h3
-            className="w-full truncate text-center font-semibold text-foreground"
-            style={{
-              fontSize: TEAM_PANEL_ROLODEX_NAME_SIZE,
-              marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL,
-              lineHeight: 1.2,
-            }}
-            title={member.name}
-          >
-            {getAbbreviatedDisplayName(member.name)}
-          </h3>
-
-          <div
-            className="flex w-full flex-col items-center"
-            style={{ gap: TEAM_PANEL_MARGIN_BOTTOM_SMALL }}
-          >
-            <Badge
-              variant={getRoleBadgeVariant(member.role)}
-              className="max-w-full capitalize"
-              style={{
-                fontSize: TEAM_PANEL_TEXT_SIZE_XS,
-                paddingLeft: TEAM_PANEL_BADGE_PADDING_X,
-                paddingRight: TEAM_PANEL_BADGE_PADDING_X,
-                paddingTop: TEAM_PANEL_BADGE_PADDING_Y,
-                paddingBottom: TEAM_PANEL_BADGE_PADDING_Y,
-              }}
-            >
-              <span className="inline-flex items-center truncate" style={{ gap: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
-                {getRoleIcon(member.role)}
-                {roleDisplayText}
-              </span>
-            </Badge>
-
-            {isCurrentUser && (
-              <span className="text-primary" style={{ fontSize: TEAM_PANEL_ROLODEX_STAT_SIZE }}>
-                {TEAM_PANEL_UI_TEXT.currentUser.replace(/[()]/g, '')}
-              </span>
-            )}
-
-            {getInviteStatusBadge(member)}
-
-            <span
-              className="text-center text-muted-foreground"
-              style={{ fontSize: TEAM_PANEL_ROLODEX_STAT_SIZE, lineHeight: 1.2 }}
-            >
-              <span className="font-semibold text-foreground">{stats.total}</span>{' '}
-              {stats.total !== 1 ? TEAM_PANEL_UI_TEXT.stats.tasks : TEAM_PANEL_UI_TEXT.stats.task}
-              {stats.completed > 0 && (
-                <>
-                  {' · '}
-                  <span className="font-semibold" style={{ color: COLOR_TASK_COMPLETED_GREEN }}>
-                    {stats.completed}
-                  </span>
-                </>
-              )}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  });
-
-  TeamMemberCard.displayName = 'TeamMemberCard';
 
   const handleBulkInvite = async () => {
     if (!bulkInvites.trim()) {
@@ -1227,474 +918,212 @@ export function TeamPanel() {
     }
   };
 
+  const teamLabel = selectedTeam?.name ?? TEAM_PANEL_UI_TEXT.workspaceTeam;
+  const teamDescription = selectedTeam
+    ? (selectedTeam.description || TEAM_PANEL_UI_TEXT.overview.teamDescription(selectedTeam.name))
+    : TEAM_PANEL_UI_TEXT.overview.workspaceDescription;
+
+  const renderSectionContent = () => {
+    if (activeSection === 'tasks') {
+      return (
+        <TeamAssignedTasksList
+          tasks={assignedTasksForTeam}
+          members={activeMembers}
+          onViewMember={handleCardClick}
+        />
+      );
+    }
+
+    if (activeSection === 'invites') {
+      if (pendingMembers.length === 0) {
+        return (
+          <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+            <Icon name="paper-plane-tilt" size={40} className="mb-4 text-muted-foreground/50" />
+            <p className="font-medium text-foreground">{TEAM_PANEL_UI_TEXT.overview.emptyInvites}</p>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              {TEAM_PANEL_UI_TEXT.overview.emptyInvitesHint}
+            </p>
+            {isCurrentUserAdmin ? (
+              <Button type="button" className="mt-4 gap-2" onClick={openAddMemberDialog}>
+                <Icon name="user-plus" size={18} />
+                {TEAM_PANEL_UI_TEXT.overview.inviteMember}
+              </Button>
+            ) : null}
+          </div>
+        );
+      }
+
+      return (
+        <div className="space-y-2">
+          {pendingMembers.map((member) => (
+            <TeamInviteRow
+              key={member.id}
+              member={member}
+              canManageTeam={isCurrentUserAdmin}
+              onResend={handleResendInvitation}
+              onCancel={handleDeclineInvitation}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (filteredAcceptedMembers.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+          <Icon name="users" size={40} className="mb-4 text-muted-foreground/50" />
+          <p className="font-medium text-foreground">
+            {searchQuery
+              ? TEAM_PANEL_UI_TEXT.overview.noSearchResults
+              : TEAM_PANEL_UI_TEXT.overview.emptyMembers}
+          </p>
+          {!searchQuery && isCurrentUserAdmin ? (
+            <>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                {currentTeamId
+                  ? TEAM_PANEL_UI_TEXT.inviteToTeam
+                  : TEAM_PANEL_UI_TEXT.inviteFamilyMembers}
+              </p>
+              <Button type="button" className="mt-4 gap-2" onClick={openAddMemberDialog}>
+                <Icon name="user-plus" size={18} />
+                {TEAM_PANEL_UI_TEXT.overview.inviteMember}
+              </Button>
+            </>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {filteredAcceptedMembers.map((member) => (
+          <TeamMemberRow
+            key={member.id}
+            member={member}
+            stats={getTaskStats(member.id)}
+            isCurrentUser={member.id === currentUser?.id}
+            canManageTeam={isCurrentUserAdmin}
+            onViewProfile={handleCardClick}
+            onUpdateRole={handleUpdateRole}
+            onRemoveMember={handleRemoveMember}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div
       className={cn(
         'flex flex-col bg-background',
-        typeof window !== 'undefined' && window.innerWidth < VIEWPORT_BREAKPOINTS.mobile ? 'min-h-full' : 'h-full',
+        shouldUseMobileLayout ? 'min-h-full' : 'h-full',
       )}
     >
-      {/* Header */}
       <AppHeader
         title={NAVIGATION_UI_TEXT.team}
         panelOpen={true}
         isSidePanelHeader={true}
         description={
-          currentTeamId
-            ? teams.find(t => t.id === currentTeamId)
-              ? `${filteredMembers.length} of ${activeMembers.length} member${activeMembers.length === 1 ? "" : "s"} in ${teams.find(t => t.id === currentTeamId)?.name || "team"}`
-              : `${filteredMembers.length} of ${activeMembers.length} member${activeMembers.length === 1 ? "" : "s"}`
-            : teams.length > 0
-            ? TEAM_PANEL_UI_TEXT.teamsAvailable(teams.length)
-            : activeMembers.length === 0
-            ? TEAM_PANEL_UI_TEXT.inviteFirstMember
-            : `${filteredMembers.length} of ${activeMembers.length} member${activeMembers.length === 1 ? "" : "s"}`
-        }
-        actions={
-          <div className="flex items-center" style={{ gap: TEAM_PANEL_HEADER_ICON_GAP }}>
-            {isCurrentUserAdmin && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      onClick={() => setShowCreateTeam(true)}
-                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setShowCreateTeam(true);
-                        }
-                      }}
-                    >
-                      <Icon 
-                        name="user-three"
-                        size={ICON_SIZE_XL}
-                        className="text-primary dark:text-primary-foreground flex-shrink-0"
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{TEAM_PANEL_UI_TEXT.createNewTeam}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            {isCurrentUserAdmin && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      onClick={openAddMemberDialog}
-                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          openAddMemberDialog();
-                        }
-                      }}
-                    >
-                      <Icon 
-                        name="user-plus"
-                        size={ICON_SIZE_XL}
-                        className="text-primary dark:text-primary-foreground flex-shrink-0"
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{TEAM_PANEL_UI_TEXT.addMember}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            {isCurrentUserAdmin && (teamMembers.length > 0 || (currentTeamId && currentTeamMembers.length > 0)) && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      onClick={openBulkInviteDialog}
-                      className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setShowBulkInvite(true);
-                        }
-                      }}
-                    >
-                      <Icon 
-                        name="paper-plane-tilt"
-                        size={ICON_SIZE_XL}
-                        className="text-primary dark:text-primary-foreground flex-shrink-0"
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{TEAM_PANEL_UI_TEXT.bulkInvite}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
+          isSyncing
+            ? 'Syncing team…'
+            : `${acceptedMembers.length} active · ${pendingMembers.length} pending · ${assignedTasksForTeam.length} assigned`
         }
         hideDesktopLogo
       />
 
-      {/* Teams Tabs - Always show if teams exist, or show workspace team if no teams */}
-      <div 
-        className={cn('border-b border-border/40 bg-muted/20 min-w-0', HEADER_BACKDROP_BLUR_CLASS)}
-        style={{ 
-          paddingLeft: PANEL_PADDING,
-          paddingRight: PANEL_PADDING,
-          paddingTop: TEAM_PANEL_TAB_PADDING,
-          paddingBottom: TEAM_PANEL_TAB_PADDING
-        }}
-      >
-        <Tabs 
-          value={currentTeamId || "workspace"} 
-          onValueChange={(value) => {
-            console.log('Team tab clicked:', value);
-            selectTeam(value === "workspace" ? null : value);
-          }}
+      <TeamOverviewBar
+        teamLabel={teamLabel}
+        teamDescription={teamDescription}
+        memberCount={acceptedMembers.length}
+        assignedTaskCount={assignedTasksForTeam.length}
+        pendingInviteCount={pendingMembers.length}
+        teams={teams}
+        currentTeamId={currentTeamId}
+        isLoadingTeams={isLoadingTeams}
+        canManageTeam={isCurrentUserAdmin}
+        onTeamChange={selectTeam}
+        onInvite={openAddMemberDialog}
+        onBulkInvite={openBulkInviteDialog}
+        onCreateTeam={() => setShowCreateTeam(true)}
+        onEditTeam={
+          selectedTeam && isCurrentUserAdmin
+            ? () => handleEditTeam(selectedTeam)
+            : undefined
+        }
+      />
+
+      <TeamSectionNav
+        activeSection={activeSection}
+        memberCount={acceptedMembers.length}
+        assignedTaskCount={assignedTasksForTeam.length}
+        pendingInviteCount={pendingMembers.length}
+        onSectionChange={setActiveSection}
+      />
+
+      {activeSection === 'members' ? (
+        <div
+          className="border-b border-border/40 px-4 py-3"
         >
-          <TabsList className="w-full justify-start overflow-x-auto min-w-0" style={{ height: TEAM_PANEL_TAB_HEIGHT }}>
-            <TabsTrigger value="workspace" className="flex-shrink-0 min-w-[theme(spacing.20)]">
-              {TEAM_PANEL_UI_TEXT.workspaceTeam}
-            </TabsTrigger>
-              {isLoadingTeams ? (
-              <TabsTrigger value="loading" disabled className="flex-shrink-0 min-w-[theme(spacing.20)]">
-                {TEAM_PANEL_UI_TEXT.loadingTeams}
-              </TabsTrigger>
-            ) : (
-              teams.length > 0 ? (
-                teams.map((team) => {
-                  const memberCount = team.memberCount ?? (team.id === currentTeamId ? currentTeamMembers.length : 0);
-                  return (
-                    <TabsTrigger key={team.id} value={team.id} className="flex-shrink-0 min-w-[theme(spacing.20)]">
-                      {team.name}
-                      {memberCount > 0 && (
-                        <Badge variant="secondary" className="ml-1" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
-                          {memberCount}/{TEAM_MAX_MEMBERS}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  );
-                })
-              ) : null
-            )}
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* Team Settings Bar - Only show when a specific team is selected */}
-      {currentTeamId && isCurrentUserAdmin && (() => {
-        const selectedTeam = teams.find(t => t.id === currentTeamId);
-        return selectedTeam ? (
-          <div 
-            className={cn('border-b border-border/40 bg-muted/15', HEADER_BACKDROP_BLUR_CLASS)}
-            style={{ 
-              paddingLeft: PANEL_PADDING,
-              paddingRight: PANEL_PADDING,
-              paddingTop: PANEL_GAP_SMALL,
-              paddingBottom: PANEL_GAP_SMALL
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Icon name="users" size={TEAM_PANEL_ICON_SIZE_MEDIUM} className="text-primary" />
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm">{selectedTeam.name}</span>
-                  {selectedTeam.description && (
-                    <span className="text-xs text-muted-foreground">{selectedTeam.description}</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEditTeam(selectedTeam)}
-                        className="h-8 w-8"
-                      >
-                        <Icon name="pencil" size={TEAM_PANEL_ICON_SIZE_SMALL} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{TEAM_PANEL_UI_TEXT.editTeam}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteTeam(selectedTeam)}
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                      >
-                        <Icon name="trash" size={TEAM_PANEL_ICON_SIZE_SMALL} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{TEAM_PANEL_UI_TEXT.deleteTeam}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
-          </div>
-        ) : null;
-      })()}
-
-      {/* Search Bar */}
-      <div 
-        className="border-b border-border/40"
-        style={{ 
-          paddingLeft: PANEL_PADDING,
-          paddingRight: PANEL_PADDING,
-          paddingTop: PANEL_SEARCH_BAR_PADDING_TOP,
-          paddingBottom: PANEL_SEARCH_BAR_PADDING_BOTTOM
-        }}
-      >
-        <div className="relative">
-          <Icon 
-            name="search"
-            size={TEAM_PANEL_SEARCH_ICON_SIZE}
-            className="absolute top-1/2 -translate-y-1/2 text-muted-foreground" 
-            style={{ 
-              left: PANEL_SEARCH_ICON_POSITION_LEFT
-            }} 
-          />
-          <Input
-            placeholder={TEAM_PANEL_UI_TEXT.searchMembersPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: PANEL_SEARCH_INPUT_PADDING_LEFT }}
-            className="bg-background/80 text-foreground border-border/50"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-1/2 -translate-y-1/2"
-              style={{ 
-                right: TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT,
-                height: TEAM_PANEL_BUTTON_SIZE_SMALL, 
-                width: TEAM_PANEL_BUTTON_SIZE_SMALL 
-              }}
-              onClick={() => setSearchQuery("")}
-            >
-              <Icon name="x" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Team Members List */}
-      {/* On mobile, rely on parent scroll container in App.tsx - no ScrollArea */}
-      {typeof window !== 'undefined' && window.innerWidth >= VIEWPORT_BREAKPOINTS.mobile ? (
-      <ScrollArea className="flex-1">
-        <div 
-          className="pb-safe md:pb-4" 
-          style={{ 
-            padding: PANEL_PADDING,
-            paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
-            paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE,
-            gap: PANEL_CONTENT_SPACING
-          }}
-        >
-          {filteredMembers.length === 0 ? (
-            <div 
-              className="text-center" 
-              style={{ 
-                paddingTop: PANEL_EMPTY_STATE_PADDING_Y, 
-                paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
-              }}
-            >
-              <Icon 
-                name="users"
-                size={TEAM_PANEL_EMPTY_STATE_ICON_SIZE}
-                className="mx-auto text-muted-foreground opacity-50" 
-                style={{ 
-                  marginBottom: TEAM_PANEL_MARGIN_BOTTOM_LARGE
-                }} 
-              />
-              <p 
-                className="text-muted-foreground" 
-                style={{ 
-                  fontSize: PANEL_EMPTY_STATE_TEXT_SIZE, 
-                  marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
+          <div className="relative">
+            <Icon
+              name="search"
+              size={TEAM_PANEL_SEARCH_ICON_SIZE}
+              className="absolute top-1/2 -translate-y-1/2 text-muted-foreground"
+              style={{ left: PANEL_SEARCH_ICON_POSITION_LEFT }}
+            />
+            <Input
+              placeholder={TEAM_PANEL_UI_TEXT.overview.searchMembers}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              style={{ paddingLeft: PANEL_SEARCH_INPUT_PADDING_LEFT }}
+              className="bg-background/80 text-foreground border-border/50"
+            />
+            {searchQuery ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1/2 -translate-y-1/2"
+                style={{
+                  right: TEAM_PANEL_SEARCH_CLEAR_BUTTON_RIGHT,
+                  height: TEAM_PANEL_BUTTON_SIZE_SMALL,
+                  width: TEAM_PANEL_BUTTON_SIZE_SMALL,
                 }}
+                onClick={() => setSearchQuery('')}
               >
-                {searchQuery ? "No members match your search" : "No team members yet"}
-              </p>
-              {!searchQuery && (
-                <>
-                  <p 
-                    className="text-muted-foreground" 
-                    style={{ 
-                      fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                      marginBottom: TEAM_PANEL_MARGIN_BOTTOM_XLARGE
-                    }}
-                  >
-                    {currentTeamId 
-                      ? TEAM_PANEL_UI_TEXT.inviteToTeam
-                      : TEAM_PANEL_UI_TEXT.inviteFamilyMembers}
-                  </p>
-                  <Button
-                    onClick={openAddMemberDialog}
-                    variant="outline"
-                    size="sm"
-                    style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
-                  >
-                    <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                    {currentTeamId ? TEAM_PANEL_UI_TEXT.addMemberToTeam : TEAM_PANEL_UI_TEXT.addFirstMember}
-                  </Button>
-                </>
-              )}
-            </div>
-          ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(auto-fill, minmax(${TEAM_PANEL_ROLODEX_CARD_MIN_WIDTH}, 1fr))`,
-                gap: TEAM_PANEL_GRID_GAP,
-              }}
-            >
-              {filteredMembers.map((member) => {
-                const stats = getTaskStats(member.id);
-                const isCurrentUser = member.id === currentUser?.id;
-
-                return (
-                  <TeamMemberCard
-                    key={member.id}
-                    member={member}
-                    stats={stats}
-                    isCurrentUser={isCurrentUser}
-                    allTeamMembers={activeMembers}
-                    onCardClick={handleCardClick}
-                    onResendInvitation={handleResendInvitation}
-                    onDeclineInvitation={handleDeclineInvitation}
-                    onUpdateRole={handleUpdateRole}
-                    onRemoveMember={handleRemoveMember}
-                    getRoleIcon={getRoleIcon}
-                    getRoleBadgeVariant={getRoleBadgeVariant}
-                    getInviteStatusBadge={getInviteStatusBadge}
-                    formatExpirationDate={formatExpirationDate}
-                    acceptInvitation={acceptInvitation}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-      ) : (
-          <div className="flex-1">
-            <div 
-              className="pb-safe md:pb-4" 
-              style={{ 
-                padding: PANEL_PADDING,
-                paddingTop: `calc(${PANEL_PADDING_TOP_MOBILE} + ${TEAM_PANEL_CONTENT_PADDING_TOP_OFFSET})`,
-                paddingBottom: `calc(${TEAM_PANEL_BOTTOM_PADDING_MOBILE} + ${MOBILE_PADDING_BOTTOM})`,
-                gap: PANEL_CONTENT_SPACING
-              }}
-            >
-              {filteredMembers.length === 0 ? (
-                <div 
-                  className="text-center" 
-                  style={{
-                    paddingTop: PANEL_EMPTY_STATE_PADDING_Y, 
-                    paddingBottom: PANEL_EMPTY_STATE_PADDING_Y
-                  }}
-                >
-                  <Icon 
-                    name="users"
-                    size={TEAM_PANEL_EMPTY_STATE_ICON_SIZE}
-                    className="mx-auto text-muted-foreground opacity-50" 
-                    style={{ 
-                      marginBottom: TEAM_PANEL_MARGIN_BOTTOM_LARGE
-                    }} 
-                  />
-                  <p 
-                    className="text-muted-foreground" 
-                    style={{ 
-                      fontSize: PANEL_EMPTY_STATE_TEXT_SIZE, 
-                      marginBottom: TEAM_PANEL_MARGIN_BOTTOM_SMALL
-                    }}
-                  >
-                    {searchQuery ? "No members match your search" : "No team members yet"}
-                  </p>
-                  {!searchQuery && (
-                    <>
-                      <p 
-                        className="text-muted-foreground" 
-                        style={{ 
-                          fontSize: TEAM_PANEL_TEXT_SIZE_SMALL, 
-                          marginBottom: TEAM_PANEL_MARGIN_BOTTOM_XLARGE
-                        }}
-                      >
-                        {currentTeamId 
-                          ? TEAM_PANEL_UI_TEXT.inviteToTeam
-                          : TEAM_PANEL_UI_TEXT.inviteFamilyMembers}
-                      </p>
-                      <Button
-                        onClick={openAddMemberDialog}
-                        variant="outline"
-                        size="sm"
-                        style={{ marginTop: TEAM_PANEL_MARGIN_TOP_SMALL }}
-                      >
-                        <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                        {currentTeamId ? TEAM_PANEL_UI_TEXT.addMemberToTeam : TEAM_PANEL_UI_TEXT.addFirstMember}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(auto-fill, minmax(${TEAM_PANEL_ROLODEX_CARD_MIN_WIDTH}, 1fr))`,
-                    gap: TEAM_PANEL_GRID_GAP,
-                  }}
-                >
-                  {filteredMembers.map((member) => {
-                    const stats = getTaskStats(member.id);
-                    const isCurrentUser = member.id === currentUser?.id;
-
-                    return (
-                      <TeamMemberCard
-                        key={member.id}
-                        member={member}
-                        stats={stats}
-                        isCurrentUser={isCurrentUser}
-                        allTeamMembers={activeMembers}
-                        onCardClick={handleCardClick}
-                        onResendInvitation={handleResendInvitation}
-                        onDeclineInvitation={handleDeclineInvitation}
-                    onUpdateRole={handleUpdateRole}
-                    onRemoveMember={handleRemoveMember}
-                        getRoleIcon={getRoleIcon}
-                        getRoleBadgeVariant={getRoleBadgeVariant}
-                        getInviteStatusBadge={getInviteStatusBadge}
-                        formatExpirationDate={formatExpirationDate}
-                        acceptInvitation={acceptInvitation}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                <Icon name="x" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+              </Button>
+            ) : null}
           </div>
-        )}
+        </div>
+      ) : null}
+
+      {shouldUseMobileLayout ? (
+        <div
+          className="flex-1 px-4 py-4"
+          style={{ paddingBottom: `calc(${TEAM_PANEL_BOTTOM_PADDING_MOBILE} + ${MOBILE_PADDING_BOTTOM})` }}
+        >
+          {renderSectionContent()}
+        </div>
+      ) : (
+        <ScrollArea className="flex-1">
+          <div
+            className="px-4 py-4"
+            style={{ paddingBottom: TEAM_PANEL_BOTTOM_PADDING_MOBILE }}
+          >
+            {renderSectionContent()}
+          </div>
+        </ScrollArea>
+      )}
+
+      <TeamMemberProfileDialog
+        member={editingMember}
+        stats={profileMemberStats}
+        teamName={profileTeamName}
+        assignedTasks={profileAssignedTasks}
+        isCurrentUser={editingMember?.id === currentUser?.id}
+        inviteStatusBadge={editingMember ? getInviteStatusBadge(editingMember) : null}
+        onClose={() => setEditingMember(null)}
+      />
 
       {/* Create Team Dialog */}
       <Dialog
@@ -1841,147 +1270,6 @@ export function TeamPanel() {
               {isDeletingTeam ? TEAM_PANEL_UI_TEXT.deletingTeam : TEAM_PANEL_UI_TEXT.deleteTeam}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Member Profile Dialog */}
-      <Dialog
-        open={editingMember !== null}
-        onOpenChange={(open) => {
-          if (!open) setEditingMember(null);
-        }}
-      >
-        <DialogContent className="overflow-hidden p-0 sm:max-w-md">
-          {editingMember && profileMemberStats && (
-            <>
-              <div
-                className="relative w-full bg-primary/80 dark:bg-primary/60"
-                style={{ height: TEAM_PANEL_PROFILE_BANNER_HEIGHT }}
-              />
-              <div
-                style={{
-                  marginTop: TEAM_PANEL_PROFILE_AVATAR_OVERLAP_OFFSET,
-                  paddingLeft: PANEL_PADDING,
-                  paddingRight: PANEL_PADDING,
-                }}
-              >
-                <UserProfileAvatar
-                  src={editingMember.avatar}
-                  name={editingMember.name}
-                  size={TEAM_PANEL_PROFILE_AVATAR_SIZE}
-                  fontSize={TEAM_PANEL_PROFILE_AVATAR_FONT_SIZE}
-                  className="border-4 border-background shadow-lg ring-0"
-                />
-              </div>
-              <div style={{ padding: PANEL_PADDING, paddingTop: PANEL_GAP_MEDIUM }}>
-                <DialogHeader className="space-y-0 text-left">
-                  <DialogTitle className="flex flex-wrap items-center gap-2 pr-6">
-                    <span>{editingMember.name}</span>
-                    {editingMember.id === currentUser?.id && (
-                      <Badge variant="secondary" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
-                        {TEAM_PANEL_UI_TEXT.currentUser.replace(/[()]/g, '')}
-                      </Badge>
-                    )}
-                  </DialogTitle>
-                  <DialogDescription asChild>
-                    <div className="space-y-3 pt-2">
-                      <a
-                        href={`mailto:${editingMember.email}`}
-                        className="flex items-center text-foreground transition-colors hover:text-primary"
-                        style={{ gap: PANEL_GAP_SMALL, fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}
-                      >
-                        <Icon name="envelope-simple" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
-                        {editingMember.email}
-                      </a>
-                      <div className="flex flex-wrap items-center" style={{ gap: PANEL_GAP_SMALL }}>
-                        <Badge variant={getRoleBadgeVariant(editingMember.role)} className="capitalize">
-                          <span className="inline-flex items-center" style={{ gap: TEAM_PANEL_MARGIN_RIGHT_SMALL }}>
-                            {getRoleIcon(editingMember.role)}
-                            {editingMember.role === 'admin'
-                              ? TEAM_PANEL_UI_TEXT.roles.admin
-                              : editingMember.role === 'member'
-                                ? TEAM_PANEL_UI_TEXT.roles.member
-                                : TEAM_PANEL_UI_TEXT.roles.viewer}
-                          </span>
-                        </Badge>
-                        {getInviteStatusBadge(editingMember)}
-                        {profileTeamName && (
-                          <Badge variant="outline" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_XS }}>
-                            <Icon name="users" size={TEAM_PANEL_ICON_SIZE_SMALL} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
-                            {profileTeamName}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div
-                  className="rounded-lg border border-border/50 bg-muted/20"
-                  style={{
-                    marginTop: PANEL_GAP_LARGE,
-                    padding: PANEL_GAP_MEDIUM,
-                  }}
-                >
-                  <p
-                    className="font-medium text-foreground"
-                    style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, marginBottom: TEAM_PANEL_MARGIN_BOTTOM_MEDIUM }}
-                  >
-                    {TEAM_PANEL_UI_TEXT.memberProfile.tasksAssigned}
-                  </p>
-                  <div
-                    className="grid grid-cols-2"
-                    style={{ gap: PANEL_GAP_MEDIUM }}
-                  >
-                    <div>
-                      <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                        {TEAM_PANEL_UI_TEXT.stats.tasks}
-                      </p>
-                      <p className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM }}>
-                        {profileMemberStats.total}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                        {TEAM_PANEL_UI_TEXT.stats.completed}
-                      </p>
-                      <p className="font-semibold" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, color: COLOR_TASK_COMPLETED_GREEN }}>
-                        {profileMemberStats.completed}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                        {TEAM_PANEL_UI_TEXT.stats.inProgress}
-                      </p>
-                      <p className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, color: COLOR_TASK_IN_PROGRESS_AMBER }}>
-                        {profileMemberStats.inProgress}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
-                        {TEAM_PANEL_UI_TEXT.stats.todo}
-                      </p>
-                      <p className="font-semibold text-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_MEDIUM, color: COLOR_TASK_TODO_BLUE }}>
-                        {profileMemberStats.todo}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end" style={{ gap: PANEL_GAP_MEDIUM, marginTop: PANEL_GAP_LARGE }}>
-                  <Button variant="outline" asChild>
-                    <a href={`mailto:${editingMember.email}`}>
-                      <Icon name="paper-plane-tilt" size={TEAM_PANEL_ICON_SIZE_MEDIUM} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_MEDIUM }} />
-                      {TEAM_PANEL_UI_TEXT.memberProfile.emailMember}
-                    </a>
-                  </Button>
-                  <Button onClick={() => setEditingMember(null)}>
-                    {TEAM_PANEL_UI_TEXT.memberProfile.close}
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
         </DialogContent>
       </Dialog>
 

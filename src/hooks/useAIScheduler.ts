@@ -948,6 +948,28 @@ export function useAIScheduler() {
 
     const dayType = isWeekendDate ? 'weekend' : 'weekday';
     const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
+
+    // For today, never return a distributed slot in the past or after category end
+    if (isToday && currentTimeRounded) {
+      const proposedTime = new Date(scheduleDate);
+      proposedTime.setHours(adjustedFinalHours, adjustedFinalMinutes, 0, 0);
+      const categoryEnd = new Date(scheduleDate);
+      categoryEnd.setHours(endTime.hours, endTime.minutes, 0, 0);
+      const taskDuration = taskDurationMinutes ?? getTaskMinutes(task, { useCachedAIAnalysis: true });
+      const proposedEndMs = proposedTime.getTime() + taskDuration * MILLISECONDS_PER_MINUTE;
+
+      if (proposedTime < currentTimeRounded || proposedEndMs > categoryEnd.getTime()) {
+        const currentEndMs = currentTimeRounded.getTime() + taskDuration * MILLISECONDS_PER_MINUTE;
+        if (currentEndMs <= categoryEnd.getTime()) {
+          return {
+            hours: currentTimeRounded.getHours(),
+            minutes: currentTimeRounded.getMinutes(),
+            reason: `${categoryName} task scheduled from current time during ${dayType} ${category} hours`,
+          };
+        }
+        return null;
+      }
+    }
     
     return {
       hours: adjustedFinalHours,
@@ -2251,6 +2273,7 @@ export function useAIScheduler() {
                 // to get all tasks for this occurrence day. This ensures consistency and that
                 // we see all tasks (existing and in-plan) with their scheduledDate properly adjusted.
                 const occurrenceDateKey = getDateKey(occurrenceDay);
+                const occurrenceIsToday = occurrenceDateKey === getDateKey(new Date());
                 
                 // Get existing tasks for this occurrence day (same logic as existingTasksForDay above)
                 const occurrenceExistingTasks = (dailyTasks.get(occurrenceDateKey) || [])
@@ -2341,7 +2364,7 @@ export function useAIScheduler() {
                   taskDurationMinutes,
                   allOccurrenceTasks, // Use all tasks for this occurrence day (existing + from plan)
                   buildAISchedulerSlotOptions({
-                    ensureAfterCurrentTime: false, // Don't check current time for future days
+                    ensureAfterCurrentTime: occurrenceIsToday,
                     categoryHours: categoryHours ? {
                       start: categoryHours.start,
                       end: categoryHours.end,
@@ -3122,7 +3145,7 @@ export function useAIScheduler() {
             taskDurationMinutes,
             validTasksForDay, // Use validated tasks which includes tasks from current plan
             buildAISchedulerSlotOptions({
-              ensureAfterCurrentTime: false, // Already handled by earlier logic
+              ensureAfterCurrentTime: isToday,
               categoryHours: effectiveCategoryHours ? {
                 start: effectiveCategoryHours.start,
                 end: effectiveCategoryHours.end,
@@ -3327,13 +3350,15 @@ export function useAIScheduler() {
         // Get calendar events for this specific day for final safeguard
         const finalSafeguardCalendarEvents = calendarEventsForDay(scheduleDate);
         
+        const finalSafeguardIsToday = getDateKey(scheduleDate) === getDateKey(new Date());
+
         const finalSafeguardSlot = findNextAvailableSlot(
           task.id,
           scheduleDate,
           taskDurationMinutes,
           updatedValidTasksForDay, // Use updated list with all tasks from plan
           buildAISchedulerSlotOptions({
-            ensureAfterCurrentTime: false,
+            ensureAfterCurrentTime: finalSafeguardIsToday,
             categoryHours: undefined, // Remove constraints for final check
             calendarEvents: finalSafeguardCalendarEvents, // Include calendar events
           })
