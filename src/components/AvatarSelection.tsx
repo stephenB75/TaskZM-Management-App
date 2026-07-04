@@ -1,5 +1,5 @@
 /**
- * Avatar Selection — Avataaars flat vector portraits (bundled SVG pack).
+ * Avatar Selection — Craftwork Userpics flat portraits (bundled PNG pack).
  */
 
 import React from 'react';

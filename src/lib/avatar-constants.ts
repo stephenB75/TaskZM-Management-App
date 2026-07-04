@@ -1,9 +1,14 @@
 /**
  * Avatar Constants
- * Bundled Avataaars pack (DiceBear / Pablo Stanley) — flat colorful vector portraits.
+ * Craftwork Userpics — diverse flat vector portraits (free commercial use).
+ * https://userpics.craftwork.design/
  */
 
-export const AVATAR_ID_PREFIX = 'taskzm:avataaars:';
+export const AVATAR_ID_PREFIX = 'taskzm:userpics:';
+/** @deprecated Avataaars pack */
+export const AVATAR_AVATAAARS_PREFIX = 'taskzm:avataaars:';
+/** @deprecated Micah pack */
+export const AVATAR_MICAH_PREFIX = 'taskzm:micah:';
 /** @deprecated Lorelei pack */
 export const AVATAR_LORELEI_PREFIX = 'taskzm:lorelei:';
 /** @deprecated Notionists pack */
@@ -14,15 +19,16 @@ export const AVATAR_PRESET_PREFIX = 'taskzm:pastel-';
 export const AVATAR_ICON_PREFIX = 'taskzm:icon:';
 
 export const AVATAR_PACK = {
-  id: 'avataaars',
-  name: 'Avataaars',
-  license: 'Free for personal and commercial use',
-  sourceUrl: 'https://avataaars.com/',
-  credit: 'Avataaars by Pablo Stanley (via DiceBear)',
-  publicPath: '/avatars/avataaars',
+  id: 'userpics',
+  name: 'Userpics',
+  license: 'Free commercial use (Craftwork)',
+  sourceUrl: 'https://userpics.craftwork.design/',
+  credit: 'Userpics by Craftwork',
+  publicPath: '/avatars/userpics',
+  fileExtension: 'png',
 } as const;
 
-export const AVATAR_COUNT = 24;
+export const AVATAR_COUNT = 27;
 
 /** @deprecated Gender is no longer used for avatar selection */
 export type AvatarGender = 'male' | 'female';
@@ -36,9 +42,9 @@ export interface AvatarOption {
 export const AVATAR_OPTIONS: readonly AvatarOption[] = Array.from(
   { length: AVATAR_COUNT },
   (_, index) => {
-    const file = `${String(index + 1).padStart(2, '0')}.svg`;
+    const file = `${String(index + 1).padStart(2, '0')}.${AVATAR_PACK.fileExtension}`;
     return {
-      id: `${AVATAR_ID_PREFIX}${file.replace('.svg', '')}`,
+      id: `${AVATAR_ID_PREFIX}${file.replace(`.${AVATAR_PACK.fileExtension}`, '')}`,
       label: `Profile ${index + 1}`,
       file,
     };
@@ -47,21 +53,21 @@ export const AVATAR_OPTIONS: readonly AvatarOption[] = Array.from(
 
 export const DEFAULT_AVATAR = AVATAR_OPTIONS[0].id;
 
-export const AVATAR_SELECTION_GRID_COLS = 6;
-export const AVATAR_SELECTION_SIZE = '72px';
-export const AVATAR_SELECTION_GAP = '0.625rem';
+export const AVATAR_SELECTION_GRID_COLS = 9;
+export const AVATAR_SELECTION_SIZE = '64px';
+export const AVATAR_SELECTION_GAP = '0.5rem';
 
 export const AVATAR_UI_TEXT = {
   chooseYourAvatar: 'Choose Your Avatar',
   chooseAvatar: 'Choose Avatar',
   selectYourAvatar: 'Select Your Avatar',
-  selectAvatarDescription: 'Pick a flat vector profile avatar',
+  selectAvatarDescription: 'Pick a profile character that fits you',
   changeAvatar: 'Change Avatar',
   saveAvatar: 'Save Avatar',
   saving: 'Saving…',
   cancel: 'Cancel',
   pleaseSelectAvatar: 'Please select an avatar',
-  packCredit: `${AVATAR_PACK.credit}`,
+  packCredit: `${AVATAR_PACK.credit} · ${AVATAR_PACK.license}`,
 } as const;
 
 export const AVATAR_CHECKMARK_SIZE = '1.5rem';
@@ -99,6 +105,8 @@ export function getAvatarPresetIndex(option: AvatarOption): number {
 /** All bundled pack ID prefixes — used for legacy migration by slot index. */
 export const AVATAR_LEGACY_PREFIXES = [
   AVATAR_ID_PREFIX,
+  AVATAR_AVATAAARS_PREFIX,
+  AVATAR_MICAH_PREFIX,
   AVATAR_LORELEI_PREFIX,
   AVATAR_NOTIONISTS_PREFIX,
 ] as const;
