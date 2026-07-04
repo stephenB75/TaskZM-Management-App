@@ -24,6 +24,15 @@ export const ICLOUD_EMAIL_PLACEHOLDER = 'your.email@icloud.com';
 /** Fallback color when a discovered Apple calendar has no color (indigo-500). */
 export const APPLE_CALENDAR_FALLBACK_COLOR = '#6366f1';
 
+/** Title used when an imported calendar event has no SUMMARY. */
+export const CALENDAR_UNTITLED_EVENT_TITLE = 'Untitled Event';
+
+/** CalDAV import window — days before today to fetch (recurring series anchors). */
+export const APPLE_CALDAV_SYNC_PAST_DAYS = 365;
+
+/** CalDAV import window — days after today to fetch. */
+export const APPLE_CALDAV_SYNC_FUTURE_DAYS = 365;
+
 /** OAuth provider origins allowed for calendar postMessage (security allowlist). */
 export const CALENDAR_OAUTH_ORIGINS = {
   google: 'https://accounts.google.com',

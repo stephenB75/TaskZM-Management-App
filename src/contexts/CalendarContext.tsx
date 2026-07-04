@@ -1000,7 +1000,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           } else {
             aggregated.created += Number(result.data.created) || 0;
             aggregated.updated += Number(result.data.updated) || 0;
-            aggregated.deleted += Number(result.data.deleted) || 0;
             if (result.data.success === false) {
               aggregated.success = false;
               if (Array.isArray(result.data.errors)) {
@@ -1011,6 +1010,23 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           if (i < calendarHrefs.length - 1) {
             await sleep(TIMING_CONSTANTS.calendar.caldavSyncCalendarDelayMs);
           }
+        }
+
+        // Final full sync pass: reconcile deletions across all selected calendars
+        const deletionPass = await runSync(undefined, false);
+        if (deletionPass.ok) {
+          aggregated.deleted += Number(deletionPass.data.deleted) || 0;
+          aggregated.created += Number(deletionPass.data.created) || 0;
+          aggregated.updated += Number(deletionPass.data.updated) || 0;
+          if (deletionPass.data.success === false) {
+            aggregated.success = false;
+            if (Array.isArray(deletionPass.data.errors)) {
+              aggregated.errors.push(...deletionPass.data.errors.map(String));
+            }
+          }
+        } else if (deletionPass.status === 401) {
+          authFailed = true;
+          aggregated.success = false;
         }
       } else {
         const result = await runSync(calendarHrefs[0], false);

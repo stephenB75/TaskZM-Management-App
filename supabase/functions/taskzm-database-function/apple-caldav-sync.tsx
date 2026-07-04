@@ -21,8 +21,8 @@ import {
 // Constants
 const DEFAULT_TIMEZONE = DEFAULT_CALENDAR_TIMEZONE;
 const MAX_RECURRENCE_ITERATIONS = 365; // Maximum iterations for recurring event expansion (1 year)
-const CALENDAR_SYNC_PAST_DAYS = 365; // Days to look back when syncing calendar (to capture recurring events)
-const CALENDAR_SYNC_FUTURE_DAYS = 90; // Days to look ahead when syncing calendar
+const CALENDAR_SYNC_PAST_DAYS = 365;
+const CALENDAR_SYNC_FUTURE_DAYS = 365;
 /** Batch size for calendar_events upsert during CalDAV sync (reduces edge 546 timeouts). */
 const CALDAV_DB_UPSERT_BATCH_SIZE = 50;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000; // 86400000 ms
@@ -71,6 +71,30 @@ export interface SyncResult {
 // Constants
 const ICLOUD_CALDAV_URL = 'https://caldav.icloud.com';
 const USER_AGENT = 'TaskZM/1.0 (CalDAV; +https://taskzm.app)';
+const CALENDAR_UNTITLED_EVENT_TITLE = 'Untitled Event';
+
+/**
+ * Stable calendar segment from CalDAV href (e.g. .../calendars/primary/ → primary).
+ * Used to scope external_id so the same UID in two calendars does not collide.
+ */
+function getCalendarKeyFromHref(calendarHref: string): string {
+  try {
+    const path = new URL(calendarHref).pathname.replace(/\/$/, '');
+    const segments = path.split('/').filter(Boolean);
+    const calendarsIdx = segments.indexOf('calendars');
+    if (calendarsIdx >= 0 && segments[calendarsIdx + 1]) {
+      return segments[calendarsIdx + 1];
+    }
+    return segments[segments.length - 1] || 'default';
+  } catch {
+    return calendarHref.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80);
+  }
+}
+
+/** Composite external id: calendar + event uid (unique per user/source). */
+export function buildAppleCalendarExternalId(calendarHref: string, eventUid: string): string {
+  return `${getCalendarKeyFromHref(calendarHref)}::${eventUid}`;
+}
 
 /**
  * Clean and format the app-specific password
@@ -733,18 +757,15 @@ function formatDatePreservingTimezone(date: Date, _isUtc: boolean): string {
  */
 function deduplicateEvents(events: CalendarEvent[]): CalendarEvent[] {
   const seen = new Map<string, CalendarEvent>();
-  
+
   for (const event of events) {
-    // Create a unique key from start time, end time, and title
-    // This identifies duplicate occurrences of the same recurring event
-    const key = `${event.dtstart}_${event.dtend}_${event.summary}`;
-    
-    // Only keep the first occurrence of each unique event
+    const key = `${event.calendarHref}::${event.uid}`;
+
     if (!seen.has(key)) {
       seen.set(key, event);
     }
   }
-  
+
   return Array.from(seen.values());
 }
 
@@ -851,20 +872,33 @@ function expandRecurringEvent(
 }
 
 /**
- * Parse a VEVENT from iCalendar data - returns array for recurring events
+ * Parse a VEVENT from iCalendar data - returns array for recurring events.
+ * Handles ICS files with multiple VEVENT components (master + exceptions).
  */
 function parseVEvent(
-  icalData: string, 
+  icalData: string,
   calendarHref: string,
   rangeStart?: Date,
   rangeEnd?: Date
 ): CalendarEvent[] {
-  // Extract VEVENT block
-  const veventMatch = icalData.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/i);
-  if (!veventMatch) return [];
+  const veventPattern = /BEGIN:VEVENT[\s\S]*?END:VEVENT/gi;
+  const events: CalendarEvent[] = [];
+  let match;
 
-  const vevent = veventMatch[0];
+  while ((match = veventPattern.exec(icalData)) !== null) {
+    const parsed = parseSingleVEvent(match[0], calendarHref, rangeStart, rangeEnd);
+    events.push(...parsed);
+  }
 
+  return events;
+}
+
+function parseSingleVEvent(
+  vevent: string,
+  calendarHref: string,
+  _rangeStart?: Date,
+  _rangeEnd?: Date
+): CalendarEvent[] {
   // Helper to extract property value only
   const getProp = (name: string): string | undefined => {
     const regex = new RegExp(`^${name}[;:](.*)$`, 'mi');
@@ -907,14 +941,19 @@ function parseVEvent(
   };
 
   const baseUid = getProp('UID');
+  const status = getProp('STATUS');
   const summary = getProp('SUMMARY');
   const dtstartData = getPropWithParams('DTSTART');
   const dtendData = getPropWithParams('DTEND');
   const rrule = getProp('RRULE');
   const recurrenceId = getProp('RECURRENCE-ID');
 
+  if (status?.toUpperCase() === 'CANCELLED') {
+    return [];
+  }
+
   // Log missing required fields for debugging
-  if (!baseUid || !summary || !dtstartData) {
+  if (!baseUid || !dtstartData) {
     console.warn('Skipping event due to missing required fields:', {
       hasUid: !!baseUid,
       hasSummary: !!summary,
@@ -923,6 +962,10 @@ function parseVEvent(
     });
     return [];
   }
+
+  const resolvedSummary = summary
+    ? summary.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\')
+    : CALENDAR_UNTITLED_EVENT_TITLE;
 
   const dtstart = dtstartData.value;
   const dtstartTzid = dtstartData.tzid;
@@ -1037,7 +1080,7 @@ function parseVEvent(
 
   const baseEvent: CalendarEvent = {
     uid,
-    summary: summary.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
+    summary: resolvedSummary,
     description: getProp('DESCRIPTION')?.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\\\/g, '\\'),
     dtstart: parsedDtstart,
     dtend: parseDate(dtendValue, dtendTzid),
@@ -1211,12 +1254,9 @@ export async function syncCalendarsToDatabase(
     
     // For fetched events, use base UID for recurring events (same format as external_id)
     // This ensures we can properly match and detect deletions
-    const fetchedUids = new Set(deduplicatedEvents.map(e => {
-      // For base recurring events, use the event UID (which is stored as external_id)
-      // For instances (shouldn't happen now, but handle for safety), use base UID
-      // This should match the external_id format in the database
-      return e.recurrenceBaseId || e.uid;
-    }));
+    const fetchedUids = new Set(deduplicatedEvents.map(e =>
+      buildAppleCalendarExternalId(e.calendarHref, e.recurrenceBaseId || e.uid)
+    ));
 
     // Build rows and upsert in batches (avoids 170 sequential DB round-trips → edge 546).
     console.log(`[Calendar Sync] Upserting ${deduplicatedEvents.length} events in batches...`);
@@ -1230,7 +1270,7 @@ export async function syncCalendarsToDatabase(
       }
 
       const matchKey = event.recurrenceBaseId || event.uid;
-      const externalId = matchKey;
+      const externalId = buildAppleCalendarExternalId(event.calendarHref, matchKey);
       if (existingMap.has(matchKey)) {
         result.updated++;
       } else {

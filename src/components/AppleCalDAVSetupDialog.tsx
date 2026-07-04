@@ -77,7 +77,9 @@ export function AppleCalDAVSetupDialog({
       const data = await response.json();
 
       if (data.success) {
-        setCalendars(data.calendars || []);
+        const discovered = data.calendars || [];
+        setCalendars(discovered);
+        setSelectedCalendars(discovered);
         setStep(2);
         toast.success('Connected successfully!');
       } else {
@@ -108,7 +110,14 @@ export function AppleCalDAVSetupDialog({
       const data = await response.json();
 
       if (data.success) {
-        setCalendars(data.calendars || []);
+        const discovered = data.calendars || [];
+        setCalendars(discovered);
+        setSelectedCalendars((prev) => {
+          const prevHrefs = new Set(prev.map((cal) => cal.href));
+          const kept = discovered.filter((cal) => prevHrefs.has(cal.href));
+          const added = discovered.filter((cal) => !prevHrefs.has(cal.href));
+          return [...kept, ...added];
+        });
       } else {
         setError(data.error || 'Failed to discover calendars');
       }

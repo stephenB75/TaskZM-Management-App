@@ -7,6 +7,7 @@ import { supabase } from './supabase-client';
 import { TIMING_CONSTANTS } from './timing-constants';
 import { parseCalendarEventTime } from './utils';
 import { logger } from './logger';
+import { CALENDAR_UNTITLED_EVENT_TITLE } from './calendar-integration-constants';
 
 const ICLOUD_SOURCE = 'icloud';
 const DB_COLUMNS =
@@ -57,7 +58,7 @@ function mapRowToCalendarEvent(row: CalendarEventRow): AppleDbCalendarEvent {
 
   return {
     id: row.id,
-    title: row.title || 'Calendar Event',
+    title: row.title || CALENDAR_UNTITLED_EVENT_TITLE,
     start: row.start_time,
     end: endIso,
     location: row.location ?? undefined,

@@ -12,6 +12,7 @@ import {
   getWallClockInTimeZone,
   resolveValidIanaTimeZone,
   wallClockPartsToUtcDate,
+  type WallClockParts,
 } from './calendar-timezone-utils';
 import { parseCalendarEventTime } from './utils';
 
@@ -22,6 +23,67 @@ const MAX_EXPANDED_EVENTS = TIMING_CONSTANTS.calendar.maxOccurrences;
 const DEFAULT_EVENT_DURATION_MS =
   TIMING_CONSTANTS.calendar.defaultEventDurationMinutes *
   TIMING_CONSTANTS.timeConversions.minutesToMs;
+
+/** iCalendar BYDAY token → JS getUTCDay() (0 = Sunday). */
+const ICAL_DAY_TO_JS: Record<string, number> = {
+  SU: 0,
+  MO: 1,
+  TU: 2,
+  WE: 3,
+  TH: 4,
+  FR: 5,
+  SA: 6,
+};
+
+function parseByDayTokens(byDay: string | undefined): number[] {
+  if (!byDay) return [];
+  return byDay
+    .split(',')
+    .map((part) => part.trim().replace(/^[-+]?\d+/, ''))
+    .map((token) => ICAL_DAY_TO_JS[token])
+    .filter((day): day is number => day !== undefined);
+}
+
+function getWallClockDayOfWeek(parts: WallClockParts): number {
+  return new Date(Date.UTC(parts.year, parts.monthIndex, parts.day)).getUTCDay();
+}
+
+function daysBetweenWallClock(a: WallClockParts, b: WallClockParts): number {
+  const aMs = Date.UTC(a.year, a.monthIndex, a.day);
+  const bMs = Date.UTC(b.year, b.monthIndex, b.day);
+  return Math.round((bMs - aMs) / MS_PER_DAY);
+}
+
+/** Advance to the next weekly occurrence, honoring BYDAY and INTERVAL when present. */
+function advanceWeeklyWallClock(
+  wall: WallClockParts,
+  baseWall: WallClockParts,
+  interval: number,
+  byDayRaw: string | undefined,
+): WallClockParts {
+  const targetDays = parseByDayTokens(byDayRaw);
+  if (targetDays.length === 0) {
+    return addCalendarDays(wall, DAYS_PER_WEEK * interval);
+  }
+
+  let candidate = addCalendarDays(wall, 1);
+  for (let guard = 0; guard < 400; guard++) {
+    const dow = getWallClockDayOfWeek(candidate);
+    if (!targetDays.includes(dow)) {
+      candidate = addCalendarDays(candidate, 1);
+      continue;
+    }
+
+    const weeksFromBase = Math.floor(daysBetweenWallClock(baseWall, candidate) / DAYS_PER_WEEK);
+    if (weeksFromBase >= 0 && weeksFromBase % interval === 0) {
+      return candidate;
+    }
+
+    candidate = addCalendarDays(candidate, 1);
+  }
+
+  return addCalendarDays(wall, DAYS_PER_WEEK * interval);
+}
 
 export interface ExpandableCalendarEvent {
   id: string;
@@ -84,6 +146,7 @@ function generateOccurrencesFromMaster(
   const count = parts['COUNT'] ? parseInt(parts['COUNT'], 10) : undefined;
   const until = parts['UNTIL'];
   const byMonthDay = parts['BYMONTHDAY'] ? parseInt(parts['BYMONTHDAY'], 10) : undefined;
+  const byDay = parts['BYDAY'];
 
   const anchorStart = master.recurrenceAnchorStart ?? master.start;
   const anchorEnd = master.recurrenceAnchorEnd ?? master.end;
@@ -119,13 +182,18 @@ function generateOccurrencesFromMaster(
   let currentInstant = wallClockPartsToUtcDate(wall, validTz);
   let iterations = 0;
 
+  const baseWall = getWallClockInTimeZone(baseStart, validTz);
+
   if (currentInstant < rangeStart) {
     if (freq === 'DAILY') {
       const daysDiff = Math.floor((rangeStart.getTime() - currentInstant.getTime()) / MS_PER_DAY);
       wall = addCalendarDays(wall, Math.floor(daysDiff / interval) * interval);
     } else if (freq === 'WEEKLY') {
-      const daysDiff = Math.floor((rangeStart.getTime() - currentInstant.getTime()) / MS_PER_DAY);
-      wall = addCalendarDays(wall, Math.floor(daysDiff / (DAYS_PER_WEEK * interval)) * DAYS_PER_WEEK * interval);
+      let skipGuard = 0;
+      while (wallClockPartsToUtcDate(wall, validTz) < rangeStart && skipGuard < maxIterations) {
+        wall = advanceWeeklyWallClock(wall, baseWall, interval, byDay);
+        skipGuard++;
+      }
     } else {
       let skipGuard = 0;
       while (wallClockPartsToUtcDate(wall, validTz) < rangeStart && skipGuard < maxIterations) {
@@ -168,7 +236,7 @@ function generateOccurrencesFromMaster(
         wall = addCalendarDays(wall, interval);
         break;
       case 'WEEKLY':
-        wall = addCalendarDays(wall, DAYS_PER_WEEK * interval);
+        wall = advanceWeeklyWallClock(wall, baseWall, interval, byDay);
         break;
       case 'MONTHLY':
         wall = addCalendarMonths(wall, interval, byMonthDay);
