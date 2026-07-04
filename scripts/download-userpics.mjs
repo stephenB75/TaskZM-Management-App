@@ -1,5 +1,5 @@
 /**
- * Download Craftwork Userpics preview assets (free commercial use).
+ * Download Craftwork Userpics single-portrait assets (free commercial use).
  * Source: https://userpics.craftwork.design/
  * Run: npm run generate:avatars
  */
@@ -9,13 +9,14 @@ import { join } from 'node:path';
 
 const OUT_DIR = join(process.cwd(), 'src/public/avatars/userpics');
 const BASE_URL = 'https://userpics.craftwork.design/images';
-const COUNT = 27;
+/** Individual portraits — not modal-* landing-page collages */
+const COUNT = 30;
 
 mkdirSync(OUT_DIR, { recursive: true });
 
 for (let index = 1; index <= COUNT; index += 1) {
   const id = String(index).padStart(2, '0');
-  const url = `${BASE_URL}/modal-${id}@2x.png`;
+  const url = `${BASE_URL}/s-5-img-${index}.png`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to download ${url}: ${response.status}`);

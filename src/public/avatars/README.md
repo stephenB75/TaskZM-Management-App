@@ -2,13 +2,14 @@
 
 Served by Vite from `src/public/avatars/` → `/avatars/...` in the app.
 
-TaskZM uses **[Craftwork Userpics](https://userpics.craftwork.design/)** — 27 diverse flat profile illustrations (free commercial use).
+TaskZM uses **[Craftwork Userpics](https://userpics.craftwork.design/)** — 30 diverse flat profile illustrations (free commercial use).
 
 ## Bundled pack (`userpics/`)
 
-- **27 PNG portraits** from the Craftwork Userpics pack
-- Files: `src/public/avatars/userpics/01.png` … `27.png`
-- App IDs: `taskzm:userpics:01` … `taskzm:userpics:27`
+- **30 PNG single portraits** from the Craftwork Userpics pack (`s-5-img-*.png`)
+- Files: `src/public/avatars/userpics/01.png` … `30.png`
+- App IDs: `taskzm:userpics:01` … `taskzm:userpics:30`
+- Male / female filters in the picker use tags in `src/lib/avatar-constants.ts`
 
 Refresh assets:
 

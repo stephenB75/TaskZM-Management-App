@@ -2,25 +2,33 @@
  * Avatar Selection — Craftwork Userpics flat portraits (bundled PNG pack).
  */
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import {
-  AVATAR_OPTIONS,
   AVATAR_SELECTION_SIZE,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
   AVATAR_UI_TEXT,
+  DEFAULT_AVATAR_GENDER,
   USER_PROFILE_AVATAR_RING_CLASS,
+  getAvatarGenderById,
   getAvatarImageUrl,
+  getAvatarOptionsByGender,
+  type AvatarGender,
 } from '../lib/avatar-constants';
 import { resolveAvatarOption } from '../lib/avatar-utils';
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+
+export type { AvatarGender };
 
 interface AvatarSelectionProps {
   selectedAvatar?: string;
   onAvatarSelect: (avatarId: string) => void;
+  gender?: AvatarGender;
+  onGenderChange?: (gender: AvatarGender) => void;
   className?: string;
   previewSeed?: string;
 }
@@ -28,13 +36,54 @@ interface AvatarSelectionProps {
 export function AvatarSelection({
   selectedAvatar,
   onAvatarSelect,
+  gender,
+  onGenderChange,
   className,
   previewSeed = 'User',
 }: AvatarSelectionProps) {
   const resolvedSelection = resolveAvatarOption(selectedAvatar, previewSeed).id;
+  const selectedGender = getAvatarGenderById(resolvedSelection) ?? DEFAULT_AVATAR_GENDER;
+  const [activeGender, setActiveGender] = useState<AvatarGender>(gender ?? selectedGender);
+
+  useEffect(() => {
+    if (gender !== undefined) {
+      setActiveGender(gender);
+    }
+  }, [gender]);
+
+  useEffect(() => {
+    if (gender === undefined && selectedAvatar) {
+      setActiveGender(selectedGender);
+    }
+  }, [gender, selectedAvatar, selectedGender]);
+
+  const visibleOptions = useMemo(
+    () => getAvatarOptionsByGender(activeGender),
+    [activeGender],
+  );
+
+  const handleGenderChange = (nextGender: AvatarGender) => {
+    setActiveGender(nextGender);
+    onGenderChange?.(nextGender);
+  };
 
   return (
     <div className={cn('w-full', className)}>
+      <Tabs
+        value={activeGender}
+        onValueChange={(value) => handleGenderChange(value as AvatarGender)}
+        className="mb-3"
+      >
+        <TabsList className="grid h-9 w-full grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+          <TabsTrigger value="male" className="text-xs sm:text-sm">
+            {AVATAR_UI_TEXT.male}
+          </TabsTrigger>
+          <TabsTrigger value="female" className="text-xs sm:text-sm">
+            {AVATAR_UI_TEXT.female}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div
         className="grid rounded-xl border border-border/40 bg-muted/20 p-3"
         style={{
@@ -42,7 +91,7 @@ export function AvatarSelection({
           gap: AVATAR_SELECTION_GAP,
         }}
       >
-        {AVATAR_OPTIONS.map((option) => {
+        {visibleOptions.map((option) => {
           const isSelected = resolvedSelection === option.id;
           return (
             <button
@@ -108,6 +157,3 @@ export function AvatarSelection({
     </div>
   );
 }
-
-/** @deprecated Gender is no longer used for avatar selection */
-export type AvatarGender = 'male' | 'female';

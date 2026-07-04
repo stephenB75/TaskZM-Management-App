@@ -4,8 +4,10 @@ import {
   AVATAR_PRESET_PREFIX,
   AVATAR_OPTIONS,
   DEFAULT_AVATAR,
+  DEFAULT_AVATAR_GENDER,
   getAvatarImageUrl,
   getAvatarOptionById,
+  getAvatarOptionsByGender,
   type AvatarOption,
   type AvatarGender,
 } from './avatar-constants';
@@ -91,8 +93,10 @@ export function encodeAvatarOption(index: number): string {
   return AVATAR_OPTIONS[safeIndex].id;
 }
 
-export function pickAvatarFromPool(seed: string, _gender?: AvatarGender): string {
-  return encodeAvatarOption(hashString(seed.toLowerCase()) % AVATAR_OPTIONS.length);
+export function pickAvatarFromPool(seed: string, gender: AvatarGender = DEFAULT_AVATAR_GENDER): string {
+  const pool = getAvatarOptionsByGender(gender);
+  const index = hashString(seed.toLowerCase()) % pool.length;
+  return pool[index].id;
 }
 
 export function pickAvatarFromPoolAuto(seed: string): string {
@@ -102,12 +106,14 @@ export function pickAvatarFromPoolAuto(seed: string): string {
 export function resolveUserAvatar(
   avatar: string | undefined,
   seed: string,
-  _gender?: AvatarGender,
+  gender: AvatarGender = DEFAULT_AVATAR_GENDER,
 ): string {
   const avatarId = parseAvatarId(avatar);
   if (avatarId && getAvatarOptionById(avatarId)) return avatarId;
   if (avatar && !isLegacyAvatarUrl(avatar)) return avatar;
-  return encodeAvatarOption(migrateLegacyToIndex(avatar, seed));
+  const pool = getAvatarOptionsByGender(gender);
+  const index = migrateLegacyToIndex(avatar, seed) % pool.length;
+  return pool[index].id;
 }
 
 export function isDiceBearAvatar(avatar?: string): boolean {

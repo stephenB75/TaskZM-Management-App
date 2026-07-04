@@ -28,15 +28,51 @@ export const AVATAR_PACK = {
   fileExtension: 'png',
 } as const;
 
-export const AVATAR_COUNT = 27;
+export const AVATAR_COUNT = 30;
 
-/** @deprecated Gender is no longer used for avatar selection */
 export type AvatarGender = 'male' | 'female';
+
+export const DEFAULT_AVATAR_GENDER: AvatarGender = 'male';
+
+/** Gender tags for Craftwork s-5-img-1 … s-5-img-30 single portraits */
+const USERPICS_GENDERS: readonly AvatarGender[] = [
+  'male',
+  'male',
+  'female',
+  'female',
+  'female',
+  'female',
+  'male',
+  'male',
+  'male',
+  'female',
+  'female',
+  'male',
+  'male',
+  'male',
+  'female',
+  'male',
+  'male',
+  'female',
+  'female',
+  'female',
+  'female',
+  'male',
+  'male',
+  'male',
+  'female',
+  'female',
+  'male',
+  'female',
+  'male',
+  'female',
+] as const;
 
 export interface AvatarOption {
   id: string;
   label: string;
   file: string;
+  gender: AvatarGender;
 }
 
 export const AVATAR_OPTIONS: readonly AvatarOption[] = Array.from(
@@ -47,14 +83,15 @@ export const AVATAR_OPTIONS: readonly AvatarOption[] = Array.from(
       id: `${AVATAR_ID_PREFIX}${file.replace(`.${AVATAR_PACK.fileExtension}`, '')}`,
       label: `Profile ${index + 1}`,
       file,
+      gender: USERPICS_GENDERS[index],
     };
   },
 );
 
 export const DEFAULT_AVATAR = AVATAR_OPTIONS[0].id;
 
-export const AVATAR_SELECTION_GRID_COLS = 9;
-export const AVATAR_SELECTION_SIZE = '64px';
+export const AVATAR_SELECTION_GRID_COLS = 5;
+export const AVATAR_SELECTION_SIZE = '72px';
 export const AVATAR_SELECTION_GAP = '0.5rem';
 
 export const AVATAR_UI_TEXT = {
@@ -68,6 +105,8 @@ export const AVATAR_UI_TEXT = {
   cancel: 'Cancel',
   pleaseSelectAvatar: 'Please select an avatar',
   packCredit: `${AVATAR_PACK.credit} · ${AVATAR_PACK.license}`,
+  male: 'Male',
+  female: 'Female',
 } as const;
 
 export const AVATAR_CHECKMARK_SIZE = '1.5rem';
@@ -84,12 +123,20 @@ export function getAvatarOptionById(id: string): AvatarOption | undefined {
   return AVATAR_OPTIONS.find((option) => option.id === id);
 }
 
+export function getAvatarOptionsByGender(gender: AvatarGender): readonly AvatarOption[] {
+  return AVATAR_OPTIONS.filter((option) => option.gender === gender);
+}
+
 export function getAvatarImageUrl(option: AvatarOption): string {
   return `${AVATAR_PACK.publicPath}/${option.file}`;
 }
 
 export function getAvatarOptionIndex(option: AvatarOption): number {
   return AVATAR_OPTIONS.findIndex((entry) => entry.id === option.id);
+}
+
+export function getAvatarGenderById(id: string): AvatarGender | undefined {
+  return getAvatarOptionById(id)?.gender;
 }
 
 /** @deprecated */
