@@ -57,6 +57,14 @@ export const TOAST_LAYOUT = {
   horizontalSafeAreaRight: 'env(safe-area-inset-right, 0px)',
 } as const;
 
+/** Sonner toast close (×) control — compact on mobile; global touch-target rules must not inflate this. */
+export const TOAST_CLOSE_BUTTON = {
+  sizePx: 20,
+  sizeMobilePx: 16,
+  iconSizePx: 12,
+  iconSizeMobilePx: 10,
+} as const;
+
 /** Sonner `offset` / `mobileOffset` props (Sonner v2 uses --offset-top / --mobile-offset-top). */
 export function getToastViewportOffset(top: string = TOAST_LAYOUT.topWithSafeArea) {
   return {

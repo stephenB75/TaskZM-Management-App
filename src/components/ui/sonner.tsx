@@ -5,7 +5,7 @@ import { Toaster as Sonner, ToasterProps } from "sonner";
 import { useEffect, useMemo, useState } from "react";
 import { TOAST_DURATION_DEFAULT_MS, VIEWPORT_BREAKPOINTS, Z_INDEX } from "../../lib/layout-constants";
 import { AGENDA_LIST_CARD } from "../../lib/agenda-list-card-constants";
-import { getToastViewportOffset, TOAST_LAYOUT } from "../../lib/toast-constants";
+import { getToastViewportOffset, TOAST_CLOSE_BUTTON, TOAST_LAYOUT } from "../../lib/toast-constants";
 import { getPlatform } from "../../lib/platform";
 import { useMobileLayout } from "../../hooks/useMobileLayout";
 
@@ -73,7 +73,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             'group-[.toast]:rounded-full group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
           closeButton:
-            'group-[.toast]:rounded-full group-[.toast]:border-border/50 group-[.toast]:bg-card/90',
+            'group-[.toast]:!min-h-0 group-[.toast]:!min-w-0 group-[.toast]:rounded-full group-[.toast]:border-border/50 group-[.toast]:bg-card/90 group-[.toast]:p-0 group-[.toast]:shrink-0',
           success:
             'group-[.toast]:border-emerald-200/60 group-[.toast]:bg-emerald-50/90 dark:group-[.toast]:border-emerald-900/40 dark:group-[.toast]:bg-emerald-950/80',
           error:
@@ -96,6 +96,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--toast-gap": `${TOAST_LAYOUT.toastGapPx}px`,
+          "--toast-close-size": `${TOAST_CLOSE_BUTTON.sizePx}px`,
+          "--toast-close-size-mobile": `${TOAST_CLOSE_BUTTON.sizeMobilePx}px`,
+          "--toast-close-icon-size": `${TOAST_CLOSE_BUTTON.iconSizePx}px`,
+          "--toast-close-icon-size-mobile": `${TOAST_CLOSE_BUTTON.iconSizeMobilePx}px`,
           zIndex: Z_INDEX.TOAST,
         } as React.CSSProperties
       }

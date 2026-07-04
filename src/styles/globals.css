@@ -249,7 +249,7 @@ img[alt="TaskZM Logo"] {
   }
 
   /* Ensure touch-friendly tap targets (44px minimum per WCAG / Apple HIG) */
-  button, a {
+  button:not([data-close-button]), a {
     min-height: 44px;
     min-width: 44px;
   }
@@ -809,6 +809,39 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 [data-sonner-toast][data-y-position="top"] {
   margin-top: 0 !important;
   margin-bottom: var(--toast-gap, 8px) !important;
+}
+
+/* Sonner close (×): keep compact on mobile — do not inherit 44px touch-target minimum */
+[data-sonner-toast] [data-close-button] {
+  min-width: unset !important;
+  min-height: unset !important;
+  width: var(--toast-close-size, 20px) !important;
+  height: var(--toast-close-size, 20px) !important;
+}
+
+[data-sonner-toast] [data-close-button] svg {
+  width: var(--toast-close-icon-size, 12px) !important;
+  height: var(--toast-close-icon-size, 12px) !important;
+}
+
+@media (max-width: 1023px) {
+  [data-sonner-toaster][dir='ltr'] {
+    --toast-close-button-transform: translate(-20%, -20%);
+  }
+
+  [data-sonner-toaster][dir='rtl'] {
+    --toast-close-button-transform: translate(20%, -20%);
+  }
+
+  [data-sonner-toast] [data-close-button] {
+    width: var(--toast-close-size-mobile, 16px) !important;
+    height: var(--toast-close-size-mobile, 16px) !important;
+  }
+
+  [data-sonner-toast] [data-close-button] svg {
+    width: var(--toast-close-icon-size-mobile, 10px) !important;
+    height: var(--toast-close-icon-size-mobile, 10px) !important;
+  }
 }
 
 @keyframes slide-down {
