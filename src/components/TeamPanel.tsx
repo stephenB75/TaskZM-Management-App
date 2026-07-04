@@ -34,7 +34,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { AvatarSelection, type AvatarGender } from "./AvatarSelection";
 import { UserProfileAvatar } from "./UserProfileAvatar";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { AVATAR_UI_TEXT, DEFAULT_AVATAR_GENDER } from "../lib/avatar-constants";
+import { AVATAR_UI_TEXT, AVATAR_SELECTION_DIALOG_BODY_CLASS, AVATAR_SELECTION_DIALOG_CLASS, AVATAR_SELECTION_DIALOG_FOOTER_CLASS, DEFAULT_AVATAR_GENDER } from "../lib/avatar-constants";
 import { pickAvatarFromPool, pickAvatarFromPoolAuto } from "../lib/avatar-utils";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import {
@@ -1279,15 +1279,16 @@ export function TeamPanel() {
         open={showAddMember}
         onOpenChange={setShowAddMember}
       >
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className={AVATAR_SELECTION_DIALOG_CLASS}>
+          <DialogHeader className="shrink-0">
             <DialogTitle>{TEAM_PANEL_UI_TEXT.addTeamMember}</DialogTitle>
             <DialogDescription>
               {TEAM_PANEL_UI_TEXT.addMemberDescription}
             </DialogDescription>
           </DialogHeader>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingTop: PANEL_PADDING, paddingBottom: PANEL_PADDING }}>
+          <div className={AVATAR_SELECTION_DIALOG_BODY_CLASS}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_SECTION_SPACING, paddingBottom: PANEL_PADDING }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label htmlFor="invite-team">{TEAM_PANEL_UI_TEXT.addMemberTargetTeamLabel}</Label>
               <Select
@@ -1396,14 +1397,17 @@ export function TeamPanel() {
                 gender={newMemberGender}
                 onGenderChange={setNewMemberGender}
                 previewSeed={newMemberName.trim() || newMemberEmail.trim() || 'User'}
+                scrollable
               />
             </div>
           </div>
+          </div>
 
-          <div className="flex justify-between items-center">
+          <div className="flex shrink-0 flex-col gap-3 border-t border-border/40 pt-3">
             <Button
               variant="ghost"
               size="sm"
+              className="w-full justify-center sm:w-auto sm:justify-start"
               onClick={() => {
                 setShowAddMember(false);
                 openBulkInviteDialog();
@@ -1413,14 +1417,16 @@ export function TeamPanel() {
               <Icon name="user-plus" size={TEAM_PANEL_ICON_SIZE_SMALL} style={{ marginRight: TEAM_PANEL_MARGIN_RIGHT_SMALL }} />
               {TEAM_PANEL_UI_TEXT.bulkInvite}
             </Button>
-            <div className="flex" style={{ gap: PANEL_GAP_MEDIUM }}>
+            <div className={AVATAR_SELECTION_DIALOG_FOOTER_CLASS}>
               <Button
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => setShowAddMember(false)}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
+                className="w-full sm:w-auto"
                 onClick={handleAddMember}
                 disabled={!newMemberName.trim() || !newMemberEmail.trim() || isLoading}
               >

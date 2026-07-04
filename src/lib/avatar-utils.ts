@@ -2,15 +2,17 @@ import {
   AVATAR_ID_PREFIX,
   AVATAR_LEGACY_PREFIXES,
   AVATAR_PRESET_PREFIX,
+  AVATAR_USERPICS_PREFIX,
   AVATAR_OPTIONS,
   DEFAULT_AVATAR,
   DEFAULT_AVATAR_GENDER,
-  getAvatarImageUrl,
   getAvatarOptionById,
   getAvatarOptionsByGender,
   type AvatarOption,
   type AvatarGender,
+  type MultiavatarTheme,
 } from './avatar-constants';
+import { getAvatarSvgDataUrl } from './avatar-render';
 
 function hashString(value: string): number {
   let hash = 0;
@@ -21,8 +23,14 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
+function parseMultiavatarId(avatar: string): string | null {
+  if (!avatar.startsWith(AVATAR_ID_PREFIX)) return null;
+  return getAvatarOptionById(avatar) ? avatar : null;
+}
+
 function parseBundledAvatarIndex(avatar: string): number | null {
   for (const prefix of AVATAR_LEGACY_PREFIXES) {
+    if (prefix === AVATAR_ID_PREFIX) continue;
     if (!avatar.startsWith(prefix)) continue;
     const suffix = avatar.slice(prefix.length);
     const parsed = Number.parseInt(suffix, 10);
@@ -36,9 +44,8 @@ function parseBundledAvatarIndex(avatar: string): number | null {
 export function isLegacyAvatarUrl(avatar?: string): boolean {
   if (!avatar) return false;
   if (avatar.startsWith(AVATAR_PRESET_PREFIX)) return true;
-  if (parseBundledAvatarIndex(avatar) !== null) {
-    return !avatar.startsWith(AVATAR_ID_PREFIX);
-  }
+  if (parseMultiavatarId(avatar)) return false;
+  if (parseBundledAvatarIndex(avatar) !== null) return true;
   return (
     avatar.includes('/avatars/') ||
     avatar.includes('api.dicebear.com') ||
@@ -48,25 +55,32 @@ export function isLegacyAvatarUrl(avatar?: string): boolean {
 
 export function parseAvatarId(avatar?: string): string | null {
   if (!avatar) return null;
-  if (avatar.startsWith(AVATAR_ID_PREFIX)) {
-    return getAvatarOptionById(avatar) ? avatar : null;
-  }
+  const multiavatarId = parseMultiavatarId(avatar);
+  if (multiavatarId) return multiavatarId;
   const legacyIndex = parseBundledAvatarIndex(avatar);
   if (legacyIndex !== null) {
-    return AVATAR_OPTIONS[legacyIndex].id;
+    return AVATAR_OPTIONS[legacyIndex % AVATAR_OPTIONS.length].id;
   }
   return null;
 }
 
 function migrateLegacyToIndex(avatar: string | undefined, seed: string): number {
   const bundledIndex = avatar ? parseBundledAvatarIndex(avatar) : null;
-  if (bundledIndex !== null) return bundledIndex;
+  if (bundledIndex !== null) return bundledIndex % AVATAR_OPTIONS.length;
 
   if (avatar?.startsWith(AVATAR_PRESET_PREFIX)) {
     const suffix = avatar.slice(AVATAR_PRESET_PREFIX.length);
     const parsed = Number.parseInt(suffix, 10);
     if (!Number.isNaN(parsed)) {
       return parsed % AVATAR_OPTIONS.length;
+    }
+  }
+
+  if (avatar?.startsWith(AVATAR_USERPICS_PREFIX)) {
+    const suffix = avatar.slice(AVATAR_USERPICS_PREFIX.length);
+    const parsed = Number.parseInt(suffix, 10);
+    if (!Number.isNaN(parsed)) {
+      return (parsed - 1) % AVATAR_OPTIONS.length;
     }
   }
 
@@ -156,5 +170,8 @@ export function getDiceBearAvatarUrl(seed: string, _gender?: AvatarGender): stri
 
 export function getAvatarDisplayUrl(avatar: string | undefined, seed: string): string {
   const option = resolveAvatarOption(avatar, seed);
-  return getAvatarImageUrl(option);
+  return getAvatarSvgDataUrl(option);
 }
+
+/** @deprecated */
+export type { MultiavatarTheme };

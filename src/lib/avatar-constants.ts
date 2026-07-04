@@ -1,10 +1,12 @@
 /**
  * Avatar Constants
- * Craftwork Userpics — diverse flat vector portraits (free commercial use).
- * https://userpics.craftwork.design/
+ * Multiavatar — multicultural SVG avatars (free commercial use in apps).
+ * https://multiavatar.com
  */
 
-export const AVATAR_ID_PREFIX = 'taskzm:userpics:';
+export const AVATAR_ID_PREFIX = 'taskzm:multiavatar:';
+/** @deprecated Craftwork Userpics PNG pack */
+export const AVATAR_USERPICS_PREFIX = 'taskzm:userpics:';
 /** @deprecated Avataaars pack */
 export const AVATAR_AVATAAARS_PREFIX = 'taskzm:avataaars:';
 /** @deprecated Micah pack */
@@ -18,89 +20,87 @@ export const AVATAR_PRESET_PREFIX = 'taskzm:pastel-';
 /** @deprecated Portrait PNG avatars */
 export const AVATAR_ICON_PREFIX = 'taskzm:icon:';
 
+export type MultiavatarTheme = 'A' | 'B';
+
 export const AVATAR_PACK = {
-  id: 'userpics',
-  name: 'Userpics',
-  license: 'Free commercial use (Craftwork)',
-  sourceUrl: 'https://userpics.craftwork.design/',
-  credit: 'Userpics by Craftwork',
-  publicPath: '/avatars/userpics',
-  fileExtension: 'png',
+  id: 'multiavatar',
+  name: 'Multiavatar',
+  license: 'Multiavatar License v1.0 (free in apps)',
+  sourceUrl: 'https://multiavatar.com/',
+  credit: 'Avatars by Multiavatar',
 } as const;
-
-export const AVATAR_COUNT = 30;
-
-/** Bump when avatar PNGs change so browsers drop stale collage caches */
-export const AVATAR_ASSET_VERSION = '2';
-
-export const AVATAR_RENDER_SIZE = 256;
 
 export type AvatarGender = 'male' | 'female';
 
 export const DEFAULT_AVATAR_GENDER: AvatarGender = 'male';
 
-/** Gender tags for Craftwork s-5-img-1 … s-5-img-30 single portraits */
-const USERPICS_GENDERS: readonly AvatarGender[] = [
-  'male',
-  'male',
-  'female',
-  'female',
-  'female',
-  'female',
-  'male',
-  'male',
-  'male',
-  'female',
-  'female',
-  'male',
-  'male',
-  'male',
-  'female',
-  'male',
-  'male',
-  'female',
-  'female',
-  'female',
-  'female',
-  'male',
-  'male',
-  'male',
-  'female',
+/**
+ * Sixteen multicultural base characters (00–15), each with two color themes.
+ * Gender tags group picker tabs; parts are Netguru/Multiavatar inclusive designs.
+ */
+const MULTIAVATAR_PART_GENDERS: readonly AvatarGender[] = [
   'female',
   'male',
   'female',
   'male',
   'female',
+  'male',
+  'female',
+  'male',
+  'female',
+  'male',
+  'female',
+  'male',
+  'female',
+  'male',
+  'female',
+  'male',
 ] as const;
+
+const MULTIAVATAR_PARTS = Array.from({ length: 16 }, (_, index) =>
+  String(index).padStart(2, '0'),
+);
+
+const MULTIAVATAR_THEMES: readonly MultiavatarTheme[] = ['A', 'B'];
 
 export interface AvatarOption {
   id: string;
   label: string;
-  file: string;
+  part: string;
+  theme: MultiavatarTheme;
   gender: AvatarGender;
 }
 
-export const AVATAR_OPTIONS: readonly AvatarOption[] = Array.from(
-  { length: AVATAR_COUNT },
-  (_, index) => {
-    const file = `${String(index + 1).padStart(2, '0')}.${AVATAR_PACK.fileExtension}`;
-    return {
-      id: `${AVATAR_ID_PREFIX}${file.replace(`.${AVATAR_PACK.fileExtension}`, '')}`,
-      label: `Profile ${index + 1}`,
-      file,
-      gender: USERPICS_GENDERS[index],
-    };
-  },
+export const AVATAR_OPTIONS: readonly AvatarOption[] = MULTIAVATAR_PARTS.flatMap(
+  (part, partIndex) =>
+    MULTIAVATAR_THEMES.map((theme) => ({
+      id: `${AVATAR_ID_PREFIX}${part}:${theme}`,
+      label: `Profile ${part}${theme}`,
+      part,
+      theme,
+      gender: MULTIAVATAR_PART_GENDERS[partIndex],
+    })),
 );
+
+export const AVATAR_COUNT = AVATAR_OPTIONS.length;
 
 export const DEFAULT_AVATAR = AVATAR_OPTIONS[0].id;
 
-export const AVATAR_SELECTION_GRID_COLS = 5;
-export const AVATAR_SELECTION_SIZE = '72px';
+export const AVATAR_SELECTION_GRID_COLS = 4;
+/** Max avatar cell size on large screens; grid shrinks cells on narrow viewports */
+export const AVATAR_SELECTION_MAX_CELL_SIZE = '4.5rem';
 export const AVATAR_SELECTION_GAP = '0.5rem';
-/** Zoom past square letterboxing so circular masks show one face */
-export const AVATAR_SELECTION_IMAGE_SCALE = 1.12;
-export const AVATAR_DISPLAY_IMAGE_SCALE = 1.1;
+export const AVATAR_SELECTION_PANEL_PADDING = '0.5rem';
+export const AVATAR_SELECTION_PANEL_PADDING_DESKTOP = '0.75rem';
+/** Scrollable grid area inside dialogs on small screens (4 rows of avatars) */
+export const AVATAR_SELECTION_GRID_MAX_HEIGHT = 'min(17rem, 45dvh)';
+
+export const AVATAR_SELECTION_DIALOG_CLASS =
+  'flex max-h-[calc(var(--viewport-height,100dvh)-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] max-w-[calc(100%-1rem)] flex-col gap-4 overflow-hidden sm:max-w-lg';
+export const AVATAR_SELECTION_DIALOG_BODY_CLASS =
+  'min-h-0 flex-1 overflow-y-auto overscroll-contain';
+export const AVATAR_SELECTION_DIALOG_FOOTER_CLASS =
+  'flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end';
 
 export const AVATAR_SELECTION_RING_CLASS = 'shadow-sm';
 export const AVATAR_SELECTION_SELECTED_CLASS =
@@ -112,13 +112,13 @@ export const AVATAR_UI_TEXT = {
   chooseYourAvatar: 'Choose Your Avatar',
   chooseAvatar: 'Choose Avatar',
   selectYourAvatar: 'Select Your Avatar',
-  selectAvatarDescription: 'Pick a profile character that fits you',
+  selectAvatarDescription: 'Pick a profile character that represents you',
   changeAvatar: 'Change Avatar',
   saveAvatar: 'Save Avatar',
   saving: 'Saving…',
   cancel: 'Cancel',
   pleaseSelectAvatar: 'Please select an avatar',
-  packCredit: `${AVATAR_PACK.credit} · ${AVATAR_PACK.license}`,
+  packCredit: `${AVATAR_PACK.credit} · Multicultural avatar maker`,
   male: 'Male',
   female: 'Female',
 } as const;
@@ -141,16 +141,17 @@ export function getAvatarOptionsByGender(gender: AvatarGender): readonly AvatarO
   return AVATAR_OPTIONS.filter((option) => option.gender === gender);
 }
 
-export function getAvatarImageUrl(option: AvatarOption): string {
-  return `${AVATAR_PACK.publicPath}/${option.file}?v=${AVATAR_ASSET_VERSION}`;
-}
-
 export function getAvatarOptionIndex(option: AvatarOption): number {
   return AVATAR_OPTIONS.findIndex((entry) => entry.id === option.id);
 }
 
 export function getAvatarGenderById(id: string): AvatarGender | undefined {
   return getAvatarOptionById(id)?.gender;
+}
+
+/** @deprecated Use getAvatarSvgDataUrl from avatar-render.ts */
+export function getAvatarImageUrl(option: AvatarOption): string {
+  return `${AVATAR_ID_PREFIX}${option.part}:${option.theme}`;
 }
 
 /** @deprecated */
@@ -166,6 +167,7 @@ export function getAvatarPresetIndex(option: AvatarOption): number {
 /** All bundled pack ID prefixes — used for legacy migration by slot index. */
 export const AVATAR_LEGACY_PREFIXES = [
   AVATAR_ID_PREFIX,
+  AVATAR_USERPICS_PREFIX,
   AVATAR_AVATAAARS_PREFIX,
   AVATAR_MICAH_PREFIX,
   AVATAR_LORELEI_PREFIX,

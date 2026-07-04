@@ -1,21 +1,14 @@
 # Avatar Images
 
-Served by Vite from `src/public/avatars/` → `/avatars/...` in the app.
+TaskZM uses **[Multiavatar](https://multiavatar.com/)** — 32 multicultural SVG avatars generated in-app (free for use in products per the Multiavatar license).
 
-TaskZM uses **[Craftwork Userpics](https://userpics.craftwork.design/)** — 30 diverse flat profile illustrations (free commercial use).
+## How it works
 
-## Bundled pack (`userpics/`)
+- **32 picker options** — 16 inclusive base characters (parts `00`–`15`), each with two color themes (`A`, `B`)
+- **Male / Female tabs** — 16 options per tab (see gender tags in `src/lib/avatar-constants.ts`)
+- **App IDs** — `taskzm:multiavatar:00:A` … `taskzm:multiavatar:15:B`
+- **Rendering** — SVG is generated client-side via `@multiavatar/multiavatar` (`src/lib/avatar-render.ts`)
 
-- **30 PNG single portraits** from the Craftwork Userpics pack (`s-5-img-*.png`), normalized to 256×256 on download
-- Files: `src/public/avatars/userpics/01.png` … `30.png`
-- App IDs: `taskzm:userpics:01` … `taskzm:userpics:30`
-- URLs include `?v=` cache-busting (`AVATAR_ASSET_VERSION` in `avatar-constants.ts`)
-- Male / female filters in the picker use tags in `src/lib/avatar-constants.ts`
+No PNG assets are bundled; avatars always render as crisp SVG in circular frames.
 
-Refresh assets:
-
-```bash
-npm run generate:avatars
-```
-
-Legacy avatar paths (`/avatars/male-*.png`, DiceBear URLs, older `taskzm:*` IDs) are migrated automatically in `avatar-utils.ts`.
+Legacy avatar paths (`/avatars/userpics/*`, DiceBear URLs, older `taskzm:*` IDs) migrate automatically in `avatar-utils.ts`.

@@ -27,7 +27,7 @@ import { TermsOfServiceDialog } from './TermsOfServiceDialog';
 import { Badge } from './ui/badge';
 import { AppHeader } from './AppHeader';
 import { AvatarSelection } from './AvatarSelection';
-import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
+import { AVATAR_UI_TEXT, AVATAR_SELECTION_DIALOG_BODY_CLASS, AVATAR_SELECTION_DIALOG_CLASS, AVATAR_SELECTION_DIALOG_FOOTER_CLASS } from '../lib/avatar-constants';
 import { SETTINGS_PANEL_UI_TEXT } from '../lib/settings-panel-constants';
 import { NAVIGATION_UI_TEXT } from '../lib/navigation-constants';
 import { scrollSettingsTourTargetIntoView } from '../lib/app-tour-constants';
@@ -2934,28 +2934,30 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
       {/* Avatar Selection Dialog */}
       <Dialog open={showAvatarSelection} onOpenChange={setShowAvatarSelection}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className={AVATAR_SELECTION_DIALOG_CLASS}>
+          <DialogHeader className="shrink-0">
             <DialogTitle>{AVATAR_UI_TEXT.selectYourAvatar}</DialogTitle>
             <DialogDescription>
               {AVATAR_UI_TEXT.selectAvatarDescription}
             </DialogDescription>
           </DialogHeader>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_MEDIUM, paddingTop: SETTINGS_PANEL_PADDING, paddingBottom: SETTINGS_PANEL_PADDING }}>
+          <div className={AVATAR_SELECTION_DIALOG_BODY_CLASS}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
               <Label>{AVATAR_UI_TEXT.chooseAvatar}</Label>
               <AvatarSelection
                 selectedAvatar={profileAvatar}
                 onAvatarSelect={setProfileAvatar}
                 previewSeed={profileName.trim() || user?.name || user?.email || 'User'}
+                scrollable
               />
             </div>
           </div>
 
-          <div className="flex justify-end" style={{ gap: PANEL_GAP_MEDIUM }}>
+          <div className={AVATAR_SELECTION_DIALOG_FOOTER_CLASS}>
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setShowAvatarSelection(false);
                 setProfileAvatar(user?.avatar);
@@ -2964,6 +2966,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               {AVATAR_UI_TEXT.cancel}
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={() => {
                 if (profileAvatar) {
                   handleUpdateProfile();

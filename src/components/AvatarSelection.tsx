@@ -1,14 +1,14 @@
 /**
- * Avatar Selection — Craftwork Userpics flat portraits (bundled PNG pack).
+ * Avatar Selection — Multiavatar multicultural SVG portraits.
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import {
-  AVATAR_SELECTION_SIZE,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
-  AVATAR_SELECTION_IMAGE_SCALE,
+  AVATAR_SELECTION_GRID_MAX_HEIGHT,
+  AVATAR_SELECTION_MAX_CELL_SIZE,
   AVATAR_SELECTION_RING_CLASS,
   AVATAR_SELECTION_SELECTED_CLASS,
   AVATAR_SELECTION_UNSELECTED_CLASS,
@@ -18,10 +18,10 @@ import {
   DEFAULT_AVATAR_GENDER,
   USER_PROFILE_AVATAR_BG_CLASS,
   getAvatarGenderById,
-  getAvatarImageUrl,
   getAvatarOptionsByGender,
   type AvatarGender,
 } from '../lib/avatar-constants';
+import { getAvatarSvgDataUrl } from '../lib/avatar-render';
 import { resolveAvatarOption } from '../lib/avatar-utils';
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
@@ -35,6 +35,8 @@ interface AvatarSelectionProps {
   onGenderChange?: (gender: AvatarGender) => void;
   className?: string;
   previewSeed?: string;
+  /** Enable vertical scroll for the grid (use inside dialogs on mobile) */
+  scrollable?: boolean;
 }
 
 export function AvatarSelection({
@@ -44,6 +46,7 @@ export function AvatarSelection({
   onGenderChange,
   className,
   previewSeed = 'User',
+  scrollable = false,
 }: AvatarSelectionProps) {
   const resolvedSelection = resolveAvatarOption(selectedAvatar, previewSeed).id;
   const selectedGender = getAvatarGenderById(resolvedSelection) ?? DEFAULT_AVATAR_GENDER;
@@ -66,13 +69,21 @@ export function AvatarSelection({
     [activeGender],
   );
 
+  const avatarUrls = useMemo(
+    () =>
+      Object.fromEntries(
+        visibleOptions.map((option) => [option.id, getAvatarSvgDataUrl(option)]),
+      ),
+    [visibleOptions],
+  );
+
   const handleGenderChange = (nextGender: AvatarGender) => {
     setActiveGender(nextGender);
     onGenderChange?.(nextGender);
   };
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('w-full min-w-0', className)}>
       <Tabs
         value={activeGender}
         onValueChange={(value) => handleGenderChange(value as AvatarGender)}
@@ -89,78 +100,85 @@ export function AvatarSelection({
       </Tabs>
 
       <div
-        className="grid justify-center rounded-xl border border-border/40 bg-muted/20 p-3"
+        className={cn(
+          'w-full min-w-0 rounded-xl border border-border/40 bg-muted/20 p-2 sm:p-3',
+          scrollable && 'overflow-y-auto overscroll-contain',
+        )}
         style={{
-          gridTemplateColumns: `repeat(${AVATAR_SELECTION_GRID_COLS}, ${AVATAR_SELECTION_SIZE})`,
-          gap: AVATAR_SELECTION_GAP,
+          maxHeight: scrollable ? AVATAR_SELECTION_GRID_MAX_HEIGHT : undefined,
         }}
       >
-        {visibleOptions.map((option) => {
-          const isSelected = resolvedSelection === option.id;
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => onAvatarSelect(option.id)}
-              className={cn(
-                'relative shrink-0 cursor-pointer overflow-hidden rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
-                AVATAR_SELECTION_RING_CLASS,
-                USER_PROFILE_AVATAR_BG_CLASS,
-                isSelected ? AVATAR_SELECTION_SELECTED_CLASS : AVATAR_SELECTION_UNSELECTED_CLASS,
-              )}
-              style={{
-                width: AVATAR_SELECTION_SIZE,
-                height: AVATAR_SELECTION_SIZE,
-              }}
-              aria-label={option.label}
-              title={option.label}
-            >
-              <img
-                src={getAvatarImageUrl(option)}
-                alt={option.label}
-                className="block h-full w-full object-cover object-center"
+        <div
+          className="grid w-full min-w-0"
+          style={{
+            gridTemplateColumns: `repeat(${AVATAR_SELECTION_GRID_COLS}, minmax(0, 1fr))`,
+            gap: AVATAR_SELECTION_GAP,
+          }}
+        >
+          {visibleOptions.map((option) => {
+            const isSelected = resolvedSelection === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => onAvatarSelect(option.id)}
+                className={cn(
+                  'relative mx-auto aspect-square w-full max-w-full cursor-pointer overflow-hidden rounded-full border-2 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 sm:hover:scale-105 sm:focus:ring-offset-2',
+                  AVATAR_SELECTION_RING_CLASS,
+                  USER_PROFILE_AVATAR_BG_CLASS,
+                  isSelected ? AVATAR_SELECTION_SELECTED_CLASS : AVATAR_SELECTION_UNSELECTED_CLASS,
+                )}
                 style={{
-                  transform: `scale(${AVATAR_SELECTION_IMAGE_SCALE})`,
-                  transformOrigin: 'center center',
+                  maxWidth: AVATAR_SELECTION_MAX_CELL_SIZE,
                 }}
-                loading="lazy"
-                draggable={false}
-              />
-              {isSelected && (
-                <div className="absolute inset-0 flex items-center justify-center bg-primary/15">
-                  <div
-                    className="flex items-center justify-center rounded-full bg-primary shadow-sm"
-                    style={{
-                      width: AVATAR_CHECKMARK_SIZE,
-                      height: AVATAR_CHECKMARK_SIZE,
-                    }}
-                  >
-                    <svg
+                aria-label={option.label}
+                title={option.label}
+              >
+                <img
+                  src={avatarUrls[option.id]}
+                  alt={option.label}
+                  className="block h-full w-full object-cover object-center"
+                  loading="lazy"
+                  draggable={false}
+                />
+                {isSelected && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-primary/15">
+                    <div
+                      className="flex items-center justify-center rounded-full bg-primary shadow-sm"
                       style={{
-                        color: COLOR_TEXT_WHITE,
-                        width: AVATAR_CHECKMARK_ICON_SIZE,
-                        height: AVATAR_CHECKMARK_ICON_SIZE,
+                        width: AVATAR_CHECKMARK_SIZE,
+                        height: AVATAR_CHECKMARK_SIZE,
                       }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+                      <svg
+                        style={{
+                          color: COLOR_TEXT_WHITE,
+                          width: AVATAR_CHECKMARK_ICON_SIZE,
+                          height: AVATAR_CHECKMARK_ICON_SIZE,
+                        }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-              )}
-            </button>
-          );
-        })}
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <p className="mt-2 text-center text-[10px] text-muted-foreground">{AVATAR_UI_TEXT.packCredit}</p>
+      <p className="mt-2 text-center text-[10px] leading-snug text-muted-foreground">
+        {AVATAR_UI_TEXT.packCredit}
+      </p>
     </div>
   );
 }

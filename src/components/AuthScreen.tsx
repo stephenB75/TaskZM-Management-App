@@ -981,7 +981,7 @@ export function AuthScreen() {
                       </div>
 
                       {/* Avatar Selection */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: PANEL_FIELD_SPACING }} className="min-w-0">
                         <Label className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300">{AVATAR_UI_TEXT.chooseYourAvatar}</Label>
                         <AvatarSelection
                           selectedAvatar={signUpAvatar}
@@ -989,6 +989,7 @@ export function AuthScreen() {
                           gender={signUpGender}
                           onGenderChange={setSignUpGender}
                           previewSeed={signUpName.trim() || signUpEmail.trim() || 'User'}
+                          scrollable
                         />
                       </div>
 
