@@ -221,7 +221,7 @@ export function SettingsProfileSection({
       {/* Actions */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button size="sm" variant="outline" className="flex-1" onClick={onChangeAvatar}>
-          <Icon name="user" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+          <Icon name="user-focus" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
           {AVATAR_UI_TEXT.changeAvatar}
         </Button>
         <Button

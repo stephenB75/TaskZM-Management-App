@@ -1363,7 +1363,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="member">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="user-circle-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <Icon name="identification-badge" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Member</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1374,7 +1374,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="viewer">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="user-circle-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <Icon name="identification-badge" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Viewer</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1514,7 +1514,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="member">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="user-circle-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <Icon name="identification-badge" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Member</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>
@@ -1525,7 +1525,7 @@ export function TeamPanel() {
                   </SelectItem>
                   <SelectItem value="viewer">
                     <div className="flex items-center" style={{ gap: PANEL_GAP_MEDIUM }}>
-                      <Icon name="user-circle-check" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
+                      <Icon name="identification-badge" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />
                       <div>
                         <div>Viewer</div>
                         <div className="text-muted-foreground" style={{ fontSize: TEAM_PANEL_TEXT_SIZE_SMALL }}>

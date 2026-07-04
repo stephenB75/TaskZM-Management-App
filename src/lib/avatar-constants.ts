@@ -1,134 +1,53 @@
 /**
  * Avatar Constants
- * Phosphor user icons on pastel gradient circles — aligned with TaskZM brand.
+ * Bundled Avataaars pack (DiceBear / Pablo Stanley) — flat colorful vector portraits.
  */
 
-import {
-  COLOR_PRIMARY,
-  COLOR_PRIMARY_DARK,
-  COLOR_PRIMARY_LIGHT,
-  COLOR_PASTEL_LAVENDER,
-  COLOR_PASTEL_LAVENDER_DARK,
-  COLOR_PASTEL_MINT,
-  COLOR_PASTEL_MINT_DARK,
-  COLOR_PASTEL_SKY,
-  COLOR_PASTEL_SKY_DARK,
-  COLOR_PASTEL_PEACH,
-  COLOR_PASTEL_LILAC,
-  COLOR_PASTEL_PINK,
-  COLOR_PASTEL_SAGE,
-  COLOR_PASTEL_SAGE_BORDER,
-  COLOR_PASTEL_YELLOW,
-} from './color-theme';
-
-export type AvatarGender = 'male' | 'female';
-
+export const AVATAR_ID_PREFIX = 'taskzm:avataaars:';
+/** @deprecated Lorelei pack */
+export const AVATAR_LORELEI_PREFIX = 'taskzm:lorelei:';
+/** @deprecated Notionists pack */
+export const AVATAR_NOTIONISTS_PREFIX = 'taskzm:notionists:';
+/** @deprecated Icon-based pastel presets */
 export const AVATAR_PRESET_PREFIX = 'taskzm:pastel-';
 /** @deprecated Portrait PNG avatars */
 export const AVATAR_ICON_PREFIX = 'taskzm:icon:';
 
-export interface AvatarPresetStyle {
-  gradientFrom: string;
-  gradientTo: string;
-  iconColor: string;
-}
+export const AVATAR_PACK = {
+  id: 'avataaars',
+  name: 'Avataaars',
+  license: 'Free for personal and commercial use',
+  sourceUrl: 'https://avataaars.com/',
+  credit: 'Avataaars by Pablo Stanley (via DiceBear)',
+  publicPath: '/avatars/avataaars',
+} as const;
 
-export interface AvatarPreset {
+export const AVATAR_COUNT = 24;
+
+/** @deprecated Gender is no longer used for avatar selection */
+export type AvatarGender = 'male' | 'female';
+
+export interface AvatarOption {
   id: string;
   label: string;
-  icon: string;
-  style: AvatarPresetStyle;
+  file: string;
 }
 
-export const AVATAR_PRESETS: readonly AvatarPreset[] = [
-  {
-    id: `${AVATAR_PRESET_PREFIX}0`,
-    label: 'Lavender',
-    icon: 'user-circle',
-    style: {
-      gradientFrom: COLOR_PASTEL_LAVENDER,
-      gradientTo: COLOR_PRIMARY_LIGHT,
-      iconColor: COLOR_PRIMARY_DARK,
-    },
+export const AVATAR_OPTIONS: readonly AvatarOption[] = Array.from(
+  { length: AVATAR_COUNT },
+  (_, index) => {
+    const file = `${String(index + 1).padStart(2, '0')}.svg`;
+    return {
+      id: `${AVATAR_ID_PREFIX}${file.replace('.svg', '')}`,
+      label: `Profile ${index + 1}`,
+      file,
+    };
   },
-  {
-    id: `${AVATAR_PRESET_PREFIX}1`,
-    label: 'Mint',
-    icon: 'user',
-    style: {
-      gradientFrom: COLOR_PASTEL_MINT,
-      gradientTo: COLOR_PASTEL_SKY,
-      iconColor: COLOR_PASTEL_MINT_DARK,
-    },
-  },
-  {
-    id: `${AVATAR_PRESET_PREFIX}2`,
-    label: 'Peach',
-    icon: 'user-plus',
-    style: {
-      gradientFrom: COLOR_PASTEL_PEACH,
-      gradientTo: COLOR_PASTEL_PINK,
-      iconColor: COLOR_PASTEL_LAVENDER_DARK,
-    },
-  },
-  {
-    id: `${AVATAR_PRESET_PREFIX}3`,
-    label: 'Sky',
-    icon: 'users',
-    style: {
-      gradientFrom: COLOR_PASTEL_SKY,
-      gradientTo: COLOR_PASTEL_LILAC,
-      iconColor: COLOR_PASTEL_SKY_DARK,
-    },
-  },
-  {
-    id: `${AVATAR_PRESET_PREFIX}4`,
-    label: 'Sage',
-    icon: 'user-three',
-    style: {
-      gradientFrom: COLOR_PASTEL_SAGE,
-      gradientTo: COLOR_PASTEL_MINT,
-      iconColor: COLOR_PASTEL_SAGE_BORDER,
-    },
-  },
-  {
-    id: `${AVATAR_PRESET_PREFIX}5`,
-    label: 'Sunrise',
-    icon: 'user-circle',
-    style: {
-      gradientFrom: COLOR_PASTEL_YELLOW,
-      gradientTo: COLOR_PASTEL_PEACH,
-      iconColor: COLOR_PASTEL_SKY_DARK,
-    },
-  },
-  {
-    id: `${AVATAR_PRESET_PREFIX}6`,
-    label: 'Violet',
-    icon: 'user',
-    style: {
-      gradientFrom: COLOR_PRIMARY_LIGHT,
-      gradientTo: COLOR_PRIMARY,
-      iconColor: COLOR_PRIMARY_DARK,
-    },
-  },
-  {
-    id: `${AVATAR_PRESET_PREFIX}7`,
-    label: 'Rose',
-    icon: 'user-plus',
-    style: {
-      gradientFrom: COLOR_PASTEL_PINK,
-      gradientTo: COLOR_PASTEL_LAVENDER,
-      iconColor: COLOR_PASTEL_LAVENDER_DARK,
-    },
-  },
-] as const;
+);
 
-/** @deprecated Portrait PNG pool */
-export const AVATAR_PATHS = { male: [] as string[], female: [] as string[] } as const;
+export const DEFAULT_AVATAR = AVATAR_OPTIONS[0].id;
 
-export const DEFAULT_AVATAR = AVATAR_PRESETS[0].id;
-
-export const AVATAR_SELECTION_GRID_COLS = 4;
+export const AVATAR_SELECTION_GRID_COLS = 6;
 export const AVATAR_SELECTION_SIZE = '72px';
 export const AVATAR_SELECTION_GAP = '0.625rem';
 
@@ -136,34 +55,50 @@ export const AVATAR_UI_TEXT = {
   chooseYourAvatar: 'Choose Your Avatar',
   chooseAvatar: 'Choose Avatar',
   selectYourAvatar: 'Select Your Avatar',
-  selectAvatarDescription: 'Pick a profile icon and color',
+  selectAvatarDescription: 'Pick a flat vector profile avatar',
   changeAvatar: 'Change Avatar',
   saveAvatar: 'Save Avatar',
   saving: 'Saving…',
   cancel: 'Cancel',
   pleaseSelectAvatar: 'Please select an avatar',
+  packCredit: `${AVATAR_PACK.credit}`,
 } as const;
 
 export const AVATAR_CHECKMARK_SIZE = '1.5rem';
 export const AVATAR_CHECKMARK_ICON_SIZE = '1rem';
 
-export const AVATAR_ICON = {
-  /** Icon size as a ratio of avatar diameter. */
-  iconScaleRatio: 0.46,
-} as const;
-
 export const USER_PROFILE_AVATAR_RING_CLASS =
-  'ring-2 ring-background/80 ring-offset-2 ring-offset-card shadow-sm';
-export const USER_PROFILE_AVATAR_BG_CLASS = 'bg-card';
+  'ring-2 ring-background/80 ring-offset-2 ring-offset-card shadow-md';
+export const USER_PROFILE_AVATAR_BG_CLASS = 'bg-muted/30';
 
-export function getAvatarPresetById(id: string): AvatarPreset | undefined {
-  return AVATAR_PRESETS.find((preset) => preset.id === id);
+/** @deprecated Use AVATAR_OPTIONS */
+export const AVATAR_PRESETS = AVATAR_OPTIONS;
+
+export function getAvatarOptionById(id: string): AvatarOption | undefined {
+  return AVATAR_OPTIONS.find((option) => option.id === id);
 }
 
-export function getAvatarPresetStyles(preset: AvatarPreset, _isDark: boolean): AvatarPresetStyle {
-  return preset.style;
+export function getAvatarImageUrl(option: AvatarOption): string {
+  return `${AVATAR_PACK.publicPath}/${option.file}`;
 }
 
-export function getAvatarPresetIndex(preset: AvatarPreset): number {
-  return AVATAR_PRESETS.findIndex((entry) => entry.id === preset.id);
+export function getAvatarOptionIndex(option: AvatarOption): number {
+  return AVATAR_OPTIONS.findIndex((entry) => entry.id === option.id);
 }
+
+/** @deprecated */
+export function getAvatarPresetById(id: string): AvatarOption | undefined {
+  return getAvatarOptionById(id);
+}
+
+/** @deprecated */
+export function getAvatarPresetIndex(option: AvatarOption): number {
+  return getAvatarOptionIndex(option);
+}
+
+/** All bundled pack ID prefixes — used for legacy migration by slot index. */
+export const AVATAR_LEGACY_PREFIXES = [
+  AVATAR_ID_PREFIX,
+  AVATAR_LORELEI_PREFIX,
+  AVATAR_NOTIONISTS_PREFIX,
+] as const;

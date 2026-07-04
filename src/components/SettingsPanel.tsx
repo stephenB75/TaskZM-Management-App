@@ -684,7 +684,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         <SettingsSection
           value="user-profile"
           dataTour="settings-user-profile"
-          icon="user-circle-check"
+          icon="identification-badge"
           title={SETTINGS_PANEL_UI_TEXT.profile.userProfile}
           description={SETTINGS_PANEL_UI_TEXT.sections.userProfile.description}
         >

@@ -1,45 +1,28 @@
 # Avatar Images
 
-This directory should contain the cropped avatar illustrations.
+TaskZM uses the **Avataaars** flat vector avatar pack by [Pablo Stanley](https://avataaars.com/) (via [DiceBear](https://www.dicebear.com/styles/avataaars/)). This is the same colorful, Flaticon-style profile icon family used across many apps.
 
-## Avatar Files
+## Bundled pack (`avataaars/`)
 
-The following PNG avatar files are available in this directory (processed from user profile images):
+- **24 SVG portraits** with TaskZM pastel background colors
+- Stored as `public/avatars/avataaars/01.svg` … `24.svg`
+- Referenced in the app as `taskzm:avataaars:01` … `taskzm:avataaars:24`
 
-### Male Avatars (10 files):
-- `male-1.png` through `male-10.png`
-- App uses: `male-1.png` through `male-6.png`
+Regenerate after changing seeds or colors:
 
-### Female Avatars (14 files):
-- `female-1.png` through `female-14.png`
-- App uses: `female-1.png` through `female-6.png`
+```bash
+npm run generate:avatars
+```
 
-## Processing
+## Alternative free packs
 
-All avatars were processed from source images in `src/assets/user_profiles/` using `scripts/process-user-profiles.py`:
-- ✅ White background removed (transparent)
-- ✅ Converted to black & white
-- ✅ Enhanced and cleaned
-- ✅ Cropped to square (300x300px)
-- ✅ Saved as PNG format with RGBA transparency
+| Pack | Style | License | URL |
+|------|-------|---------|-----|
+| **Craftwork Userpics** | 100 colorful flat avatars (PNG/SVG, circle + square) | Free commercial use | [userpics.craftwork.design](https://userpics.craftwork.design/) |
+| **Speckyboy Avatar Set** | 50 flat/outlined user icons | Free commercial | [speckyboy.com](https://speckyboy.com/free-cute-user-avatar-icon-set/) |
+| **DiceBear Micah** | Flat modern half-body portraits | CC BY 4.0 | [dicebear.com/styles/micah](https://www.dicebear.com/styles/micah/) |
+| **Flaticon** | Huge icon/avatar library | Free with attribution (Premium: no attribution) | [flaticon.com](https://www.flaticon.com/) |
 
-## Image Specifications
+## Legacy assets
 
-- Format: PNG with RGBA transparency
-- Size: 300x300px (square)
-- Style: Black and white illustrations
-- Background: Transparent
-- Content: Head and shoulders view, centered
-
-## Instructions
-
-1. Clean up and crop each illustration from the reference images
-2. Save them with the exact filenames listed above
-3. Place all files in the `public/avatars/` directory
-4. The app will automatically load and display them in the avatar selection component
-
-## Fallback
-
-If an avatar image fails to load, the app will:
-- Use DiceBear generated avatar as fallback
-- Show user initials if image loading fails
+Older packs (`lorelei/`, `notionists/`, `female-*.png`, `male-*.png`, `taskzm:pastel-*` IDs) are deprecated. Users with legacy paths are mapped automatically to the Avataaars pack by index.

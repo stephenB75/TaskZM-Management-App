@@ -60,8 +60,17 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'user': 'User',
   'user-plus': 'UserPlus',
   'user-circle': 'UserCircle',
-  'user-circle-check': 'UserCircle', // UserCircleCheck doesn't exist in phosphor-react v1.4.1, using UserCircle as fallback
+  'user-circle-check': 'IdentificationBadge',
+  'user-focus': 'UserFocus',
   'user-three': 'UsersThree',
+  'identification-badge': 'IdentificationBadge',
+  'smiley-wink': 'SmileyWink',
+  'flower-lotus': 'FlowerLotus',
+  'flower': 'Flower',
+  'leaf': 'Leaf',
+  'heart': 'Heart',
+  'star-four': 'StarFour',
+  'sun-horizon': 'SunHorizon',
   'bell': 'Bell',
   'alert-circle': 'WarningCircle',
   'alert-triangle': 'Warning',
@@ -196,7 +205,21 @@ const DUOTONE_ICONS = new Set([
   'calendar-dots', // Added for Re-Scheduler icon
   'check-circle',
   'checkmark-circle',
-  'user-circle-check', // Added for User Profile icon
+  'user-circle-check',
+  'identification-badge',
+  'user-focus',
+  'sparkle',
+  'leaf',
+  'flower-lotus',
+  'smiley-wink',
+  'heart',
+  'star-four',
+  'sun-horizon',
+  'compass',
+  'crown',
+  'coffee',
+  'briefcase',
+  'brain',
 ]);
 
 function Icon({

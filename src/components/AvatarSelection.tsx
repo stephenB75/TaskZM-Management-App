@@ -1,29 +1,27 @@
 /**
- * Avatar Selection — Phosphor user icons on pastel gradient circles.
+ * Avatar Selection — Avataaars flat vector portraits (bundled SVG pack).
  */
 
 import React from 'react';
 import { cn } from '../lib/utils';
-import { Icon } from './Icon';
 import {
-  AVATAR_PRESETS,
+  AVATAR_OPTIONS,
   AVATAR_SELECTION_SIZE,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
-  AVATAR_ICON,
+  AVATAR_UI_TEXT,
   USER_PROFILE_AVATAR_RING_CLASS,
-  getAvatarPresetStyles,
+  getAvatarImageUrl,
 } from '../lib/avatar-constants';
-import { resolveAvatarPreset } from '../lib/avatar-utils';
+import { resolveAvatarOption } from '../lib/avatar-utils';
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 
 interface AvatarSelectionProps {
   selectedAvatar?: string;
-  onAvatarSelect: (avatarPresetId: string) => void;
+  onAvatarSelect: (avatarId: string) => void;
   className?: string;
-  /** Used to resolve legacy portrait paths to the matching preset highlight. */
   previewSeed?: string;
 }
 
@@ -33,9 +31,7 @@ export function AvatarSelection({
   className,
   previewSeed = 'User',
 }: AvatarSelectionProps) {
-  const selectionSizePx = parseFloat(AVATAR_SELECTION_SIZE);
-  const iconSize = Math.max(selectionSizePx * AVATAR_ICON.iconScaleRatio, 16);
-  const resolvedSelection = resolveAvatarPreset(selectedAvatar, previewSeed).id;
+  const resolvedSelection = resolveAvatarOption(selectedAvatar, previewSeed).id;
 
   return (
     <div className={cn('w-full', className)}>
@@ -46,14 +42,13 @@ export function AvatarSelection({
           gap: AVATAR_SELECTION_GAP,
         }}
       >
-        {AVATAR_PRESETS.map((preset) => {
-          const isSelected = resolvedSelection === preset.id;
-          const style = getAvatarPresetStyles(preset, false);
+        {AVATAR_OPTIONS.map((option) => {
+          const isSelected = resolvedSelection === option.id;
           return (
             <button
-              key={preset.id}
+              key={option.id}
               type="button"
-              onClick={() => onAvatarSelect(preset.id)}
+              onClick={() => onAvatarSelect(option.id)}
               className={cn(
                 'relative cursor-pointer overflow-hidden rounded-full border-2 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
                 isSelected
@@ -64,19 +59,17 @@ export function AvatarSelection({
               style={{
                 width: AVATAR_SELECTION_SIZE,
                 height: AVATAR_SELECTION_SIZE,
-                background: `linear-gradient(145deg, ${style.gradientFrom} 0%, ${style.gradientTo} 100%)`,
               }}
-              aria-label={preset.label}
-              title={preset.label}
+              aria-label={option.label}
+              title={option.label}
             >
-              <div className="flex h-full w-full items-center justify-center">
-                <Icon
-                  name={preset.icon}
-                  size={iconSize}
-                  weight="duotone"
-                  style={{ color: style.iconColor }}
-                />
-              </div>
+              <img
+                src={getAvatarImageUrl(option)}
+                alt={option.label}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                draggable={false}
+              />
               {isSelected && (
                 <div className="absolute inset-0 flex items-center justify-center bg-primary/15">
                   <div
@@ -111,6 +104,7 @@ export function AvatarSelection({
           );
         })}
       </div>
+      <p className="mt-2 text-center text-[10px] text-muted-foreground">{AVATAR_UI_TEXT.packCredit}</p>
     </div>
   );
 }
