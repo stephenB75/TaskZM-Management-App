@@ -114,6 +114,9 @@ export default defineConfig(({ mode }) => {
           if (id.includes('@radix-ui')) {
             return 'ui';
           }
+          if (id.includes('@dicebear')) {
+            return 'dicebear';
+          }
           // Default: let Vite handle other chunks
           return undefined;
         },

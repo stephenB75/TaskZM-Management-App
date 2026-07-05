@@ -1,13 +1,16 @@
 import {
-  AVATAR_ID_PREFIX,
+  AVATAR_ACTIVE_PREFIXES,
   AVATAR_LEGACY_PREFIXES,
+  AVATAR_MULTIAVATAR_PREFIX,
   AVATAR_PRESET_PREFIX,
+  AVATAR_SEEDS_PER_STYLE,
   AVATAR_USERPICS_PREFIX,
   AVATAR_OPTIONS,
   DEFAULT_AVATAR,
   getAvatarOptionById,
+  getMultiavatarLegacyIndex,
   type AvatarOption,
-  type MultiavatarTheme,
+  type MultiavatarLegacyTheme,
 } from './avatar-constants';
 import { getAvatarSvgDataUrl } from './avatar-render';
 
@@ -20,14 +23,33 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
-function parseMultiavatarId(avatar: string): string | null {
-  if (!avatar.startsWith(AVATAR_ID_PREFIX)) return null;
-  return getAvatarOptionById(avatar) ? avatar : null;
+function normalizeBundledAvatarId(avatar: string, prefix: string): string | null {
+  if (!avatar.startsWith(prefix)) return null;
+  const suffix = avatar.slice(prefix.length);
+  const parsed = Number.parseInt(suffix, 10);
+  if (Number.isNaN(parsed) || parsed < 1 || parsed > AVATAR_SEEDS_PER_STYLE) {
+    return null;
+  }
+  const slot = String(parsed).padStart(2, '0');
+  return getAvatarOptionById(`${prefix}${slot}`)?.id ?? null;
 }
 
-function parseBundledAvatarIndex(avatar: string): number | null {
+function parseCurrentAvatarId(avatar: string): string | null {
+  if (getAvatarOptionById(avatar)) return avatar;
+
+  for (const prefix of AVATAR_ACTIVE_PREFIXES) {
+    const normalized = normalizeBundledAvatarId(avatar, prefix);
+    if (normalized) return normalized;
+  }
+
+  return null;
+}
+
+function parseLegacyBundledAvatarIndex(avatar: string): number | null {
   for (const prefix of AVATAR_LEGACY_PREFIXES) {
-    if (prefix === AVATAR_ID_PREFIX) continue;
+    if (AVATAR_ACTIVE_PREFIXES.includes(prefix as (typeof AVATAR_ACTIVE_PREFIXES)[number])) {
+      continue;
+    }
     if (!avatar.startsWith(prefix)) continue;
     const suffix = avatar.slice(prefix.length);
     const parsed = Number.parseInt(suffix, 10);
@@ -41,8 +63,8 @@ function parseBundledAvatarIndex(avatar: string): number | null {
 export function isLegacyAvatarUrl(avatar?: string): boolean {
   if (!avatar) return false;
   if (avatar.startsWith(AVATAR_PRESET_PREFIX)) return true;
-  if (parseMultiavatarId(avatar)) return false;
-  if (parseBundledAvatarIndex(avatar) !== null) return true;
+  if (parseCurrentAvatarId(avatar)) return false;
+  if (parseLegacyBundledAvatarIndex(avatar) !== null) return true;
   return (
     avatar.includes('/avatars/') ||
     avatar.includes('api.dicebear.com') ||
@@ -52,18 +74,30 @@ export function isLegacyAvatarUrl(avatar?: string): boolean {
 
 export function parseAvatarId(avatar?: string): string | null {
   if (!avatar) return null;
-  const multiavatarId = parseMultiavatarId(avatar);
-  if (multiavatarId) return multiavatarId;
-  const legacyIndex = parseBundledAvatarIndex(avatar);
+
+  const currentId = parseCurrentAvatarId(avatar);
+  if (currentId) return currentId;
+
+  const legacyIndex = parseLegacyBundledAvatarIndex(avatar);
   if (legacyIndex !== null) {
     return AVATAR_OPTIONS[legacyIndex % AVATAR_OPTIONS.length].id;
   }
+
+  if (avatar.startsWith(AVATAR_MULTIAVATAR_PREFIX)) {
+    const body = avatar.slice(AVATAR_MULTIAVATAR_PREFIX.length);
+    const [part, theme] = body.split(':') as [string, MultiavatarLegacyTheme];
+    const legacyIndex = getMultiavatarLegacyIndex(part, theme);
+    if (legacyIndex !== null) {
+      return AVATAR_OPTIONS[legacyIndex % AVATAR_OPTIONS.length].id;
+    }
+  }
+
   return null;
 }
 
 function migrateLegacyToIndex(avatar: string | undefined, seed: string): number {
-  const bundledIndex = avatar ? parseBundledAvatarIndex(avatar) : null;
-  if (bundledIndex !== null) return bundledIndex % AVATAR_OPTIONS.length;
+  const legacyIndex = avatar ? parseLegacyBundledAvatarIndex(avatar) : null;
+  if (legacyIndex !== null) return legacyIndex % AVATAR_OPTIONS.length;
 
   if (avatar?.startsWith(AVATAR_PRESET_PREFIX)) {
     const suffix = avatar.slice(AVATAR_PRESET_PREFIX.length);
@@ -125,7 +159,9 @@ export function resolveUserAvatar(
 }
 
 export function isDiceBearAvatar(avatar?: string): boolean {
-  return Boolean(avatar?.includes('api.dicebear.com'));
+  if (!avatar) return false;
+  if (parseCurrentAvatarId(avatar)) return true;
+  return avatar.includes('api.dicebear.com');
 }
 
 export function getAvatarFallback(_avatar?: string): string {
@@ -166,6 +202,3 @@ export function getAvatarDisplayUrl(avatar: string | undefined, seed: string): s
   const option = resolveAvatarOption(avatar, seed);
   return getAvatarSvgDataUrl(option);
 }
-
-/** @deprecated */
-export type { MultiavatarTheme };

@@ -1,5 +1,5 @@
 /**
- * Avatar Selection — Multiavatar multicultural SVG portraits.
+ * Avatar Selection — DiceBear illustrated SVG portraits.
  */
 
 import React, { useMemo } from 'react';
@@ -11,12 +11,17 @@ import {
   AVATAR_SELECTION_GRID_MAX_HEIGHT,
   AVATAR_SELECTION_MAX_CELL_SIZE,
   AVATAR_SELECTION_RING_CLASS,
+  AVATAR_SELECTION_SECTION_GAP,
+  AVATAR_SELECTION_SECTION_LABEL_CLASS,
   AVATAR_SELECTION_SELECTED_CLASS,
   AVATAR_SELECTION_UNSELECTED_CLASS,
+  AVATAR_STYLE_CONFIG,
+  AVATAR_STYLE_ORDER,
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
   AVATAR_UI_TEXT,
   USER_PROFILE_AVATAR_BG_CLASS,
+  getAvatarOptionsByStyle,
 } from '../lib/avatar-constants';
 import { getAvatarSvgDataUrl } from '../lib/avatar-render';
 import { resolveAvatarOption } from '../lib/avatar-utils';
@@ -29,6 +34,88 @@ interface AvatarSelectionProps {
   previewSeed?: string;
   /** Enable vertical scroll for the grid (use inside dialogs on mobile) */
   scrollable?: boolean;
+}
+
+function AvatarGrid({
+  options,
+  avatarUrls,
+  resolvedSelection,
+  onAvatarSelect,
+}: {
+  options: readonly (typeof AVATAR_OPTIONS)[number][];
+  avatarUrls: Record<string, string>;
+  resolvedSelection: string;
+  onAvatarSelect: (avatarId: string) => void;
+}) {
+  return (
+    <div
+      className="grid w-full min-w-0"
+      style={{
+        gridTemplateColumns: `repeat(${AVATAR_SELECTION_GRID_COLS}, minmax(0, 1fr))`,
+        gap: AVATAR_SELECTION_GAP,
+      }}
+    >
+      {options.map((option) => {
+        const isSelected = resolvedSelection === option.id;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onAvatarSelect(option.id)}
+            className={cn(
+              'relative mx-auto aspect-square w-full max-w-full cursor-pointer overflow-hidden rounded-full border-2 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 sm:hover:scale-105 sm:focus:ring-offset-2',
+              AVATAR_SELECTION_RING_CLASS,
+              USER_PROFILE_AVATAR_BG_CLASS,
+              isSelected ? AVATAR_SELECTION_SELECTED_CLASS : AVATAR_SELECTION_UNSELECTED_CLASS,
+            )}
+            style={{
+              maxWidth: AVATAR_SELECTION_MAX_CELL_SIZE,
+            }}
+            aria-label={option.label}
+            title={option.label}
+          >
+            <img
+              src={avatarUrls[option.id]}
+              alt={option.label}
+              className="block h-full w-full object-cover object-center"
+              loading="lazy"
+              draggable={false}
+            />
+            {isSelected && (
+              <div className="absolute inset-0 flex items-center justify-center bg-primary/15">
+                <div
+                  className="flex items-center justify-center rounded-full bg-primary shadow-sm"
+                  style={{
+                    width: AVATAR_CHECKMARK_SIZE,
+                    height: AVATAR_CHECKMARK_SIZE,
+                  }}
+                >
+                  <svg
+                    style={{
+                      color: COLOR_TEXT_WHITE,
+                      width: AVATAR_CHECKMARK_ICON_SIZE,
+                      height: AVATAR_CHECKMARK_ICON_SIZE,
+                    }}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function AvatarSelection({
@@ -64,69 +151,23 @@ export function AvatarSelection({
         }}
       >
         <div
-          className="grid w-full min-w-0"
-          style={{
-            gridTemplateColumns: `repeat(${AVATAR_SELECTION_GRID_COLS}, minmax(0, 1fr))`,
-            gap: AVATAR_SELECTION_GAP,
-          }}
+          className="flex flex-col"
+          style={{ gap: AVATAR_SELECTION_SECTION_GAP }}
         >
-          {AVATAR_OPTIONS.map((option) => {
-            const isSelected = resolvedSelection === option.id;
+          {AVATAR_STYLE_ORDER.map((styleId) => {
+            const styleOptions = getAvatarOptionsByStyle(styleId);
             return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => onAvatarSelect(option.id)}
-                className={cn(
-                  'relative mx-auto aspect-square w-full max-w-full cursor-pointer overflow-hidden rounded-full border-2 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 sm:hover:scale-105 sm:focus:ring-offset-2',
-                  AVATAR_SELECTION_RING_CLASS,
-                  USER_PROFILE_AVATAR_BG_CLASS,
-                  isSelected ? AVATAR_SELECTION_SELECTED_CLASS : AVATAR_SELECTION_UNSELECTED_CLASS,
-                )}
-                style={{
-                  maxWidth: AVATAR_SELECTION_MAX_CELL_SIZE,
-                }}
-                aria-label={option.label}
-                title={option.label}
-              >
-                <img
-                  src={avatarUrls[option.id]}
-                  alt={option.label}
-                  className="block h-full w-full object-cover object-center"
-                  loading="lazy"
-                  draggable={false}
+              <section key={styleId}>
+                <h4 className={AVATAR_SELECTION_SECTION_LABEL_CLASS}>
+                  {AVATAR_STYLE_CONFIG[styleId].sectionLabel}
+                </h4>
+                <AvatarGrid
+                  options={styleOptions}
+                  avatarUrls={avatarUrls}
+                  resolvedSelection={resolvedSelection}
+                  onAvatarSelect={onAvatarSelect}
                 />
-                {isSelected && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-primary/15">
-                    <div
-                      className="flex items-center justify-center rounded-full bg-primary shadow-sm"
-                      style={{
-                        width: AVATAR_CHECKMARK_SIZE,
-                        height: AVATAR_CHECKMARK_SIZE,
-                      }}
-                    >
-                      <svg
-                        style={{
-                          color: COLOR_TEXT_WHITE,
-                          width: AVATAR_CHECKMARK_ICON_SIZE,
-                          height: AVATAR_CHECKMARK_ICON_SIZE,
-                        }}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                )}
-              </button>
+              </section>
             );
           })}
         </div>
