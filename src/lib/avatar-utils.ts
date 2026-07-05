@@ -5,11 +5,8 @@ import {
   AVATAR_USERPICS_PREFIX,
   AVATAR_OPTIONS,
   DEFAULT_AVATAR,
-  DEFAULT_AVATAR_GENDER,
   getAvatarOptionById,
-  getAvatarOptionsByGender,
   type AvatarOption,
-  type AvatarGender,
   type MultiavatarTheme,
 } from './avatar-constants';
 import { getAvatarSvgDataUrl } from './avatar-render';
@@ -107,10 +104,9 @@ export function encodeAvatarOption(index: number): string {
   return AVATAR_OPTIONS[safeIndex].id;
 }
 
-export function pickAvatarFromPool(seed: string, gender: AvatarGender = DEFAULT_AVATAR_GENDER): string {
-  const pool = getAvatarOptionsByGender(gender);
-  const index = hashString(seed.toLowerCase()) % pool.length;
-  return pool[index].id;
+export function pickAvatarFromPool(seed: string): string {
+  const index = hashString(seed.toLowerCase()) % AVATAR_OPTIONS.length;
+  return AVATAR_OPTIONS[index].id;
 }
 
 export function pickAvatarFromPoolAuto(seed: string): string {
@@ -120,14 +116,12 @@ export function pickAvatarFromPoolAuto(seed: string): string {
 export function resolveUserAvatar(
   avatar: string | undefined,
   seed: string,
-  gender: AvatarGender = DEFAULT_AVATAR_GENDER,
 ): string {
   const avatarId = parseAvatarId(avatar);
   if (avatarId && getAvatarOptionById(avatarId)) return avatarId;
   if (avatar && !isLegacyAvatarUrl(avatar)) return avatar;
-  const pool = getAvatarOptionsByGender(gender);
-  const index = migrateLegacyToIndex(avatar, seed) % pool.length;
-  return pool[index].id;
+  const index = migrateLegacyToIndex(avatar, seed) % AVATAR_OPTIONS.length;
+  return AVATAR_OPTIONS[index].id;
 }
 
 export function isDiceBearAvatar(avatar?: string): boolean {
@@ -164,7 +158,7 @@ export function resolveAvatarIconIndex(avatar: string | undefined, seed: string)
 }
 
 /** @deprecated Use pickAvatarFromPool */
-export function getDiceBearAvatarUrl(seed: string, _gender?: AvatarGender): string {
+export function getDiceBearAvatarUrl(seed: string): string {
   return pickAvatarFromPool(seed);
 }
 

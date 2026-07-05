@@ -20,7 +20,12 @@ export const AVATAR_PRESET_PREFIX = 'taskzm:pastel-';
 /** @deprecated Portrait PNG avatars */
 export const AVATAR_ICON_PREFIX = 'taskzm:icon:';
 
-export type MultiavatarTheme = 'A' | 'B';
+export type MultiavatarTheme = 'A' | 'B' | 'C';
+
+/** Inclusive base character count in the Multiavatar pack (parts 00–15). */
+export const MULTIAVATAR_PART_COUNT = 16;
+
+export const MULTIAVATAR_THEMES: readonly MultiavatarTheme[] = ['A', 'B', 'C'];
 
 export const AVATAR_PACK = {
   id: 'multiavatar',
@@ -30,55 +35,33 @@ export const AVATAR_PACK = {
   credit: 'Avatars by Multiavatar',
 } as const;
 
-export type AvatarGender = 'male' | 'female';
-
-export const DEFAULT_AVATAR_GENDER: AvatarGender = 'male';
-
-/**
- * Sixteen multicultural base characters (00–15), each with two color themes.
- * Gender tags group picker tabs; parts are Netguru/Multiavatar inclusive designs.
- */
-const MULTIAVATAR_PART_GENDERS: readonly AvatarGender[] = [
-  'female',
-  'male',
-  'female',
-  'male',
-  'female',
-  'male',
-  'female',
-  'male',
-  'female',
-  'male',
-  'female',
-  'male',
-  'female',
-  'male',
-  'female',
-  'male',
-] as const;
-
-const MULTIAVATAR_PARTS = Array.from({ length: 16 }, (_, index) =>
+const MULTIAVATAR_PARTS = Array.from({ length: MULTIAVATAR_PART_COUNT }, (_, index) =>
   String(index).padStart(2, '0'),
 );
-
-const MULTIAVATAR_THEMES: readonly MultiavatarTheme[] = ['A', 'B'];
 
 export interface AvatarOption {
   id: string;
   label: string;
   part: string;
   theme: MultiavatarTheme;
-  gender: AvatarGender;
+}
+
+const AVATAR_OPTION_LABEL = {
+  characterPrefix: 'Character',
+  themePrefix: 'Theme',
+} as const;
+
+function buildAvatarLabel(part: string, theme: MultiavatarTheme): string {
+  return `${AVATAR_OPTION_LABEL.characterPrefix} ${part} · ${AVATAR_OPTION_LABEL.themePrefix} ${theme}`;
 }
 
 export const AVATAR_OPTIONS: readonly AvatarOption[] = MULTIAVATAR_PARTS.flatMap(
-  (part, partIndex) =>
+  (part) =>
     MULTIAVATAR_THEMES.map((theme) => ({
       id: `${AVATAR_ID_PREFIX}${part}:${theme}`,
-      label: `Profile ${part}${theme}`,
+      label: buildAvatarLabel(part, theme),
       part,
       theme,
-      gender: MULTIAVATAR_PART_GENDERS[partIndex],
     })),
 );
 
@@ -92,8 +75,10 @@ export const AVATAR_SELECTION_MAX_CELL_SIZE = '4.5rem';
 export const AVATAR_SELECTION_GAP = '0.5rem';
 export const AVATAR_SELECTION_PANEL_PADDING = '0.5rem';
 export const AVATAR_SELECTION_PANEL_PADDING_DESKTOP = '0.75rem';
-/** Scrollable grid area inside dialogs on small screens (4 rows of avatars) */
-export const AVATAR_SELECTION_GRID_MAX_HEIGHT = 'min(17rem, 45dvh)';
+/** Visible rows in scrollable picker grids (full catalog scrolls beyond this) */
+export const AVATAR_SELECTION_SCROLLABLE_VISIBLE_ROWS = 4;
+/** Scrollable grid area inside dialogs on small screens */
+export const AVATAR_SELECTION_GRID_MAX_HEIGHT = 'min(20rem, 50dvh)';
 
 export const AVATAR_SELECTION_DIALOG_CLASS =
   'flex max-h-[calc(var(--viewport-height,100dvh)-2rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] max-w-[calc(100%-1rem)] flex-col gap-4 overflow-hidden sm:max-w-lg';
@@ -112,15 +97,13 @@ export const AVATAR_UI_TEXT = {
   chooseYourAvatar: 'Choose Your Avatar',
   chooseAvatar: 'Choose Avatar',
   selectYourAvatar: 'Select Your Avatar',
-  selectAvatarDescription: 'Pick a profile character that represents you',
+  selectAvatarDescription: `Browse ${AVATAR_COUNT} inclusive characters across diverse styles and color themes`,
   changeAvatar: 'Change Avatar',
   saveAvatar: 'Save Avatar',
   saving: 'Saving…',
   cancel: 'Cancel',
   pleaseSelectAvatar: 'Please select an avatar',
-  packCredit: `${AVATAR_PACK.credit} · Multicultural avatar maker`,
-  male: 'Male',
-  female: 'Female',
+  packCredit: `${AVATAR_PACK.credit} · Inclusive multicultural avatars`,
 } as const;
 
 export const AVATAR_CHECKMARK_SIZE = '1.5rem';
@@ -137,16 +120,8 @@ export function getAvatarOptionById(id: string): AvatarOption | undefined {
   return AVATAR_OPTIONS.find((option) => option.id === id);
 }
 
-export function getAvatarOptionsByGender(gender: AvatarGender): readonly AvatarOption[] {
-  return AVATAR_OPTIONS.filter((option) => option.gender === gender);
-}
-
 export function getAvatarOptionIndex(option: AvatarOption): number {
   return AVATAR_OPTIONS.findIndex((entry) => entry.id === option.id);
-}
-
-export function getAvatarGenderById(id: string): AvatarGender | undefined {
-  return getAvatarOptionById(id)?.gender;
 }
 
 /** @deprecated Use getAvatarSvgDataUrl from avatar-render.ts */

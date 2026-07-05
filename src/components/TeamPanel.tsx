@@ -31,10 +31,10 @@ import {
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { AvatarSelection, type AvatarGender } from "./AvatarSelection";
+import { AvatarSelection } from "./AvatarSelection";
 import { UserProfileAvatar } from "./UserProfileAvatar";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { AVATAR_UI_TEXT, AVATAR_SELECTION_DIALOG_BODY_CLASS, AVATAR_SELECTION_DIALOG_CLASS, AVATAR_SELECTION_DIALOG_FOOTER_CLASS, DEFAULT_AVATAR_GENDER } from "../lib/avatar-constants";
+import { AVATAR_UI_TEXT, AVATAR_SELECTION_DIALOG_BODY_CLASS, AVATAR_SELECTION_DIALOG_CLASS, AVATAR_SELECTION_DIALOG_FOOTER_CLASS } from "../lib/avatar-constants";
 import { pickAvatarFromPool, pickAvatarFromPoolAuto } from "../lib/avatar-utils";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import {
@@ -207,7 +207,6 @@ export function TeamPanel() {
     "admin" | "member" | "viewer"
   >("member");
   const [newMemberAvatar, setNewMemberAvatar] = useState<string | undefined>(undefined);
-  const [newMemberGender, setNewMemberGender] = useState<AvatarGender>(DEFAULT_AVATAR_GENDER);
   const [searchQuery, setSearchQuery] = useState("");
   const [bulkInvites, setBulkInvites] = useState<string>("");
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
@@ -313,14 +312,14 @@ export function TeamPanel() {
             email: newMemberEmail.trim(),
             role: newMemberRole,
           },
-          newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim(), newMemberGender),
+          newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim()),
         );
       } else {
         await addTeamMember({
           name: newMemberName.trim(),
           email: newMemberEmail.trim(),
           role: newMemberRole,
-          avatar: newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim(), newMemberGender),
+          avatar: newMemberAvatar || pickAvatarFromPool(newMemberEmail.trim() || newMemberName.trim()),
         }, currentWorkspaceId);
       }
 
@@ -1394,8 +1393,6 @@ export function TeamPanel() {
               <AvatarSelection
                 selectedAvatar={newMemberAvatar}
                 onAvatarSelect={setNewMemberAvatar}
-                gender={newMemberGender}
-                onGenderChange={setNewMemberGender}
                 previewSeed={newMemberName.trim() || newMemberEmail.trim() || 'User'}
                 scrollable
               />

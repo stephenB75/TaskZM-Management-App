@@ -50,8 +50,8 @@ import {
 import { getUserFriendlyErrorMessage } from '../lib/error-utils';
 import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS, PANEL_GAP_MEDIUM, PANEL_GAP_SMALL, PANEL_FIELD_SPACING, AUTH_SCREEN_SAFE_AREA } from '../lib/layout-constants';
 import { useIsMobile } from './ui/use-mobile';
-import { AvatarSelection, type AvatarGender } from './AvatarSelection';
-import { AVATAR_UI_TEXT, DEFAULT_AVATAR_GENDER } from '../lib/avatar-constants';
+import { AvatarSelection } from './AvatarSelection';
+import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
 import { pickAvatarFromPool } from '../lib/avatar-utils';
 import { getPlatform } from '../lib/platform';
 import { getNativePasswordResetRedirectUrl } from '../lib/native-app';
@@ -140,7 +140,6 @@ export function AuthScreen() {
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [signUpAvatar, setSignUpAvatar] = useState<string | undefined>(undefined);
-  const [signUpGender, setSignUpGender] = useState<AvatarGender>(DEFAULT_AVATAR_GENDER);
 
   // Prevent concurrent sign-in (double submit / multiple clicks)
   const signInInProgressRef = useRef(false);
@@ -320,7 +319,7 @@ export function AuthScreen() {
 
     try {
       const avatar =
-        signUpAvatar || pickAvatarFromPool(signUpName.trim() || signUpEmail.trim(), signUpGender);
+        signUpAvatar || pickAvatarFromPool(signUpName.trim() || signUpEmail.trim());
       await signUp(signUpEmail, signUpPassword, signUpName, false, avatar);
       toast.success(
         AUTH_UI_TEXT.signUp.successMessage,
@@ -986,8 +985,6 @@ export function AuthScreen() {
                         <AvatarSelection
                           selectedAvatar={signUpAvatar}
                           onAvatarSelect={setSignUpAvatar}
-                          gender={signUpGender}
-                          onGenderChange={setSignUpGender}
                           previewSeed={signUpName.trim() || signUpEmail.trim() || 'User'}
                           scrollable
                         />

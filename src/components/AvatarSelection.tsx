@@ -2,9 +2,10 @@
  * Avatar Selection — Multiavatar multicultural SVG portraits.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { cn } from '../lib/utils';
 import {
+  AVATAR_OPTIONS,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
   AVATAR_SELECTION_GRID_MAX_HEIGHT,
@@ -15,24 +16,15 @@ import {
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
   AVATAR_UI_TEXT,
-  DEFAULT_AVATAR_GENDER,
   USER_PROFILE_AVATAR_BG_CLASS,
-  getAvatarGenderById,
-  getAvatarOptionsByGender,
-  type AvatarGender,
 } from '../lib/avatar-constants';
 import { getAvatarSvgDataUrl } from '../lib/avatar-render';
 import { resolveAvatarOption } from '../lib/avatar-utils';
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
-
-export type { AvatarGender };
 
 interface AvatarSelectionProps {
   selectedAvatar?: string;
   onAvatarSelect: (avatarId: string) => void;
-  gender?: AvatarGender;
-  onGenderChange?: (gender: AvatarGender) => void;
   className?: string;
   previewSeed?: string;
   /** Enable vertical scroll for the grid (use inside dialogs on mobile) */
@@ -42,62 +34,25 @@ interface AvatarSelectionProps {
 export function AvatarSelection({
   selectedAvatar,
   onAvatarSelect,
-  gender,
-  onGenderChange,
   className,
   previewSeed = 'User',
   scrollable = false,
 }: AvatarSelectionProps) {
   const resolvedSelection = resolveAvatarOption(selectedAvatar, previewSeed).id;
-  const selectedGender = getAvatarGenderById(resolvedSelection) ?? DEFAULT_AVATAR_GENDER;
-  const [activeGender, setActiveGender] = useState<AvatarGender>(gender ?? selectedGender);
-
-  useEffect(() => {
-    if (gender !== undefined) {
-      setActiveGender(gender);
-    }
-  }, [gender]);
-
-  useEffect(() => {
-    if (gender === undefined && selectedAvatar) {
-      setActiveGender(selectedGender);
-    }
-  }, [gender, selectedAvatar, selectedGender]);
-
-  const visibleOptions = useMemo(
-    () => getAvatarOptionsByGender(activeGender),
-    [activeGender],
-  );
 
   const avatarUrls = useMemo(
     () =>
       Object.fromEntries(
-        visibleOptions.map((option) => [option.id, getAvatarSvgDataUrl(option)]),
+        AVATAR_OPTIONS.map((option) => [option.id, getAvatarSvgDataUrl(option)]),
       ),
-    [visibleOptions],
+    [],
   );
-
-  const handleGenderChange = (nextGender: AvatarGender) => {
-    setActiveGender(nextGender);
-    onGenderChange?.(nextGender);
-  };
 
   return (
     <div className={cn('w-full min-w-0', className)}>
-      <Tabs
-        value={activeGender}
-        onValueChange={(value) => handleGenderChange(value as AvatarGender)}
-        className="mb-3"
-      >
-        <TabsList className="grid h-9 w-full grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-          <TabsTrigger value="male" className="text-xs sm:text-sm">
-            {AVATAR_UI_TEXT.male}
-          </TabsTrigger>
-          <TabsTrigger value="female" className="text-xs sm:text-sm">
-            {AVATAR_UI_TEXT.female}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <p className="mb-3 text-center text-[11px] leading-snug text-muted-foreground sm:text-xs">
+        {AVATAR_UI_TEXT.selectAvatarDescription}
+      </p>
 
       <div
         className={cn(
@@ -115,7 +70,7 @@ export function AvatarSelection({
             gap: AVATAR_SELECTION_GAP,
           }}
         >
-          {visibleOptions.map((option) => {
+          {AVATAR_OPTIONS.map((option) => {
             const isSelected = resolvedSelection === option.id;
             return (
               <button
