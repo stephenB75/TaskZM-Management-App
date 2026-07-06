@@ -1,10 +1,13 @@
 /**
- * Avatar Selection — DiceBear illustrated SVG portraits.
+ * Avatar Selection — Multiavatar multicultural portraits with TaskZM pastels.
  */
 
 import React, { useMemo } from 'react';
 import { cn } from '../lib/utils';
 import {
+  AVATAR_LORELEI_PREFIX,
+  AVATAR_MICAH_PREFIX,
+  AVATAR_NOTIONISTS_PREFIX,
   AVATAR_OPTIONS,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
@@ -15,13 +18,12 @@ import {
   AVATAR_SELECTION_SECTION_LABEL_CLASS,
   AVATAR_SELECTION_SELECTED_CLASS,
   AVATAR_SELECTION_UNSELECTED_CLASS,
-  AVATAR_STYLE_CONFIG,
-  AVATAR_STYLE_ORDER,
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
   AVATAR_UI_TEXT,
-  USER_PROFILE_AVATAR_BG_CLASS,
-  getAvatarOptionsByStyle,
+  MULTIAVATAR_PARTS,
+  MULTIAVATAR_THEME_LABELS,
+  getAvatarOptionsByPart,
 } from '../lib/avatar-constants';
 import { getAvatarSvgDataUrl } from '../lib/avatar-render';
 import { resolveAvatarOption } from '../lib/avatar-utils';
@@ -51,7 +53,7 @@ function AvatarGrid({
     <div
       className="grid w-full min-w-0"
       style={{
-        gridTemplateColumns: `repeat(${AVATAR_SELECTION_GRID_COLS}, minmax(0, 1fr))`,
+        gridTemplateColumns: `repeat(${Math.min(options.length, AVATAR_SELECTION_GRID_COLS)}, minmax(0, 1fr))`,
         gap: AVATAR_SELECTION_GAP,
       }}
     >
@@ -65,11 +67,11 @@ function AvatarGrid({
             className={cn(
               'relative mx-auto aspect-square w-full max-w-full cursor-pointer overflow-hidden rounded-full border-2 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 sm:hover:scale-105 sm:focus:ring-offset-2',
               AVATAR_SELECTION_RING_CLASS,
-              USER_PROFILE_AVATAR_BG_CLASS,
               isSelected ? AVATAR_SELECTION_SELECTED_CLASS : AVATAR_SELECTION_UNSELECTED_CLASS,
             )}
             style={{
               maxWidth: AVATAR_SELECTION_MAX_CELL_SIZE,
+              backgroundColor: option.backgroundColor,
             }}
             aria-label={option.label}
             title={option.label}
@@ -154,15 +156,17 @@ export function AvatarSelection({
           className="flex flex-col"
           style={{ gap: AVATAR_SELECTION_SECTION_GAP }}
         >
-          {AVATAR_STYLE_ORDER.map((styleId) => {
-            const styleOptions = getAvatarOptionsByStyle(styleId);
+          {MULTIAVATAR_PARTS.map((part) => {
+            const partOptions = getAvatarOptionsByPart(part);
             return (
-              <section key={styleId}>
+              <section key={part}>
                 <h4 className={AVATAR_SELECTION_SECTION_LABEL_CLASS}>
-                  {AVATAR_STYLE_CONFIG[styleId].sectionLabel}
+                  {AVATAR_UI_TEXT.characterSectionPrefix} {part}
+                  {' · '}
+                  {partOptions.map((option) => MULTIAVATAR_THEME_LABELS[option.theme]).join(' / ')}
                 </h4>
                 <AvatarGrid
-                  options={styleOptions}
+                  options={partOptions}
                   avatarUrls={avatarUrls}
                   resolvedSelection={resolvedSelection}
                   onAvatarSelect={onAvatarSelect}
