@@ -11,6 +11,36 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         purgeWebViewCacheIfBuildChanged()
+        scheduleLocalCapacitorPluginRegistration()
+        return true
+    }
+
+    /// Capacitor 6+ requires manual registration for local app plugins (not on npm).
+    private var didRegisterLocalCapacitorPlugins = false
+
+    private func scheduleLocalCapacitorPluginRegistration(attempt: Int = 0) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if self.registerLocalCapacitorPluginsIfReady() {
+                return
+            }
+            guard attempt < 40 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                self?.scheduleLocalCapacitorPluginRegistration(attempt: attempt + 1)
+            }
+        }
+    }
+
+    @discardableResult
+    private func registerLocalCapacitorPluginsIfReady() -> Bool {
+        guard !didRegisterLocalCapacitorPlugins else { return true }
+        guard let bridgeViewController = window?.rootViewController as? CAPBridgeViewController,
+              let bridge = bridgeViewController.bridge else {
+            return false
+        }
+
+        bridge.registerPluginInstance(AppIconBadgePlugin())
+        didRegisterLocalCapacitorPlugins = true
         return true
     }
 
