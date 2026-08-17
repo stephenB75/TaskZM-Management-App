@@ -39,6 +39,20 @@ export function isSameCalendarDay(a: Date, b: Date): boolean {
   return startOfDay(a).getTime() === startOfDay(b).getTime();
 }
 
+/** When to schedule a due-soon native reminder (handles lead-time windows that already started). */
+export function getTaskReminderScheduleTime(
+  targetDate: Date,
+  reminderTimeMinutes: number,
+  now: Date = new Date(),
+): Date | null {
+  if (targetDate <= now) return null;
+
+  const reminderAt = new Date(targetDate.getTime() - reminderTimeMinutes * MILLISECONDS_PER_MINUTE);
+  if (reminderAt > now) return reminderAt;
+
+  return new Date(now.getTime() + TIMING_CONSTANTS.delays.nativeReminderCatchUpDelay);
+}
+
 /** Midnight on the day after the target date — when overdue alerts should fire. */
 export function getOverdueNotificationTime(targetDate: Date): Date {
   const nextDay = startOfDay(targetDate);

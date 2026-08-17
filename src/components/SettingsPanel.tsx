@@ -1341,6 +1341,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <SettingsGroup>
                         <SettingsLead>Manage notifications for due and overdue tasks</SettingsLead>
 
+                        <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground leading-relaxed`}>
+                          {NOTIFICATION_PANEL_TEXT.permission.inAppAlwaysAvailable}
+                        </p>
+
                         <SettingsStatusCard>
                           <div className="flex items-center justify-between" style={{ gap: SETTINGS_PANEL_GAP_SMALL, marginBottom: permission !== 'granted' ? SETTINGS_PANEL_MARGIN_BOTTOM_SMALL : 0 }}>
                             <span className="flex-1 min-w-0 font-medium" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}>Notification Permission</span>
@@ -1453,7 +1457,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           )}
                           {permission === 'default' && (
                             <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground leading-relaxed`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_MEDIUM_SMALL }}>
-                              Click "Enable Notifications" above to receive alerts for due and overdue tasks. A browser dialog will appear asking for permission.
+                              {NOTIFICATION_PANEL_TEXT.permission.systemAlertsRequired} Tap &quot;Enable Notifications&quot; above to allow lock-screen and banner alerts.
                             </p>
                           )}
                         </SettingsStatusCard>

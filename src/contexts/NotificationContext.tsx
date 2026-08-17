@@ -279,11 +279,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const checkAndNotify = useCallback(async () => {
     if (!settings.enabled) return;
-    if (permission !== 'granted') return;
     if (!user) return;
 
+    const inForeground = isAppInForeground();
     const isNative = await isNativeNotificationsAvailable();
-    if (!isNative && !('Notification' in window)) return;
+
+    // Background/system delivery requires OS permission; in-app toasts do not.
+    if (!inForeground) {
+      if (permission !== 'granted') return;
+      if (!isNative && !('Notification' in window)) return;
+    }
 
     const now = new Date();
     const notifiedTasksArray = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.notifiedTasks, []);
@@ -376,17 +381,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const refreshOnResume = () => {
-      const run = () => {
-        void refreshPermission();
+      const run = async () => {
+        const currentPermission = await refreshPermission();
         updateBadge();
+        if (currentPermission === 'granted') {
+          await syncNativeSchedule();
+        }
       };
       if ('requestIdleCallback' in window) {
         (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void }).requestIdleCallback(
-          run,
+          () => {
+            void run();
+          },
           { timeout: TIMING_CONSTANTS.timeouts.idleCallback },
         );
       } else {
-        setTimeout(run, TIMING_CONSTANTS.delays.badgeUpdateFallback);
+        setTimeout(() => {
+          void run();
+        }, TIMING_CONSTANTS.delays.badgeUpdateFallback);
       }
     };
 
@@ -402,16 +414,56 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', refreshOnResume);
     };
-  }, [refreshPermission, updateBadge]);
+  }, [refreshPermission, updateBadge, syncNativeSchedule]);
 
   useEffect(() => {
-    if (!settings.enabled || permission !== 'granted' || !user) return;
+    if (!user || !settings.enabled) return;
+
+    const platform = getPlatform();
+    if (!platform.isNative || permission !== 'default') return;
+
+    const promptShown = getFromLocalStorage<boolean>(
+      NOTIFICATION_STORAGE_KEYS.taskSystemAlertsPermissionPromptShown,
+      false,
+    );
+    if (promptShown) return;
+
+    saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.taskSystemAlertsPermissionPromptShown, true);
+
+    toast.info(NOTIFICATION_TOAST_MESSAGES.taskSystemAlertsPrompt, {
+      duration: TIMING_CONSTANTS.timeouts.notificationDueNow,
+      action: {
+        label: NOTIFICATION_TOAST_MESSAGES.taskSystemAlertsEnable,
+        onClick: () => {
+          void requestPermission().then((granted) => {
+            if (granted) {
+              void syncNativeSchedule();
+            }
+          });
+        },
+      },
+    });
+  }, [user, settings.enabled, permission, requestPermission, syncNativeSchedule]);
+
+  useEffect(() => {
+    if (!settings.enabled || !user) return;
     const timeoutId = setTimeout(() => checkAndNotify(), NOTIFICATION_INTERVALS.taskUpdateDelay);
     return () => clearTimeout(timeoutId);
   }, [tasks, settings.enabled, permission, user, checkAndNotify]);
 
   useEffect(() => {
-    if (!settings.enabled || permission !== 'granted') return;
+    if (!settings.enabled || !user) return;
+
+    if (permission === 'granted') {
+      checkAndNotify();
+      const interval = setInterval(
+        () => checkAndNotify(),
+        settings.checkInterval * TIMING_CONSTANTS.timeConversions.minutesToMs,
+      );
+      return () => clearInterval(interval);
+    }
+
+    if (!isAppInForeground()) return;
 
     checkAndNotify();
     const interval = setInterval(
@@ -419,7 +471,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       settings.checkInterval * TIMING_CONSTANTS.timeConversions.minutesToMs,
     );
     return () => clearInterval(interval);
-  }, [settings, permission, checkAndNotify]);
+  }, [settings, permission, user, checkAndNotify]);
 
   const addToastNotification = useCallback((type: 'success' | 'error' | 'info' | 'warning', title: string, description?: string) => {
     const toastNotifications = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, []);

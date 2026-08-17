@@ -31,6 +31,7 @@ import {
   getOverdueNotificationTime,
   getOverdueTasks,
   getTaskNotificationTargetDate,
+  getTaskReminderScheduleTime,
   isEligibleForTaskNotification,
   isTaskDueNow,
 } from './notification-task-filters';
@@ -388,8 +389,8 @@ export async function syncScheduledTaskNotifications(
       if (!targetDate) continue;
 
       if (settings.dueDateReminders) {
-        const reminderAt = new Date(targetDate.getTime() - settings.reminderTime * MILLISECONDS_PER_MINUTE);
-        if (reminderAt > now) {
+        const reminderAt = getTaskReminderScheduleTime(targetDate, settings.reminderTime, now);
+        if (reminderAt) {
           const copy = buildDueSoonCopy(task, reminderAt);
           scheduled.push({
             id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.reminder, task.id),

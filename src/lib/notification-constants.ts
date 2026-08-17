@@ -84,6 +84,7 @@ export const NOTIFICATION_STORAGE_KEYS = {
   lastSeenPomodoroSessions: 'lastSeenPomodoroSessions',
   lastSeenAwards: 'lastSeenAwards',
   achievementPermissionPromptShown: 'achievementPermissionPromptShown',
+  taskSystemAlertsPermissionPromptShown: 'taskSystemAlertsPermissionPromptShown',
   toastNotifications: 'toastNotifications',
   updateAvailable: 'taskzm_update_available', // Service worker update notification key
   appVersion: 'taskzm_app_version', // Last loaded APP_VERSION — triggers cache purge when bumped
@@ -106,6 +107,9 @@ export const NOTIFICATION_TOAST_MESSAGES = {
   enabled: 'Notifications enabled',
   permissionDenied: 'Notification permission denied',
   requestFailed: 'Failed to request notification permission',
+  taskSystemAlertsPrompt:
+    'Enable system alerts for due and overdue tasks when TaskZM is in the background? The in-app notification center always works without this.',
+  taskSystemAlertsEnable: 'Enable alerts',
   permissionDeniedInfo: 'Permission denied',
   permissionDeniedDescription: 'Check the instructions below to enable notifications in your browser settings.',
 } as const;
@@ -174,6 +178,10 @@ export const NOTIFICATION_PANEL_TEXT = {
     enable: 'Enable Notifications',
     requesting: 'Requesting…',
     blocked: 'Notifications Blocked (Enable in Browser Settings)',
+    inAppAlwaysAvailable:
+      'The Notifications tab and in-app toasts work without system permission. Lock-screen and banner alerts require permission below.',
+    systemAlertsRequired:
+      'Background alerts (when the app is closed or in another app) require system notification permission on iOS and in your browser.',
   },
   badge: {
     showAppIconBadge: 'Show App Icon Badge',

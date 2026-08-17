@@ -51,6 +51,8 @@ export const TIMING_CONSTANTS = {
     splashScreenMinKanbanColumns: 3, // Minimum number of kanban columns required to consider kanban view ready
     revenueCat: 100, // RevenueCat processing delay
     notificationCheck: 100, // Notification check delay after task update
+    /** Minimum delay before scheduling a native reminder when the lead-time window already started. */
+    nativeReminderCatchUpDelay: 2000,
     throttle: 1000, // Throttle delay for activity tracking
     calendarPopup: 100, // Calendar popup delay
     calendarCheck: 1000, // Calendar check interval delay
