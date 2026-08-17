@@ -30,6 +30,10 @@ import {
   getOverdueTasks,
   getDueSoonTasks,
 } from '../lib/native-notifications';
+import {
+  syncWebScheduledTaskNotifications,
+  clearWebScheduledTaskNotifications,
+} from '../lib/web-scheduled-notifications';
 import { getPlatform } from '../lib/platform';
 import { isAppInForeground } from '../lib/app-visibility';
 import { isEligibleForTaskNotification, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
@@ -189,8 +193,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [tasks, settings, user, isBadgeAPIAvailable]);
 
-  const syncNativeSchedule = useCallback(async () => {
+  const syncTaskSchedules = useCallback(async () => {
     await syncScheduledTaskNotifications(tasks, settings, permission);
+    syncWebScheduledTaskNotifications(tasks, settings, permission);
   }, [tasks, settings, permission]);
 
   const updateSettings = useCallback((newSettings: Partial<NotificationSettings>) => {
@@ -238,8 +243,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [tasks]);
 
   useEffect(() => {
-    void syncNativeSchedule();
-  }, [syncNativeSchedule]);
+    void syncTaskSchedules();
+    return () => {
+      clearWebScheduledTaskNotifications();
+    };
+  }, [syncTaskSchedules]);
 
   useEffect(() => {
     const handleForegroundNativeDelivery = (event: Event) => {
@@ -385,7 +393,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         const currentPermission = await refreshPermission();
         updateBadge();
         if (currentPermission === 'granted') {
-          await syncNativeSchedule();
+          await syncTaskSchedules();
         }
       };
       if ('requestIdleCallback' in window) {
@@ -414,13 +422,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', refreshOnResume);
     };
-  }, [refreshPermission, updateBadge, syncNativeSchedule]);
+  }, [refreshPermission, updateBadge, syncTaskSchedules]);
 
   useEffect(() => {
     if (!user || !settings.enabled) return;
-
-    const platform = getPlatform();
-    if (!platform.isNative || permission !== 'default') return;
+    if (permission !== 'default') return;
 
     const promptShown = getFromLocalStorage<boolean>(
       NOTIFICATION_STORAGE_KEYS.taskSystemAlertsPermissionPromptShown,
@@ -437,13 +443,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         onClick: () => {
           void requestPermission().then((granted) => {
             if (granted) {
-              void syncNativeSchedule();
+              void syncTaskSchedules();
             }
           });
         },
       },
     });
-  }, [user, settings.enabled, permission, requestPermission, syncNativeSchedule]);
+  }, [user, settings.enabled, permission, requestPermission, syncTaskSchedules]);
 
   useEffect(() => {
     if (!settings.enabled || !user) return;

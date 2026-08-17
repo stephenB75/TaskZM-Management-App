@@ -40,6 +40,8 @@ export const DEFAULT_WEEKEND_PROJECTS_END = '18:00';
 // Notification Settings Defaults
 export const DEFAULT_NOTIFICATION_REMINDER_TIME = 60; // Minutes before due date
 export const DEFAULT_NOTIFICATION_CHECK_INTERVAL = 15; // Minutes between checks
+/** Max days ahead to register in-page web reminder timers (tab must stay open). */
+export const WEB_NOTIFICATION_MAX_SCHEDULE_DAYS = 30;
 
 // Time Conversion Constants (must be defined first as they're used by other constants)
 export const MINUTES_PER_HOUR = 60;

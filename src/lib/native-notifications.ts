@@ -550,4 +550,30 @@ export function buildDueSoonNotificationPayload(task: Task, now: Date): Notifica
   };
 }
 
+/** Deliver a scheduled reminder (native or web timer) — toast in foreground, system alert in background. */
+export async function deliverScheduledTaskNotification(
+  payload: NotificationOptions,
+  variant: 'overdue' | 'reminder',
+): Promise<void> {
+  const taskId = payload.data?.taskId;
+  if (typeof taskId === 'string') {
+    markTaskNotified(taskId, variant);
+  }
+
+  if (isAppInForeground()) {
+    window.dispatchEvent(
+      new CustomEvent(NOTIFICATION_FOREGROUND_DELIVERED_EVENT, {
+        detail: {
+          title: payload.title,
+          body: payload.body,
+          variant,
+        },
+      }),
+    );
+    return;
+  }
+
+  await showNotification(payload);
+}
+
 export { getOverdueTasks, getDueSoonTasks };
