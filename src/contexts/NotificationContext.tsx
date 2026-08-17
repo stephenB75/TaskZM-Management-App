@@ -35,6 +35,7 @@ import {
   clearWebScheduledTaskNotifications,
 } from '../lib/web-scheduled-notifications';
 import { getPlatform } from '../lib/platform';
+import { isAppIconBadgeSupported, setAppIconBadgeCount } from '../lib/app-icon-badge';
 import { isAppInForeground } from '../lib/app-visibility';
 import { isEligibleForTaskDueReminder, isEligibleForTaskOverdueAlert, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
 
@@ -145,14 +146,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const isBadgeAPIAvailable = useCallback(() => {
-    return (
-      'navigator' in window &&
-      'setAppBadge' in navigator &&
-      typeof (navigator as Navigator & { setAppBadge?: (count: number) => Promise<void> }).setAppBadge === 'function'
-    );
-  }, []);
-
   const updateBadge = useCallback(() => {
     const dismissedNotificationsArray = getFromLocalStorage<string[]>(
       NOTIFICATION_STORAGE_KEYS.dismissedNotifications,
@@ -178,20 +171,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     setBadgeCount(count);
 
-    if (isBadgeAPIAvailable()) {
-      try {
-        Promise.resolve((navigator as Navigator & { setAppBadge: (count: number) => Promise<void> }).setAppBadge(count))
-          .then(() => logger.debug('App badge set successfully:', count))
-          .catch((err: Error) => {
-            if (err.name !== 'NotSupportedError' && err.name !== 'TypeError') {
-              logger.warn('Failed to set app badge:', err);
-            }
-          });
-      } catch (error) {
-        logger.debug('Badge API error:', error);
-      }
+    if (isAppIconBadgeSupported()) {
+      void setAppIconBadgeCount(count);
     }
-  }, [tasks, settings, user, isBadgeAPIAvailable]);
+  }, [tasks, settings, user]);
 
   const syncTaskSchedules = useCallback(async () => {
     await syncScheduledTaskNotifications(tasks, settings, permission);
@@ -205,16 +188,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       if (!updated.enabled || !updated.showBadge) {
         setBadgeCount(0);
-        if (isBadgeAPIAvailable()) {
-          Promise.resolve((navigator as Navigator & { setAppBadge: (count: number) => Promise<void> }).setAppBadge(0)).catch(
-            () => undefined,
-          );
+        if (isAppIconBadgeSupported()) {
+          void setAppIconBadgeCount(0);
         }
       }
 
       return updated;
     });
-  }, [isBadgeAPIAvailable]);
+  }, []);
 
   const enableNotifications = useCallback(async (): Promise<boolean> => {
     const granted = await requestPermission();

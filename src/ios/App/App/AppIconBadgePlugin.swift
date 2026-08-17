@@ -1,0 +1,33 @@
+import Foundation
+import Capacitor
+import UIKit
+import UserNotifications
+
+@objc(AppIconBadgePlugin)
+public class AppIconBadgePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "AppIconBadgePlugin"
+    public let jsName = "AppIconBadge"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "setCount", returnType: CAPPluginReturnPromise),
+    ]
+
+    @objc func setCount(_ call: CAPPluginCall) {
+        let count = max(0, call.getInt("count") ?? 0)
+
+        DispatchQueue.main.async {
+            if #available(iOS 16.0, *) {
+                UNUserNotificationCenter.current().setBadgeCount(count) { error in
+                    if let error = error {
+                        call.reject(error.localizedDescription)
+                        return
+                    }
+                    call.resolve()
+                }
+                return
+            }
+
+            UIApplication.shared.applicationIconBadgeNumber = count
+            call.resolve()
+        }
+    }
+}
