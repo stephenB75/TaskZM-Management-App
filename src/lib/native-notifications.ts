@@ -28,11 +28,12 @@ import { isAppInForeground, shouldUseSystemNotification } from './app-visibility
 import { TIMING_CONSTANTS } from './timing-constants';
 import {
   getDueSoonTasks,
-  getOverdueNotificationTime,
+  getOverdueNotificationScheduleTime,
   getOverdueTasks,
   getTaskNotificationTargetDate,
   getTaskReminderScheduleTime,
-  isEligibleForTaskNotification,
+  isEligibleForTaskDueReminder,
+  isEligibleForTaskOverdueAlert,
   isTaskDueNow,
 } from './notification-task-filters';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
@@ -167,6 +168,7 @@ export function normalizeNotificationPermission(
 ): 'granted' | 'denied' | 'default' {
   if (state === 'granted') return 'granted';
   if (state === 'denied') return 'denied';
+  if (state === 'prompt') return 'default';
   return 'default';
 }
 
@@ -384,11 +386,10 @@ export async function syncScheduledTaskNotifications(
     }> = [];
 
     for (const task of tasks) {
-      if (!isEligibleForTaskNotification(task)) continue;
       const targetDate = getTaskNotificationTargetDate(task);
       if (!targetDate) continue;
 
-      if (settings.dueDateReminders) {
+      if (settings.dueDateReminders && isEligibleForTaskDueReminder(task)) {
         const reminderAt = getTaskReminderScheduleTime(targetDate, settings.reminderTime, now);
         if (reminderAt) {
           const copy = buildDueSoonCopy(task, reminderAt);
@@ -408,9 +409,9 @@ export async function syncScheduledTaskNotifications(
         }
       }
 
-      if (settings.overdueAlerts) {
-        const overdueAt = getOverdueNotificationTime(targetDate);
-        if (overdueAt > now) {
+      if (settings.overdueAlerts && isEligibleForTaskOverdueAlert(task)) {
+        const overdueAt = getOverdueNotificationScheduleTime(task, now);
+        if (overdueAt) {
           const dateText = targetDate.toLocaleDateString();
           scheduled.push({
             id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.overdue, task.id),

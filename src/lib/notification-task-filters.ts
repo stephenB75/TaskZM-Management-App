@@ -6,6 +6,7 @@ import type { Task } from '../types';
 import { MILLISECONDS_PER_MINUTE } from './business-constants';
 import { NOTIFICATION_TAG_PREFIXES } from './notification-constants';
 import { TIMING_CONSTANTS } from './timing-constants';
+import { getTimeAndPeriod, parseChronologicalTimeSource } from './utils';
 
 export interface TaskNotificationFilterOptions {
   overdueAlerts?: boolean;
@@ -15,20 +16,54 @@ export interface TaskNotificationFilterOptions {
   now?: Date;
 }
 
-/** Rolled-over (no scheduled date), recurring, and completed tasks are excluded. */
-export function isEligibleForTaskNotification(task: Task): boolean {
-  if (task.status === 'done') return false;
-  if (task.scheduledDate === null || task.scheduledDate === undefined) return false;
-  if (task.recurrence && task.recurrence.type !== 'none') return false;
-  return true;
+/** Raw ISO field used for notification timing (scheduled date preferred). */
+export function getTaskNotificationTargetRaw(task: Task): string | null {
+  return task.scheduledDate ?? task.dueDate ?? null;
 }
 
 /** Primary date for notification timing — scheduled date takes precedence over due date. */
 export function getTaskNotificationTargetDate(task: Task): Date | null {
-  const raw = task.scheduledDate ?? task.dueDate;
+  const raw = getTaskNotificationTargetRaw(task);
   if (!raw) return null;
-  const parsed = new Date(raw);
+  const parsed = parseChronologicalTimeSource(raw);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/** Date-only targets (no specific time of day) vs timed scheduled tasks. */
+export function isDateOnlyNotificationTarget(raw: string, targetDate: Date): boolean {
+  const trimmed = raw.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return true;
+  const time = getTimeAndPeriod(raw);
+  return (
+    time?.timePart === '12:00' &&
+    time.period === 'AM' &&
+    targetDate.getMinutes() === 0 &&
+    targetDate.getSeconds() === 0
+  );
+}
+
+/** Scheduled (calendar) tasks eligible for due-soon/upcoming reminders. */
+export function isEligibleForTaskDueReminder(task: Task): boolean {
+  if (task.status === 'done') return false;
+  if (task.recurrence && task.recurrence.type !== 'none') return false;
+  if (task.scheduledDate) return true;
+  const raw = task.dueDate;
+  if (!raw) return false;
+  const targetDate = getTaskNotificationTargetDate(task);
+  if (!targetDate) return false;
+  return !isDateOnlyNotificationTarget(raw, targetDate);
+}
+
+/** Any incomplete task with a due or scheduled date (includes inbox / rolled-over). */
+export function isEligibleForTaskOverdueAlert(task: Task): boolean {
+  if (task.status === 'done') return false;
+  if (task.recurrence && task.recurrence.type !== 'none') return false;
+  return getTaskNotificationTargetDate(task) !== null;
+}
+
+/** @deprecated Use isEligibleForTaskDueReminder or isEligibleForTaskOverdueAlert. */
+export function isEligibleForTaskNotification(task: Task): boolean {
+  return isEligibleForTaskDueReminder(task);
 }
 
 export function startOfDay(date: Date): Date {
@@ -53,18 +88,42 @@ export function getTaskReminderScheduleTime(
   return new Date(now.getTime() + TIMING_CONSTANTS.delays.nativeReminderCatchUpDelay);
 }
 
-/** Midnight on the day after the target date — when overdue alerts should fire. */
+/** Midnight on the day after a date-only target — when overdue alerts should fire. */
 export function getOverdueNotificationTime(targetDate: Date): Date {
   const nextDay = startOfDay(targetDate);
   nextDay.setDate(nextDay.getDate() + 1);
   return nextDay;
 }
 
-export function isTaskOverdue(task: Task, now: Date = new Date()): boolean {
-  if (!isEligibleForTaskNotification(task)) return false;
+/** When to schedule an overdue alert (future or catch-up for already-overdue tasks). */
+export function getOverdueNotificationScheduleTime(
+  task: Task,
+  now: Date = new Date(),
+): Date | null {
+  const raw = getTaskNotificationTargetRaw(task);
   const targetDate = getTaskNotificationTargetDate(task);
-  if (!targetDate) return false;
-  return startOfDay(targetDate).getTime() < startOfDay(now).getTime();
+  if (!raw || !targetDate) return null;
+
+  const overdueAt = isDateOnlyNotificationTarget(raw, targetDate)
+    ? getOverdueNotificationTime(targetDate)
+    : targetDate;
+
+  if (overdueAt > now) return overdueAt;
+
+  return new Date(now.getTime() + TIMING_CONSTANTS.delays.nativeReminderCatchUpDelay);
+}
+
+export function isTaskOverdue(task: Task, now: Date = new Date()): boolean {
+  if (!isEligibleForTaskOverdueAlert(task)) return false;
+  const raw = getTaskNotificationTargetRaw(task);
+  const targetDate = getTaskNotificationTargetDate(task);
+  if (!raw || !targetDate) return false;
+
+  if (isDateOnlyNotificationTarget(raw, targetDate)) {
+    return startOfDay(targetDate).getTime() < startOfDay(now).getTime();
+  }
+
+  return targetDate.getTime() < now.getTime();
 }
 
 export function isTaskDueSoon(
@@ -72,10 +131,16 @@ export function isTaskDueSoon(
   reminderTimeMinutes: number,
   now: Date = new Date(),
 ): boolean {
-  if (!isEligibleForTaskNotification(task)) return false;
+  if (!isEligibleForTaskDueReminder(task)) return false;
+  const raw = getTaskNotificationTargetRaw(task);
   const targetDate = getTaskNotificationTargetDate(task);
-  if (!targetDate) return false;
-  // Foreground/badge/panel reminders only for tasks due today (future days use native schedule).
+  if (!raw || !targetDate) return false;
+
+  if (isDateOnlyNotificationTarget(raw, targetDate)) {
+    if (!isSameCalendarDay(targetDate, now)) return false;
+    return startOfDay(now).getTime() <= startOfDay(targetDate).getTime();
+  }
+
   if (!isSameCalendarDay(targetDate, now)) return false;
   const reminderEnd = new Date(now.getTime() + reminderTimeMinutes * MILLISECONDS_PER_MINUTE);
   return targetDate >= now && targetDate <= reminderEnd;
@@ -85,7 +150,7 @@ export function isTaskDueNow(
   task: Task,
   now: Date = new Date(),
 ): boolean {
-  if (!isEligibleForTaskNotification(task)) return false;
+  if (!isEligibleForTaskDueReminder(task)) return false;
   const targetDate = getTaskNotificationTargetDate(task);
   if (!targetDate) return false;
   if (!isSameCalendarDay(targetDate, now)) return false;
@@ -95,7 +160,7 @@ export function isTaskDueNow(
 
 /** Scheduled later today (after due-now window, within dueSoonMaxMinutes). Excludes overdue. */
 export function isTaskUpcomingToday(task: Task, now: Date = new Date()): boolean {
-  if (!isEligibleForTaskNotification(task)) return false;
+  if (!isEligibleForTaskDueReminder(task)) return false;
   const targetDate = getTaskNotificationTargetDate(task);
   if (!targetDate) return false;
   if (!isSameCalendarDay(targetDate, now)) return false;

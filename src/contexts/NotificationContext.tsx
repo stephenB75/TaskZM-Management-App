@@ -36,7 +36,7 @@ import {
 } from '../lib/web-scheduled-notifications';
 import { getPlatform } from '../lib/platform';
 import { isAppInForeground } from '../lib/app-visibility';
-import { isEligibleForTaskNotification, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
+import { isEligibleForTaskDueReminder, isEligibleForTaskOverdueAlert, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
 
 interface ToastNotification {
   id: string;
@@ -359,7 +359,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (parts.length >= 2) {
         const taskId = parts.slice(1).join('_');
         const task = tasks.find(t => t.id === taskId);
-        if (!task || task.status === 'done' || !isEligibleForTaskNotification(task)) return;
+        if (!task || task.status === 'done') return;
+        if (taskKey.startsWith(NOTIFICATION_TAG_PREFIXES.overdue) && !isEligibleForTaskOverdueAlert(task)) return;
+        if (taskKey.startsWith(NOTIFICATION_TAG_PREFIXES.reminder) && !isEligibleForTaskDueReminder(task)) return;
         if (dismissedNotifications.has(`overdue_${taskId}`) || dismissedNotifications.has(`due-soon_${taskId}`)) {
           return;
         }
@@ -427,6 +429,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user || !settings.enabled) return;
     if (permission !== 'default') return;
+
+    const platform = getPlatform();
+
+    if (platform.isNative) {
+      void requestPermission().then((granted) => {
+        if (granted) {
+          void syncTaskSchedules();
+        }
+      });
+      return;
+    }
 
     const promptShown = getFromLocalStorage<boolean>(
       NOTIFICATION_STORAGE_KEYS.taskSystemAlertsPermissionPromptShown,

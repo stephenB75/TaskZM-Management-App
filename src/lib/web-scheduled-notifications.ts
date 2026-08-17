@@ -15,10 +15,11 @@ import {
   type TaskNotificationSyncSettings,
 } from './native-notifications';
 import {
-  getOverdueNotificationTime,
+  getOverdueNotificationScheduleTime,
   getTaskNotificationTargetDate,
   getTaskReminderScheduleTime,
-  isEligibleForTaskNotification,
+  isEligibleForTaskDueReminder,
+  isEligibleForTaskOverdueAlert,
 } from './notification-task-filters';
 
 const webReminderTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -83,11 +84,10 @@ export function syncWebScheduledTaskNotifications(
   let scheduledCount = 0;
 
   for (const task of tasks) {
-    if (!isEligibleForTaskNotification(task)) continue;
     const targetDate = getTaskNotificationTargetDate(task);
     if (!targetDate) continue;
 
-    if (settings.dueDateReminders) {
+    if (settings.dueDateReminders && isEligibleForTaskDueReminder(task)) {
       const reminderAt = getTaskReminderScheduleTime(targetDate, settings.reminderTime, now);
       if (reminderAt) {
         scheduleWebReminder(
@@ -103,9 +103,9 @@ export function syncWebScheduledTaskNotifications(
       }
     }
 
-    if (settings.overdueAlerts) {
-      const overdueAt = getOverdueNotificationTime(targetDate);
-      if (overdueAt > now) {
+    if (settings.overdueAlerts && isEligibleForTaskOverdueAlert(task)) {
+      const overdueAt = getOverdueNotificationScheduleTime(task, now);
+      if (overdueAt) {
         scheduleWebReminder(
           SCHEDULED_NOTIFICATION_PREFIXES.overdue,
           task,
