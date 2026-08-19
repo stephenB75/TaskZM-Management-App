@@ -2226,11 +2226,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       <div className="space-y-4">
                         {/* Time Format */}
                         <div className="space-y-2 sm:space-y-2">
-                          <Label className="text-sm">Time Format</Label>
+                          <Label className="text-sm">{SETTINGS_PANEL_UI_TEXT.sections.dateTime.timeFormat.sectionLabel}</Label>
                           <div className="flex items-center justify-between gap-3 py-1">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <Label htmlFor="time-format-toggle" className="text-sm cursor-pointer">
-                                {timeFormat === '24h' ? '24-hour (14:00)' : '12-hour (2:00 PM)'}
+                                {timeFormat === '24h'
+                                  ? SETTINGS_PANEL_UI_TEXT.sections.dateTime.timeFormat.toggleOnLabel
+                                  : SETTINGS_PANEL_UI_TEXT.sections.dateTime.timeFormat.toggleOffLabel}
                               </Label>
                             </div>
                             <Switch 
@@ -2243,9 +2245,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             />
                           </div>
                           <p className="text-xs text-muted-foreground pl-0.5">
-                            {timeFormat === '24h' 
-                              ? 'Times are displayed in 24-hour format (e.g., 14:00 instead of 2:00 PM)' 
-                              : 'Times are displayed in 12-hour format with AM/PM (e.g., 2:00 PM instead of 14:00)'}
+                            {timeFormat === '24h'
+                              ? SETTINGS_PANEL_UI_TEXT.sections.dateTime.timeFormat.descriptionWhenOn
+                              : SETTINGS_PANEL_UI_TEXT.sections.dateTime.timeFormat.descriptionWhenOff}
                           </p>
                         </div>
 
@@ -2253,11 +2255,13 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
                         {/* Week Starts On */}
                         <div className="space-y-2 sm:space-y-2">
-                          <Label className="text-sm">Week Starts On</Label>
+                          <Label className="text-sm">{SETTINGS_PANEL_UI_TEXT.sections.dateTime.weekStart.sectionLabel}</Label>
                           <div className="flex items-center justify-between gap-3 py-1">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               <Label htmlFor="week-start-toggle" className="text-sm cursor-pointer">
-                                {weekStart === 'monday' ? 'Monday' : 'Sunday'}
+                                {weekStart === 'monday'
+                                  ? SETTINGS_PANEL_UI_TEXT.sections.dateTime.weekStart.toggleOnLabel
+                                  : SETTINGS_PANEL_UI_TEXT.sections.dateTime.weekStart.toggleOffLabel}
                               </Label>
                             </div>
                             <Switch 
@@ -2270,9 +2274,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             />
                           </div>
                           <p className="text-xs text-muted-foreground pl-0.5">
-                            {weekStart === 'monday' 
-                              ? 'The calendar week begins on Monday, with Sunday at the end of the week' 
-                              : 'The calendar week begins on Sunday, with Saturday at the end of the week'}
+                            {weekStart === 'monday'
+                              ? SETTINGS_PANEL_UI_TEXT.sections.dateTime.weekStart.descriptionWhenOn
+                              : SETTINGS_PANEL_UI_TEXT.sections.dateTime.weekStart.descriptionWhenOff}
                           </p>
                         </div>
 
@@ -2280,13 +2284,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
                         {/* Theme */}
                         <div className="space-y-2 sm:space-y-2">
-                          <Label htmlFor="theme-select" className="text-sm">Theme</Label>
+                          <Label htmlFor="theme-select" className="text-sm">{SETTINGS_PANEL_UI_TEXT.sections.dateTime.theme.sectionLabel}</Label>
                           <div className="space-y-3">
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between gap-3 py-1">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <Icon name="monitor" size={ICON_SIZE_MD} />
-                                  <Label htmlFor="system-theme-toggle" className="text-sm cursor-pointer">Use System Theme</Label>
+                                  <Label htmlFor="system-theme-toggle" className="text-sm cursor-pointer">
+                                    {SETTINGS_PANEL_UI_TEXT.sections.dateTime.theme.systemToggleLabel}
+                                  </Label>
                                 </div>
                                 <Switch 
                                   id="system-theme-toggle" 
@@ -2298,9 +2304,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 />
                               </div>
                               <p className="text-xs text-muted-foreground pl-6">
-                                {theme === 'system' 
-                                  ? 'The app automatically matches your device\'s theme (light or dark) and updates when your system theme changes' 
-                                  : 'You can manually choose between light and dark mode below'}
+                                {theme === 'system'
+                                  ? SETTINGS_PANEL_UI_TEXT.sections.dateTime.theme.descriptionWhenSystemOn
+                                  : SETTINGS_PANEL_UI_TEXT.sections.dateTime.theme.descriptionWhenSystemOff}
                               </p>
                             </div>
                             {theme !== 'system' && (
@@ -2308,7 +2314,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 <div className="flex items-center justify-between gap-3 py-1">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <Icon name="moon" size={ICON_SIZE_MD} />
-                                    <Label htmlFor="dark-mode-toggle" className="text-sm cursor-pointer">Dark Mode</Label>
+                                    <Label htmlFor="dark-mode-toggle" className="text-sm cursor-pointer">
+                                      {SETTINGS_PANEL_UI_TEXT.sections.dateTime.theme.darkModeLabel}
+                                    </Label>
                                   </div>
                                   <Switch 
                                     id="dark-mode-toggle" 
@@ -2320,9 +2328,9 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                   />
                                 </div>
                                 <p className="text-xs text-muted-foreground pl-6">
-                                  {theme === 'dark' 
-                                    ? 'Dark mode is enabled with a dark background and light text for better viewing in low-light conditions' 
-                                    : 'Light mode is enabled with a light background and dark text for better viewing in bright conditions'}
+                                  {theme === 'dark'
+                                    ? SETTINGS_PANEL_UI_TEXT.sections.dateTime.theme.descriptionWhenDarkOn
+                                    : SETTINGS_PANEL_UI_TEXT.sections.dateTime.theme.descriptionWhenDarkOff}
                                 </p>
                               </div>
                             )}

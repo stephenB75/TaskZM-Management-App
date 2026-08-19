@@ -77,6 +77,37 @@ export const SETTINGS_PANEL_UI_TEXT = {
     },
     dateTime: {
       description: 'Time format, week start, and appearance',
+      timeFormat: {
+        sectionLabel: 'Time Format',
+        toggleOnLabel: '24-hour (14:00)',
+        toggleOffLabel: '12-hour (2:00 PM)',
+        descriptionWhenOn:
+          'On: times use 24-hour format (e.g. 14:00). Turn off for 12-hour format with AM/PM (e.g. 2:00 PM).',
+        descriptionWhenOff:
+          'Off: times use 12-hour format with AM/PM (e.g. 2:00 PM). Turn on for 24-hour format (e.g. 14:00).',
+      },
+      weekStart: {
+        sectionLabel: 'Week Starts On',
+        toggleOnLabel: 'Monday',
+        toggleOffLabel: 'Sunday',
+        descriptionWhenOn:
+          'On: calendar and week views start on Monday (Sunday appears at the end of the week). Turn off to start on Sunday.',
+        descriptionWhenOff:
+          'Off: calendar and week views start on Sunday (Saturday at the end of the week). Turn on to start on Monday.',
+      },
+      theme: {
+        sectionLabel: 'Theme',
+        systemToggleLabel: 'Use System Theme',
+        descriptionWhenSystemOn:
+          'On: appearance follows your device (light or dark) and updates when the system theme changes. Turn off to choose Light or Dark yourself.',
+        descriptionWhenSystemOff:
+          'Off: you pick Light or Dark mode below. Turn on to match your device theme automatically.',
+        darkModeLabel: 'Dark Mode',
+        descriptionWhenDarkOn:
+          'On: dark backgrounds with light text. Turn off for light mode.',
+        descriptionWhenDarkOff:
+          'Off: light backgrounds with dark text. Turn on for dark mode.',
+      },
     },
     rollover: {
       description: 'Move incomplete tasks to the next day automatically',
