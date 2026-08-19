@@ -209,6 +209,7 @@ import {
   SETTINGS_PANEL_ACCORDION_LIST_END_PADDING,
   SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
   SETTINGS_PANEL_LIST_ROW_PADDING_Y,
+  SETTINGS_PANEL_CATEGORY_HOURS_DAY_TYPE_TOGGLE,
 } from '../lib/layout-constants';
 import { NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
@@ -1923,24 +1924,26 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           </p>
 
                       {/* Weekday/Weekend Toggle */}
-                      <div className="flex justify-center">
+                      <div className="w-full">
                         <ToggleGroup 
                           type="single" 
                           value={dayType} 
                           onValueChange={(value) => value && setDayType(value as 'weekday' | 'weekend')}
-                          className="bg-muted/50 rounded-lg p-1"
+                          className={SETTINGS_PANEL_CATEGORY_HOURS_DAY_TYPE_TOGGLE.groupClassName}
                         >
                           <ToggleGroupItem 
                             value="weekday" 
-                            className="data-[state=on]:bg-background data-[state=on]:text-foreground px-6 rounded-md"
+                            aria-label={SETTINGS_PANEL_UI_TEXT.sections.hours.weekdayLabel}
+                            className={SETTINGS_PANEL_CATEGORY_HOURS_DAY_TYPE_TOGGLE.itemClassName}
                           >
-                            Weekdays
+                            {SETTINGS_PANEL_UI_TEXT.sections.hours.weekdayLabel}
                           </ToggleGroupItem>
                           <ToggleGroupItem 
                             value="weekend" 
-                            className="data-[state=on]:bg-background data-[state=on]:text-foreground px-6 rounded-md"
+                            aria-label={SETTINGS_PANEL_UI_TEXT.sections.hours.weekendLabel}
+                            className={SETTINGS_PANEL_CATEGORY_HOURS_DAY_TYPE_TOGGLE.itemClassName}
                           >
-                            Weekends
+                            {SETTINGS_PANEL_UI_TEXT.sections.hours.weekendLabel}
                           </ToggleGroupItem>
                         </ToggleGroup>
                       </div>

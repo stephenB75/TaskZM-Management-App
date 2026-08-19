@@ -826,6 +826,12 @@ export const SETTINGS_PANEL_SECTION_GAP = '0.75rem'; // Gap between stacked sett
 /** Extra inset after the last settings card so border radius + shadow aren't clipped when scrolled to end */
 export const SETTINGS_PANEL_ACCORDION_LIST_END_PADDING = '0.5rem';
 export const SETTINGS_PANEL_TOGGLE_ROW_PADDING_Y = '0.625rem'; // Vertical padding for toggle rows
+/** Weekday/weekend segmented control in Task Category Hours settings */
+export const SETTINGS_PANEL_CATEGORY_HOURS_DAY_TYPE_TOGGLE = {
+  groupClassName: 'bg-muted rounded-lg p-1 w-full grid grid-cols-2',
+  itemClassName:
+    'px-6 rounded-md text-muted-foreground font-normal hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:font-semibold data-[state=on]:shadow-sm data-[state=on]:hover:text-primary-foreground transition-colors',
+} as const;
 export const SETTINGS_PANEL_CATEGORY_HEADER_FONT_SIZE = '0.6875rem'; // 11px category labels
 export const SETTINGS_PANEL_CATEGORY_HEADER_LETTER_SPACING_EM = 0.08;
 export const SETTINGS_PANEL_CATEGORY_HEADER_PADDING_TOP = '1.25rem';

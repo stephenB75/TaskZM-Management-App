@@ -114,6 +114,8 @@ export const SETTINGS_PANEL_UI_TEXT = {
     },
     hours: {
       description: 'Work, personal, and project hours by day type',
+      weekdayLabel: 'Weekdays',
+      weekendLabel: 'Weekends',
     },
     awards: {
       description: 'Track milestones and earned achievements',
