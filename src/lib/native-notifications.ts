@@ -83,6 +83,18 @@ function markTaskNotified(taskId: string, type: 'overdue' | 'reminder'): void {
   saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.notifiedTasks, Array.from(notified));
 }
 
+function wasTaskNotified(taskId: string, type: 'overdue' | 'reminder'): boolean {
+  const prefix =
+    type === 'overdue' ? NOTIFICATION_TAG_PREFIXES.overdue : NOTIFICATION_TAG_PREFIXES.reminder;
+  return getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.notifiedTasks, []).includes(
+    `${prefix}${taskId}`,
+  );
+}
+
+function isCatchUpScheduleTime(scheduleAt: Date, now: Date): boolean {
+  return scheduleAt.getTime() <= now.getTime() + TIMING_CONSTANTS.delays.nativeReminderCatchUpDelay;
+}
+
 function buildDueSoonCopy(task: Task, now: Date): { title: string; body: string; requireInteraction: boolean } {
   const targetDate = getTaskNotificationTargetDate(task);
   if (!targetDate) {
@@ -351,27 +363,18 @@ export async function syncScheduledTaskNotifications(
     const LocalNotifications = await loadLocalNotifications();
     const now = new Date();
 
-    try {
-      const pending = await LocalNotifications.getPending();
-      const pendingIds = pending.notifications?.map((notification) => ({ id: notification.id })) ?? [];
-      if (pendingIds.length > 0) {
-        await LocalNotifications.cancel({ notifications: pendingIds });
+    if (!settings.enabled || permission !== 'granted') {
+      try {
+        const pending = await LocalNotifications.getPending();
+        const pendingIds = pending.notifications?.map((notification) => ({ id: notification.id })) ?? [];
+        if (pendingIds.length > 0) {
+          await LocalNotifications.cancel({ notifications: pendingIds });
+        }
+      } catch (cancelError) {
+        logger.debug('Could not cancel pending native notifications when disabled:', cancelError);
       }
-    } catch (cancelError) {
-      logger.debug('Could not cancel pending native notifications, falling back to per-task cancel:', cancelError);
-      const cancelIds: { id: number }[] = [];
-      for (const task of tasks) {
-        cancelIds.push(
-          { id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.reminder, task.id) },
-          { id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.overdue, task.id) },
-        );
-      }
-      if (cancelIds.length > 0) {
-        await LocalNotifications.cancel({ notifications: cancelIds });
-      }
+      return;
     }
-
-    if (!settings.enabled || permission !== 'granted') return;
 
     const scheduled: Array<{
       id: number;
@@ -381,6 +384,7 @@ export async function syncScheduledTaskNotifications(
       sound: string;
       extra: Record<string, unknown>;
       summary?: string;
+      silent?: boolean;
       smallIcon?: string;
       iconColor?: string;
     }> = [];
@@ -392,6 +396,15 @@ export async function syncScheduledTaskNotifications(
       if (settings.dueDateReminders && isEligibleForTaskDueReminder(task)) {
         const reminderAt = getTaskReminderScheduleTime(targetDate, settings.reminderTime, now);
         if (reminderAt) {
+          if (
+            isCatchUpScheduleTime(reminderAt, now) &&
+            !wasTaskNotified(task.id, 'reminder') &&
+            shouldUseSystemNotification()
+          ) {
+            await deliverScheduledTaskNotification(buildDueSoonNotificationPayload(task, now), 'reminder');
+            continue;
+          }
+
           const copy = buildDueSoonCopy(task, reminderAt);
           scheduled.push({
             id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.reminder, task.id),
@@ -412,6 +425,15 @@ export async function syncScheduledTaskNotifications(
       if (settings.overdueAlerts && isEligibleForTaskOverdueAlert(task)) {
         const overdueAt = getOverdueNotificationScheduleTime(task, now);
         if (overdueAt) {
+          if (
+            isCatchUpScheduleTime(overdueAt, now) &&
+            !wasTaskNotified(task.id, 'overdue') &&
+            shouldUseSystemNotification()
+          ) {
+            await deliverScheduledTaskNotification(buildOverdueNotificationPayload(task), 'overdue');
+            continue;
+          }
+
           const dateText = targetDate.toLocaleDateString();
           scheduled.push({
             id: getScheduledNotificationId(SCHEDULED_NOTIFICATION_PREFIXES.overdue, task.id),
@@ -428,6 +450,21 @@ export async function syncScheduledTaskNotifications(
           });
         }
       }
+    }
+
+    const scheduledIds = new Set(scheduled.map((notification) => notification.id));
+
+    try {
+      const pending = await LocalNotifications.getPending();
+      const staleIds =
+        pending.notifications
+          ?.filter((notification) => !scheduledIds.has(notification.id))
+          .map((notification) => ({ id: notification.id })) ?? [];
+      if (staleIds.length > 0) {
+        await LocalNotifications.cancel({ notifications: staleIds });
+      }
+    } catch (cancelError) {
+      logger.debug('Could not prune stale native notifications:', cancelError);
     }
 
     if (scheduled.length > 0) {

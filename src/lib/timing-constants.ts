@@ -53,6 +53,10 @@ export const TIMING_CONSTANTS = {
     notificationCheck: 100, // Notification check delay after task update
     /** Minimum delay before scheduling a native reminder when the lead-time window already started. */
     nativeReminderCatchUpDelay: 2000,
+    /** Retry interval when the iOS AppIconBadge plugin is not ready yet at launch. */
+    nativeBadgePluginRetry: 500,
+    /** Max AppIconBadge plugin retries after launch (500ms × 12 ≈ 6s). */
+    nativeBadgePluginMaxRetries: 12,
     throttle: 1000, // Throttle delay for activity tracking
     calendarPopup: 100, // Calendar popup delay
     calendarCheck: 1000, // Calendar check interval delay

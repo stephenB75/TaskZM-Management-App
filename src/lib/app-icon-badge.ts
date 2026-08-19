@@ -6,6 +6,7 @@
 import { registerPlugin } from '@capacitor/core';
 import { logger } from './logger';
 import { getPlatform } from './platform';
+import { TIMING_CONSTANTS } from './timing-constants';
 
 interface AppIconBadgePlugin {
   setCount(options: { count: number }): Promise<void>;
@@ -23,6 +24,30 @@ const AppIconBadge = registerPlugin<AppIconBadgePlugin>('AppIconBadge', {
     },
   }),
 });
+
+let pendingBadgeCount: number | null = null;
+let badgePluginRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let badgePluginRetryAttempts = 0;
+
+function scheduleNativeBadgeRetry(): void {
+  if (badgePluginRetryTimer !== null) return;
+  if (badgePluginRetryAttempts >= TIMING_CONSTANTS.delays.nativeBadgePluginMaxRetries) return;
+  if (pendingBadgeCount === null) return;
+
+  badgePluginRetryTimer = setTimeout(() => {
+    badgePluginRetryTimer = null;
+    badgePluginRetryAttempts += 1;
+    if (pendingBadgeCount !== null) {
+      void setAppIconBadgeCount(pendingBadgeCount);
+    }
+  }, TIMING_CONSTANTS.delays.nativeBadgePluginRetry);
+}
+
+export function flushPendingAppIconBadgeCount(): void {
+  if (pendingBadgeCount !== null) {
+    void setAppIconBadgeCount(pendingBadgeCount);
+  }
+}
 
 async function setWebAppIconBadgeCount(count: number): Promise<void> {
   const navigatorWithBadge = navigator as NavigatorWithBadge;
@@ -75,11 +100,23 @@ export async function setAppIconBadgeCount(count: number): Promise<void> {
   const platform = getPlatform();
 
   if (platform.isIOS) {
+    pendingBadgeCount = safeCount;
     try {
       await AppIconBadge.setCount({ count: safeCount });
+      pendingBadgeCount = null;
+      badgePluginRetryAttempts = 0;
+      if (badgePluginRetryTimer !== null) {
+        clearTimeout(badgePluginRetryTimer);
+        badgePluginRetryTimer = null;
+      }
       logger.debug('Native app icon badge set:', safeCount);
     } catch (error) {
-      logger.warn('Failed to set native app icon badge:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('not implemented') || message.includes('UNIMPLEMENTED')) {
+        scheduleNativeBadgeRetry();
+      } else {
+        logger.warn('Failed to set native app icon badge:', error);
+      }
     }
     return;
   }

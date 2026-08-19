@@ -8,6 +8,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     private let nativeBuildDefaultsKey = "TaskZMNativeBuildNumber"
+    private let nativePluginsReadyEvent = "taskzm-native-plugins-ready"
+    private enum LocalPluginRegistration {
+        static let maxAttempts = 40
+        static let retryIntervalSeconds = 0.05
+    }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         purgeWebViewCacheIfBuildChanged()
@@ -24,8 +29,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             if self.registerLocalCapacitorPluginsIfReady() {
                 return
             }
-            guard attempt < 40 else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard attempt < LocalPluginRegistration.maxAttempts else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + LocalPluginRegistration.retryIntervalSeconds) { [weak self] in
                 self?.scheduleLocalCapacitorPluginRegistration(attempt: attempt + 1)
             }
         }
@@ -41,7 +46,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         bridge.registerPluginInstance(AppIconBadgePlugin())
         didRegisterLocalCapacitorPlugins = true
+        notifyWebNativePluginsReady(on: bridgeViewController)
         return true
+    }
+
+    private func notifyWebNativePluginsReady(on bridgeViewController: CAPBridgeViewController) {
+        let script = "window.dispatchEvent(new CustomEvent('\(nativePluginsReadyEvent)'));"
+        bridgeViewController.bridge?.eval(js: script)
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -140,7 +151,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        scheduleLocalCapacitorPluginRegistration()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

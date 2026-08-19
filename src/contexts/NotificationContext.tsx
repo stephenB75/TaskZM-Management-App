@@ -13,6 +13,7 @@ import {
   NOTIFICATION_ERRORS,
   NOTIFICATION_INTERVALS,
   NOTIFICATION_FOREGROUND_DELIVERED_EVENT,
+  NATIVE_PLUGINS_READY_EVENT,
   type NotificationSettings,
 } from '../lib/notification-constants';
 import { getUnreadAwardCount } from '../lib/achievement-notifications';
@@ -35,7 +36,7 @@ import {
   clearWebScheduledTaskNotifications,
 } from '../lib/web-scheduled-notifications';
 import { getPlatform } from '../lib/platform';
-import { isAppIconBadgeSupported, setAppIconBadgeCount } from '../lib/app-icon-badge';
+import { isAppIconBadgeSupported, setAppIconBadgeCount, flushPendingAppIconBadgeCount } from '../lib/app-icon-badge';
 import { isAppInForeground } from '../lib/app-visibility';
 import { isEligibleForTaskDueReminder, isEligibleForTaskOverdueAlert, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
 
@@ -229,6 +230,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       clearWebScheduledTaskNotifications();
     };
   }, [syncTaskSchedules]);
+
+  useEffect(() => {
+    const handleNativePluginsReady = () => {
+      flushPendingAppIconBadgeCount();
+      updateBadge();
+      if (permission === 'granted') {
+        void syncTaskSchedules();
+      }
+    };
+
+    window.addEventListener(NATIVE_PLUGINS_READY_EVENT, handleNativePluginsReady);
+    return () => {
+      window.removeEventListener(NATIVE_PLUGINS_READY_EVENT, handleNativePluginsReady);
+    };
+  }, [permission, syncTaskSchedules, updateBadge]);
 
   useEffect(() => {
     const handleForegroundNativeDelivery = (event: Event) => {

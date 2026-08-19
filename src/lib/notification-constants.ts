@@ -52,6 +52,8 @@ export type NotificationSettings = {
 export const NOTIFICATION_OPEN_TASK_EVENT = 'taskzm-open-task';
 /** Fired when a scheduled native notification arrives while the app is in the foreground (iOS silent delivery). */
 export const NOTIFICATION_FOREGROUND_DELIVERED_EVENT = 'taskzm-foreground-notification-delivered';
+/** Fired from the iOS shell when local Capacitor plugins (e.g. AppIconBadge) are registered. */
+export const NATIVE_PLUGINS_READY_EVENT = 'taskzm-native-plugins-ready';
 
 /** Scheduled local notification ID prefixes (hashed to integers for Capacitor). */
 export const SCHEDULED_NOTIFICATION_PREFIXES = {
