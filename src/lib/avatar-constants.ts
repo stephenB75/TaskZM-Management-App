@@ -1,10 +1,11 @@
 /**
  * Avatar Constants
- * Multiavatar — multicultural SVG avatars styled with TaskZM pastel palettes.
- * https://multiavatar.com
+ * IconScout faceless character avatars — transparent PNG silhouettes.
+ * https://iconscout.com/free-icon-packs/avatars
  */
 
 import {
+  COLOR_BACKGROUND_TRANSPARENT,
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_LILAC,
   COLOR_PASTEL_MINT,
@@ -15,7 +16,11 @@ import {
   COLOR_PASTEL_YELLOW,
 } from './color-theme';
 
-export const AVATAR_ID_PREFIX = 'taskzm:multiavatar:';
+export const AVATAR_ID_PREFIX = 'taskzm:iconscout:';
+/** @deprecated Multiavatar pack */
+export const AVATAR_MULTIAVATAR_PREFIX = 'taskzm:multiavatar:';
+/** @deprecated Icon54 pack */
+export const AVATAR_ICON54_PREFIX = 'taskzm:icon54:';
 /** @deprecated Craftwork Userpics PNG pack */
 export const AVATAR_USERPICS_PREFIX = 'taskzm:userpics:';
 /** @deprecated Avataaars pack */
@@ -31,26 +36,35 @@ export const AVATAR_PRESET_PREFIX = 'taskzm:pastel-';
 /** @deprecated Portrait PNG avatars */
 export const AVATAR_ICON_PREFIX = 'taskzm:icon:';
 
-/** @deprecated Use AVATAR_ID_PREFIX */
-export const AVATAR_MULTIAVATAR_PREFIX = AVATAR_ID_PREFIX;
+export const ICONSCOUT_AVATAR_COUNT = 42;
+export const ICONSCOUT_AVATARS_PER_CATEGORY = 6;
+export const ICONSCOUT_CATEGORY_COUNT = ICONSCOUT_AVATAR_COUNT / ICONSCOUT_AVATARS_PER_CATEGORY;
 
-export type MultiavatarTheme = 'A' | 'B' | 'C';
+export const ICONSCOUT_CATEGORY_LABELS = [
+  'Character',
+  'Everyday',
+  'Profiles',
+  'Classic',
+  'Global',
+  'Professional',
+  'Happy',
+] as const;
 
-/** Inclusive base characters in the Multiavatar pack (parts 00–15). */
-export const MULTIAVATAR_PART_COUNT = 16;
+export const AVATAR_ASSET_BASE_PATH = '/avatars/iconscout';
+export const AVATAR_ASSET_EXTENSION = '.png';
+export const AVATAR_ASSET_SIZE_PX = 128;
 
-export const MULTIAVATAR_THEME_COUNT = 3;
+export const AVATAR_PACK = {
+  id: 'iconscout',
+  name: 'IconScout',
+  license: 'IconScout free assets (personal & commercial — see iconscout.com/license)',
+  sourceUrl: 'https://iconscout.com/free-icon-packs/avatars',
+  credit: 'Avatars by IconScout',
+} as const;
 
-export const MULTIAVATAR_THEMES: readonly MultiavatarTheme[] = ['A', 'B', 'C'];
+export const AVATAR_DISPLAY_BACKGROUND = COLOR_BACKGROUND_TRANSPARENT;
 
-/** Pastel palette labels aligned with TaskZM theme colors. */
-export const MULTIAVATAR_THEME_LABELS: Record<MultiavatarTheme, string> = {
-  A: 'Lavender',
-  B: 'Mint',
-  C: 'Sky',
-};
-
-/** TaskZM pastel backgrounds cycled across the avatar catalog. */
+/** @deprecated Pastel circle backgrounds removed — avatars use transparent PNGs. */
 export const AVATAR_PASTEL_BACKGROUNDS = [
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_MINT,
@@ -62,53 +76,43 @@ export const AVATAR_PASTEL_BACKGROUNDS = [
   COLOR_PASTEL_SAGE,
 ] as const;
 
-export const AVATAR_PACK = {
-  id: 'multiavatar',
-  name: 'Multiavatar',
-  license: 'Multiavatar License v1.0 (free in apps)',
-  sourceUrl: 'https://multiavatar.com/',
-  credit: 'Avatars by Multiavatar',
-} as const;
-
-const MULTIAVATAR_PARTS = Array.from({ length: MULTIAVATAR_PART_COUNT }, (_, index) =>
-  String(index).padStart(2, '0'),
-);
-
-export { MULTIAVATAR_PARTS };
-
 export interface AvatarOption {
   id: string;
   label: string;
-  part: string;
-  theme: MultiavatarTheme;
   slot: string;
+  category: string;
+  categoryIndex: number;
   backgroundColor: string;
+  assetPath: string;
 }
 
 const AVATAR_OPTION_LABEL = {
   portraitPrefix: 'Portrait',
-  paletteSeparator: '·',
 } as const;
 
-function buildAvatarLabel(part: string, theme: MultiavatarTheme): string {
-  return `${AVATAR_OPTION_LABEL.portraitPrefix} ${part} ${AVATAR_OPTION_LABEL.paletteSeparator} ${MULTIAVATAR_THEME_LABELS[theme]}`;
+function buildAvatarSlot(index: number): string {
+  return String(index + 1).padStart(2, '0');
+}
+
+function buildAvatarAssetPath(slot: string): string {
+  return `${AVATAR_ASSET_BASE_PATH}/${slot}${AVATAR_ASSET_EXTENSION}`;
 }
 
 function buildAvatarOptions(): readonly AvatarOption[] {
-  return MULTIAVATAR_PARTS.flatMap((part, partIndex) =>
-    MULTIAVATAR_THEMES.map((theme, themeIndex) => {
-      const slot = String(partIndex * MULTIAVATAR_THEME_COUNT + themeIndex + 1).padStart(2, '0');
-      const backgroundIndex = partIndex * MULTIAVATAR_THEME_COUNT + themeIndex;
-      return {
-        id: `${AVATAR_ID_PREFIX}${part}:${theme}`,
-        label: buildAvatarLabel(part, theme),
-        part,
-        theme,
-        slot,
-        backgroundColor: getAvatarBackgroundColor(backgroundIndex),
-      };
-    }),
-  );
+  return Array.from({ length: ICONSCOUT_AVATAR_COUNT }, (_, index) => {
+    const slot = buildAvatarSlot(index);
+    const categoryIndex = Math.floor(index / ICONSCOUT_AVATARS_PER_CATEGORY);
+    const category = ICONSCOUT_CATEGORY_LABELS[categoryIndex] ?? ICONSCOUT_CATEGORY_LABELS[0];
+    return {
+      id: `${AVATAR_ID_PREFIX}${slot}`,
+      label: `${AVATAR_OPTION_LABEL.portraitPrefix} ${slot}`,
+      slot,
+      category,
+      categoryIndex,
+      backgroundColor: AVATAR_DISPLAY_BACKGROUND,
+      assetPath: buildAvatarAssetPath(slot),
+    };
+  });
 }
 
 export const AVATAR_OPTIONS = buildAvatarOptions();
@@ -117,18 +121,12 @@ export const AVATAR_COUNT = AVATAR_OPTIONS.length;
 
 export const DEFAULT_AVATAR = AVATAR_OPTIONS[0].id;
 
-/** SVG render size in pixels. */
-export const AVATAR_RENDER_SIZE = 128;
-
 export const AVATAR_SELECTION_GRID_COLS = 4;
-/** Max avatar cell size on large screens; grid shrinks cells on narrow viewports */
 export const AVATAR_SELECTION_MAX_CELL_SIZE = '4.5rem';
 export const AVATAR_SELECTION_GAP = '0.5rem';
 export const AVATAR_SELECTION_PANEL_PADDING = '0.5rem';
 export const AVATAR_SELECTION_PANEL_PADDING_DESKTOP = '0.75rem';
-/** Visible rows in scrollable picker grids (full catalog scrolls beyond this) */
 export const AVATAR_SELECTION_SCROLLABLE_VISIBLE_ROWS = 4;
-/** Scrollable grid area inside dialogs on small screens */
 export const AVATAR_SELECTION_GRID_MAX_HEIGHT = 'min(22rem, 55dvh)';
 export const AVATAR_SELECTION_SECTION_GAP = '1rem';
 export const AVATAR_SELECTION_SECTION_LABEL_CLASS =
@@ -151,14 +149,14 @@ export const AVATAR_UI_TEXT = {
   chooseYourAvatar: 'Choose Your Avatar',
   chooseAvatar: 'Choose Avatar',
   selectYourAvatar: 'Select Your Avatar',
-  selectAvatarDescription: `${AVATAR_COUNT} inclusive portraits representing people from many cultures — styled with TaskZM pastel palettes`,
+  selectAvatarDescription:
+    `${AVATAR_COUNT} square character portraits from IconScout — pick a silhouette that fits you`,
   changeAvatar: 'Change Avatar',
   saveAvatar: 'Save Avatar',
   saving: 'Saving…',
   cancel: 'Cancel',
   pleaseSelectAvatar: 'Please select an avatar',
-  packCredit: `${AVATAR_PACK.credit} · Multicultural characters · Pastel palettes`,
-  characterSectionPrefix: 'Character',
+  packCredit: `${AVATAR_PACK.credit} · Faceless silhouettes`,
 } as const;
 
 export const AVATAR_CHECKMARK_SIZE = '1.5rem';
@@ -171,15 +169,28 @@ export const USER_PROFILE_AVATAR_BG_CLASS = 'bg-muted/30';
 /** @deprecated Use AVATAR_OPTIONS */
 export const AVATAR_PRESETS = AVATAR_OPTIONS;
 
-/** @deprecated Multiavatar theme count for legacy ID migration */
-export const MULTIAVATAR_LEGACY_THEME_COUNT = MULTIAVATAR_THEME_COUNT;
-
 /** @deprecated Multiavatar part count for legacy ID migration */
-export const MULTIAVATAR_LEGACY_PART_COUNT = MULTIAVATAR_PART_COUNT;
-
+export const MULTIAVATAR_LEGACY_PART_COUNT = 16;
+/** @deprecated Multiavatar theme count for legacy ID migration */
+export const MULTIAVATAR_LEGACY_THEME_COUNT = 3;
+/** @deprecated Use ICONSCOUT_CATEGORY_LABELS */
+export const MULTIAVATAR_PARTS = ICONSCOUT_CATEGORY_LABELS.map((_, index) =>
+  String(index + 1).padStart(2, '0'),
+);
+/** @deprecated */
+export const MULTIAVATAR_THEMES = ['A', 'B', 'C'] as const;
+/** @deprecated */
+export type MultiavatarTheme = (typeof MULTIAVATAR_THEMES)[number];
+/** @deprecated */
 export type MultiavatarLegacyTheme = MultiavatarTheme;
-
+/** @deprecated */
 export const MULTIAVATAR_LEGACY_THEMES = MULTIAVATAR_THEMES;
+/** @deprecated */
+export const MULTIAVATAR_THEME_LABELS: Record<MultiavatarTheme, string> = {
+  A: 'Lavender',
+  B: 'Mint',
+  C: 'Sky',
+};
 
 export function getMultiavatarLegacyIndex(part: string, theme: MultiavatarLegacyTheme): number | null {
   const partIndex = Number.parseInt(part, 10);
@@ -187,34 +198,46 @@ export function getMultiavatarLegacyIndex(part: string, theme: MultiavatarLegacy
   if (
     Number.isNaN(partIndex) ||
     partIndex < 0 ||
-    partIndex >= MULTIAVATAR_PART_COUNT ||
+    partIndex >= MULTIAVATAR_LEGACY_PART_COUNT ||
     themeIndex < 0
   ) {
     return null;
   }
-  return partIndex * MULTIAVATAR_THEME_COUNT + themeIndex;
+  return partIndex * MULTIAVATAR_LEGACY_THEME_COUNT + themeIndex;
 }
 
 export function getAvatarOptionById(id: string): AvatarOption | undefined {
   return AVATAR_OPTIONS.find((option) => option.id === id);
 }
 
+export function getAvatarOptionsByCategory(categoryIndex: number): readonly AvatarOption[] {
+  return AVATAR_OPTIONS.filter((option) => option.categoryIndex === categoryIndex);
+}
+
+/** @deprecated Use getAvatarOptionsByCategory */
 export function getAvatarOptionsByPart(part: string): readonly AvatarOption[] {
-  return AVATAR_OPTIONS.filter((option) => option.part === part);
+  const categoryIndex = Number.parseInt(part, 10) - 1;
+  if (Number.isNaN(categoryIndex) || categoryIndex < 0) {
+    return AVATAR_OPTIONS;
+  }
+  return getAvatarOptionsByCategory(categoryIndex);
 }
 
 export function getAvatarOptionIndex(option: AvatarOption): number {
   return AVATAR_OPTIONS.findIndex((entry) => entry.id === option.id);
 }
 
-export function getAvatarBackgroundColor(index: number): string {
-  const colors = AVATAR_PASTEL_BACKGROUNDS;
-  return colors[((index % colors.length) + colors.length) % colors.length];
+export function getAvatarBackgroundColor(_index: number): string {
+  return AVATAR_DISPLAY_BACKGROUND;
 }
 
-/** @deprecated Use getAvatarSvgDataUrl from avatar-render.ts */
+export function getAvatarAssetPath(option: AvatarOption): string {
+  return option.assetPath;
+}
+
+/** @deprecated Use getAvatarAssetPath */
 export function getAvatarImageUrl(option: AvatarOption): string {
-  return option.id;
+  return getAvatarAssetPath(option);
 }
 
 /** @deprecated */
@@ -231,11 +254,13 @@ export function getAvatarPresetIndex(option: AvatarOption): number {
 export const AVATAR_ACTIVE_PREFIXES = [AVATAR_ID_PREFIX] as const;
 
 /** Curated slot count per legacy DiceBear style pack. */
-export const AVATAR_SEEDS_PER_STYLE = MULTIAVATAR_PART_COUNT;
+export const AVATAR_SEEDS_PER_STYLE = MULTIAVATAR_LEGACY_PART_COUNT;
 
 /** All bundled pack ID prefixes — used for legacy migration by slot index. */
 export const AVATAR_LEGACY_PREFIXES = [
   AVATAR_ID_PREFIX,
+  AVATAR_ICON54_PREFIX,
+  AVATAR_MULTIAVATAR_PREFIX,
   AVATAR_USERPICS_PREFIX,
   AVATAR_AVATAAARS_PREFIX,
   AVATAR_MICAH_PREFIX,
@@ -243,7 +268,7 @@ export const AVATAR_LEGACY_PREFIXES = [
   AVATAR_NOTIONISTS_PREFIX,
 ] as const;
 
-/** @deprecated Use getAvatarOptionsByPart */
+/** @deprecated Use getAvatarOptionsByCategory */
 export function getAvatarOptionsByStyle(_style: string): readonly AvatarOption[] {
   return AVATAR_OPTIONS;
 }

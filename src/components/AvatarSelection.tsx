@@ -1,13 +1,10 @@
 /**
- * Avatar Selection — Multiavatar multicultural portraits with TaskZM pastels.
+ * Avatar Selection — IconScout faceless characters with TaskZM pastels.
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { cn } from '../lib/utils';
 import {
-  AVATAR_LORELEI_PREFIX,
-  AVATAR_MICAH_PREFIX,
-  AVATAR_NOTIONISTS_PREFIX,
   AVATAR_OPTIONS,
   AVATAR_SELECTION_GAP,
   AVATAR_SELECTION_GRID_COLS,
@@ -20,12 +17,13 @@ import {
   AVATAR_SELECTION_UNSELECTED_CLASS,
   AVATAR_CHECKMARK_SIZE,
   AVATAR_CHECKMARK_ICON_SIZE,
+  AVATAR_DISPLAY_BACKGROUND,
   AVATAR_UI_TEXT,
-  MULTIAVATAR_PARTS,
-  MULTIAVATAR_THEME_LABELS,
-  getAvatarOptionsByPart,
+  ICONSCOUT_CATEGORY_COUNT,
+  ICONSCOUT_CATEGORY_LABELS,
+  getAvatarAssetPath,
+  getAvatarOptionsByCategory,
 } from '../lib/avatar-constants';
-import { getAvatarSvgDataUrl } from '../lib/avatar-render';
 import { resolveAvatarOption } from '../lib/avatar-utils';
 import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 
@@ -40,12 +38,10 @@ interface AvatarSelectionProps {
 
 function AvatarGrid({
   options,
-  avatarUrls,
   resolvedSelection,
   onAvatarSelect,
 }: {
   options: readonly (typeof AVATAR_OPTIONS)[number][];
-  avatarUrls: Record<string, string>;
   resolvedSelection: string;
   onAvatarSelect: (avatarId: string) => void;
 }) {
@@ -71,15 +67,15 @@ function AvatarGrid({
             )}
             style={{
               maxWidth: AVATAR_SELECTION_MAX_CELL_SIZE,
-              backgroundColor: option.backgroundColor,
+              backgroundColor: AVATAR_DISPLAY_BACKGROUND,
             }}
             aria-label={option.label}
             title={option.label}
           >
             <img
-              src={avatarUrls[option.id]}
+              src={getAvatarAssetPath(option)}
               alt={option.label}
-              className="block h-full w-full object-cover object-center"
+              className="block h-full w-full object-contain object-center p-1.5"
               loading="lazy"
               draggable={false}
             />
@@ -129,14 +125,6 @@ export function AvatarSelection({
 }: AvatarSelectionProps) {
   const resolvedSelection = resolveAvatarOption(selectedAvatar, previewSeed).id;
 
-  const avatarUrls = useMemo(
-    () =>
-      Object.fromEntries(
-        AVATAR_OPTIONS.map((option) => [option.id, getAvatarSvgDataUrl(option)]),
-      ),
-    [],
-  );
-
   return (
     <div className={cn('w-full min-w-0', className)}>
       <p className="mb-3 text-center text-[11px] leading-snug text-muted-foreground sm:text-xs">
@@ -156,24 +144,18 @@ export function AvatarSelection({
           className="flex flex-col"
           style={{ gap: AVATAR_SELECTION_SECTION_GAP }}
         >
-          {MULTIAVATAR_PARTS.map((part) => {
-            const partOptions = getAvatarOptionsByPart(part);
-            return (
-              <section key={part}>
-                <h4 className={AVATAR_SELECTION_SECTION_LABEL_CLASS}>
-                  {AVATAR_UI_TEXT.characterSectionPrefix} {part}
-                  {' · '}
-                  {partOptions.map((option) => MULTIAVATAR_THEME_LABELS[option.theme]).join(' / ')}
-                </h4>
-                <AvatarGrid
-                  options={partOptions}
-                  avatarUrls={avatarUrls}
-                  resolvedSelection={resolvedSelection}
-                  onAvatarSelect={onAvatarSelect}
-                />
-              </section>
-            );
-          })}
+          {Array.from({ length: ICONSCOUT_CATEGORY_COUNT }, (_, categoryIndex) => (
+            <section key={categoryIndex}>
+              <h4 className={AVATAR_SELECTION_SECTION_LABEL_CLASS}>
+                {ICONSCOUT_CATEGORY_LABELS[categoryIndex]}
+              </h4>
+              <AvatarGrid
+                options={getAvatarOptionsByCategory(categoryIndex)}
+                resolvedSelection={resolvedSelection}
+                onAvatarSelect={onAvatarSelect}
+              />
+            </section>
+          ))}
         </div>
       </div>
       <p className="mt-2 text-center text-[10px] leading-snug text-muted-foreground">

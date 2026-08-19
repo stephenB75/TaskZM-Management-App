@@ -1,14 +1,24 @@
 # Avatar Images
 
-TaskZM uses **[Multiavatar](https://multiavatar.com/)** — 48 multicultural SVG portraits styled with TaskZM pastel palettes, generated in-app.
+TaskZM uses **[IconScout](https://iconscout.com/free-icon-packs/avatars)** faceless character avatars — cropped to transparent PNG silhouettes (no background circle).
 
 ## How it works
 
-- **48 picker options** — 16 inclusive base characters (parts `00`–`15`), each with three color themes (`A`, `B`, `C`)
-- **Pastel styling** — avatar backgrounds use the app’s pastel palette from `color-theme.ts`
-- **App IDs** — `taskzm:multiavatar:00:A` … `taskzm:multiavatar:15:C`
-- **Rendering** — SVG is generated client-side via `@multiavatar/multiavatar` (`src/lib/avatar-render.ts`)
+- **42 picker options** — 7 bundled IconScout sets × 6 square-cropped characters each
+- **Transparent assets** — white pack backgrounds are trimmed away
+- **App IDs** — `taskzm:iconscout:01` … `taskzm:iconscout:42`
+- **Assets** — bundled PNGs in `public/avatars/iconscout/`
 
-Multiavatar characters are designed to represent people from many cultures and backgrounds. No PNG assets are bundled; avatars render as crisp SVG in circular frames.
+Legacy avatar IDs (Multiavatar, Icon54, DiceBear, etc.) migrate automatically in `avatar-utils.ts`.
 
-Legacy avatar paths (DiceBear style IDs, `/avatars/userpics/*`, HTTP DiceBear URLs, older `taskzm:*` IDs) migrate automatically in `avatar-utils.ts`.
+## Regenerate avatars
+
+```bash
+npm run generate:avatars
+```
+
+This reads the seven bundled pack sheets in `assets/iconscout-source/` (`pack-25077.png` … `pack-89116.png`), square-crops each icon from the 3×2 grid, trims the white background, normalizes to 128×128 transparent PNGs, and writes 42 assets to `src/public/avatars/iconscout/`.
+
+### Optional: manual SVG pack
+
+Download a pack from IconScout and unzip SVGs to `assets/iconscout-avatar-pack/`, then run `npm run generate:avatars` to import those instead.

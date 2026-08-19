@@ -1,11 +1,11 @@
-import multiavatar from '@multiavatar/multiavatar/esm';
 import type { AvatarOption } from './avatar-constants';
-
-export function renderAvatarSvg(option: AvatarOption): string {
-  return multiavatar('taskzm', false, { part: option.part, theme: option.theme });
-}
+import { getAvatarAssetPath } from './avatar-constants';
 
 export function getAvatarSvgDataUrl(option: AvatarOption): string {
-  const svg = renderAvatarSvg(option);
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  return getAvatarAssetPath(option);
+}
+
+/** @deprecated Avatars are bundled PNG assets, not rendered at runtime. */
+export function renderAvatarSvg(_option: AvatarOption): string {
+  return '';
 }

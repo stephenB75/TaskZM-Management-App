@@ -1,20 +1,23 @@
 import {
   AVATAR_ID_PREFIX,
+  AVATAR_ICON54_PREFIX,
   AVATAR_LEGACY_PREFIXES,
   AVATAR_LORELEI_PREFIX,
   AVATAR_MICAH_PREFIX,
+  AVATAR_MULTIAVATAR_PREFIX,
   AVATAR_NOTIONISTS_PREFIX,
+  AVATAR_OPTIONS,
   AVATAR_PRESET_PREFIX,
   AVATAR_SEEDS_PER_STYLE,
   AVATAR_USERPICS_PREFIX,
-  AVATAR_OPTIONS,
+  AVATAR_DISPLAY_BACKGROUND,
   DEFAULT_AVATAR,
+  getAvatarAssetPath,
   getAvatarOptionById,
   getMultiavatarLegacyIndex,
   type AvatarOption,
   type MultiavatarLegacyTheme,
 } from './avatar-constants';
-import { getAvatarSvgDataUrl } from './avatar-render';
 
 function hashString(value: string): number {
   let hash = 0;
@@ -25,15 +28,35 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
-function parseMultiavatarId(avatar: string): string | null {
+function parseIconScoutId(avatar: string): string | null {
   if (!avatar.startsWith(AVATAR_ID_PREFIX)) return null;
-  if (getAvatarOptionById(avatar)) return avatar;
 
-  const body = avatar.slice(AVATAR_ID_PREFIX.length);
+  const direct = getAvatarOptionById(avatar);
+  if (direct) return direct.id;
+
+  const legacySlot = avatar.slice(AVATAR_ID_PREFIX.length);
+  const slotNumber = Number.parseInt(legacySlot, 10);
+  if (!Number.isNaN(slotNumber) && slotNumber >= 1) {
+    return AVATAR_OPTIONS[(slotNumber - 1) % AVATAR_OPTIONS.length]?.id ?? null;
+  }
+
+  return null;
+}
+
+function parseIcon54Id(avatar: string): string | null {
+  if (!avatar.startsWith(AVATAR_ICON54_PREFIX)) return null;
+  const suffix = avatar.slice(AVATAR_ICON54_PREFIX.length);
+  return getAvatarOptionById(`${AVATAR_ID_PREFIX}${suffix}`)?.id ?? null;
+}
+
+function parseMultiavatarId(avatar: string): string | null {
+  if (!avatar.startsWith(AVATAR_MULTIAVATAR_PREFIX)) return null;
+
+  const body = avatar.slice(AVATAR_MULTIAVATAR_PREFIX.length);
   const [part, theme] = body.split(':') as [string, MultiavatarLegacyTheme];
   const legacyIndex = getMultiavatarLegacyIndex(part, theme);
   if (legacyIndex === null) return null;
-  return AVATAR_OPTIONS[legacyIndex]?.id ?? null;
+  return AVATAR_OPTIONS[legacyIndex % AVATAR_OPTIONS.length]?.id ?? null;
 }
 
 const LEGACY_DICEBEAR_STYLE_PREFIXES = [
@@ -61,6 +84,8 @@ function parseLegacyBundledAvatarIndex(avatar: string): number | null {
   for (const prefix of AVATAR_LEGACY_PREFIXES) {
     if (
       prefix === AVATAR_ID_PREFIX ||
+      prefix === AVATAR_ICON54_PREFIX ||
+      prefix === AVATAR_MULTIAVATAR_PREFIX ||
       prefix === AVATAR_LORELEI_PREFIX ||
       prefix === AVATAR_NOTIONISTS_PREFIX ||
       prefix === AVATAR_MICAH_PREFIX
@@ -80,7 +105,9 @@ function parseLegacyBundledAvatarIndex(avatar: string): number | null {
 export function isLegacyAvatarUrl(avatar?: string): boolean {
   if (!avatar) return false;
   if (avatar.startsWith(AVATAR_PRESET_PREFIX)) return true;
-  if (parseMultiavatarId(avatar)) return false;
+  if (parseIconScoutId(avatar)) return false;
+  if (parseIcon54Id(avatar)) return true;
+  if (parseMultiavatarId(avatar)) return true;
   if (parseLegacyBundledAvatarIndex(avatar) !== null) return true;
   return (
     avatar.includes('/avatars/') ||
@@ -91,6 +118,12 @@ export function isLegacyAvatarUrl(avatar?: string): boolean {
 
 export function parseAvatarId(avatar?: string): string | null {
   if (!avatar) return null;
+
+  const iconScoutId = parseIconScoutId(avatar);
+  if (iconScoutId) return iconScoutId;
+
+  const icon54Id = parseIcon54Id(avatar);
+  if (icon54Id) return icon54Id;
 
   const multiavatarId = parseMultiavatarId(avatar);
   if (multiavatarId) return multiavatarId;
@@ -215,11 +248,11 @@ export function getDiceBearAvatarUrl(seed: string): string {
 
 export function getAvatarDisplayUrl(avatar: string | undefined, seed: string): string {
   const option = resolveAvatarOption(avatar, seed);
-  return getAvatarSvgDataUrl(option);
+  return getAvatarAssetPath(option);
 }
 
-export function getAvatarDisplayBackground(avatar: string | undefined, seed: string): string {
-  return resolveAvatarOption(avatar, seed).backgroundColor;
+export function getAvatarDisplayBackground(_avatar: string | undefined, _seed: string): string {
+  return AVATAR_DISPLAY_BACKGROUND;
 }
 
 /** @deprecated */

@@ -83,7 +83,7 @@
     "deploy-functions": "./scripts/deploy-functions.sh",
     "setup:google-calendar": "bash scripts/setup-google-calendar-secrets.sh",
     "generate-icons": "node scripts/generate-icons-with-padding.js",
-    "generate:avatars": "node -e \"console.log('Avatars are generated at runtime via Multiavatar (see src/lib/avatar-render.ts).')\"",
+    "generate:avatars": "node scripts/setup-iconscout-avatars.mjs",
     "sync:platforms": "bash scripts/sync-all-platforms.sh",
     "sync:cloud-shell": "bash scripts/sync-native-cloud-shell.sh",
     "ios:fresh": "bash scripts/ios-fresh-build.sh",

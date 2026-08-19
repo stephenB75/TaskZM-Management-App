@@ -2,8 +2,9 @@ import React from 'react';
 import { cn } from '../lib/utils';
 import {
   USER_PROFILE_AVATAR_RING_CLASS,
+  AVATAR_DISPLAY_BACKGROUND,
 } from '../lib/avatar-constants';
-import { getAvatarDisplayBackground, getAvatarDisplayUrl } from '../lib/avatar-utils';
+import { getAvatarDisplayUrl } from '../lib/avatar-utils';
 
 interface UserProfileAvatarProps {
   src?: string;
@@ -25,23 +26,22 @@ export function UserProfileAvatar({
 }: UserProfileAvatarProps) {
   const seed = name.trim() || 'User';
   const imageUrl = getAvatarDisplayUrl(src, seed);
-  const backgroundColor = getAvatarDisplayBackground(src, seed);
 
   return (
     <div
       className={cn(
-        'relative flex-shrink-0 overflow-hidden rounded-full',
+        'relative flex-shrink-0 overflow-hidden rounded-full bg-muted/20',
         showRing && USER_PROFILE_AVATAR_RING_CLASS,
         className,
       )}
-      style={{ width: size, height: size, backgroundColor }}
+      style={{ width: size, height: size, backgroundColor: AVATAR_DISPLAY_BACKGROUND }}
       title={alt || name}
       aria-label={alt || name}
     >
       <img
         src={imageUrl}
         alt={alt || `${name} avatar`}
-        className="block h-full w-full object-cover object-center"
+        className="block h-full w-full object-contain object-center p-1"
         loading="lazy"
         draggable={false}
       />
