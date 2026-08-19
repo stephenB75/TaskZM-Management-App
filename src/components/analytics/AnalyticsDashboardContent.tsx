@@ -192,9 +192,16 @@ export function AnalyticsDashboardContent({
     ? ANALYTICS_CHART_LAYOUT.tagBar.yAxisWidthMobilePx
     : ANALYTICS_CHART_LAYOUT.tagBar.yAxisWidthDesktopPx;
   const timeOfDayLayout = ANALYTICS_CHART_LAYOUT.timeOfDay;
-  const timeOfDayChartHeight = isCompactCharts
-    ? timeOfDayLayout.heightMobilePx
-    : timeOfDayLayout.heightDesktopPx;
+  const timeOfDayYAxisWidth = isCompactCharts
+    ? timeOfDayLayout.yAxisWidthMobilePx
+    : timeOfDayLayout.yAxisWidthDesktopPx;
+  const timeOfDayChartHeight = Math.min(
+    timeOfDayLayout.heightMaxPx,
+    Math.max(
+      timeOfDayLayout.heightMinPx,
+      analytics.timePatterns.buckets.length * timeOfDayLayout.heightPerBucketPx,
+    ),
+  );
 
   const totalTimeLabel = formatAnalyticsDurationLabel(analytics.totalTimeTracked);
   const weeklyTimeLabel = formatAnalyticsDurationLabel(analytics.weeklyTimeTracked);
@@ -504,38 +511,41 @@ export function AnalyticsDashboardContent({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={analytics.timePatterns.buckets}
-                  margin={timeOfDayLayout.margin}
+                  layout="vertical"
+                  margin={{
+                    ...timeOfDayLayout.margin,
+                    left: timeOfDayYAxisWidth,
+                  }}
                 >
                   <CartesianGrid
                     strokeDasharray={ANALYTICS_CHART_LAYOUT.gridStrokeDasharray}
                     stroke={theme.border}
-                    vertical={ANALYTICS_CHART_LAYOUT.cartesianVertical}
+                    horizontal
                   />
                   <XAxis
-                    dataKey="shortName"
+                    type="number"
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: ANALYTICS_CHART_LAYOUT.axisTickFontSizePx, fill: theme.textMuted }}
-                    interval={0}
-                    angle={timeOfDayLayout.xAxisAngleDeg}
-                    textAnchor="end"
-                    height={timeOfDayLayout.xAxisHeightPx}
-                  />
-                  <YAxis
-                    width={timeOfDayLayout.yAxisWidthPx}
-                    tickLine={false}
-                    axisLine={false}
+                    allowDecimals={false}
                     tick={{ fontSize: ANALYTICS_CHART_LAYOUT.axisTickFontSizePx, fill: theme.textMuted }}
                     label={{
                       value: ANALYTICS_LABELS.tasksCompletedAxis,
-                      angle: -90,
-                      position: "left",
+                      position: "insideBottom",
+                      offset: -timeOfDayLayout.xAxisLabelOffsetPx,
                       style: {
                         fontSize: ANALYTICS_CHART_LAYOUT.axisTickFontSizePx,
                         fill: theme.textMuted,
                         textAnchor: "middle",
                       },
                     }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="shortName"
+                    tickLine={false}
+                    axisLine={false}
+                    width={timeOfDayYAxisWidth}
+                    tick={{ fontSize: ANALYTICS_CHART_LAYOUT.axisTickFontSizePx, fill: theme.textMuted }}
                   />
                   <Tooltip
                     content={<AnalyticsTooltip />}
@@ -546,9 +556,9 @@ export function AnalyticsDashboardContent({
                   <Bar
                     dataKey="value"
                     radius={[
-                      timeOfDayLayout.barRadiusPx,
-                      timeOfDayLayout.barRadiusPx,
                       0,
+                      timeOfDayLayout.barRadiusEndPx,
+                      timeOfDayLayout.barRadiusEndPx,
                       0,
                     ]}
                     isAnimationActive={false}
