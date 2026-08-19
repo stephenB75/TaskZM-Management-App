@@ -23,7 +23,7 @@ export const TIMING_CONSTANTS = {
     demoActivity: 5 * 60 * 1000, // 5 minutes - Demo user activity tracking
     pomodoro: 1000, // 1 second - Pomodoro timer interval
     activityCheck: 60000, // 1 minute - Activity checking interval
-    notificationCheck: 60000, // 1 minute - Notification check interval (multiplied by settings.checkInterval)
+    notificationCheck: 60000, // Legacy delay constant; task poll uses NOTIFICATION_INTERVALS.defaultCheckInterval
   },
   
   // Delays (in milliseconds)

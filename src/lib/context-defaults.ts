@@ -33,7 +33,6 @@ import {
   DEFAULT_TAGS,
   POMODORO_WORK_DURATION,
   DEFAULT_NOTIFICATION_REMINDER_TIME,
-  DEFAULT_NOTIFICATION_CHECK_INTERVAL,
 } from './business-constants';
 
 /**
@@ -403,7 +402,6 @@ export function createDefaultNotificationContext() {
       overdueAlerts: true,
       soundEnabled: true,
       reminderTime: DEFAULT_NOTIFICATION_REMINDER_TIME,
-      checkInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL,
       achievementCelebrations: true,
       achievementHaptics: true,
       achievementBackgroundAlerts: true,

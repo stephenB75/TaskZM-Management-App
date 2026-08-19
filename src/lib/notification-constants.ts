@@ -27,7 +27,6 @@ export const DEFAULT_NOTIFICATION_SETTINGS = {
   overdueAlerts: true,
   soundEnabled: true,
   reminderTime: DEFAULT_NOTIFICATION_REMINDER_TIME,
-  checkInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL,
   achievementCelebrations: true,
   achievementHaptics: true,
   achievementBackgroundAlerts: true,
@@ -41,7 +40,6 @@ export type NotificationSettings = {
   overdueAlerts: boolean;
   soundEnabled: boolean;
   reminderTime: number;
-  checkInterval: number;
   achievementCelebrations: boolean;
   achievementHaptics: boolean;
   achievementBackgroundAlerts: boolean;
@@ -67,14 +65,6 @@ export const NOTIFICATION_REMINDER_TIME_OPTIONS = [
   { value: 30, label: '30 minutes before' },
   { value: 60, label: '1 hour before' },
   { value: 120, label: '2 hours before' },
-] as const;
-
-/** Settings UI options for foreground poll interval (minutes). */
-export const NOTIFICATION_CHECK_INTERVAL_OPTIONS = [
-  { value: 5, label: 'Every 5 minutes' },
-  { value: 15, label: 'Every 15 minutes' },
-  { value: 30, label: 'Every 30 minutes' },
-  { value: 60, label: 'Every hour' },
 ] as const;
 
 // LocalStorage keys
@@ -210,10 +200,6 @@ export const NOTIFICATION_PANEL_TEXT = {
     label: 'Reminder Lead Time',
     description: 'How far ahead to alert before a task is due',
   },
-  checkInterval: {
-    label: 'Check While App Is Open',
-    description: 'How often to check for due tasks when the app is active',
-  },
 } as const;
 
 // Notification type identifiers
@@ -244,7 +230,7 @@ export const NOTIFICATION_TIME_FORMATS = {
 // Notification check intervals (in milliseconds)
 export const NOTIFICATION_INTERVALS = {
   taskUpdateDelay: 100, // Delay before checking notifications after task update (ms)
-  defaultCheckInterval: DEFAULT_NOTIFICATION_SETTINGS.checkInterval * MILLISECONDS_PER_MINUTE, // Convert minutes to ms
+  defaultCheckInterval: DEFAULT_NOTIFICATION_CHECK_INTERVAL * MILLISECONDS_PER_MINUTE,
 } as const;
 
 // Error messages

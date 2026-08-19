@@ -210,7 +210,7 @@ import {
   SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
   SETTINGS_PANEL_LIST_ROW_PADDING_Y,
 } from '../lib/layout-constants';
-import { NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS, NOTIFICATION_CHECK_INTERVAL_OPTIONS } from '../lib/notification-constants';
+import { NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { isNativePurchasedSubscriptionStore, openNativeSubscriptionManagement } from '../lib/subscription-billing';
@@ -1563,31 +1563,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                               </SelectTrigger>
                               <SelectContent>
                                 {NOTIFICATION_REMINDER_TIME_OPTIONS.map((option) => (
-                                  <SelectItem key={option.value} value={String(option.value)}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div
-                            className="flex flex-col gap-2 border-t border-border/40 px-4 py-3"
-                            style={{ opacity: !notificationSettings.enabled || permission !== 'granted' ? 0.5 : 1 }}
-                          >
-                            <Label htmlFor="notification-check-interval" className="text-sm font-medium">
-                              {NOTIFICATION_PANEL_TEXT.checkInterval.label}
-                            </Label>
-                            <p className="text-xs text-muted-foreground">{NOTIFICATION_PANEL_TEXT.checkInterval.description}</p>
-                            <Select
-                              value={String(notificationSettings.checkInterval)}
-                              disabled={!notificationSettings.enabled || permission !== 'granted'}
-                              onValueChange={(value) => updateNotificationSettings({ checkInterval: Number(value) })}
-                            >
-                              <SelectTrigger id="notification-check-interval" className="h-9">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {NOTIFICATION_CHECK_INTERVAL_OPTIONS.map((option) => (
                                   <SelectItem key={option.value} value={String(option.value)}>
                                     {option.label}
                                   </SelectItem>

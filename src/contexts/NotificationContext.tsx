@@ -474,7 +474,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       checkAndNotify();
       const interval = setInterval(
         () => checkAndNotify(),
-        settings.checkInterval * TIMING_CONSTANTS.timeConversions.minutesToMs,
+        NOTIFICATION_INTERVALS.defaultCheckInterval,
       );
       return () => clearInterval(interval);
     }
@@ -484,7 +484,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     checkAndNotify();
     const interval = setInterval(
       () => checkAndNotify(),
-      settings.checkInterval * TIMING_CONSTANTS.timeConversions.minutesToMs,
+      NOTIFICATION_INTERVALS.defaultCheckInterval,
     );
     return () => clearInterval(interval);
   }, [settings, permission, user, checkAndNotify]);
