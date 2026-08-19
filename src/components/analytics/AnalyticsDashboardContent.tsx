@@ -191,6 +191,10 @@ export function AnalyticsDashboardContent({
   const tagYAxisWidth = isCompactCharts
     ? ANALYTICS_CHART_LAYOUT.tagBar.yAxisWidthMobilePx
     : ANALYTICS_CHART_LAYOUT.tagBar.yAxisWidthDesktopPx;
+  const timeOfDayLayout = ANALYTICS_CHART_LAYOUT.timeOfDay;
+  const timeOfDayChartHeight = isCompactCharts
+    ? timeOfDayLayout.heightMobilePx
+    : timeOfDayLayout.heightDesktopPx;
 
   const totalTimeLabel = formatAnalyticsDurationLabel(analytics.totalTimeTracked);
   const weeklyTimeLabel = formatAnalyticsDurationLabel(analytics.weeklyTimeTracked);
@@ -494,13 +498,13 @@ export function AnalyticsDashboardContent({
           <CardContent className="px-3 pb-3">
             <div
               ref={timeOfDayChartRef}
-              style={{ height: lineHeight, width: "100%" }}
+              style={{ height: timeOfDayChartHeight, width: "100%" }}
               data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={analytics.timePatterns.buckets}
-                  margin={ANALYTICS_CHART_LAYOUT.bar.margin}
+                  margin={timeOfDayLayout.margin}
                 >
                   <CartesianGrid
                     strokeDasharray={ANALYTICS_CHART_LAYOUT.gridStrokeDasharray}
@@ -508,32 +512,42 @@ export function AnalyticsDashboardContent({
                     vertical={ANALYTICS_CHART_LAYOUT.cartesianVertical}
                   />
                   <XAxis
-                    dataKey="name"
+                    dataKey="shortName"
                     tickLine={false}
                     axisLine={false}
                     tick={{ fontSize: ANALYTICS_CHART_LAYOUT.axisTickFontSizePx, fill: theme.textMuted }}
                     interval={0}
-                    angle={isCompactCharts ? -25 : 0}
-                    textAnchor={isCompactCharts ? "end" : "middle"}
-                    height={isCompactCharts ? ANALYTICS_CHART_LAYOUT.tagBar.yAxisWidthMobilePx / 2 : undefined}
+                    angle={timeOfDayLayout.xAxisAngleDeg}
+                    textAnchor="end"
+                    height={timeOfDayLayout.xAxisHeightPx}
                   />
                   <YAxis
+                    width={timeOfDayLayout.yAxisWidthPx}
                     tickLine={false}
                     axisLine={false}
                     tick={{ fontSize: ANALYTICS_CHART_LAYOUT.axisTickFontSizePx, fill: theme.textMuted }}
                     label={{
                       value: ANALYTICS_LABELS.tasksCompletedAxis,
                       angle: -90,
-                      position: "insideLeft",
-                      style: { fontSize: ANALYTICS_CHART_LAYOUT.axisTickFontSizePx, fill: theme.textMuted },
+                      position: "left",
+                      style: {
+                        fontSize: ANALYTICS_CHART_LAYOUT.axisTickFontSizePx,
+                        fill: theme.textMuted,
+                        textAnchor: "middle",
+                      },
                     }}
                   />
-                  <Tooltip content={<AnalyticsTooltip />} />
+                  <Tooltip
+                    content={<AnalyticsTooltip />}
+                    labelFormatter={(_label, payload) =>
+                      (payload?.[0]?.payload as { name?: string } | undefined)?.name ?? _label
+                    }
+                  />
                   <Bar
                     dataKey="value"
                     radius={[
-                      ANALYTICS_CHART_LAYOUT.bar.barRadiusPx,
-                      ANALYTICS_CHART_LAYOUT.bar.barRadiusPx,
+                      timeOfDayLayout.barRadiusPx,
+                      timeOfDayLayout.barRadiusPx,
                       0,
                       0,
                     ]}

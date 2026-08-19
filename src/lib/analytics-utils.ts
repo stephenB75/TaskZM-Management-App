@@ -50,6 +50,7 @@ export interface AnalyticsTaskDayPoint {
 
 export interface AnalyticsTimeBucket {
   name: string;
+  shortName: string;
   value: number;
   color: string;
   startHour: number;
@@ -210,8 +211,26 @@ function formatHourLabel(hour: number): string {
   return `${hour - ANALYTICS_TIME_FORMAT.noonHour} PM`;
 }
 
+function formatHourLabelShort(hour: number): string {
+  const normalizedHour = hour % HOURS_PER_DAY;
+  if (normalizedHour === 0) {
+    return ANALYTICS_TIME_FORMAT.shortMidnightLabel;
+  }
+  if (normalizedHour === ANALYTICS_TIME_FORMAT.noonHour) {
+    return ANALYTICS_TIME_FORMAT.shortNoonLabel;
+  }
+  if (normalizedHour < ANALYTICS_TIME_FORMAT.noonHour) {
+    return `${normalizedHour}${ANALYTICS_TIME_FORMAT.shortAmSuffix}`;
+  }
+  return `${normalizedHour - ANALYTICS_TIME_FORMAT.noonHour}${ANALYTICS_TIME_FORMAT.shortPmSuffix}`;
+}
+
 function formatHourBucketLabel(startHour: number, endHour: number): string {
-  return `${formatHourLabel(startHour % HOURS_PER_DAY)}–${formatHourLabel(endHour % HOURS_PER_DAY)}`;
+  return `${formatHourLabel(startHour % HOURS_PER_DAY)}${ANALYTICS_TIME_FORMAT.hourRangeSeparator}${formatHourLabel(endHour % HOURS_PER_DAY)}`;
+}
+
+function formatHourBucketShortLabel(startHour: number, endHour: number): string {
+  return `${formatHourLabelShort(startHour)}${ANALYTICS_TIME_FORMAT.hourRangeSeparator}${formatHourLabelShort(endHour % HOURS_PER_DAY)}`;
 }
 
 const TIME_BUCKET_COLORS = [
@@ -232,6 +251,7 @@ function buildHourBuckets(hourCounts: number[]): AnalyticsTimeBucket[] {
     if (value <= 0) continue;
     buckets.push({
       name: formatHourBucketLabel(startHour, endHour),
+      shortName: formatHourBucketShortLabel(startHour, endHour),
       value,
       color: TIME_BUCKET_COLORS[index % TIME_BUCKET_COLORS.length],
       startHour,

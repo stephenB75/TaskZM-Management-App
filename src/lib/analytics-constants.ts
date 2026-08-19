@@ -128,6 +128,15 @@ export const ANALYTICS_CHART_LAYOUT = {
     barRadiusPx: 6,
     margin: { top: 5, right: 10, left: 0, bottom: 0 },
   },
+  timeOfDay: {
+    heightMobilePx: 220,
+    heightDesktopPx: 200,
+    barRadiusPx: 6,
+    margin: { top: 5, right: 8, left: 16, bottom: 40 },
+    xAxisAngleDeg: -32,
+    xAxisHeightPx: 52,
+    yAxisWidthPx: 32,
+  },
   tagBar: {
     heightMobilePx: 192,
     heightDesktopPx: 160,
@@ -232,6 +241,11 @@ export const ANALYTICS_TIME_FORMAT = {
   noonHour: 12,
   midnightLabel: "12 AM",
   noonLabel: "12 PM",
+  shortMidnightLabel: "12a",
+  shortNoonLabel: "12p",
+  shortAmSuffix: "a",
+  shortPmSuffix: "p",
+  hourRangeSeparator: "–",
 } as const;
 
 export const ANALYTICS_COMPLETION_RATE = {
