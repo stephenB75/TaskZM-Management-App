@@ -123,6 +123,18 @@ async function loadLocalNotifications() {
   return LocalNotifications;
 }
 
+function getAndroidNotificationFields(channelId?: string): {
+  smallIcon: string;
+  iconColor: string;
+  channelId: string;
+} {
+  return {
+    smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
+    iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
+    channelId: channelId ?? MOBILE_NOTIFICATION_CHANNELS.tasks,
+  };
+}
+
 type LocalNotificationsPlugin = Awaited<ReturnType<typeof loadLocalNotifications>>;
 
 async function ensureAndroidNotificationChannels(
@@ -279,11 +291,7 @@ export async function showNotification(options: NotificationOptions): Promise<vo
             actionTypeId: '',
             extra: options.data ?? {},
             ...(platform.isIOS && { summary: options.title }),
-            ...(platform.isAndroid && {
-              smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
-              iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
-              ...(options.channelId ? { channelId: options.channelId } : {}),
-            }),
+            ...(platform.isAndroid && getAndroidNotificationFields(options.channelId)),
           },
         ],
       });
@@ -387,6 +395,7 @@ export async function syncScheduledTaskNotifications(
       silent?: boolean;
       smallIcon?: string;
       iconColor?: string;
+      channelId?: string;
     }> = [];
 
     for (const task of tasks) {
@@ -414,10 +423,7 @@ export async function syncScheduledTaskNotifications(
             sound: 'default',
             extra: { taskId: task.id, type: 'reminder' },
             ...(platform.isIOS && { summary: copy.title, silent: true }),
-            ...(platform.isAndroid && {
-              smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
-              iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
-            }),
+            ...(platform.isAndroid && getAndroidNotificationFields(MOBILE_NOTIFICATION_CHANNELS.tasks)),
           });
         }
       }
@@ -443,10 +449,7 @@ export async function syncScheduledTaskNotifications(
             sound: 'default',
             extra: { taskId: task.id, type: 'overdue' },
             ...(platform.isIOS && { summary: NOTIFICATION_TITLES.taskOverdue, silent: true }),
-            ...(platform.isAndroid && {
-              smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
-              iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
-            }),
+            ...(platform.isAndroid && getAndroidNotificationFields(MOBILE_NOTIFICATION_CHANNELS.tasks)),
           });
         }
       }
@@ -573,6 +576,7 @@ export function buildOverdueNotificationPayload(task: Task): NotificationOptions
     body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
     tag: `${NOTIFICATION_TAG_PREFIXES.overdue}${task.id}`,
     requireInteraction: false,
+    channelId: MOBILE_NOTIFICATION_CHANNELS.tasks,
     data: { taskId: task.id, type: 'overdue' },
   };
 }
@@ -584,6 +588,7 @@ export function buildDueSoonNotificationPayload(task: Task, now: Date): Notifica
     body: copy.body,
     tag: `${NOTIFICATION_TAG_PREFIXES.reminder}${task.id}`,
     requireInteraction: copy.requireInteraction,
+    channelId: MOBILE_NOTIFICATION_CHANNELS.tasks,
     data: { taskId: task.id, type: isTaskDueNow(task, now) ? 'dueNow' : 'upcoming' },
   };
 }

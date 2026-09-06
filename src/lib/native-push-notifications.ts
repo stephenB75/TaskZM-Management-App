@@ -52,12 +52,7 @@ export async function initNativePushNotifications(): Promise<void> {
   });
 
   await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-    const taskId = extractTaskIdFromPushData(
-      notification.data as Record<string, unknown> | undefined,
-    );
-    if (taskId) {
-      dispatchOpenTaskFromPush(taskId);
-    }
+    logger.debug('[Native] Push notification received in foreground', notification.title);
   });
 
   await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {

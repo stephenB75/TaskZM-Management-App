@@ -63,8 +63,8 @@ export function buildCalendarOAuthDeepLink(
   return url.toString();
 }
 
-/** Android status-bar notification icon (drawable name). */
-export const MOBILE_NOTIFICATION_SMALL_ICON = 'ic_stat_icon_config_sample';
+/** Android status-bar notification icon (drawable name). Must be white-on-transparent. */
+export const MOBILE_NOTIFICATION_SMALL_ICON = 'ic_stat_taskzm';
 
 /** Accent color for Android notification icon. */
 export const MOBILE_NOTIFICATION_ICON_COLOR = '#9D87C3';
