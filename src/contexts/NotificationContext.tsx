@@ -250,6 +250,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const handleForegroundNativeDelivery = (event: Event) => {
       const { title, body, variant } = (event as CustomEvent<{ title: string; body: string; variant: 'overdue' | 'reminder' }>).detail;
       if (!settings.enabled) return;
+      if (getPlatform().isNative) return;
       if (settings.soundEnabled) playDueReminderChime();
       if (variant === 'overdue') {
         toast.warning(title, { description: body });
@@ -268,16 +269,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     async (payload: ReturnType<typeof buildOverdueNotificationPayload>, variant: 'overdue' | 'reminder') => {
       if (settings.soundEnabled) playDueReminderChime();
 
-      if (isAppInForeground()) {
-        if (variant === 'overdue') {
-          toast.warning(payload.title, { description: payload.body });
-        } else {
-          toast.info(payload.title, { description: payload.body });
-        }
+      if (getPlatform().isNative || !isAppInForeground()) {
+        await showNativeNotification(payload);
         return;
       }
 
-      await showNativeNotification(payload);
+      if (variant === 'overdue') {
+        toast.warning(payload.title, { description: payload.body });
+      } else {
+        toast.info(payload.title, { description: payload.body });
+      }
     },
     [settings.soundEnabled],
   );

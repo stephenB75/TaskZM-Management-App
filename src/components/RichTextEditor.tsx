@@ -14,6 +14,8 @@ interface RichTextEditorProps {
   className?: string;
   rows?: number;
   disabled?: boolean;
+  /** Notes field: editor only, formatting stays in task settings. */
+  compact?: boolean;
 }
 
 export function RichTextEditor({
@@ -23,6 +25,7 @@ export function RichTextEditor({
   className,
   rows = 3,
   disabled = false,
+  compact = false,
 }: RichTextEditorProps) {
   const { actualTheme } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -371,8 +374,9 @@ export function RichTextEditor({
       )}
     >
       {/* Formatting Toolbar */}
+      {!compact && (
       <div className={cn(
-        "flex flex-wrap items-center gap-1.5 p-2 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl",
+        "flex flex-nowrap items-center gap-1 overflow-x-auto p-1 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl",
         disabled && "opacity-60 pointer-events-none"
       )}>
         {/* Text Formatting Group */}
@@ -381,7 +385,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('bold') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('bold')}
@@ -394,7 +398,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('italic') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('italic')}
@@ -407,7 +411,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('underline') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('underline')}
@@ -420,7 +424,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('strikethrough') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('strikethrough')}
@@ -435,7 +439,7 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 rounded-full p-0 leading-none"
           onClick={() => formatText('highlight')}
           title="Highlight"
         >
@@ -445,7 +449,7 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 rounded-full p-0 leading-none"
           onClick={() => formatText('code')}
           title="Code"
         >
@@ -459,7 +463,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('bullet') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('bullet')}
@@ -472,7 +476,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('numbered') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('numbered')}
@@ -488,7 +492,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('alignLeft') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('alignLeft')}
@@ -501,7 +505,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('alignCenter') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('alignCenter')}
@@ -514,7 +518,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('alignRight') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('alignRight')}
@@ -527,7 +531,7 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className={cn(
-            "h-7 w-7 p-0",
+            "h-6 w-6 rounded-full p-0 leading-none",
             isFormatActive('alignJustify') && "bg-primary/10 text-primary"
           )}
           onClick={() => formatText('alignJustify')}
@@ -542,7 +546,7 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 rounded-full p-0 leading-none"
           onClick={() => formatText('paragraph')}
           title="Paragraph (Press Enter for new paragraph)"
         >
@@ -555,7 +559,7 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 rounded-full p-0 leading-none"
           onClick={() => formatText('outdent')}
           title="Decrease Indent"
         >
@@ -565,7 +569,7 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 rounded-full p-0 leading-none"
           onClick={() => formatText('indent')}
           title="Increase Indent"
         >
@@ -578,7 +582,7 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 rounded-full p-0 leading-none"
           onClick={() => formatText('uppercase')}
           title="Uppercase"
         >
@@ -588,7 +592,7 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 rounded-full p-0 leading-none"
           onClick={() => formatText('lowercase')}
           title="Lowercase"
         >
@@ -601,13 +605,14 @@ export function RichTextEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 rounded-full p-0 leading-none"
           onClick={() => formatText('clear')}
           title="Clear Formatting"
         >
           <Icon name="eraser" size={ICON_SIZE_MD} />
         </Button>
       </div>
+      )}
 
       {/* Editor */}
       <div
@@ -619,7 +624,8 @@ export function RichTextEditor({
         onFocus={() => !disabled && setIsFocused(true)}
         onBlur={() => !disabled && setIsFocused(false)}
         className={cn(
-          "min-h-[60px] p-3 outline-none rounded-b-xl",
+          "min-h-[60px] p-3 outline-none",
+          compact ? "rounded-xl" : "rounded-b-xl",
           "focus:ring-2 focus:ring-primary/20 focus:border-primary/40",
           !value && "text-muted-foreground",
           disabled && "cursor-not-allowed opacity-60",

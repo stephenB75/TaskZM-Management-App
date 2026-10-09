@@ -330,7 +330,7 @@ export const UI_INBOX_GRADIENTS = {
   main: {
     from: '#E4E0EF',
     to: '#DCD6EB',
-    className: 'bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB]',
+    className: 'bg-white dark:bg-gray-950',
   },
   button: {
     from: '#E6D5F0',
@@ -359,7 +359,7 @@ export const UI_NOTIFICATIONS_PANEL_GRADIENTS = {
   main: {
     from: '#E4E0EF',
     to: '#DCD6EB',
-    className: 'bg-gradient-to-b from-[#E4E0EF] to-[#DCD6EB]',
+    className: 'bg-white dark:bg-gray-950',
   },
 } as const;
 

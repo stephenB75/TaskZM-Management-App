@@ -141,8 +141,7 @@ export const FolderCard = React.memo(function FolderCard({
     <div
       ref={setNodeRef}
       className={cn(
-        'group/card cursor-pointer transition-all',
-        'hover:scale-[1.005] active:scale-[0.995]',
+        'group/card cursor-pointer',
         isOver && 'ring-2 ring-primary/50 ring-inset rounded-2xl',
       )}
       onClick={() => onFolderClick(folder)}

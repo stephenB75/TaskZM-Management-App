@@ -19,10 +19,15 @@ import { useAI } from './contexts/AIContext';
 import { useNotifications } from './contexts/NotificationContext';
 import { InviteAcceptancePage } from './components/InviteAcceptancePage';
 import { AwardCelebration } from './components/AwardCelebration';
+import { AppHeader } from './components/AppHeader';
 import { AppSidebar } from './components/AppSidebar';
 import { AppTour } from './components/AppTour';
 import { BottomNav } from './components/BottomNav';
 import { MobileHomePager } from './components/MobileHomePager';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './components/ui/sheet';
+import { DesktopHome } from './components/DesktopHome';
+import { WeekBoard } from './components/WeekBoard';
+import { TaskDialog } from './components/TaskDialog';
 import { NativePullToRefresh } from './components/NativePullToRefresh';
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
 import { PricingDialog } from './components/PricingDialog';
@@ -30,15 +35,14 @@ import { UpgradePrompt } from './components/UpgradePrompt';
 import { DemoAccountDisclaimer } from './components/DemoAccountDisclaimer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-const DashboardView = lazyWithRetry(() => import('./components/DashboardView').then(m => ({ default: m.DashboardView })));
 const InboxView = lazyWithRetry(() => import('./components/InboxView').then(m => ({ default: m.InboxView })));
 const ArchiveView = lazyWithRetry(() => import('./components/ArchiveView').then(m => ({ default: m.ArchiveView })));
 const SettingsPanel = lazyWithRetry(() => import('./components/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
-const TodayAgendaView = lazyWithRetry(() => import('./components/TodayAgendaView').then(m => ({ default: m.TodayAgendaView })));
 const AnalyticsPanel = lazyWithRetry(() => import('./components/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })));
 const TeamPanel = lazyWithRetry(() => import('./components/TeamPanel').then(m => ({ default: m.TeamPanel })));
 const FoldersPanel = lazyWithRetry(() => import('./components/FoldersPanel').then(m => ({ default: m.FoldersPanel })));
 const NotificationsPanel = lazyWithRetry(() => import('./components/NotificationsPanel').then(m => ({ default: m.NotificationsPanel })));
+const AIRecommendationPanel = lazyWithRetry(() => import('./components/AIRecommendationPanel').then(m => ({ default: m.AIRecommendationPanel })));
 import { useAIScheduler, type SchedulePlan } from './hooks/useAIScheduler';
 import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
@@ -48,8 +52,7 @@ import { NOTIFICATION_OPEN_TASK_EVENT } from './lib/notification-constants';
 import { clearCalendarEventsCache } from './lib/calendar-events-cache';
 import { MOBILE_DEEP_LINK_PATHS } from './lib/mobile-constants';
 import { getTodayAgendaBadgeCount } from './lib/notification-task-filters';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, MOBILE_SCROLL_CONTAINER_MIN_HEIGHT, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
-import { KANBAN_BACKGROUND_GRADIENTS } from './lib/kanban-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_LOGO_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, MOBILE_SCROLL_CONTAINER_MIN_HEIGHT, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, APP_CANVAS_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 import logoImageGray from './assets/taskzm-logo-gray.png';
 
@@ -63,7 +66,6 @@ function ViewFallback() {
 
 const DESKTOP_SIDE_PANEL_VIEWS = new Set([
   'notifications',
-  'today',
   'inbox',
   'team',
   'folders',
@@ -95,7 +97,7 @@ export default function AppContent() {
   // Initialize view: use same breakpoint as useMobileLayout (tablet) so mobile/tablet see tasks immediately
   const getInitialView = () => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth < VIEWPORT_BREAKPOINTS.tablet ? 'today' : 'dashboard';
+      return 'today';
     }
     return 'dashboard';
   };
@@ -103,6 +105,8 @@ export default function AppContent() {
   const [currentView, setCurrentView] = useState(getInitialView);
   const [mobileView, setMobileView] = useState<'today' | 'week'>('today');
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [scrollHomeWeek, setScrollHomeWeek] = useState(false);
   const [showScheduleResult, setShowScheduleResult] = useState(false);
   const [scheduledTasks, setScheduledTasks] = useState<SchedulePlan[]>([]);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -462,7 +466,7 @@ export default function AppContent() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setCurrentView('dashboard');
+        setCurrentView('today');
       }
     };
 
@@ -595,8 +599,24 @@ export default function AppContent() {
       return;
     }
     
-    if (currentView === view && view !== 'dashboard') {
-      setCurrentView('dashboard');
+    if (view === 'dashboard') {
+      if (shouldUseMobileLayout) {
+        setCurrentView('dashboard');
+        setMobileView('week');
+        setSidebarOpen(false);
+        return;
+      }
+      setCurrentView('today');
+      setSidebarOpen(false);
+      setScrollHomeWeek(true);
+      return;
+    }
+
+    if (currentView === view && view !== 'today') {
+      setCurrentView('today');
+      if (shouldUseMobileLayout) {
+        setMobileView('today');
+      }
     } else {
       setCurrentView(view);
       if (view === 'dashboard' && shouldUseMobileLayout) {
@@ -607,9 +627,9 @@ export default function AppContent() {
   };
 
   const handleClosePanel = () => {
-    setCurrentView('dashboard');
+    setCurrentView('today');
     if (shouldUseMobileLayout) {
-      setMobileView('week');
+      setMobileView('today');
     }
   };
 
@@ -775,13 +795,46 @@ export default function AppContent() {
     setSidebarOpen(false);
   };
 
+  useEffect(() => {
+    if (!scrollHomeWeek) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById('home-week')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setScrollHomeWeek(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [scrollHomeWeek, currentView]);
+
+  useEffect(() => {
+    const openAi = () => setAiPanelOpen(true);
+    const openCreate = () => setCreateTaskOpen(true);
+    window.addEventListener('taskzm-open-ai', openAi);
+    window.addEventListener('taskzm-add-task', openCreate);
+    return () => {
+      window.removeEventListener('taskzm-open-ai', openAi);
+      window.removeEventListener('taskzm-add-task', openCreate);
+    };
+  }, []);
+
   if (inviteToken) {
     return <InviteAcceptancePage token={inviteToken} />;
   }
 
   return (
     <>
-      <div className={`h-screen h-viewport-safe min-h-viewport-safe flex ${LOADING_SCREEN_GRADIENT_CLASS} relative overflow-hidden`}>
+      <div className={`h-screen h-viewport-safe min-h-viewport-safe flex ${APP_CANVAS_CLASS} relative overflow-hidden`}>
+        {(!shouldUseMobileLayout || currentView === 'today' || currentView === 'dashboard') && (
+          <AppHeader
+            title={
+              <img
+                src={isDark ? logoImageGray : logoImageBlack}
+                alt="TaskZM"
+                className="object-contain"
+                style={{ height: HEADER_LOGO_HEIGHT, width: 'auto' }}
+              />
+            }
+            panelOpen={!shouldUseMobileLayout && isDesktopSidePanelView(currentView)}
+          />
+        )}
         <AppSidebar 
           currentView={currentView} 
           onViewChange={handleViewChange}
@@ -814,31 +867,14 @@ export default function AppContent() {
                   ? MOBILE_SCROLL_CONTAINER_PADDING_TOP
                   : undefined,
                 paddingBottom: shouldUseMobileLayout ? NAV_BAR_SCROLL_PADDING_MOBILE : undefined,
-                backgroundImage: shouldUseMobileLayout
-                  ? isDark
-                    ? `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.dark.from}, ${KANBAN_BACKGROUND_GRADIENTS.dark.via}, ${KANBAN_BACKGROUND_GRADIENTS.dark.to})`
-                    : `linear-gradient(to bottom, ${KANBAN_BACKGROUND_GRADIENTS.mobile.from}, ${KANBAN_BACKGROUND_GRADIENTS.mobile.to})`
-                  : 'transparent',
-                backgroundSize: shouldUseMobileLayout
-                  ? '100% auto'
-                  : 'auto',
-                backgroundRepeat: 'repeat-y',
-                backgroundAttachment: 'scroll',
+                background: 'transparent',
                 width: '100%',
                 maxWidth: '100%',
                 boxSizing: 'border-box',
               } as React.CSSProperties}
             >
               <Suspense fallback={<ViewFallback />}>
-                {currentView === 'dashboard' && (
-                  <DashboardView 
-                    mobileView={mobileView}
-                    onMobileViewChange={setMobileView}
-                    aiPanelOpen={aiPanelOpen}
-                    onAiPanelChange={setAiPanelOpen}
-                  />
-                )}
-                {currentView === 'notifications' && <NotificationsPanel />}
+                {currentView === 'dashboard' && <WeekBoard />}
                 {currentView === 'today' && (
                   <div className="h-full min-h-0">
                     <MobileHomePager
@@ -849,6 +885,7 @@ export default function AppContent() {
                     />
                   </div>
                 )}
+                {currentView === 'notifications' && <NotificationsPanel />}
                 {currentView === 'inbox' && <InboxView />}
                 {currentView === 'team' && <TeamPanel />}
                 {currentView === 'folders' && <FoldersPanel />}
@@ -912,7 +949,6 @@ export default function AppContent() {
                   >
                     <Suspense fallback={<ViewFallback />}>
                       {currentView === 'notifications' && <NotificationsPanel />}
-                      {currentView === 'today' && <TodayAgendaView />}
                       {currentView === 'inbox' && <InboxView />}
                       {currentView === 'team' && <TeamPanel />}
                       {currentView === 'folders' && <FoldersPanel />}
@@ -938,15 +974,12 @@ export default function AppContent() {
             style={{ paddingTop: `${HEADER_HEIGHT}px` }}
           >
             <Suspense fallback={<ViewFallback />}>
-              <DashboardView 
-                mobileView={mobileView}
-                onMobileViewChange={setMobileView}
-                aiPanelOpen={aiPanelOpen}
-                onAiPanelChange={setAiPanelOpen}
-                hideAgenda={true}
-                panelOpen={currentView !== 'dashboard'}
-                panelKey={currentView}
-              />
+              <DesktopHome
+                  onRunScheduler={() => {
+                    void handleAISchedule();
+                  }}
+                  isScheduling={isScheduling}
+                />
             </Suspense>
           </div>
           )}
@@ -995,6 +1028,20 @@ export default function AppContent() {
         open={showDemoDisclaimer}
         onOpenChange={setShowDemoDisclaimer}
       />
+      <TaskDialog open={createTaskOpen} onClose={() => setCreateTaskOpen(false)} />
+
+      <Sheet open={aiPanelOpen} onOpenChange={setAiPanelOpen}>
+        <SheetContent side="right" className="w-full overflow-y-auto bg-background sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>AI</SheetTitle>
+            <SheetDescription>Scheduling suggestions for open tasks.</SheetDescription>
+          </SheetHeader>
+          <Suspense fallback={null}>
+            <AIRecommendationPanel onClose={() => setAiPanelOpen(false)} />
+          </Suspense>
+        </SheetContent>
+      </Sheet>
+
       {loadingOverlay}
     </>
   );

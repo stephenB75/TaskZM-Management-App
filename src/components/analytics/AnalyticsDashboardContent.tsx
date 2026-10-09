@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   Area,
@@ -14,7 +14,6 @@ import {
   LineChart,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -61,6 +60,33 @@ interface AnalyticsTooltipProps {
   active?: boolean;
   payload?: ChartTooltipEntry[];
   label?: string;
+}
+
+function ChartSlot({
+  height,
+  children,
+}: {
+  height: number;
+  children: React.ReactElement;
+}) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const measure = () => setWidth(Math.floor(node.getBoundingClientRect().width));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{ width: '100%', height }}>
+      {width > 0 ? React.cloneElement(children, { width, height }) : null}
+    </div>
+  );
 }
 
 function AnalyticsTooltip({ active, payload, label }: AnalyticsTooltipProps) {
@@ -306,7 +332,7 @@ export function AnalyticsDashboardContent({
                 style={{ minHeight: pieHeight, width: "100%" }}
                 data-chart-ref={ANALYTICS_PDF_CONFIG.labels.statusDistribution}
               >
-                <ResponsiveContainer width="100%" height={pieHeight}>
+                <ChartSlot height={pieHeight}>
                   <PieChart key={`piechart-${chartKey}`} margin={pieLayout.margin}>
                     <Pie
                       key={`pie-${chartKey}`}
@@ -337,7 +363,7 @@ export function AnalyticsDashboardContent({
                       }}
                     />
                   </PieChart>
-                </ResponsiveContainer>
+                </ChartSlot>
                 <div
                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
                   style={{ paddingBottom: pieLayout.legendHeightPx + pieLayout.legendPaddingTopPx }}
@@ -370,7 +396,7 @@ export function AnalyticsDashboardContent({
             data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTimeTracked}
           >
             {analytics.timeTrackingTrend.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartSlot height={lineHeight}>
                 <LineChart data={analytics.timeTrackingTrend} margin={ANALYTICS_CHART_LAYOUT.line.margin}>
                   <CartesianGrid
                     strokeDasharray={ANALYTICS_CHART_LAYOUT.gridStrokeDasharray}
@@ -412,7 +438,7 @@ export function AnalyticsDashboardContent({
                     isAnimationActive={false}
                   />
                 </LineChart>
-              </ResponsiveContainer>
+              </ChartSlot>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                 {ANALYTICS_LABELS.noData}
@@ -435,7 +461,7 @@ export function AnalyticsDashboardContent({
             data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTasksCreatedCompleted}
           >
             {analytics.taskPerDayProgress.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartSlot height={lineHeight}>
                 <ComposedChart
                   data={analytics.taskPerDayProgress}
                   margin={ANALYTICS_CHART_LAYOUT.composed.margin}
@@ -485,7 +511,7 @@ export function AnalyticsDashboardContent({
                     isAnimationActive={false}
                   />
                 </ComposedChart>
-              </ResponsiveContainer>
+              </ChartSlot>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                 {ANALYTICS_LABELS.noData}
@@ -508,7 +534,7 @@ export function AnalyticsDashboardContent({
               style={{ height: timeOfDayChartHeight, width: "100%" }}
               data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartCompletionByTimeOfDay}
             >
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartSlot height={timeOfDayChartHeight}>
                 <BarChart
                   data={analytics.timePatterns.buckets}
                   layout="vertical"
@@ -568,7 +594,7 @@ export function AnalyticsDashboardContent({
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
+              </ChartSlot>
             </div>
             {analytics.timePatterns.peakBucket ? (
               <div className="text-center mt-2">
@@ -597,7 +623,7 @@ export function AnalyticsDashboardContent({
               style={{ height: lineHeight, width: "100%" }}
               data-chart-ref={ANALYTICS_PDF_CONFIG.labels.chartTopTaskTags}
             >
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartSlot height={lineHeight}>
                 <BarChart
                   data={analytics.taskTypes.map((tag) => ({
                     ...tag,
@@ -653,7 +679,7 @@ export function AnalyticsDashboardContent({
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
+              </ChartSlot>
             </div>
           </CardContent>
         </Card>

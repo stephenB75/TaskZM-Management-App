@@ -55,8 +55,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       duration={TOAST_DURATION_DEFAULT_MS}
-      visibleToasts={3}
-      expand={true}
+      visibleToasts={1}
+      expand={false}
       position={position}
       offset={toastViewportOffset}
       mobileOffset={toastViewportOffset}
@@ -100,6 +100,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--toast-close-size-mobile": `${TOAST_CLOSE_BUTTON.sizeMobilePx}px`,
           "--toast-close-icon-size": `${TOAST_CLOSE_BUTTON.iconSizePx}px`,
           "--toast-close-icon-size-mobile": `${TOAST_CLOSE_BUTTON.iconSizeMobilePx}px`,
+          "--width": TOAST_LAYOUT.maxWidth,
           zIndex: Z_INDEX.TOAST,
         } as React.CSSProperties
       }

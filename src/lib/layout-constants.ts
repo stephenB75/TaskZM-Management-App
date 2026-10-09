@@ -6,8 +6,8 @@
 // Minimum touch target size (Apple HIG / WCAG); use for toggles and controls on touch devices
 export const MIN_TOUCH_TARGET_PX = 44;
 
-// Sidebar width (matches Tailwind w-16 = 64px)
-export const SIDEBAR_WIDTH = 64;
+// Labeled desktop side column (16rem)
+export const SIDEBAR_WIDTH = 256;
 
 // Side panel width (matches panel animation width in App.tsx)
 export const PANEL_WIDTH = 440;
@@ -547,6 +547,22 @@ export const MOBILE_HOME_PAGE_PADDING = '1rem';
 export const MOBILE_HOME_SECTION_GAP = '0.75rem';
 export const MOBILE_HOME_CARD_RADIUS = '1rem';
 export const MOBILE_HOME_PILL_RADIUS = '999px';
+export const MOBILE_HOME_SLIDE_BASIS = '86%';
+export const MOBILE_HOME_DOT_SIZE_PX = 10;
+export const MOBILE_HOME_CARD_BAR_PX = 8;
+export const MOBILE_HOME_CARD_PADDING = '0.875rem';
+export const MOBILE_HOME_LABEL_GAP = '0.25rem';
+export const MOBILE_HOME_SUMMARY_NUMBER_SIZE = '2.5rem';
+export const MOBILE_HOME_SUMMARY_COMPACT_NUMBER_SIZE = '1.25rem';
+export const MOBILE_HOME_SUMMARY_COMPACT_PADDING = '0.5rem';
+/** Phone dialogs sit above the nav, narrower than the screen, and rise slowly. */
+export const DIALOG_MOBILE_SHEET_MAX_WIDTH_PX = 280;
+export const DIALOG_MOBILE_SHEET_SLIDE_MS = 800;
+export const DIALOG_MOBILE_SHEET_CLASS =
+  `max-sm:!top-auto max-sm:!bottom-[var(--dialog-above-nav)] max-sm:!left-1/2 max-sm:!right-auto max-sm:!w-[${DIALOG_MOBILE_SHEET_MAX_WIDTH_PX}px] max-sm:!max-w-[calc(100%-2rem)] max-sm:!h-auto max-sm:!max-h-[min(46dvh,calc(100dvh-var(--dialog-above-nav)-1rem))] max-sm:!translate-x-[-50%] max-sm:!translate-y-0 max-sm:!rounded-2xl max-sm:data-[state=open]:![animation:taskzm-sheet-up_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-out_both] max-sm:data-[state=closed]:![animation:taskzm-sheet-down_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-in_both]`;
+export const MOBILE_HOME_CHART_HEIGHT_PX = 140;
+export const APP_CANVAS_CLASS = 'bg-white dark:bg-gray-950';
+export const DIALOG_SHEET_CLASS = 'rounded-2xl border-0 bg-background shadow-none';
 export const NAV_BAR_SHADOW_OPACITY_LIGHT = 0.08; // Shadow opacity for lighter shadow
 export const NAV_BAR_SHADOW_OPACITY_DARK = 0.04; // Shadow opacity for darker shadow
 export const NAV_BAR_SHADOW_BLUR_LARGE = 24; // Large blur radius in pixels

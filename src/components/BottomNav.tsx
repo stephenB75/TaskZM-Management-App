@@ -4,7 +4,6 @@ import { Icon } from "./Icon";
 import { motion } from "motion/react";
 import { cn } from "../lib/utils";
 import { useTasks } from "../contexts/TaskContext";
-import { useTheme } from "../contexts/ThemeContext";
 import {
   NAV_BAR_HEIGHT,
   NAV_BAR_LAYOUT_VERSION,
@@ -12,11 +11,8 @@ import {
   NAV_BAR_ICON_SLOT_SIZE,
   NAV_BAR_ICON_LABEL_GAP,
   NAV_BAR_LABEL_LINE_HEIGHT,
-  NAV_BAR_INDICATOR_TOP_OFFSET,
   NAV_BAR_TAB_TOP_INSET,
   NAV_BAR_LABEL_TEXT_SIZE,
-  MOBILE_HOME_PILL_RADIUS,
-  MOBILE_HOME_TAP_TARGET_PX,
   NAV_BAR_BADGE_SIZE,
   NAV_BAR_BADGE_TEXT_SIZE,
   NAV_BAR_BADGE_BORDER_WIDTH,
@@ -32,24 +28,16 @@ import {
   NAV_BAR_INITIAL_Y_OFFSET,
   NAV_BAR_ANIMATION_DURATION,
   NAV_BAR_BUTTON_TRANSITION_DURATION,
-  NAV_BAR_SHADOW_OPACITY_LIGHT,
-  NAV_BAR_SHADOW_OPACITY_DARK,
-  NAV_BAR_SHADOW_BLUR_LARGE,
-  NAV_BAR_SHADOW_BLUR_SMALL,
-  NAV_BAR_SHADOW_OFFSET_Y_LARGE,
-  NAV_BAR_SHADOW_OFFSET_Y_SMALL,
   Z_INDEX,
 } from "../lib/layout-constants";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { triggerSelectionHaptic } from "../lib/native-haptics";
 import {
-  COLOR_PRIMARY,
   COLOR_PASTEL_MINT,
   COLOR_PASTEL_SKY,
   COLOR_PASTEL_LILAC,
   COLOR_BADGE_RED,
-  getColorWithOpacity,
 } from "../lib/color-theme";
 
 interface BottomNavProps {
@@ -79,8 +67,6 @@ export function BottomNav({
   upcomingAndDueNowCount = 0,
 }: BottomNavProps) {
   const { isSyncing } = useTasks();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === 'dark';
   const isDashboard = currentView === "dashboard";
 
   const triggerHaptic = () => {
@@ -152,7 +138,7 @@ export function BottomNav({
 
   return (
     <motion.nav
-      className="native-hide-with-keyboard lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-primary/10 dark:border-gray-700/50 shadow-2xl overflow-visible transition-transform duration-200 ease-out"
+      className="native-hide-with-keyboard lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-border overflow-visible transition-transform duration-200 ease-out"
       initial={{ y: NAV_BAR_INITIAL_Y_OFFSET }}
       animate={{ y: 0 }}
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
@@ -163,9 +149,6 @@ export function BottomNav({
         paddingTop: NAV_BAR_PADDING_TOP,
         paddingBottom: NAV_BAR_SAFE_AREA_BOTTOM,
         boxSizing: 'border-box',
-        boxShadow: isDark
-          ? `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity('#000000', 0.3)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity('#000000', 0.2)}`
-          : `0 ${NAV_BAR_SHADOW_OFFSET_Y_LARGE}px ${NAV_BAR_SHADOW_BLUR_LARGE}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_LIGHT)}, 0 ${NAV_BAR_SHADOW_OFFSET_Y_SMALL}px ${NAV_BAR_SHADOW_BLUR_SMALL}px ${getColorWithOpacity(COLOR_PRIMARY, NAV_BAR_SHADOW_OPACITY_DARK)}`,
       }}
     >
       {/* Subtle sync indicator at top */}
@@ -199,7 +182,7 @@ export function BottomNav({
               className={cn(
                 "relative flex h-full w-full min-w-0 max-w-full flex-col items-center justify-center overflow-visible rounded-xl",
                 "touch-manipulation transition-transform ease-out",
-                item.active && "text-primary-foreground",
+                item.active && "text-primary",
                 !item.active &&
                   "text-foreground dark:text-gray-100",
               )}
@@ -224,19 +207,6 @@ export function BottomNav({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              {item.active && (
-                <div
-                  className="pointer-events-none absolute inset-x-1 bg-primary"
-                  style={{
-                    top: NAV_BAR_INDICATOR_TOP_OFFSET,
-                    bottom: '0.25rem',
-                    borderRadius: MOBILE_HOME_PILL_RADIUS,
-                    minHeight: MOBILE_HOME_TAP_TARGET_PX,
-                  }}
-                  aria-hidden
-                />
-              )}
-
               <div
                 className="relative flex shrink-0 items-center justify-center overflow-visible"
                 style={{
@@ -273,7 +243,7 @@ export function BottomNav({
                 className={cn(
                   "relative z-10 w-full min-w-0 shrink-0 truncate text-center font-semibold",
                   item.active
-                    ? "text-primary-foreground"
+                    ? "text-primary"
                     : "text-foreground dark:text-gray-100"
                 )} 
                 style={{

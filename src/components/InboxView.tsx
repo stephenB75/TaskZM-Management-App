@@ -1034,7 +1034,7 @@ export function InboxView() {
                 >
                   <Button
                     variant="outline"
-                    className="w-full rounded-xl border-dashed border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                    className="w-full rounded-2xl border-0 bg-white shadow-none dark:bg-gray-900"
                     onClick={() => {
                       if (!permissions.canCreateTask) {
                         toast.error('Permission Denied', {

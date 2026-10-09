@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { UI_GRADIENT_COLORS, UI_FOLDER_COLORS } from "../lib/ui-colors";
-import { Z_INDEX, MAX_HEIGHT, ICON_SIZE_XS } from "../lib/layout-constants";
+import { Z_INDEX, MAX_HEIGHT, ICON_SIZE_XS, DIALOG_MOBILE_SHEET_CLASS } from "../lib/layout-constants";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
@@ -96,12 +96,11 @@ import {
   splitMinutesToDurationFields,
   suggestPriorityFromEffort,
 } from "../lib/new-task-ai-assist";
-import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS, MOBILE_HOME_TAP_TARGET_PX, MOBILE_HOME_LABEL_GAP, MOBILE_HOME_SECTION_GAP } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS, getTaskDialogPriorityAccent, getTaskDialogPriorityPillStyles } from "../lib/task-dialog-constants";
 import { AGENDA_LIST_CARD } from "../lib/agenda-list-card-constants";
 import { TaskDialogSection } from "./task-dialog/TaskDialogSection";
-import { TaskDialogPreviewCard } from "./task-dialog/TaskDialogPreviewCard";
 import { useIsMobile } from "./ui/use-mobile";
 import type {
   Task,
@@ -741,6 +740,21 @@ export function TaskDialog({
   const [timeFormat, setTimeFormat] = useState<"12hr" | "24hr">("12hr");
   const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
   const [activeTab, setActiveTab] = useState<string>("basic");
+  const [showSettings, setShowSettings] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    setShowSettings(false);
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const keepFieldVisible = () => {
+      const field = document.activeElement;
+      if (field instanceof HTMLElement && field !== document.body) {
+        field.scrollIntoView({ block: 'nearest' });
+      }
+    };
+    viewport.addEventListener('resize', keepFieldVisible);
+    return () => viewport.removeEventListener('resize', keepFieldVisible);
+  }, [open, task?.id]);
   
   // Conflict detection state
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
@@ -2625,7 +2639,8 @@ export function TaskDialog({
       <DialogContent
         hideCloseButton
         className={cn(
-          "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[95vw] sm:w-full rounded-2xl p-0 gap-0 !border-0 !bg-transparent ![background-image:none] !shadow-none sm:!shadow-xl",
+          "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[calc(100%-1.5rem)] sm:w-full rounded-2xl p-0 gap-0 !border-0 !bg-background ![background-image:none] !shadow-none",
+          DIALOG_MOBILE_SHEET_CLASS,
           TASK_DIALOG_COLORS.dialogMaxWidth,
           "text-foreground dark:text-foreground"
         )}
@@ -2648,57 +2663,7 @@ export function TaskDialog({
           >
             <Icon name="x" size={ICON_SIZE_MD} aria-hidden />
           </button>
-          {/* Section tabs */}
-          <nav className={cn("flex flex-row items-center gap-1 pb-2 border-b border-gray-200/70 dark:border-gray-600/50 mb-2", TASK_DIALOG_MINIMAL_SPACING.navPaddingRightForClose)} aria-label="Task sections">
-            <button
-              type="button"
-              onClick={() => setActiveTab('basic')}
-              className={cn(
-                "rounded-full py-1.5 px-3 text-xs sm:text-sm font-medium transition-colors",
-                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                activeTab === 'basic' ? TASK_DIALOG_COLORS.tabActive : TASK_DIALOG_COLORS.tabInactive,
-              )}
-            >
-              {TASK_DIALOG_UI_TEXT.taskInfoTitle}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('scheduling')}
-              className={cn(
-                "rounded-full py-1.5 px-3 text-xs sm:text-sm font-medium transition-colors",
-                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                activeTab === 'scheduling' ? TASK_DIALOG_COLORS.tabActive : TASK_DIALOG_COLORS.tabInactive,
-              )}
-            >
-              {TASK_DIALOG_UI_TEXT.schedule.desktop}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('organization')}
-              className={cn(
-                "rounded-full py-1.5 px-3 text-xs sm:text-sm font-medium transition-colors",
-                TASK_DIALOG_MINIMAL_SPACING.tabButtonMinHeight,
-                activeTab === 'organization' ? TASK_DIALOG_COLORS.tabActive : TASK_DIALOG_COLORS.tabInactive,
-              )}
-            >
-              {TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
-            </button>
-          </nav>
-          <div className="mb-3">
-            <TaskDialogPreviewCard
-              title={title}
-              description={description}
-              priority={priority}
-              status={status}
-              scheduledDate={scheduledDate}
-              scheduledTime={scheduledTime}
-              tags={tags}
-              estimatedMinutes={
-                (parseInt(estimatedHours, 10) || 0) * MINUTES_PER_HOUR + (parseInt(estimatedMinutes, 10) || 0)
-              }
-            />
-          </div>
-        <DialogTitle className="sr-only">
+          <DialogTitle className="sr-only">
           {activeTab === 'basic'
             ? TASK_DIALOG_UI_TEXT.taskInfoTitle
             : activeTab === 'scheduling'
@@ -2718,16 +2683,76 @@ export function TaskDialog({
               Editing recurring series. Changes here apply to all occurrences.
             </p>
           )}
+          {!showSettings ? (
+            <div className="flex min-h-0 flex-col overflow-y-auto" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
+              <div className="flex flex-col" style={{ gap: MOBILE_HOME_LABEL_GAP }}>
+                <Label htmlFor="task-notes-title">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
+                <Input
+                  id="task-notes-title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  className="rounded-xl"
+                />
+              </div>
+              <div className="flex flex-col" style={{ gap: MOBILE_HOME_LABEL_GAP }}>
+                <Label htmlFor="task-notes">{TASK_DIALOG_UI_TEXT.notesHeading}</Label>
+                <RichTextEditor
+                  compact
+                  value={description}
+                  onChange={setDescription}
+                  rows={6}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSettings(true)}
+                className="self-start bg-transparent font-medium text-primary"
+              >
+                {TASK_DIALOG_UI_TEXT.taskSettings}
+              </button>
+            </div>
+          ) : (
+          <>
+          <button
+            type="button"
+            onClick={() => setShowSettings(false)}
+            className="mb-2 self-start bg-transparent text-sm font-medium text-primary"
+          >
+            {TASK_DIALOG_UI_TEXT.backToNotes}
+          </button>
           {/* Tabbed Interface - single column (reference: no right menu) */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 flex overflow-hidden flex-col">
-              {/* Content Area - single column */}
+              <div className="flex shrink-0">
+                {(
+                  [
+                    ['basic', TASK_DIALOG_UI_TEXT.groupWhat],
+                    ['scheduling', TASK_DIALOG_UI_TEXT.groupWhen],
+                    ['organization', TASK_DIALOG_UI_TEXT.groupSteps],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={activeTab === value}
+                    onClick={() => setActiveTab(value)}
+                    className="flex-1 bg-transparent font-medium"
+                    style={{
+                      minHeight: MOBILE_HOME_TAP_TARGET_PX,
+                      border: 'none',
+                      borderBottom: activeTab === value ? '2px solid currentColor' : '2px solid transparent',
+                    }}
+                  >
+                    <span className={activeTab === value ? 'text-primary' : 'text-foreground'}>{label}</span>
+                  </button>
+                ))}
+              </div>
               <div className={cn(
-                "flex-1 overflow-y-auto",
+                "flex-1 overflow-y-auto min-w-0",
                 TASK_DIALOG_MINIMAL_SPACING.contentPadding
               )}>
-                {/* Basic Info Tab - Reference: warm surface only; Task Name, Description, Status, Priority with generous spacing; no inner card */}
-                <TabsContent value="basic" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
+                <TabsContent value="basic" className={cn("mt-0 flex flex-col", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
+                  <h2 className="font-medium text-foreground">{TASK_DIALOG_UI_TEXT.groupWhat}</h2>
                   <TaskDialogSection
                     accentColor={getTaskDialogPriorityAccent(priority)}
                     title={TASK_DIALOG_UI_TEXT.taskInfoTitle}
@@ -3192,7 +3217,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium transition-colors",
+                              "h-7 rounded-full px-3 text-xs font-medium leading-none transition-colors",
                               !isSelected && TASK_DIALOG_COLORS.pillUnselected,
                               isSelected && TASK_DIALOG_COLORS.pillSelected,
                             )}
@@ -3218,7 +3243,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium transition-colors capitalize",
+                              "h-7 rounded-full px-3 text-xs font-medium leading-none transition-colors capitalize",
                               !isSelected && TASK_DIALOG_COLORS.pillUnselected,
                             )}
                             style={getTaskDialogPriorityPillStyles(value, isSelected)}
@@ -3233,7 +3258,8 @@ export function TaskDialog({
                   </TaskDialogSection>
                 </TabsContent>
 
-                <TabsContent value="scheduling" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
+                <TabsContent value="scheduling" className={cn("mt-0 flex flex-col", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
+                  <h2 className="font-medium text-foreground">{TASK_DIALOG_UI_TEXT.groupWhen}</h2>
                   <TaskDialogSection
                     accentColor={getTaskDialogPriorityAccent(priority)}
                     title={TASK_DIALOG_UI_TEXT.schedule.desktop}
@@ -3696,7 +3722,8 @@ export function TaskDialog({
               </TabsContent>
 
               {/* Organization & Advanced Tab - Folder, Tags, Subtasks, etc. */}
-                <TabsContent value="organization" className={cn("mt-0", TASK_DIALOG_MINIMAL_SPACING.cardSpaceY)}>
+                <TabsContent value="organization" className={cn("mt-0 flex flex-col", TASK_DIALOG_MINIMAL_SPACING.cardSpaceY)}>
+                  <h2 className="font-medium text-foreground">{TASK_DIALOG_UI_TEXT.groupSteps}</h2>
                   <TaskDialogSection
                     accentColor={getTaskDialogPriorityAccent(priority)}
                     title={TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
@@ -4525,6 +4552,8 @@ export function TaskDialog({
               </div>
             </div>
           </Tabs>
+          </>
+          )}
 
           {/* Apply to series: when editing a series occurrence, optionally apply shared fields to all in series */}
           {isSeriesOccurrence && task && (
@@ -4557,7 +4586,7 @@ export function TaskDialog({
             style={{
               paddingLeft: 0,
               paddingRight: 0,
-              paddingBottom: COMPONENT_DIMENSIONS.taskDialog.footer.padding.bottom,
+              paddingBottom: MOBILE_HOME_SECTION_GAP,
             }}
           >
             {/* Secondary row: Duplicate / Delete - icon-only below lg for spacing */}
@@ -4568,7 +4597,7 @@ export function TaskDialog({
                   variant="ghost"
                   size="sm"
                   onClick={() => void handleShare()}
-                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
+                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-full flex items-center justify-center"
                   title={TASK_DIALOG_UI_TEXT.buttonTooltips.share}
                 >
                   <Icon name="link" size={16} className="shrink-0 lg:mr-1.5" />
@@ -4579,7 +4608,7 @@ export function TaskDialog({
                   variant="ghost"
                   size="sm"
                   onClick={handleDuplicate}
-                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
+                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-full flex items-center justify-center"
                   title={TASK_DIALOG_UI_TEXT.buttonTooltips.duplicate}
                 >
                   <Icon name="copy" size={16} className="shrink-0 lg:mr-1.5" />
@@ -4591,7 +4620,7 @@ export function TaskDialog({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="text-destructive hover:bg-destructive/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
+                    className="text-destructive hover:bg-destructive/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-full flex items-center justify-center"
                     title={TASK_DIALOG_UI_TEXT.buttonTooltips.delete}
                   >
                     <Icon name="trash-2" size={16} className="shrink-0 lg:mr-1.5" />
@@ -4601,19 +4630,19 @@ export function TaskDialog({
               </div>
             )}
             {/* Primary row: cancel and Create/Update - icon-only below lg, text on desktop */}
-            <div className="flex gap-2 sm:gap-4">
+            <div className="flex justify-end" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
               <Button
                 type="button"
                 variant="destructive"
                 onClick={onClose}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCancel,
-                  "flex-1 lg:flex-initial font-semibold h-9 sm:h-10 rounded-xl text-sm min-w-0",
-                  "px-3 lg:px-6 flex items-center justify-center"
+                  "h-8 min-h-0 min-w-14 rounded-full px-5 py-0 text-xs font-semibold leading-none",
+                  "flex items-center justify-center"
                 )}
                 title={TASK_DIALOG_UI_TEXT.buttonTooltips.cancel}
               >
-                <Icon name="x" size={22} className="shrink-0 lg:hidden" style={{ color: 'inherit' }} aria-hidden />
+                <Icon name="x" size={ICON_SIZE_SM} className="shrink-0 lg:hidden" style={{ color: 'inherit' }} aria-hidden />
                 <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.cancel}</span>
               </Button>
               <Button
@@ -4625,8 +4654,8 @@ export function TaskDialog({
                 }}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCreate,
-                  "flex-1 lg:flex-initial font-semibold h-9 sm:h-10 rounded-xl text-sm shadow-md min-w-0",
-                  "px-3 lg:px-6 flex items-center justify-center"
+                  "h-8 min-h-0 min-w-14 rounded-full px-5 py-0 text-xs font-semibold leading-none",
+                  "flex items-center justify-center"
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
                 title={task ? TASK_DIALOG_UI_TEXT.buttonTooltips.updateTask : TASK_DIALOG_UI_TEXT.buttonTooltips.createTask}
@@ -4640,12 +4669,12 @@ export function TaskDialog({
                   <>
                     {task ? (
                       <>
-                        <Icon name="check" size={22} className="shrink-0 lg:hidden" style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
+                        <Icon name="check" size={ICON_SIZE_SM} className="shrink-0 lg:hidden" style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
                         <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.updateTask}</span>
                       </>
                     ) : (
                       <>
-                        <Icon name="plus" size={22} className="shrink-0 lg:hidden" style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
+                        <Icon name="plus" size={ICON_SIZE_SM} className="shrink-0 lg:hidden" style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
                         <span className="hidden lg:inline lg:flex lg:items-center lg:gap-2">
                           <Icon name="plus" size={18} style={{ color: COLOR_TEXT_WHITE }} />
                           {TASK_DIALOG_UI_TEXT.createTask}

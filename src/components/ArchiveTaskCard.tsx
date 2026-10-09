@@ -105,8 +105,7 @@ export function ArchiveTaskCard({
   return (
     <div
       className={cn(
-        'group/card flex items-start gap-2 md:gap-3 cursor-pointer transition-all',
-        'hover:scale-[1.005] active:scale-[0.995]',
+        'group/card flex items-start gap-2 md:gap-3 cursor-pointer',
         className,
       )}
       onClick={onClick}

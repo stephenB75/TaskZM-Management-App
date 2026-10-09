@@ -270,11 +270,51 @@ body {
 /* Viewport height for consistent full-height layout in all browsers (Edge, Chrome, Safari, Firefox) */
 :root {
   --viewport-height: 100vh;
+  --dialog-above-nav: calc(72px + env(safe-area-inset-bottom, 0px));
+  --dialog-sheet-width: 280px;
+  --dialog-sheet-slide: 800ms;
 }
 @supports (min-height: 100dvh) {
   :root {
     --viewport-height: 100dvh;
   }
+}
+
+@keyframes taskzm-sheet-up {
+  from { transform: translate3d(-50%, 100%, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes taskzm-sheet-down {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(-50%, 100%, 0); }
+}
+
+@media (max-width: 639px) {
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"] {
+    width: min(var(--dialog-sheet-width), calc(100% - 2rem)) !important;
+    max-width: min(var(--dialog-sheet-width), calc(100% - 2rem)) !important;
+    left: 50% !important;
+    right: auto !important;
+    translate: none !important;
+    border-radius: 1rem !important;
+  }
+
+  [data-slot="dialog-content"][data-state="open"],
+  [data-slot="alert-dialog-content"][data-state="open"] {
+    animation: taskzm-sheet-up var(--dialog-sheet-slide) ease-out both !important;
+  }
+
+  [data-slot="dialog-content"][data-state="closed"],
+  [data-slot="alert-dialog-content"][data-state="closed"] {
+    animation: taskzm-sheet-down var(--dialog-sheet-slide) ease-in both !important;
+  }
+}
+
+[data-slot="dialog-content"] button {
+  min-height: 0;
+  min-width: 0;
 }
 
 .min-h-viewport-safe {

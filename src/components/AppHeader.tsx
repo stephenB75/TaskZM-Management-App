@@ -228,7 +228,40 @@ export function AppHeader({
           </div>
 
           <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_SMALL }}>
-            {/* Custom Actions — mobile layout only (avoid duplicate data-tour nodes in DOM) */}
+            <button
+              type="button"
+              aria-label="Add task"
+              onClick={() => window.dispatchEvent(new CustomEvent('taskzm-add-task'))}
+              className="inline-flex items-center bg-transparent font-semibold text-foreground"
+              style={{
+                minHeight: HEADER_BUTTON_SIZE,
+                border: 'none',
+                paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
+                paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
+                paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
+                paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
+              }}
+            >
+              <Icon name="plus" size={HEADER_ICON_SIZE_BUTTON_DESKTOP} />
+            </button>
+            <button
+              type="button"
+              aria-label="AI"
+              onClick={() => window.dispatchEvent(new CustomEvent('taskzm-open-ai'))}
+              className="inline-flex items-center bg-transparent font-semibold text-primary"
+              style={{
+                minHeight: HEADER_BUTTON_SIZE,
+                border: 'none',
+                paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
+                paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
+                paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
+                paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
+                gap: HEADER_GAP_XSMALL,
+              }}
+            >
+              <Icon name="head-circuit" size={HEADER_ICON_SIZE_SMALL} />
+              AI
+            </button>
             {shouldUseMobileLayout && (
               <div className="flex items-center" style={{ gap: HEADER_GAP_SMALL }}>
                 {actions}
@@ -463,23 +496,56 @@ export function AppHeader({
               )}
             </div>
             {/* Right side: Actions (desktop layout only — avoid duplicate data-tour nodes in DOM) */}
-            {!shouldUseMobileLayout && actions && (
+            {!shouldUseMobileLayout && (
               <div 
                 className="flex items-center min-w-0"
                 data-tour-header-actions="desktop"
                 style={{ 
-                  // Responsive gap: smaller for small monitors and landscape
                   gap: isSmallMonitor && isLandscape 
                     ? HEADER_GAP_XSMALL 
                     : (isSmallMonitor 
                       ? HEADER_GAP_XSMALL 
                       : HEADER_GAP_MEDIUM),
                   justifyContent: 'flex-end',
-                  flexShrink: 1, // Allow slight shrinking on very small screens
-                  flexBasis: 'auto', // Use natural width
-                  minWidth: 0, // Allow flex items to shrink below content size
+                  flexShrink: 1,
+                  flexBasis: 'auto',
+                  minWidth: 0,
                 }}
               >
+                <button
+                  type="button"
+                  aria-label="Add task"
+                  onClick={() => window.dispatchEvent(new CustomEvent('taskzm-add-task'))}
+                  className="inline-flex items-center bg-transparent font-semibold text-foreground"
+                  style={{
+                    minHeight: HEADER_BUTTON_SIZE,
+                    border: 'none',
+                    paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
+                    paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
+                    paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
+                    paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
+                  }}
+                >
+                  <Icon name="plus" size={HEADER_ICON_SIZE_BUTTON_DESKTOP} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="AI"
+                  onClick={() => window.dispatchEvent(new CustomEvent('taskzm-open-ai'))}
+                  className="inline-flex items-center bg-transparent font-semibold text-primary"
+                  style={{
+                    minHeight: HEADER_BUTTON_SIZE,
+                    border: 'none',
+                    paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
+                    paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
+                    paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
+                    paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
+                    gap: HEADER_GAP_XSMALL,
+                  }}
+                >
+                  <Icon name="head-circuit" size={HEADER_ICON_SIZE_SMALL} />
+                  AI
+                </button>
                 {actions}
               </div>
             )}

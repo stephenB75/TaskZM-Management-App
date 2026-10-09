@@ -568,7 +568,7 @@ export function PricingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[850px] max-h-[95vh] overflow-y-auto p-0 md:p-0">
+      <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[850px] max-h-[95vh] overflow-y-auto rounded-2xl border-0 bg-background p-0 shadow-none md:p-0">
         <div className="p-3 md:p-4">
           <div className="mb-3 md:mb-4">
             <DialogHeader className="text-center">

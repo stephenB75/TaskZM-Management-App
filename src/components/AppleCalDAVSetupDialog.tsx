@@ -249,7 +249,7 @@ export function AppleCalDAVSetupDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="rounded-2xl border-0 bg-background shadow-none sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon name="calendar" size={ICON_SIZE_LG} weight="duotone" />

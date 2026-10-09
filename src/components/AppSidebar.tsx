@@ -1,7 +1,6 @@
 import React from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { motion } from "motion/react";
 import { Button } from "./ui/button";
 import {
   Sheet,
@@ -10,15 +9,9 @@ import {
   SheetTitle,
   SheetDescription,
 } from "./ui/sheet";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
-import { COMPONENT_DIMENSIONS, SIDEBAR_Z_INDEX } from "../lib/layout-constants";
+import { COMPONENT_DIMENSIONS, MOBILE_HOME_SECTION_GAP, SIDEBAR_WIDTH, SIDEBAR_Z_INDEX } from "../lib/layout-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -65,8 +58,17 @@ export function AppSidebar({
 
   const menuItems = [
     {
+      id: "today",
+      label: NAVIGATION_UI_TEXT.home,
+      iconName: "calendar",
+      badge:
+        currentView !== "today" && upcomingAndDueNowCount > 0
+          ? upcomingAndDueNowCount
+          : undefined,
+    },
+    {
       id: "dashboard",
-      label: NAVIGATION_UI_TEXT.dashboard,
+      label: NAVIGATION_UI_TEXT.week,
       iconName: "kanban",
     },
     {
@@ -74,15 +76,6 @@ export function AppSidebar({
       label: NAVIGATION_UI_TEXT.notifications,
       iconName: "bell",
       badge: badgeCount,
-    },
-    { 
-      id: "today", 
-      label: NAVIGATION_UI_TEXT.todayAgenda, 
-      iconName: "calendar",
-      badge:
-        currentView !== 'today' && upcomingAndDueNowCount > 0
-          ? upcomingAndDueNowCount
-          : undefined,
     },
     {
       id: "inbox",
@@ -111,70 +104,6 @@ export function AppSidebar({
     { id: "archive", label: NAVIGATION_UI_TEXT.archive, iconName: "archive" },
     { id: "settings", label: NAVIGATION_UI_TEXT.settings, iconName: "settings" },
   ];
-
-  const iconNavContent = (
-    <TooltipProvider delayDuration={0}>
-      <div
-        className="flex flex-col items-center py-4 gap-2"
-        data-tour="sidebar"
-      >
-        {menuItems
-          .map((item) => {
-            return (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  <div className="relative">
-                    <motion.button
-                      type="button"
-                      aria-label={item.label}
-                      data-tour={`sidebar-${item.id}`}
-                      className={cn(
-                        "w-12 h-12 rounded-xl transition-all relative flex items-center justify-center",
-                        "bg-transparent border-none cursor-pointer",
-                        currentView === item.id
-                          ? "text-primary"
-                          : "text-muted-foreground hover:text-primary",
-                      )}
-                      onClick={() => onViewChange(item.id)}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    >
-                      <Icon 
-                        name={item.iconName} 
-                        size={20} 
-                        weight={currentView === item.id ? "fill" : "duotone"}
-                        className={currentView === item.id ? "text-primary" : "text-muted-foreground"}
-                      />
-                      {item.pro && (
-                        <Icon name="lock" size={12} className="absolute top-1 right-1" style={{ color: '#D4C5F9' }} />
-                      )}
-                    </motion.button>
-                    {item.badge !== undefined &&
-                      item.badge > 0 && (
-                        <Badge
-                          variant="destructive"
-                          className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-[10px] rounded-full"
-                        >
-                          {item.badge > 9 ? "9+" : item.badge}
-                        </Badge>
-                      )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>
-                    {item.label}{" "}
-                    {item.badge !== undefined && item.badge > 0
-                      ? `(${item.badge})`
-                      : ""}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-      </div>
-    </TooltipProvider>
-  );
 
   const mobileSidebarContent = (
     <div className="p-4 flex flex-col h-full">
@@ -210,7 +139,7 @@ export function AppSidebar({
                 className={cn(
                   "w-full justify-start rounded-xl transition-all relative",
                   currentView === item.id &&
-                    "bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] text-primary shadow-sm",
+                    "bg-primary text-primary-foreground",
                 )}
                 onClick={() => {
                   onViewChange(item.id);
@@ -254,10 +183,56 @@ export function AppSidebar({
       {/* Desktop Icon Navbar - Only visible on desktop (>= 1280px) */}
       {!shouldUseMobileLayout && (
         <div
-          className="relative flex w-16 border-r border-primary/20 bg-gradient-to-b from-[#F3F0F9] via-[#E6D5F0] to-[#D4C5F9] dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex-col h-full flex-shrink-0"
-          style={{ zIndex: SIDEBAR_Z_INDEX }}
+          className="relative flex border-r border-border bg-white dark:bg-gray-900 flex-col h-full flex-shrink-0 overflow-y-auto"
+          data-tour="sidebar"
+          style={{ zIndex: SIDEBAR_Z_INDEX, width: SIDEBAR_WIDTH }}
         >
-          {iconNavContent}
+          <div className="flex flex-col gap-1 p-3">
+            <img
+              src={isDark ? taskzmLogoGray : taskzmLogoBlack}
+              alt="TaskZM"
+              className="object-contain"
+              style={{
+                width: 'auto',
+                maxWidth: COMPONENT_DIMENSIONS.sidebar.logoMaxWidth,
+                height: 'auto',
+                display: 'block',
+                marginBottom: MOBILE_HOME_SECTION_GAP,
+              }}
+            />
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={item.label}
+                data-tour={`sidebar-${item.id}`}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl px-3 py-3 text-left",
+                  currentView === item.id
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground hover:bg-muted",
+                )}
+                onClick={() => onViewChange(item.id)}
+              >
+                <Icon
+                  name={item.iconName}
+                  size={20}
+                  weight={currentView === item.id ? "fill" : "duotone"}
+                />
+                <span className="text-sm font-medium">{item.label}</span>
+                {item.pro && (
+                  <Badge variant="secondary" className="ml-auto">
+                    PRO
+                  </Badge>
+                )}
+                {item.badge !== undefined && item.badge > 0 && !item.pro && (
+                  <Badge variant="secondary" className="ml-auto">
+                    {item.badge > 9 ? "9+" : item.badge}
+                  </Badge>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

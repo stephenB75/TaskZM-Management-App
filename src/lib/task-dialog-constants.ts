@@ -36,6 +36,12 @@ export const TASK_DIALOG_UI_TEXT = {
   
   // Minimal view: section title and labels (inspiration: consolidated task dialog)
   taskInfoTitle: 'Task Info',
+  groupWhat: 'What',
+  groupWhen: 'When',
+  groupSteps: 'Steps',
+  notesHeading: 'Notes',
+  taskSettings: 'Task settings',
+  backToNotes: 'Back to notes',
   priorityLevelLabel: 'Priority Level',
 
   // Tab Labels

@@ -49,6 +49,9 @@ export const SETTINGS_PANEL_UI_TEXT = {
     scheduling: 'Scheduling & AI',
     preferences: 'Display & preferences',
     engagement: 'Achievements & help',
+    you: 'You',
+    plan: 'Plan',
+    accountGroup: 'Account',
   },
     sections: {
     userProfile: {

@@ -11,6 +11,9 @@ import { getFromLocalStorage, saveToLocalStorage } from './utils';
 import { NOTIFICATION_STORAGE_KEYS } from './notification-constants';
 import { playNotificationSound } from './toast-sound';
 import { MAX_STORED_TOASTS, TOAST_STORAGE_ID_PREFIX } from './toast-constants';
+import { getPlatform } from './platform';
+import { showNotification } from './native-notifications';
+import { logger } from './logger';
 
 interface ToastNotification {
   id: string;
@@ -43,26 +46,41 @@ const addToastToStorage = (type: 'success' | 'error' | 'info' | 'warning', title
   }
 };
 
+function deliverOnNative(title: string, description?: string): boolean {
+  if (!getPlatform().isNative) return false;
+  void showNotification({
+    title,
+    body: description || title,
+  }).catch((error) => {
+    logger.error('Failed to deliver native notification:', error);
+  });
+  return true;
+}
+
 // Wrapped toast functions that show popup AND store in notification panel
 export const toast = {
   success: (message: string, options?: { description?: string; duration?: number; playSound?: boolean; [key: string]: any }) => {
     if (options?.playSound) playNotificationSound();
     addToastToStorage('success', message, options?.description);
+    if (deliverOnNative(message, options?.description)) return;
     return sonnerToast.success(message, options);
   },
   
   error: (message: string, options?: { description?: string; duration?: number; [key: string]: any }) => {
     addToastToStorage('error', message, options?.description);
+    if (deliverOnNative(message, options?.description)) return;
     return sonnerToast.error(message, options);
   },
   
   info: (message: string, options?: { description?: string; duration?: number; [key: string]: any }) => {
     addToastToStorage('info', message, options?.description);
+    if (deliverOnNative(message, options?.description)) return;
     return sonnerToast.info(message, options);
   },
   
   warning: (message: string, options?: { description?: string; duration?: number; [key: string]: any }) => {
     addToastToStorage('warning', message, options?.description);
+    if (deliverOnNative(message, options?.description)) return;
     return sonnerToast.warning(message, options);
   },
   

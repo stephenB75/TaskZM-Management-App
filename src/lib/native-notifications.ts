@@ -269,12 +269,11 @@ export async function getNotificationPermission(): Promise<'granted' | 'denied' 
  * Show a notification (uses native on iOS/Android, browser on web)
  */
 export async function showNotification(options: NotificationOptions): Promise<void> {
-  if (!shouldUseSystemNotification()) {
+  const platform = getPlatform();
+  if (!platform.isNative && !shouldUseSystemNotification()) {
     logger.debug('Skipping system notification while app is in foreground:', options.title);
     return;
   }
-
-  const platform = getPlatform();
 
   if (platform.isNative) {
     try {
@@ -422,7 +421,7 @@ export async function syncScheduledTaskNotifications(
             schedule: { at: reminderAt, allowWhileIdle: true },
             sound: 'default',
             extra: { taskId: task.id, type: 'reminder' },
-            ...(platform.isIOS && { summary: copy.title, silent: true }),
+            ...(platform.isIOS && { summary: copy.title }),
             ...(platform.isAndroid && getAndroidNotificationFields(MOBILE_NOTIFICATION_CHANNELS.tasks)),
           });
         }
@@ -448,7 +447,7 @@ export async function syncScheduledTaskNotifications(
             schedule: { at: overdueAt, allowWhileIdle: true },
             sound: 'default',
             extra: { taskId: task.id, type: 'overdue' },
-            ...(platform.isIOS && { summary: NOTIFICATION_TITLES.taskOverdue, silent: true }),
+            ...(platform.isIOS && { summary: NOTIFICATION_TITLES.taskOverdue }),
             ...(platform.isAndroid && getAndroidNotificationFields(MOBILE_NOTIFICATION_CHANNELS.tasks)),
           });
         }

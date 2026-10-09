@@ -33,7 +33,6 @@ import { useTheme } from "../contexts/ThemeContext";
 import { logger } from "../lib/logger";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { PrivacyPolicyDialog } from "./PrivacyPolicyDialog";
 import { TermsOfServiceDialog } from "./TermsOfServiceDialog";
 import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black logo for light mode
@@ -43,12 +42,12 @@ import {
   DEMO_ACCOUNT_CONFIG, 
   AUTH_UI_TEXT, 
   AUTH_CONFIG,
-  AUTH_BACKGROUND_IMAGE,
   AUTH_COLORS,
   AUTH_REMEMBER_EMAIL_KEY,
 } from '../lib/auth-constants';
 import { getUserFriendlyErrorMessage } from '../lib/error-utils';
 import { AUTH_SCREEN, VIEWPORT_BREAKPOINTS, PANEL_GAP_MEDIUM, PANEL_GAP_SMALL, PANEL_FIELD_SPACING, AUTH_SCREEN_SAFE_AREA } from '../lib/layout-constants';
+import { COLOR_BACKGROUND_LIGHT } from '../lib/color-theme';
 import { useIsMobile } from './ui/use-mobile';
 import { AvatarSelection } from './AvatarSelection';
 import { AVATAR_UI_TEXT } from '../lib/avatar-constants';
@@ -443,42 +442,10 @@ export function AuthScreen() {
         paddingRight: AUTH_SCREEN_SAFE_AREA.right(padding.horizontal),
       } as React.CSSProperties}
     >
-      {/* Background Image with Overlay - Full viewport coverage */}
-      <div className="fixed inset-0 z-0 w-screen h-screen">
-        <ImageWithFallback
-          src={AUTH_BACKGROUND_IMAGE.url}
-          alt={AUTH_BACKGROUND_IMAGE.alt}
-          className="w-full h-full object-cover"
-        />
-        {/* Gradient overlay for better readability and pastel tones */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#B4E4FF]/90 via-[#E0BBE4]/85 to-[#FFDAB9]/90 dark:from-gray-900/95 dark:via-purple-900/90 dark:to-gray-800/95" />
-
-        {/* Animated accent circles - hidden on mobile */}
-        <motion.div
-          className="hidden md:block absolute top-20 left-20 w-96 h-96 bg-[#98D8C8]/30 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="hidden md:block absolute bottom-20 right-20 w-96 h-96 bg-[#DDA0DD]/30 rounded-full blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.4, 0.6, 0.4],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
+      <div
+        className="fixed inset-0 z-0 w-screen h-screen dark:bg-gray-950"
+        style={{ background: isDark ? undefined : COLOR_BACKGROUND_LIGHT }}
+      />
 
       {/* Main Content */}
       <motion.div

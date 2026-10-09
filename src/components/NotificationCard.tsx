@@ -129,8 +129,7 @@ export function NotificationCard({
   return (
     <div
       className={cn(
-        'group/card flex items-start gap-2 md:gap-3 cursor-pointer transition-all',
-        'hover:scale-[1.005] active:scale-[0.995]',
+        'group/card flex items-start gap-2 md:gap-3 cursor-pointer',
         className,
       )}
       onClick={onMarkAsRead}
@@ -163,12 +162,11 @@ export function NotificationCard({
       </div>
       <div
         className={cn(
-          'flex-1 min-w-0 min-h-0 rounded-2xl transition-all',
-          !notification.read && NOTIFICATION_CARD.unreadRingClass,
-          notification.read && 'opacity-75',
+          'flex-1 min-w-0 min-h-0',
         )}
       >
         <AgendaListCard
+          compact
           accentColor={accentColor}
           accentIcon={accentIcon}
           badgeLabel={badgeLabel}

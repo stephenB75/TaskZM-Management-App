@@ -5,8 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Icon } from "../Icon";
 
 import { cn } from "./utils";
-import { UI_GRADIENT_COLORS } from "../../lib/ui-colors";
-import { DIALOG_CLOSE_BUTTON } from "../../lib/layout-constants";
+import { DIALOG_CLOSE_BUTTON, DIALOG_DIMENSIONS, DIALOG_MOBILE_SHEET_CLASS } from "../../lib/layout-constants";
 
 function Dialog({
   ...props
@@ -40,7 +39,7 @@ const DialogOverlay = React.forwardRef<
       ref={ref}
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 dark:bg-black/70",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 backdrop-blur-sm max-sm:bottom-[var(--dialog-above-nav)]",
         className,
       )}
       {...props}
@@ -63,9 +62,9 @@ const DialogContent = React.forwardRef<
       ref={ref}
       data-slot="dialog-content"
       className={cn(
-        `${UI_GRADIENT_COLORS.dialog.className} dark:from-[#1A1A2E] dark:via-[#252538] dark:to-[#2A2A3E] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border border-primary/25 dark:border-primary/40 shadow-lg duration-200 text-foreground dark:text-foreground`,
-        // Mobile: smaller padding and max-width, Desktop: standard
-        'max-w-[calc(100%-2rem)] p-4 sm:max-w-lg sm:p-6', // Mobile: 1rem padding, 2rem margin from edges; Desktop: standard
+        `bg-background text-foreground shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border border-border/60 duration-200`,
+        `${DIALOG_DIMENSIONS.taskDialog.maxHeight} w-[calc(100%-2rem)] overflow-y-auto rounded-2xl p-4 sm:max-w-lg sm:p-6`,
+        DIALOG_MOBILE_SHEET_CLASS,
         className,
       )}
       onInteractOutside={(e) => {

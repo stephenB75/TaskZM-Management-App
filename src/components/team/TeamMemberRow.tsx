@@ -49,9 +49,7 @@ export function TeamMemberRow({
   return (
     <div
       className={cn(
-        'group flex min-w-0 items-center rounded-xl border border-border/50 bg-card/90 transition-colors',
-        'hover:border-primary/30 hover:bg-muted/20',
-        isCurrentUser && 'ring-1 ring-primary/15',
+        'group flex min-w-0 items-center rounded-2xl border-0 bg-white shadow-none dark:bg-gray-900',
       )}
       style={{
         gap: TEAM_PANEL_ROW.gapPx,

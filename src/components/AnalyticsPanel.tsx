@@ -175,8 +175,6 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
     />
   );
 
-  const panelGradient = isDark ? ANALYTICS_THEME.dark.panelGradient : ANALYTICS_THEME.light.panelGradient;
-
   return (
     <div
       className={cn(
@@ -186,7 +184,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
           : "h-full",
       )}
       data-tour="analytics-panel"
-      style={{ backgroundImage: panelGradient } as React.CSSProperties}
+      style={{ background: 'transparent' } as React.CSSProperties}
     >
       <AppHeader
         title={ANALYTICS_LABELS.panelTitle}

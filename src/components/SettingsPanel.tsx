@@ -667,7 +667,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               paddingBottom: SETTINGS_PANEL_ACCORDION_LIST_END_PADDING,
             }}
           >
-        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.account} />
+        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.you} />
         <SettingsSection
           value="user-profile"
           dataTour="settings-user-profile"
@@ -1182,7 +1182,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           
         </SettingsSection>
 
-        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.integrations} />
+        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.plan} />
         <SettingsSection
           value="calendar"
           dataTour="settings-calendar"
@@ -1576,7 +1576,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           
         </SettingsSection>
 
-        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.tasks} />
         <SettingsSection
           value="tags"
           dataTour="settings-tags"
@@ -1685,7 +1684,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           
         </SettingsSection>
 
-        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.scheduling} />
         <SettingsSection
           value="ai-settings"
           dataTour="settings-ai-settings"
@@ -2203,7 +2201,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           
         </SettingsSection>
 
-        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.preferences} />
+        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.accountGroup} />
         <SettingsSection
           value="datetime"
           dataTour="settings-datetime"
@@ -2329,7 +2327,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           
         </SettingsSection>
 
-        <SettingsCategoryHeader title={SETTINGS_PANEL_UI_TEXT.categories.engagement} />
         <SettingsSection
           value="awards"
           icon="trophy"
