@@ -32,6 +32,8 @@ end
 def configure_pod_target_settings(config, suppress_third_party_warnings: false)
   config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
   config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+  # Xcode 16+ explicit modules fail indexing before CocoaPods frameworks exist.
+  config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
   disable_module_verifier!(config)
   return unless suppress_third_party_warnings
 

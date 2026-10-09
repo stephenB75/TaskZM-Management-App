@@ -12,11 +12,11 @@ import {
   NAV_BAR_ICON_SLOT_SIZE,
   NAV_BAR_ICON_LABEL_GAP,
   NAV_BAR_LABEL_LINE_HEIGHT,
-  NAV_BAR_INDICATOR_WIDTH,
-  NAV_BAR_INDICATOR_HEIGHT,
   NAV_BAR_INDICATOR_TOP_OFFSET,
   NAV_BAR_TAB_TOP_INSET,
   NAV_BAR_LABEL_TEXT_SIZE,
+  MOBILE_HOME_PILL_RADIUS,
+  MOBILE_HOME_TAP_TARGET_PX,
   NAV_BAR_BADGE_SIZE,
   NAV_BAR_BADGE_TEXT_SIZE,
   NAV_BAR_BADGE_BORDER_WIDTH,
@@ -90,7 +90,7 @@ export function BottomNav({
   const navItems = [
     {
       id: "today",
-      label: NAVIGATION_UI_TEXT.today,
+      label: NAVIGATION_UI_TEXT.home,
       iconName: "calendar",
       onClick: () => {
         if (tourActive) return;
@@ -199,9 +199,9 @@ export function BottomNav({
               className={cn(
                 "relative flex h-full w-full min-w-0 max-w-full flex-col items-center justify-center overflow-visible rounded-xl",
                 "touch-manipulation transition-transform ease-out",
-                item.active && "text-primary dark:text-primary-foreground",
+                item.active && "text-primary-foreground",
                 !item.active &&
-                  "text-muted-foreground dark:text-gray-400 hover:text-foreground dark:hover:text-gray-200",
+                  "text-foreground dark:text-gray-100",
               )}
               style={{
                 gap: NAV_BAR_ICON_LABEL_GAP,
@@ -226,12 +226,14 @@ export function BottomNav({
             >
               {item.active && (
                 <div
-                  className="absolute left-0 right-0 mx-auto rounded-full bg-primary"
+                  className="pointer-events-none absolute inset-x-1 bg-primary"
                   style={{
                     top: NAV_BAR_INDICATOR_TOP_OFFSET,
-                    width: NAV_BAR_INDICATOR_WIDTH,
-                    height: NAV_BAR_INDICATOR_HEIGHT,
+                    bottom: '0.25rem',
+                    borderRadius: MOBILE_HOME_PILL_RADIUS,
+                    minHeight: MOBILE_HOME_TAP_TARGET_PX,
                   }}
+                  aria-hidden
                 />
               )}
 
@@ -269,10 +271,10 @@ export function BottomNav({
 
               <span 
                 className={cn(
-                  "w-full min-w-0 shrink-0 truncate text-center font-medium",
-                  item.active 
-                    ? "text-primary dark:text-primary-foreground" 
-                    : "text-muted-foreground dark:text-gray-400"
+                  "relative z-10 w-full min-w-0 shrink-0 truncate text-center font-semibold",
+                  item.active
+                    ? "text-primary-foreground"
+                    : "text-foreground dark:text-gray-100"
                 )} 
                 style={{
                   fontSize: NAV_BAR_LABEL_TEXT_SIZE,

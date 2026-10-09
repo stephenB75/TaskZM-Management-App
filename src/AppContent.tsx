@@ -22,6 +22,7 @@ import { AwardCelebration } from './components/AwardCelebration';
 import { AppSidebar } from './components/AppSidebar';
 import { AppTour } from './components/AppTour';
 import { BottomNav } from './components/BottomNav';
+import { MobileHomePager } from './components/MobileHomePager';
 import { NativePullToRefresh } from './components/NativePullToRefresh';
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
 import { PricingDialog } from './components/PricingDialog';
@@ -799,7 +800,9 @@ export default function AppContent() {
             >
             <div
               ref={mobileScrollRef}
-              className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 relative min-w-0 w-full max-w-full"
+              className={`flex-1 min-h-0 relative min-w-0 w-full max-w-full ${
+                currentView === 'today' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'
+              }`}
               style={{
                 scrollBehavior: 'smooth',
                 WebkitOverflowScrolling: 'touch',
@@ -836,7 +839,16 @@ export default function AppContent() {
                   />
                 )}
                 {currentView === 'notifications' && <NotificationsPanel />}
-                {currentView === 'today' && <TodayAgendaView />}
+                {currentView === 'today' && (
+                  <div className="h-full min-h-0">
+                    <MobileHomePager
+                      onRunScheduler={() => {
+                        void handleAISchedule();
+                      }}
+                      isScheduling={isScheduling}
+                    />
+                  </div>
+                )}
                 {currentView === 'inbox' && <InboxView />}
                 {currentView === 'team' && <TeamPanel />}
                 {currentView === 'folders' && <FoldersPanel />}

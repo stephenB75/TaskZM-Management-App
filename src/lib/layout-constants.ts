@@ -512,7 +512,7 @@ export const NAV_BAR_INDICATOR_TOP_OFFSET = '0.25rem';
 export const NAV_BAR_INDICATOR_GAP = '0.375rem';
 /** Reserved top inset on every tab so icons align whether active or not. */
 export const NAV_BAR_TAB_TOP_INSET = `calc(${NAV_BAR_INDICATOR_TOP_OFFSET} + ${NAV_BAR_INDICATOR_HEIGHT} + ${NAV_BAR_INDICATOR_GAP})`;
-export const NAV_BAR_LABEL_TEXT_SIZE = '11px';
+export const NAV_BAR_LABEL_TEXT_SIZE = '12px';
 export const NAV_BAR_LABEL_LINE_HEIGHT = '1.2';
 export const NAV_BAR_LABEL_MARGIN_TOP = '0'; // use NAV_BAR_ICON_LABEL_GAP on button flex instead
 export const NAV_BAR_BADGE_SIZE = '1rem'; // w-4 h-4 = 1rem
@@ -527,7 +527,7 @@ export const NAV_BAR_HORIZONTAL_PADDING_LEFT = `max(${NAV_BAR_HORIZONTAL_PADDING
 export const NAV_BAR_HORIZONTAL_PADDING_RIGHT = `max(${NAV_BAR_HORIZONTAL_PADDING}, env(safe-area-inset-right, 0px))`;
 export const NAV_BAR_SAFE_AREA_BOTTOM = 'env(safe-area-inset-bottom, 0px)';
 /** Nav layout stamp — bump when changing BottomNav structure (visible in DOM for device verification). */
-export const NAV_BAR_LAYOUT_VERSION = 'v4';
+export const NAV_BAR_LAYOUT_VERSION = 'v5';
 export const NAV_BAR_TAB_COUNT = 4;
 export const NAV_BAR_ACTIVE_SCALE = 0.95; // scale-95 = 0.95
 export const NAV_BAR_INITIAL_Y_OFFSET = 100; // Initial animation offset in pixels
@@ -536,6 +536,17 @@ export const NAV_BAR_ANIMATION_STIFFNESS = 500;
 export const NAV_BAR_ANIMATION_DAMPING = 30;
 export const NAV_BAR_HAPTIC_DURATION = 10; // milliseconds
 export const NAV_BAR_BUTTON_TRANSITION_DURATION = 100; // milliseconds (duration-100 = 100ms)
+
+/** Mobile home pager — one job per page, large targets, high-contrast pills. */
+export const MOBILE_HOME_PAGE_COUNT = 3;
+export const MOBILE_HOME_TAP_TARGET_PX = 48;
+export const MOBILE_HOME_PAGER_TRANSITION_MS = 280;
+export const MOBILE_HOME_TAB_FONT_SIZE = '0.875rem';
+export const MOBILE_HOME_BODY_FONT_SIZE = '1rem';
+export const MOBILE_HOME_PAGE_PADDING = '1rem';
+export const MOBILE_HOME_SECTION_GAP = '0.75rem';
+export const MOBILE_HOME_CARD_RADIUS = '1rem';
+export const MOBILE_HOME_PILL_RADIUS = '999px';
 export const NAV_BAR_SHADOW_OPACITY_LIGHT = 0.08; // Shadow opacity for lighter shadow
 export const NAV_BAR_SHADOW_OPACITY_DARK = 0.04; // Shadow opacity for darker shadow
 export const NAV_BAR_SHADOW_BLUR_LARGE = 24; // Large blur radius in pixels
