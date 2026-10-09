@@ -35,10 +35,11 @@ interface PastelTaskCardProps {
   detail?: string;
   unfinished?: boolean;
   onOpen?: () => void;
+  fullTitle?: boolean;
   children?: React.ReactNode;
 }
 
-export function PastelTaskCard({ task, detail, unfinished, onOpen, children }: PastelTaskCardProps) {
+export function PastelTaskCard({ task, detail, unfinished, onOpen, fullTitle, children }: PastelTaskCardProps) {
   const wash = pastelWashForTask(task, { unfinished, done: task.status === 'done' });
   const timeLabel = detail || taskTimeRange(task);
   const badgeLabel = task.priority && task.priority !== 'default' ? task.priority : '';
@@ -76,7 +77,7 @@ export function PastelTaskCard({ task, detail, unfinished, onOpen, children }: P
           style={{ background: 'transparent', border: 'none', color: 'inherit', padding: 0 }}
         >
           <span className="flex items-start justify-between gap-2">
-            <span className="block font-medium" style={{ fontSize: MOBILE_HOME_BODY_FONT_SIZE }}>
+            <span className="block font-medium" style={{ fontSize: MOBILE_HOME_BODY_FONT_SIZE, whiteSpace: fullTitle ? 'nowrap' : undefined }}>
               {task.title}
             </span>
             {badgeLabel ? (

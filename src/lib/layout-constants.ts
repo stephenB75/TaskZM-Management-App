@@ -556,8 +556,8 @@ export const MOBILE_HOME_SUMMARY_NUMBER_SIZE = '2.5rem';
 export const MOBILE_HOME_SUMMARY_COMPACT_NUMBER_SIZE = '1.25rem';
 export const MOBILE_HOME_SUMMARY_COMPACT_PADDING = '0.5rem';
 /** Phone dialogs sit above the nav, narrower than the screen, and rise slowly. */
-export const DIALOG_MOBILE_SHEET_MAX_WIDTH_PX = 280;
-export const DIALOG_MOBILE_SHEET_SLIDE_MS = 800;
+export const DIALOG_MOBILE_SHEET_MAX_WIDTH_PX = 240;
+export const DIALOG_MOBILE_SHEET_SLIDE_MS = 1200;
 export const DIALOG_MOBILE_SHEET_CLASS =
   `max-sm:!top-auto max-sm:!bottom-[var(--dialog-above-nav)] max-sm:!left-1/2 max-sm:!right-auto max-sm:!w-[${DIALOG_MOBILE_SHEET_MAX_WIDTH_PX}px] max-sm:!max-w-[calc(100%-2rem)] max-sm:!h-auto max-sm:!max-h-[min(46dvh,calc(100dvh-var(--dialog-above-nav)-1rem))] max-sm:!translate-x-[-50%] max-sm:!translate-y-0 max-sm:!rounded-2xl max-sm:data-[state=open]:![animation:taskzm-sheet-up_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-out_both] max-sm:data-[state=closed]:![animation:taskzm-sheet-down_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-in_both]`;
 export const MOBILE_HOME_CHART_HEIGHT_PX = 140;

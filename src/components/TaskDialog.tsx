@@ -3217,7 +3217,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setStatus(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "h-7 rounded-full px-3 text-xs font-medium leading-none transition-colors",
+                              "h-6 rounded-full px-3 text-xs font-medium leading-none transition-colors",
                               !isSelected && TASK_DIALOG_COLORS.pillUnselected,
                               isSelected && TASK_DIALOG_COLORS.pillSelected,
                             )}
@@ -3243,7 +3243,7 @@ export function TaskDialog({
                             onClick={() => (task ? permissions.canEditTask : permissions.canCreateTask) && setPriority(value)}
                             disabled={task ? !permissions.canEditTask : !permissions.canCreateTask}
                             className={cn(
-                              "h-7 rounded-full px-3 text-xs font-medium leading-none transition-colors capitalize",
+                              "h-6 rounded-full px-3 text-xs font-medium leading-none transition-colors capitalize",
                               !isSelected && TASK_DIALOG_COLORS.pillUnselected,
                             )}
                             style={getTaskDialogPriorityPillStyles(value, isSelected)}
@@ -4637,13 +4637,12 @@ export function TaskDialog({
                 onClick={onClose}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCancel,
-                  "h-8 min-h-0 min-w-14 rounded-full px-5 py-0 text-xs font-semibold leading-none",
+                  "h-7 min-h-0 rounded-full px-4 py-0 text-xs font-semibold leading-none",
                   "flex items-center justify-center"
                 )}
                 title={TASK_DIALOG_UI_TEXT.buttonTooltips.cancel}
               >
-                <Icon name="x" size={ICON_SIZE_SM} className="shrink-0 lg:hidden" style={{ color: 'inherit' }} aria-hidden />
-                <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.cancel}</span>
+                <span>{TASK_DIALOG_UI_TEXT.cancel}</span>
               </Button>
               <Button
                 type="button"
@@ -4654,7 +4653,7 @@ export function TaskDialog({
                 }}
                 className={cn(
                   TASK_DIALOG_COLORS.footerCreate,
-                  "h-8 min-h-0 min-w-14 rounded-full px-5 py-0 text-xs font-semibold leading-none",
+                  "h-7 min-h-0 rounded-full px-4 py-0 text-xs font-semibold leading-none",
                   "flex items-center justify-center"
                 )}
                 style={{ color: COLOR_TEXT_WHITE }}
@@ -4668,18 +4667,9 @@ export function TaskDialog({
                 ) : (
                   <>
                     {task ? (
-                      <>
-                        <Icon name="check" size={ICON_SIZE_SM} className="shrink-0 lg:hidden" style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
-                        <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.updateTask}</span>
-                      </>
+                      <span>{TASK_DIALOG_UI_TEXT.updateTask}</span>
                     ) : (
-                      <>
-                        <Icon name="plus" size={ICON_SIZE_SM} className="shrink-0 lg:hidden" style={{ color: COLOR_TEXT_WHITE }} aria-hidden />
-                        <span className="hidden lg:inline lg:flex lg:items-center lg:gap-2">
-                          <Icon name="plus" size={18} style={{ color: COLOR_TEXT_WHITE }} />
-                          {TASK_DIALOG_UI_TEXT.createTask}
-                        </span>
-                      </>
+                      <span>{TASK_DIALOG_UI_TEXT.createTask}</span>
                     )}
                   </>
                 )}

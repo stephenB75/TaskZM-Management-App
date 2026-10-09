@@ -90,11 +90,23 @@ export function WeekBoard({
       <div className="flex items-center" style={{ gap: MOBILE_HOME_SECTION_GAP, marginBottom: MOBILE_HOME_SECTION_GAP }}>
         {embedded ? (
           <>
-            <button type="button" className="font-semibold text-foreground" style={weekChoiceStyle(showingCurrentWeek)} onClick={() => showDesktopWeek(false)}>
-              {MOBILE_HOME_UI_TEXT.currentWeek}
+            <button
+              type="button"
+              className="font-semibold text-foreground"
+              style={{ ...weekChoiceStyle(false), opacity: showingCurrentWeek ? 0.4 : 1 }}
+              disabled={showingCurrentWeek}
+              onClick={() => showDesktopWeek(false)}
+            >
+              {MOBILE_HOME_UI_TEXT.previousWeek}
             </button>
-            <button type="button" className="font-semibold text-foreground" style={weekChoiceStyle(!showingCurrentWeek)} onClick={() => showDesktopWeek(true)}>
-              {MOBILE_HOME_UI_TEXT.upcomingWeek}
+            <button
+              type="button"
+              className="font-semibold text-foreground"
+              style={{ ...weekChoiceStyle(false), opacity: showingCurrentWeek ? 1 : 0.4 }}
+              disabled={!showingCurrentWeek}
+              onClick={() => showDesktopWeek(true)}
+            >
+              {MOBILE_HOME_UI_TEXT.nextWeek}
             </button>
           </>
         ) : (
@@ -118,7 +130,7 @@ export function WeekBoard({
         <div
           className="grid"
           style={{
-            gridTemplateColumns: `repeat(${DAYS_IN_WEEK}, ${KANBAN_COLUMN_DIMENSIONS.width.desktop}px)`,
+            gridTemplateColumns: `repeat(${DAYS_IN_WEEK}, max-content)`,
             gap: MOBILE_HOME_SECTION_GAP,
             width: 'max-content',
           }}
@@ -126,7 +138,8 @@ export function WeekBoard({
           {days.map((day) => {
             const dayTasks = tasksScheduledOn(tasks, day);
             return (
-              <DroppableColumn key={getDateString(day)} id={getDateString(day)}>
+              <div key={getDateString(day)} style={{ minWidth: KANBAN_COLUMN_DIMENSIONS.width.desktop }}>
+              <DroppableColumn id={getDateString(day)}>
                 <h2 style={{ margin: 0, fontSize: MOBILE_HOME_TAB_FONT_SIZE, fontWeight: 500 }}>
                   {day.toLocaleDateString(undefined, { weekday: 'short' })} {day.getDate()}
                 </h2>
@@ -136,12 +149,13 @@ export function WeekBoard({
                   ) : (
                     dayTasks.map((task) => (
                       <li key={task.id} id={`home-task-${task.id}`} style={{ scrollMarginTop: HEADER_HEIGHT }}>
-                        <DraggableWeekCard task={task} onOpen={() => openTask(task)} />
+                        <DraggableWeekCard task={task} fullTitle onOpen={() => openTask(task)} />
                       </li>
                     ))
                   )}
                 </ul>
               </DroppableColumn>
+              </div>
             );
           })}
         </div>
@@ -233,12 +247,12 @@ const dayButtonStyle: React.CSSProperties = {
   background: 'transparent',
 };
 
-function DraggableWeekCard({ task, onOpen }: { task: Task; onOpen: () => void }) {
+function DraggableWeekCard({ task, onOpen, fullTitle = false }: { task: Task; onOpen: () => void; fullTitle?: boolean }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: task.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <PastelTaskCard task={task} onOpen={onOpen} />
+      <PastelTaskCard task={task} onOpen={onOpen} fullTitle={fullTitle} />
     </div>
   );
 }

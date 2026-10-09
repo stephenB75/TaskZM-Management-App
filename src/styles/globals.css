@@ -271,8 +271,8 @@ body {
 :root {
   --viewport-height: 100vh;
   --dialog-above-nav: calc(72px + env(safe-area-inset-bottom, 0px));
-  --dialog-sheet-width: 280px;
-  --dialog-sheet-slide: 800ms;
+  --dialog-sheet-width: 240px;
+  --dialog-sheet-slide: 1200ms;
 }
 @supports (min-height: 100dvh) {
   :root {
