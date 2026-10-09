@@ -55,51 +55,6 @@ def configure_pod_target_settings(config, suppress_third_party_warnings: false)
   config.build_settings['OTHER_CFLAGS'] = other_cflags
 end
 
-# Opening App.xcodeproj (instead of the workspace) does not build Pods, so
-# `import Capacitor` fails. Nest Pods and depend on the aggregate target.
-def depend_on_pods_project!(user_project, pods_project)
-  app_target = user_project.native_targets.find { |target| target.name == 'App' }
-  pods_target = pods_project.targets.find { |target| target.name == 'Pods-App' }
-  return unless app_target && pods_target
-
-  relative_path = 'Pods/Pods.xcodeproj'
-  file_ref = user_project.files.find { |file| file.path == relative_path }
-  unless file_ref
-    file_ref = user_project.main_group.new_reference(relative_path)
-    file_ref.name = 'Pods.xcodeproj'
-    file_ref.last_known_file_type = 'wrapper.pb-project'
-    file_ref.source_tree = '<group>'
-  end
-
-  already_referenced = user_project.root_object.project_references.any? do |reference|
-    reference[:project_ref] == file_ref
-  end
-  unless already_referenced
-    product_group = user_project.main_group.find_subpath('Pod Products', true)
-    product_group.set_source_tree('<group>')
-    user_project.root_object.project_references << {
-      project_ref: file_ref,
-      product_group: product_group,
-    }
-  end
-
-  already_dependent = app_target.dependencies.any? do |dependency|
-    dependency.target_proxy&.remote_info == 'Pods-App'
-  end
-  return if already_dependent
-
-  proxy = user_project.new(Xcodeproj::Project::Object::PBXContainerItemProxy)
-  proxy.container_portal = file_ref.uuid
-  proxy.proxy_type = '1'
-  proxy.remote_global_id_string = pods_target.uuid
-  proxy.remote_info = pods_target.name
-
-  dependency = user_project.new(Xcodeproj::Project::Object::PBXTargetDependency)
-  dependency.name = pods_target.name
-  dependency.target_proxy = proxy
-  app_target.dependencies << dependency
-end
-
 def fix_cocoapods_script_phases(project)
   project.native_targets.each do |target|
     target.shell_script_build_phases.each do |phase|
@@ -293,7 +248,6 @@ post_install do |installer|
   end
 
   installer.aggregate_targets.each do |aggregate_target|
-    depend_on_pods_project!(aggregate_target.user_project, installer.pods_project)
     fix_cocoapods_script_phases(aggregate_target.user_project)
     aggregate_target.user_project.native_targets.each do |target|
       target.build_configurations.each do |config|

@@ -19,135 +19,6 @@
 		A084ECDBA7D38E1E42DFC39D /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		018162CB997ABE9A6ECC1658 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 0391CB10F6FC8CE6B82C8A5DDD52C704;
-			remoteInfo = Subproject;
-		};
-		08FACEEB0AC0FDAF09EDFCEE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 43F80CDA05D5624A6B812123E023B138;
-			remoteInfo = Subproject;
-		};
-		1B8E68F85FFCA3ACFDE1C6D2 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 371BD27D31DD792203BF22D0A33BB8DB;
-			remoteInfo = Subproject;
-		};
-		22F7865D90D82FD838B1BECE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 0B99B1F4AFD915162773FD2C09D3EAE5;
-			remoteInfo = Subproject;
-		};
-		2E19B960A8636DF86171A731 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 74A3C88613D4EB0E63038367698A81E9;
-			remoteInfo = Subproject;
-		};
-		3439297D7633EC7B6861BB13 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 80B4EAC55FDCA2A0D3FC58E15C98A22E;
-			remoteInfo = Subproject;
-		};
-		717215899EBD30B3F61BA511 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 5BEF4602752E47C46E8C10FB8B4B57F2;
-			remoteInfo = Subproject;
-		};
-		86AC0F7954736560AC3AA47B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 44D6062E8C618EC2B8F1D7229E8AD501;
-			remoteInfo = Subproject;
-		};
-		908FF104B29182378B16A99A /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = CDFF4A7EE78A2AC8170A2DC20868DF1F;
-			remoteInfo = Subproject;
-		};
-		9732E3F1F3B647EEC38729B0 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 37915BEC3E9EB6CD453C07348A49B51A;
-			remoteInfo = Subproject;
-		};
-		9FF72F7D12CE576B77EBB344 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = A9C1AE5EF2DE4871B3A49E5726100845;
-			remoteInfo = Subproject;
-		};
-		AB9DEF7F7C5E4F3334707DB9 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = A60135599BA436B4A540E7E9B24C699D;
-			remoteInfo = Subproject;
-		};
-		B3BF7DC7AB4DE070DAA2382F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 5C415F33D02A6F89DB713EFB9D75A3FB;
-			remoteInfo = "Pods-App";
-		};
-		C47FDA7D0D94AFA1E049FA49 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 3AA9124C018EA7BF6460091D86216692;
-			remoteInfo = Subproject;
-		};
-		D123A02ED0C69603C1D10E3B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 4830CABC2D58B5C50BE6EFECA34B2895;
-			remoteInfo = Subproject;
-		};
-		D997E3B14B61E2A8B2EEFD31 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1ABFDA3391AEBA42EFB0FEBF824A6E34;
-			remoteInfo = Subproject;
-		};
-		E10EEEC8A37D58BDCADC0E19 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = D83AE5D93C653BDBFDDF59AC3D1E32BB;
-			remoteInfo = Subproject;
-		};
-		E19C4B6570EAB242A2E8D2F8 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 70E052060A1D7DF2CCC7B1124232A9F7;
-			remoteInfo = Subproject;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
@@ -161,7 +32,6 @@
 		50A1B2C51FED79650016851F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		50C1BAD11FED79650016851F /* AppIconBadgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconBadgePlugin.swift; sourceTree = "<group>"; };
-		8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Pods.xcodeproj; path = Pods/Pods.xcodeproj; sourceTree = "<group>"; };
 		AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
 		FC68EB0AF532CFC21C3344DD /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
@@ -194,7 +64,6 @@
 				504EC3051FED79650016851F /* Products */,
 				7F8756D8B27F46E3366F6CEA /* Pods */,
 				27E2DDA53C4D2A4D1A88CE4A /* Frameworks */,
-				8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -202,23 +71,6 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
-				6F7DD28B4F74B3013914BD5E /* Capacitor.framework */,
-				C91CDB8B30B8CD0ABB5F9B5B /* CapacitorApp.framework */,
-				F3B9DEEF2E24963262C51E35 /* CapacitorBrowser.framework */,
-				CE479DE810466BAE4866495E /* CapacitorHaptics.framework */,
-				6DA103415037F851EE0E71CD /* CapacitorKeyboard.framework */,
-				60C83862FA019AB5168617D7 /* CapacitorLocalNotifications.framework */,
-				A91FBBF6461822AD61FC9C6E /* CapacitorPushNotifications.framework */,
-				8750F47CA59574955CD09F78 /* CapacitorSplashScreen.framework */,
-				DB488F00745F0EC8FD99E082 /* CapacitorStatusBar.framework */,
-				A44F9754C73DD5761B4EA770 /* CapgoCapacitorNativeBiometric.framework */,
-				95FFD816C9A1278C547BC03C /* CapacitorCordova.framework */,
-				416A7C8039C53932329C382D /* Pods-App.framework */,
-				AB46B84DB9ADBF4752C06DC8 /* PurchasesHybridCommon-PurchasesHybridCommon.bundle */,
-				617E8049EF717F48AACB6806 /* PurchasesHybridCommon.framework */,
-				953C146EDE7DA94ACFA20F8C /* RevenueCat-RevenueCat.bundle */,
-				5F4BF16F20B3FBF9450DEC8E /* RevenueCat.framework */,
-				34A25406743846732FAE399E /* RevenuecatPurchasesCapacitor.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -266,7 +118,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				6ECD946A944B15BD58283764 /* PBXTargetDependency */,
 			);
 			name = App;
 			productName = App;
@@ -301,140 +152,12 @@
 			mainGroup = 504EC2FB1FED79650016851F;
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 504EC3051FED79650016851F /* Products */;
-					ProjectRef = 8971DB260F7161B6D5BA2FE4 /* Pods.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		34A25406743846732FAE399E /* RevenuecatPurchasesCapacitor.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = RevenuecatPurchasesCapacitor.framework;
-			remoteRef = 1B8E68F85FFCA3ACFDE1C6D2 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		416A7C8039C53932329C382D /* Pods-App.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = "Pods-App.framework";
-			remoteRef = 717215899EBD30B3F61BA511 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		5F4BF16F20B3FBF9450DEC8E /* RevenueCat.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = RevenueCat.framework;
-			remoteRef = 2E19B960A8636DF86171A731 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		60C83862FA019AB5168617D7 /* CapacitorLocalNotifications.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorLocalNotifications.framework;
-			remoteRef = E19C4B6570EAB242A2E8D2F8 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		617E8049EF717F48AACB6806 /* PurchasesHybridCommon.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = PurchasesHybridCommon.framework;
-			remoteRef = 3439297D7633EC7B6861BB13 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		6DA103415037F851EE0E71CD /* CapacitorKeyboard.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorKeyboard.framework;
-			remoteRef = 08FACEEB0AC0FDAF09EDFCEE /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		6F7DD28B4F74B3013914BD5E /* Capacitor.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = Capacitor.framework;
-			remoteRef = 86AC0F7954736560AC3AA47B /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		8750F47CA59574955CD09F78 /* CapacitorSplashScreen.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorSplashScreen.framework;
-			remoteRef = 018162CB997ABE9A6ECC1658 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		953C146EDE7DA94ACFA20F8C /* RevenueCat-RevenueCat.bundle */ = {
-			isa = PBXReferenceProxy;
-			fileType = "wrapper.plug-in";
-			path = "RevenueCat-RevenueCat.bundle";
-			remoteRef = E10EEEC8A37D58BDCADC0E19 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		95FFD816C9A1278C547BC03C /* CapacitorCordova.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorCordova.framework;
-			remoteRef = D997E3B14B61E2A8B2EEFD31 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A44F9754C73DD5761B4EA770 /* CapgoCapacitorNativeBiometric.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapgoCapacitorNativeBiometric.framework;
-			remoteRef = 22F7865D90D82FD838B1BECE /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		A91FBBF6461822AD61FC9C6E /* CapacitorPushNotifications.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorPushNotifications.framework;
-			remoteRef = 9FF72F7D12CE576B77EBB344 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		AB46B84DB9ADBF4752C06DC8 /* PurchasesHybridCommon-PurchasesHybridCommon.bundle */ = {
-			isa = PBXReferenceProxy;
-			fileType = "wrapper.plug-in";
-			path = "PurchasesHybridCommon-PurchasesHybridCommon.bundle";
-			remoteRef = C47FDA7D0D94AFA1E049FA49 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		C91CDB8B30B8CD0ABB5F9B5B /* CapacitorApp.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorApp.framework;
-			remoteRef = 908FF104B29182378B16A99A /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		CE479DE810466BAE4866495E /* CapacitorHaptics.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorHaptics.framework;
-			remoteRef = D123A02ED0C69603C1D10E3B /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		DB488F00745F0EC8FD99E082 /* CapacitorStatusBar.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorStatusBar.framework;
-			remoteRef = 9732E3F1F3B647EEC38729B0 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		F3B9DEEF2E24963262C51E35 /* CapacitorBrowser.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CapacitorBrowser.framework;
-			remoteRef = AB9DEF7F7C5E4F3334707DB9 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		504EC3021FED79650016851F /* Resources */ = {
@@ -456,7 +179,6 @@
 /* Begin PBXShellScriptBuildPhase section */
 		6634F4EFEBD30273BCE97C65 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 0;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -475,7 +197,6 @@
 		};
 		9592DBEFFC6D2A0C8D5DEB22 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 0;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -531,14 +252,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		6ECD946A944B15BD58283764 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = "Pods-App";
-			targetProxy = B3BF7DC7AB4DE070DAA2382F /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
