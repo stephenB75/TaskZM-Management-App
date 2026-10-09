@@ -66,6 +66,56 @@ def fix_cocoapods_script_phases(project)
   end
 end
 
+# Build Pods before App. Pod products stay in their own group so Xcode 27
+# does not abort while saving the app project.
+def depend_on_pods_project!(user_project, pods_project)
+  app_target = user_project.native_targets.find { |target| target.name == 'App' }
+  pods_target = pods_project.targets.find { |target| target.name == 'Pods-App' }
+  return unless app_target && pods_target
+
+  relative_path = 'Pods/Pods.xcodeproj'
+  file_ref = user_project.files.find { |file| file.path == relative_path }
+  unless file_ref
+    file_ref = user_project.main_group.new_reference(relative_path)
+    file_ref.name = 'Pods.xcodeproj'
+    file_ref.last_known_file_type = 'wrapper.pb-project'
+    file_ref.source_tree = '<group>'
+  end
+
+  product_group = user_project.main_group['Pod Products'] || user_project.main_group.new_group('Pod Products')
+  product_group.source_tree = '<group>'
+
+  app_products = user_project.root_object.product_ref_group
+  if app_products
+    app_products.children.grep(Xcodeproj::Project::Object::PBXReferenceProxy).each(&:remove_from_project)
+  end
+
+  references = user_project.root_object.project_references
+  references.delete_if do |reference|
+    reference[:project_ref] == file_ref && reference[:product_group] != product_group
+  end
+  unless references.any? { |reference| reference[:project_ref] == file_ref }
+    attribute = Xcodeproj::Project::Object::PBXProject.references_by_keys_attributes.find { |attrb| attrb.name == :project_references }
+    project_reference = Xcodeproj::Project::ObjectDictionary.new(attribute, user_project.root_object)
+    project_reference[:project_ref] = file_ref
+    project_reference[:product_group] = product_group
+    references << project_reference
+  end
+
+  return if app_target.dependencies.any? { |dependency| dependency.target_proxy&.remote_info == 'Pods-App' }
+
+  proxy = user_project.new(Xcodeproj::Project::Object::PBXContainerItemProxy)
+  proxy.container_portal = file_ref.uuid
+  proxy.proxy_type = '1'
+  proxy.remote_global_id_string = pods_target.uuid
+  proxy.remote_info = pods_target.name
+
+  dependency = user_project.new(Xcodeproj::Project::Object::PBXTargetDependency)
+  dependency.name = pods_target.name
+  dependency.target_proxy = proxy
+  app_target.dependencies << dependency
+end
+
 def patch_capacitor_cordova_framework_headers
   marker = 'TASKZM_CORDOVA_ANGLE_INCLUDES'
   public_dir = File.expand_path(
@@ -248,6 +298,7 @@ post_install do |installer|
   end
 
   installer.aggregate_targets.each do |aggregate_target|
+    depend_on_pods_project!(aggregate_target.user_project, installer.pods_project)
     fix_cocoapods_script_phases(aggregate_target.user_project)
     aggregate_target.user_project.native_targets.each do |target|
       target.build_configurations.each do |config|
