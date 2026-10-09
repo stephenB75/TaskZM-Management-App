@@ -550,16 +550,20 @@ export const MOBILE_HOME_PILL_RADIUS = '999px';
 export const MOBILE_HOME_SLIDE_BASIS = '86%';
 export const MOBILE_HOME_DOT_SIZE_PX = 10;
 export const MOBILE_HOME_CARD_BAR_PX = 8;
-export const MOBILE_HOME_CARD_PADDING = '0.875rem';
+export const MOBILE_HOME_CARD_PADDING = '0.5rem';
+export const MOBILE_HOME_CARD_TITLE_FONT_SIZE = '0.875rem';
 export const MOBILE_HOME_LABEL_GAP = '0.25rem';
+export const MOBILE_HOME_TIMELINE_LABEL_WIDTH = '4.5rem';
+export const MOBILE_HOME_DAY_RULE_PX = 2;
 export const MOBILE_HOME_SUMMARY_NUMBER_SIZE = '2.5rem';
 export const MOBILE_HOME_SUMMARY_COMPACT_NUMBER_SIZE = '1.25rem';
 export const MOBILE_HOME_SUMMARY_COMPACT_PADDING = '0.5rem';
-/** Phone dialogs sit above the nav, narrower than the screen, and rise slowly. */
-export const DIALOG_MOBILE_SHEET_MAX_WIDTH_PX = 240;
+/** Phone dialogs sit above the nav, inset from the screen edges, and rise slowly. */
 export const DIALOG_MOBILE_SHEET_SLIDE_MS = 1200;
+/** Wider than a narrow card, capped so a phone sheet does not span the screen. */
+export const DIALOG_MOBILE_SHEET_WIDTH = 'min(26rem, 86vw)';
 export const DIALOG_MOBILE_SHEET_CLASS =
-  `max-sm:!top-auto max-sm:!bottom-[var(--dialog-above-nav)] max-sm:!left-1/2 max-sm:!right-auto max-sm:!w-[${DIALOG_MOBILE_SHEET_MAX_WIDTH_PX}px] max-sm:!max-w-[calc(100%-2rem)] max-sm:!h-auto max-sm:!max-h-[min(46dvh,calc(100dvh-var(--dialog-above-nav)-1rem))] max-sm:!translate-x-[-50%] max-sm:!translate-y-0 max-sm:!rounded-2xl max-sm:data-[state=open]:![animation:taskzm-sheet-up_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-out_both] max-sm:data-[state=closed]:![animation:taskzm-sheet-down_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-in_both]`;
+  `max-sm:!top-auto max-sm:!bottom-[var(--dialog-above-nav)] max-sm:!left-1/2 max-sm:!right-auto max-sm:!w-[var(--dialog-sheet-width)] max-sm:!max-w-[var(--dialog-sheet-width)] max-sm:!h-auto max-sm:!max-h-[min(70dvh,calc(100dvh-var(--dialog-above-nav)-1rem))] max-sm:!translate-x-[-50%] max-sm:!translate-y-0 max-sm:!rounded-2xl max-sm:data-[state=open]:![animation:taskzm-sheet-up_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-out_both] max-sm:data-[state=closed]:![animation:taskzm-sheet-down_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-in_both]`;
 export const MOBILE_HOME_CHART_HEIGHT_PX = 140;
 export const APP_CANVAS_CLASS = 'bg-white dark:bg-gray-950';
 export const DIALOG_SHEET_CLASS = 'rounded-2xl border-0 bg-background shadow-none';

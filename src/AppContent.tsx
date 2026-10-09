@@ -1031,7 +1031,10 @@ export default function AppContent() {
       <TaskDialog open={createTaskOpen} onClose={() => setCreateTaskOpen(false)} />
 
       <Sheet open={aiPanelOpen} onOpenChange={setAiPanelOpen}>
-        <SheetContent side="right" className="w-full overflow-y-auto bg-background sm:max-w-md">
+        <SheetContent
+          side={shouldUseMobileLayout ? 'bottom' : 'right'}
+          className={shouldUseMobileLayout ? 'taskzm-ai-sheet overflow-y-auto bg-background' : 'w-full overflow-y-auto bg-background sm:max-w-md'}
+        >
           <SheetHeader>
             <SheetTitle>AI</SheetTitle>
             <SheetDescription>Scheduling suggestions for open tasks.</SheetDescription>

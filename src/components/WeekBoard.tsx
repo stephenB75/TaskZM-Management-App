@@ -9,6 +9,8 @@ import { DAYS_IN_WEEK } from '../lib/business-constants';
 import {
   HEADER_HEIGHT,
   MOBILE_HOME_BODY_FONT_SIZE,
+  MOBILE_HOME_DAY_RULE_PX,
+  MOBILE_HOME_DOT_SIZE_PX,
   MOBILE_HOME_LABEL_GAP,
   MOBILE_HOME_PAGE_PADDING,
   MOBILE_HOME_PILL_RADIUS,
@@ -17,7 +19,7 @@ import {
   MOBILE_HOME_TAP_TARGET_PX,
 } from '../lib/layout-constants';
 import { KANBAN_COLUMN_DIMENSIONS } from '../lib/kanban-constants';
-import { COLOR_TEXT_PRIMARY } from '../lib/color-theme';
+import { COLOR_PRIMARY, COLOR_TEXT_PRIMARY } from '../lib/color-theme';
 import { getDateString, getWeekStart } from '../lib/utils';
 import { clearEditingScrollPad, revealTaskAboveDialog } from '../lib/reveal-editing-task';
 import { useDraggable } from '@dnd-kit/core';
@@ -166,6 +168,7 @@ export function WeekBoard({
             {days.map((day) => {
               const dateKey = getDateString(day);
               const isSelected = dateKey === getDateString(selected);
+              const hasTasks = tasksScheduledOn(tasks, day).length > 0;
               return (
                 <button
                   key={dateKey}
@@ -174,7 +177,6 @@ export function WeekBoard({
                   className="bg-transparent font-medium"
                   style={{
                     border: 'none',
-                    borderBottom: isSelected ? '2px solid currentColor' : '2px solid transparent',
                     padding: 0,
                     color: isSelected ? undefined : COLOR_TEXT_PRIMARY,
                   }}
@@ -182,9 +184,29 @@ export function WeekBoard({
                   <span className="block" style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE }}>
                     {day.toLocaleDateString(undefined, { weekday: 'narrow' })}
                   </span>
+                  <span
+                    aria-hidden
+                    style={{
+                      display: 'block',
+                      height: MOBILE_HOME_DAY_RULE_PX,
+                      margin: `${MOBILE_HOME_LABEL_GAP} 0`,
+                      background: isSelected ? COLOR_PRIMARY : 'transparent',
+                    }}
+                  />
                   <span className={isSelected ? 'text-primary' : undefined} style={{ fontSize: MOBILE_HOME_BODY_FONT_SIZE }}>
                     {day.getDate()}
                   </span>
+                  <span
+                    aria-hidden
+                    style={{
+                      display: 'block',
+                      width: MOBILE_HOME_DOT_SIZE_PX,
+                      height: MOBILE_HOME_DOT_SIZE_PX,
+                      margin: `${MOBILE_HOME_LABEL_GAP} auto 0`,
+                      borderRadius: MOBILE_HOME_PILL_RADIUS,
+                      background: hasTasks ? COLOR_PRIMARY : 'transparent',
+                    }}
+                  />
                 </button>
               );
             })}

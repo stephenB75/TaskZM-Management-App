@@ -55,7 +55,7 @@ export const TOAST_LAYOUT = {
   topNativeIosWithFallback: `max(calc(1rem + env(safe-area-inset-top, 0px)), calc(1rem + ${IOS_NATIVE_TOAST_TOP_MIN_PX}px))`,
   horizontalSafeAreaLeft: 'env(safe-area-inset-left, 0px)',
   horizontalSafeAreaRight: 'env(safe-area-inset-right, 0px)',
-  maxWidth: '16rem',
+  maxWidth: 'min(24rem, calc(100vw - 2rem))',
 } as const;
 
 /** Sonner toast close (×) control — compact on mobile; global touch-target rules must not inflate this. */

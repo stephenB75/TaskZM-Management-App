@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { completedCountByRecentMonth, isUnfinishedTask, tasksScheduledOn, tasksToPlace } from '../lib/home-task-groups';
 import { MOBILE_HOME_UI_TEXT } from '../lib/navigation-constants';
 import { greetingLine, PlaceTasksButton, SummaryCard } from './HomeSummary';
-import { PastelTaskCard } from './PastelTaskCard';
+import { PastelTaskCard, TaskTimelineRow } from './PastelTaskCard';
 import {
   MOBILE_HOME_BODY_FONT_SIZE,
   MOBILE_HOME_CARD_RADIUS,
@@ -58,9 +58,8 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
         color: COLOR_TEXT_PRIMARY,
       }}
     >
-      <p style={{ margin: 0, fontSize: MOBILE_HOME_BODY_FONT_SIZE }}>{MOBILE_HOME_UI_TEXT.greetingHello}</p>
       <h2 style={{ margin: 0, fontSize: MOBILE_HOME_BODY_FONT_SIZE, fontWeight: 500 }}>
-        {greetingLine(now)}{name ? `, ${name}` : ''}
+        {MOBILE_HOME_UI_TEXT.greetingHello} {greetingLine(now)}{name ? `, ${name}` : ''}
       </h2>
 
       <div
@@ -135,7 +134,9 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
             <p style={{ margin: 0 }}>{MOBILE_HOME_UI_TEXT.weekEmpty}</p>
           ) : (
             upcoming.slice(0, 4).map((task) => (
-              <WeekDraggable key={task.id} task={task} onOpen={() => setEditorTask(task)} />
+              <TaskTimelineRow key={task.id} task={task}>
+                <WeekDraggable task={task} hideTime onOpen={() => setEditorTask(task)} />
+              </TaskTimelineRow>
             ))
           )}
         </section>
@@ -196,14 +197,14 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
   );
 }
 
-function WeekDraggable({ task, onOpen }: { task: Task; onOpen: () => void }) {
+function WeekDraggable({ task, onOpen, hideTime }: { task: Task; onOpen: () => void; hideTime?: boolean }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: task.id });
   const style = transform
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
     : undefined;
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <PastelTaskCard task={task} onOpen={onOpen} />
+      <PastelTaskCard task={task} hideTime={hideTime} onOpen={onOpen} />
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { isSameCalendarDay } from '../lib/notification-task-filters';
 import { isUnfinishedTask, tasksScheduledOn, tasksToPlace } from '../lib/home-task-groups';
 import { clearEditingScrollPad, revealTaskAboveDialog } from '../lib/reveal-editing-task';
 import { MOBILE_HOME_UI_TEXT } from '../lib/navigation-constants';
-import { PastelTaskCard } from './PastelTaskCard';
+import { PastelTaskCard, TaskTimelineRow } from './PastelTaskCard';
 import { greetingLine, PlaceTasksButton, SummaryCard } from './HomeSummary';
 import {
   HEADER_HEIGHT,
@@ -161,11 +161,8 @@ export function MobileHomePager({ onRunScheduler, isScheduling }: MobileHomePage
     >
       <div className="flex flex-col" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
         <section>
-          <p style={{ fontSize: MOBILE_HOME_BODY_FONT_SIZE, color: COLOR_TEXT_PRIMARY, margin: 0 }}>
-            {MOBILE_HOME_UI_TEXT.greetingHello}
-          </p>
-          <h2 style={{ fontSize: MOBILE_HOME_BODY_FONT_SIZE, fontWeight: 500, margin: 0 }}>
-            {greetingLine(now)}{name ? `, ${name}` : ''}
+          <h2 style={{ fontSize: MOBILE_HOME_BODY_FONT_SIZE, fontWeight: 500, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {MOBILE_HOME_UI_TEXT.greetingHello} {greetingLine(now)}{name ? `, ${name}` : ''}
           </h2>
           <div className="grid grid-cols-2" style={{ gap: MOBILE_HOME_SECTION_GAP, marginTop: MOBILE_HOME_SECTION_GAP }}>
             <SummaryCard compact accent label={MOBILE_HOME_UI_TEXT.summaryUnfinished} value={unfinished.length} />
@@ -191,7 +188,9 @@ export function MobileHomePager({ onRunScheduler, isScheduling }: MobileHomePage
             <ul className="flex flex-col" style={{ gap: MOBILE_HOME_SECTION_GAP, marginTop: MOBILE_HOME_SECTION_GAP }}>
               {upcoming.map((task) => (
                 <li key={task.id} id={`home-task-${task.id}`} style={{ scrollMarginTop: HEADER_HEIGHT }}>
-                  <PastelTaskCard task={task} onOpen={() => openEditor(task)} />
+                  <TaskTimelineRow task={task}>
+                    <PastelTaskCard task={task} hideTime onOpen={() => openEditor(task)} />
+                  </TaskTimelineRow>
                 </li>
               ))}
             </ul>

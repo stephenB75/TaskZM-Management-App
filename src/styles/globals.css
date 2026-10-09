@@ -271,7 +271,7 @@ body {
 :root {
   --viewport-height: 100vh;
   --dialog-above-nav: calc(72px + env(safe-area-inset-bottom, 0px));
-  --dialog-sheet-width: 240px;
+  --dialog-sheet-width: min(26rem, 86vw);
   --dialog-sheet-slide: 1200ms;
 }
 @supports (min-height: 100dvh) {
@@ -291,23 +291,43 @@ body {
 }
 
 @media (max-width: 639px) {
+  /* Let the fixed nav (z-index 10001) stack above portaled sheets. */
+  body.loaded #root,
+  #root {
+    z-index: auto !important;
+  }
+
   [data-slot="dialog-content"],
-  [data-slot="alert-dialog-content"] {
-    width: min(var(--dialog-sheet-width), calc(100% - 2rem)) !important;
-    max-width: min(var(--dialog-sheet-width), calc(100% - 2rem)) !important;
+  [data-slot="alert-dialog-content"],
+  .taskzm-ai-sheet {
+    width: var(--dialog-sheet-width) !important;
+    max-width: var(--dialog-sheet-width) !important;
     left: 50% !important;
     right: auto !important;
+    top: auto !important;
+    bottom: var(--dialog-above-nav) !important;
+    height: auto !important;
+    max-height: min(70dvh, calc(100dvh - var(--dialog-above-nav) - 1rem)) !important;
     translate: none !important;
     border-radius: 1rem !important;
+    z-index: 41 !important;
+  }
+
+  [data-slot="dialog-overlay"],
+  [data-slot="sheet-overlay"] {
+    bottom: var(--dialog-above-nav);
+    z-index: 40 !important;
   }
 
   [data-slot="dialog-content"][data-state="open"],
-  [data-slot="alert-dialog-content"][data-state="open"] {
+  [data-slot="alert-dialog-content"][data-state="open"],
+  .taskzm-ai-sheet[data-state="open"] {
     animation: taskzm-sheet-up var(--dialog-sheet-slide) ease-out both !important;
   }
 
   [data-slot="dialog-content"][data-state="closed"],
-  [data-slot="alert-dialog-content"][data-state="closed"] {
+  [data-slot="alert-dialog-content"][data-state="closed"],
+  .taskzm-ai-sheet[data-state="closed"] {
     animation: taskzm-sheet-down var(--dialog-sheet-slide) ease-in both !important;
   }
 }
@@ -833,11 +853,11 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 
 @media (max-width: 600px) {
   [data-sonner-toaster][data-x-position="center"] {
-    left: var(--mobile-offset-left, env(safe-area-inset-left, 0px)) !important;
-    right: var(--mobile-offset-right, env(safe-area-inset-right, 0px)) !important;
-    transform: none !important;
-    width: calc(100% - var(--mobile-offset-left, 0px) - var(--mobile-offset-right, 0px));
-    max-width: none;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: var(--width, min(24rem, calc(100vw - 2rem))) !important;
+    max-width: var(--width, min(24rem, calc(100vw - 2rem))) !important;
   }
 }
 

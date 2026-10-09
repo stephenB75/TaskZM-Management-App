@@ -259,7 +259,6 @@ export function AppHeader({
                 gap: HEADER_GAP_XSMALL,
               }}
             >
-              <Icon name="head-circuit" size={HEADER_ICON_SIZE_SMALL} />
               AI
             </button>
             {shouldUseMobileLayout && (
@@ -543,7 +542,6 @@ export function AppHeader({
                     gap: HEADER_GAP_XSMALL,
                   }}
                 >
-                  <Icon name="head-circuit" size={HEADER_ICON_SIZE_SMALL} />
                   AI
                 </button>
                 {actions}

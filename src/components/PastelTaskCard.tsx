@@ -5,14 +5,14 @@ import {
   MILLISECONDS_PER_MINUTE,
 } from '../lib/business-constants';
 import {
-  MOBILE_HOME_BODY_FONT_SIZE,
   MOBILE_HOME_CARD_BAR_PX,
   MOBILE_HOME_CARD_PADDING,
   MOBILE_HOME_CARD_RADIUS,
+  MOBILE_HOME_CARD_TITLE_FONT_SIZE,
   MOBILE_HOME_LABEL_GAP,
   MOBILE_HOME_PILL_RADIUS,
-  MOBILE_HOME_SECTION_GAP,
   MOBILE_HOME_TAB_FONT_SIZE,
+  MOBILE_HOME_TIMELINE_LABEL_WIDTH,
 } from '../lib/layout-constants';
 import { COLOR_TEXT_PRIMARY } from '../lib/color-theme';
 import { AGENDA_LIST_CARD, getAgendaCardBadgeStyles } from '../lib/agenda-list-card-constants';
@@ -35,13 +35,15 @@ interface PastelTaskCardProps {
   detail?: string;
   unfinished?: boolean;
   onOpen?: () => void;
+  /** Timeline rows show the time beside the card. */
+  hideTime?: boolean;
   fullTitle?: boolean;
   children?: React.ReactNode;
 }
 
-export function PastelTaskCard({ task, detail, unfinished, onOpen, fullTitle, children }: PastelTaskCardProps) {
+export function PastelTaskCard({ task, detail, unfinished, onOpen, hideTime, fullTitle, children }: PastelTaskCardProps) {
   const wash = pastelWashForTask(task, { unfinished, done: task.status === 'done' });
-  const timeLabel = detail || taskTimeRange(task);
+  const timeLabel = hideTime ? (detail || '') : (detail || taskTimeRange(task));
   const badgeLabel = task.priority && task.priority !== 'default' ? task.priority : '';
   const badge = getAgendaCardBadgeStyles(wash.bar);
 
@@ -49,7 +51,7 @@ export function PastelTaskCard({ task, detail, unfinished, onOpen, fullTitle, ch
     <div
       style={{
         display: 'flex',
-        gap: MOBILE_HOME_SECTION_GAP,
+        gap: MOBILE_HOME_LABEL_GAP,
         alignItems: 'stretch',
         background: 'transparent',
         color: COLOR_TEXT_PRIMARY,
@@ -77,7 +79,7 @@ export function PastelTaskCard({ task, detail, unfinished, onOpen, fullTitle, ch
           style={{ background: 'transparent', border: 'none', color: 'inherit', padding: 0 }}
         >
           <span className="flex items-start justify-between gap-2">
-            <span className="block font-medium" style={{ fontSize: MOBILE_HOME_BODY_FONT_SIZE, whiteSpace: fullTitle ? 'nowrap' : undefined }}>
+            <span className="block font-medium" style={{ fontSize: MOBILE_HOME_CARD_TITLE_FONT_SIZE, whiteSpace: fullTitle ? 'nowrap' : undefined }}>
               {task.title}
             </span>
             {badgeLabel ? (
@@ -106,6 +108,26 @@ export function PastelTaskCard({ task, detail, unfinished, onOpen, fullTitle, ch
         </button>
         {children}
       </span>
+    </div>
+  );
+}
+
+export function TaskTimelineRow({ task, children }: { task: Task; children: React.ReactNode }) {
+  const timeLabel = task.scheduledDate ? formatTimeAMPM(task.scheduledDate) : '';
+  return (
+    <div style={{ display: 'flex', gap: MOBILE_HOME_LABEL_GAP, alignItems: 'stretch' }}>
+      <span
+        style={{
+          width: MOBILE_HOME_TIMELINE_LABEL_WIDTH,
+          flex: 'none',
+          fontSize: MOBILE_HOME_TAB_FONT_SIZE,
+          color: COLOR_TEXT_PRIMARY,
+          paddingTop: MOBILE_HOME_LABEL_GAP,
+        }}
+      >
+        {timeLabel}
+      </span>
+      <span className="min-w-0 flex-1">{children}</span>
     </div>
   );
 }

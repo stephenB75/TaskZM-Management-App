@@ -889,38 +889,6 @@ export function InboxView() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div
-                        onClick={unscheduledTasks.length === 0 || !permissions.canEditTask ? undefined : handleScheduleAll}
-                        className={cn(
-                          "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
-                          (unscheduledTasks.length === 0 || !permissions.canEditTask) && "opacity-50 cursor-not-allowed"
-                        )}
-                        role="button"
-                        tabIndex={unscheduledTasks.length === 0 || !permissions.canEditTask ? -1 : 0}
-                        onKeyDown={(e) => {
-                          if (unscheduledTasks.length === 0 || !permissions.canEditTask) return;
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleScheduleAll();
-                          }
-                        }}
-                      >
-                        <Icon 
-                          name="head-circuit"
-                          size={ICON_SIZE_XL}
-                          weight="duotone"
-                          className="text-primary dark:text-primary-foreground flex-shrink-0"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Schedule All</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
                         onClick={() => {
                           if (!permissions.canCreateTask) {
                             toast.error('Permission Denied', {
