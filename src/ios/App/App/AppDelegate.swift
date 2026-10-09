@@ -39,7 +39,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     @discardableResult
     private func registerLocalCapacitorPluginsIfReady() -> Bool {
         guard !didRegisterLocalCapacitorPlugins else { return true }
-        guard let bridgeViewController = window?.rootViewController as? CAPBridgeViewController,
+        guard let bridgeViewController = capacitorBridgeViewController(),
               let bridge = bridgeViewController.bridge else {
             return false
         }
@@ -48,6 +48,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         didRegisterLocalCapacitorPlugins = true
         notifyWebNativePluginsReady(on: bridgeViewController)
         return true
+    }
+
+    /// Scene-based launch keeps the Capacitor window on the scene, not AppDelegate.window.
+    private func capacitorBridgeViewController() -> CAPBridgeViewController? {
+        let sceneWindows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+        let candidates = ([window] + sceneWindows).compactMap { $0 }
+        for candidate in candidates {
+            if let controller = candidate.rootViewController as? CAPBridgeViewController {
+                window = candidate
+                return controller
+            }
+        }
+        return nil
     }
 
     private func notifyWebNativePluginsReady(on bridgeViewController: CAPBridgeViewController) {
