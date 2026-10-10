@@ -11,22 +11,22 @@ import { TIMING_CONSTANTS } from './timing-constants';
 /** Sidebar icon tour stops (desktop) — order matches AppSidebar menuItems. */
 export const APP_TOUR_SIDEBAR_ITEMS = [
   {
-    id: 'dashboard',
-    label: NAVIGATION_UI_TEXT.dashboard,
+    id: 'today',
+    label: NAVIGATION_UI_TEXT.today,
     description:
-      'Your main workspace — 7-day Week view and Month calendar. Drag tasks, add items, and plan your schedule.',
+      'Your day at a glance — counts, the next thing to do, and tasks with calendar events in time order.',
+  },
+  {
+    id: 'dashboard',
+    label: NAVIGATION_UI_TEXT.week,
+    description:
+      'The 7-day board. Drag tasks between days to reschedule; calendar events show alongside them.',
   },
   {
     id: 'notifications',
     label: NAVIGATION_UI_TEXT.notifications,
     description:
       'Due-soon, overdue, and system alerts. Badge counts show how many need attention.',
-  },
-  {
-    id: 'today',
-    label: NAVIGATION_UI_TEXT.todayAgenda,
-    description:
-      'Today’s timeline — tasks and calendar events in chronological order with a visual day rail.',
   },
   {
     id: 'inbox',
@@ -66,22 +66,22 @@ export const APP_TOUR_BOTTOM_NAV_ITEMS = [
   {
     id: 'today',
     label: NAVIGATION_UI_TEXT.today,
-    description: 'Today Agenda — your scheduled day in timeline order.',
+    description: 'Your day — tasks and calendar events in time order, with what is up next.',
   },
   {
     id: 'week',
     label: NAVIGATION_UI_TEXT.week,
-    description: 'Week view — scroll the 7-day board and manage task cards.',
+    description: 'The 7-day board. Pick a day to see its tasks and events.',
   },
   {
     id: 'inbox',
     label: NAVIGATION_UI_TEXT.inbox,
-    description: 'Unscheduled tasks ready for AI Scheduler or manual planning.',
+    description: 'Tasks without a time yet, ready for AI scheduling or manual planning.',
   },
   {
-    id: 'settings',
-    label: NAVIGATION_UI_TEXT.settings,
-    description: 'Customize calendars, notifications, AI behavior, and more.',
+    id: 'ai',
+    label: NAVIGATION_UI_TEXT.ai,
+    description: 'AI scheduling and rescheduling suggestions. Settings now live in the menu.',
   },
 ] as const;
 
@@ -147,7 +147,24 @@ export const APP_TOUR_UI = {
   welcome: {
     title: 'Welcome to TaskZM!',
     description:
-      'This walkthrough highlights each navigation icon, Week and Month views, AI scheduling buttons and dialogs, and key settings sections.',
+      'A quick look at navigation, your Today list, the Week board, AI scheduling, and key settings.',
+  },
+  headerBell: {
+    title: 'Notifications',
+    description: 'Tap the bell to open your notifications. The badge shows how many need attention.',
+  },
+  todayAgenda: {
+    title: 'Today',
+    description: 'Tasks and calendar events for today, in time order. The first one is marked Up next.',
+    bullets: [
+      'Swipe a task right to mark it done',
+      'Tap a task to edit it',
+      'Items tagged Calendar come from your connected calendars',
+    ] as const,
+  },
+  placeTasks: {
+    title: 'Place open tasks',
+    description: 'Gives a time to tasks that are not on the calendar yet, around your hours and calendar events.',
   },
   sidebarIconIntro: {
     title: 'Sidebar Icons',
@@ -157,36 +174,20 @@ export const APP_TOUR_UI = {
     title: 'Bottom Navigation',
     description: 'Each tab opens a different part of TaskZM. We’ll highlight them one by one.',
   },
-  weekMonthToggle: {
-    title: 'Week ↔ Month Toggle',
-    description:
-      'Use this switch to move between Week and Month. Week shows your 7-day kanban; Month shows the full calendar grid.',
-    hint: 'Flip toward Month when you want the big-picture view — we’ll switch there on the next step.',
-  },
   weekView: {
-    title: 'Week View',
+    title: 'Week',
     description:
-      'Seven color-coded day columns with task cards showing priority, tags, duration, and inline Pomodoro controls.',
+      'Seven days of tasks and calendar events. Move between weeks or jump back to today.',
     bullets: [
       'Drag tasks between days to reschedule',
-      'Click a card to edit details and subtasks',
-      'Use the play icon on a card footer to start focus time',
-    ] as const,
-  },
-  monthView: {
-    title: 'Month View',
-    description:
-      'The calendar grid shows scheduled tasks and synced events across the month. Click any day to inspect or add tasks.',
-    bullets: [
-      'Spot busy days before committing to new work',
-      'Drag tasks between days when rescheduling manually',
-      'Use the Week ↔ Month toggle anytime to switch back',
+      'Tap a card to edit details and subtasks',
+      'Calendar events are read-only and tagged Calendar',
     ] as const,
   },
   aiSchedulerButton: {
     title: DASHBOARD_VIEW_HEADER_LABELS.aiSchedulerSuggestionsLong,
     description:
-      'Runs AI Scheduler to place unscheduled Inbox tasks into open slots using priority, due dates, your hours, and calendar conflicts.',
+      'Places unscheduled Inbox tasks into open slots using priority, due dates, your hours, and calendar conflicts.',
     hint: 'You don’t need to click this button now — the next step opens an example preview automatically.',
   },
   aiSchedulePreview: {
@@ -224,7 +225,7 @@ export const APP_TOUR_UI = {
   complete: {
     title: 'You’re Ready!',
     description:
-      'You’ve seen the navigation icons, Week/Month toggle, AI Scheduler & Re-Scheduler flows, and settings sections. Click Get Started to begin.',
+      'You’ve seen navigation, Today, the Week board, AI scheduling, and settings. Click Get Started to begin.',
   },
 } as const;
 
@@ -250,17 +251,12 @@ export const APP_TOUR_TARGETS = {
   body: 'body',
   sidebar: '[data-tour="sidebar"]',
   bottomNav: '[data-tour="bottom-nav"]',
-  weekMonthToggle: '[data-tour-header-actions="desktop"] [data-tour="week-month-toggle"]',
-  kanbanBoard: '[data-tour="kanban-board"]',
-  kanbanMobile: '[data-tour="kanban"]',
-  monthCalendar: '[data-tour="month-calendar-view"]',
-  aiScheduler: '[data-tour-header-actions="desktop"] [data-tour="ai-scheduler"]',
-  aiSchedulePreview: '[data-tour="dashboard-ai-schedule-preview-dialog"]',
-  aiSchedulePreviewMobile: '[data-tour="ai-schedule-preview-dialog"]',
-  aiReschedule: '[data-tour-header-actions="desktop"] [data-tour="re-schedule"]',
+  headerBell: '[data-tour="header-notifications"]',
+  homeAgenda: '[data-tour="home-agenda"]',
+  placeTasks: '[data-tour="place-tasks"]',
+  weekBoard: '[data-tour="week-board"]',
+  aiSchedulePreview: '[data-tour="ai-schedule-preview-dialog"]',
   rescheduleDialog: '[data-tour="reschedule-dialog"]',
-  rescheduleDialogOptions: '[data-tour="dashboard-reschedule-dialog-options"]',
-  aiRecommendationsPanel: '[data-tour="ai-recommendations-panel"]',
   aiSchedulerSection: '[data-tour="ai-scheduler-section"]',
   aiRescheduleSection: '[data-tour="ai-reschedule-section"]',
   settingsPanel: '[data-tour="settings-panel"]',
@@ -368,9 +364,10 @@ export const APP_TOUR_STEP_KEYS = {
   welcome: 'welcome',
   navIntro: 'navIntro',
   navIcon: 'navIcon',
+  headerBell: 'headerBell',
+  todayAgenda: 'todayAgenda',
+  placeTasks: 'placeTasks',
   weekView: 'weekView',
-  weekMonthToggle: 'weekMonthToggle',
-  monthView: 'monthView',
   aiSchedulerButton: 'aiSchedulerButton',
   aiSchedulePreview: 'aiSchedulePreview',
   aiReschedulerButton: 'aiReschedulerButton',
@@ -441,38 +438,41 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
 
   steps.push(
     {
+      stepKey: APP_TOUR_STEP_KEYS.headerBell,
+      target: APP_TOUR_TARGETS.headerBell,
+      placement: 'bottom-end',
+      isFixed: true,
+      mobileOnly: true,
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.todayAgenda,
+      target: APP_TOUR_TARGETS.homeAgenda,
+      placement: 'top',
+    },
+    {
+      stepKey: APP_TOUR_STEP_KEYS.placeTasks,
+      target: APP_TOUR_TARGETS.placeTasks,
+      placement: 'bottom',
+    },
+    {
       stepKey: APP_TOUR_STEP_KEYS.weekView,
-      target: isMobile ? APP_TOUR_TARGETS.kanbanMobile : APP_TOUR_TARGETS.kanbanBoard,
+      target: APP_TOUR_TARGETS.weekBoard,
       placement: 'top',
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.aiSchedulerButton,
-      target: isMobile ? APP_TOUR_TARGETS.aiSchedulerSection : APP_TOUR_TARGETS.aiScheduler,
-      placement: isMobile ? 'top' : 'bottom-start',
-      isFixed: !isMobile,
+      target: APP_TOUR_TARGETS.aiSchedulerSection,
+      placement: isMobile ? 'top' : 'left',
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.aiSchedulePreview,
-      target: isMobile ? APP_TOUR_TARGETS.aiSchedulePreviewMobile : APP_TOUR_TARGETS.aiSchedulePreview,
+      target: APP_TOUR_TARGETS.aiSchedulePreview,
       placement: 'auto',
     },
     {
-      stepKey: APP_TOUR_STEP_KEYS.weekMonthToggle,
-      target: APP_TOUR_TARGETS.weekMonthToggle,
-      placement: 'bottom-start',
-      isFixed: true,
-      desktopOnly: true,
-    },
-    {
-      stepKey: APP_TOUR_STEP_KEYS.monthView,
-      target: APP_TOUR_TARGETS.monthCalendar,
-      placement: 'top',
-    },
-    {
       stepKey: APP_TOUR_STEP_KEYS.aiReschedulerButton,
-      target: isMobile ? APP_TOUR_TARGETS.aiRescheduleSection : APP_TOUR_TARGETS.aiReschedule,
-      placement: isMobile ? 'top' : 'bottom-start',
-      isFixed: !isMobile,
+      target: APP_TOUR_TARGETS.aiRescheduleSection,
+      placement: isMobile ? 'top' : 'left',
     },
     {
       stepKey: APP_TOUR_STEP_KEYS.rescheduleDialog,
@@ -579,7 +579,7 @@ export function getTourStepWaitTimeoutMs(
   if (isAppTourSettingsSectionStep(meta)) {
     return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.defaultMultiplier;
   }
-  if (meta.stepKey === APP_TOUR_STEP_KEYS.monthView) {
+  if (meta.stepKey === APP_TOUR_STEP_KEYS.weekView) {
     return highlightDelayMs * TIMING_CONSTANTS.tour.targetWait.viewSwitchMultiplier;
   }
   if (meta.isFixed) {
@@ -589,9 +589,10 @@ export function getTourStepWaitTimeoutMs(
 }
 
 const TOUR_DASHBOARD_PREP_STEP_KEYS = new Set<AppTourStepKey>([
+  APP_TOUR_STEP_KEYS.todayAgenda,
+  APP_TOUR_STEP_KEYS.placeTasks,
   APP_TOUR_STEP_KEYS.weekView,
   APP_TOUR_STEP_KEYS.aiSchedulerButton,
-  APP_TOUR_STEP_KEYS.weekMonthToggle,
   APP_TOUR_STEP_KEYS.aiReschedulerButton,
 ]);
 
@@ -607,7 +608,7 @@ export function getTourStepAdvanceDelayMs(meta: AppTourStepMeta | undefined): nu
   if (TOUR_LAZY_PANEL_STEP_KEYS.has(meta.stepKey)) {
     return navigationComplete + advanceExtra.lazyPanelMs;
   }
-  if (meta.stepKey === APP_TOUR_STEP_KEYS.monthView) {
+  if (meta.stepKey === APP_TOUR_STEP_KEYS.weekView) {
     return navigationComplete + advanceExtra.viewSwitchMs;
   }
   if (TOUR_DASHBOARD_PREP_STEP_KEYS.has(meta.stepKey)) {

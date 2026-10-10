@@ -14,7 +14,7 @@ import { cn, formatTimeAMPM, getTimeAndPeriod, getInitials, getAbbreviatedDispla
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { playSubtaskCompleteSound } from "../lib/toast-sound";
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";

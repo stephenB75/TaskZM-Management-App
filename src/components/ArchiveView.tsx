@@ -23,7 +23,7 @@ import { TaskDialog } from "./TaskDialog";
 import { ArchiveTaskCard } from "./ArchiveTaskCard";
 import { cn, prepareTaskForDialog } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { Icon } from "./Icon";
 import {

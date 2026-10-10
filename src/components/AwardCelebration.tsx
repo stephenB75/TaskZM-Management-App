@@ -14,6 +14,9 @@ import {
   TOAST_DURATION_LONG_MS,
 } from "../lib/layout-constants";
 import type { Award } from "../types";
+import { getPlatform } from "../lib/platform";
+import { showAchievementNotification } from "../lib/native-notifications";
+import { NOTIFICATION_TAG_PREFIXES } from "../lib/notification-constants";
 
 export function AwardCelebration() {
   const { celebrationQueue, dismissCelebration } = useAwards();
@@ -67,6 +70,14 @@ export function AwardCelebration() {
   }, [settings.soundEnabled]);
 
   const showAwardToast = useCallback((award: Award, tier: CelebrationTier) => {
+    if (getPlatform().isNative) {
+      void showAchievementNotification({
+        awardId: award.id,
+        awardName: award.name,
+        tag: `${NOTIFICATION_TAG_PREFIXES.award}${award.id}`,
+      }).catch(() => undefined);
+      return;
+    }
     const iconName = getCategoryIconName(award.category);
     const color = getRarityColor(award.rarity);
     const isElevated = tier === "elevated";

@@ -2,10 +2,12 @@ import React, { useEffect, useMemo } from 'react';
 import { useSheetItem } from '../hooks/useSheetItem';
 import { useDraggable } from '@dnd-kit/core';
 import { useTasks } from '../contexts/TaskContext';
-import { completedCountByRecentMonth, isUnfinishedTask, tasksScheduledOn, tasksToPlace } from '../lib/home-task-groups';
+import { completedCountByRecentMonth, homeAgendaOn, isUnfinishedTask, tasksScheduledOn, tasksToPlace } from '../lib/home-task-groups';
+import { useCalendarEvents } from '../hooks/useCalendarEvents';
+import { HOME_UPCOMING_PREVIEW_COUNT } from '../lib/business-constants';
 import { MOBILE_HOME_UI_TEXT } from '../lib/navigation-constants';
 import { PlaceTasksButton, SummaryCard } from './HomeSummary';
-import { PastelTaskCard, TaskTimelineRow } from './PastelTaskCard';
+import { EventTimelineRow, PastelEventCard, PastelTaskCard, TaskTimelineRow } from './PastelTaskCard';
 import {
   MOBILE_HOME_BODY_FONT_SIZE,
   MOBILE_HOME_CARD_RADIUS,
@@ -15,8 +17,8 @@ import {
   MOBILE_HOME_TAB_FONT_SIZE,
   MOBILE_HOME_LABEL_GAP,
 } from '../lib/layout-constants';
-import { COLOR_BACKGROUND_GRAY, COLOR_BACKGROUND_WHITE, COLOR_PASTEL_YELLOW, COLOR_TEXT_PRIMARY } from '../lib/color-theme';
-import { getDateString } from '../lib/utils';
+import { THEME_COLOR } from '../lib/color-theme';
+import { dateStringToLocalDate, getDateString } from '../lib/utils';
 import { TaskDialog } from './TaskDialog';
 import { WeekBoard } from './WeekBoard';
 import type { Task } from '../types';
@@ -35,6 +37,16 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
   const unfinished = useMemo(() => tasks.filter((task) => isUnfinishedTask(task, now)), [tasks, now]);
   const toPlace = useMemo(() => tasksToPlace(tasks, unfinished), [tasks, unfinished]);
   const upcoming = useMemo(() => tasksScheduledOn(tasks, now), [tasks, now]);
+  const todayKey = getDateString(now);
+  const { dayStart, dayEnd } = useMemo(() => {
+    const start = dateStringToLocalDate(todayKey);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    end.setMilliseconds(-1);
+    return { dayStart: start, dayEnd: end };
+  }, [todayKey]);
+  const { events } = useCalendarEvents(dayStart, dayEnd);
+  const agenda = useMemo(() => homeAgendaOn(tasks, events, now), [tasks, events, now]);
   const doneCount = useMemo(() => tasks.filter((task) => task.status === 'done').length, [tasks]);
   const months = useMemo(() => completedCountByRecentMonth(tasks, now), [tasks, now]);
   const peak = months.reduce((best, month) => Math.max(best, month.count), 0);
@@ -50,9 +62,9 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
     <div
       className="h-full overflow-y-auto"
       style={{
-        background: COLOR_BACKGROUND_GRAY,
+        background: THEME_COLOR.page,
         padding: MOBILE_HOME_PAGE_PADDING,
-        color: COLOR_TEXT_PRIMARY,
+        color: THEME_COLOR.text,
       }}
     >
       <div
@@ -85,7 +97,7 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
       >
         <section
           style={{
-            background: COLOR_BACKGROUND_WHITE,
+            background: THEME_COLOR.surface,
             borderRadius: MOBILE_HOME_CARD_RADIUS,
             padding: MOBILE_HOME_PAGE_PADDING,
           }}
@@ -109,7 +121,7 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
                       width: '100%',
                       height,
                       borderRadius: MOBILE_HOME_CARD_RADIUS,
-                      background: highlighted ? COLOR_PASTEL_YELLOW : COLOR_BACKGROUND_GRAY,
+                      background: highlighted ? THEME_COLOR.highlight : THEME_COLOR.muted,
                     }}
                   />
                   <span style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE, marginTop: MOBILE_HOME_SECTION_GAP }}>{month.label}</span>
@@ -119,21 +131,27 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
           </div>
         </section>
 
-        <section className="flex flex-col" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
-          {upcoming.length === 0 ? (
+        <section className="flex flex-col" data-tour="home-agenda" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
+          {agenda.length === 0 ? (
             <p style={{ margin: 0 }}>{MOBILE_HOME_UI_TEXT.weekEmpty}</p>
           ) : (
-            upcoming.slice(0, 4).map((task, index) => (
-              <div key={task.id} className={index === 0 ? 'taskzm-up-next' : undefined}>
+            agenda.slice(0, HOME_UPCOMING_PREVIEW_COUNT).map((item, index) => (
+              <div key={item.key} className={index === 0 ? 'taskzm-up-next' : undefined}>
                 {index === 0 ? (
                   <p className="flex items-center font-medium text-primary" style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE, margin: `0 0 ${MOBILE_HOME_LABEL_GAP}`, gap: MOBILE_HOME_LABEL_GAP }}>
                     <span aria-hidden className="taskzm-up-next-dot" />
                     {MOBILE_HOME_UI_TEXT.upNext}
                   </p>
                 ) : null}
-                <TaskTimelineRow task={task}>
-                  <WeekDraggable task={task} hideTime onOpen={() => setEditorTask(task)} />
-                </TaskTimelineRow>
+                {item.kind === 'task' ? (
+                  <TaskTimelineRow task={item.task}>
+                    <WeekDraggable task={item.task} hideTime onOpen={() => setEditorTask(item.task)} />
+                  </TaskTimelineRow>
+                ) : (
+                  <EventTimelineRow event={item.event}>
+                    <PastelEventCard event={item.event} hideTime />
+                  </EventTimelineRow>
+                )}
               </div>
             ))
           )}

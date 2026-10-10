@@ -20,7 +20,7 @@ import {
 import { TaskDialog } from "./TaskDialog";
 import { ScrollArea } from "./ui/scroll-area";
 import { cn, getInitials, getAbbreviatedDisplayName, sanitizeHTML, hasHTMLTags } from "../lib/utils";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import type { Task, Folder as FolderType } from "../types";
 import { Z_INDEX } from "../lib/layout-constants";
 import { TASK_CARD_ASSIGNED_USER_COLORS, TASK_CARD_ADDITIONAL_FONT_SIZES } from "../lib/task-card-constants";

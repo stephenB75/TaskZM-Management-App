@@ -40,7 +40,12 @@ import {
   isTaskDueNow,
 } from "../lib/notification-task-filters";
 
-export function NotificationsPanel() {
+interface NotificationsPanelProps {
+  /** Rendered inside the mobile bottom sheet: no page header, sheet supplies padding. */
+  embedded?: boolean;
+}
+
+export function NotificationsPanel({ embedded = false }: NotificationsPanelProps = {}) {
   const { tasks } = useTasks();
   const { settings, getToastNotifications, markToastAsRead, clearToastNotification, updateBadge } = useNotifications();
   const { getTimerState } = usePomodoro();
@@ -466,26 +471,7 @@ export function NotificationsPanel() {
     </div>
   );
 
-  return (
-    <div
-      className={cn(
-        'flex flex-col',
-        UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className,
-        'dark:from-gray-950 dark:via-gray-900 dark:to-gray-900',
-        shouldUseMobileLayout ? 'min-h-full' : 'h-full',
-      )}
-    >
-      <AppHeader
-        title={NOTIFICATION_PANEL_TEXT.title}
-        panelOpen={true}
-        isSidePanelHeader={true}
-        description={
-          unreadCount > 0
-            ? NOTIFICATION_MESSAGES.unreadCount(unreadCount)
-            : NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp
-        }
-        hideDesktopLogo
-        actions={
+  const headerActions =
           selectedNotificationIds.size > 0 ? (
             <div className="flex flex-wrap items-center justify-end" style={{ gap: NOTIFICATION_PANEL.headerActionGapPx }}>
               <Button
@@ -531,12 +517,49 @@ export function NotificationsPanel() {
               <span className="hidden sm:inline">{NOTIFICATION_PANEL_TEXT.markAllRead}</span>
               <span className="sm:hidden">{NOTIFICATION_PANEL_TEXT.markRead}</span>
             </Button>
-          )
-        }
-      />
+          );
+
+  const statusText =
+    unreadCount > 0
+      ? NOTIFICATION_MESSAGES.unreadCount(unreadCount)
+      : NOTIFICATION_PANEL_TEXT.emptyState.allCaughtUp;
+
+  return (
+    <div
+      className={cn(
+        'flex flex-col',
+        !embedded && UI_NOTIFICATIONS_PANEL_GRADIENTS.main.className,
+        !embedded && 'dark:from-gray-950 dark:via-gray-900 dark:to-gray-900',
+        shouldUseMobileLayout ? 'min-h-full' : 'h-full',
+      )}
+    >
+      {embedded ? (
+        <div className="flex items-center justify-between" style={{ gap: NOTIFICATION_PANEL.headerActionGapPx }}>
+          <p className="text-muted-foreground" style={{ fontSize: NOTIFICATION_PANEL.headerActionFontSize }}>
+            {statusText}
+          </p>
+          {headerActions}
+        </div>
+      ) : (
+        <AppHeader
+          title={NOTIFICATION_PANEL_TEXT.title}
+          panelOpen={true}
+          isSidePanelHeader={true}
+          description={statusText}
+          hideDesktopLogo
+          actions={headerActions}
+        />
+      )}
 
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="px-4 md:px-8 py-3 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
+        <div
+          className={cn(
+            'flex-shrink-0',
+            embedded
+              ? 'py-3'
+              : 'px-4 md:px-8 py-3 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm',
+          )}
+        >
           <div
             className="flex flex-wrap"
             style={{ gap: NOTIFICATION_PANEL.filterChipGapPx }}
@@ -585,7 +608,9 @@ export function NotificationsPanel() {
         </div>
 
         <div className="flex-1 min-h-0">
-          {!shouldUseMobileLayout ? (
+          {embedded ? (
+            renderNotificationsList()
+          ) : !shouldUseMobileLayout ? (
             <div className="h-full overflow-y-auto overscroll-contain">
               <div className="p-4 md:px-8 pb-safe md:pb-8">{renderNotificationsList()}</div>
             </div>

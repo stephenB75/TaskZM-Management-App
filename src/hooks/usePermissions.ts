@@ -1,7 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { TeamContext } from '../contexts/TeamContext';
 import { useContext, useMemo } from 'react';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 
 export type UserRole = 'admin' | 'member' | 'viewer';
 

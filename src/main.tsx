@@ -469,10 +469,11 @@ import { ensureWebReleaseIsCurrent } from './lib/app-release-cache';
 // Platform detection
 const isNative = Capacitor.isNativePlatform();
 
+initNativeKeyboardHandlers();
+
 if (isNative) {
   initNativeAppHandlers();
   initNativeNotificationHandlers();
-  initNativeKeyboardHandlers();
   void initNativePushNotifications();
 }
 

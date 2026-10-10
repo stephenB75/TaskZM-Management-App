@@ -50,6 +50,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
     };
   }, []);
 
+  // Native apps deliver every message as a system notification (see lib/toast-wrapper).
+  if (platform.isNative) return null;
+
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
@@ -69,9 +72,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           title: 'group-[.toast]:font-semibold group-[.toast]:text-foreground',
           description: 'group-[.toast]:text-muted-foreground',
           actionButton:
-            'group-[.toast]:rounded-full group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
+            'group-[.toast]:rounded-md group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
           cancelButton:
-            'group-[.toast]:rounded-full group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+            'group-[.toast]:rounded-md group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
           closeButton:
             'group-[.toast]:!min-h-0 group-[.toast]:!min-w-0 group-[.toast]:p-0 group-[.toast]:shrink-0',
           success:

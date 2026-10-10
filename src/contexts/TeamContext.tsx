@@ -3,7 +3,7 @@ import type { User, Team } from '../types';
 import { useAuth } from './AuthContext';
 import { useTasks } from './TaskContext';
 import * as api from '../lib/api';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { DAYS_IN_WEEK } from '../lib/business-constants';
 import { createDefaultTeamContext } from '../lib/context-defaults';
 import { TEAM_MAX_MEMBERS } from '../lib/layout-constants';

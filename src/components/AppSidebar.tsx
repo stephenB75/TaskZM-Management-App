@@ -19,6 +19,8 @@ import { useNotifications } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
+import { triggerSelectionHaptic } from "../lib/native-haptics";
+import { BADGE_DISPLAY_MAX } from "../lib/notification-constants";
 import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black logo for light mode
 import taskzmLogoGray from "../assets/taskzm-logo-gray.png";  // Gray logo for dark mode
 
@@ -59,29 +61,33 @@ export function AppSidebar({
   const menuItems = [
     {
       id: "today",
-      label: NAVIGATION_UI_TEXT.home,
-      iconName: "calendar",
+      label: NAVIGATION_UI_TEXT.today,
+      iconName: "calendar-today",
       badge:
         currentView !== "today" && upcomingAndDueNowCount > 0
           ? upcomingAndDueNowCount
           : undefined,
+      mobileHidden: true,
     },
     {
       id: "dashboard",
       label: NAVIGATION_UI_TEXT.week,
       iconName: "kanban",
+      mobileHidden: true,
     },
     {
       id: "notifications",
       label: NAVIGATION_UI_TEXT.notifications,
       iconName: "bell",
       badge: badgeCount,
+      mobileHidden: true,
     },
     {
       id: "inbox",
       label: NAVIGATION_UI_TEXT.inbox,
       iconName: "inbox",
       badge: unscheduledCount,
+      mobileHidden: true,
     },
     {
       id: "folders",
@@ -132,9 +138,9 @@ export function AppSidebar({
       </div>
 
       {/* Navigation */}
-      <div className="flex min-h-0 flex-1 flex-col justify-evenly gap-1 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col justify-start gap-2 overflow-y-auto pt-4">
         {menuItems
-          .filter((item) => !('desktopOnly' in item && item.desktopOnly)) // Mobile sidebar excludes desktop-only items
+          .filter((item) => !('mobileHidden' in item && item.mobileHidden))
           .map((item) => {
             return (
               <Button
@@ -148,6 +154,7 @@ export function AppSidebar({
                     "bg-primary text-primary-foreground",
                 )}
                 onClick={() => {
+                  void triggerSelectionHaptic();
                   onViewChange(item.id);
                   onOpenChange?.(false);
                 }}
@@ -189,7 +196,7 @@ export function AppSidebar({
       {/* Desktop Icon Navbar - Only visible on desktop (>= 1280px) */}
       {!shouldUseMobileLayout && (
         <div
-          className="relative flex border-r border-border bg-white dark:bg-gray-900 flex-col h-full flex-shrink-0 overflow-y-auto"
+          className="relative flex border-r border-border bg-card flex-col h-full flex-shrink-0 overflow-y-auto"
           data-tour="sidebar"
           style={{ zIndex: SIDEBAR_Z_INDEX, width: SIDEBAR_WIDTH }}
         >
@@ -233,7 +240,7 @@ export function AppSidebar({
                 )}
                 {item.badge !== undefined && item.badge > 0 && !item.pro && (
                   <Badge variant="secondary" className="ml-auto">
-                    {item.badge > 9 ? "9+" : item.badge}
+                    {item.badge > BADGE_DISPLAY_MAX ? `${BADGE_DISPLAY_MAX}+` : item.badge}
                   </Badge>
                 )}
               </button>

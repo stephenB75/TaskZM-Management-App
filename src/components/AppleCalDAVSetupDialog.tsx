@@ -19,8 +19,8 @@ import { COLOR_TEXT_WHITE } from '../lib/color-theme';
 import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
-import { APPLE_ID_BASE_URL, APPLE_ID_DISPLAY_NAME, APPLE_CALENDAR_FALLBACK_COLOR, ICLOUD_EMAIL_PLACEHOLDER } from '../lib/calendar-integration-constants';
-import { DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
+import { APPLE_ID_BASE_URL, APPLE_ID_DISPLAY_NAME, APPLE_CALENDAR_FALLBACK_COLOR, ICLOUD_EMAIL_PLACEHOLDER, CALDAV_TRANSIENT_STATUSES } from '../lib/calendar-integration-constants';
+import { DEFAULT_FALLBACK_TIMEZONE, TIMING_CONSTANTS } from '../lib/timing-constants';
 
 interface AppleCalDAVSetupDialogProps {
   open: boolean;
@@ -180,18 +180,38 @@ export function AppleCalDAVSetupDialog({
       // Trigger initial sync with user's timezone
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_FALLBACK_TIMEZONE;
 
-      const syncResponse = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userTimezone }),
-      });
+      type SyncData = { success?: boolean; error?: string; errors?: string[]; created?: number };
+      const syncCalendar = async (calendarHref: string): Promise<SyncData> => {
+        const request = () =>
+          fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userTimezone, calendarHref, skipDeletions: false }),
+          });
+        let response = await request();
+        if (CALDAV_TRANSIENT_STATUSES.has(response.status)) {
+          await new Promise((resolve) => setTimeout(resolve, TIMING_CONSTANTS.calendar.eventsFetchRetryDelayMs));
+          response = await request();
+        }
+        return response.json();
+      };
 
-      let syncData: { success?: boolean; error?: string; errors?: string[]; created?: number };
+      let syncData: SyncData;
       try {
-        syncData = await syncResponse.json();
+        const results: SyncData[] = [];
+        for (const calendar of selectedCalendars) {
+          results.push(await syncCalendar(calendar.href));
+          await new Promise((resolve) => setTimeout(resolve, TIMING_CONSTANTS.calendar.caldavSyncCalendarDelayMs));
+        }
+        const errors = results.flatMap((r) => r.errors ?? (r.error ? [r.error] : []));
+        syncData = {
+          success: results.every((r) => r.success),
+          created: results.reduce((sum, r) => sum + (Number(r.created) || 0), 0),
+          errors,
+        };
       } catch {
         setError('Sync started but we couldn’t read the result. You can try syncing again from Settings.');
         setStep(3);

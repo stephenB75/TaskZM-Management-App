@@ -114,7 +114,7 @@ export function SettingsProfileSection({
               type="button"
               variant="outline"
               size="icon"
-              className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-background bg-card hover:bg-muted"
+              className="absolute -bottom-0.5 -right-0.5 rounded-lg bg-card shadow-md hover:bg-muted"
               style={{
                 width: SETTINGS_PANEL_EDIT_BUTTON_SIZE,
                 height: SETTINGS_PANEL_EDIT_BUTTON_SIZE,

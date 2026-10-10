@@ -1,5 +1,5 @@
 import { getCategoryFromTags } from './ai-config';
-import { HOME_ACTIVITY_MONTH_COUNT } from './business-constants';
+import { HOME_ACTIVITY_MONTH_COUNT, MILLISECONDS_PER_DAY } from './business-constants';
 import {
   COLOR_PASTEL_LAVENDER,
   COLOR_PASTEL_LILAC,
@@ -10,6 +10,8 @@ import {
   COLOR_PRIMARY_DARK,
 } from './color-theme';
 import { isSameCalendarDay, isTaskOverdue } from './notification-task-filters';
+import { getCalendarEventSortTimeOnDay, parseCalendarEventTime } from './utils';
+import type { CalendarEvent } from '../hooks/useCalendarEvents';
 import type { Task } from '../types';
 
 export type PastelWash = {
@@ -56,6 +58,49 @@ export function tasksScheduledOn(tasks: Task[], day: Date): Task[] {
       const bTime = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
       return aTime - bTime;
     });
+}
+
+export type HomeAgendaItem =
+  | { kind: 'task'; key: string; time: number; task: Task }
+  | { kind: 'event'; key: string; time: number; event: CalendarEvent };
+
+export function calendarEventsOn(events: CalendarEvent[], day: Date): CalendarEvent[] {
+  const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+  const dayEnd = dayStart + MILLISECONDS_PER_DAY;
+  return events.filter((event) => {
+    const start = parseCalendarEventTime(event.start).getTime();
+    if (Number.isNaN(start)) return false;
+    const endRaw = parseCalendarEventTime(event.end || event.start).getTime();
+    const end = Number.isNaN(endRaw) ? start : endRaw;
+    // Exclusive end: an all-day event ending at midnight does not spill into the next day.
+    return start < dayEnd && (end > dayStart || start === dayStart);
+  });
+}
+
+export function isAllDayCalendarEvent(event: CalendarEvent): boolean {
+  const start = parseCalendarEventTime(event.start);
+  const end = parseCalendarEventTime(event.end || event.start);
+  const atMidnight = (date: Date) => date.getHours() === 0 && date.getMinutes() === 0;
+  return atMidnight(start) && atMidnight(end) && end.getTime() > start.getTime();
+}
+
+/** Tasks scheduled on `day` merged with that day's calendar events, in time order. */
+export function homeAgendaOn(tasks: Task[], events: CalendarEvent[], day: Date): HomeAgendaItem[] {
+  const items: HomeAgendaItem[] = [
+    ...tasksScheduledOn(tasks, day).map((task) => ({
+      kind: 'task' as const,
+      key: `task-${task.id}`,
+      time: task.scheduledDate ? new Date(task.scheduledDate).getTime() : 0,
+      task,
+    })),
+    ...calendarEventsOn(events, day).map((event) => ({
+      kind: 'event' as const,
+      key: `event-${event.id}`,
+      time: getCalendarEventSortTimeOnDay(day, event.start),
+      event,
+    })),
+  ];
+  return items.sort((a, b) => a.time - b.time);
 }
 
 export function completedCountByRecentMonth(tasks: Task[], now: Date): { label: string; count: number }[] {

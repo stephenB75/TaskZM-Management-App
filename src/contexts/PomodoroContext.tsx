@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { logger } from '../lib/logger';
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import {

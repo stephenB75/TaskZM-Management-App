@@ -80,12 +80,26 @@ function renderStepContent(meta: AppTourStepMeta, isMobile: boolean): React.Reac
         </div>
       );
     }
-    case APP_TOUR_STEP_KEYS.weekMonthToggle:
+    case APP_TOUR_STEP_KEYS.headerBell:
       return (
         <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.weekMonthToggle.title}</h3>
-          <p className="text-sm text-muted-foreground mb-2">{APP_TOUR_UI.weekMonthToggle.description}</p>
-          <p className="text-xs text-muted-foreground">{APP_TOUR_UI.weekMonthToggle.hint}</p>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.headerBell.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.headerBell.description}</p>
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.todayAgenda:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.todayAgenda.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.todayAgenda.description}</p>
+          <TourBullets items={APP_TOUR_UI.todayAgenda.bullets} />
+        </div>
+      );
+    case APP_TOUR_STEP_KEYS.placeTasks:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.placeTasks.title}</h3>
+          <p className="text-sm text-muted-foreground">{APP_TOUR_UI.placeTasks.description}</p>
         </div>
       );
     case APP_TOUR_STEP_KEYS.weekView:
@@ -94,14 +108,6 @@ function renderStepContent(meta: AppTourStepMeta, isMobile: boolean): React.Reac
           <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.weekView.title}</h3>
           <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.weekView.description}</p>
           <TourBullets items={APP_TOUR_UI.weekView.bullets} />
-        </div>
-      );
-    case APP_TOUR_STEP_KEYS.monthView:
-      return (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.monthView.title}</h3>
-          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.monthView.description}</p>
-          <TourBullets items={APP_TOUR_UI.monthView.bullets} />
         </div>
       );
     case APP_TOUR_STEP_KEYS.aiSchedulerButton:
@@ -167,16 +173,9 @@ function renderStepContent(meta: AppTourStepMeta, isMobile: boolean): React.Reac
 }
 
 const DASHBOARD_TARGETS = new Set<string>([
-  APP_TOUR_TARGETS.weekMonthToggle,
-  APP_TOUR_TARGETS.kanbanBoard,
-  APP_TOUR_TARGETS.kanbanMobile,
-  APP_TOUR_TARGETS.monthCalendar,
-  APP_TOUR_TARGETS.aiScheduler,
+  APP_TOUR_TARGETS.weekBoard,
   APP_TOUR_TARGETS.aiSchedulePreview,
-  APP_TOUR_TARGETS.aiSchedulePreviewMobile,
-  APP_TOUR_TARGETS.aiReschedule,
   APP_TOUR_TARGETS.rescheduleDialog,
-  APP_TOUR_TARGETS.rescheduleDialogOptions,
   APP_TOUR_TARGETS.aiSchedulerSection,
   APP_TOUR_TARGETS.aiRescheduleSection,
 ]);
@@ -199,14 +198,6 @@ function dispatchTourOpenAiDialog(dialog: 'schedule-preview' | 'reschedule-day')
 
 function dispatchTourCloseAiDialog() {
   window.dispatchEvent(new CustomEvent('tour-close-ai-dialog'));
-}
-
-function dispatchTourOpenDashboardSchedulePreview() {
-  window.dispatchEvent(new CustomEvent('tour-open-schedule-preview'));
-}
-
-function dispatchTourOpenDashboardRescheduleDialog() {
-  window.dispatchEvent(new CustomEvent('tour-open-reschedule-dialog'));
 }
 
 function dispatchTourCloseDashboardDialogs() {
@@ -237,11 +228,9 @@ function closeTourDashboardDialogs() {
   dispatchTourCloseDashboardDialogs();
 }
 
-function closeAllTourDialogs(isMobile: boolean) {
+function closeAllTourDialogs() {
   closeTourDashboardDialogs();
-  if (isMobile) {
-    dispatchTourClosePanel();
-  }
+  dispatchTourClosePanel();
 }
 
 function isTourTargetReady(target: string): boolean {
@@ -415,7 +404,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
   useEffect(() => {
     dispatchTourActiveChanged(run);
     if (!run) {
-      closeAllTourDialogs(shouldUseMobileLayout);
+      closeTourDashboardDialogs();
       settingsPanelReadyRef.current = false;
       tourFinishingRef.current = false;
     } else {
@@ -494,96 +483,57 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
 
       const { stepKey, target } = meta;
 
+      if (
+        stepKey === APP_TOUR_STEP_KEYS.headerBell
+        || stepKey === APP_TOUR_STEP_KEYS.todayAgenda
+        || stepKey === APP_TOUR_STEP_KEYS.placeTasks
+      ) {
+        closeAllTourDialogs();
+        onNavigate?.(shouldUseMobileLayout ? 'today' : TOUR_CONSTANTS.viewModes.dashboard);
+        scrollTourTargetIntoView(target);
+      }
+
       if (DASHBOARD_TARGETS.has(target)) {
         onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.weekView) {
+        closeAllTourDialogs();
         dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
-        closeAllTourDialogs(shouldUseMobileLayout);
-      }
-
-      if (stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle) {
-        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
-        closeAllTourDialogs(shouldUseMobileLayout);
-      }
-
-      if (stepKey === APP_TOUR_STEP_KEYS.monthView) {
-        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
-        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.month);
-        closeAllTourDialogs(shouldUseMobileLayout);
+        scrollTourTargetIntoView(target);
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulerButton) {
-        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
-        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
-        closeAllTourDialogs(shouldUseMobileLayout);
-        if (shouldUseMobileLayout) {
-          dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
-        }
+        closeAllTourDialogs();
+        dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
       }
 
-      if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulePreview) {
-        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
-        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
-        const previewTarget = shouldUseMobileLayout
-          ? APP_TOUR_TARGETS.aiSchedulePreviewMobile
-          : APP_TOUR_TARGETS.aiSchedulePreview;
-        if (!isTourTargetReady(previewTarget)) {
-          closeAllTourDialogs(shouldUseMobileLayout);
-          if (shouldUseMobileLayout) {
-            dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
-            window.setTimeout(() => {
-              dispatchTourOpenAiDialog('schedule-preview');
-              scrollTourTargetIntoView(previewTarget);
-            }, TIMING_CONSTANTS.tour.navigationComplete);
-          } else {
-            dispatchTourOpenDashboardSchedulePreview();
-            scrollTourTargetIntoView(previewTarget);
-          }
-        }
+      if (stepKey === APP_TOUR_STEP_KEYS.aiSchedulePreview && !isTourTargetReady(target)) {
+        dispatchTourCloseAiDialog();
+        dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+        window.setTimeout(() => {
+          dispatchTourOpenAiDialog('schedule-preview');
+          scrollTourTargetIntoView(target);
+        }, TIMING_CONSTANTS.tour.navigationComplete);
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.aiReschedulerButton) {
-        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
-        if (shouldUseMobileLayout) {
-          dispatchTourCloseDashboardDialogs();
-          dispatchTourCloseAiDialog();
-          dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
-        } else {
-          dispatchTourCloseDashboardDialogs();
-          dispatchTourCloseAiDialog();
-        }
+        dispatchTourCloseAiDialog();
+        dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
       }
 
-      if (stepKey === APP_TOUR_STEP_KEYS.rescheduleDialog) {
-        onNavigate?.(TOUR_CONSTANTS.viewModes.dashboard);
+      if (stepKey === APP_TOUR_STEP_KEYS.rescheduleDialog && !isTourTargetReady(target)) {
         preloadSettingsPanelForTour();
-        const rescheduleTarget = APP_TOUR_TARGETS.rescheduleDialog;
-        if (!isTourTargetReady(rescheduleTarget)) {
-          if (shouldUseMobileLayout) {
-            closeAllTourDialogs(shouldUseMobileLayout);
-            dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
-            window.setTimeout(() => {
-              dispatchTourOpenAiDialog('reschedule-day');
-              scrollTourTargetIntoView(rescheduleTarget);
-            }, TIMING_CONSTANTS.tour.navigationComplete);
-          } else {
-            dispatchTourCloseAiDialog();
-            dispatchTourCloseDashboardDialogs();
-            dispatchTourOpenDashboardRescheduleDialog();
-            scrollTourTargetIntoView(rescheduleTarget);
-          }
-        }
-      }
-
-      if (stepKey === APP_TOUR_STEP_KEYS.weekView || stepKey === APP_TOUR_STEP_KEYS.monthView) {
-        scrollTourTargetIntoView(meta.target);
+        dispatchTourCloseAiDialog();
+        dispatchTourOpenPanel(TOUR_CONSTANTS.panels.ai);
+        window.setTimeout(() => {
+          dispatchTourOpenAiDialog('reschedule-day');
+          scrollTourTargetIntoView(target);
+        }, TIMING_CONSTANTS.tour.navigationComplete);
       }
 
       if (stepKey === APP_TOUR_STEP_KEYS.settingsIntro || stepKey === APP_TOUR_STEP_KEYS.settingsSection) {
-        closeAllTourDialogs(shouldUseMobileLayout);
-        dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
+        closeAllTourDialogs();
         preloadSettingsPanelForTour();
         onNavigate?.('settings');
         if (stepKey === APP_TOUR_STEP_KEYS.settingsSection && meta.settingsId) {
@@ -596,11 +546,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
         scrollTourTargetIntoView(meta.target);
       }
 
-      if (
-        stepKey === APP_TOUR_STEP_KEYS.aiSchedulerButton
-        || stepKey === APP_TOUR_STEP_KEYS.aiReschedulerButton
-        || stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle
-      ) {
+      if (meta.isFixed) {
         prepareFixedHeaderTourTarget(meta.target);
       }
     },
@@ -644,18 +590,6 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
       }
 
       if (type === EVENTS.STEP_AFTER) {
-        if (meta?.stepKey === APP_TOUR_STEP_KEYS.weekMonthToggle) {
-          window.setTimeout(() => {
-            dispatchTourViewMode(TOUR_CONSTANTS.viewModes.month);
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
-        if (meta?.stepKey === APP_TOUR_STEP_KEYS.monthView) {
-          window.setTimeout(() => {
-            dispatchTourViewMode(TOUR_CONSTANTS.viewModes.week);
-          }, TIMING_CONSTANTS.tour.navigationComplete);
-        }
-
         const nextMeta = getStepMeta(index + 1);
         if (nextMeta && stepNeedsNavigationLeadTime(nextMeta)) {
           prepareStep(index + 1);
@@ -671,9 +605,7 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           if (meta && isAppTourDialogStep(meta)) {
             setJoyrideActive(false);
             closeTourDashboardDialogs();
-            if (shouldUseMobileLayout) {
-              dispatchTourClosePanel();
-            }
+            dispatchTourClosePanel();
           }
 
           const scheduleAdvance = () => {
@@ -774,7 +706,8 @@ export function AppTour({ run, onFinish, onNavigate, onShowPricing }: AppTourPro
           console.warn('Failed to save tour completion:', error);
         }
 
-        closeAllTourDialogs(shouldUseMobileLayout);
+        closeAllTourDialogs();
+        if (shouldUseMobileLayout) onNavigate?.('today');
 
         const isNewSignup =
           window?.localStorage?.getItem(NOTIFICATION_STORAGE_KEYS.newSignup) === 'true';

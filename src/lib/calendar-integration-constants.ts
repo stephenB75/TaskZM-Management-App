@@ -21,6 +21,9 @@ export const APPLE_ID_DISPLAY_NAME = 'appleid.apple.com';
 /** Placeholder for iCloud email input in Apple CalDAV setup. */
 export const ICLOUD_EMAIL_PLACEHOLDER = 'your.email@icloud.com';
 
+/** Edge gateway / worker-limit statuses worth one retry (546 = worker resource limit). */
+export const CALDAV_TRANSIENT_STATUSES: ReadonlySet<number> = new Set([502, 503, 546]);
+
 /** Fallback color when a discovered Apple calendar has no color (indigo-500). */
 export const APPLE_CALENDAR_FALLBACK_COLOR = '#6366f1';
 

@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useTasks } from '../contexts/TaskContext';
 import { DroppableColumn } from './DroppableColumn';
-import { PastelTaskCard } from './PastelTaskCard';
+import { PastelEventCard, PastelTaskCard } from './PastelTaskCard';
 import { TaskDialog } from './TaskDialog';
-import { tasksScheduledOn } from '../lib/home-task-groups';
+import { homeAgendaOn } from '../lib/home-task-groups';
+import { useCalendarEvents } from '../hooks/useCalendarEvents';
 import { MOBILE_HOME_UI_TEXT } from '../lib/navigation-constants';
 import { DAYS_IN_WEEK } from '../lib/business-constants';
 import {
@@ -19,7 +20,7 @@ import {
   MOBILE_HOME_TAP_TARGET_PX,
 } from '../lib/layout-constants';
 import { KANBAN_COLUMN_DIMENSIONS } from '../lib/kanban-constants';
-import { COLOR_PRIMARY, COLOR_TEXT_PRIMARY } from '../lib/color-theme';
+import { COLOR_PRIMARY, THEME_COLOR } from '../lib/color-theme';
 import { getDateString, getWeekStart } from '../lib/utils';
 import { clearEditingScrollPad, revealTaskAboveDialog } from '../lib/reveal-editing-task';
 import { useDraggable } from '@dnd-kit/core';
@@ -69,7 +70,14 @@ export function WeekBoard({
     setAnchor(startOfDay(next));
   };
   const selected = days.find((day) => getDateString(day) === selectedKey) ?? days[0];
-  const selectedTasks = tasksScheduledOn(tasks, selected);
+  const weekEnd = useMemo(() => {
+    const end = new Date(days[days.length - 1]);
+    end.setDate(end.getDate() + 1);
+    end.setMilliseconds(-1);
+    return end;
+  }, [days]);
+  const { events } = useCalendarEvents(days[0], weekEnd);
+  const selectedAgenda = homeAgendaOn(tasks, events, selected);
 
   const shiftWeek = (amount: number) => {
     setAnchor((current) => {
@@ -93,8 +101,9 @@ export function WeekBoard({
   return (
     <section
       id="home-week"
-      className={embedded ? 'min-w-0' : 'flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-white'}
-      style={{ padding: embedded ? 0 : MOBILE_HOME_PAGE_PADDING, color: COLOR_TEXT_PRIMARY }}
+      data-tour="week-board"
+      className={embedded ? 'min-w-0' : 'flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-background'}
+      style={{ padding: embedded ? 0 : MOBILE_HOME_PAGE_PADDING, color: THEME_COLOR.text }}
     >
       <div className="flex flex-wrap items-center" style={{ gap: MOBILE_HOME_SECTION_GAP, marginBottom: MOBILE_HOME_SECTION_GAP }}>
         {embedded ? (
@@ -171,7 +180,7 @@ export function WeekBoard({
           }}
         >
           {days.map((day) => {
-            const dayTasks = tasksScheduledOn(tasks, day);
+            const dayAgenda = homeAgendaOn(tasks, events, day);
             return (
               <div key={getDateString(day)} style={{ minWidth: KANBAN_COLUMN_DIMENSIONS.width.desktop }}>
               <DroppableColumn id={getDateString(day)}>
@@ -179,14 +188,20 @@ export function WeekBoard({
                   {day.toLocaleDateString(undefined, { weekday: 'short' })} {day.getDate()}
                 </h2>
                 <ul className="flex flex-col" style={{ gap: MOBILE_HOME_SECTION_GAP, marginTop: MOBILE_HOME_SECTION_GAP }}>
-                  {dayTasks.length === 0 ? (
-                    <li style={{ color: COLOR_TEXT_PRIMARY, fontSize: MOBILE_HOME_TAB_FONT_SIZE }}>{MOBILE_HOME_UI_TEXT.weekEmpty}</li>
+                  {dayAgenda.length === 0 ? (
+                    <li style={{ color: THEME_COLOR.text, fontSize: MOBILE_HOME_TAB_FONT_SIZE }}>{MOBILE_HOME_UI_TEXT.weekEmpty}</li>
                   ) : (
-                    dayTasks.map((task) => (
-                      <li key={task.id} id={`home-task-${task.id}`} style={{ scrollMarginTop: HEADER_HEIGHT }}>
-                        <DraggableWeekCard task={task} fullTitle onOpen={() => openTask(task)} />
-                      </li>
-                    ))
+                    dayAgenda.map((item) =>
+                      item.kind === 'task' ? (
+                        <li key={item.key} id={`home-task-${item.task.id}`} style={{ scrollMarginTop: HEADER_HEIGHT }}>
+                          <DraggableWeekCard task={item.task} fullTitle onOpen={() => openTask(item.task)} />
+                        </li>
+                      ) : (
+                        <li key={item.key}>
+                          <PastelEventCard event={item.event} fullTitle />
+                        </li>
+                      ),
+                    )
                   )}
                 </ul>
               </DroppableColumn>
@@ -201,7 +216,7 @@ export function WeekBoard({
             {days.map((day) => {
               const dateKey = getDateString(day);
               const isSelected = dateKey === getDateString(selected);
-              const hasTasks = tasksScheduledOn(tasks, day).length > 0;
+              const hasTasks = homeAgendaOn(tasks, events, day).length > 0;
               return (
                 <button
                   key={dateKey}
@@ -211,7 +226,7 @@ export function WeekBoard({
                   style={{
                     border: 'none',
                     padding: 0,
-                    color: isSelected ? undefined : COLOR_TEXT_PRIMARY,
+                    color: isSelected ? undefined : THEME_COLOR.text,
                   }}
                 >
                   <span className="block" style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE }}>
@@ -250,14 +265,20 @@ export function WeekBoard({
                 {selected.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
               </h2>
               <ul className="flex flex-col" style={{ gap: MOBILE_HOME_SECTION_GAP, marginTop: MOBILE_HOME_SECTION_GAP }}>
-                {selectedTasks.length === 0 ? (
-                  <li style={{ color: COLOR_TEXT_PRIMARY }}>{MOBILE_HOME_UI_TEXT.weekEmpty}</li>
+                {selectedAgenda.length === 0 ? (
+                  <li style={{ color: THEME_COLOR.text }}>{MOBILE_HOME_UI_TEXT.weekEmpty}</li>
                 ) : (
-                  selectedTasks.map((task) => (
-                    <li key={task.id} id={`home-task-${task.id}`} style={{ scrollMarginTop: HEADER_HEIGHT }}>
-                      <DraggableWeekCard task={task} onOpen={() => openTask(task)} />
-                    </li>
-                  ))
+                  selectedAgenda.map((item) =>
+                    item.kind === 'task' ? (
+                      <li key={item.key} id={`home-task-${item.task.id}`} style={{ scrollMarginTop: HEADER_HEIGHT }}>
+                        <DraggableWeekCard task={item.task} onOpen={() => openTask(item.task)} />
+                      </li>
+                    ) : (
+                      <li key={item.key}>
+                        <PastelEventCard event={item.event} />
+                      </li>
+                    ),
+                  )
                 )}
               </ul>
             </DroppableColumn>
@@ -288,7 +309,7 @@ function weekChoiceStyle(selected: boolean): React.CSSProperties {
     paddingTop: MOBILE_HOME_LABEL_GAP,
     paddingBottom: MOBILE_HOME_LABEL_GAP,
     background: 'transparent',
-    color: selected ? undefined : COLOR_TEXT_PRIMARY,
+    color: selected ? undefined : THEME_COLOR.text,
     boxShadow: selected ? 'inset 0 -2px 0 currentColor' : undefined,
   };
 }

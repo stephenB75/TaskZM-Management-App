@@ -29,7 +29,7 @@ import { cn, prepareTaskForDialog, parseCalendarEventTime, getDateString, isSeri
 import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
 import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES, MONTH_VIEW_LOW_PRIORITY_DARK_TEXT } from "../lib/task-card-constants";

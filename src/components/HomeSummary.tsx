@@ -15,7 +15,7 @@ import {
   MOBILE_HOME_TAB_FONT_SIZE,
   MOBILE_HOME_TAP_TARGET_PX,
 } from '../lib/layout-constants';
-import { COLOR_BACKGROUND_WHITE, COLOR_PASTEL_YELLOW, COLOR_TEXT_PRIMARY } from '../lib/color-theme';
+import { THEME_COLOR } from '../lib/color-theme';
 
 export function greetingLine(now: Date): string {
   const hour = now.getHours();
@@ -39,8 +39,8 @@ export function SummaryCard({ label, value, accent, compact }: SummaryCardProps)
   return (
     <article
       style={{
-        background: accent ? COLOR_PASTEL_YELLOW : COLOR_BACKGROUND_WHITE,
-        color: COLOR_TEXT_PRIMARY,
+        background: accent ? THEME_COLOR.highlight : THEME_COLOR.surface,
+        color: accent ? THEME_COLOR.highlightText : THEME_COLOR.text,
         borderRadius: MOBILE_HOME_CARD_RADIUS,
         padding: compact ? MOBILE_HOME_SUMMARY_COMPACT_PADDING : MOBILE_HOME_CARD_PADDING,
         display: 'flex',
@@ -75,6 +75,7 @@ export function PlaceTasksButton({
   return (
     <button
       type="button"
+      data-tour="place-tasks"
       disabled={disabled || busy}
       onClick={onClick}
       className="bg-primary font-semibold text-primary-foreground disabled:opacity-60"

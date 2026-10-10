@@ -100,6 +100,9 @@ export const MOBILE_PULL_TO_REFRESH = {
   thresholdPx: 72,
   maxPullPx: 120,
   resistance: 0.45,
+  settleMs: 150,
+  indicatorSizePx: 36,
+  iconSizePx: 20,
 } as const;
 
 /** Build a shareable HTTPS URL for a task (Universal Links + web). */

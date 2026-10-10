@@ -85,7 +85,12 @@ import {
 } from "../lib/layout-constants";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { useOrientation } from "../hooks/useOrientation";
-import { getColorWithOpacity } from "../lib/color-theme";
+import { getColorWithOpacity, COLOR_TEXT_WHITE, COLOR_BADGE_RED } from "../lib/color-theme";
+import { NAV_BAR_BADGE_SIZE, NAV_BAR_BADGE_TEXT_SIZE } from "../lib/layout-constants";
+import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
+import { NOTIFICATIONS_SHEET_OPEN_EVENT, BADGE_DISPLAY_MAX } from "../lib/notification-constants";
+import { triggerSelectionHaptic } from "../lib/native-haptics";
+import { useNotifications } from "../contexts/NotificationContext";
 import { cn } from "../lib/utils";
 import logoImageBlack from "../assets/Taskzm_Logo_BLK-removebg.png"; // Black logo version
 import logoImageGray from "../assets/taskzm-logo-gray.png"; // Gray logo version for dark mode
@@ -114,6 +119,7 @@ export function AppHeader({
   const { isSyncing, lastSync, workspaceId } = useTasks();
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
+  const { badgeCount } = useNotifications();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const shouldUseMobileLayout = useMobileLayout(); // Determine if device should use mobile layout (includes tablets)
@@ -198,7 +204,10 @@ export function AppHeader({
               aria-label={onBack ? 'Back' : 'Open menu'}
               className="inline-flex flex-shrink-0 items-center justify-center bg-transparent text-foreground"
               style={mobileHeaderIconStyle}
-              onClick={onBack ?? toggleSidebar}
+              onClick={() => {
+                void triggerSelectionHaptic();
+                (onBack ?? toggleSidebar)();
+              }}
             >
               <Icon name={onBack ? 'arrow-left' : 'menu'} size={HEADER_ICON_SIZE_BUTTON_DESKTOP} />
             </button>
@@ -238,12 +247,32 @@ export function AppHeader({
             </button>
             <button
               type="button"
-              aria-label="AI"
-              onClick={() => window.dispatchEvent(new CustomEvent('taskzm-open-ai'))}
-              className="inline-flex items-center justify-center bg-transparent font-semibold text-primary"
+              aria-label={NAVIGATION_UI_TEXT.notifications}
+              data-tour="header-notifications"
+              onClick={() => {
+                void triggerSelectionHaptic();
+                window.dispatchEvent(new CustomEvent(NOTIFICATIONS_SHEET_OPEN_EVENT));
+              }}
+              className="relative inline-flex items-center justify-center bg-transparent text-foreground"
               style={mobileHeaderIconStyle}
             >
-              AI
+              <Icon name="bell" size={HEADER_ICON_SIZE_BUTTON_DESKTOP} />
+              {badgeCount > 0 && (
+                <span
+                  className="absolute flex items-center justify-center rounded-full font-bold"
+                  style={{
+                    color: COLOR_TEXT_WHITE,
+                    backgroundColor: COLOR_BADGE_RED,
+                    fontSize: NAV_BAR_BADGE_TEXT_SIZE,
+                    width: NAV_BAR_BADGE_SIZE,
+                    height: NAV_BAR_BADGE_SIZE,
+                    top: 0,
+                    right: 0,
+                  }}
+                >
+                  {badgeCount > BADGE_DISPLAY_MAX ? `${BADGE_DISPLAY_MAX}+` : badgeCount}
+                </span>
+              )}
             </button>
             {shouldUseMobileLayout && actions ? (
               <div className="contents">{actions}</div>

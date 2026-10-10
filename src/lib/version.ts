@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '1.0.33';
-export const VERSION_NAME = 'Calendar, Notifications & Deploy';
-export const VERSION_DATE = 'July 1, 2026';
-export const BUILD_NUMBER = '20260701-4';
+export const APP_VERSION = '2.0.0';
+export const VERSION_NAME = 'TaskZM 2.0';
+export const VERSION_DATE = 'October 9, 2026';
+export const BUILD_NUMBER = '20261009-1';
 
 /** Stable release stamp for cache purge (version + build). */
 export function getAppReleaseStamp(): string {
@@ -88,6 +88,22 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '2.0.0',
+    date: 'October 9, 2026',
+    name: 'TaskZM 2.0',
+    changes: [
+      'Mobile nav: Today, Week, Inbox and AI tabs; header bell opens notifications as a slide-up sheet',
+      'Swipe a task card right to mark it done',
+      'Calendar events appear alongside tasks with a Calendar tag',
+      'iCloud calendar sync: per-calendar sync, no lost events when a calendar fails to load, fewer re-downloads',
+      'All in-app toasts now arrive as iOS notifications on the native app',
+      'Remote push reminders (APNs) and more reliable local reminders',
+      'Face ID app lock toggle fixed',
+      'Slide-up sheets are full width and stay above the keyboard',
+      'Pull-to-refresh indicator sits below the Dynamic Island',
+    ],
+  },
   {
     version: '1.0.33',
     date: 'July 1, 2026',

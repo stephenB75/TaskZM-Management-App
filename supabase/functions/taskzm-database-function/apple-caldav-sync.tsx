@@ -1205,6 +1205,8 @@ export async function syncCalendarsToDatabase(
 
     // Fetch events from each selected calendar
     const allEvents: CalendarEvent[] = [];
+    // Only calendars that fetched successfully may have their missing events deleted.
+    const fetchedCalendarHrefs = new Set<string>();
 
     for (const href of hrefsToFetch) {
       try {
@@ -1218,6 +1220,7 @@ export async function syncCalendarsToDatabase(
           event.calendarColor = calendarColor;
         }
         allEvents.push(...events);
+        fetchedCalendarHrefs.add(href);
       } catch (error) {
         const message = `Failed to fetch from ${href}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         result.errors.push(message);
@@ -1271,10 +1274,11 @@ export async function syncCalendarsToDatabase(
 
       const matchKey = event.recurrenceBaseId || event.uid;
       const externalId = buildAppleCalendarExternalId(event.calendarHref, matchKey);
-      if (existingMap.has(matchKey)) {
-        result.updated++;
-      } else {
+      const existing = existingMap.get(externalId);
+      if (!existing) {
         result.created++;
+      } else if ((existing.external_updated_at ?? null) !== (event.lastModified ?? null)) {
+        result.updated++;
       }
 
       rowsToUpsert.push({
@@ -1311,34 +1315,27 @@ export async function syncCalendarsToDatabase(
     }
 
     if (!options.skipDeletions) {
-    // Only delete events from calendars that were synced (selectedCalendarHrefs)
-    // This prevents deleting events from calendars that weren't included in this sync
-    const syncedCalendarHrefs = new Set(selectedCalendarHrefs);
-    
-    // Compare external_id from DB with fetched event UIDs
+    // Only delete events from calendars fetched in this request. A single-calendar
+    // sync must not remove events that belong to the other selected calendars.
+    const syncedCalendarHrefs = fetchedCalendarHrefs;
+    const idsToDelete: string[] = [];
     for (const [externalId, existing] of existingMap) {
-      // Check if this external_id exists in the fetched events
-      // external_id should match the event UID for base events
-      if (!fetchedUids.has(externalId)) {
-        // Only delete if this event is from a calendar that was synced
-        // This prevents accidental deletion of events from unsynced calendars
-        if (existing.calendar_href && syncedCalendarHrefs.has(existing.calendar_href)) {
-          // Event was deleted from iCloud - remove from database
-          const { error: deleteError } = await supabase
-            .from('calendar_events')
-            .delete()
-            .eq('id', existing.id);
+      if (fetchedUids.has(externalId)) continue;
+      if (existing.calendar_href && syncedCalendarHrefs.has(existing.calendar_href)) {
+        idsToDelete.push(existing.id);
+      }
+    }
 
-          if (deleteError) {
-            result.errors.push(`Failed to delete event ${externalId}: ${deleteError.message}`);
-          } else {
-            result.deleted++;
-            console.log(`Deleted event ${externalId} from calendar ${existing.calendar_href} (no longer in iCloud)`);
-          }
-        } else {
-          // Event is from a calendar that wasn't synced - skip deletion
-          console.debug(`Skipping deletion of event ${externalId} - not from synced calendar (href: ${existing.calendar_href})`);
-        }
+    for (let i = 0; i < idsToDelete.length; i += CALDAV_DB_UPSERT_BATCH_SIZE) {
+      const batch = idsToDelete.slice(i, i + CALDAV_DB_UPSERT_BATCH_SIZE);
+      const { error: deleteError } = await supabase
+        .from('calendar_events')
+        .delete()
+        .in('id', batch);
+      if (deleteError) {
+        result.errors.push(`Failed to delete removed events: ${deleteError.message}`);
+      } else {
+        result.deleted += batch.length;
       }
     }
     }

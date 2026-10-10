@@ -175,14 +175,14 @@ export const SHEET_SAFE_AREA = {
 } as const;
 export const HEADER_BACKGROUND_OPACITY = 0.88; // Slightly translucent bar — visible but not heavy
 export const HEADER_BACKGROUND_LIGHT_COLOR = '#FFFFFF';
-export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.92)';
+export const HEADER_BACKGROUND_DARK_COLOR = 'rgba(22, 20, 30, 0.92)';
 export const HEADER_BORDER_COLOR = 'rgba(148, 163, 184, 0.14)';
 export const HEADER_BACKDROP_BLUR_CLASS = 'backdrop-blur-md';
 
 // Header background gradient constants
 // Dark mode gradient: gray-800 to gray-900 and back
 export const HEADER_GRADIENT_DARK_START = 'rgba(31, 41, 55, 0.92)'; // gray-800 with opacity
-export const HEADER_GRADIENT_DARK_MID = 'rgba(17, 24, 39, 0.9)'; // gray-900 with opacity
+export const HEADER_GRADIENT_DARK_MID = 'rgba(22, 20, 30, 0.9)';
 export const HEADER_GRADIENT_DARK_END = 'rgba(31, 41, 55, 0.92)'; // gray-800 with opacity
 
 // Light mode gradient: white to light purple and back
@@ -558,6 +558,12 @@ export const MOBILE_HOME_CARD_PADDING = '0.5rem';
 export const MOBILE_HOME_CARD_TITLE_FONT_SIZE = '0.875rem';
 export const MOBILE_HOME_LABEL_GAP = '0.25rem';
 export const MOBILE_HOME_TIMELINE_LABEL_WIDTH = '4.5rem';
+/** Swipe a phone task card right past this distance to mark it done. */
+export const SWIPE_COMPLETE_THRESHOLD_PX = 96;
+/** How far the card stretches past the threshold (motion dragElastic, 0–1). */
+export const SWIPE_COMPLETE_ELASTIC = 0.6;
+/** Card offset that counts as a drag rather than a tap. */
+export const SWIPE_TAP_SLOP_PX = 6;
 export const MOBILE_HOME_DAY_RULE_PX = 2;
 export const MOBILE_HOME_SUMMARY_NUMBER_SIZE = '2.5rem';
 export const MOBILE_HOME_SUMMARY_COMPACT_NUMBER_SIZE = '1.25rem';
@@ -567,7 +573,7 @@ export const DIALOG_MOBILE_SHEET_SLIDE_MS = 1200;
 /** Wider than a narrow card, capped so a phone sheet does not span the screen. */
 export const DIALOG_MOBILE_SHEET_WIDTH = 'min(26rem, 86vw)';
 export const DIALOG_MOBILE_SHEET_CLASS =
-  `max-sm:!top-auto max-sm:!bottom-[var(--dialog-above-nav)] max-sm:!left-1/2 max-sm:!right-auto max-sm:!w-[var(--dialog-sheet-width)] max-sm:!max-w-[var(--dialog-sheet-width)] max-sm:!h-auto max-sm:!max-h-[min(70dvh,calc(100dvh-var(--dialog-above-nav)-1rem))] max-sm:!rounded-2xl max-sm:data-[state=open]:![animation:taskzm-sheet-up_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-out_both] max-sm:data-[state=closed]:![animation:taskzm-sheet-down_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-in_both]`;
+  `max-sm:!top-auto max-sm:!bottom-[var(--dialog-above-nav)] max-sm:!left-1/2 max-sm:!right-auto max-sm:!w-[var(--dialog-sheet-width)] max-sm:!max-w-[var(--dialog-sheet-width)] max-sm:!h-auto max-sm:!max-h-[min(70dvh,calc(100dvh-var(--dialog-above-nav)-env(safe-area-inset-top,0px)-1rem))] max-sm:!rounded-t-2xl max-sm:!rounded-b-none max-sm:data-[state=open]:![animation:taskzm-sheet-up_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-out_both] max-sm:data-[state=closed]:![animation:taskzm-sheet-down_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-in_both]`;
 export const MOBILE_HOME_CHART_HEIGHT_PX = 140;
 export const APP_CANVAS_CLASS = 'bg-white dark:bg-gray-950';
 export const DIALOG_SHEET_CLASS = 'rounded-2xl border-0 bg-background shadow-none';

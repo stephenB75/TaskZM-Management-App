@@ -7,7 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { Icon } from '../components/Icon';
 import { MOBILE_PULL_TO_REFRESH } from '../lib/mobile-constants';
 import { triggerSuccessHaptic } from '../lib/native-haptics';
-import { Z_INDEX } from '../lib/layout-constants';
+import { MOBILE_SCROLL_CONTAINER_PADDING_TOP, Z_INDEX } from '../lib/layout-constants';
 
 interface NativePullToRefreshProps {
   scrollRef: RefObject<HTMLElement | null>;
@@ -30,24 +30,34 @@ export function NativePullToRefresh({
   const isNative = Capacitor.isNativePlatform();
   const active = enabled && isNative;
 
+  const isScrolledFromTop = useCallback(
+    (target: EventTarget | null, boundary: HTMLElement | null) => {
+      let node = target instanceof HTMLElement ? target : null;
+      while (node && node !== boundary) {
+        if (node.scrollTop > 0) return true;
+        node = node.parentElement;
+      }
+      return (scrollRef.current?.scrollTop ?? 0) > 0;
+    },
+    [scrollRef],
+  );
+
   const handleTouchStart = useCallback(
-    (event: React.TouchEvent) => {
+    (event: React.TouchEvent<HTMLDivElement>) => {
       if (!active || isRefreshing) return;
-      const scrollTop = scrollRef.current?.scrollTop ?? 0;
-      if (scrollTop > 0) return;
+      if (isScrolledFromTop(event.target, event.currentTarget)) return;
 
       touchStartY.current = event.touches[0]?.clientY ?? 0;
       pulling.current = true;
     },
-    [active, isRefreshing, scrollRef],
+    [active, isRefreshing, isScrolledFromTop],
   );
 
   const handleTouchMove = useCallback(
-    (event: React.TouchEvent) => {
+    (event: React.TouchEvent<HTMLDivElement>) => {
       if (!active || !pulling.current || isRefreshing) return;
 
-      const scrollTop = scrollRef.current?.scrollTop ?? 0;
-      if (scrollTop > 0) {
+      if (isScrolledFromTop(event.target, event.currentTarget)) {
         pulling.current = false;
         setPullDistance(0);
         return;
@@ -61,7 +71,7 @@ export function NativePullToRefresh({
       );
       setPullDistance(resisted);
     },
-    [active, isRefreshing, scrollRef],
+    [active, isRefreshing, isScrolledFromTop],
   );
 
   const handleTouchEnd = useCallback(async () => {
@@ -106,21 +116,27 @@ export function NativePullToRefresh({
           className="absolute left-0 right-0 flex items-center justify-center pointer-events-none"
           style={{
             zIndex: Z_INDEX.NAV_BAR - 1,
-            top: 0,
+            top: MOBILE_SCROLL_CONTAINER_PADDING_TOP,
             height: `${Math.max(pullDistance, isRefreshing ? MOBILE_PULL_TO_REFRESH.thresholdPx : 0)}px`,
-            transition: isRefreshing ? 'height 150ms ease-out' : undefined,
+            transition: isRefreshing ? `height ${MOBILE_PULL_TO_REFRESH.settleMs}ms ease-out` : undefined,
           }}
           aria-hidden
         >
-          <Icon
-            name="refresh-cw"
-            size={22}
-            className={isRefreshing ? 'animate-spin text-primary' : 'text-primary'}
+          <span
+            className="flex items-center justify-center rounded-full bg-background shadow-md"
             style={{
-              opacity: progress,
-              transform: `rotate(${progress * 180}deg)`,
+              width: MOBILE_PULL_TO_REFRESH.indicatorSizePx,
+              height: MOBILE_PULL_TO_REFRESH.indicatorSizePx,
+              opacity: isRefreshing ? 1 : progress,
             }}
-          />
+          >
+            <Icon
+              name="refresh-cw"
+              size={MOBILE_PULL_TO_REFRESH.iconSizePx}
+              className={isRefreshing ? 'animate-spin text-primary' : 'text-primary'}
+              style={{ transform: `rotate(${progress * 180}deg)` }}
+            />
+          </span>
         </div>
       ) : null}
       {children}

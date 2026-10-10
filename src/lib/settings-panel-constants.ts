@@ -137,6 +137,7 @@ export const SETTINGS_PANEL_UI_TEXT = {
       description: 'Lock TaskZM when you leave the app and return from the home screen.',
       unavailable: 'Biometric unlock is not available on this device.',
       enabled: 'App lock enabled',
+      confirmReason: 'Confirm it is you to turn on app lock',
       verifyFailed: 'Could not verify your identity. Try again.',
     },
     pushNotifications: {

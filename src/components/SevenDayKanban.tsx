@@ -17,7 +17,7 @@ import { DraggableTaskCard } from './DraggableTaskCard';
 import { CalendarEventCard } from './CalendarEventCard';
 import { DroppableColumn } from './DroppableColumn';
 import { cn, prepareTaskForDialog, getWeekStart, getDateString, getTaskWithOccurrenceSubtasks, getTasksForDayView, dateStringToLocalDate, buildSortedKanbanDayItems } from '../lib/utils';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { logger } from '../lib/logger';
 import { useCalendarEventsByDate } from '../hooks/useCalendarEvents';
 import {

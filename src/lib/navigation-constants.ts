@@ -16,7 +16,10 @@ export const NAVIGATION_UI_TEXT = {
   team: 'Team',
   analytics: 'Analytics',
   archive: 'Archive',
+  ai: 'AI',
 } as const;
+
+export const AI_PANEL_OPEN_EVENT = 'taskzm-open-ai';
 
 export const MOBILE_HOME_UI_TEXT = {
   tabs: {
@@ -38,6 +41,8 @@ export const MOBILE_HOME_UI_TEXT = {
   activityTitle: 'Activity',
   upcomingTitle: 'Upcoming',
   upNext: 'Up next',
+  calendarTag: 'Calendar',
+  allDay: 'All day',
   needsTime: 'Needs a time',
   notScheduled: 'Not scheduled',
   previousDay: 'Previous day',

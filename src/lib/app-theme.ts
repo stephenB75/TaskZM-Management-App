@@ -21,7 +21,7 @@ export const THEME_PRIMARY = {
 // Secondary Theme Colors
 export const THEME_SECONDARY = {
   light: '#E6D5F0',
-  dark: '#4A4A5E',
+  dark: '#2E2940',
   foreground: {
     light: '#4A1F5C',
     dark: '#F3F4F6',
@@ -31,14 +31,14 @@ export const THEME_SECONDARY = {
 // Background Colors
 export const THEME_BACKGROUND = {
   light: '#FAF9FC',
-  dark: '#2A2A3E',
+  dark: '#16141E',
   card: {
     light: '#FFFFFF',
-    dark: '#353549',
+    dark: '#201D2B',
   },
   popover: {
     light: '#FFFFFF',
-    dark: '#353549',
+    dark: '#242031',
   },
 } as const;
 
@@ -46,11 +46,11 @@ export const THEME_BACKGROUND = {
 export const THEME_TEXT = {
   primary: {
     light: '#1F2937',
-    dark: '#F3F4F6',
+    dark: '#EEEBF6',
   },
   secondary: {
     light: '#6B7280',
-    dark: '#D1D5DB',
+    dark: '#ABA4BE',
   },
   muted: {
     light: '#9CA3AF',
@@ -61,10 +61,10 @@ export const THEME_TEXT = {
 // Border Colors
 export const THEME_BORDER = {
   light: 'rgba(155, 135, 232, 0.25)',
-  dark: 'rgba(155, 135, 232, 0.35)',
+  dark: 'rgba(155, 135, 232, 0.2)',
   muted: {
     light: '#E5E7EB',
-    dark: '#4A4A5E',
+    dark: '#3A3450',
   },
 } as const;
 
@@ -72,7 +72,7 @@ export const THEME_BORDER = {
 export const THEME_MUTED = {
   background: {
     light: '#F3F0F9',
-    dark: '#3E3E52',
+    dark: '#282435',
   },
   foreground: {
     light: '#6B7280',
@@ -84,7 +84,7 @@ export const THEME_MUTED = {
 export const THEME_ACCENT = {
   background: {
     light: '#C9E4F7',
-    dark: '#5A5A6E',
+    dark: '#322C46',
   },
   foreground: {
     light: '#1E3A5F',
@@ -106,7 +106,7 @@ export const THEME_DESTRUCTIVE = {
 export const THEME_INPUT = {
   background: {
     light: '#F5F0FA',
-    dark: '#3E3E52',
+    dark: '#282435',
   },
   border: {
     light: 'rgba(155, 135, 232, 0.25)',
@@ -137,7 +137,7 @@ export const THEME_BUTTON = {
     },
     hover: {
       light: '#D4C5E0',
-      dark: '#5A5A6E',
+      dark: '#3A3450',
     },
     text: {
       light: THEME_SECONDARY.foreground.light,
@@ -179,9 +179,9 @@ export const THEME_DIALOG = {
       to: '#F3F0F9',
     },
     dark: {
-      from: '#1A1A2E',
-      via: '#252538',
-      to: '#2A2A3E',
+      from: '#13111A',
+      via: '#16141E',
+      to: '#1B1825',
     },
   },
   border: {

@@ -219,8 +219,8 @@ export const TASK_DIALOG_COLORS = {
   assigneeFallbackGradient: 'bg-gradient-to-br from-primary/20 to-primary/40',
   minimalCardBg: 'bg-gray-50/60 dark:bg-gray-800/30 border border-gray-200/60 dark:border-gray-600/40',
   dialogMaxWidth: 'max-w-[95vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl',
-  dialogShell: 'bg-white dark:bg-[#3E3E52]',
-  sectionCard: 'bg-white dark:bg-[#3E3E52]/90 border border-gray-200/60 dark:border-gray-600/40',
+  dialogShell: 'bg-card',
+  sectionCard: 'bg-card border border-border',
   pillSelected: 'bg-primary/14 text-primary font-semibold',
   pillUnselected: 'bg-gray-100/90 dark:bg-gray-700/40 text-muted-foreground hover:bg-gray-200/80 dark:hover:bg-gray-600/50',
   tabActive: 'bg-primary/12 text-primary font-semibold shadow-sm',
@@ -228,11 +228,11 @@ export const TASK_DIALOG_COLORS = {
   footerCancel: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
   footerCreate: 'bg-primary text-primary-foreground hover:bg-primary/90',
   inputFieldBg: 'bg-gray-50/90 dark:bg-gray-800/70 border border-gray-200/80 dark:border-gray-600/50 shadow-sm placeholder:text-muted-foreground/70',
-  contentCardBg: 'bg-white dark:bg-[#3E3E52]',
+  contentCardBg: 'bg-card',
   menuLayerBg: 'bg-white dark:bg-gray-900',
   menuLayerBorder: 'border border-gray-200 dark:border-gray-600',
   /** @deprecated Use contentCardBg — kept for gradual migration */
-  dialogBg: 'bg-white dark:bg-[#3E3E52]',
+  dialogBg: 'bg-card',
 } as const;
 
 /** Section layout tokens (accent dot + line, shared with agenda cards). */

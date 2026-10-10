@@ -1,11 +1,14 @@
 /**
- * Toast Wrapper
- * Wraps sonner toast functions to also store notifications in the notification panel
- * 
- * Usage: Import this instead of 'sonner' to automatically store notifications
+ * Toast Wrapper — drop-in replacement for sonner's `toast`.
+ *
+ * Every message is stored for the notification panel ("Updates"). On native iOS/Android
+ * nothing renders in-app: the message is delivered as a system notification instead.
+ * On web it falls through to sonner.
+ *
  * import { toast } from '../lib/toast-wrapper';
  */
 
+import type { ReactNode } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
 import { NOTIFICATION_STORAGE_KEYS } from './notification-constants';
@@ -15,103 +18,120 @@ import { getPlatform } from './platform';
 import { showNotification } from './native-notifications';
 import { logger } from './logger';
 
+type ToastVariant = 'success' | 'error' | 'info' | 'warning';
+type ToastMessage = string | ReactNode;
+type ToastOptions = { description?: ToastMessage; duration?: number; playSound?: boolean; id?: string | number; [key: string]: any };
+type ToastId = string | number;
+
 interface ToastNotification {
   id: string;
-  type: 'success' | 'error' | 'info' | 'warning';
+  type: ToastVariant;
   title: string;
   description?: string;
-  timestamp: string; // Store as ISO string for localStorage
+  timestamp: string;
   read: boolean;
 }
 
-// Helper function to add toast notification to storage
-const addToastToStorage = (type: 'success' | 'error' | 'info' | 'warning', title: string, description?: string) => {
+const asText = (value: ToastMessage | undefined): string | undefined =>
+  typeof value === 'string' || typeof value === 'number' ? String(value) : undefined;
+
+const addToastToStorage = (type: ToastVariant, title: string, description?: string) => {
   try {
-    const toastNotifications = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, []);
-    const newNotification: ToastNotification = {
-      id: `${TOAST_STORAGE_ID_PREFIX}${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    const stored = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, []);
+    const entry: ToastNotification = {
+      id: `${TOAST_STORAGE_ID_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
       type,
       title,
       description,
       timestamp: new Date().toISOString(),
       read: false,
     };
-
-    const updated = [newNotification, ...toastNotifications];
-    const trimmed = updated.slice(0, MAX_STORED_TOASTS);
-    
-    saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.toastNotifications, trimmed);
+    saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.toastNotifications, [entry, ...stored].slice(0, MAX_STORED_TOASTS));
   } catch (error) {
-    console.error('Failed to store toast notification:', error);
+    logger.warn('Failed to store toast notification:', error);
   }
 };
 
-function deliverOnNative(title: string, description?: string): boolean {
-  if (!getPlatform().isNative) return false;
-  void showNotification({
-    title,
-    body: description || title,
-  }).catch((error) => {
+const isNative = () => getPlatform().isNative;
+
+let nativeToastCounter = 0;
+const nextNativeId = (): ToastId => `native-toast-${++nativeToastCounter}`;
+
+function deliverNative(title: string, description?: string): void {
+  void showNotification({ title, body: description || title }).catch((error) => {
     logger.error('Failed to deliver native notification:', error);
   });
-  return true;
 }
 
-// Wrapped toast functions that show popup AND store in notification panel
-export const toast = {
-  success: (message: string, options?: { description?: string; duration?: number; playSound?: boolean; [key: string]: any }) => {
-    if (options?.playSound) playNotificationSound();
-    addToastToStorage('success', message, options?.description);
-    if (deliverOnNative(message, options?.description)) return;
-    return sonnerToast.success(message, options);
-  },
-  
-  error: (message: string, options?: { description?: string; duration?: number; [key: string]: any }) => {
-    addToastToStorage('error', message, options?.description);
-    if (deliverOnNative(message, options?.description)) return;
-    return sonnerToast.error(message, options);
-  },
-  
-  info: (message: string, options?: { description?: string; duration?: number; [key: string]: any }) => {
-    addToastToStorage('info', message, options?.description);
-    if (deliverOnNative(message, options?.description)) return;
-    return sonnerToast.info(message, options);
-  },
-  
-  warning: (message: string, options?: { description?: string; duration?: number; [key: string]: any }) => {
-    addToastToStorage('warning', message, options?.description);
-    if (deliverOnNative(message, options?.description)) return;
-    return sonnerToast.warning(message, options);
-  },
-  
-  loading: (message: string, options?: { description?: string; duration?: number; [key: string]: any }) => {
-    // Loading toasts are temporary, don't store them
-    return sonnerToast.loading(message, options);
-  },
-  
-  dismiss: (toastId?: string | number) => {
-    return sonnerToast.dismiss(toastId);
-  },
-  
-  promise: <T,>(promise: Promise<T> | (() => Promise<T>), options: { loading?: string; success?: string | ((data: T) => string); error?: string | ((error: any) => string); [key: string]: any }) => {
-    // For promise toasts, store the success/error messages
-    const promiseResult = sonnerToast.promise(promise, {
+function emit(variant: ToastVariant, message: ToastMessage, options?: ToastOptions): ToastId {
+  const title = asText(message) ?? '';
+  const description = asText(options?.description);
+  if (title) addToastToStorage(variant, title, description);
+
+  if (isNative()) {
+    if (title) deliverNative(title, description);
+    return options?.id ?? nextNativeId();
+  }
+
+  if (options?.playSound) playNotificationSound();
+  return sonnerToast[variant](message, options);
+}
+
+function baseToast(message: ToastMessage, options?: ToastOptions): ToastId {
+  return emit('info', message, options);
+}
+
+export const toast = Object.assign(baseToast, {
+  success: (message: ToastMessage, options?: ToastOptions) => emit('success', message, options),
+  error: (message: ToastMessage, options?: ToastOptions) => emit('error', message, options),
+  info: (message: ToastMessage, options?: ToastOptions) => emit('info', message, options),
+  warning: (message: ToastMessage, options?: ToastOptions) => emit('warning', message, options),
+  message: (message: ToastMessage, options?: ToastOptions) => emit('info', message, options),
+
+  /** Progress states are transient; on native the follow-up success/error becomes the notification. */
+  loading: (message: ToastMessage, options?: ToastOptions): ToastId =>
+    isNative() ? options?.id ?? nextNativeId() : sonnerToast.loading(message, options),
+
+  custom: (...args: Parameters<typeof sonnerToast.custom>): ToastId =>
+    isNative() ? nextNativeId() : sonnerToast.custom(...args),
+
+  dismiss: (toastId?: ToastId) => (isNative() ? toastId : sonnerToast.dismiss(toastId)),
+
+  promise: <T,>(
+    promise: Promise<T> | (() => Promise<T>),
+    options: {
+      loading?: string;
+      success?: string | ((data: T) => string);
+      error?: string | ((error: any) => string);
+      [key: string]: any;
+    },
+  ) => {
+    const run = typeof promise === 'function' ? promise() : promise;
+    const successText = (data: T) =>
+      typeof options.success === 'function' ? options.success(data) : options.success || 'Success';
+    const errorText = (error: any) =>
+      typeof options.error === 'function' ? options.error(error) : options.error || 'Error occurred';
+
+    if (isNative()) {
+      run.then(
+        (data) => emit('success', successText(data)),
+        (error) => emit('error', errorText(error)),
+      );
+      return run;
+    }
+
+    return sonnerToast.promise(run, {
       ...options,
       success: (data: T) => {
-        const successMsg = typeof options.success === 'function' ? options.success(data) : (options.success || 'Success');
-        addToastToStorage('success', successMsg);
-        return successMsg;
+        const text = successText(data);
+        addToastToStorage('success', text);
+        return text;
       },
       error: (error: any) => {
-        const errorMsg = typeof options.error === 'function' ? options.error(error) : (options.error || 'Error occurred');
-        addToastToStorage('error', errorMsg);
-        return errorMsg;
+        const text = errorText(error);
+        addToastToStorage('error', text);
+        return text;
       },
     });
-    return promiseResult;
   },
-  
-  // Expose all other sonner methods
-  ...sonnerToast,
-};
-
+});

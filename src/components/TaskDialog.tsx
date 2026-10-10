@@ -65,7 +65,7 @@ import { useAI } from "../contexts/AIContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useCalendarEventsByDate } from "../hooks/useCalendarEvents";
 import * as api from "../lib/api";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { playSubtaskCompleteSound } from "../lib/toast-sound";
 import { shareWithNativeSheet } from "../lib/native-share";
 import { buildTaskWebUrl } from "../lib/mobile-constants";
@@ -530,7 +530,7 @@ function SingleDateMiniCalendar({
   const weekDays = TASK_DIALOG_CALENDAR.WEEK_DAYS_SHORT;
 
   return (
-    <div className="w-full bg-white/80 dark:bg-gray-800/95 dark:border dark:border-gray-600 text-foreground dark:text-gray-100 rounded-lg p-3">
+    <div className="w-full bg-card/80 dark:border dark:border-border text-foreground rounded-lg p-3">
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-3">
         <Button
@@ -3834,7 +3834,7 @@ export function TaskDialog({
                       onClick={addTag}
                       variant="outline"
                       size="icon"
-                      className="border hover:border-primary hover:bg-primary/10 h-10 w-10"
+                      className="hover:bg-primary/15 h-10 w-10"
                     >
                       <Icon name="plus" size={ICON_SIZE_MD} />
                     </Button>
@@ -3892,7 +3892,7 @@ export function TaskDialog({
                       onClick={addSubtask}
                       variant="outline"
                       size="icon"
-                      className="border hover:border-primary hover:bg-primary/10 h-10 w-10"
+                      className="hover:bg-primary/15 h-10 w-10"
                     >
                       <Icon name="plus" size={ICON_SIZE_MD} />
                     </Button>
@@ -4576,7 +4576,7 @@ export function TaskDialog({
                   variant="ghost"
                   size="sm"
                   onClick={() => void handleShare()}
-                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-full flex items-center justify-center"
+                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
                   title={TASK_DIALOG_UI_TEXT.buttonTooltips.share}
                 >
                   <Icon name="link" size={16} className="shrink-0 lg:mr-1.5" />
@@ -4587,7 +4587,7 @@ export function TaskDialog({
                   variant="ghost"
                   size="sm"
                   onClick={handleDuplicate}
-                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-full flex items-center justify-center"
+                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
                   title={TASK_DIALOG_UI_TEXT.buttonTooltips.duplicate}
                 >
                   <Icon name="copy" size={16} className="shrink-0 lg:mr-1.5" />
@@ -4599,7 +4599,7 @@ export function TaskDialog({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="text-destructive hover:bg-destructive/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-full flex items-center justify-center"
+                    className="text-destructive hover:bg-destructive/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
                     title={TASK_DIALOG_UI_TEXT.buttonTooltips.delete}
                   >
                     <Icon name="trash-2" size={16} className="shrink-0 lg:mr-1.5" />

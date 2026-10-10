@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { useTasks } from "../contexts/TaskContext";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { cn } from "../lib/utils";
 import { logger } from "../lib/logger";
 import { FolderView } from "./FolderView";

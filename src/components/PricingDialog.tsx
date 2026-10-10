@@ -14,7 +14,7 @@ import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/l
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAuth } from "../contexts/AuthContext";
 import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY, COLOR_PASTEL_MINT, COLOR_TEXT_WHITE } from "../lib/color-theme";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { motion } from "motion/react";
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";

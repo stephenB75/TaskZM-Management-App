@@ -5,11 +5,13 @@
 import React, { useCallback, useMemo } from 'react';
 import { useSheetItem } from '../hooks/useSheetItem';
 import { useTasks } from '../contexts/TaskContext';
-import { isUnfinishedTask, tasksScheduledOn, tasksToPlace } from '../lib/home-task-groups';
+import { homeAgendaOn, isUnfinishedTask, tasksScheduledOn, tasksToPlace } from '../lib/home-task-groups';
+import { useCalendarEvents } from '../hooks/useCalendarEvents';
 import { clearEditingScrollPad, revealTaskAboveDialog } from '../lib/reveal-editing-task';
 import { MOBILE_HOME_UI_TEXT } from '../lib/navigation-constants';
-import { PastelTaskCard, TaskTimelineRow } from './PastelTaskCard';
+import { EventTimelineRow, PastelEventCard, PastelTaskCard, TaskTimelineRow } from './PastelTaskCard';
 import { PlaceTasksButton, SummaryCard } from './HomeSummary';
+import { SwipeToComplete } from './SwipeToComplete';
 import {
   HEADER_HEIGHT,
   MOBILE_HOME_BODY_FONT_SIZE,
@@ -18,8 +20,8 @@ import {
   MOBILE_HOME_SECTION_GAP,
   MOBILE_HOME_TAB_FONT_SIZE,
 } from '../lib/layout-constants';
-import { COLOR_BACKGROUND_GRAY, COLOR_TEXT_PRIMARY } from '../lib/color-theme';
-import { getDateString } from '../lib/utils';
+import { THEME_COLOR } from '../lib/color-theme';
+import { dateStringToLocalDate, getDateString } from '../lib/utils';
 import { TaskDialog } from './TaskDialog';
 import type { Task } from '../types';
 
@@ -43,13 +45,23 @@ export function MobileHomePager({ onRunScheduler, isScheduling }: MobileHomePage
   const unfinished = useMemo(() => tasks.filter((task) => isUnfinishedTask(task, now)), [tasks, now]);
   const toPlace = useMemo(() => tasksToPlace(tasks, unfinished), [tasks, unfinished]);
   const upcoming = useMemo(() => tasksScheduledOn(tasks, now), [tasks, now]);
+  const todayKey = getDateString(now);
+  const { dayStart, dayEnd } = useMemo(() => {
+    const start = dateStringToLocalDate(todayKey);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    end.setMilliseconds(-1);
+    return { dayStart: start, dayEnd: end };
+  }, [todayKey]);
+  const { events } = useCalendarEvents(dayStart, dayEnd);
+  const agenda = useMemo(() => homeAgendaOn(tasks, events, now), [tasks, events, now]);
   const doneCount = useMemo(() => tasks.filter((task) => task.status === 'done').length, [tasks]);
 
   return (
     <div
       className="h-full min-h-0 overflow-y-auto overflow-x-hidden"
       style={{
-        background: COLOR_BACKGROUND_GRAY,
+        background: THEME_COLOR.page,
         padding: MOBILE_HOME_PAGE_PADDING,
       }}
     >
@@ -63,28 +75,41 @@ export function MobileHomePager({ onRunScheduler, isScheduling }: MobileHomePage
           </div>
           <div className="flex flex-col items-center" style={{ marginTop: MOBILE_HOME_SECTION_GAP, gap: MOBILE_HOME_LABEL_GAP }}>
             <PlaceTasksButton busy={isScheduling} onClick={onRunScheduler} />
-            <p style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE, margin: 0, color: COLOR_TEXT_PRIMARY, textAlign: 'center' }}>
+            <p style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE, margin: 0, color: THEME_COLOR.text, textAlign: 'center' }}>
               {MOBILE_HOME_UI_TEXT.scheduleHint}
             </p>
           </div>
         </section>
 
-        <section>
-          {upcoming.length === 0 ? (
+        <section data-tour="home-agenda">
+          {agenda.length === 0 ? (
             <p style={{ fontSize: MOBILE_HOME_BODY_FONT_SIZE, margin: 0 }}>{MOBILE_HOME_UI_TEXT.weekEmpty}</p>
           ) : (
             <ul className="flex flex-col" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
-              {upcoming.map((task, index) => (
-                <li key={task.id} id={`home-task-${task.id}`} className={index === 0 ? 'taskzm-up-next' : undefined} style={{ scrollMarginTop: HEADER_HEIGHT }}>
+              {agenda.map((item, index) => (
+                <li
+                  key={item.key}
+                  id={item.kind === 'task' ? `home-task-${item.task.id}` : undefined}
+                  className={index === 0 ? 'taskzm-up-next' : undefined}
+                  style={{ scrollMarginTop: HEADER_HEIGHT }}
+                >
                   {index === 0 ? (
                     <p className="flex items-center font-medium text-primary" style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE, margin: `0 0 ${MOBILE_HOME_LABEL_GAP}`, gap: MOBILE_HOME_LABEL_GAP }}>
                       <span aria-hidden className="taskzm-up-next-dot" />
                       {MOBILE_HOME_UI_TEXT.upNext}
                     </p>
                   ) : null}
-                  <TaskTimelineRow task={task}>
-                    <PastelTaskCard task={task} hideTime onOpen={() => openEditor(task)} />
-                  </TaskTimelineRow>
+                  {item.kind === 'task' ? (
+                    <TaskTimelineRow task={item.task}>
+                      <SwipeToComplete task={item.task}>
+                        <PastelTaskCard task={item.task} hideTime onOpen={() => openEditor(item.task)} />
+                      </SwipeToComplete>
+                    </TaskTimelineRow>
+                  ) : (
+                    <EventTimelineRow event={item.event}>
+                      <PastelEventCard event={item.event} hideTime />
+                    </EventTimelineRow>
+                  )}
                 </li>
               ))}
             </ul>

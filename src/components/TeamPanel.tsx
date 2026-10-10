@@ -59,7 +59,7 @@ import {
   getMemberTaskStats,
   getPendingMembers,
 } from "../lib/team-utils";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { cn, getAbbreviatedDisplayName } from "../lib/utils";
 import type { User, Team } from "../types";
 import {

@@ -48,7 +48,8 @@ import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
-import { NOTIFICATION_OPEN_TASK_EVENT } from './lib/notification-constants';
+import { NOTIFICATION_OPEN_TASK_EVENT, NOTIFICATIONS_SHEET_OPEN_EVENT } from './lib/notification-constants';
+import { NAVIGATION_UI_TEXT } from './lib/navigation-constants';
 import { clearCalendarEventsCache } from './lib/calendar-events-cache';
 import { MOBILE_DEEP_LINK_PATHS } from './lib/mobile-constants';
 import { getTodayAgendaBadgeCount } from './lib/notification-task-filters';
@@ -91,6 +92,8 @@ export default function AppContent() {
   const { hasFeature, features, subscription } = useSubscription();
   const { syncWithServer, workspaceId, tasks } = useTasks();
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
+  const shouldUseMobileLayoutRef = useRef(shouldUseMobileLayout);
+  shouldUseMobileLayoutRef.current = shouldUseMobileLayout;
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   
@@ -105,6 +108,7 @@ export default function AppContent() {
   const [currentView, setCurrentView] = useState(getInitialView);
   const [mobileView, setMobileView] = useState<'today' | 'week'>('today');
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [notificationsSheetOpen, setNotificationsSheetOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [scrollHomeWeek, setScrollHomeWeek] = useState(false);
   const [showScheduleResult, setShowScheduleResult] = useState(false);
@@ -160,10 +164,15 @@ export default function AppContent() {
         setCurrentView('today');
         setMobileView('today');
         setAiPanelOpen(false);
+        setNotificationsSheetOpen(false);
+        return;
+      }
+      setAiPanelOpen(false);
+      if (shouldUseMobileLayoutRef.current) {
+        setNotificationsSheetOpen(true);
         return;
       }
       setCurrentView('notifications');
-      setAiPanelOpen(false);
     };
 
     window.addEventListener(NOTIFICATION_OPEN_TASK_EVENT, handleOpenTaskFromNotification as EventListener);
@@ -585,6 +594,12 @@ export default function AppContent() {
   }
 
   const handleViewChange = (view: string) => {
+    if (view === 'notifications' && shouldUseMobileLayout) {
+      setSidebarOpen(false);
+      setNotificationsSheetOpen(true);
+      return;
+    }
+
     if (view === 'analytics' && !hasFeature('analytics')) {
       setUpgradeFeature('analytics');
       setShowUpgradePrompt(true);
@@ -807,11 +822,14 @@ export default function AppContent() {
   useEffect(() => {
     const openAi = () => setAiPanelOpen(true);
     const openCreate = () => setCreateTaskOpen(true);
+    const openNotifications = () => setNotificationsSheetOpen(true);
     window.addEventListener('taskzm-open-ai', openAi);
     window.addEventListener('taskzm-add-task', openCreate);
+    window.addEventListener(NOTIFICATIONS_SHEET_OPEN_EVENT, openNotifications);
     return () => {
       window.removeEventListener('taskzm-open-ai', openAi);
       window.removeEventListener('taskzm-add-task', openCreate);
+      window.removeEventListener(NOTIFICATIONS_SHEET_OPEN_EVENT, openNotifications);
     };
   }, []);
 
@@ -1044,6 +1062,20 @@ export default function AppContent() {
           </Suspense>
         </SheetContent>
       </Sheet>
+
+      {shouldUseMobileLayout && (
+        <Sheet open={notificationsSheetOpen} onOpenChange={setNotificationsSheetOpen}>
+          <SheetContent side="bottom" className="taskzm-ai-sheet overflow-y-auto bg-background">
+            <SheetHeader className="p-0 pr-10">
+              <SheetTitle>{NAVIGATION_UI_TEXT.notifications}</SheetTitle>
+              <SheetDescription className="sr-only">{NAVIGATION_UI_TEXT.notifications}</SheetDescription>
+            </SheetHeader>
+            <Suspense fallback={<ViewFallback />}>
+              <NotificationsPanel embedded />
+            </Suspense>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {loadingOverlay}
     </>

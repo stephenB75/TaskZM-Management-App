@@ -22,6 +22,9 @@ import {
 /** Apple Push Notifications auth key identifier from the Apple Developer portal. */
 export const IOS_APNS_KEY_ID = 'W3QFFC6SFU';
 
+/** iOS discards scheduled local notifications beyond the soonest 64. */
+export const IOS_PENDING_NOTIFICATION_LIMIT = 64;
+
 // Default notification settings
 export const DEFAULT_NOTIFICATION_SETTINGS = {
   enabled: true,
@@ -51,6 +54,10 @@ export type NotificationSettings = {
 
 /** Custom event dispatched when a notification is tapped (native or web). */
 export const NOTIFICATION_OPEN_TASK_EVENT = 'taskzm-open-task';
+/** Counts above this render as "N+" in nav/header badges. */
+export const BADGE_DISPLAY_MAX = 9;
+/** Mobile header bell — opens the notifications bottom sheet. */
+export const NOTIFICATIONS_SHEET_OPEN_EVENT = 'taskzm-open-notifications';
 /** Fired when a scheduled native notification arrives while the app is in the foreground (iOS silent delivery). */
 export const NOTIFICATION_FOREGROUND_DELIVERED_EVENT = 'taskzm-foreground-notification-delivered';
 /** Fired from the iOS shell when local Capacitor plugins (e.g. AppIconBadge) are registered. */

@@ -11,9 +11,9 @@ export const UI_GRADIENT_COLORS = {
     via: '#F9F7FD',
     to: '#F3F0F9',
     dark: {
-      from: '#1A1A2E',
-      via: '#252538',
-      to: '#2A2A3E',
+      from: '#13111A',
+      via: '#16141E',
+      to: '#1B1825',
     },
     // Tailwind class: bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9]
     className: 'bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9]',

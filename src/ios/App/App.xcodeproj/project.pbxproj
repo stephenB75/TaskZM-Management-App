@@ -700,7 +700,7 @@
 				CLANG_ENABLE_MODULE_VERIFIER = NO;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 202607014;
+				CURRENT_PROJECT_VERSION = 202610091;
 				DEVELOPMENT_TEAM = BGGBNMD49N;
 				ENABLE_DEBUG_DYLIB = NO;
 				ENABLE_MODULE_VERIFIER = NO;
@@ -713,7 +713,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0;
+				MARKETING_VERSION = 2.0.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.app.taskzm.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -735,7 +735,7 @@
 				CLANG_ENABLE_MODULE_VERIFIER = NO;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 202607014;
+				CURRENT_PROJECT_VERSION = 202610091;
 				DEVELOPMENT_TEAM = BGGBNMD49N;
 				ENABLE_DEBUG_DYLIB = NO;
 				ENABLE_MODULE_VERIFIER = NO;
@@ -748,7 +748,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.app.taskzm.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

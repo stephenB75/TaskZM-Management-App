@@ -31,7 +31,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { logger } from "../lib/logger";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { motion } from "motion/react";
 import { PrivacyPolicyDialog } from "./PrivacyPolicyDialog";
 import { TermsOfServiceDialog } from "./TermsOfServiceDialog";
@@ -745,7 +745,7 @@ export function AuthScreen() {
                         type="button"
                         onClick={handleDemoSignIn}
                         variant="outline"
-                        className="w-full border-2 border-primary text-primary hover:bg-primary/10 text-xs sm:text-sm"
+                        className="w-full text-primary hover:bg-primary/15 text-xs sm:text-sm"
                         style={{
                           height: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,
                           minHeight: screenSize === 'mobile' ? AUTH_SCREEN.mobile.button.height : screenSize === 'tablet' ? AUTH_SCREEN.tablet.button.height : AUTH_SCREEN.desktop.button.height,

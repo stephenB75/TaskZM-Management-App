@@ -22,6 +22,7 @@ import {
   NOTIFICATION_OPEN_TASK_EVENT,
   NOTIFICATION_FOREGROUND_DELIVERED_EVENT,
   SCHEDULED_NOTIFICATION_PREFIXES,
+  IOS_PENDING_NOTIFICATION_LIMIT,
 } from './notification-constants';
 import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR } from './business-constants';
 import { isAppInForeground, shouldUseSystemNotification } from './app-visibility';
@@ -370,8 +371,13 @@ export async function syncScheduledTaskNotifications(
   try {
     const LocalNotifications = await loadLocalNotifications();
     const now = new Date();
+    // The context's permission state starts as 'default' until its async check resolves; ask the OS directly.
+    const osPermission =
+      permission === 'granted'
+        ? permission
+        : normalizeNotificationPermission((await LocalNotifications.checkPermissions()).display);
 
-    if (!settings.enabled || permission !== 'granted' || isServerPushRemindersActive()) {
+    if (!settings.enabled || osPermission !== 'granted' || isServerPushRemindersActive()) {
       try {
         const pending = await LocalNotifications.getPending();
         const pendingIds = pending.notifications?.map((notification) => ({ id: notification.id })) ?? [];
@@ -454,6 +460,10 @@ export async function syncScheduledTaskNotifications(
         }
       }
     }
+
+    // iOS keeps only the soonest IOS_PENDING_NOTIFICATION_LIMIT requests; schedule those explicitly.
+    scheduled.sort((a, b) => a.schedule.at.getTime() - b.schedule.at.getTime());
+    scheduled.splice(IOS_PENDING_NOTIFICATION_LIMIT);
 
     const scheduledIds = new Set(scheduled.map((notification) => notification.id));
 
@@ -603,7 +613,7 @@ export async function deliverScheduledTaskNotification(
     markTaskNotified(taskId, variant);
   }
 
-  if (isAppInForeground()) {
+  if (isAppInForeground() && !getPlatform().isNative) {
     window.dispatchEvent(
       new CustomEvent(NOTIFICATION_FOREGROUND_DELIVERED_EVENT, {
         detail: {

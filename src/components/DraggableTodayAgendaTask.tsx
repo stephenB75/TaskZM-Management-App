@@ -8,7 +8,7 @@ import { ICON_SIZE_XS, ICON_SIZE_SM, ICON_SIZE_MD, getCheckboxSizePxForWidth, ge
 import { Badge } from "./ui/badge";
 import { cn, getDateString } from "../lib/utils";
 import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS } from "../lib/business-constants";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { useTasks } from "../contexts/TaskContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useTeam } from "../contexts/TeamContext";

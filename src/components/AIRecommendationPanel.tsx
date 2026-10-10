@@ -55,7 +55,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { toast } from '../lib/toast-wrapper';
 import { cn } from "../lib/utils";
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import type { SchedulePlan, ScheduleResult } from "../hooks/useAIScheduler";

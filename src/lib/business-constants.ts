@@ -100,6 +100,8 @@ export const TWO_WEEKS_DAYS = 14; // 2 weeks = 14 days
 export const LAST_7_DAYS_OFFSET = 6; // For calculating last 7 days (0-6)
 export const DAYS_IN_MONTH_APPROX = 30; // Approximate days in a month for scheduling
 export const HOME_ACTIVITY_MONTH_COUNT = 6;
+/** Items shown in the desktop home "up next" column. */
+export const HOME_UPCOMING_PREVIEW_COUNT = 4;
 
 // Time Period Definitions (for analytics)
 export const TIME_PERIODS = {

@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import * as api from '../lib/api';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../lib/logger';
 

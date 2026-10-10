@@ -40,7 +40,7 @@ export function SettingsSection({
     <AccordionItem
       value={value}
       className={cn(
-        'mb-2 overflow-visible rounded-2xl border-0 bg-white shadow-none last:mb-0 dark:bg-gray-900',
+        'mb-2 overflow-visible rounded-2xl border-0 bg-card shadow-none last:mb-0',
         className,
       )}
     >

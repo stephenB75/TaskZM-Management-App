@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import type { SubscriptionInfo, SubscriptionTier, SubscriptionFeatures } from '../types';
 import { useAuth } from './AuthContext';
 import * as api from '../lib/api';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { SUBSCRIPTION_UI_TEXT, SUBSCRIPTION_STORAGE_KEY_PREFIX, SUBSCRIPTION_SYNC_INTERVAL } from '../lib/subscription-constants';
 import { configureRevenueCat, resetRevenueCat, getCustomerInfo as getRevenueCatCustomerInfo, isRevenueCatConfigured } from '../lib/revenuecat';
 import { DAYS_IN_MONTH_APPROX } from '../lib/business-constants';

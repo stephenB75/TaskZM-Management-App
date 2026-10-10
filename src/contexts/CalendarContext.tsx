@@ -5,7 +5,7 @@ import { useSubscription } from './SubscriptionContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
-import { CALENDAR_OAUTH_ORIGINS, CALENDAR_OAUTH_MESSAGE_TYPES, CALENDAR_PROVIDER_DISPLAY_NAMES, CALENDAR_PROVIDERS, type CalendarProviderId } from '../lib/calendar-integration-constants';
+import { CALENDAR_OAUTH_ORIGINS, CALENDAR_OAUTH_MESSAGE_TYPES, CALENDAR_PROVIDER_DISPLAY_NAMES, CALENDAR_PROVIDERS, CALDAV_TRANSIENT_STATUSES, type CalendarProviderId } from '../lib/calendar-integration-constants';
 import { RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { supabase } from '../lib/supabase-client';
 import { TIMING_CONSTANTS, DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
@@ -901,10 +901,12 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       return false;
     }
     
-    // Check minimum interval for auto-sync
+    const lastSyncStorageKey = `calendar_apple_last_sync_${user.id}`;
+    // Check minimum interval for auto-sync (persisted so reloads/resumes don't re-download iCloud)
     if (silent) {
       const now = Date.now();
-      const timeSinceLastSync = now - lastAutoSyncRef.current;
+      const persistedLastSync = Number(localStorage.getItem(lastSyncStorageKey)) || 0;
+      const timeSinceLastSync = now - Math.max(lastAutoSyncRef.current, persistedLastSync);
       if (timeSinceLastSync < MIN_AUTO_SYNC_INTERVAL) {
         console.debug(`Apple Calendar auto-sync skipped (last sync was ${Math.round(timeSinceLastSync / 1000)}s ago, minimum is ${MIN_AUTO_SYNC_INTERVAL / 1000}s)`);
         return false;
@@ -979,7 +981,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
       const runSync = async (href?: string, skipDeletions?: boolean) => {
         let result = await syncOneCalendar(href, skipDeletions);
-        if (result.status === 546 || result.status === 502 || result.status === 503) {
+        if (CALDAV_TRANSIENT_STATUSES.has(result.status)) {
           await sleep(TIMING_CONSTANTS.calendar.eventsFetchRetryDelayMs);
           result = await syncOneCalendar(href, skipDeletions);
         }
@@ -989,7 +991,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (calendarHrefs.length > 1) {
         for (let i = 0; i < calendarHrefs.length; i++) {
           const href = calendarHrefs[i];
-          const result = await runSync(href, true);
+          const result = await runSync(href, false);
           if (!result.ok) {
             if (result.status === 401) authFailed = true;
             aggregated.success = false;
@@ -1000,6 +1002,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           } else {
             aggregated.created += Number(result.data.created) || 0;
             aggregated.updated += Number(result.data.updated) || 0;
+            aggregated.deleted += Number(result.data.deleted) || 0;
             if (result.data.success === false) {
               aggregated.success = false;
               if (Array.isArray(result.data.errors)) {
@@ -1010,23 +1013,6 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           if (i < calendarHrefs.length - 1) {
             await sleep(TIMING_CONSTANTS.calendar.caldavSyncCalendarDelayMs);
           }
-        }
-
-        // Final full sync pass: reconcile deletions across all selected calendars
-        const deletionPass = await runSync(undefined, false);
-        if (deletionPass.ok) {
-          aggregated.deleted += Number(deletionPass.data.deleted) || 0;
-          aggregated.created += Number(deletionPass.data.created) || 0;
-          aggregated.updated += Number(deletionPass.data.updated) || 0;
-          if (deletionPass.data.success === false) {
-            aggregated.success = false;
-            if (Array.isArray(deletionPass.data.errors)) {
-              aggregated.errors.push(...deletionPass.data.errors.map(String));
-            }
-          }
-        } else if (deletionPass.status === 401) {
-          authFailed = true;
-          aggregated.success = false;
         }
       } else {
         const result = await runSync(calendarHrefs[0], false);
@@ -1056,6 +1042,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       if (data.success) {
         setLastSync(new Date());
         lastAutoSyncRef.current = Date.now();
+        localStorage.setItem(lastSyncStorageKey, String(lastAutoSyncRef.current));
         
         // Always invalidate cached events so views refetch after import/sync
         clearCalendarEventsCache();

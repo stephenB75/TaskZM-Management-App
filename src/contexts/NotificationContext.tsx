@@ -94,7 +94,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkPermission = async () => {
-      const currentPermission = await getNativePermission();
+      let currentPermission = await getNativePermission();
+      if (currentPermission === 'default' && getPlatform().isNative) {
+        currentPermission = await requestNativePermission();
+      }
       setPermission(currentPermission);
     };
     checkPermission();

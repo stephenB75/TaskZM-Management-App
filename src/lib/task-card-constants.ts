@@ -659,14 +659,14 @@ export const TASK_CARD_BORDERS = {
 
 // Background Colors - Use lighter backgrounds in dark mode for better visibility
 export const TASK_CARD_BACKGROUNDS = {
-  mobile: 'bg-white dark:bg-[#3E3E52]', // Lighter dark background for better visibility
-  desktop: 'bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm', // Lighter with transparency
-  hover: 'hover:bg-white/80 dark:hover:bg-[#4A4A5E]', // Slightly lighter on hover
+  mobile: 'bg-card', // Lighter dark background for better visibility
+  desktop: 'bg-card/60 dark:bg-card/90 backdrop-blur-sm', // Lighter with transparency
+  hover: 'hover:bg-card/80 dark:hover:bg-accent', // Slightly lighter on hover
   // Timeline view backgrounds
   timeline: {
-    mobile: 'bg-white dark:bg-[#3E3E52]',
-    desktop: 'bg-white/60 dark:bg-[#3E3E52]/80 backdrop-blur-sm',
-    hover: 'hover:bg-white/80 dark:hover:bg-[#4A4A5E]',
+    mobile: 'bg-card',
+    desktop: 'bg-card/60 dark:bg-card/90 backdrop-blur-sm',
+    hover: 'hover:bg-card/80 dark:hover:bg-accent',
   },
   // Gradient opacity values for more vibrant card backgrounds
   gradient: {

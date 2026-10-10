@@ -33,7 +33,18 @@ export const COLOR_ANALYTICS_ORANGE = '#F59E0B'; // Warning orange (matches COLO
 export const COLOR_BACKGROUND_LIGHT = '#F5F3FF'; // Light purple background
 export const COLOR_BACKGROUND_WHITE = '#FFFFFF'; // Pure white
 export const COLOR_BACKGROUND_GRAY = '#F9FAFB'; // Light gray background
-export const COLOR_BACKGROUND_DARK_COLOR = 'rgba(17, 24, 39, 0.95)'; // Dark background for dark mode (matches HEADER_BACKGROUND_DARK_COLOR)
+export const COLOR_BACKGROUND_DARK_COLOR = 'rgba(22, 20, 30, 0.95)'; // Dark background for dark mode (matches HEADER_BACKGROUND_DARK_COLOR)
+
+// Theme-aware tokens (follow light/dark CSS variables in globals.css)
+export const THEME_COLOR = {
+  page: 'var(--background)',
+  surface: 'var(--card)',
+  muted: 'var(--muted)',
+  text: 'var(--foreground)',
+  textMuted: 'var(--muted-foreground)',
+  highlight: 'var(--home-highlight)',
+  highlightText: 'var(--home-highlight-foreground)',
+} as const;
 
 // Gradient Colors (for complex gradients)
 export const COLOR_GRADIENT_START = '#9B87E8'; // Gradient start (primary)

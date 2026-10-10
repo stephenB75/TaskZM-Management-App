@@ -56,7 +56,7 @@ export const AGENDA_LIST_CARD = {
 
 export const AGENDA_LIST_CARD_COLORS = {
   cardBackground: '#FFFFFF',
-  cardBackgroundDark: '#3E3E52',
+  cardBackgroundDark: '#201D2B',
   title: '#111827',
   titleDark: '#F9FAFB',
   subtitle: '#6B7280',

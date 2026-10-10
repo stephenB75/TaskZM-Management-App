@@ -58,34 +58,45 @@ export async function getBiometricTypeLabel(): Promise<string> {
   }
 }
 
-export async function verifyBiometricIdentity(reason?: string): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return true;
+/** The Face ID sheet resigns the app's active state; lock handlers must ignore that transition. */
+let biometricPromptActive = false;
+let verifyInFlight: Promise<boolean> | null = null;
 
-  try {
-    await NativeBiometric.verifyIdentity({
-      reason: reason ?? SETTINGS_PANEL_UI_TEXT.security.biometricLock.label,
-      title: 'TaskZM',
-      useFallback: true,
+export function verifyBiometricIdentity(reason?: string): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return Promise.resolve(true);
+  if (verifyInFlight) return verifyInFlight;
+
+  biometricPromptActive = true;
+  verifyInFlight = NativeBiometric.verifyIdentity({
+    reason: reason ?? SETTINGS_PANEL_UI_TEXT.security.biometricLock.label,
+    title: 'TaskZM',
+    useFallback: true,
+  })
+    .then(() => true)
+    .catch((error) => {
+      logger.debug('[Native] Biometric verify failed', error);
+      return false;
+    })
+    .finally(() => {
+      biometricPromptActive = false;
+      verifyInFlight = null;
     });
-    return true;
-  } catch (error) {
-    logger.debug('[Native] Biometric verify failed', error);
-    return false;
-  }
+  return verifyInFlight;
 }
 
+export type EnableBiometricLockResult = 'enabled' | 'unavailable' | 'cancelled';
+
 /** Prompt biometrics before enabling app lock in Settings. */
-export async function enableBiometricLockWithVerification(): Promise<boolean> {
+export async function enableBiometricLockWithVerification(): Promise<EnableBiometricLockResult> {
   const available = await isBiometricHardwareAvailable();
-  if (!available) return false;
+  if (!available) return 'unavailable';
 
   const verified = await verifyBiometricIdentity(
-    SETTINGS_PANEL_UI_TEXT.security.biometricLock.enabled,
+    SETTINGS_PANEL_UI_TEXT.security.biometricLock.confirmReason,
   );
-  if (verified) {
-    setBiometricLockEnabled(true);
-  }
-  return verified;
+  if (!verified) return 'cancelled';
+  setBiometricLockEnabled(true);
+  return 'enabled';
 }
 
 export function disableBiometricLock(): void {
@@ -103,22 +114,21 @@ export function initNativeBiometricLockHandlers(onLockRequired: () => void): () 
 
   let wentToBackground = false;
 
-  const listenerPromise = App.addListener('appStateChange', ({ isActive }) => {
-    if (!isBiometricLockEnabled()) return;
-
-    if (!isActive) {
-      wentToBackground = true;
-      return;
-    }
-
-    if (wentToBackground) {
-      wentToBackground = false;
-      onLockRequired();
-    }
+  // 'pause'/'resume' fire on real background transitions only (not Control Center or the Face ID sheet).
+  const pausePromise = App.addListener('pause', () => {
+    if (!isBiometricLockEnabled() || biometricPromptActive) return;
+    wentToBackground = true;
+  });
+  const resumePromise = App.addListener('resume', () => {
+    if (!wentToBackground) return;
+    wentToBackground = false;
+    if (isBiometricLockEnabled() && !biometricPromptActive) onLockRequired();
   });
 
   return () => {
-    void listenerPromise.then((handle) => handle.remove());
+    void pausePromise.then((handle) => handle.remove());
+    void resumePromise.then((handle) => handle.remove());
+    appLockListenersRegistered = false;
   };
 }
 

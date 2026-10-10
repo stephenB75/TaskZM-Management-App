@@ -60,7 +60,7 @@ import {
   isPushNotificationsPreferenceEnabled,
   setPushNotificationsEnabled,
 } from '../lib/native-push-notifications';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast-wrapper';
 import { Icon } from './Icon';
 import { SettingsSection } from './settings/SettingsSection';
 import { SettingsCategoryHeader } from './settings/SettingsCategoryHeader';
@@ -110,6 +110,7 @@ import {
   SETTINGS_PANEL_GAP_SMALL,
   SETTINGS_PANEL_GAP_XSMALL,
   SETTINGS_PANEL_SPACING_XSMALL,
+  SETTINGS_PANEL_SPACING_EXTRA_SMALL,
   SETTINGS_PANEL_SPACING_SMALL,
   SETTINGS_PANEL_SPACING_MEDIUM,
   SETTINGS_PANEL_SPACING_LARGE,
@@ -264,14 +265,15 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
   const handleBiometricLockToggle = async (checked: boolean) => {
     if (checked) {
-      const enabled = await enableBiometricLockWithVerification();
-      if (!enabled) {
-        toast.error(SETTINGS_PANEL_UI_TEXT.security.biometricLock.unavailable);
+      const copy = SETTINGS_PANEL_UI_TEXT.security.biometricLock;
+      setBiometricLockEnabledState(true);
+      const result = await enableBiometricLockWithVerification();
+      if (result !== 'enabled') {
         setBiometricLockEnabledState(false);
+        toast.error(result === 'unavailable' ? copy.unavailable : copy.verifyFailed);
         return;
       }
-      setBiometricLockEnabledState(true);
-      toast.success(SETTINGS_PANEL_UI_TEXT.security.biometricLock.enabled);
+      toast.success(copy.enabled);
       return;
     }
 
@@ -2775,7 +2777,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         </div>
                         <Button 
                           size="sm" 
-                          className="w-full bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 text-primary-foreground border border-primary/20 shadow-sm"
+                          className="w-full bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 text-primary-foreground shadow-sm"
                           onClick={handleStartTour}
                         >
                           <Icon name="compass" size={ICON_SIZE_XS} weight="duotone" className="text-primary-foreground" style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />

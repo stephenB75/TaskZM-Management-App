@@ -30,9 +30,10 @@ import {
   NAV_BAR_BUTTON_TRANSITION_DURATION,
   Z_INDEX,
 } from "../lib/layout-constants";
-import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
+import { NAVIGATION_UI_TEXT, AI_PANEL_OPEN_EVENT } from "../lib/navigation-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { triggerSelectionHaptic } from "../lib/native-haptics";
+import { BADGE_DISPLAY_MAX } from "../lib/notification-constants";
 import {
   COLOR_PASTEL_MINT,
   COLOR_PASTEL_SKY,
@@ -76,8 +77,8 @@ export function BottomNav({
   const navItems = [
     {
       id: "today",
-      label: NAVIGATION_UI_TEXT.home,
-      iconName: "calendar",
+      label: NAVIGATION_UI_TEXT.today,
+      iconName: "calendar-today",
       onClick: () => {
         if (tourActive) return;
         triggerHaptic();
@@ -123,22 +124,22 @@ export function BottomNav({
       badge: unscheduledCount,
     },
     {
-      id: "settings",
-      label: NAVIGATION_UI_TEXT.settings,
-      iconName: "settings",
+      id: "ai",
+      label: NAVIGATION_UI_TEXT.ai,
+      iconName: "sparkle",
       onClick: () => {
         if (tourActive) return;
         triggerHaptic();
         onNavInteraction?.();
-        onViewChange("settings");
+        window.dispatchEvent(new CustomEvent(AI_PANEL_OPEN_EVENT));
       },
-      active: currentView === "settings",
+      active: false,
     },
   ];
 
   return (
     <motion.nav
-      className="native-hide-with-keyboard lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-border overflow-visible transition-transform duration-200 ease-out"
+      className="native-hide-with-keyboard lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border overflow-visible transition-transform duration-200 ease-out"
       initial={{ y: NAV_BAR_INITIAL_Y_OFFSET }}
       animate={{ y: 0 }}
       transition={{ duration: NAV_BAR_ANIMATION_DURATION, ease: "easeOut" }}
@@ -163,7 +164,7 @@ export function BottomNav({
       )}
 
       <div
-        className="relative grid w-full overflow-visible bg-white dark:bg-gray-900"
+        className="relative grid w-full overflow-visible bg-card"
         data-tour="bottom-nav"
         data-nav-layout={NAV_BAR_LAYOUT_VERSION}
         style={{
@@ -234,7 +235,7 @@ export function BottomNav({
                       right: NAV_BAR_BADGE_RIGHT_OFFSET,
                     }}
                   >
-                    {item.badge > 9 ? "9+" : item.badge}
+                    {item.badge > BADGE_DISPLAY_MAX ? `${BADGE_DISPLAY_MAX}+` : item.badge}
                   </span>
                 )}
               </div>
