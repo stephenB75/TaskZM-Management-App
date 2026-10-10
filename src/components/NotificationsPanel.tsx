@@ -487,11 +487,12 @@ export function NotificationsPanel() {
         hideDesktopLogo
         actions={
           selectedNotificationIds.size > 0 ? (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-end" style={{ gap: NOTIFICATION_PANEL.headerActionGapPx }}>
               <Button
                 onClick={handleSelectAll}
-                variant="outline"
-                className="rounded-full px-2.5 sm:px-3"
+                variant="ghost"
+                className="h-auto rounded-md px-1.5 py-1 font-medium text-primary hover:bg-transparent"
+                style={{ fontSize: NOTIFICATION_PANEL.headerActionFontSize }}
                 size="sm"
               >
                 <span className="hidden sm:inline">
@@ -505,11 +506,12 @@ export function NotificationsPanel() {
               </Button>
               <Button
                 onClick={clearSelectedNotifications}
-                variant="destructive"
-                className="rounded-full px-2.5 sm:px-3"
+                variant="ghost"
+                className="h-auto gap-1 rounded-md px-1.5 py-1 font-medium text-destructive hover:bg-transparent [&_svg]:text-destructive"
+                style={{ fontSize: NOTIFICATION_PANEL.headerActionFontSize }}
                 size="sm"
               >
-                <Icon name="trash-2" size={ICON_SIZE_MD} className="sm:mr-2" />
+                <Icon name="trash-2" size={ICON_SIZE_XS} />
                 <span className="hidden sm:inline">
                   {NOTIFICATION_PANEL_TEXT.clearSelected} ({selectedNotificationIds.size})
                 </span>
@@ -518,13 +520,14 @@ export function NotificationsPanel() {
             </div>
           ) : (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={markAllAsRead}
-              className="rounded-full px-3"
+              className="h-auto gap-1 rounded-md px-1.5 py-1 font-medium text-primary hover:bg-transparent [&_svg]:text-primary"
+              style={{ fontSize: NOTIFICATION_PANEL.headerActionFontSize }}
               disabled={unreadCount === 0}
             >
-              <Icon name="check-circle" size={ICON_SIZE_XS} className="mr-2" />
+              <Icon name="check-circle" size={ICON_SIZE_XS} />
               <span className="hidden sm:inline">{NOTIFICATION_PANEL_TEXT.markAllRead}</span>
               <span className="sm:hidden">{NOTIFICATION_PANEL_TEXT.markRead}</span>
             </Button>
@@ -533,9 +536,9 @@ export function NotificationsPanel() {
       />
 
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="px-4 md:px-8 py-4 md:py-5 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
+        <div className="px-4 md:px-8 py-3 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0">
           <div
-            className="flex gap-2 overflow-x-auto pb-1 scrollbar-none"
+            className="flex flex-wrap"
             style={{ gap: NOTIFICATION_PANEL.filterChipGapPx }}
           >
             {NOTIFICATION_FILTER_OPTIONS.map((option) => {
@@ -552,12 +555,16 @@ export function NotificationsPanel() {
                   type="button"
                   onClick={() => setFilterType(option.id)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full border px-3 text-sm font-medium whitespace-nowrap transition-all flex-shrink-0',
+                    'inline-flex items-center gap-1 rounded-full border-0 px-2.5 font-medium whitespace-nowrap transition-colors flex-shrink-0',
                     isActive
-                      ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
-                      : 'border-border/60 bg-card/80 text-muted-foreground hover:border-primary/25 hover:text-foreground',
+                      ? 'bg-primary/15 text-primary'
+                      : 'bg-transparent text-muted-foreground hover:text-foreground',
                   )}
-                  style={{ height: NOTIFICATION_PANEL.filterChipHeightPx }}
+                  style={{
+                    height: NOTIFICATION_PANEL.filterChipHeightPx,
+                    minHeight: NOTIFICATION_PANEL.filterChipHeightPx,
+                    fontSize: NOTIFICATION_PANEL.headerActionFontSize,
+                  }}
                 >
                   <Icon name={option.icon} size={ICON_SIZE_XS} weight={isActive ? 'duotone' : 'regular'} />
                   {option.label}

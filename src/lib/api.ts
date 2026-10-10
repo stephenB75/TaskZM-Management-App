@@ -1558,3 +1558,64 @@ export async function saveUserAward(award: UserAward): Promise<{ success: boolea
     return { success: false };
   }
 }
+
+export interface PushRegistrationPreferences {
+  enabled: boolean;
+  dueDateReminders: boolean;
+  overdueAlerts: boolean;
+  reminderTime: number;
+}
+
+/** Store this device's APNs token server-side. `serverReminders` is true once the server sends task reminders. */
+export async function registerPushDeviceToken(payload: {
+  token: string;
+  platform: 'ios';
+  timezone: string;
+  preferences: PushRegistrationPreferences;
+}): Promise<{ success: boolean; serverReminders: boolean }> {
+  try {
+    const response = await fetch(`${API_BASE}/user/push-token`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      logger.warn('Failed to register push token:', response.status);
+      return { success: false, serverReminders: false };
+    }
+    const data = await response.json();
+    return { success: true, serverReminders: data.serverReminders === true };
+  } catch (error) {
+    logger.warn('Error registering push token:', error);
+    return { success: false, serverReminders: false };
+  }
+}
+
+export async function unregisterPushDeviceToken(token: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/user/push-token`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+      body: JSON.stringify({ token }),
+    });
+  } catch (error) {
+    logger.warn('Error unregistering push token:', error);
+  }
+}
+
+/** Ask the server to send a test push to every registered device for this user. */
+export async function sendTestPushNotification(): Promise<{ sent: number; devices: number; error?: string }> {
+  try {
+    const response = await fetch(`${API_BASE}/user/push-test`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { sent: 0, devices: 0, error: data.error ?? String(response.status) };
+    }
+    return { sent: data.sent ?? 0, devices: data.devices ?? 0, error: data.errors?.[0] };
+  } catch (error) {
+    return { sent: 0, devices: 0, error: error instanceof Error ? error.message : String(error) };
+  }
+}

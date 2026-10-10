@@ -37,6 +37,7 @@ import {
   isTaskDueNow,
 } from './notification-task-filters';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
+import { isServerPushRemindersActive } from './native-push-notifications';
 
 interface NotificationOptions {
   title: string;
@@ -370,7 +371,7 @@ export async function syncScheduledTaskNotifications(
     const LocalNotifications = await loadLocalNotifications();
     const now = new Date();
 
-    if (!settings.enabled || permission !== 'granted') {
+    if (!settings.enabled || permission !== 'granted' || isServerPushRemindersActive()) {
       try {
         const pending = await LocalNotifications.getPending();
         const pendingIds = pending.notifications?.map((notification) => ({ id: notification.id })) ?? [];

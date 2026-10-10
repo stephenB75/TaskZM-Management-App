@@ -73,7 +73,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             'group-[.toast]:rounded-full group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
           closeButton:
-            'group-[.toast]:!min-h-0 group-[.toast]:!min-w-0 group-[.toast]:rounded-full group-[.toast]:border-border/50 group-[.toast]:bg-card/90 group-[.toast]:p-0 group-[.toast]:shrink-0',
+            'group-[.toast]:!min-h-0 group-[.toast]:!min-w-0 group-[.toast]:p-0 group-[.toast]:shrink-0',
           success:
             'group-[.toast]:border-emerald-200/60 group-[.toast]:bg-emerald-50/90 dark:group-[.toast]:border-emerald-900/40 dark:group-[.toast]:bg-emerald-950/80',
           error:

@@ -368,7 +368,7 @@ export function RichTextEditor({
   return (
     <div 
       className={cn(
-        "border rounded-xl bg-white/80 dark:bg-background/70 backdrop-blur-sm shadow-sm",
+        "min-w-0 max-w-full border rounded-xl bg-white/80 dark:bg-background/70 backdrop-blur-sm shadow-sm",
         "border-primary/10",
         className
       )}
@@ -376,7 +376,7 @@ export function RichTextEditor({
       {/* Formatting Toolbar */}
       {!compact && (
       <div className={cn(
-        "flex flex-nowrap items-center gap-1 overflow-x-auto p-1 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl",
+        "flex min-w-0 max-w-full flex-nowrap items-center gap-1 overflow-x-auto p-1 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl",
         disabled && "opacity-60 pointer-events-none"
       )}>
         {/* Text Formatting Group */}

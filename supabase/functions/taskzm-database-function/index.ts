@@ -9,6 +9,7 @@ import * as cleanupUtils from "./cleanup-utils.tsx";
 import * as emailService from "./email-service.tsx";
 import * as appleCaldavSync from "./apple-caldav-sync.tsx";
 import * as googleCalendarSync from "./google-calendar-sync.tsx";
+import * as pushService from "./push-service.tsx";
 import {
   getGoogleOAuthConfig,
   getGoogleOAuthConfigDiagnostics,
@@ -6573,6 +6574,79 @@ app.post("/taskzm-database-function/user/awards", saveUserAwardsHandler);
 app.post("/user/awards", saveUserAwardsHandler);
 app.post("/taskzm-database-function/user/awards/single", saveUserAwardHandler);
 app.post("/user/awards/single", saveUserAwardHandler);
+
+// ============================================================================
+// REMOTE PUSH (APNs)
+// ============================================================================
+
+const registerPushTokenHandler = async (c: any) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const result = await pushService.registerDeviceToken(userId, await c.req.json());
+    if (!result.ok) {
+      return c.json({ error: result.error }, 400);
+    }
+    return c.json({ success: true, serverReminders: result.serverReminders });
+  } catch (error) {
+    console.error('Error registering push token:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+};
+
+const unregisterPushTokenHandler = async (c: any) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const { token } = await c.req.json();
+    await pushService.unregisterDeviceToken(userId, token);
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error unregistering push token:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+};
+
+const testPushHandler = async (c: any) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    if (!pushService.isApnsConfigured()) {
+      return c.json({ error: 'APNs is not configured on the server' }, 503);
+    }
+    return c.json(await pushService.sendTestPush(userId));
+  } catch (error) {
+    console.error('Error sending test push:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+};
+
+const dispatchPushHandler = async (c: any) => {
+  if (!pushService.isValidCronSecret(c.req.header('x-push-cron-secret'))) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  try {
+    return c.json(await pushService.dispatchDuePushes());
+  } catch (error) {
+    console.error('Error dispatching pushes:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+};
+
+app.post("/taskzm-database-function/user/push-token", registerPushTokenHandler);
+app.post("/user/push-token", registerPushTokenHandler);
+app.delete("/taskzm-database-function/user/push-token", unregisterPushTokenHandler);
+app.delete("/user/push-token", unregisterPushTokenHandler);
+app.post("/taskzm-database-function/user/push-test", testPushHandler);
+app.post("/user/push-test", testPushHandler);
+app.post("/taskzm-database-function/push/dispatch", dispatchPushHandler);
+app.post("/push/dispatch", dispatchPushHandler);
 
 // ============================================================================
 // CATCH-ALL ROUTE (must be last)

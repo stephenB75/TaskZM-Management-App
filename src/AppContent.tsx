@@ -1035,7 +1035,7 @@ export default function AppContent() {
           side={shouldUseMobileLayout ? 'bottom' : 'right'}
           className={shouldUseMobileLayout ? 'taskzm-ai-sheet overflow-y-auto bg-background' : 'w-full overflow-y-auto bg-background sm:max-w-md'}
         >
-          <SheetHeader>
+          <SheetHeader className="p-0 pr-10">
             <SheetTitle>AI</SheetTitle>
             <SheetDescription>Scheduling suggestions for open tasks.</SheetDescription>
           </SheetHeader>

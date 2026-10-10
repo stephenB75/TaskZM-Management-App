@@ -11,7 +11,7 @@ import {
 } from "./ui/sheet";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
-import { COMPONENT_DIMENSIONS, MOBILE_HOME_SECTION_GAP, SIDEBAR_WIDTH, SIDEBAR_Z_INDEX } from "../lib/layout-constants";
+import { COMPONENT_DIMENSIONS, MOBILE_HOME_SECTION_GAP, NAV_BAR_HEIGHT, NAV_BAR_PADDING_TOP, SHEET_SAFE_AREA, SIDEBAR_WIDTH, SIDEBAR_Z_INDEX } from "../lib/layout-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -106,9 +106,15 @@ export function AppSidebar({
   ];
 
   const mobileSidebarContent = (
-    <div className="p-4 flex flex-col h-full">
-      {/* Header */}
-      <div className="mb-6 flex flex-col items-center gap-1.5">
+    <div
+      className="flex h-full min-h-0 flex-col"
+      style={{
+        padding: MOBILE_HOME_SECTION_GAP,
+        paddingTop: `calc(${MOBILE_HOME_SECTION_GAP} + ${SHEET_SAFE_AREA.top})`,
+        paddingBottom: `calc(${MOBILE_HOME_SECTION_GAP} + ${NAV_BAR_PADDING_TOP} + ${NAV_BAR_HEIGHT}px)`,
+      }}
+    >
+      <div className="mb-2 flex shrink-0 flex-col items-center gap-1">
         <img
           src={isDark ? taskzmLogoGray : taskzmLogoBlack}
           alt="TaskZM Logo"
@@ -126,7 +132,7 @@ export function AppSidebar({
       </div>
 
       {/* Navigation */}
-      <div className="space-y-2 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col justify-evenly gap-1 overflow-y-auto">
         {menuItems
           .filter((item) => !('desktopOnly' in item && item.desktopOnly)) // Mobile sidebar excludes desktop-only items
           .map((item) => {
@@ -241,7 +247,7 @@ export function AppSidebar({
         <Sheet open={open} onOpenChange={onOpenChange}>
           <SheetContent
             side="left"
-            className="w-64 p-0"
+            className="taskzm-sidebar-sheet w-64 p-0"
           >
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation Menu</SheetTitle>

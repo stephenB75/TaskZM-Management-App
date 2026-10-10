@@ -141,8 +141,13 @@ export const SETTINGS_PANEL_UI_TEXT = {
     },
     pushNotifications: {
       label: 'Remote push notifications',
-      description: 'Receive task alerts from TaskZM even when the app is closed (requires server setup).',
+      description: 'Receive task alerts from TaskZM even when the app is closed.',
       permissionDenied: 'Push permission denied. Enable notifications in iOS Settings.',
+      testButton: 'Send test push',
+      testSending: 'Sending…',
+      testSent: 'Test push sent. It should arrive in a few seconds.',
+      testNoDevice: 'This device is not registered for push yet. Reopen the app and try again.',
+      testFailed: (reason: string) => `Test push failed: ${reason}`,
     },
   },
 } as const;

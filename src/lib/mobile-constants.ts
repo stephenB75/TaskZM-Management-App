@@ -91,6 +91,8 @@ export const MOBILE_STORAGE_KEYS = {
   pushDeviceToken: 'taskzm_push_device_token',
   /** User preference for remote push registration. */
   pushNotificationsEnabled: 'taskzm_push_notifications_enabled',
+  /** True when the server confirmed it sends due-soon/overdue pushes, so on-device scheduling stands down. */
+  pushServerReminders: 'taskzm_push_server_reminders',
 } as const;
 
 /** Pull-to-refresh gesture thresholds (native mobile). */

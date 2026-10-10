@@ -5,11 +5,57 @@
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { MOBILE_STORAGE_KEYS } from './mobile-constants';
-import { NOTIFICATION_OPEN_TASK_EVENT } from './notification-constants';
+import { NOTIFICATION_OPEN_TASK_EVENT, IOS_APNS_KEY_ID } from './notification-constants';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
 import { logger } from './logger';
+import { getPlatform } from './platform';
+import {
+  registerPushDeviceToken,
+  unregisterPushDeviceToken,
+  type PushRegistrationPreferences,
+} from './api';
 
 let pushHandlersRegistered = false;
+let latestPushPreferences: PushRegistrationPreferences | null = null;
+
+/** True when the server confirmed it delivers due-soon/overdue alerts to this device. */
+export function isServerPushRemindersActive(): boolean {
+  return getFromLocalStorage<boolean>(MOBILE_STORAGE_KEYS.pushServerReminders, false);
+}
+
+/**
+ * Upload this device's APNs token with current reminder preferences and timezone.
+ * Safe to call repeatedly (login, settings change, new token); no-ops until both are known.
+ */
+export async function syncPushRegistration(preferences?: PushRegistrationPreferences): Promise<void> {
+  if (preferences) latestPushPreferences = preferences;
+  const platform = getPlatform();
+  if (!platform.isNative || !platform.isIOS) return;
+
+  if (!latestPushPreferences || !isPushNotificationsPreferenceEnabled()) return;
+
+  const token = getStoredPushDeviceToken();
+  if (!token) {
+    // Logout clears the cached token; re-registering fires the 'registration' listener, which calls back here.
+    if (pushHandlersRegistered) await registerForPushNotifications();
+    return;
+  }
+
+  const result = await registerPushDeviceToken({
+    token,
+    platform: 'ios',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    preferences: latestPushPreferences,
+  });
+  saveToLocalStorage(MOBILE_STORAGE_KEYS.pushServerReminders, result.success && result.serverReminders);
+}
+
+/** Stop server pushes to this device (logout or push disabled). */
+export async function removePushRegistrationFromServer(): Promise<void> {
+  saveToLocalStorage(MOBILE_STORAGE_KEYS.pushServerReminders, false);
+  const token = getStoredPushDeviceToken();
+  if (token) await unregisterPushDeviceToken(token);
+}
 
 export function isPushNotificationsPreferenceEnabled(): boolean {
   return getFromLocalStorage<boolean>(MOBILE_STORAGE_KEYS.pushNotificationsEnabled, true);
@@ -45,6 +91,7 @@ export async function initNativePushNotifications(): Promise<void> {
   await PushNotifications.addListener('registration', (token) => {
     saveToLocalStorage(MOBILE_STORAGE_KEYS.pushDeviceToken, token.value);
     logger.info('[Native] Push registration token received');
+    void syncPushRegistration();
   });
 
   await PushNotifications.addListener('registrationError', (error) => {
@@ -81,6 +128,7 @@ export async function registerForPushNotifications(): Promise<boolean> {
     }
 
     await PushNotifications.register();
+    logger.info('[Native] Push registration requested', { apnsKeyId: IOS_APNS_KEY_ID });
     return true;
   } catch (error) {
     logger.warn('[Native] Push register failed', error);
@@ -92,6 +140,7 @@ export async function unregisterPushNotifications(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
 
   try {
+    await removePushRegistrationFromServer();
     await PushNotifications.removeAllListeners();
     pushHandlersRegistered = false;
     saveToLocalStorage(MOBILE_STORAGE_KEYS.pushDeviceToken, null);
@@ -106,6 +155,7 @@ export async function setPushNotificationsEnabled(enabled: boolean): Promise<boo
   if (!Capacitor.isNativePlatform()) return false;
 
   if (!enabled) {
+    await removePushRegistrationFromServer();
     saveToLocalStorage(MOBILE_STORAGE_KEYS.pushDeviceToken, null);
     return true;
   }

@@ -5,7 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Icon } from "../Icon";
 
 import { cn } from "./utils";
-import { DIALOG_CLOSE_BUTTON, DIALOG_DIMENSIONS, DIALOG_MOBILE_SHEET_CLASS } from "../../lib/layout-constants";
+import { CLOSE_BUTTON, DIALOG_DIMENSIONS, DIALOG_MOBILE_SHEET_CLASS } from "../../lib/layout-constants";
 
 function Dialog({
   ...props
@@ -80,38 +80,18 @@ const DialogContent = React.forwardRef<
     >
       {children}
       {!hideCloseButton && (
-      <DialogPrimitive.Close 
-        className={cn(
-          "ring-offset-background focus:ring-ring absolute rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none text-foreground/70 hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 flex items-center justify-center p-0",
-          // Mobile: use mobile constants via inline styles, Desktop: use Tailwind classes
-          "sm:w-8 sm:h-8 sm:top-4 sm:right-4"
-        )}
+      <DialogPrimitive.Close
+        data-close-button
+        className={CLOSE_BUTTON.className}
         style={{
-          width: DIALOG_CLOSE_BUTTON.mobile.size,
-          height: DIALOG_CLOSE_BUTTON.mobile.size,
-          top: DIALOG_CLOSE_BUTTON.mobile.top,
-          right: DIALOG_CLOSE_BUTTON.mobile.right,
-          padding: DIALOG_CLOSE_BUTTON.mobile.padding,
+          width: CLOSE_BUTTON.size,
+          height: CLOSE_BUTTON.size,
+          minHeight: CLOSE_BUTTON.size,
+          top: CLOSE_BUTTON.inset,
+          right: CLOSE_BUTTON.inset,
         }}
       >
-        <Icon 
-          name="x" 
-          size={parseInt(DIALOG_CLOSE_BUTTON.mobile.iconSize.replace('rem', '')) * 16}
-          className="sm:hidden"
-          style={{
-            width: DIALOG_CLOSE_BUTTON.mobile.iconSize,
-            height: DIALOG_CLOSE_BUTTON.mobile.iconSize,
-          }}
-        />
-        <Icon 
-          name="x" 
-          size={parseInt(DIALOG_CLOSE_BUTTON.desktop.iconSize.replace('rem', '')) * 16}
-          className="hidden sm:block"
-          style={{
-            width: DIALOG_CLOSE_BUTTON.desktop.iconSize,
-            height: DIALOG_CLOSE_BUTTON.desktop.iconSize,
-          }}
-        />
+        <Icon name="x" size={CLOSE_BUTTON.iconPx} />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
       )}

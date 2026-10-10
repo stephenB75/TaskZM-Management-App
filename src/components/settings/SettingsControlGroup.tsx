@@ -11,7 +11,7 @@ export function SettingsControlGroup({ children, className }: SettingsControlGro
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-xl border border-border/40 bg-background/80 shadow-sm divide-y divide-border/30',
+        'rounded-xl border border-border/40 bg-background/80 shadow-sm divide-y divide-border/30',
         className,
       )}
     >

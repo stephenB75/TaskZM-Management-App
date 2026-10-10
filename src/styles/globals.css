@@ -270,7 +270,7 @@ body {
 /* Viewport height for consistent full-height layout in all browsers (Edge, Chrome, Safari, Firefox) */
 :root {
   --viewport-height: 100vh;
-  --dialog-above-nav: calc(72px + env(safe-area-inset-bottom, 0px));
+  --dialog-above-nav: calc(0.625rem + 72px + 0.5rem + env(safe-area-inset-bottom, 0px) * 1.5);
   --dialog-sheet-width: min(26rem, 86vw);
   --dialog-sheet-slide: 1200ms;
 }
@@ -311,6 +311,8 @@ body {
     translate: none !important;
     border-radius: 1rem !important;
     z-index: 41 !important;
+    box-sizing: border-box !important;
+    padding: 1rem 1rem 1.25rem !important;
   }
 
   [data-slot="dialog-overlay"],
@@ -334,6 +336,42 @@ body {
 
 [data-slot="dialog-content"] button {
   min-height: 0;
+  min-width: 0;
+}
+
+@keyframes taskzm-up-next-dot {
+  0%, 100% { transform: scale(0.7); opacity: 0.55; }
+  50% { transform: scale(1); opacity: 1; }
+}
+
+.taskzm-up-next {
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  padding: 0.5rem;
+}
+
+.taskzm-up-next-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--primary);
+  animation: taskzm-up-next-dot 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taskzm-up-next-dot { animation: none; }
+}
+
+.taskzm-sidebar-sheet {
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+}
+
+.taskzm-sidebar-sheet button {
+  min-height: 2.75rem;
   min-width: 0;
 }
 
@@ -875,33 +913,30 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 [data-sonner-toast] [data-close-button] {
   min-width: unset !important;
   min-height: unset !important;
-  width: var(--toast-close-size, 20px) !important;
-  height: var(--toast-close-size, 20px) !important;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  top: 0.5rem !important;
+  right: 0.5rem !important;
+  left: auto !important;
+  transform: none !important;
+  border: 0 !important;
+  border-radius: 0.375rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--muted-foreground) !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  color: var(--foreground) !important;
 }
 
 [data-sonner-toast] [data-close-button] svg {
-  width: var(--toast-close-icon-size, 12px) !important;
-  height: var(--toast-close-icon-size, 12px) !important;
+  width: 0.875rem !important;
+  height: 0.875rem !important;
 }
 
-@media (max-width: 1023px) {
-  [data-sonner-toaster][dir='ltr'] {
-    --toast-close-button-transform: translate(-20%, -20%);
-  }
-
-  [data-sonner-toaster][dir='rtl'] {
-    --toast-close-button-transform: translate(20%, -20%);
-  }
-
-  [data-sonner-toast] [data-close-button] {
-    width: var(--toast-close-size-mobile, 16px) !important;
-    height: var(--toast-close-size-mobile, 16px) !important;
-  }
-
-  [data-sonner-toast] [data-close-button] svg {
-    width: var(--toast-close-icon-size-mobile, 10px) !important;
-    height: var(--toast-close-icon-size-mobile, 10px) !important;
-  }
+[data-sonner-toast] [data-content] {
+  padding-right: 1.5rem;
 }
 
 @keyframes slide-down {

@@ -150,6 +150,17 @@ export function AppHeader({
     borderColor: HEADER_BORDER_COLOR,
   };
 
+  const mobileHeaderIconStyle: React.CSSProperties = {
+    width: HEADER_BUTTON_SIZE,
+    height: HEADER_BUTTON_SIZE,
+    minWidth: HEADER_BUTTON_SIZE,
+    minHeight: HEADER_BUTTON_SIZE,
+    padding: 0,
+    border: 'none',
+    borderRadius: 0,
+    background: 'transparent',
+  };
+
   return (
     <>
       {/* Mobile/Tablet Header - Fixed at top (shown on mobile and tablets < 1280px) */}
@@ -182,27 +193,15 @@ export function AppHeader({
         <div className="flex items-center justify-between" style={{ gap: HEADER_GAP_MEDIUM, paddingLeft: HEADER_CONTENT_PADDING_LEFT_MOBILE }}>
           <div className="flex items-center min-w-0 flex-1" style={{ gap: HEADER_GAP_MEDIUM }}>
             {/* Back Button (if onBack provided) or Menu Button */}
-            {onBack ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-shrink-0 p-0"
-                style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
-                onClick={onBack}
-              >
-                <Icon name="arrow-left" size={HEADER_ICON_SIZE_SMALL} />
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-shrink-0 p-0"
-                style={{ height: HEADER_BUTTON_SIZE, width: HEADER_BUTTON_SIZE }}
-                onClick={toggleSidebar}
-              >
-                <Icon name="menu" size={HEADER_ICON_SIZE_SMALL} />
-              </Button>
-            )}
+            <button
+              type="button"
+              aria-label={onBack ? 'Back' : 'Open menu'}
+              className="inline-flex flex-shrink-0 items-center justify-center bg-transparent text-foreground"
+              style={mobileHeaderIconStyle}
+              onClick={onBack ?? toggleSidebar}
+            >
+              <Icon name={onBack ? 'arrow-left' : 'menu'} size={HEADER_ICON_SIZE_BUTTON_DESKTOP} />
+            </button>
 
             {/* Title - contextual; compact when description is shown */}
             <div className="flex-1 min-w-0">
@@ -214,7 +213,7 @@ export function AppHeader({
               </h1>
               {description && (
                 <p
-                  className="text-muted-foreground truncate normal-case tracking-normal font-medium"
+                  className="text-muted-foreground normal-case tracking-normal font-medium"
                   style={{
                     fontSize: HEADER_DESCRIPTION_SIZE_SMALL_SCREEN,
                     marginTop: 2,
@@ -227,20 +226,13 @@ export function AppHeader({
             </div>
           </div>
 
-          <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_SMALL }}>
+          <div className="flex items-center flex-shrink-0" style={{ gap: HEADER_GAP_MEDIUM }}>
             <button
               type="button"
               aria-label="Add task"
               onClick={() => window.dispatchEvent(new CustomEvent('taskzm-add-task'))}
-              className="inline-flex items-center bg-transparent font-semibold text-foreground"
-              style={{
-                minHeight: HEADER_BUTTON_SIZE,
-                border: 'none',
-                paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
-                paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
-                paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
-                paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
-              }}
+              className="inline-flex items-center justify-center bg-transparent font-semibold text-foreground"
+              style={mobileHeaderIconStyle}
             >
               <Icon name="plus" size={HEADER_ICON_SIZE_BUTTON_DESKTOP} />
             </button>
@@ -248,24 +240,14 @@ export function AppHeader({
               type="button"
               aria-label="AI"
               onClick={() => window.dispatchEvent(new CustomEvent('taskzm-open-ai'))}
-              className="inline-flex items-center bg-transparent font-semibold text-primary"
-              style={{
-                minHeight: HEADER_BUTTON_SIZE,
-                border: 'none',
-                paddingTop: HEADER_BUTTON_PADDING_Y_SMALL,
-                paddingBottom: HEADER_BUTTON_PADDING_Y_SMALL,
-                paddingLeft: HEADER_BUTTON_PADDING_X_SMALL,
-                paddingRight: HEADER_BUTTON_PADDING_X_SMALL,
-                gap: HEADER_GAP_XSMALL,
-              }}
+              className="inline-flex items-center justify-center bg-transparent font-semibold text-primary"
+              style={mobileHeaderIconStyle}
             >
               AI
             </button>
-            {shouldUseMobileLayout && (
-              <div className="flex items-center" style={{ gap: HEADER_GAP_SMALL }}>
-                {actions}
-              </div>
-            )}
+            {shouldUseMobileLayout && actions ? (
+              <div className="contents">{actions}</div>
+            ) : null}
           </div>
         </div>
       </div>

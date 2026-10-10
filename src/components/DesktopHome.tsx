@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { useSheetItem } from '../hooks/useSheetItem';
 import { useDraggable } from '@dnd-kit/core';
 import { useTasks } from '../contexts/TaskContext';
-import { useAuth } from '../contexts/AuthContext';
 import { completedCountByRecentMonth, isUnfinishedTask, tasksScheduledOn, tasksToPlace } from '../lib/home-task-groups';
 import { MOBILE_HOME_UI_TEXT } from '../lib/navigation-constants';
-import { greetingLine, PlaceTasksButton, SummaryCard } from './HomeSummary';
+import { PlaceTasksButton, SummaryCard } from './HomeSummary';
 import { PastelTaskCard, TaskTimelineRow } from './PastelTaskCard';
 import {
   MOBILE_HOME_BODY_FONT_SIZE,
@@ -28,8 +28,9 @@ interface DesktopHomeProps {
 
 export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) {
   const { tasks } = useTasks();
-  const { user } = useAuth();
-  const [editorTask, setEditorTask] = useState<Task | null>(null);
+  const editor = useSheetItem<Task>();
+  const editorTask = editor.item;
+  const setEditorTask = editor.show;
   const now = useMemo(() => new Date(), [tasks]);
   const unfinished = useMemo(() => tasks.filter((task) => isUnfinishedTask(task, now)), [tasks, now]);
   const toPlace = useMemo(() => tasksToPlace(tasks, unfinished), [tasks, unfinished]);
@@ -37,7 +38,6 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
   const doneCount = useMemo(() => tasks.filter((task) => task.status === 'done').length, [tasks]);
   const months = useMemo(() => completedCountByRecentMonth(tasks, now), [tasks, now]);
   const peak = months.reduce((best, month) => Math.max(best, month.count), 0);
-  const name = user?.name || '';
 
   useEffect(() => {
     const showWeek = () => {
@@ -46,9 +46,6 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
     window.addEventListener('taskzm-show-week', showWeek);
     return () => window.removeEventListener('taskzm-show-week', showWeek);
   }, []);
-  const nextUnfinished = unfinished[0];
-  const nextToPlace = toPlace[0];
-
   return (
     <div
       className="h-full overflow-y-auto"
@@ -58,10 +55,6 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
         color: COLOR_TEXT_PRIMARY,
       }}
     >
-      <h2 style={{ margin: 0, fontSize: MOBILE_HOME_BODY_FONT_SIZE, fontWeight: 500 }}>
-        {MOBILE_HOME_UI_TEXT.greetingHello} {greetingLine(now)}{name ? `, ${name}` : ''}
-      </h2>
-
       <div
         className="grid"
         style={{
@@ -75,9 +68,9 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
         <SummaryCard compact label={MOBILE_HOME_UI_TEXT.summaryScheduledToday} value={upcoming.length} />
         <SummaryCard compact label={MOBILE_HOME_UI_TEXT.summaryDone} value={doneCount} />
       </div>
-      <div style={{ marginTop: MOBILE_HOME_SECTION_GAP }}>
+      <div className="flex flex-col items-center" style={{ marginTop: MOBILE_HOME_SECTION_GAP, gap: MOBILE_HOME_LABEL_GAP }}>
         <PlaceTasksButton busy={isScheduling} onClick={onRunScheduler} />
-        <p style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE, margin: `${MOBILE_HOME_LABEL_GAP} 0 0` }}>
+        <p style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE, margin: 0, textAlign: 'center' }}>
           {MOBILE_HOME_UI_TEXT.scheduleHint}
         </p>
       </div>
@@ -127,63 +120,24 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
         </section>
 
         <section className="flex flex-col" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
-          <h2 style={{ margin: 0, fontSize: MOBILE_HOME_BODY_FONT_SIZE, fontWeight: 500 }}>
-            {MOBILE_HOME_UI_TEXT.upcomingTitle}
-          </h2>
           {upcoming.length === 0 ? (
             <p style={{ margin: 0 }}>{MOBILE_HOME_UI_TEXT.weekEmpty}</p>
           ) : (
-            upcoming.slice(0, 4).map((task) => (
-              <TaskTimelineRow key={task.id} task={task}>
-                <WeekDraggable task={task} hideTime onOpen={() => setEditorTask(task)} />
-              </TaskTimelineRow>
+            upcoming.slice(0, 4).map((task, index) => (
+              <div key={task.id} className={index === 0 ? 'taskzm-up-next' : undefined}>
+                {index === 0 ? (
+                  <p className="flex items-center font-medium text-primary" style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE, margin: `0 0 ${MOBILE_HOME_LABEL_GAP}`, gap: MOBILE_HOME_LABEL_GAP }}>
+                    <span aria-hidden className="taskzm-up-next-dot" />
+                    {MOBILE_HOME_UI_TEXT.upNext}
+                  </p>
+                ) : null}
+                <TaskTimelineRow task={task}>
+                  <WeekDraggable task={task} hideTime onOpen={() => setEditorTask(task)} />
+                </TaskTimelineRow>
+              </div>
             ))
           )}
         </section>
-      </div>
-
-      <div
-        className="grid"
-        style={{
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: MOBILE_HOME_SECTION_GAP,
-          marginTop: MOBILE_HOME_SECTION_GAP,
-        }}
-      >
-        {nextUnfinished ? (
-          <button
-            type="button"
-            className="text-left"
-            style={{
-              background: COLOR_BACKGROUND_WHITE,
-              borderRadius: MOBILE_HOME_CARD_RADIUS,
-              padding: MOBILE_HOME_PAGE_PADDING,
-              border: 'none',
-              color: COLOR_TEXT_PRIMARY,
-            }}
-            onClick={() => setEditorTask(nextUnfinished)}
-          >
-            <p style={{ margin: 0, fontSize: MOBILE_HOME_TAB_FONT_SIZE }}>{MOBILE_HOME_UI_TEXT.summaryUnfinished}</p>
-            <p style={{ margin: 0, fontWeight: 500 }}>{nextUnfinished.title}</p>
-          </button>
-        ) : null}
-        {nextToPlace ? (
-          <button
-            type="button"
-            className="text-left"
-            style={{
-              background: COLOR_BACKGROUND_WHITE,
-              borderRadius: MOBILE_HOME_CARD_RADIUS,
-              padding: MOBILE_HOME_PAGE_PADDING,
-              border: 'none',
-              color: COLOR_TEXT_PRIMARY,
-            }}
-            onClick={() => setEditorTask(nextToPlace)}
-          >
-            <p style={{ margin: 0, fontSize: MOBILE_HOME_TAB_FONT_SIZE }}>{MOBILE_HOME_UI_TEXT.needsTime}</p>
-            <p style={{ margin: 0, fontWeight: 500 }}>{nextToPlace.title}</p>
-          </button>
-        ) : null}
       </div>
 
       <div style={{ marginTop: MOBILE_HOME_SECTION_GAP }}>
@@ -191,7 +145,7 @@ export function DesktopHome({ onRunScheduler, isScheduling }: DesktopHomeProps) 
       </div>
 
       {editorTask ? (
-        <TaskDialog open task={editorTask} onClose={() => setEditorTask(null)} initialDate={getDateString(now)} />
+        <TaskDialog open={editor.open} task={editorTask} onClose={editor.close} initialDate={getDateString(now)} />
       ) : null}
     </div>
   );

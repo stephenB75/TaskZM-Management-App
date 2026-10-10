@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_3XL, TOAST_DURATION_SHORT_MS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS, TOAST_DURATION_SHORT_MS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { APP_TOUR_DEMO_SCHEDULE_TASKS } from "../lib/app-tour-constants";
 import { TourDemoDialogNotice } from "./TourDemoDialogNotice";
 import { useAI } from "../contexts/AIContext";
@@ -962,7 +962,7 @@ export function AIRecommendationPanel({
         </DialogContent>
       </Dialog>
 
-      <div className="mt-6 h-[calc(100vh-8rem)]" data-tour="ai-scheduler-section">
+      <div className="min-h-0" data-tour="ai-scheduler-section">
         {/* AI Scheduler Action */}
         {(() => {
           const unscheduledTasks = getUnscheduledTasks();
@@ -1007,12 +1007,12 @@ export function AIRecommendationPanel({
                     {showScheduleButton && (
                       <>
                         {/* Period Selector for AI Suggestions */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Select
                             value={suggestionPeriod}
                             onValueChange={(value) => setSuggestionPeriod(value as 'day' | 'week' | 'month' | 'twoWeeks')}
                           >
-                            <SelectTrigger className="h-8 text-xs">
+                            <SelectTrigger className="h-9 w-full rounded-xl text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1028,7 +1028,7 @@ export function AIRecommendationPanel({
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-8 text-xs flex-1"
+                                  className="h-9 w-full rounded-xl text-xs sm:flex-1"
                                 >
                                   <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className="mr-1" />
                                   {suggestionDate?.toLocaleDateString('en-US', {
@@ -1067,54 +1067,24 @@ export function AIRecommendationPanel({
                     
                     {/* Reschedule Options - Always show when AI scheduling is enabled */}
                     <div className="space-y-2" data-tour="ai-reschedule-section">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Icon name="refresh-cw" size={ICON_SIZE_MD} className="text-primary/70" />
-                        <span className="text-xs font-medium text-muted-foreground">Reschedule Tasks</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setRescheduleType('day');
-                            setSelectedDate(new Date());
-                            setShowRescheduleDialog(true);
-                          }}
-                          className="rounded-full text-xs"
-                          disabled={isScheduling}
-                        >
-                          <Icon name="refresh-cw" size={ICON_SIZE_SM} className="mr-1.5" />
-                          Day
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setRescheduleType('week');
-                            setSelectedDate(new Date());
-                            setShowRescheduleDialog(true);
-                          }}
-                          className="rounded-full text-xs"
-                          disabled={isScheduling}
-                        >
-                          <Icon name="calendar-days" size={ICON_SIZE_SM} weight="duotone" className="mr-1.5" />
-                          Week
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setRescheduleType('month');
-                            setSelectedDate(new Date());
-                            setShowRescheduleDialog(true);
-                          }}
-                          className="rounded-full text-xs"
-                          disabled={isScheduling}
-                        >
-                          <Icon name="calendar-range" size={ICON_SIZE_SM} weight="duotone" className="mr-1.5" />
-                          Month
-                        </Button>
-                      </div>
+                      <span className="text-xs font-medium text-muted-foreground">Reschedule</span>
+                      <Select
+                        disabled={isScheduling}
+                        onValueChange={(value) => {
+                          setRescheduleType(value as 'day' | 'week' | 'month');
+                          setSelectedDate(new Date());
+                          setShowRescheduleDialog(true);
+                        }}
+                      >
+                        <SelectTrigger className="h-9 rounded-xl text-sm">
+                          <SelectValue placeholder="Choose a range" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="day">Day</SelectItem>
+                          <SelectItem value="week">Week</SelectItem>
+                          <SelectItem value="month">Month</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </Card>
@@ -1154,27 +1124,9 @@ export function AIRecommendationPanel({
         })()}
 
         {/* AI Scheduler Info */}
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-          <div className={cn("w-20 h-20 mb-6 rounded-full flex items-center justify-center", UI_INBOX_GRADIENTS.emptyState.className)}>
-            <Icon name="brain" size={ICON_SIZE_3XL} weight="duotone" className="text-primary" />
-          </div>
-          <h3 className="font-semibold text-lg mb-2">
-            AI Smart Scheduler
-          </h3>
-          <p className="text-sm text-muted-foreground max-w-md mb-6">
-            Use the scheduler above to automatically organize
-            your unscheduled tasks across upcoming days based on
-            priority.
-          </p>
-          <div className="bg-primary/5 border border-primary/10 rounded-lg p-4 max-w-md">
-            <p className="text-xs text-muted-foreground">
-              The AI scheduler analyzes task priority, due
-              dates, and status to intelligently distribute your
-              workload. Enable priority-based scheduling in
-              Settings for optimal results.
-            </p>
-          </div>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          The scheduler uses priority, due dates, and status. Turn on priority-based scheduling in Settings when you want that order.
+        </p>
       </div>
     </>
   );

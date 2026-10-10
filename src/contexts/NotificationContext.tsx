@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useTasks } from './TaskContext';
 import { useAuth } from './AuthContext';
 import { toast } from '../lib/toast-wrapper';
@@ -36,6 +36,7 @@ import {
   clearWebScheduledTaskNotifications,
 } from '../lib/web-scheduled-notifications';
 import { getPlatform } from '../lib/platform';
+import { syncPushRegistration } from '../lib/native-push-notifications';
 import { isAppIconBadgeSupported, setAppIconBadgeCount, flushPendingAppIconBadgeCount } from '../lib/app-icon-badge';
 import { isAppInForeground } from '../lib/app-visibility';
 import { isEligibleForTaskDueReminder, isEligibleForTaskOverdueAlert, isTaskOverdue, isTaskDueSoon, pruneStaleTaskNotificationKeys } from '../lib/notification-task-filters';
@@ -230,6 +231,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       clearWebScheduledTaskNotifications();
     };
   }, [syncTaskSchedules]);
+
+  const syncTaskSchedulesRef = useRef(syncTaskSchedules);
+  syncTaskSchedulesRef.current = syncTaskSchedules;
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void syncPushRegistration({
+      enabled: settings.enabled,
+      dueDateReminders: settings.dueDateReminders,
+      overdueAlerts: settings.overdueAlerts,
+      reminderTime: settings.reminderTime,
+    }).then(() => syncTaskSchedulesRef.current());
+  }, [user?.id, settings.enabled, settings.dueDateReminders, settings.overdueAlerts, settings.reminderTime]);
 
   useEffect(() => {
     const handleNativePluginsReady = () => {

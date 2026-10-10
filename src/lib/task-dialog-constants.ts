@@ -295,7 +295,9 @@ export const TASK_DIALOG_MINIMAL_SPACING = {
   contentPadding: 'px-0 pb-2 sm:pb-3',
   mobileTabSelectWrapper: 'px-3 pt-3 pb-2 sm:px-4 sm:pt-4 lg:px-5 lg:pt-4 lg:pb-3',
   basicContentSpaceY: 'space-y-3 sm:space-y-4',
-  dialogInnerPadding: 'pt-3 px-3 pb-3 sm:pt-4 sm:px-5 sm:pb-4 md:px-6 md:pb-4',
+  dialogInnerPadding: 'px-3 pb-3 pt-1 sm:px-5 sm:pb-4 md:px-6',
+  /** Clears the corner close control so fields do not sit under it. */
+  contentBelowClose: 'pt-10',
   tabButtonMinHeight: 'min-h-[2rem] sm:min-h-[2.25rem]',
   // Schedule tab: grid and time row spacing (no hardcoded values in component)
   scheduleGridGap: 'gap-6 sm:gap-8',

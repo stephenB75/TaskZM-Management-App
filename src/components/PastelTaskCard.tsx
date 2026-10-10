@@ -5,16 +5,18 @@ import {
   MILLISECONDS_PER_MINUTE,
 } from '../lib/business-constants';
 import {
-  MOBILE_HOME_CARD_BAR_PX,
   MOBILE_HOME_CARD_PADDING,
   MOBILE_HOME_CARD_RADIUS,
   MOBILE_HOME_CARD_TITLE_FONT_SIZE,
   MOBILE_HOME_LABEL_GAP,
   MOBILE_HOME_PILL_RADIUS,
   MOBILE_HOME_TAB_FONT_SIZE,
+  MOBILE_HOME_TASK_BAR_GAP,
+  MOBILE_HOME_TASK_BAR_PX,
   MOBILE_HOME_TIMELINE_LABEL_WIDTH,
 } from '../lib/layout-constants';
 import { COLOR_TEXT_PRIMARY } from '../lib/color-theme';
+import { getTaskDialogPriorityAccent } from '../lib/task-dialog-constants';
 import { AGENDA_LIST_CARD, getAgendaCardBadgeStyles } from '../lib/agenda-list-card-constants';
 import { triggerSelectionHaptic } from '../lib/native-haptics';
 import type { Task } from '../types';
@@ -51,7 +53,7 @@ export function PastelTaskCard({ task, detail, unfinished, onOpen, hideTime, ful
     <div
       style={{
         display: 'flex',
-        gap: MOBILE_HOME_LABEL_GAP,
+        gap: MOBILE_HOME_TASK_BAR_GAP,
         alignItems: 'stretch',
         background: 'transparent',
         color: COLOR_TEXT_PRIMARY,
@@ -62,9 +64,9 @@ export function PastelTaskCard({ task, detail, unfinished, onOpen, hideTime, ful
       <span
         aria-hidden
         style={{
-          width: MOBILE_HOME_CARD_BAR_PX,
+          width: MOBILE_HOME_TASK_BAR_PX,
           borderRadius: MOBILE_HOME_CARD_RADIUS,
-          background: wash.bar,
+          background: getTaskDialogPriorityAccent(task.priority),
           flex: 'none',
         }}
       />

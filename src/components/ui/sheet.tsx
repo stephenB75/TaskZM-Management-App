@@ -5,7 +5,7 @@ import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { Icon } from "../Icon";
 
 import { cn } from "./utils";
-import { SHEET_SAFE_AREA } from "../../lib/layout-constants";
+import { CLOSE_BUTTON, SHEET_SAFE_AREA } from "../../lib/layout-constants";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -87,7 +87,10 @@ function SheetContent({
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
 }) {
-  const safeAreaStyle = getSheetSafeAreaStyle(side);
+  const fullHeightMenu = typeof className === "string" && className.includes("taskzm-sidebar-sheet");
+  const safeAreaStyle = fullHeightMenu
+    ? { top: 0, right: "auto", bottom: 0, left: 0, height: "100dvh", maxHeight: "100dvh" }
+    : getSheetSafeAreaStyle(side);
 
   return (
     <SheetPortal>
@@ -111,13 +114,17 @@ function SheetContent({
       >
         {children}
         <SheetPrimitive.Close
-          className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
+          data-close-button
+          className={CLOSE_BUTTON.className}
           style={{
-            top: SHEET_SAFE_AREA.closeButtonTop,
-            right: SHEET_SAFE_AREA.closeButtonRight,
+            width: CLOSE_BUTTON.size,
+            height: CLOSE_BUTTON.size,
+            minHeight: CLOSE_BUTTON.size,
+            top: side === "bottom" ? CLOSE_BUTTON.inset : `calc(${CLOSE_BUTTON.inset} + ${SHEET_SAFE_AREA.top})`,
+            right: `calc(${CLOSE_BUTTON.inset} + ${SHEET_SAFE_AREA.right})`,
           }}
         >
-          <Icon name="x" size={16} className="size-4" />
+          <Icon name="x" size={CLOSE_BUTTON.iconPx} />
           <span className="sr-only">Close</span>
         </SheetPrimitive.Close>
       </SheetPrimitive.Content>

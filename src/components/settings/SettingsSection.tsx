@@ -40,7 +40,7 @@ export function SettingsSection({
     <AccordionItem
       value={value}
       className={cn(
-        'mb-2 overflow-hidden rounded-2xl border-0 bg-white shadow-none last:mb-0 dark:bg-gray-900',
+        'mb-2 overflow-visible rounded-2xl border-0 bg-white shadow-none last:mb-0 dark:bg-gray-900',
         className,
       )}
     >
@@ -82,11 +82,21 @@ export function SettingsSection({
                   fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL,
                   marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL,
                   lineHeight: 1.45,
+                  overflow: 'visible',
                 }}
               >
                 {description}
               </p>
             ) : null}
+            <span
+              aria-hidden
+              className="block bg-border"
+              style={{
+                height: '1px',
+                width: '100%',
+                marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL,
+              }}
+            />
           </div>
         </div>
       </AccordionTrigger>

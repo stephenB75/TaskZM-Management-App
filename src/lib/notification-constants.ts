@@ -19,6 +19,9 @@ import {
   COLOR_PASTEL_LAVENDER,
 } from './color-theme';
 
+/** Apple Push Notifications auth key identifier from the Apple Developer portal. */
+export const IOS_APNS_KEY_ID = 'W3QFFC6SFU';
+
 // Default notification settings
 export const DEFAULT_NOTIFICATION_SETTINGS = {
   enabled: true,
@@ -336,12 +339,14 @@ export type NotificationCardType =
 
 /** Notification panel layout tokens. */
 export const NOTIFICATION_PANEL = {
-  sectionGapPx: 20,
-  listGapPx: 10,
+  sectionGapPx: 16,
+  listGapPx: 8,
   sectionTitleFontSizePx: 11,
   sectionTitleLetterSpacingEm: 0.06,
-  filterChipGapPx: 8,
-  filterChipHeightPx: 32,
+  filterChipGapPx: 4,
+  filterChipHeightPx: 28,
+  headerActionGapPx: 4,
+  headerActionFontSize: '0.75rem',
 } as const;
 
 export const NOTIFICATION_FILTER_OPTIONS = [
@@ -356,7 +361,7 @@ export const NOTIFICATION_FILTER_OPTIONS = [
 /** Notification card layout tokens (AgendaListCard shell). */
 export const NOTIFICATION_CARD = {
   unreadDotSizePx: AGENDA_LIST_CARD.dotSizePx,
-  dismissButtonSizePx: 28,
+  dismissButtonSizePx: 24,
   unreadRingClass: 'ring-1 ring-primary/25 shadow-sm',
 } as const;
 

@@ -196,6 +196,8 @@ import {
   SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
   SETTINGS_PANEL_LIST_ROW_PADDING_Y,
   SETTINGS_PANEL_CATEGORY_HOURS_DAY_TYPE_TOGGLE,
+  HEADER_BUTTON_SIZE,
+  HEADER_ICON_SIZE_BUTTON_DESKTOP,
 } from '../lib/layout-constants';
 import { NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
@@ -205,7 +207,7 @@ import { CALENDAR_PROVIDERS, CALENDAR_SETTINGS_LABELS, CALENDAR_SETTINGS_UI } fr
 import { getBrowserTimezone } from '../lib/timing-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
 import { COLOR_PRIMARY, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_LAVENDER_DARK, COLOR_PASTEL_SKY, COLOR_PASTEL_SKY_DARK, COLOR_PASTEL_MINT, COLOR_PASTEL_MINT_DARK, COLOR_TEXT_WHITE, getColorWithOpacity } from '../lib/color-theme';
-import { API_BASE, getAIConfigStatus } from '../lib/api';
+import { API_BASE, getAIConfigStatus, sendTestPushNotification } from '../lib/api';
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -282,6 +284,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
     setPushNotificationsEnabledState(checked);
     if (checked && !success && isNativeApp) {
       toast.error(SETTINGS_PANEL_UI_TEXT.security.pushNotifications.permissionDenied);
+    }
+  };
+
+  const [sendingTestPush, setSendingTestPush] = useState(false);
+  const handleSendTestPush = async () => {
+    const copy = SETTINGS_PANEL_UI_TEXT.security.pushNotifications;
+    setSendingTestPush(true);
+    const result = await sendTestPushNotification();
+    setSendingTestPush(false);
+    if (result.sent > 0) {
+      toast.success(copy.testSent);
+    } else if (!result.error && result.devices === 0) {
+      toast.error(copy.testNoDevice);
+    } else {
+      toast.error(copy.testFailed(result.error ?? ''));
     }
   };
 
@@ -600,10 +617,28 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         description="Customize your task manager"
         hideDesktopLogo
         actions={
-          onStartTour ? (
+          onStartTour && shouldUseMobileLayout ? (
+            <button
+              type="button"
+              aria-label="Start Tour"
+              onClick={handleStartTour}
+              className="inline-flex items-center justify-center bg-transparent text-foreground"
+              style={{
+                width: HEADER_BUTTON_SIZE,
+                height: HEADER_BUTTON_SIZE,
+                minWidth: HEADER_BUTTON_SIZE,
+                minHeight: HEADER_BUTTON_SIZE,
+                padding: 0,
+                border: 'none',
+              }}
+            >
+              <Icon name="compass" size={HEADER_ICON_SIZE_BUTTON_DESKTOP} weight="duotone" />
+            </button>
+          ) : onStartTour ? (
             <Button
               size="sm"
               variant="outline"
+              aria-label="Start Tour"
               className="flex items-center rounded-full"
               style={{
                 gap: SETTINGS_PANEL_START_TOUR_BUTTON_GAP,
@@ -646,7 +681,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           }}
         >
           <div 
-            className="mx-auto w-full max-w-full box-border min-w-0 break-words overflow-x-auto" 
+            className="mx-auto w-full max-w-full box-border min-w-0 break-words overflow-x-hidden" 
             style={{ 
               maxWidth: `min(${SETTINGS_PANEL_MAX_WIDTH}, 100%)`,
               paddingBottom: 0, // Bottom padding handled by parent container
@@ -737,6 +772,21 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               }}
               touchTarget
             />
+            {pushNotificationsEnabled && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto self-start px-0 font-medium text-primary hover:bg-transparent"
+                disabled={sendingTestPush}
+                onClick={() => {
+                  void handleSendTestPush();
+                }}
+              >
+                {sendingTestPush
+                  ? SETTINGS_PANEL_UI_TEXT.security.pushNotifications.testSending
+                  : SETTINGS_PANEL_UI_TEXT.security.pushNotifications.testButton}
+              </Button>
+            )}
           </SettingsControlGroup>
         </SettingsSection>
         ) : null}

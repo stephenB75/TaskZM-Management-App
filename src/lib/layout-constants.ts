@@ -550,6 +550,10 @@ export const MOBILE_HOME_PILL_RADIUS = '999px';
 export const MOBILE_HOME_SLIDE_BASIS = '86%';
 export const MOBILE_HOME_DOT_SIZE_PX = 10;
 export const MOBILE_HOME_CARD_BAR_PX = 8;
+/** Thinner accent on home and week task cards. */
+export const MOBILE_HOME_TASK_BAR_PX = 3;
+/** Space between a card's priority bar and its text. */
+export const MOBILE_HOME_TASK_BAR_GAP = '0.625rem';
 export const MOBILE_HOME_CARD_PADDING = '0.5rem';
 export const MOBILE_HOME_CARD_TITLE_FONT_SIZE = '0.875rem';
 export const MOBILE_HOME_LABEL_GAP = '0.25rem';
@@ -563,7 +567,7 @@ export const DIALOG_MOBILE_SHEET_SLIDE_MS = 1200;
 /** Wider than a narrow card, capped so a phone sheet does not span the screen. */
 export const DIALOG_MOBILE_SHEET_WIDTH = 'min(26rem, 86vw)';
 export const DIALOG_MOBILE_SHEET_CLASS =
-  `max-sm:!top-auto max-sm:!bottom-[var(--dialog-above-nav)] max-sm:!left-1/2 max-sm:!right-auto max-sm:!w-[var(--dialog-sheet-width)] max-sm:!max-w-[var(--dialog-sheet-width)] max-sm:!h-auto max-sm:!max-h-[min(70dvh,calc(100dvh-var(--dialog-above-nav)-1rem))] max-sm:!translate-x-[-50%] max-sm:!translate-y-0 max-sm:!rounded-2xl max-sm:data-[state=open]:![animation:taskzm-sheet-up_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-out_both] max-sm:data-[state=closed]:![animation:taskzm-sheet-down_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-in_both]`;
+  `max-sm:!top-auto max-sm:!bottom-[var(--dialog-above-nav)] max-sm:!left-1/2 max-sm:!right-auto max-sm:!w-[var(--dialog-sheet-width)] max-sm:!max-w-[var(--dialog-sheet-width)] max-sm:!h-auto max-sm:!max-h-[min(70dvh,calc(100dvh-var(--dialog-above-nav)-1rem))] max-sm:!rounded-2xl max-sm:data-[state=open]:![animation:taskzm-sheet-up_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-out_both] max-sm:data-[state=closed]:![animation:taskzm-sheet-down_${DIALOG_MOBILE_SHEET_SLIDE_MS}ms_ease-in_both]`;
 export const MOBILE_HOME_CHART_HEIGHT_PX = 140;
 export const APP_CANVAS_CLASS = 'bg-white dark:bg-gray-950';
 export const DIALOG_SHEET_CLASS = 'rounded-2xl border-0 bg-background shadow-none';
@@ -1332,6 +1336,15 @@ export const AUTH_SCREEN_SAFE_AREA = {
 } as const;
 
 // Dialog Close Button Constants
+/** Shared close (X) control for dialogs and sheets: square, no fill, no border. */
+export const CLOSE_BUTTON = {
+  size: '2rem',
+  inset: '0.75rem',
+  iconPx: 16,
+  className:
+    'absolute z-20 inline-flex items-center justify-center rounded-md border-0 bg-transparent p-0 text-muted-foreground opacity-80 transition-opacity hover:opacity-100 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none',
+} as const;
+
 export const DIALOG_CLOSE_BUTTON = {
   mobile: {
     size: '1.5rem', // w-6 h-6 = 1.5rem (24px) - smaller for mobile

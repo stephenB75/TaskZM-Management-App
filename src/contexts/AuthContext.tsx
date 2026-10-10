@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase-client';
 import { setAccessToken } from '../lib/api';
 import { logger } from '../lib/logger';
 import { clearUserLocalStorage } from '../lib/utils';
+import { removePushRegistrationFromServer } from '../lib/native-push-notifications';
 import { API_BASE } from '../lib/api';
 import { publicAnonKey } from '../utils/supabase/info';
 import type { User } from '../types';
@@ -253,6 +254,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const isDemoUser = user?.isDemo;
       const userId = user?.id;
+
+      if (accessToken) {
+        await removePushRegistrationFromServer();
+      }
       
       // If this is a demo user, clean up all their data
       if (isDemoUser && accessToken && userId) {

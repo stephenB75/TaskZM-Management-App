@@ -28,6 +28,125 @@
 			remoteGlobalIDString = 5C415F33D02A6F89DB713EFB9D75A3FB;
 			remoteInfo = "Pods-App";
 		};
+		DCFE5A0A30791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 44D6062E8C618EC2B8F1D7229E8AD501;
+			remoteInfo = Capacitor;
+		};
+		DCFE5A0C30791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CDFF4A7EE78A2AC8170A2DC20868DF1F;
+			remoteInfo = CapacitorApp;
+		};
+		DCFE5A0E30791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A60135599BA436B4A540E7E9B24C699D;
+			remoteInfo = CapacitorBrowser;
+		};
+		DCFE5A1030791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1ABFDA3391AEBA42EFB0FEBF824A6E34;
+			remoteInfo = CapacitorCordova;
+		};
+		DCFE5A1230791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 4830CABC2D58B5C50BE6EFECA34B2895;
+			remoteInfo = CapacitorHaptics;
+		};
+		DCFE5A1430791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 43F80CDA05D5624A6B812123E023B138;
+			remoteInfo = CapacitorKeyboard;
+		};
+		DCFE5A1630791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 70E052060A1D7DF2CCC7B1124232A9F7;
+			remoteInfo = CapacitorLocalNotifications;
+		};
+		DCFE5A1830791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A9C1AE5EF2DE4871B3A49E5726100845;
+			remoteInfo = CapacitorPushNotifications;
+		};
+		DCFE5A1A30791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 0391CB10F6FC8CE6B82C8A5DDD52C704;
+			remoteInfo = CapacitorSplashScreen;
+		};
+		DCFE5A1C30791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 37915BEC3E9EB6CD453C07348A49B51A;
+			remoteInfo = CapacitorStatusBar;
+		};
+		DCFE5A1E30791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 0B99B1F4AFD915162773FD2C09D3EAE5;
+			remoteInfo = CapgoCapacitorNativeBiometric;
+		};
+		DCFE5A2030791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 5BEF4602752E47C46E8C10FB8B4B57F2;
+			remoteInfo = "Pods-App";
+		};
+		DCFE5A2230791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 80B4EAC55FDCA2A0D3FC58E15C98A22E;
+			remoteInfo = PurchasesHybridCommon;
+		};
+		DCFE5A2430791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 3AA9124C018EA7BF6460091D86216692;
+			remoteInfo = "PurchasesHybridCommon-PurchasesHybridCommon";
+		};
+		DCFE5A2630791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 74A3C88613D4EB0E63038367698A81E9;
+			remoteInfo = RevenueCat;
+		};
+		DCFE5A2830791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D83AE5D93C653BDBFDDF59AC3D1E32BB;
+			remoteInfo = "RevenueCat-RevenueCat";
+		};
+		DCFE5A2A30791449002FC364 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F3E2F65F7890F1E31477413 /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 371BD27D31DD792203BF22D0A33BB8DB;
+			remoteInfo = RevenuecatPurchasesCapacitor;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -65,6 +184,23 @@
 		0B199929F15CFCFF6FBC4A48 /* Pod Products */ = {
 			isa = PBXGroup;
 			children = (
+				DCFE5A0B30791449002FC364 /* Capacitor.framework */,
+				DCFE5A0D30791449002FC364 /* CapacitorApp.framework */,
+				DCFE5A0F30791449002FC364 /* CapacitorBrowser.framework */,
+				DCFE5A1130791449002FC364 /* Cordova.framework */,
+				DCFE5A1330791449002FC364 /* CapacitorHaptics.framework */,
+				DCFE5A1530791449002FC364 /* CapacitorKeyboard.framework */,
+				DCFE5A1730791449002FC364 /* CapacitorLocalNotifications.framework */,
+				DCFE5A1930791449002FC364 /* CapacitorPushNotifications.framework */,
+				DCFE5A1B30791449002FC364 /* CapacitorSplashScreen.framework */,
+				DCFE5A1D30791449002FC364 /* CapacitorStatusBar.framework */,
+				DCFE5A1F30791449002FC364 /* CapgoCapacitorNativeBiometric.framework */,
+				DCFE5A2130791449002FC364 /* Pods_App.framework */,
+				DCFE5A2330791449002FC364 /* PurchasesHybridCommon.framework */,
+				DCFE5A2530791449002FC364 /* PurchasesHybridCommon.bundle */,
+				DCFE5A2730791449002FC364 /* RevenueCat.framework */,
+				DCFE5A2930791449002FC364 /* RevenueCat.bundle */,
+				DCFE5A2B30791449002FC364 /* RevenuecatPurchasesCapacitor.framework */,
 			);
 			name = "Pod Products";
 			sourceTree = "<group>";
@@ -189,6 +325,128 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXReferenceProxy section */
+		DCFE5A0B30791449002FC364 /* Capacitor.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Capacitor.framework;
+			remoteRef = DCFE5A0A30791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A0D30791449002FC364 /* CapacitorApp.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapacitorApp.framework;
+			remoteRef = DCFE5A0C30791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A0F30791449002FC364 /* CapacitorBrowser.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapacitorBrowser.framework;
+			remoteRef = DCFE5A0E30791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A1130791449002FC364 /* Cordova.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Cordova.framework;
+			remoteRef = DCFE5A1030791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A1330791449002FC364 /* CapacitorHaptics.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapacitorHaptics.framework;
+			remoteRef = DCFE5A1230791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A1530791449002FC364 /* CapacitorKeyboard.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapacitorKeyboard.framework;
+			remoteRef = DCFE5A1430791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A1730791449002FC364 /* CapacitorLocalNotifications.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapacitorLocalNotifications.framework;
+			remoteRef = DCFE5A1630791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A1930791449002FC364 /* CapacitorPushNotifications.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapacitorPushNotifications.framework;
+			remoteRef = DCFE5A1830791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A1B30791449002FC364 /* CapacitorSplashScreen.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapacitorSplashScreen.framework;
+			remoteRef = DCFE5A1A30791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A1D30791449002FC364 /* CapacitorStatusBar.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapacitorStatusBar.framework;
+			remoteRef = DCFE5A1C30791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A1F30791449002FC364 /* CapgoCapacitorNativeBiometric.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CapgoCapacitorNativeBiometric.framework;
+			remoteRef = DCFE5A1E30791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A2130791449002FC364 /* Pods_App.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Pods_App.framework;
+			remoteRef = DCFE5A2030791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A2330791449002FC364 /* PurchasesHybridCommon.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = PurchasesHybridCommon.framework;
+			remoteRef = DCFE5A2230791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A2530791449002FC364 /* PurchasesHybridCommon.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = PurchasesHybridCommon.bundle;
+			remoteRef = DCFE5A2430791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A2730791449002FC364 /* RevenueCat.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = RevenueCat.framework;
+			remoteRef = DCFE5A2630791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A2930791449002FC364 /* RevenueCat.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = RevenueCat.bundle;
+			remoteRef = DCFE5A2830791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DCFE5A2B30791449002FC364 /* RevenuecatPurchasesCapacitor.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = RevenuecatPurchasesCapacitor.framework;
+			remoteRef = DCFE5A2A30791449002FC364 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
 /* Begin PBXResourcesBuildPhase section */
 		504EC3021FED79650016851F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -209,6 +467,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		6634F4EFEBD30273BCE97C65 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 0;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -227,6 +486,7 @@
 		};
 		9592DBEFFC6D2A0C8D5DEB22 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 0;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -455,7 +715,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.33;
+				MARKETING_VERSION = 2.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.app.taskzm.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -490,7 +750,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.33;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.app.taskzm.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

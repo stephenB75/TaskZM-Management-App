@@ -23,6 +23,7 @@ import { COLOR_PRIMARY, COLOR_TEXT_PRIMARY } from '../lib/color-theme';
 import { getDateString, getWeekStart } from '../lib/utils';
 import { clearEditingScrollPad, revealTaskAboveDialog } from '../lib/reveal-editing-task';
 import { useDraggable } from '@dnd-kit/core';
+import { useSheetItem } from '../hooks/useSheetItem';
 import type { Task } from '../types';
 
 function startOfDay(date: Date): Date {
@@ -53,7 +54,8 @@ export function WeekBoard({
 }) {
   const { tasks } = useTasks();
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
-  const [localTask, setLocalTask] = useState<Task | null>(null);
+  const localEditor = useSheetItem<Task>();
+  const localTask = localEditor.item;
   const days = useMemo(() => weekDates(anchor), [anchor]);
   const today = startOfDay(new Date());
   const todayKey = getDateString(today);
@@ -77,9 +79,14 @@ export function WeekBoard({
     });
   };
 
+  const goToToday = () => {
+    setAnchor(today);
+    setSelectedKey(todayKey);
+  };
+
   const openTask = (task: Task) => {
     if (onOpenTask) onOpenTask(task);
-    else setLocalTask(task);
+    else localEditor.show(task);
     revealTaskAboveDialog(task.id);
   };
 
@@ -89,7 +96,7 @@ export function WeekBoard({
       className={embedded ? 'min-w-0' : 'flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-white'}
       style={{ padding: embedded ? 0 : MOBILE_HOME_PAGE_PADDING, color: COLOR_TEXT_PRIMARY }}
     >
-      <div className="flex items-center" style={{ gap: MOBILE_HOME_SECTION_GAP, marginBottom: MOBILE_HOME_SECTION_GAP }}>
+      <div className="flex flex-wrap items-center" style={{ gap: MOBILE_HOME_SECTION_GAP, marginBottom: MOBILE_HOME_SECTION_GAP }}>
         {embedded ? (
           <>
             <button
@@ -110,6 +117,19 @@ export function WeekBoard({
             >
               {MOBILE_HOME_UI_TEXT.nextWeek}
             </button>
+            <button
+              type="button"
+              className="font-semibold text-foreground"
+              style={{
+                ...weekChoiceStyle(false),
+                opacity: showingCurrentWeek ? 0.4 : 1,
+                color: showingCurrentWeek ? undefined : COLOR_PRIMARY,
+              }}
+              disabled={showingCurrentWeek}
+              onClick={goToToday}
+            >
+              {MOBILE_HOME_UI_TEXT.today}
+            </button>
           </>
         ) : (
           <>
@@ -118,6 +138,19 @@ export function WeekBoard({
             </button>
             <button type="button" className="font-semibold text-foreground" style={dayButtonStyle} onClick={() => shiftWeek(DAYS_IN_WEEK)}>
               {MOBILE_HOME_UI_TEXT.nextWeek}
+            </button>
+            <button
+              type="button"
+              className="font-semibold text-foreground"
+              style={{
+                ...dayButtonStyle,
+                opacity: showingCurrentWeek && selectedKey === todayKey ? 0.4 : 1,
+                color: showingCurrentWeek && selectedKey === todayKey ? undefined : COLOR_PRIMARY,
+              }}
+              disabled={showingCurrentWeek && selectedKey === todayKey}
+              onClick={goToToday}
+            >
+              {MOBILE_HOME_UI_TEXT.today}
             </button>
           </>
         )}
@@ -233,11 +266,11 @@ export function WeekBoard({
       )}
       {localTask ? (
         <TaskDialog
-          open
+          open={localEditor.open}
           task={localTask}
           onClose={() => {
             clearEditingScrollPad(localTask.id);
-            setLocalTask(null);
+            localEditor.close();
           }}
           initialDate={getDateString(selected)}
         />

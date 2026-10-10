@@ -11,6 +11,7 @@ import {
   MOBILE_HOME_SUMMARY_COMPACT_NUMBER_SIZE,
   MOBILE_HOME_SUMMARY_COMPACT_PADDING,
   MOBILE_HOME_SUMMARY_NUMBER_SIZE,
+  MOBILE_HOME_PAGE_PADDING,
   MOBILE_HOME_TAB_FONT_SIZE,
   MOBILE_HOME_TAP_TARGET_PX,
 } from '../lib/layout-constants';
@@ -76,12 +77,14 @@ export function PlaceTasksButton({
       type="button"
       disabled={disabled || busy}
       onClick={onClick}
-      className="w-full bg-primary font-semibold text-primary-foreground disabled:opacity-60"
+      className="bg-primary font-semibold text-primary-foreground disabled:opacity-60"
       style={{
         minHeight: MOBILE_HOME_TAP_TARGET_PX,
         borderRadius: MOBILE_HOME_PILL_RADIUS,
         fontSize: MOBILE_HOME_BODY_FONT_SIZE,
         border: 'none',
+        paddingLeft: `calc(${MOBILE_HOME_PAGE_PADDING} + ${MOBILE_HOME_SECTION_GAP})`,
+        paddingRight: `calc(${MOBILE_HOME_PAGE_PADDING} + ${MOBILE_HOME_SECTION_GAP})`,
       }}
     >
       {busy ? MOBILE_HOME_UI_TEXT.scheduling : MOBILE_HOME_UI_TEXT.scheduleAction}
