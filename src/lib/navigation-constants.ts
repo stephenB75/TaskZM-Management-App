@@ -156,12 +156,14 @@ export const PLANNER_UI_TEXT = {
       month: { label: 'Month', hint: 'Balance the next 4 weeks' },
     } as Record<PlannerRescheduleRange, { label: string; hint: string }>,
     emptyTitle: 'What do you need to get done?',
-    emptyHint: 'Type or dictate tasks, one per line. The planner estimates each one and finds a time.',
+    emptyHint:
+      'Type or dictate tasks, one per line. The planner estimates each one and finds a time. You can also ask it to move, rename, tag, assign, duplicate, break down, or focus on a task.',
     suggestions: [
       'What is on today?',
       'Schedule my inbox',
       'Rebalance my week',
     ],
+    openTask: 'Open task',
     draftsTitle: 'Draft tasks to confirm',
     accept: 'Accept',
     skip: 'Skip',
@@ -198,6 +200,37 @@ export const PLANNER_UI_TEXT = {
       `There's nothing scheduled this ${range} to move.`,
     aiUnavailable: 'AI scheduling is off or not on your plan, so new tasks go to the Inbox.',
     failed: 'Something went wrong while planning. Please try again.',
+    taskNotFound: (ref: string) => `I couldn't find a task matching "${ref}".`,
+    noTaskInFocus: 'Which task? Tell me its name.',
+    ambiguous: (titles: string[]) => `Which one did you mean: ${titles.map((title) => `"${title}"`).join(', ')}?`,
+    noPermission: "You don't have permission to edit tasks here.",
+    found: (parts: { title: string; when: string | null; details: string[] }) =>
+      [`Found "${parts.title}".`, parts.when ? `It's planned for ${parts.when}.` : 'It needs a time.', parts.details.join(' · ')]
+        .filter(Boolean)
+        .join(' '),
+    pomodoroStarted: (title: string, minutes: number) => `Focus timer started for "${title}" (${minutes} min).`,
+    pomodoroUnavailable: 'The focus timer is not on your plan.',
+    pomodoroDone: (title: string) => `"${title}" is already done. Reopen it first to focus on it.`,
+    subtasksAdded: (count: number, title: string) => `Added ${plural(count, 'subtask')} to "${title}".`,
+    tagsAdded: (tags: string[], title: string) => `Tagged "${title}" with ${tags.map((tag) => `#${tag}`).join(', ')}.`,
+    tagsCreated: (tags: string[]) => `Created ${tags.map((tag) => `#${tag}`).join(', ')}.`,
+    tagsExist: (tags: string[]) => `${tags.map((tag) => `#${tag}`).join(', ')} already exist.`,
+    assigned: (title: string, name: string) => `Assigned "${title}" to ${name}.`,
+    alreadyAssigned: (title: string, name: string) => `"${title}" is already assigned to ${name}.`,
+    memberNotFound: (name: string) => `I couldn't find a team member called "${name}".`,
+    noTeam: 'Add people in Team first, then I can assign tasks to them.',
+    duplicated: (title: string, when: string | null) =>
+      when ? `Duplicated "${title}" and booked the copy for ${when}.` : `Duplicated "${title}". The copy is in your Inbox.`,
+    unscheduled: (title: string) => `Moved "${title}" back to the Inbox.`,
+    renamed: (from: string, to: string) => `Renamed "${from}" to "${to}".`,
+    durationSet: (title: string, estimate: string) => `"${title}" now takes ${estimate}.`,
+    prioritySet: (title: string, priority: string) => `Set "${title}" to ${priority} priority.`,
+    completed: (title: string) => `Marked "${title}" done.`,
+    alreadyDone: (title: string) => `"${title}" is already done.`,
+    moved: (title: string, when: string) => `Moved "${title}" to ${when}.`,
+    overlaps: (title: string) => `Heads up: that overlaps "${title}".`,
+    noSlotThatDay: (title: string, day: string) =>
+      `There's no open time for "${title}" on ${day} within your hours. Give me a time, like "${day} 4pm".`,
     summary: (parts: { today: number; next: string | null; inbox: number; weekHours: number }) =>
       [
         parts.today === 0 ? 'Nothing is scheduled for today.' : `You have ${plural(parts.today, 'task')} today.`,

@@ -36,9 +36,9 @@ function LoadingFallback() {
             className="absolute inset-0 border-4 rounded-full animate-spin"
             style={{
               borderTopColor: 'var(--primary, #171717)',
-              borderRightColor: 'var(--pastel-lavender, #DDD6FE)',
-              borderBottomColor: 'var(--pastel-lavender, #DDD6FE)',
-              borderLeftColor: 'var(--pastel-lavender, #DDD6FE)',
+              borderRightColor: 'var(--border)',
+              borderBottomColor: 'var(--border)',
+              borderLeftColor: 'var(--border)',
               display: 'block',
               visibility: 'visible',
               opacity: 1,
@@ -49,9 +49,9 @@ function LoadingFallback() {
             className="absolute inset-0 border-4 rounded-full animate-spin"
             style={{
               borderTopColor: 'transparent',
-              borderRightColor: 'var(--pastel-sky, #C4B5FD)',
-              borderBottomColor: 'var(--pastel-sky, #C4B5FD)',
-              borderLeftColor: 'var(--pastel-sky, #C4B5FD)',
+              borderRightColor: 'var(--border)',
+              borderBottomColor: 'var(--border)',
+              borderLeftColor: 'var(--border)',
               animationDirection: REACT_LOADING_SCREEN.spinner.inner.animationDirection,
               animationDuration: REACT_LOADING_SCREEN.spinner.inner.animationDuration,
               display: 'block',

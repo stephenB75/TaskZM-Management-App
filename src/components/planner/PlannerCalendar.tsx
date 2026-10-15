@@ -59,14 +59,19 @@ function eventTimeLabel(event: CalendarEvent): string {
   return formatTimeAMPM(parseCalendarEventTime(event.start).toISOString()) ?? '';
 }
 
+const MOBILE_CALENDAR_MODES: readonly CalendarMode[] = ['week'];
+const DESKTOP_CALENDAR_MODES: readonly CalendarMode[] = ['week', 'month'];
+
 function CalendarHeader({
   mode,
+  modes,
   onModeChange,
   anchor,
   onShift,
   onToday,
 }: {
   mode: CalendarMode;
+  modes: readonly CalendarMode[];
   onModeChange: (mode: CalendarMode) => void;
   anchor: Date;
   onShift: (direction: 1 | -1) => void;
@@ -80,7 +85,7 @@ function CalendarHeader({
       </div>
       <div className="planner-header-controls">
         <div className="planner-segment" role="tablist">
-          {(['week', 'month'] as const).map((value) => (
+          {modes.map((value) => (
             <button
               key={value}
               type="button"
@@ -473,7 +478,9 @@ function DesktopWeek({ anchor, onOpenTask }: { anchor: Date; onOpenTask: (task: 
 export function PlannerCalendar({ className }: { className?: string }) {
   const isMobile = useMobileLayout();
   const editor = useSheetItem<Task>();
-  const [mode, setMode] = useState<CalendarMode>('week');
+  const [selectedMode, setMode] = useState<CalendarMode>('week');
+  const modes: readonly CalendarMode[] = isMobile ? MOBILE_CALENDAR_MODES : DESKTOP_CALENDAR_MODES;
+  const mode: CalendarMode = modes.includes(selectedMode) ? selectedMode : 'week';
   const [anchor, setAnchor] = useState(() => new Date());
 
   useEffect(() => {
@@ -494,6 +501,7 @@ export function PlannerCalendar({ className }: { className?: string }) {
     <section className={`planner-panel ${className ?? ''}`} aria-label={TEXT.week} id="home-week" data-tour="week-board">
       <CalendarHeader
         mode={mode}
+        modes={modes}
         onModeChange={setMode}
         anchor={anchor}
         onShift={(direction) => setAnchor((current) => addDays(current, direction * DAYS_IN_WEEK))}

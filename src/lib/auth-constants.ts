@@ -128,27 +128,27 @@ export const AUTH_COLORS = {
     via: '#262626',
     to: '#404040',
   },
-  secondary: '#C4B5FD',
-  secondaryHover: '#A78BFA',
+  secondary: '#A3A3A3',
+  secondaryHover: '#737373',
   buttonText: '#FFFFFF', // White text for dark button backgrounds
   background: {
     gradient: {
-      from: '#ECFCCB',
-      via: '#EDE9FE',
-      to: '#FFEDD5',
+      from: '#FAFAFA',
+      via: '#F5F5F5',
+      to: '#F5F5F5',
     },
-    accent1: '#98D8C8',
-    accent2: '#DDA0DD',
+    accent1: '#D4D4D4',
+    accent2: '#E5E5E5',
   },
   card: {
     gradient: {
-      from: '#ECFCCB',
-      via: '#EDE9FE',
-      to: '#FFEDD5',
+      from: '#FAFAFA',
+      via: '#F5F5F5',
+      to: '#F5F5F5',
     },
     tabs: {
-      from: '#E8F5F1',
-      to: '#F3E8FF',
+      from: '#F5F5F5',
+      to: '#F5F5F5',
     },
   },
 } as const;

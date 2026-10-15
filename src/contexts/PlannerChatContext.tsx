@@ -3,6 +3,9 @@ import { useTasks } from './TaskContext';
 import { useAI } from './AIContext';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
+import { usePomodoro } from './PomodoroContext';
+import { useTeam } from './TeamContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { useAIScheduler, type ScheduleResult } from '../hooks/useAIScheduler';
 import { hasReachedLimit, incrementAIUsage } from '../lib/ai-scheduler-usage';
 import { PLANNER_CHAT_CONFIG } from '../lib/ai-config';
@@ -10,6 +13,7 @@ import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from '../lib/navigation-
 import {
   detectPlannerIntent,
   draftToTask,
+  endOfDay,
   formatPlannedWhen,
   parsePlannerDrafts,
   plannerScheduleWindow,
@@ -17,14 +21,32 @@ import {
   startOfPlannerWeek,
   type PlannerDraft,
 } from '../lib/planner-chat';
+import {
+  findTaskByReference,
+  findTeamMember,
+  normalizeTag,
+  parsePlannerCommand,
+  parsePlannerWhen,
+  type PlannerCommand,
+} from '../lib/planner-commands';
+import { getCategoryFromTags } from '../lib/ai-config';
+import {
+  MILLISECONDS_PER_MINUTE,
+  POMODORO_WORK_DURATION,
+  RECURRENCE_NONE_CONFIG,
+  SECONDS_PER_MINUTE,
+} from '../lib/business-constants';
 import { generateId } from '../lib/utils';
 import { logger } from '../lib/logger';
+import type { Subtask, Task } from '../types';
 
 export interface PlannerMessage {
   id: string;
   role: 'user' | 'planner';
   text: string;
   createdAt: string;
+  /** Task the reply is about, so the chat can offer to open it. */
+  taskId?: string;
 }
 
 interface PlannerChatValue {
@@ -63,12 +85,27 @@ function readStoredChat(key: string): StoredChat {
   }
 }
 
-function message(role: PlannerMessage['role'], text: string): PlannerMessage {
-  return { id: generateId(), role, text, createdAt: new Date().toISOString() };
+function message(role: PlannerMessage['role'], text: string, taskId?: string): PlannerMessage {
+  return { id: generateId(), role, text, createdAt: new Date().toISOString(), ...(taskId ? { taskId } : {}) };
+}
+
+/** Commands whose wording also reads like a new task ("Finish the report", "Schedule dentist for Friday"). */
+const DRAFT_FALLBACK_KINDS = new Set<PlannerCommand['kind']>(['done', 'move', 'find', 'duplicate', 'rename']);
+
+function dayLabel(date: Date): string {
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function taskEnd(task: Task, start: Date): number {
+  return start.getTime() + (task.estimatedTime ?? 0) * MILLISECONDS_PER_MINUTE;
 }
 
 export function PlannerChatProvider({ children }: { children: React.ReactNode }) {
-  const { tasks, addTask } = useTasks();
+  const { tasks, addTask, updateTask, availableTags, addAvailableTag } = useTasks();
+  const { startTimer } = usePomodoro();
+  const { teamMembers } = useTeam();
+  const { canEditTask, canAssignTask, canCreateTask } = usePermissions();
+  const lastTaskIdRef = useRef<string | null>(null);
   const { settings: aiSettings } = useAI();
   const { user } = useAuth();
   const { hasFeature, features } = useSubscription();
@@ -157,11 +194,12 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       const slot = slots.get(task.id);
       await addTask({ ...task, scheduledDate: slot ? slot.toISOString() : null });
     }
+    lastTaskIdRef.current = newTasks[newTasks.length - 1].id;
 
     const { replies } = PLANNER_UI_TEXT;
     if (newTasks.length === 1) {
       const slot = slots.get(newTasks[0].id);
-      say(message('planner', slot ? replies.scheduledOne(newTasks[0].title, formatPlannedWhen(slot)) : replies.addedToInbox(newTasks[0].title)));
+      say(message('planner', slot ? replies.scheduledOne(newTasks[0].title, formatPlannedWhen(slot)) : replies.addedToInbox(newTasks[0].title), newTasks[0].id));
     } else {
       const unplaced = newTasks.length - slots.size;
       say(message('planner', [slots.size > 0 ? replies.scheduledMany(slots.size) : '', unplaced > 0 ? replies.unplaced(unplaced) : ''].filter(Boolean).join(' ')));
@@ -214,6 +252,166 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
     ].filter(Boolean).join(' ')));
   }), [getScheduledTasksForDay, getScheduledTasksForMonth, getScheduledTasksForWeek, hasFeature, rescheduleDay, rescheduleMonth, rescheduleWeek, run, say]);
 
+
+  /** Run a command on an existing task. Returns false when the message should be handled another way. */
+  const runCommand = useCallback(async (command: PlannerCommand, fallsBackToRange: boolean): Promise<boolean> => {
+    const { replies } = PLANNER_UI_TEXT;
+    const reply = (text: string, taskId?: string) => say(message('planner', text, taskId));
+
+    if (command.kind === 'createTags') {
+      const fresh = command.tags.filter((tag) => !availableTags.includes(tag));
+      for (const tag of fresh) await addAvailableTag(tag);
+      reply(fresh.length > 0 ? replies.tagsCreated(fresh) : replies.tagsExist(command.tags));
+      return true;
+    }
+
+    const lookup = findTaskByReference(tasksRef.current, command.ref, lastTaskIdRef.current);
+    if (lookup.kind === 'missing' && (fallsBackToRange || DRAFT_FALLBACK_KINDS.has(command.kind))) return false;
+    if (lookup.kind !== 'found') {
+      if (lookup.kind === 'ambiguous') reply(replies.ambiguous(lookup.options.map((task) => task.title)));
+      else reply(lastTaskIdRef.current || command.ref ? replies.taskNotFound(command.ref) : replies.noTaskInFocus);
+      return true;
+    }
+    const task = lookup.task;
+    lastTaskIdRef.current = task.id;
+
+    if (command.kind === 'find') {
+      const when = task.scheduledDate ? formatPlannedWhen(new Date(task.scheduledDate)) : null;
+      const assignees = task.assignedTo
+        .map((id) => teamMembers.find((member) => member.id === id)?.name)
+        .filter((name): name is string => Boolean(name));
+      reply(replies.found({
+        title: task.title,
+        when,
+        details: [
+          getCategoryFromTags(task.tags) ?? '',
+          task.estimatedTime ? PLANNER_UI_TEXT.chat.estimate(task.estimatedTime) : '',
+          task.priority,
+          task.status === 'done' ? 'done' : '',
+          task.subtasks.length > 0 ? `${task.subtasks.filter((item) => item.completed).length}/${task.subtasks.length} subtasks` : '',
+          assignees.length > 0 ? assignees.join(', ') : '',
+        ].filter(Boolean),
+      }), task.id);
+      return true;
+    }
+
+    if (command.kind === 'pomodoro') {
+      if (!hasFeature('pomodoroTimer')) return reply(replies.pomodoroUnavailable), true;
+      if (task.status === 'done') return reply(replies.pomodoroDone(task.title), task.id), true;
+      const minutes = task.estimatedTime && task.estimatedTime > 0 ? task.estimatedTime : POMODORO_WORK_DURATION / SECONDS_PER_MINUTE;
+      startTimer(task.id, { durationMinutes: minutes });
+      reply(replies.pomodoroStarted(task.title, minutes), task.id);
+      return true;
+    }
+
+    if (command.kind === 'duplicate') {
+      if (!canCreateTask) return reply(replies.noPermission), true;
+      const now = new Date().toISOString();
+      const copy: Task = {
+        ...task,
+        id: generateId(),
+        status: 'todo',
+        completedAt: null,
+        actualTime: null,
+        scheduledDate: null,
+        createdAt: now,
+        updatedAt: now,
+        calendar_event_id: null,
+        recurrence: RECURRENCE_NONE_CONFIG,
+        subtasks: task.subtasks.map((item): Subtask => ({ ...item, id: generateId(), completed: false, createdAt: now })),
+      };
+      let slot: Date | undefined;
+      if (canAutoSchedule()) {
+        countUsage();
+        const plan = await generateSchedulePlan([copy], plannerScheduleWindow(new Date()), { forceCategoryHours: true });
+        slot = plan.scheduled[0]?.scheduledDate;
+      }
+      await addTask({ ...copy, scheduledDate: slot ? slot.toISOString() : null });
+      lastTaskIdRef.current = copy.id;
+      reply(replies.duplicated(task.title, slot ? formatPlannedWhen(slot) : null), copy.id);
+      return true;
+    }
+
+    if (command.kind === 'assign') {
+      if (!canAssignTask) return reply(replies.noPermission), true;
+      const isSelf = PLANNER_CHAT_CONFIG.selfPattern.test(command.member);
+      const member = isSelf ? null : findTeamMember(teamMembers, command.member);
+      const memberId = isSelf ? user?.id : member?.id;
+      const name = isSelf ? user?.name ?? command.member : member?.name ?? command.member;
+      if (!memberId) return reply(teamMembers.length === 0 && !isSelf ? replies.noTeam : replies.memberNotFound(command.member)), true;
+      if (task.assignedTo.includes(memberId)) return reply(replies.alreadyAssigned(task.title, name), task.id), true;
+      await updateTask(task.id, { assignedTo: [...task.assignedTo, memberId] });
+      reply(replies.assigned(task.title, name), task.id);
+      return true;
+    }
+
+    if (!canEditTask) return reply(replies.noPermission), true;
+
+    switch (command.kind) {
+      case 'subtasks': {
+        const now = new Date().toISOString();
+        const added = command.items.map((title): Subtask => ({ id: generateId(), title, completed: false, createdAt: now }));
+        await updateTask(task.id, { subtasks: [...task.subtasks, ...added] });
+        reply(replies.subtasksAdded(added.length, task.title), task.id);
+        return true;
+      }
+      case 'tags': {
+        const tags = command.tags.map(normalizeTag);
+        for (const tag of tags.filter((item) => !availableTags.includes(item))) await addAvailableTag(tag);
+        await updateTask(task.id, { tags: [...new Set([...task.tags, ...tags])] });
+        reply(replies.tagsAdded(tags, task.title), task.id);
+        return true;
+      }
+      case 'unschedule':
+        await updateTask(task.id, { scheduledDate: null });
+        reply(replies.unscheduled(task.title), task.id);
+        return true;
+      case 'rename':
+        await updateTask(task.id, { title: command.title });
+        reply(replies.renamed(task.title, command.title), task.id);
+        return true;
+      case 'duration':
+        await updateTask(task.id, { estimatedTime: command.minutes });
+        reply(replies.durationSet(task.title, PLANNER_UI_TEXT.chat.estimate(command.minutes)), task.id);
+        return true;
+      case 'priority':
+        await updateTask(task.id, { priority: command.priority });
+        reply(replies.prioritySet(task.title, command.priority), task.id);
+        return true;
+      case 'done':
+        if (task.status === 'done') return reply(replies.alreadyDone(task.title), task.id), true;
+        await updateTask(task.id, { status: 'done', completedAt: new Date().toISOString() });
+        reply(replies.completed(task.title), task.id);
+        return true;
+      case 'move': {
+        const now = new Date();
+        const when = parsePlannerWhen(command.when, now);
+        if (!when) return false;
+        let start = when.date;
+        if (!when.hasTime) {
+          // Only a day: let the scheduler pick a slot inside category hours, daily limits, and calendar events.
+          const plan = canAutoSchedule()
+            ? await generateSchedulePlan([{ ...task, scheduledDate: null }], { startDate: when.date, endDate: endOfDay(when.date) }, { forceCategoryHours: true })
+            : null;
+          const picked = plan?.scheduled[0]?.scheduledDate;
+          if (!picked) return reply(replies.noSlotThatDay(task.title, dayLabel(when.date)), task.id), true;
+          countUsage();
+          start = picked;
+        }
+        await updateTask(task.id, { scheduledDate: start.toISOString() });
+        const clash = tasksRef.current.find((other) => {
+          if (other.id === task.id || other.status === 'done' || !other.scheduledDate) return false;
+          const otherStart = new Date(other.scheduledDate);
+          return otherStart.getTime() < taskEnd(task, start) && start.getTime() < taskEnd(other, otherStart);
+        });
+        reply([replies.moved(task.title, formatPlannedWhen(start)), clash ? replies.overlaps(clash.title) : ''].filter(Boolean).join(' '), task.id);
+        return true;
+      }
+      default:
+        return false;
+    }
+  }, [addAvailableTag, addTask, availableTags, canAssignTask, canAutoSchedule, canCreateTask, canEditTask, countUsage, generateSchedulePlan, hasFeature, say, startTimer, teamMembers, updateTask, user?.id, user?.name]);
+
   const addDrafts = useCallback((drafts: PlannerDraft[]) => {
     const { replies } = PLANNER_UI_TEXT;
     if (drafts.length === 0) {
@@ -229,6 +427,15 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
     if (!trimmed) return;
     say(message('user', trimmed));
     const intent = detectPlannerIntent(trimmed);
+    const command = intent.kind === 'scheduleInbox' ? null : parsePlannerCommand(trimmed);
+    if (command) {
+      // Stays true if the command throws, so a failed edit isn't also turned into drafts.
+      let handled = true;
+      await run(async () => {
+        handled = await runCommand(command, intent.kind === 'reschedule');
+      });
+      if (handled) return;
+    }
     if (intent.kind === 'question') {
       say(message('planner', plannerSummary(tasksRef.current, new Date())));
       return;
@@ -242,7 +449,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       return;
     }
     addDrafts(intent.drafts);
-  }, [addDrafts, reschedule, say, scheduleInbox]);
+  }, [addDrafts, reschedule, run, runCommand, say, scheduleInbox]);
 
   const analyzeContext = useCallback((text: string) => {
     if (!text.trim()) return;

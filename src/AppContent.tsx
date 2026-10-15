@@ -28,7 +28,6 @@ import { NativePullToRefresh } from './components/NativePullToRefresh';
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
 import { PricingDialog } from './components/PricingDialog';
 import { UpgradePrompt } from './components/UpgradePrompt';
-import { DemoAccountDisclaimer } from './components/DemoAccountDisclaimer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const InboxView = lazyWithRetry(() => import('./components/InboxView').then(m => ({ default: m.InboxView })));
@@ -112,7 +111,6 @@ export default function AppContent() {
   const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<'aiScheduler' | 'taskHours' | 'analytics' | 'taskRollover' | 'pomodoroTimer' | 'teamFeatures' | 'calendarSync' | 'recurringTasks' | 'taskDependencies' | 'taskTemplates'>('aiScheduler');
   const [runTour, setRunTour] = useState(false);
-  const [showDemoDisclaimer, setShowDemoDisclaimer] = useState(false);
   const hasInitializedView = useRef(false);
   const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
   const dashboardViewModeRef = useRef<'week' | 'month'>('week');
@@ -343,26 +341,6 @@ export default function AppContent() {
     }
   }, [shouldUseMobileLayout, currentView, mobileView]);
 
-  useEffect(() => {
-    if (!user || isLoading) return;
-    
-    if (user.isDemo) {
-      try {
-        const disclaimerSeen = window?.sessionStorage?.getItem('demo_disclaimer_seen');
-        
-        if (!disclaimerSeen) {
-          const timer = setTimeout(() => {
-            setShowDemoDisclaimer(true);
-          }, TIMING_CONSTANTS.demoDisclaimer.delayMs);
-          
-          return () => clearTimeout(timer);
-        }
-      } catch (error) {
-        console.warn('Session storage unavailable when checking demo disclaimer:', error);
-      }
-    }
-  }, [user, isLoading]);
-
   const tourTriggeredRef = React.useRef(false);
 
   useEffect(() => {
@@ -375,87 +353,24 @@ export default function AppContent() {
       const isNewSignup = window?.localStorage?.getItem('taskzm_is_new_signup') === 'true';
       
       if (isNewSignup && !tourCompleted) {
-        if (user.isDemo) {
-          const disclaimerSeen = window?.sessionStorage?.getItem('demo_disclaimer_seen');
-          
-          if (disclaimerSeen) {
-            tourTriggeredRef.current = true;
-            
-            try {
-              window?.localStorage?.removeItem('taskzm_is_new_signup');
-            } catch (removeError) {
-              console.warn('Unable to clear new signup flag:', removeError);
-            }
-            
-            const timer = setTimeout(() => {
-              console.log('🎯 Starting tour for demo user after disclaimer closed');
-              setRunTour(true);
-              toast.info('👋 Welcome! Let us show you around TaskZM', {
-                description: 'Take a quick tour to learn the basics',
-                duration: TOAST_DURATION_MEDIUM_MS
-              });
-            }, TIMING_CONSTANTS.animations.long);
-            
-            return () => clearTimeout(timer);
-          } else {
-            let hasTriggered = false;
-            
-            const checkDisclaimer = () => {
-              if (hasTriggered || tourTriggeredRef.current) return;
-              
-              const seen = window?.sessionStorage?.getItem('demo_disclaimer_seen');
-              if (seen && !tourCompleted) {
-                hasTriggered = true;
-                tourTriggeredRef.current = true;
-                
-                try {
-                  window?.localStorage?.removeItem('taskzm_is_new_signup');
-                } catch (removeError) {
-                  console.warn('Unable to clear new signup flag:', removeError);
-                }
-                
-                console.log('🎯 Disclaimer closed, starting tour for demo user');
-                setTimeout(() => {
-                  setRunTour(true);
-                  toast.info('👋 Welcome! Let us show you around TaskZM', {
-                    description: 'Take a quick tour to learn the basics',
-                    duration: TOAST_DURATION_MEDIUM_MS
-                  });
-                }, TIMING_CONSTANTS.animations.long);
-              }
-            };
-            
-            checkDisclaimer();
-            
-            const interval = setInterval(() => {
-              checkDisclaimer();
-              if (hasTriggered) {
-                clearInterval(interval);
-              }
-            }, TIMING_CONSTANTS.delays.splashScreenPollInterval);
-            
-            return () => clearInterval(interval);
-          }
-        } else {
-          tourTriggeredRef.current = true;
-          
-          try {
-            window?.localStorage?.removeItem('taskzm_is_new_signup');
-          } catch (removeError) {
-            console.warn('Unable to clear new signup flag:', removeError);
-          }
-          
-          const timer = setTimeout(() => {
-            console.log('🎯 Starting tour for new regular user');
-            setRunTour(true);
-            toast.info('👋 Welcome! Let us show you around TaskZM', {
-              description: 'Take a quick tour to learn the basics',
-              duration: TOAST_DURATION_MEDIUM_MS
-            });
-          }, TIMING_CONSTANTS.animations.long * 3);
-          
-          return () => clearTimeout(timer);
+        tourTriggeredRef.current = true;
+        
+        try {
+          window?.localStorage?.removeItem('taskzm_is_new_signup');
+        } catch (removeError) {
+          console.warn('Unable to clear new signup flag:', removeError);
         }
+        
+        const timer = setTimeout(() => {
+          console.log('🎯 Starting tour for new regular user');
+          setRunTour(true);
+          toast.info('👋 Welcome! Let us show you around TaskZM', {
+            description: 'Take a quick tour to learn the basics',
+            duration: TOAST_DURATION_MEDIUM_MS
+          });
+        }, TIMING_CONSTANTS.animations.long * 3);
+        
+        return () => clearTimeout(timer);
       } else if (isNewSignup) {
         window?.localStorage?.removeItem('taskzm_is_new_signup');
       }
@@ -548,9 +463,9 @@ export default function AppContent() {
             className="absolute inset-0 border-4 rounded-full animate-spin"
             style={{
               borderTopColor: 'var(--primary, #171717)',
-              borderRightColor: 'var(--pastel-lavender, #DDD6FE)',
-              borderBottomColor: 'var(--pastel-lavender, #DDD6FE)',
-              borderLeftColor: 'var(--pastel-lavender, #DDD6FE)',
+              borderRightColor: 'var(--border)',
+              borderBottomColor: 'var(--border)',
+              borderLeftColor: 'var(--border)',
               display: 'block',
               visibility: 'visible',
               opacity: 1,
@@ -561,9 +476,9 @@ export default function AppContent() {
             className="absolute inset-0 border-4 rounded-full animate-spin"
             style={{
               borderTopColor: 'transparent',
-              borderRightColor: 'var(--pastel-sky, #C4B5FD)',
-              borderBottomColor: 'var(--pastel-sky, #C4B5FD)',
-              borderLeftColor: 'var(--pastel-sky, #C4B5FD)',
+              borderRightColor: 'var(--border)',
+              borderBottomColor: 'var(--border)',
+              borderLeftColor: 'var(--border)',
               animationDirection: REACT_LOADING_SCREEN.spinner.inner.animationDirection,
               animationDuration: REACT_LOADING_SCREEN.spinner.inner.animationDuration,
               display: 'block',
@@ -789,7 +704,7 @@ export default function AppContent() {
             >
             <div
               ref={mobileScrollRef}
-              className={`flex-1 min-h-0 relative min-w-0 w-full max-w-full ${
+              className={`taskzm-mobile-scroll flex-1 min-h-0 relative min-w-0 w-full max-w-full ${
                 isPlannerTab ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'
               }`}
               style={{
@@ -944,10 +859,6 @@ export default function AppContent() {
         onShowPricing={() => setShowPricingDialog(true)}
       />
 
-      <DemoAccountDisclaimer
-        open={showDemoDisclaimer}
-        onOpenChange={setShowDemoDisclaimer}
-      />
       <TaskDialog open={createTaskOpen} onClose={() => setCreateTaskOpen(false)} />
 
       <Sheet open={aiPanelOpen} onOpenChange={setAiPanelOpen}>

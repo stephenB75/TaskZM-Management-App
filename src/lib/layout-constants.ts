@@ -965,11 +965,11 @@ export const CALENDAR_CAROUSEL_DOT_SIZE_SMALL_PX = 6;
 /** Dot size in px (sm breakpoint). w-2 = 8px. */
 export const CALENDAR_CAROUSEL_DOT_SIZE_PX = 8;
 /** Task dot colors — violet stays visible on the selected-day gradient (primary dots did not). */
-export const CALENDAR_CAROUSEL_TASK_DOT_CLASS = 'bg-violet-600 dark:bg-violet-400';
-export const CALENDAR_CAROUSEL_TASK_DOT_CLASS_SELECTED = 'bg-violet-700 dark:bg-violet-300 ring-1 ring-violet-900/20 dark:ring-white/30';
-export const CALENDAR_CAROUSEL_TASK_DOT_CLASS_DONE = 'bg-violet-500/70 dark:bg-violet-400/60';
-export const CALENDAR_CAROUSEL_EVENT_DOT_CLASS = 'bg-sky-500 dark:bg-sky-400';
-export const CALENDAR_CAROUSEL_EVENT_DOT_CLASS_SELECTED = 'bg-sky-600 dark:bg-sky-300';
+export const CALENDAR_CAROUSEL_TASK_DOT_CLASS = 'bg-neutral-900 dark:bg-neutral-100';
+export const CALENDAR_CAROUSEL_TASK_DOT_CLASS_SELECTED = 'bg-neutral-900 dark:bg-neutral-100 ring-1 ring-black/20 dark:ring-white/30';
+export const CALENDAR_CAROUSEL_TASK_DOT_CLASS_DONE = 'bg-neutral-400 dark:bg-neutral-500';
+export const CALENDAR_CAROUSEL_EVENT_DOT_CLASS = 'bg-neutral-400 dark:bg-neutral-500';
+export const CALENDAR_CAROUSEL_EVENT_DOT_CLASS_SELECTED = 'bg-neutral-500 dark:bg-neutral-400';
 /** Number of days per week in the carousel grid. */
 export const CALENDAR_CAROUSEL_DAYS_PER_WEEK = 7;
 /** Number of characters to show for day abbreviations in the carousel (e.g. 3 → "SUN", "MON"). */

@@ -1194,4 +1194,77 @@ export const PLANNER_CHAT_CONFIG = {
   priorityTagPattern: /\s*\b(urgent|asap|high priority|low priority)\b!*/gi,
   durationPattern: /\b(\d+(?:\.\d+)?)\s*(h|hr|hrs|hour|hours|m|min|mins|minute|minutes)\b/i,
   hourUnitPattern: /^h/i,
+  /**
+   * Commands on existing tasks. Checked in this order; the first capture group is the task reference
+   * unless noted. A reference of "it" / "that" means the task the planner touched last.
+   */
+  commandPatterns: {
+    pomodoro: /^(?:start|begin|run|turn on|kick off)\s+(?:a\s+|the\s+)?(?:pomodoro|focus|timer)(?:\s+(?:timer|session))?\s+(?:for|on)\s+(.+)$/i,
+    focus: /^focus\s+on\s+(.+)$/i,
+    /** Groups: task, subtask list. */
+    subtasks: /^(?:add|create)\s+(?:the\s+)?(?:subtasks?|steps?)\s+(?:to|for|on)\s+(.+?)\s*:\s*([\s\S]+)$/i,
+    /** Groups: task, subtask list. */
+    breakDown: /^break\s+(.+?)\s+(?:down\s+)?into\s*:?\s*([\s\S]+)$/i,
+    /** Groups: tags, task. */
+    addTags: /^add\s+(?:the\s+)?tags?\s+(.+?)\s+to\s+(.+)$/i,
+    /** Groups: task, tags. */
+    tagTask: /^tag\s+(.+?)\s+(?:with|as)\s+(.+)$/i,
+    /** Group: tags (no task). */
+    createTag: /^(?:create|add|make)\s+(?:a\s+)?(?:new\s+)?tags?\s+(?:called\s+|named\s+)?(.+)$/i,
+    /** Groups: task, member. */
+    assign: /^assign\s+(.+?)\s+to\s+(.+)$/i,
+    duplicate: /^(?:duplicate|copy|clone)\s+(.+)$/i,
+    unschedule: /^(?:unschedule|clear the time (?:for|on))\s+(.+)$/i,
+    /** Groups: task, new title. */
+    rename: /^rename\s+(.+?)\s+to\s+(.+)$/i,
+    /** Groups: task, duration. */
+    durationSet: /^set\s+(.+?)\s+to\s+(\d+(?:\.\d+)?\s*(?:h|hr|hrs|hour|hours|m|min|mins|minute|minutes))$/i,
+    /** Groups: task, duration. */
+    durationTakes: /^(.+?)\s+(?:takes|will take|should take|needs)\s+(\d+(?:\.\d+)?\s*(?:h|hr|hrs|hour|hours|m|min|mins|minute|minutes))$/i,
+    /** Groups: task, priority. */
+    priority: /^(?:set|make|mark|change)\s+(.+?)(?:'s)?\s+(?:priority\s+)?(?:to\s+|as\s+)?(urgent|high|medium|low)(?:\s+priority)?$/i,
+    done: /^(?:mark|set)\s+(.+?)\s+(?:as\s+)?(?:done|complete|completed|finished)$/i,
+    complete: /^(?:complete|finish|check off)\s+(.+)$/i,
+    /** Groups: task, when. */
+    move: /^(?:move|reschedule|schedule|push|put)\s+(.+?)\s+(?:to|for|on)\s+(.+)$/i,
+    find: /^(?:find|locate|where(?:'s| is)|look up|open)\s+(.+)$/i,
+  },
+  /** References to the task the planner touched last. */
+  pronounPattern: /^(?:it|this|that|this one|that one|this task|that task|the task|the last one|last one)$/i,
+  /** Words stripped from a task reference before matching titles. */
+  referenceNoisePattern: /^(?:the|my|a|an)\s+|\s+(?:task|todo|item)$/gi,
+  /** Splits a list of subtasks or tags. */
+  listSplitPattern: /\s*(?:,|;|\r?\n|\band\b|•)\s*/i,
+  /** References to the current user when assigning. */
+  selfPattern: /^(?:me|myself)$/i,
+  /** Minimum title similarity (0–1) for a task reference to count as a match. */
+  minMatchScore: 0.5,
+  /** Floor score when one title contains the other; the rest scales with how much they overlap. */
+  containsBaseScore: 0.5,
+  /** Matches within this score of the best are treated as ambiguous. */
+  ambiguityMargin: 0.05,
+  maxAmbiguousShown: 3,
+  /** Natural date phrases for moving a task. */
+  when: {
+    weekdays: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+    months: ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'],
+    /** Shortest prefix accepted for weekday and month names ("tue", "oct"). */
+    namePrefixLength: 3,
+    todayPattern: /\b(?:today|tonight|this (?:morning|afternoon|evening))\b/i,
+    tomorrowPattern: /\b(?:tomorrow|tmrw|tmr)\b/i,
+    inDaysPattern: /\bin\s+(\d+)\s+days?\b/i,
+    nextWeekPattern: /\bnext week\b/i,
+    nextPrefixPattern: /\bnext\s+([a-z]+)/i,
+    wordPattern: /\b([a-z]+)\b/gi,
+    /** Groups: month name, day of month. */
+    monthDayPattern: /\b([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/i,
+    /** Groups: month, day. */
+    numericDatePattern: /\b(\d{1,2})\/(\d{1,2})\b/,
+    /** Groups: hour, minutes, meridiem. */
+    meridiemTimePattern: /\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)/i,
+    /** Groups: hour, minutes (24h). */
+    clockTimePattern: /\b(?:at\s+)?(\d{1,2}):(\d{2})\b/,
+    noonPattern: /\bnoon\b/i,
+    pmPattern: /^p/i,
+  },
 } as const;

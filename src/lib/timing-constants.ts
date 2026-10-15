@@ -246,3 +246,6 @@ export const TIMING_CONSTANTS = {
   },
 } as const;
 
+
+/** Delay (ms) after the keyboard opens before scrolling the focused field into view (lets the layout shrink first). */
+export const KEYBOARD_FOCUS_SCROLL_DELAY_MS = 120;

@@ -253,7 +253,8 @@ export function AppHeader({
                 void triggerSelectionHaptic();
                 window.dispatchEvent(new CustomEvent(NOTIFICATIONS_SHEET_OPEN_EVENT));
               }}
-              className="relative inline-flex items-center justify-center bg-transparent text-foreground"
+              data-alert={badgeCount > 0 ? "true" : undefined}
+              className="taskzm-bell relative inline-flex items-center justify-center bg-transparent text-foreground"
               style={mobileHeaderIconStyle}
             >
               <Icon name="bell" size={HEADER_ICON_SIZE_BUTTON_DESKTOP} />

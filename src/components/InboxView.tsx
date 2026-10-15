@@ -621,7 +621,7 @@ export function InboxView() {
   }, []);
 
   const renderInboxTaskList = () => (
-    <div className="space-y-2">
+    <div className="flex flex-col">
       <AnimatePresence mode="popLayout">
         {isLoading && sortedTasks.length === 0 ? (
           <motion.div

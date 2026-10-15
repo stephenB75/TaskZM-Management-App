@@ -233,7 +233,8 @@ export function AppSidebar({
                   aria-current={active ? "page" : undefined}
                   data-tour={`sidebar-${item.id}`}
                   data-active={active ? "true" : undefined}
-                  className="planner-rail-btn"
+                  data-alert={item.id === "notifications" && badge > 0 ? "true" : undefined}
+                  className="planner-rail-btn taskzm-bell"
                   onClick={() => onViewChange(item.id)}
                 >
                   <Icon name={item.iconName} size={PLANNER_LAYOUT.railIconPx} weight={active ? "fill" : "regular"} />

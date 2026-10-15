@@ -7,6 +7,11 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { usePlannerChat } from '../../contexts/PlannerChatContext';
+import { useTasks } from '../../contexts/TaskContext';
+import { useSheetItem } from '../../hooks/useSheetItem';
+import { getDateString } from '../../lib/utils';
+import { TaskDialog } from '../TaskDialog';
+import type { Task } from '../../types';
 import {
   PLANNER_COMPOSER_FOCUS_EVENT,
   PLANNER_UI_TEXT,
@@ -15,6 +20,7 @@ import {
 import { PLANNER_LAYOUT } from '../../lib/layout-constants';
 import { plannerCategoryColor } from '../../lib/planner-chat';
 import { triggerSelectionHaptic } from '../../lib/native-haptics';
+import { PlannerPriorityPill } from './PlannerPriorityPill';
 
 const TEXT = PLANNER_UI_TEXT.chat;
 const RANGES: PlannerRescheduleRange[] = ['day', 'week', 'month'];
@@ -88,6 +94,8 @@ export function PlannerChat({ className }: { className?: string }) {
     reschedule,
     clear,
   } = usePlannerChat();
+  const { tasks } = useTasks();
+  const editor = useSheetItem<Task>();
   const [input, setInput] = useState('');
   const [context, setContext] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -198,6 +206,21 @@ export function PlannerChat({ className }: { className?: string }) {
                   {TEXT.plannerName}
                 </span>
                 <p className="m-0">{item.text}</p>
+                {item.taskId && tasks.some((task) => task.id === item.taskId) ? (
+                  <button
+                    type="button"
+                    className="planner-pill planner-reply-action"
+                    onClick={() => {
+                      const task = tasks.find((candidate) => candidate.id === item.taskId);
+                      if (!task) return;
+                      void triggerSelectionHaptic();
+                      editor.show(task);
+                    }}
+                  >
+                    <Icon name="external-link" size={PLANNER_LAYOUT.iconSmPx} />
+                    {TEXT.openTask}
+                  </button>
+                ) : null}
               </div>
             ),
           )}
@@ -220,8 +243,9 @@ export function PlannerChat({ className }: { className?: string }) {
                   <div className="min-w-0">
                     <strong>{draft.title}</strong>
                     <small>
+                      <PlannerPriorityPill priority={draft.priority} />
                       <span className="planner-dot" style={{ background: plannerCategoryColor(draft.category) }} />
-                      {[TEXT.estimate(draft.estimatedMinutes), draft.category, draft.priority].filter(Boolean).join(' · ')}
+                      {[TEXT.estimate(draft.estimatedMinutes), draft.category].filter(Boolean).join(' · ')}
                     </small>
                   </div>
                   <div className="flex gap-1">
@@ -311,6 +335,9 @@ export function PlannerChat({ className }: { className?: string }) {
         </div>
         <div className="planner-footer">{TEXT.footer}</div>
       </form>
+      {editor.item ? (
+        <TaskDialog open={editor.open} task={editor.item} onClose={editor.close} initialDate={getDateString(new Date())} />
+      ) : null}
     </section>
   );
 }

@@ -48,6 +48,8 @@ export const WEB_NOTIFICATION_MAX_SCHEDULE_DAYS = 30;
 export const MINUTES_PER_HOUR = 60;
 export const SECONDS_PER_MINUTE = 60;
 export const HOURS_PER_DAY = 24;
+/** Hours on a 12-hour clock face; also the hour of noon. */
+export const HOURS_PER_HALF_DAY = HOURS_PER_DAY / 2;
 export const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR; // 60 seconds * 60 minutes
 export const SECONDS_PER_DAY = SECONDS_PER_HOUR * HOURS_PER_DAY; // 24 hours * 60 minutes * 60 seconds
 export const MILLISECONDS_PER_SECOND = 1000;

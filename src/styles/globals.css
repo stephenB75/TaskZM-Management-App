@@ -9,16 +9,16 @@
   position: relative;
   z-index: var(--tour-highlight-z-index, 9998);
   animation: tour-pulse var(--tour-pulse-duration, 2s) ease-in-out infinite;
-  box-shadow: 0 0 0 var(--tour-shadow-size-initial, 4px) var(--tour-shadow-color, rgba(115, 115, 115, 0.3)), 0 0 var(--tour-shadow-blur-initial, 20px) var(--tour-shadow-color, rgba(190, 242, 100, 0.6)) !important;
+  box-shadow: 0 0 0 var(--tour-shadow-size-initial, 4px) var(--tour-shadow-color, rgba(115, 115, 115, 0.3)), 0 0 var(--tour-shadow-blur-initial, 20px) var(--tour-shadow-color, rgba(115, 115, 115, 0.6)) !important;
   border-radius: var(--tour-border-radius, 8px);
 }
 
 @keyframes tour-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 var(--tour-shadow-size-initial, 4px) var(--tour-shadow-color, rgba(115, 115, 115, 0.3)), 0 0 var(--tour-shadow-blur-initial, 20px) var(--tour-shadow-color, rgba(190, 242, 100, 0.6));
+    box-shadow: 0 0 0 var(--tour-shadow-size-initial, 4px) var(--tour-shadow-color, rgba(115, 115, 115, 0.3)), 0 0 var(--tour-shadow-blur-initial, 20px) var(--tour-shadow-color, rgba(115, 115, 115, 0.6));
   }
   50% {
-    box-shadow: 0 0 0 var(--tour-shadow-size-pulse, 8px) var(--tour-shadow-color-pulse, rgba(190, 242, 100, 0.3)), 0 0 var(--tour-shadow-blur-pulse, 30px) var(--tour-shadow-color-pulse, rgba(190, 242, 100, 0.7));
+    box-shadow: 0 0 0 var(--tour-shadow-size-pulse, 8px) var(--tour-shadow-color-pulse, rgba(115, 115, 115, 0.3)), 0 0 var(--tour-shadow-blur-pulse, 30px) var(--tour-shadow-color-pulse, rgba(115, 115, 115, 0.7));
   }
 }
 
@@ -34,11 +34,11 @@
   --pastel-pink: #FCE7F3;
   --pastel-yellow: #FEF9C3;
   --pastel-sage: #ECFCCB;
-  --pop-lime: #D9F99D;
-  --pop-lime-strong: #BEF264;
-  --pop-lime-ink: #3F6212;
-  --pop-violet: #DDD6FE;
-  --pop-violet-ink: #4C1D95;
+  --pop-lime: #F0F0F0;
+  --pop-lime-strong: #171717;
+  --pop-lime-ink: #171717;
+  --pop-violet: #171717;
+  --pop-violet-ink: #FFFFFF;
   --pop-orange: #FED7AA;
   --pop-orange-ink: #9A3412;
   --pop-blue: #BFDBFE;
@@ -65,11 +65,11 @@
   --input: transparent;
   --input-background: #FFFFFF;
   --switch-background: #E5E5E5;
-  --home-highlight: #D9F99D;
-  --home-highlight-foreground: #1A2E05;
+  --home-highlight: #EDEDED;
+  --home-highlight-foreground: #171717;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #BEF264;
+  --ring: #A3A3A3;
 
   --chart-1: #BEF264;
   --chart-2: #C4B5FD;
@@ -85,7 +85,7 @@
   --sidebar-accent: #F0F0F0;
   --sidebar-accent-foreground: #171717;
   --sidebar-border: #E5E5E5;
-  --sidebar-ring: #BEF264;
+  --sidebar-ring: #A3A3A3;
 }
 
 .dark {
@@ -97,11 +97,11 @@
   --pastel-pink: #3F2433;
   --pastel-yellow: #3D3820;
   --pastel-sage: #2A3A20;
-  --pop-lime: #D9F99D;
-  --pop-lime-strong: #BEF264;
-  --pop-lime-ink: #D9F99D;
-  --pop-violet: #3B3360;
-  --pop-violet-ink: #DDD6FE;
+  --pop-lime: #262626;
+  --pop-lime-strong: #FAFAFA;
+  --pop-lime-ink: #FAFAFA;
+  --pop-violet: #FAFAFA;
+  --pop-violet-ink: #0A0A0A;
   --pop-orange: #4A3220;
   --pop-orange-ink: #FED7AA;
   --pop-blue: #1E3150;
@@ -127,11 +127,11 @@
   --input: #1C1C1C;
   --input-background: #1C1C1C;
   --switch-background: #333333;
-  --ring: #BEF264;
+  --ring: #A3A3A3;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --home-highlight: #D9F99D;
-  --home-highlight-foreground: #1A2E05;
+  --home-highlight: #EDEDED;
+  --home-highlight-foreground: #171717;
 
   --chart-1: #BEF264;
   --chart-2: #A78BFA;
@@ -146,7 +146,7 @@
   --sidebar-accent: #1F1F1F;
   --sidebar-accent-foreground: #F5F5F5;
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #BEF264;
+  --sidebar-ring: #A3A3A3;
 }
 
 @layer base {
@@ -455,6 +455,17 @@ html[data-keyboard-open="true"] {
   }
 }
 
+/* Keyboard open: the app shell ends at the top of the keyboard so focused fields stay visible. */
+html[data-keyboard-open="true"] .h-viewport-safe,
+html[data-keyboard-open="true"] .min-h-viewport-safe {
+  height: calc(var(--viewport-height) - var(--native-keyboard-height));
+  min-height: 0;
+}
+html[data-keyboard-open="true"] .taskzm-mobile-scroll {
+  min-height: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 /* Native iOS/Android: hide bottom tab bar while keyboard is open */
 html[data-keyboard-open="true"] .native-hide-with-keyboard {
   transform: translateY(100%);
@@ -486,7 +497,7 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(190, 242, 100, 0.6);
+  background: rgba(115, 115, 115, 0.6);
 }
 
 /* Responsive loading screen logo sizing */
@@ -1087,12 +1098,20 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   background: var(--foreground);
 }
 .planner-pill--lime {
-  color: #1A2E05;
+  color: var(--background);
   background: var(--pop-lime-strong);
 }
 .planner-pill:disabled {
   opacity: 0.4;
   cursor: wait;
+}
+.planner-reply-action {
+  align-self: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+}
+.planner-tl-focus {
+  margin-top: 6px;
 }
 .planner-header-controls {
   display: flex;
@@ -1138,13 +1157,15 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 10px;
+  box-sizing: border-box;
+  width: calc(100% - 32px);
   margin: 14px 16px 6px;
-  padding: 14px;
+  padding: 14px 16px;
   border: 0;
   border-radius: 16px;
   text-align: left;
-  color: #1A2E05;
-  background: var(--pop-lime);
+  color: var(--background);
+  background: var(--foreground);
   cursor: pointer;
 }
 .planner-upnext[data-empty="true"] {
@@ -1154,10 +1175,9 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 }
 .planner-upnext strong {
   display: block;
-  overflow: hidden;
   font-size: 15px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 .planner-upnext small {
   display: block;
@@ -1170,14 +1190,14 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: #3F6212;
+  background: var(--background);
 }
 .planner-pulse::after {
   content: "";
   position: absolute;
   inset: -4px;
   border-radius: 999px;
-  border: 2px solid #3F6212;
+  border: 2px solid var(--background);
   opacity: 0.4;
   animation: planner-pulse 1.8s ease-out infinite;
 }
@@ -1232,20 +1252,64 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 .planner-tl-body strong {
   display: block;
   margin-top: 2px;
-  overflow: hidden;
   font-size: 14px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 .planner-tl-tags {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin-top: 4px;
   font-size: 11px;
   color: var(--muted-foreground);
   text-transform: capitalize;
+}
+.planner-priority {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background: var(--planner-priority);
+}
+.planner-priority[data-priority="low"] {
+  color: var(--muted-foreground);
+  background: var(--muted);
+}
+.planner-inbox-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 8px 8px 8px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.planner-tag-name {
+  text-transform: none;
+}
+.planner-inbox-item:hover,
+.planner-inbox-item[data-selected="true"] {
+  background: var(--muted);
+}
+.planner-inbox-item .planner-tl-body {
+  padding-top: 2px;
+}
+.planner-inbox-item[data-done="true"] .planner-tl-body {
+  opacity: 0.45;
+}
+.planner-inbox-item[data-done="true"] .planner-tl-body strong {
+  text-decoration: line-through;
 }
 .planner-tl-item[data-done="true"] .planner-tl-body {
   opacity: 0.45;
@@ -1333,11 +1397,12 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
-  height: 56px;
+  height: 70px;
+  padding: 8px 2px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   color: var(--muted-foreground);
   background: transparent;
   cursor: pointer;
@@ -1359,6 +1424,7 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   color: var(--pop-violet-ink);
 }
 .planner-daystrip button i {
+  flex: none;
   width: 4px;
   height: 4px;
   border-radius: 999px;
@@ -1420,7 +1486,7 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--pop-violet-ink);
+  color: var(--muted-foreground);
 }
 .planner-typing {
   display: inline-flex;
@@ -1530,7 +1596,7 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   flex: none;
   border: 0;
   border-radius: 999px;
-  color: #1A2E05;
+  color: var(--background);
   background: var(--pop-lime-strong);
   cursor: pointer;
 }
@@ -1567,7 +1633,7 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   margin-bottom: 14px;
   border-radius: 13px;
   font-weight: 800;
-  color: #1A2E05;
+  color: var(--background);
   background: var(--pop-lime-strong);
 }
 .planner-rail-btn {
@@ -1636,6 +1702,24 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   font-weight: 800;
   color: #FFFFFF;
   background: #E11D48;
+}
+.taskzm-bell[data-alert="true"] {
+  color: #E11D48;
+}
+.taskzm-bell[data-alert="true"] > svg {
+  transform-origin: 50% 10%;
+  animation: taskzm-bell-shake 3.2s ease-in-out infinite;
+}
+@keyframes taskzm-bell-shake {
+  0%, 22%, 100% { transform: rotate(0); }
+  3% { transform: rotate(16deg); }
+  7% { transform: rotate(-14deg); }
+  11% { transform: rotate(10deg); }
+  15% { transform: rotate(-6deg); }
+  19% { transform: rotate(3deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .taskzm-bell[data-alert="true"] > svg { animation: none; }
 }
 .planner-rail-divider {
   width: 28px;
@@ -1729,10 +1813,10 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   transition: background-color 140ms ease;
 }
 .planner-week-col[data-today="true"] {
-  background-color: rgba(221, 214, 254, 0.18);
+  background-color: color-mix(in srgb, var(--foreground) 3%, transparent);
 }
 .planner-week-col[data-over="true"] {
-  background-color: rgba(190, 242, 100, 0.22);
+  background-color: color-mix(in srgb, var(--foreground) 6%, transparent);
   box-shadow: inset 0 0 0 2px var(--pop-lime-strong);
 }
 .planner-block {

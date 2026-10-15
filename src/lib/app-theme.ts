@@ -83,8 +83,8 @@ export const THEME_MUTED = {
 // Accent Colors
 export const THEME_ACCENT = {
   background: {
-    light: '#C4B5FD',
-    dark: '#322C46',
+    light: '#E5E5E5',
+    dark: '#262626',
   },
   foreground: {
     light: '#1E3A5F',

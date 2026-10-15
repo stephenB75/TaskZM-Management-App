@@ -10,7 +10,6 @@ import * as api from '../lib/api';
 import { generateId, getFromLocalStorage, saveToLocalStorage, getDateString, getSeriesBaseId } from '../lib/utils';
 import { migrateOrphanRecurringSeries } from '../lib/migrate-recurring-series';
 import { migrateRecurringOccurrenceIds } from '../lib/migrate-recurring-occurrence-ids';
-import { generateSampleTasks, generateSampleProjects } from '../lib/sampleData';
 import { logger } from '../lib/logger';
 import { getCategoryHoursForTask } from '../lib/category-hours-utils';
 import { getTaskMinutes } from '../lib/daily-hours-utils';

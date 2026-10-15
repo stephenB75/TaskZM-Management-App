@@ -141,7 +141,7 @@ export function parsePlannerDrafts(text: string): PlannerDraft[] {
   return drafts;
 }
 
-function endOfDay(date: Date): Date {
+export function endOfDay(date: Date): Date {
   const end = new Date(date);
   end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
   return end;
