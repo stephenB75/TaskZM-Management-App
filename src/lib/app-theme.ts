@@ -6,51 +6,51 @@
 
 // Primary Theme Colors (consistent across light/dark)
 export const THEME_PRIMARY = {
-  light: '#9B87E8',
-  dark: '#9B87E8',
+  light: '#171717',
+  dark: '#F5F5F5',
   hover: {
-    light: '#8B77D8',
-    dark: '#A597F0',
+    light: '#404040',
+    dark: '#E5E5E5',
   },
   foreground: {
     light: '#FFFFFF',
-    dark: '#FFFFFF',
+    dark: '#0A0A0A',
   },
 } as const;
 
 // Secondary Theme Colors
 export const THEME_SECONDARY = {
-  light: '#E6D5F0',
-  dark: '#2E2940',
+  light: '#F4F4F4',
+  dark: '#1F1F1F',
   foreground: {
-    light: '#4A1F5C',
+    light: '#262626',
     dark: '#F3F4F6',
   },
 } as const;
 
 // Background Colors
 export const THEME_BACKGROUND = {
-  light: '#FAF9FC',
-  dark: '#16141E',
+  light: '#FAFAFA',
+  dark: '#0A0A0A',
   card: {
     light: '#FFFFFF',
-    dark: '#201D2B',
+    dark: '#141414',
   },
   popover: {
     light: '#FFFFFF',
-    dark: '#242031',
+    dark: '#1A1A1A',
   },
 } as const;
 
 // Text Colors
 export const THEME_TEXT = {
   primary: {
-    light: '#1F2937',
-    dark: '#EEEBF6',
+    light: '#171717',
+    dark: '#F5F5F5',
   },
   secondary: {
-    light: '#6B7280',
-    dark: '#ABA4BE',
+    light: '#737373',
+    dark: '#A3A3A3',
   },
   muted: {
     light: '#9CA3AF',
@@ -60,18 +60,18 @@ export const THEME_TEXT = {
 
 // Border Colors
 export const THEME_BORDER = {
-  light: 'rgba(155, 135, 232, 0.25)',
-  dark: 'rgba(155, 135, 232, 0.2)',
+  light: 'rgba(115, 115, 115, 0.25)',
+  dark: 'rgba(115, 115, 115, 0.2)',
   muted: {
     light: '#E5E7EB',
-    dark: '#3A3450',
+    dark: '#262626',
   },
 } as const;
 
 // Muted/Accent Colors
 export const THEME_MUTED = {
   background: {
-    light: '#F3F0F9',
+    light: '#F4F4F4',
     dark: '#282435',
   },
   foreground: {
@@ -83,7 +83,7 @@ export const THEME_MUTED = {
 // Accent Colors
 export const THEME_ACCENT = {
   background: {
-    light: '#C9E4F7',
+    light: '#C4B5FD',
     dark: '#322C46',
   },
   foreground: {
@@ -109,8 +109,8 @@ export const THEME_INPUT = {
     dark: '#282435',
   },
   border: {
-    light: 'rgba(155, 135, 232, 0.25)',
-    dark: 'rgba(155, 135, 232, 0.35)',
+    light: 'rgba(115, 115, 115, 0.25)',
+    dark: 'rgba(115, 115, 115, 0.35)',
   },
 } as const;
 
@@ -137,7 +137,7 @@ export const THEME_BUTTON = {
     },
     hover: {
       light: '#D4C5E0',
-      dark: '#3A3450',
+      dark: '#262626',
     },
     text: {
       light: THEME_SECONDARY.foreground.light,
@@ -146,12 +146,12 @@ export const THEME_BUTTON = {
   },
   outline: {
     border: {
-      light: 'rgba(155, 135, 232, 0.3)',
-      dark: 'rgba(155, 135, 232, 0.5)',
+      light: 'rgba(115, 115, 115, 0.3)',
+      dark: 'rgba(115, 115, 115, 0.5)',
     },
     hover: {
-      light: 'rgba(155, 135, 232, 0.1)',
-      dark: 'rgba(155, 135, 232, 0.2)',
+      light: 'rgba(115, 115, 115, 0.1)',
+      dark: 'rgba(115, 115, 115, 0.2)',
     },
     text: {
       light: THEME_TEXT.primary.light,
@@ -174,19 +174,19 @@ export const THEME_BUTTON = {
 export const THEME_DIALOG = {
   background: {
     light: {
-      from: '#FAF9FC',
-      via: '#F9F7FD',
-      to: '#F3F0F9',
+      from: '#FAFAFA',
+      via: '#F7F7F7',
+      to: '#F4F4F4',
     },
     dark: {
       from: '#13111A',
-      via: '#16141E',
+      via: '#0A0A0A',
       to: '#1B1825',
     },
   },
   border: {
-    light: 'rgba(155, 135, 232, 0.25)',
-    dark: 'rgba(155, 135, 232, 0.4)',
+    light: 'rgba(115, 115, 115, 0.25)',
+    dark: 'rgba(115, 115, 115, 0.4)',
   },
   overlay: {
     light: 'rgba(0, 0, 0, 0.5)',

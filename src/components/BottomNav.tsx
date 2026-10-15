@@ -30,7 +30,7 @@ import {
   NAV_BAR_BUTTON_TRANSITION_DURATION,
   Z_INDEX,
 } from "../lib/layout-constants";
-import { NAVIGATION_UI_TEXT, AI_PANEL_OPEN_EVENT } from "../lib/navigation-constants";
+import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { triggerSelectionHaptic } from "../lib/native-haptics";
 import { BADGE_DISPLAY_MAX } from "../lib/notification-constants";
@@ -77,8 +77,8 @@ export function BottomNav({
   const navItems = [
     {
       id: "today",
-      label: NAVIGATION_UI_TEXT.today,
-      iconName: "calendar-today",
+      label: NAVIGATION_UI_TEXT.timeline,
+      iconName: "list-checks",
       onClick: () => {
         if (tourActive) return;
         triggerHaptic();
@@ -93,7 +93,7 @@ export function BottomNav({
     },
     {
       id: "week",
-      label: NAVIGATION_UI_TEXT.week,
+      label: NAVIGATION_UI_TEXT.calendar,
       iconName: "calendar-days",
       onClick: () => {
         if (tourActive) return;
@@ -111,6 +111,18 @@ export function BottomNav({
       active: isDashboard && mobileView === "week",
     },
     {
+      id: "ai",
+      label: NAVIGATION_UI_TEXT.aiPlan,
+      iconName: "magic-wand",
+      onClick: () => {
+        if (tourActive) return;
+        triggerHaptic();
+        onNavInteraction?.();
+        onViewChange("ai");
+      },
+      active: currentView === "ai",
+    },
+    {
       id: "inbox",
       label: NAVIGATION_UI_TEXT.inbox,
       iconName: "inbox",
@@ -122,18 +134,6 @@ export function BottomNav({
       },
       active: currentView === "inbox",
       badge: unscheduledCount,
-    },
-    {
-      id: "ai",
-      label: NAVIGATION_UI_TEXT.ai,
-      iconName: "magic-wand",
-      onClick: () => {
-        if (tourActive) return;
-        triggerHaptic();
-        onNavInteraction?.();
-        window.dispatchEvent(new CustomEvent(AI_PANEL_OPEN_EVENT));
-      },
-      active: false,
     },
   ];
 
@@ -183,9 +183,8 @@ export function BottomNav({
               className={cn(
                 "relative flex h-full w-full min-w-0 max-w-full flex-col items-center justify-center overflow-visible rounded-xl",
                 "touch-manipulation transition-transform ease-out",
-                item.active && "text-primary",
-                !item.active &&
-                  "text-foreground dark:text-gray-100",
+                item.active && "text-pop-lime-ink",
+                !item.active && "text-muted-foreground",
               )}
               style={{
                 gap: NAV_BAR_ICON_LABEL_GAP,
@@ -244,8 +243,8 @@ export function BottomNav({
                 className={cn(
                   "relative z-10 w-full min-w-0 shrink-0 truncate text-center font-semibold",
                   item.active
-                    ? "text-primary"
-                    : "text-foreground dark:text-gray-100"
+                    ? "text-pop-lime-ink"
+                    : "text-muted-foreground"
                 )} 
                 style={{
                   fontSize: NAV_BAR_LABEL_TEXT_SIZE,

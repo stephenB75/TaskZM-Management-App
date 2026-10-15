@@ -7,16 +7,16 @@
 // Note: Dark mode colors are applied via className in dialog.tsx for better visibility
 export const UI_GRADIENT_COLORS = {
   dialog: {
-    from: '#FAF9FC',
-    via: '#F9F7FD',
-    to: '#F3F0F9',
+    from: '#FAFAFA',
+    via: '#F7F7F7',
+    to: '#F4F4F4',
     dark: {
       from: '#13111A',
-      via: '#16141E',
+      via: '#0A0A0A',
       to: '#1B1825',
     },
-    // Tailwind class: bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9]
-    className: 'bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9]',
+    // Tailwind class: bg-gradient-to-br from-[#FAFAFA] via-[#F7F7F7] to-[#F4F4F4]
+    className: 'bg-gradient-to-br from-[#FAFAFA] via-[#F7F7F7] to-[#F4F4F4]',
   },
   timeline: {
     from: '#E4E0EF',
@@ -26,8 +26,8 @@ export const UI_GRADIENT_COLORS = {
   },
   status: {
     success: {
-      from: '#B8E6D5',
-      to: '#E6D5F0',
+      from: '#BEF264',
+      to: '#DDD6FE',
     },
   },
 } as const;
@@ -50,16 +50,16 @@ export const UI_RICH_TEXT_COLORS = {
 
 // Upgrade Prompt Colors
 export const UI_UPGRADE_PROMPT_COLORS = {
-  accent: '#D4C5F9',
-  accentHover: '#D4C5F9',
+  accent: '#D9F99D',
+  accentHover: '#D9F99D',
   // Tailwind classes
-  accentClass: 'bg-[#D4C5F9]',
-  accentHoverClass: 'hover:bg-[#D4C5F9]/90',
-  accentTextClass: 'text-[#D4C5F9]',
-  accentBorderClass: 'border-[#D4C5F9]',
-  accentBgOpacity10: 'bg-[#D4C5F9]/10',
-  accentBgOpacity20: 'bg-[#D4C5F9]/20',
-  accentBorderOpacity20: 'border-[#D4C5F9]/20',
+  accentClass: 'bg-[#D9F99D]',
+  accentHoverClass: 'hover:bg-[#D9F99D]/90',
+  accentTextClass: 'text-[#D9F99D]',
+  accentBorderClass: 'border-[#D9F99D]',
+  accentBgOpacity10: 'bg-[#D9F99D]/10',
+  accentBgOpacity20: 'bg-[#D9F99D]/20',
+  accentBorderOpacity20: 'border-[#D9F99D]/20',
 } as const;
 
 // Folder Colors
@@ -70,112 +70,112 @@ export const UI_FOLDER_COLORS = {
 // Pricing Dialog Gradient Colors
 export const UI_PRICING_GRADIENT_COLORS = {
   primary: {
-    from: '#9B87E8',
-    to: '#D4C5F9',
-    // Tailwind class: bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9]
-    className: 'bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9]',
+    from: '#171717',
+    to: '#D9F99D',
+    // Tailwind class: bg-gradient-to-r from-[#171717] to-[#D9F99D]
+    className: 'bg-gradient-to-r from-[#171717] to-[#D9F99D]',
   },
   primaryHover: {
-    from: '#8B77D8',
+    from: '#404040',
     to: '#C4B5E9',
-    // Tailwind class: hover:from-[#8B77D8] hover:to-[#C4B5E9]
-    className: 'hover:from-[#8B77D8] hover:to-[#C4B5E9]',
+    // Tailwind class: hover:from-[#404040] hover:to-[#C4B5E9]
+    className: 'hover:from-[#404040] hover:to-[#C4B5E9]',
   },
   primaryBr: {
-    from: '#9B87E8',
-    to: '#D4C5F9',
-    // Tailwind class: bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]
-    className: 'bg-gradient-to-br from-[#9B87E8] to-[#D4C5F9]',
+    from: '#171717',
+    to: '#D9F99D',
+    // Tailwind class: bg-gradient-to-br from-[#171717] to-[#D9F99D]
+    className: 'bg-gradient-to-br from-[#171717] to-[#D9F99D]',
   },
   text: {
-    from: '#9B87E8',
-    via: '#9B7EE8',
-    to: '#D4C5F9',
-    // Tailwind class: bg-gradient-to-r from-[#9B87E8] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent
-    className: 'bg-gradient-to-r from-[#9B87E8] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent',
+    from: '#171717',
+    via: '#C4B5FD',
+    to: '#D9F99D',
+    // Tailwind class: bg-gradient-to-r from-[#171717] via-[#C4B5FD] to-[#D9F99D] bg-clip-text text-transparent
+    className: 'bg-gradient-to-r from-[#171717] via-[#C4B5FD] to-[#D9F99D] bg-clip-text text-transparent',
   },
 } as const;
 
 // Pricing Dialog Colors
 export const UI_PRICING_DIALOG_COLORS = {
-  primary: '#9B87E8',
-  primaryHover: '#8B77D8',
-  primaryClass: 'bg-[#9B87E8]',
-  primaryHoverClass: 'hover:bg-[#8B77D8]',
-  primaryTextClass: 'text-[#9B87E8]',
-  secondary: '#C9E4F7',
-  secondaryClass: 'bg-[#C9E4F7]',
-  accent: '#B8E6D5',
+  primary: '#171717',
+  primaryHover: '#404040',
+  primaryClass: 'bg-[#171717]',
+  primaryHoverClass: 'hover:bg-[#404040]',
+  primaryTextClass: 'text-[#171717]',
+  secondary: '#C4B5FD',
+  secondaryClass: 'bg-[#C4B5FD]',
+  accent: '#BEF264',
   accentDark: '#5A8A7A',
-  accentClass: 'bg-[#B8E6D5]',
+  accentClass: 'bg-[#BEF264]',
   accentDarkClass: 'dark:bg-[#5A8A7A]',
-  accentBorderClass: 'border-[#B8E6D5]',
-  accentRingClass: 'ring-[#B8E6D5]/50',
+  accentBorderClass: 'border-[#BEF264]',
+  accentRingClass: 'ring-[#BEF264]/50',
   accentDarkBorderClass: 'dark:border-[#5A8A7A]',
   accentDarkRingClass: 'dark:ring-[#5A8A7A]/50',
-  accentBgClass: 'bg-[#B8E6D5]/10',
+  accentBgClass: 'bg-[#BEF264]/10',
   accentTextClass: 'text-gray-800',
   // Gradients
   titleGradient: {
-    from: '#9B87E8',
-    via: '#C9E4F7',
-    to: '#B8E6D5',
-    className: 'bg-gradient-to-r from-[#9B87E8] via-[#C9E4F7] to-[#B8E6D5] bg-clip-text text-transparent',
+    from: '#171717',
+    via: '#C4B5FD',
+    to: '#BEF264',
+    className: 'bg-gradient-to-r from-[#171717] via-[#C4B5FD] to-[#BEF264] bg-clip-text text-transparent',
   },
   cardGradient: {
-    from: '#9B87E8',
-    via: '#C9E4F7',
-    to: '#B8E6D5',
+    from: '#171717',
+    via: '#C4B5FD',
+    to: '#BEF264',
     light: {
-      className: 'bg-gradient-to-br from-[#9B87E8]/10 via-[#C9E4F7]/10 to-[#B8E6D5]/10',
+      className: 'bg-gradient-to-br from-[#171717]/10 via-[#C4B5FD]/10 to-[#BEF264]/10',
     },
     dark: {
-      className: 'dark:from-[#9B87E8]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10',
+      className: 'dark:from-[#171717]/20 dark:via-[#6A8AAA]/10 dark:to-[#5A8A7A]/10',
     },
     medium: {
-      className: 'bg-gradient-to-br from-[#9B87E8]/15 via-[#C9E4F7]/15 to-[#B8E6D5]/15',
+      className: 'bg-gradient-to-br from-[#171717]/15 via-[#C4B5FD]/15 to-[#BEF264]/15',
     },
     mediumDark: {
-      className: 'dark:from-[#9B87E8]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15',
+      className: 'dark:from-[#171717]/25 dark:via-[#6A8AAA]/15 dark:to-[#5A8A7A]/15',
     },
   },
   cardBorder: {
-    primary: 'border-[#9B87E8]',
-    primaryRing: 'ring-[#9B87E8]/50',
-    accent: 'border-[#B8E6D5]',
-    accentRing: 'ring-[#B8E6D5]/50',
+    primary: 'border-[#171717]',
+    primaryRing: 'ring-[#171717]/50',
+    accent: 'border-[#BEF264]',
+    accentRing: 'ring-[#BEF264]/50',
   },
   buttonGradient: {
-    from: '#9B87E8',
-    to: '#D4C5F9',
-    className: 'bg-gradient-to-r from-[#9B87E8] to-[#D4C5F9]',
+    from: '#171717',
+    to: '#D9F99D',
+    className: 'bg-gradient-to-r from-[#171717] to-[#D9F99D]',
     hover: {
-      from: '#8B77D8',
+      from: '#404040',
       to: '#C4B5E9',
-      className: 'hover:from-[#8B77D8] hover:to-[#C4B5E9]',
+      className: 'hover:from-[#404040] hover:to-[#C4B5E9]',
     },
   },
   badgeGradient: {
-    from: '#B8E6D5',
-    to: '#C9E4F7',
-    className: 'bg-gradient-to-r from-[#B8E6D5] to-[#C9E4F7]',
+    from: '#BEF264',
+    to: '#C4B5FD',
+    className: 'bg-gradient-to-r from-[#BEF264] to-[#C4B5FD]',
   },
   decorativeBlur: {
     light: {
-      className: 'bg-gradient-to-br from-[#9B87E8]/20 to-[#C9E4F7]/20',
+      className: 'bg-gradient-to-br from-[#171717]/20 to-[#C4B5FD]/20',
     },
     medium: {
-      className: 'bg-gradient-to-br from-[#9B87E8]/25 to-[#C9E4F7]/25',
+      className: 'bg-gradient-to-br from-[#171717]/25 to-[#C4B5FD]/25',
     },
   },
 } as const;
 
 // Settings Panel Badge Gradient Colors
 export const UI_SETTINGS_BADGE_GRADIENT = {
-  from: '#D4C5F9',
+  from: '#D9F99D',
   to: '#B4E4CE',
-  // Tailwind class: bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE]
-  className: 'bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE]',
+  // Tailwind class: bg-gradient-to-r from-[#D9F99D] to-[#B4E4CE]
+  className: 'bg-gradient-to-r from-[#D9F99D] to-[#B4E4CE]',
 } as const;
 
 // Analytics Panel Colors (from AnalyticsPanel.tsx)
@@ -192,37 +192,37 @@ export const UI_ANALYTICS_COLORS = {
 // Auth Screen Gradient Colors
 export const UI_AUTH_GRADIENT_COLORS = {
   text: {
-    from: '#7B68EE',
-    via: '#9B7EE8',
-    to: '#D4C5F9',
-    // Tailwind class: bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent
-    className: 'bg-gradient-to-r from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9] bg-clip-text text-transparent',
+    from: '#262626',
+    via: '#C4B5FD',
+    to: '#D9F99D',
+    // Tailwind class: bg-gradient-to-r from-[#262626] via-[#C4B5FD] to-[#D9F99D] bg-clip-text text-transparent
+    className: 'bg-gradient-to-r from-[#262626] via-[#C4B5FD] to-[#D9F99D] bg-clip-text text-transparent',
   },
   icon: {
-    from: '#7B68EE',
-    via: '#9B7EE8',
-    to: '#D4C5F9',
-    // Tailwind class: bg-gradient-to-br from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9]
-    className: 'bg-gradient-to-br from-[#7B68EE] via-[#9B7EE8] to-[#D4C5F9]',
+    from: '#262626',
+    via: '#C4B5FD',
+    to: '#D9F99D',
+    // Tailwind class: bg-gradient-to-br from-[#262626] via-[#C4B5FD] to-[#D9F99D]
+    className: 'bg-gradient-to-br from-[#262626] via-[#C4B5FD] to-[#D9F99D]',
   },
 } as const;
 
 // Seven Day Kanban Colors
 export const UI_KANBAN_COLORS = {
   wednesday: {
-    from: '#E6D5F0',
-    via: '#D4C5F9',
+    from: '#DDD6FE',
+    via: '#D9F99D',
     to: '#C7B8EA',
     border: '#B8A4E6',
-    // Tailwind class: bg-gradient-to-r from-[#E6D5F0]/80 via-[#D4C5F9]/70 to-[#C7B8EA]/80 border-[#B8A4E6]/30
-    className: 'bg-gradient-to-r from-[#E6D5F0]/80 via-[#D4C5F9]/70 to-[#C7B8EA]/80 border-[#B8A4E6]/30',
+    // Tailwind class: bg-gradient-to-r from-[#DDD6FE]/80 via-[#D9F99D]/70 to-[#C7B8EA]/80 border-[#B8A4E6]/30
+    className: 'bg-gradient-to-r from-[#DDD6FE]/80 via-[#D9F99D]/70 to-[#C7B8EA]/80 border-[#B8A4E6]/30',
   },
 } as const;
 
 // Today Agenda Status Colors
 export const UI_TODAY_AGENDA_STATUS_COLORS = {
   success: {
-    background: '#B8E6D5',
+    background: '#BEF264',
     text: {
       dark: '#065f46', // green-800
       darker: '#064e3b', // green-900
@@ -260,13 +260,13 @@ export const UI_SETTINGS_PANEL_GRADIENTS = {
   },
   tags: {
     from: '#E0BBE4',
-    to: '#D4C5F9',
-    className: 'bg-gradient-to-br from-[#E0BBE4]/35 to-[#D4C5F9]/35',
+    to: '#D9F99D',
+    className: 'bg-gradient-to-br from-[#E0BBE4]/35 to-[#D9F99D]/35',
   },
   aiSettings: {
-    from: '#C9E4F7',
+    from: '#C4B5FD',
     to: '#B4E4FF',
-    className: 'bg-gradient-to-br from-[#C9E4F7]/35 to-[#B4E4FF]/35',
+    className: 'bg-gradient-to-br from-[#C4B5FD]/35 to-[#B4E4FF]/35',
   },
   datetime: {
     from: '#F3E8FF',
@@ -275,8 +275,8 @@ export const UI_SETTINGS_PANEL_GRADIENTS = {
   },
   rollover: {
     from: '#E8F5F1',
-    to: '#C9E4F7',
-    className: 'bg-gradient-to-br from-[#E8F5F1]/40 to-[#C9E4F7]/40',
+    to: '#C4B5FD',
+    className: 'bg-gradient-to-br from-[#E8F5F1]/40 to-[#C4B5FD]/40',
   },
   hours: {
     from: '#FFDAB9',
@@ -284,43 +284,43 @@ export const UI_SETTINGS_PANEL_GRADIENTS = {
     className: 'bg-gradient-to-br from-[#FFDAB9]/35 to-[#E0BBE4]/35',
   },
   awards: {
-    from: '#D4C5F9',
+    from: '#D9F99D',
     to: '#FFDAB9',
-    className: 'bg-gradient-to-br from-[#D4C5F9]/40 to-[#FFDAB9]/40',
+    className: 'bg-gradient-to-br from-[#D9F99D]/40 to-[#FFDAB9]/40',
   },
 } as const;
 
 // Settings Panel Badge Colors
 export const UI_SETTINGS_BADGE_COLORS = {
-  primary: '#D4C5F9',
+  primary: '#D9F99D',
   secondary: '#B4E4CE',
   subscription: '#B5E8D3',
-  primaryClass: 'bg-[#D4C5F9]',
-  primaryBorderClass: 'border-[#D4C5F9]',
-  primaryHoverClass: 'hover:bg-[#D4C5F9]/90',
-  primaryTextClass: 'text-[#D4C5F9]',
+  primaryClass: 'bg-[#D9F99D]',
+  primaryBorderClass: 'border-[#D9F99D]',
+  primaryHoverClass: 'hover:bg-[#D9F99D]/90',
+  primaryTextClass: 'text-[#D9F99D]',
   subscriptionClass: 'bg-[#B5E8D3]',
   subscriptionBorderClass: 'border-[#B5E8D3]',
-  gradientClass: 'bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE]',
+  gradientClass: 'bg-gradient-to-r from-[#D9F99D] to-[#B4E4CE]',
   infoBox: {
     background: {
-      from: '#D4C5F9',
-      to: '#C9E4F7',
-      className: 'bg-gradient-to-br from-[#D4C5F9]/10 to-[#C9E4F7]/10',
-      darkClassName: 'dark:from-[#D4C5F9]/5 dark:to-[#C9E4F7]/5',
+      from: '#D9F99D',
+      to: '#C4B5FD',
+      className: 'bg-gradient-to-br from-[#D9F99D]/10 to-[#C4B5FD]/10',
+      darkClassName: 'dark:from-[#D9F99D]/5 dark:to-[#C4B5FD]/5',
     },
     border: {
-      className: 'border-[#D4C5F9]/20',
+      className: 'border-[#D9F99D]/20',
     },
-    icon: '#D4C5F9',
-    iconClass: 'text-[#D4C5F9]',
+    icon: '#D9F99D',
+    iconClass: 'text-[#D9F99D]',
   },
   category: {
     mint: '#B4E4CE',
-    lavender: '#E6D5F0',
+    lavender: '#DDD6FE',
     peach: '#FDD5B4',
     mintClass: 'bg-[#B4E4CE]',
-    lavenderClass: 'bg-[#E6D5F0]',
+    lavenderClass: 'bg-[#DDD6FE]',
     peachClass: 'bg-[#FDD5B4]',
   },
 } as const;
@@ -333,24 +333,24 @@ export const UI_INBOX_GRADIENTS = {
     className: 'bg-white dark:bg-gray-950',
   },
   button: {
-    from: '#E6D5F0',
-    to: '#C9E4F7',
-    className: 'bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7]',
+    from: '#DDD6FE',
+    to: '#C4B5FD',
+    className: 'bg-gradient-to-r from-[#DDD6FE] to-[#C4B5FD]',
     hover: {
-      from: '#C9E4F7',
-      to: '#E6D5F0',
-      className: 'hover:from-[#C9E4F7] hover:to-[#E6D5F0]',
+      from: '#C4B5FD',
+      to: '#DDD6FE',
+      className: 'hover:from-[#C4B5FD] hover:to-[#DDD6FE]',
     },
   },
   card: {
-    from: '#C9E4F7',
-    to: '#B8E6D5',
-    className: 'bg-gradient-to-br from-[#C9E4F7]/30 to-[#B8E6D5]/30',
+    from: '#C4B5FD',
+    to: '#BEF264',
+    className: 'bg-gradient-to-br from-[#C4B5FD]/30 to-[#BEF264]/30',
   },
   emptyState: {
-    from: '#E6D5F0',
-    to: '#C9E4F7',
-    className: 'bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7]',
+    from: '#DDD6FE',
+    to: '#C4B5FD',
+    className: 'bg-gradient-to-br from-[#DDD6FE] to-[#C4B5FD]',
   },
 } as const;
 
@@ -392,9 +392,9 @@ export const UI_TAG_COLORS = {
     fullClass: 'bg-[#B4E4CE]',
   },
   lavender: {
-    hex: '#E6D5F0',
-    class: 'bg-[#E6D5F0]/30',
-    fullClass: 'bg-[#E6D5F0]',
+    hex: '#DDD6FE',
+    class: 'bg-[#DDD6FE]/30',
+    fullClass: 'bg-[#DDD6FE]',
   },
   peach: {
     hex: '#FDD5B4',
@@ -402,9 +402,9 @@ export const UI_TAG_COLORS = {
     fullClass: 'bg-[#FDD5B4]',
   },
   blue: {
-    hex: '#C9E4F7',
-    class: 'bg-[#C9E4F7]/30',
-    fullClass: 'bg-[#C9E4F7]',
+    hex: '#C4B5FD',
+    class: 'bg-[#C4B5FD]/30',
+    fullClass: 'bg-[#C4B5FD]',
   },
 } as const;
 

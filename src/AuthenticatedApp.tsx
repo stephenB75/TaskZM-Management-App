@@ -35,10 +35,10 @@ function LoadingFallback() {
           <div
             className="absolute inset-0 border-4 rounded-full animate-spin"
             style={{
-              borderTopColor: 'var(--primary, #9B87E8)',
-              borderRightColor: 'var(--pastel-lavender, #E6D5F0)',
-              borderBottomColor: 'var(--pastel-lavender, #E6D5F0)',
-              borderLeftColor: 'var(--pastel-lavender, #E6D5F0)',
+              borderTopColor: 'var(--primary, #171717)',
+              borderRightColor: 'var(--pastel-lavender, #DDD6FE)',
+              borderBottomColor: 'var(--pastel-lavender, #DDD6FE)',
+              borderLeftColor: 'var(--pastel-lavender, #DDD6FE)',
               display: 'block',
               visibility: 'visible',
               opacity: 1,
@@ -49,9 +49,9 @@ function LoadingFallback() {
             className="absolute inset-0 border-4 rounded-full animate-spin"
             style={{
               borderTopColor: 'transparent',
-              borderRightColor: 'var(--pastel-sky, #C9E4F7)',
-              borderBottomColor: 'var(--pastel-sky, #C9E4F7)',
-              borderLeftColor: 'var(--pastel-sky, #C9E4F7)',
+              borderRightColor: 'var(--pastel-sky, #C4B5FD)',
+              borderBottomColor: 'var(--pastel-sky, #C4B5FD)',
+              borderLeftColor: 'var(--pastel-sky, #C4B5FD)',
               animationDirection: REACT_LOADING_SCREEN.spinner.inner.animationDirection,
               animationDuration: REACT_LOADING_SCREEN.spinner.inner.animationDuration,
               display: 'block',

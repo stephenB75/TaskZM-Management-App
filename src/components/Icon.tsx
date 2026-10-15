@@ -35,6 +35,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'calendar-plus': 'CalendarPlus',
   'flag': 'Flag',
   'magic-wand': 'MagicWand',
+  'microphone': 'Microphone',
   'corners-out': 'CornersOut',
   'corners-in': 'CornersIn',
   'calendar-dots': 'Calendar',

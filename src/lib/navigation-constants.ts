@@ -1,3 +1,4 @@
+import { MINUTES_PER_HOUR } from './business-constants';
 /**
  * Navigation UI Text Constants
  * Centralized text strings for navigation components (BottomNav, AppSidebar)
@@ -17,9 +18,14 @@ export const NAVIGATION_UI_TEXT = {
   analytics: 'Analytics',
   archive: 'Archive',
   ai: 'AI',
+  timeline: 'Timeline',
+  calendar: 'Calendar',
+  aiPlan: 'AI plan',
 } as const;
 
 export const AI_PANEL_OPEN_EVENT = 'taskzm-open-ai';
+/** Focus the planner chat composer (desktop chat column). */
+export const PLANNER_COMPOSER_FOCUS_EVENT = 'taskzm-planner-focus';
 
 export const AI_PANEL_UI_TEXT = {
   sheetDescription: 'Let AI plan new tasks or re-plan existing ones.',
@@ -100,4 +106,104 @@ export const MOBILE_HOME_UI_TEXT = {
   aiPro: 'AI Scheduling is a Pro feature',
   aiDisabled: 'AI Scheduling is disabled',
   aiDisabledDetail: 'Enable AI scheduling in Settings to use this feature.',
+} as const;
+
+export type PlannerRescheduleRange = 'day' | 'week' | 'month';
+
+const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
+/** Copy for the AI-first planner (timeline, calendar, and chat columns). */
+export const PLANNER_UI_TEXT = {
+  timeline: {
+    eyebrow: 'My workspace',
+    title: 'Upcoming',
+    upNext: 'Up next',
+    nothingNext: 'Nothing scheduled next',
+    nothingNextHint: 'Tell the planner what you need to do.',
+    thisWeek: 'This week',
+    nextWeek: 'Next week',
+    inWeeks: (weeks: number) => `In ${weeks} weeks`,
+    needsTime: 'Needs a time',
+    overdue: 'Overdue',
+    later: 'Later',
+    planWithAi: 'Plan with AI',
+    empty: 'Your timeline is clear.',
+    markDone: (title: string) => `Mark "${title}" done`,
+    markOpen: (title: string) => `Mark "${title}" not done`,
+  },
+  calendar: {
+    eyebrowWeek: 'This week',
+    eyebrowMonth: '30-day focus',
+    previous: 'Previous',
+    next: 'Next',
+    today: 'Today',
+    week: 'Week',
+    month: 'Month',
+    agendaEyebrow: (isToday: boolean) => (isToday ? 'Today' : 'Agenda'),
+    taskCount: (count: number) => plural(count, 'item'),
+    emptyTitle: 'Nothing planned',
+    emptyHint: 'Ask the planner to fill this day.',
+  },
+  chat: {
+    eyebrow: 'Smart inbox',
+    title: 'Plan with AI',
+    plannerName: 'Planner AI',
+    you: 'You',
+    reschedule: 'Reschedule',
+    rescheduleOptions: {
+      day: { label: 'Day', hint: "Optimize today's blocks" },
+      week: { label: 'Week', hint: 'Balance this week' },
+      month: { label: 'Month', hint: 'Balance the next 4 weeks' },
+    } as Record<PlannerRescheduleRange, { label: string; hint: string }>,
+    emptyTitle: 'What do you need to get done?',
+    emptyHint: 'Type or dictate tasks, one per line. The planner estimates each one and finds a time.',
+    suggestions: [
+      'What is on today?',
+      'Schedule my inbox',
+      'Rebalance my week',
+    ],
+    draftsTitle: 'Draft tasks to confirm',
+    accept: 'Accept',
+    skip: 'Skip',
+    acceptAll: 'Accept all',
+    skipAll: 'Skip all',
+    composerPlaceholder: 'Add tasks or ask the planner…',
+    addContext: 'Add context',
+    contextPlaceholder: 'Paste notes, an email, or a brain dump…',
+    analyzeContext: 'Analyze context',
+    send: 'Send',
+    voiceStart: 'Dictate',
+    voiceStop: 'Stop dictation',
+    footer: 'Planner agent · AI scheduling',
+    thinking: 'Planning…',
+    clear: 'Clear chat',
+    estimate: (minutes: number) =>
+      minutes >= MINUTES_PER_HOUR ? `${Number((minutes / MINUTES_PER_HOUR).toFixed(1))}h` : `${minutes}m`,
+  },
+  replies: {
+    drafted: (count: number) =>
+      count === 1
+        ? "I drafted 1 task. Accept it and I'll find it a time."
+        : `I drafted ${plural(count, 'task')}. Accept the ones you want and I'll find each a time.`,
+    nothingFound: "I couldn't find any tasks in that. Try one task per line.",
+    scheduledOne: (title: string, when: string) => `Booked "${title}" for ${when}.`,
+    addedToInbox: (title: string) => `Added "${title}" to your Inbox. It needs a time.`,
+    scheduledMany: (count: number) => `Booked ${plural(count, 'task')} into open slots.`,
+    unplaced: (count: number) =>
+      `${plural(count, 'task')} didn't fit inside your daily hours and stayed in the Inbox.`,
+    inboxEmpty: 'Every open task already has a time.',
+    rescheduled: (count: number, range: PlannerRescheduleRange) =>
+      `Rebalanced ${plural(count, 'task')} across the ${range === 'day' ? 'day' : range === 'week' ? 'week' : 'month'}.`,
+    nothingToReschedule: (range: PlannerRescheduleRange) =>
+      `There's nothing scheduled this ${range} to move.`,
+    aiUnavailable: 'AI scheduling is off or not on your plan, so new tasks go to the Inbox.',
+    failed: 'Something went wrong while planning. Please try again.',
+    summary: (parts: { today: number; next: string | null; inbox: number; weekHours: number }) =>
+      [
+        parts.today === 0 ? 'Nothing is scheduled for today.' : `You have ${plural(parts.today, 'task')} today.`,
+        parts.next ? `Up next: ${parts.next}.` : '',
+        parts.inbox > 0 ? `${plural(parts.inbox, 'task')} in the Inbox still need a time.` : 'Your Inbox is clear.',
+        `About ${parts.weekHours}h planned this week.`,
+      ].filter(Boolean).join(' '),
+  },
 } as const;

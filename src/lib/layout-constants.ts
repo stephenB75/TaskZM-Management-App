@@ -7,7 +7,7 @@
 export const MIN_TOUCH_TARGET_PX = 44;
 
 // Labeled desktop side column (16rem)
-export const SIDEBAR_WIDTH = 256;
+export const SIDEBAR_WIDTH = 72;
 
 // Side panel width (matches panel animation width in App.tsx)
 export const PANEL_WIDTH = 440;
@@ -1070,10 +1070,10 @@ export const SETTINGS_PANEL_PROFILE_AVATAR_COMPACT_FONT_SIZE = '1.25rem';
 export const SETTINGS_PANEL_PROFILE_META_ROW_PADDING_Y = '0.625rem';
 
 // App Icon and Theme Colors
-export const APP_THEME_COLOR_PRIMARY = '#9B87E8'; // TaskZM purple/lavender (primary theme color)
-export const APP_THEME_COLOR_SECONDARY = '#9D87C3'; // TaskZM purple/lavender (secondary theme color for manifest)
-export const APP_BACKGROUND_COLOR = '#F5F3FF'; // TaskZM light purple background
-export const APP_TEXT_FALLBACK_COLOR = '#7B68EE'; // Text fallback color for loading screen
+export const APP_THEME_COLOR_PRIMARY = '#171717'; // TaskZM near-black (primary theme color)
+export const APP_THEME_COLOR_SECONDARY = '#171717'; // Manifest theme color
+export const APP_BACKGROUND_COLOR = '#FAFAFA'; // TaskZM neutral background
+export const APP_TEXT_FALLBACK_COLOR = '#262626'; // Text fallback color for loading screen
 
 // Splash Screen Logo Path Constants
 export const SPLASH_SCREEN_LOGO_PATHS = {
@@ -1091,11 +1091,11 @@ export const SPLASH_SCREEN_TEXT = {
 
 // Loading screen gradient (lavender → light; same on mobile/desktop, dark uses gray)
 export const LOADING_SCREEN_GRADIENT_CLASS =
-  'bg-gradient-to-br from-[#EFE9FA] via-[#EAE4F6] to-[#E3DCF1] md:from-[#FAF9FC] md:via-[#F9F7FD] md:to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950';
+  'bg-gradient-to-br from-[#FAFAFA] via-[#F7F7F7] to-[#F4F4F4] md:from-[#FAFAFA] md:via-[#F7F7F7] md:to-[#F4F4F4] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950';
 
 // Main app background gradient (light gray; used by main layout, month calendar, invite page)
 export const MAIN_BG_GRADIENT_CLASS =
-  'bg-gradient-to-br from-[#FAF9FC] via-[#F9F7FD] to-[#F3F0F9] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950';
+  'bg-gradient-to-br from-[#FAFAFA] via-[#F7F7F7] to-[#F4F4F4] dark:from-gray-950 dark:via-gray-900 dark:to-gray-950';
 
 // React Loading Screen Constants
 export const REACT_LOADING_SCREEN = {
@@ -1684,3 +1684,39 @@ export const TOGGLE_SWITCH_EFFECTS = {
   },
 } as const;
 
+
+/** AI-first planner shell: timeline, calendar, and chat columns (desktop) / tabs (mobile). */
+export const PLANNER_LAYOUT = {
+  railWidthPx: SIDEBAR_WIDTH,
+  railIconPx: 22,
+  railButtonPx: 44,
+  timelineColumn: 'minmax(260px, 320px)',
+  calendarColumn: 'minmax(0, 1fr)',
+  chatColumn: 'minmax(300px, 360px)',
+  panelHeaderMinHeightPx: 72,
+  panelPaddingPx: 16,
+  sectionGapPx: 12,
+  itemGapPx: 8,
+  eyebrowFontPx: 11,
+  titleFontPx: 20,
+  agendaTitleFontPx: 18,
+  emptyIconPx: 36,
+  bodyFontPx: 14,
+  smallFontPx: 12,
+  checkSizePx: 20,
+  dotSizePx: 8,
+  radiusPx: 14,
+  dayStripCellHeightPx: 56,
+  composerMinRows: 1,
+  composerMaxRows: 5,
+  bubbleMaxWidth: '84%',
+  iconPx: 18,
+  iconMdPx: 16,
+  iconSmPx: 14,
+  iconXsPx: 12,
+  hourHeightPx: 56,
+  timeGutterPx: 52,
+  dayColumnMinPx: 96,
+  blockInsetPx: 3,
+  allDayRowMinPx: 28,
+} as const;

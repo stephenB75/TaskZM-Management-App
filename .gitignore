@@ -53,3 +53,4 @@ Thumbs.db
 # iOS CocoaPods (local bundle — do not commit)
 src/ios/App/vendor/bundle/
 
+.tmp-reference/

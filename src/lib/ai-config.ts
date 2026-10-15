@@ -1156,3 +1156,42 @@ export function getCategoryFromTags(tags: string[]): 'work' | 'personal' | 'proj
   return null;
 }
 
+
+// ============================================================================
+// PLANNER CHAT (AI-first task capture, scheduling, and rescheduling)
+// ============================================================================
+
+/** Rules the planner chat uses to turn free text into draft tasks and intents. */
+export const PLANNER_CHAT_CONFIG = {
+  /** One draft per line, semicolon, or bullet. */
+  draftSeparator: /\r?\n|;|•/,
+  /** Leading list markers stripped from each draft line. */
+  listMarker: /^\s*(?:[-*•]|\d+[.)])\s*/,
+  maxDraftsPerMessage: 12,
+  minTitleLength: 2,
+  maxStoredMessages: 50,
+  storageKey: 'taskzm_planner_chat',
+  /** A message is answered (not turned into drafts) when it reads like a question. */
+  questionPattern: /\?\s*$|^(what|when|how|which|who|why|do i|am i|is there|show|list|summari[sz]e)\b/i,
+  scheduleInboxPattern: /^(plan|schedule|place)\b.*\b(inbox|unscheduled|open tasks|my tasks)\b/i,
+  reschedulePatterns: {
+    day: /^(re-?schedule|optimi[sz]e|rebalance|replan)\b.*\b(today|day)\b/i,
+    week: /^(re-?schedule|optimi[sz]e|rebalance|replan|plan)\b.*\bweek\b/i,
+    month: /^(re-?schedule|optimi[sz]e|rebalance|replan|plan)\b.*\bmonth\b/i,
+  },
+  priorityPatterns: {
+    urgent: /\b(urgent|asap|immediately|critical)\b/i,
+    high: /\b(today|tonight|deadline|due|important|high priority)\b/i,
+    low: /\b(someday|maybe|eventually|low priority|whenever)\b/i,
+  },
+  categoryPatterns: {
+    work: /\b(meeting|client|report|email|call|review|deck|presentation|standup|invoice|proposal|deploy|code|ship|interview|sync)\b/i,
+    personal: /\b(gym|workout|doctor|dentist|groceries|laundry|clean|family|birthday|dinner|run|walk|pay|bills|errand|appointment)\b/i,
+    projects: /\b(project|build|design|prototype|launch|write|draft|research|outline|plan)\b/i,
+  },
+  /** Explicit durations like "45m" or "1.5h" inside a draft title. */
+  /** Priority tags that only set priority and are removed from the drafted title. */
+  priorityTagPattern: /\s*\b(urgent|asap|high priority|low priority)\b!*/gi,
+  durationPattern: /\b(\d+(?:\.\d+)?)\s*(h|hr|hrs|hour|hours|m|min|mins|minute|minutes)\b/i,
+  hourUnitPattern: /^h/i,
+} as const;

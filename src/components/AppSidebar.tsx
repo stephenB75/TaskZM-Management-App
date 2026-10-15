@@ -11,7 +11,7 @@ import {
 } from "./ui/sheet";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
-import { COMPONENT_DIMENSIONS, MOBILE_HOME_SECTION_GAP, NAV_BAR_HEIGHT, NAV_BAR_PADDING_TOP, SHEET_SAFE_AREA, SIDEBAR_WIDTH, SIDEBAR_Z_INDEX } from "../lib/layout-constants";
+import { COMPONENT_DIMENSIONS, MOBILE_HOME_SECTION_GAP, NAV_BAR_HEIGHT, NAV_BAR_PADDING_TOP, PLANNER_LAYOUT, SHEET_SAFE_AREA, SIDEBAR_WIDTH, SIDEBAR_Z_INDEX } from "../lib/layout-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -23,6 +23,10 @@ import { triggerSelectionHaptic } from "../lib/native-haptics";
 import { BADGE_DISPLAY_MAX } from "../lib/notification-constants";
 import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black logo for light mode
 import taskzmLogoGray from "../assets/taskzm-logo-gray.png";  // Gray logo for dark mode
+
+const RAIL_ADD_TASK_LABEL = "Add task";
+/** Rail items from this index on (folders, team, …) sit below a divider. */
+const RAIL_SECONDARY_START = 4;
 
 interface AppSidebarProps {
   currentView: string;
@@ -61,8 +65,8 @@ export function AppSidebar({
   const menuItems = [
     {
       id: "today",
-      label: NAVIGATION_UI_TEXT.today,
-      iconName: "calendar-today",
+      label: NAVIGATION_UI_TEXT.timeline,
+      iconName: "list-checks",
       badge:
         currentView !== "today" && upcomingAndDueNowCount > 0
           ? upcomingAndDueNowCount
@@ -71,8 +75,8 @@ export function AppSidebar({
     },
     {
       id: "dashboard",
-      label: NAVIGATION_UI_TEXT.week,
-      iconName: "kanban",
+      label: NAVIGATION_UI_TEXT.calendar,
+      iconName: "calendar-days",
       mobileHidden: true,
     },
     {
@@ -193,60 +197,58 @@ export function AppSidebar({
 
   return (
     <>
-      {/* Desktop Icon Navbar - Only visible on desktop (>= 1280px) */}
+      {/* Desktop icon rail */}
       {!shouldUseMobileLayout && (
-        <div
-          className="relative flex border-r border-border bg-card flex-col h-full flex-shrink-0 overflow-y-auto"
+        <nav
+          className="planner-rail relative flex-shrink-0"
           data-tour="sidebar"
+          aria-label={NAVIGATION_UI_TEXT.dashboard}
           style={{ zIndex: SIDEBAR_Z_INDEX, width: SIDEBAR_WIDTH }}
         >
-          <div className="flex flex-col gap-1 p-3">
-            <img
-              src={isDark ? taskzmLogoGray : taskzmLogoBlack}
-              alt="TaskZM"
-              className="object-contain"
-              style={{
-                width: 'auto',
-                maxWidth: COMPONENT_DIMENSIONS.sidebar.logoMaxWidth,
-                height: 'auto',
-                display: 'block',
-                marginBottom: MOBILE_HOME_SECTION_GAP,
-              }}
-            />
-            {menuItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-label={item.label}
-                data-tour={`sidebar-${item.id}`}
-                className={cn(
-                  "flex items-center gap-2 rounded-xl px-3 py-3 text-left",
-                  currentView === item.id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-muted",
-                )}
-                onClick={() => onViewChange(item.id)}
-              >
-                <Icon
-                  name={item.iconName}
-                  size={20}
-                  weight={currentView === item.id ? "fill" : "duotone"}
-                />
-                <span className="text-sm font-medium">{item.label}</span>
-                {item.pro && (
-                  <Badge variant="secondary" className="ml-auto">
-                    PRO
-                  </Badge>
-                )}
-                {item.badge !== undefined && item.badge > 0 && !item.pro && (
-                  <Badge variant="secondary" className="ml-auto">
-                    {item.badge > BADGE_DISPLAY_MAX ? `${BADGE_DISPLAY_MAX}+` : item.badge}
-                  </Badge>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+          <img
+            src={isDark ? taskzmLogoGray : taskzmLogoBlack}
+            alt="TaskZM"
+            className="object-contain"
+            style={{ width: PLANNER_LAYOUT.railButtonPx, height: 'auto', marginBottom: PLANNER_LAYOUT.sectionGapPx }}
+          />
+          <button
+            type="button"
+            className="planner-rail-btn planner-rail-brand"
+            aria-label={RAIL_ADD_TASK_LABEL}
+            onClick={() => window.dispatchEvent(new CustomEvent('taskzm-add-task'))}
+          >
+            <Icon name="plus" size={PLANNER_LAYOUT.railIconPx} weight="bold" />
+            <span className="planner-rail-label">{RAIL_ADD_TASK_LABEL}</span>
+          </button>
+          {menuItems.map((item, index) => {
+            const active = currentView === item.id;
+            const badge = item.badge !== undefined && item.badge > 0 && !item.pro ? item.badge : 0;
+            return (
+              <React.Fragment key={item.id}>
+                {index === RAIL_SECONDARY_START ? <span className="planner-rail-divider" aria-hidden /> : null}
+                {item.id === "settings" ? <span className="flex-1" aria-hidden /> : null}
+                <button
+                  type="button"
+                  aria-label={item.label}
+                  aria-current={active ? "page" : undefined}
+                  data-tour={`sidebar-${item.id}`}
+                  data-active={active ? "true" : undefined}
+                  className="planner-rail-btn"
+                  onClick={() => onViewChange(item.id)}
+                >
+                  <Icon name={item.iconName} size={PLANNER_LAYOUT.railIconPx} weight={active ? "fill" : "regular"} />
+                  {badge > 0 ? (
+                    <span className="planner-rail-badge">{badge > BADGE_DISPLAY_MAX ? `${BADGE_DISPLAY_MAX}+` : badge}</span>
+                  ) : null}
+                  <span className="planner-rail-label">
+                    {item.label}
+                    {item.pro ? " · PRO" : ""}
+                  </span>
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </nav>
       )}
 
       {/* Mobile/Tablet Sidebar - Sheet overlay (shown on mobile and tablets < 1280px) */}

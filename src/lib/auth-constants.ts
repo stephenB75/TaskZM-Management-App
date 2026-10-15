@@ -120,31 +120,31 @@ export const AUTH_UI_TEXT = {
 
 // Color Constants (Theme Colors)
 export const AUTH_COLORS = {
-  primary: '#7B68EE',
-  primaryHover: '#6A5ACD',
-  primaryLight: '#9B7EE8',
+  primary: '#171717',
+  primaryHover: '#404040',
+  primaryLight: '#525252',
   primaryGradient: {
-    from: '#7B68EE',
-    via: '#9B7EE8',
-    to: '#D4C5F9',
+    from: '#171717',
+    via: '#262626',
+    to: '#404040',
   },
-  secondary: '#DDA0DD',
-  secondaryHover: '#DA70D6',
+  secondary: '#C4B5FD',
+  secondaryHover: '#A78BFA',
   buttonText: '#FFFFFF', // White text for dark button backgrounds
   background: {
     gradient: {
-      from: '#B4E4FF',
-      via: '#E0BBE4',
-      to: '#FFDAB9',
+      from: '#ECFCCB',
+      via: '#EDE9FE',
+      to: '#FFEDD5',
     },
     accent1: '#98D8C8',
     accent2: '#DDA0DD',
   },
   card: {
     gradient: {
-      from: '#B4E4FF',
-      via: '#E0BBE4',
-      to: '#FFDAB9',
+      from: '#ECFCCB',
+      via: '#EDE9FE',
+      to: '#FFEDD5',
     },
     tabs: {
       from: '#E8F5F1',

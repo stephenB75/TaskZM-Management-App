@@ -3,19 +3,13 @@ import { flushSync } from 'react-dom';
 import { lazyWithRetry } from './lib/lazy-with-retry';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from './lib/toast-wrapper';
-import {
-  TOAST_DURATION_SHORT_MS,
-  TOAST_DURATION_MEDIUM_MS,
-  TOAST_DURATION_LONG_MS,
-  TOAST_DURATION_DEFAULT_MS,
-} from './lib/layout-constants';
+import { TOAST_DURATION_MEDIUM_MS } from './lib/layout-constants';
 import { useAuth } from './contexts/AuthContext';
 import { useSubscription } from './contexts/SubscriptionContext';
 import { useTasks } from './contexts/TaskContext';
 import { useLoading } from './contexts/LoadingContext';
 import { useTheme } from './contexts/ThemeContext';
 import { useSidebar } from './contexts/SidebarContext';
-import { useAI } from './contexts/AIContext';
 import { useNotifications } from './contexts/NotificationContext';
 import { InviteAcceptancePage } from './components/InviteAcceptancePage';
 import { AwardCelebration } from './components/AwardCelebration';
@@ -23,10 +17,12 @@ import { AppHeader } from './components/AppHeader';
 import { AppSidebar } from './components/AppSidebar';
 import { AppTour } from './components/AppTour';
 import { BottomNav } from './components/BottomNav';
-import { MobileHomePager } from './components/MobileHomePager';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './components/ui/sheet';
-import { DesktopHome } from './components/DesktopHome';
-import { WeekBoard } from './components/WeekBoard';
+import { PlannerDesktop } from './components/planner/PlannerDesktop';
+import { PlannerTimeline } from './components/planner/PlannerTimeline';
+import { PlannerCalendar } from './components/planner/PlannerCalendar';
+import { PlannerChat } from './components/planner/PlannerChat';
+import { PlannerChatProvider } from './contexts/PlannerChatContext';
 import { TaskDialog } from './components/TaskDialog';
 import { NativePullToRefresh } from './components/NativePullToRefresh';
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
@@ -49,11 +45,11 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { NOTIFICATION_OPEN_TASK_EVENT, NOTIFICATIONS_SHEET_OPEN_EVENT } from './lib/notification-constants';
-import { AI_PANEL_UI_TEXT, NAVIGATION_UI_TEXT } from './lib/navigation-constants';
+import { AI_PANEL_UI_TEXT, NAVIGATION_UI_TEXT, PLANNER_COMPOSER_FOCUS_EVENT } from './lib/navigation-constants';
 import { clearCalendarEventsCache } from './lib/calendar-events-cache';
 import { MOBILE_DEEP_LINK_PATHS } from './lib/mobile-constants';
 import { getTodayAgendaBadgeCount } from './lib/notification-task-filters';
-import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_HEIGHT, HEADER_LOGO_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, MOBILE_SCROLL_CONTAINER_MIN_HEIGHT, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, APP_CANVAS_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
+import { PANEL_WIDTH, PANEL_WIDTH_TABLET, PANEL_WIDTH_SMALL_MONITOR, SIDEBAR_WIDTH, HEADER_LOGO_HEIGHT, NAV_BAR_SCROLL_PADDING_MOBILE, HEADER_ANIMATION_DAMPING, HEADER_ANIMATION_STIFFNESS, VIEWPORT_BREAKPOINTS, getPanelWidth, MOBILE_SCROLL_CONTAINER_PADDING_TOP, MOBILE_SCROLL_CONTAINER_MIN_HEIGHT, SPLASH_SCREEN_TEXT, REACT_LOADING_SCREEN, APP_TEXT_FALLBACK_COLOR, HEADER_Z_INDEX, LOADING_SCREEN_GRADIENT_CLASS, APP_CANVAS_CLASS, DESKTOP_SIDE_PANEL_SPRING_ENTER, DESKTOP_SIDE_PANEL_EXIT_SECONDS, DESKTOP_SIDE_PANEL_EXIT_EASE, DESKTOP_SIDE_PANEL_CONTENT_FADE_SECONDS } from './lib/layout-constants';
 import logoImageBlack from './assets/Taskzm_Logo_BLK-removebg.png';
 import logoImageGray from './assets/taskzm-logo-gray.png';
 
@@ -88,8 +84,7 @@ export default function AppContent() {
   const { isLoading, loadingMessage } = useLoading();
   useDemoActivity(); // Track demo user activity on app interactions
   const { sidebarOpen, setSidebarOpen } = useSidebar();
-  const { settings: aiSettings } = useAI();
-  const { hasFeature, features, subscription } = useSubscription();
+  const { hasFeature, subscription } = useSubscription();
   const { syncWithServer, workspaceId, tasks } = useTasks();
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets in portrait/landscape
   const shouldUseMobileLayoutRef = useRef(shouldUseMobileLayout);
@@ -131,6 +126,7 @@ export default function AppContent() {
   const pullToRefreshEnabled =
     shouldUseMobileLayout &&
     (currentView === 'today' || (currentView === 'dashboard' && mobileView === 'week'));
+  const isPlannerTab = currentView === 'today' || currentView === 'dashboard' || currentView === 'ai';
   
   // When mobile layout is shown and user is authenticated, trigger a sync so mobile gets latest tasks from server
   const mobileSyncDoneRef = useRef(false);
@@ -244,7 +240,7 @@ export default function AppContent() {
     };
   }, [shouldUseMobileLayout]);
   
-  const { scheduleAllTasks, unscheduledCount, isScheduling } = useAIScheduler();
+  const { unscheduledCount } = useAIScheduler();
   const { settings: notificationSettings } = useNotifications();
 
   const upcomingAndDueNowCount = getTodayAgendaBadgeCount(tasks);
@@ -314,7 +310,7 @@ export default function AppContent() {
       const hasSeenMessage = window?.sessionStorage?.getItem('taskzm_session_info_shown');
       
       if (!hasSeenMessage) {
-        console.log('%c✨ TaskZM v1.0.1 - Baseline Reset ✨', 'font-size: 16px; font-weight: bold; color: #9D87C3;');
+        console.log('%c✨ TaskZM v1.0.1 - Baseline Reset ✨', 'font-size: 16px; font-weight: bold; color: #171717;');
         console.log('%cℹ️  Payment System Status:', 'font-weight: bold; color: #4A90E2;');
         console.log('  • Payment System: Stripe integration');
         console.log('  • Mode: Production (real payments via Stripe)');
@@ -551,10 +547,10 @@ export default function AppContent() {
           <div
             className="absolute inset-0 border-4 rounded-full animate-spin"
             style={{
-              borderTopColor: 'var(--primary, #9B87E8)',
-              borderRightColor: 'var(--pastel-lavender, #E6D5F0)',
-              borderBottomColor: 'var(--pastel-lavender, #E6D5F0)',
-              borderLeftColor: 'var(--pastel-lavender, #E6D5F0)',
+              borderTopColor: 'var(--primary, #171717)',
+              borderRightColor: 'var(--pastel-lavender, #DDD6FE)',
+              borderBottomColor: 'var(--pastel-lavender, #DDD6FE)',
+              borderLeftColor: 'var(--pastel-lavender, #DDD6FE)',
               display: 'block',
               visibility: 'visible',
               opacity: 1,
@@ -565,9 +561,9 @@ export default function AppContent() {
             className="absolute inset-0 border-4 rounded-full animate-spin"
             style={{
               borderTopColor: 'transparent',
-              borderRightColor: 'var(--pastel-sky, #C9E4F7)',
-              borderBottomColor: 'var(--pastel-sky, #C9E4F7)',
-              borderLeftColor: 'var(--pastel-sky, #C9E4F7)',
+              borderRightColor: 'var(--pastel-sky, #C4B5FD)',
+              borderBottomColor: 'var(--pastel-sky, #C4B5FD)',
+              borderLeftColor: 'var(--pastel-sky, #C4B5FD)',
               animationDirection: REACT_LOADING_SCREEN.spinner.inner.animationDirection,
               animationDuration: REACT_LOADING_SCREEN.spinner.inner.animationDuration,
               display: 'block',
@@ -645,90 +641,6 @@ export default function AppContent() {
     setCurrentView('today');
     if (shouldUseMobileLayout) {
       setMobileView('today');
-    }
-  };
-
-  const handleAISchedule = async () => {
-    if (!hasFeature('aiScheduler')) {
-      setUpgradeFeature('aiScheduler');
-      setShowUpgradePrompt(true);
-      return;
-    }
-
-      if (features.aiSchedulerLimit !== undefined) {
-        const { hasReachedLimit, getRemainingCount, incrementAIUsage } = await import('./lib/ai-scheduler-usage');
-        if (hasReachedLimit(features.aiSchedulerLimit)) {
-          setUpgradeFeature('aiScheduler');
-          setShowUpgradePrompt(true);
-          return;
-        }
-        incrementAIUsage();
-      }
-
-    if (!aiSettings.autoSchedulingEnabled || !aiSettings.scheduleUnscheduledTasks) {
-      toast.error('AI Scheduling is disabled', {
-        description: 'Enable AI scheduling in Settings to use this feature.',
-        duration: TOAST_DURATION_MEDIUM_MS,
-      });
-      return;
-    }
-
-    if (unscheduledCount === 0) {
-      toast.info('No tasks to schedule', {
-        description: 'All your tasks are already scheduled!',
-        duration: TOAST_DURATION_SHORT_MS,
-      });
-      return;
-    }
-
-    const loadingToast = toast.loading('AI is scheduling your tasks...', {
-      description: `Organizing ${unscheduledCount} task${unscheduledCount === 1 ? '' : 's'}`,
-    });
-
-    try {
-      const result = await scheduleAllTasks({ 
-        period: 'twoWeeks',
-        onlyWithoutDueDate: true,
-        forceCategoryHours: true 
-      });
-      
-      toast.dismiss(loadingToast);
-      
-      if (result.scheduled.length > 0) {
-        setScheduledTasks(result.scheduled);
-        setShowScheduleResult(true);
-        
-        toast.success(`Scheduled ${result.scheduled.length} task${result.scheduled.length === 1 ? '' : 's'}!`, {
-          description: 'Tasks distributed across upcoming days',
-          duration: TOAST_DURATION_SHORT_MS,
-        });
-      }
-      
-      const maxHours = aiSettings.maxHoursPerDay ?? 5;
-      if (result.exceedsLimit.length > 0) {
-        toast.warning(
-          `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} need${result.exceedsLimit.length === 1 ? 's' : ''} manual scheduling`,
-          {
-            description: `These tasks exceed the ${maxHours}-hour daily limit. Please schedule them manually.`,
-            duration: TOAST_DURATION_DEFAULT_MS,
-          }
-        );
-      }
-      
-      if (result.scheduled.length === 0 && result.exceedsLimit.length > 0) {
-        toast.info('No tasks could be automatically scheduled', {
-          description: `All tasks exceed the ${maxHours}-hour daily limit. Please schedule them manually.`,
-          duration: TOAST_DURATION_LONG_MS,
-        });
-      }
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      
-      toast.error('Scheduling failed', {
-        description: 'Something went wrong. Please try again.',
-        duration: TOAST_DURATION_MEDIUM_MS,
-      });
-      console.error('AI scheduling error:', error);
     }
   };
 
@@ -820,7 +732,13 @@ export default function AppContent() {
   }, [scrollHomeWeek, currentView]);
 
   useEffect(() => {
-    const openAi = () => setAiPanelOpen(true);
+    const openAi = () => {
+      if (shouldUseMobileLayoutRef.current) {
+        setCurrentView('ai');
+        return;
+      }
+      window.dispatchEvent(new CustomEvent(PLANNER_COMPOSER_FOCUS_EVENT));
+    };
     const openCreate = () => setCreateTaskOpen(true);
     const openNotifications = () => setNotificationsSheetOpen(true);
     window.addEventListener('taskzm-open-ai', openAi);
@@ -838,9 +756,9 @@ export default function AppContent() {
   }
 
   return (
-    <>
+    <PlannerChatProvider>
       <div className={`h-screen h-viewport-safe min-h-viewport-safe flex ${APP_CANVAS_CLASS} relative overflow-hidden`}>
-        {(!shouldUseMobileLayout || currentView === 'today' || currentView === 'dashboard') && (
+        {shouldUseMobileLayout && isPlannerTab && (
           <AppHeader
             title={
               <img
@@ -872,7 +790,7 @@ export default function AppContent() {
             <div
               ref={mobileScrollRef}
               className={`flex-1 min-h-0 relative min-w-0 w-full max-w-full ${
-                currentView === 'today' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'
+                isPlannerTab ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'
               }`}
               style={{
                 scrollBehavior: 'smooth',
@@ -892,17 +810,11 @@ export default function AppContent() {
               } as React.CSSProperties}
             >
               <Suspense fallback={<ViewFallback />}>
-                {currentView === 'dashboard' && <WeekBoard />}
                 {currentView === 'today' && (
-                  <div className="h-full min-h-0">
-                    <MobileHomePager
-                      onRunScheduler={() => {
-                        void handleAISchedule();
-                      }}
-                      isScheduling={isScheduling}
-                    />
-                  </div>
+                  <PlannerTimeline onPlanWithAi={() => setCurrentView('ai')} />
                 )}
+                {currentView === 'dashboard' && <PlannerCalendar />}
+                {currentView === 'ai' && <PlannerChat />}
                 {currentView === 'notifications' && <NotificationsPanel />}
                 {currentView === 'inbox' && <InboxView />}
                 {currentView === 'team' && <TeamPanel />}
@@ -987,18 +899,8 @@ export default function AppContent() {
           </AnimatePresence>
 
           {!shouldUseMobileLayout && (
-          <div 
-            className="h-full flex-1 overflow-hidden"
-            style={{ paddingTop: `${HEADER_HEIGHT}px` }}
-          >
-            <Suspense fallback={<ViewFallback />}>
-              <DesktopHome
-                  onRunScheduler={() => {
-                    void handleAISchedule();
-                  }}
-                  isScheduling={isScheduling}
-                />
-            </Suspense>
+          <div className="h-full flex-1 overflow-hidden">
+            <PlannerDesktop />
           </div>
           )}
         </main>
@@ -1078,6 +980,6 @@ export default function AppContent() {
       )}
 
       {loadingOverlay}
-    </>
+    </PlannerChatProvider>
   );
 }

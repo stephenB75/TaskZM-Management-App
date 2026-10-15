@@ -5,24 +5,24 @@
  */
 
 // Primary Theme Colors
-export const COLOR_PRIMARY = '#9B87E8'; // TaskZM purple/lavender (main brand color)
-export const COLOR_PRIMARY_DARK = '#7B68EE'; // Darker purple variant
-export const COLOR_PRIMARY_LIGHT = '#D4C5F9'; // Light purple variant
-export const COLOR_PRIMARY_SECONDARY = '#9D87C3'; // Secondary purple for manifest
+export const COLOR_PRIMARY = '#737373'; // Neutral brand gray (reads on light and dark surfaces)
+export const COLOR_PRIMARY_DARK = '#525252'; // Darker neutral variant
+export const COLOR_PRIMARY_LIGHT = '#E5E5E5'; // Light neutral variant
+export const COLOR_PRIMARY_SECONDARY = '#171717'; // Manifest theme color
 
 // Pastel Palette Colors
-export const COLOR_PASTEL_MINT = '#B8E6D5'; // Mint green
+export const COLOR_PASTEL_MINT = '#D9F99D'; // Lime pop
 export const COLOR_PASTEL_MINT_DARK = '#5A8A7A'; // Dark mint for dark mode
-export const COLOR_PASTEL_LAVENDER = '#E6D5F0'; // Lavender
+export const COLOR_PASTEL_LAVENDER = '#DDD6FE'; // Violet pop
 export const COLOR_PASTEL_LAVENDER_DARK = '#8A7A9A'; // Dark lavender for dark mode
-export const COLOR_PASTEL_SKY = '#C9E4F7'; // Sky blue
+export const COLOR_PASTEL_SKY = '#BFDBFE'; // Blue pop
 export const COLOR_PASTEL_SKY_DARK = '#6A8AAA'; // Dark sky for dark mode
-export const COLOR_PASTEL_PEACH = '#FFD6BA'; // Peach
-export const COLOR_PASTEL_LILAC = '#E1D4F0'; // Lilac
-export const COLOR_PASTEL_PINK = '#FFD6E8'; // Pink
-export const COLOR_PASTEL_YELLOW = '#FFF4CC'; // Yellow
-export const COLOR_PASTEL_SAGE = '#D4E8D4'; // Sage green
-export const COLOR_PASTEL_SAGE_BORDER = '#9CAF9C'; // Soft green border color (complements sage)
+export const COLOR_PASTEL_PEACH = '#FED7AA'; // Orange pop
+export const COLOR_PASTEL_LILAC = '#E9D5FF'; // Lilac
+export const COLOR_PASTEL_PINK = '#FBCFE8'; // Pink
+export const COLOR_PASTEL_YELLOW = '#FEF08A'; // Yellow
+export const COLOR_PASTEL_SAGE = '#ECFCCB'; // Soft lime
+export const COLOR_PASTEL_SAGE_BORDER = '#A3A3A3'; // Neutral border
 
 // Additional colors for analytics (Power BI inspired)
 export const COLOR_ANALYTICS_GREEN = '#10B981'; // Success green (matches COLOR_SUCCESS)
@@ -30,10 +30,18 @@ export const COLOR_ANALYTICS_BLUE = '#3B82F6'; // Info blue (matches COLOR_INFO)
 export const COLOR_ANALYTICS_ORANGE = '#F59E0B'; // Warning orange (matches COLOR_WARNING)
 
 // Background Colors
-export const COLOR_BACKGROUND_LIGHT = '#F5F3FF'; // Light purple background
+export const COLOR_BACKGROUND_LIGHT = '#FAFAFA'; // Light neutral background
 export const COLOR_BACKGROUND_WHITE = '#FFFFFF'; // Pure white
 export const COLOR_BACKGROUND_GRAY = '#F9FAFB'; // Light gray background
-export const COLOR_BACKGROUND_DARK_COLOR = 'rgba(22, 20, 30, 0.95)'; // Dark background for dark mode (matches HEADER_BACKGROUND_DARK_COLOR)
+export const COLOR_BACKGROUND_DARK_COLOR = 'rgba(10, 10, 10, 0.95)'; // Dark background for dark mode (matches HEADER_BACKGROUND_DARK_COLOR)
+
+// Pastel pops on the neutral canvas (strong tones for bars and dots)
+export const COLOR_POP_LIME = '#BEF264';
+export const COLOR_POP_VIOLET = '#C4B5FD';
+export const COLOR_POP_ORANGE = '#FDBA74';
+export const COLOR_POP_BLUE = '#93C5FD';
+export const COLOR_POP_PINK = '#F9A8D4';
+export const COLOR_POP_NEUTRAL = '#D4D4D4';
 
 // Theme-aware tokens (follow light/dark CSS variables in globals.css)
 export const THEME_COLOR = {
@@ -44,12 +52,21 @@ export const THEME_COLOR = {
   textMuted: 'var(--muted-foreground)',
   highlight: 'var(--home-highlight)',
   highlightText: 'var(--home-highlight-foreground)',
+  border: 'var(--border)',
+  popLime: 'var(--pop-lime)',
+  popLimeInk: 'var(--pop-lime-ink)',
+  popViolet: 'var(--pop-violet)',
+  popVioletInk: 'var(--pop-violet-ink)',
+  popOrange: 'var(--pop-orange)',
+  popOrangeInk: 'var(--pop-orange-ink)',
+  popBlue: 'var(--pop-blue)',
+  popBlueInk: 'var(--pop-blue-ink)',
 } as const;
 
 // Gradient Colors (for complex gradients)
-export const COLOR_GRADIENT_START = '#9B87E8'; // Gradient start (primary)
-export const COLOR_GRADIENT_MID = '#C9E4F7'; // Gradient middle (sky)
-export const COLOR_GRADIENT_END = '#B8E6D5'; // Gradient end (mint)
+export const COLOR_GRADIENT_START = '#BEF264'; // Gradient start (lime pop)
+export const COLOR_GRADIENT_MID = '#C4B5FD'; // Gradient middle (violet pop)
+export const COLOR_GRADIENT_END = '#93C5FD'; // Gradient end (blue pop)
 
 // Status Colors
 export const COLOR_SUCCESS = '#10B981'; // Green for success states

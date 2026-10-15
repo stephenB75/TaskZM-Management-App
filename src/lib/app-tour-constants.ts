@@ -12,15 +12,15 @@ import { TIMING_CONSTANTS } from './timing-constants';
 export const APP_TOUR_SIDEBAR_ITEMS = [
   {
     id: 'today',
-    label: NAVIGATION_UI_TEXT.today,
+    label: NAVIGATION_UI_TEXT.timeline,
     description:
-      'Your day at a glance — counts, the next thing to do, and tasks with calendar events in time order.',
+      'Your planner home: the timeline of upcoming tasks, the week calendar, and the AI chat side by side.',
   },
   {
     id: 'dashboard',
-    label: NAVIGATION_UI_TEXT.week,
+    label: NAVIGATION_UI_TEXT.calendar,
     description:
-      'The 7-day board. Drag tasks between days to reschedule; calendar events show alongside them.',
+      'The week calendar. Drag a task onto another day to move it; calendar events show alongside your tasks.',
   },
   {
     id: 'notifications',
@@ -65,23 +65,23 @@ export const APP_TOUR_SIDEBAR_ITEMS = [
 export const APP_TOUR_BOTTOM_NAV_ITEMS = [
   {
     id: 'today',
-    label: NAVIGATION_UI_TEXT.today,
-    description: 'Your day — tasks and calendar events in time order, with what is up next.',
+    label: NAVIGATION_UI_TEXT.timeline,
+    description: 'What is up next, then everything upcoming grouped by week.',
   },
   {
     id: 'week',
-    label: NAVIGATION_UI_TEXT.week,
-    description: 'The 7-day board. Pick a day to see its tasks and events.',
+    label: NAVIGATION_UI_TEXT.calendar,
+    description: 'Pick a day to see its tasks and calendar events.',
+  },
+  {
+    id: 'ai',
+    label: NAVIGATION_UI_TEXT.aiPlan,
+    description: 'Tell the planner what you need to do. It drafts tasks, finds times, and reschedules your day, week, or month.',
   },
   {
     id: 'inbox',
     label: NAVIGATION_UI_TEXT.inbox,
     description: 'Tasks without a time yet, ready for AI scheduling or manual planning.',
-  },
-  {
-    id: 'ai',
-    label: NAVIGATION_UI_TEXT.ai,
-    description: 'AI scheduling and rescheduling suggestions. Settings now live in the menu.',
   },
 ] as const;
 
@@ -154,16 +154,16 @@ export const APP_TOUR_UI = {
     description: 'Tap the bell to open your notifications. The badge shows how many need attention.',
   },
   todayAgenda: {
-    title: 'Today',
-    description: 'Tasks and calendar events for today, in time order. The first one is marked Up next.',
+    title: 'Timeline',
+    description: 'Upcoming tasks grouped by week, with what is up next highlighted at the top.',
     bullets: [
-      'Swipe a task right to mark it done',
+      'Tap the circle to mark a task done',
       'Tap a task to edit it',
-      'Items tagged Calendar come from your connected calendars',
+      'Tasks without a time wait under Needs a time',
     ] as const,
   },
   placeTasks: {
-    title: 'Place open tasks',
+    title: 'Plan with AI',
     description: 'Gives a time to tasks that are not on the calendar yet, around your hours and calendar events.',
   },
   sidebarIconIntro: {
@@ -175,13 +175,13 @@ export const APP_TOUR_UI = {
     description: 'Each tab opens a different part of TaskZM. We’ll highlight them one by one.',
   },
   weekView: {
-    title: 'Week',
+    title: 'Calendar',
     description:
-      'Seven days of tasks and calendar events. Move between weeks or jump back to today.',
+      'Your week of tasks and calendar events. Switch to Month, move between weeks, or jump back to today.',
     bullets: [
-      'Drag tasks between days to reschedule',
-      'Tap a card to edit details and subtasks',
-      'Calendar events are read-only and tagged Calendar',
+      'On desktop, drag a task onto another day to move it',
+      'Tap a task to edit details and subtasks',
+      'Calendar events are read-only',
     ] as const,
   },
   aiSchedulerButton: {

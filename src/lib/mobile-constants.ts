@@ -67,7 +67,7 @@ export function buildCalendarOAuthDeepLink(
 export const MOBILE_NOTIFICATION_SMALL_ICON = 'ic_stat_taskzm';
 
 /** Accent color for Android notification icon. */
-export const MOBILE_NOTIFICATION_ICON_COLOR = '#9D87C3';
+export const MOBILE_NOTIFICATION_ICON_COLOR = '#171717';
 
 /** Android notification channel IDs (Local Notifications). */
 export const MOBILE_NOTIFICATION_CHANNELS = {

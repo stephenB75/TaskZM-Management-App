@@ -102,6 +102,15 @@ export const DAYS_IN_MONTH_APPROX = 30; // Approximate days in a month for sched
 export const HOME_ACTIVITY_MONTH_COUNT = 6;
 /** Items shown in the desktop home "up next" column. */
 export const HOME_UPCOMING_PREVIEW_COUNT = 4;
+/** Planner timeline: how many weeks ahead are grouped by week before collapsing into "Later". */
+export const PLANNER_TIMELINE_WEEKS_AHEAD = 8;
+/** Planner timeline: cap on rows per group so long backlogs stay scrollable. */
+export const PLANNER_TIMELINE_GROUP_LIMIT = 40;
+/** Planner week grid: default visible hours (expands to fit earlier/later items). */
+export const PLANNER_GRID_START_HOUR = 7;
+export const PLANNER_GRID_END_HOUR = 20;
+/** Planner week grid: shortest block drawn so tiny tasks stay tappable. */
+export const PLANNER_GRID_MIN_BLOCK_MINUTES = 20;
 
 // Time Period Definitions (for analytics)
 export const TIME_PERIODS = {

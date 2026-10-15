@@ -78,8 +78,8 @@ export function Confetti({ trigger, origin, onComplete }: ConfettiProps) {
     // Create particles with theme-aware colors
     // Use brighter, more vibrant colors in dark mode for better visibility
     const colors = isDark 
-      ? ['#9B87E8', '#7B68EE', '#8A7A9A', '#6A8AAA', '#5A8A7A', '#AA8A6A'] // Dark mode: muted but visible
-      : ['#E6D5F0', '#C9E4F7', '#B8E6D5', '#FFD6BA', '#9B87E8', '#7B68EE']; // Light mode: pastel colors
+      ? ['#BEF264', '#C4B5FD', '#FDBA74', '#93C5FD', '#F9A8D4', '#F5F5F5'] // Dark mode: pastel pops
+      : ['#BEF264', '#C4B5FD', '#FDBA74', '#93C5FD', '#F9A8D4', '#171717']; // Light mode: pastel pops
     const particleCount = 50;
 
     particlesRef.current = Array.from({ length: particleCount }, () => {

@@ -82,7 +82,7 @@ export const ANALYTICS_THEME = {
   dark: {
     textMuted: COLOR_TEXT_MUTED,
     textPrimary: "#E8E6F0",
-    border: "rgba(155, 135, 232, 0.2)",
+    border: "rgba(115, 115, 115, 0.2)",
     panelGradient:
       "linear-gradient(180deg, rgba(17,24,39,0.94) 0%, rgba(17,24,39,0.90) 40%, rgba(31,41,55,0.88) 100%)",
   },

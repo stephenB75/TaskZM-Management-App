@@ -149,13 +149,13 @@ export const TASK_CARD_TAG_COLORS = {
 
 // Primary Theme Colors (for tracking badges, etc.)
 export const TASK_CARD_THEME_COLORS = {
-  primary: '#7B68EE',
-  primaryLight: '#9B87E8',
+  primary: '#262626',
+  primaryLight: '#171717',
   /** Darker lavender/violet for icons and text on light card background (better visibility) */
   primaryDark: '#5B4FCF',
   gradient: {
-    from: '#7B68EE',
-    to: '#9B87E8',
+    from: '#262626',
+    to: '#171717',
   },
 } as const;
 
@@ -1038,14 +1038,14 @@ export const TASK_CARD_DROPDOWN_DOMAIN_COLORS: Record<string, { light: string; d
 
 // Available pastel colors for random dropdown assignment (excluding kanban column colors)
 export const DROPDOWN_PASTEL_COLORS = [
-  COLOR_PASTEL_SKY,      // #C9E4F7
-  COLOR_PASTEL_LAVENDER, // #E6D5F0
+  COLOR_PASTEL_SKY,      // #C4B5FD
+  COLOR_PASTEL_LAVENDER, // #DDD6FE
   COLOR_PASTEL_PEACH,    // #FFD6BA
   COLOR_PASTEL_LILAC,    // #E1D4F0
   COLOR_PASTEL_PINK,     // #FFD6E8
   COLOR_PASTEL_YELLOW,   // #FFF4CC
   COLOR_PASTEL_SAGE,     // #D4E8D4
-  COLOR_PASTEL_MINT,     // #B8E6D5
+  COLOR_PASTEL_MINT,     // #BEF264
 ] as const;
 
 // Kanban column background colors (to exclude from dropdown colors)

@@ -6,8 +6,11 @@ import {
   COLOR_PASTEL_MINT,
   COLOR_PASTEL_PEACH,
   COLOR_PASTEL_SKY,
-  COLOR_PRIMARY,
-  COLOR_PRIMARY_DARK,
+  COLOR_POP_BLUE,
+  COLOR_POP_LIME,
+  COLOR_POP_NEUTRAL,
+  COLOR_POP_ORANGE,
+  COLOR_POP_VIOLET,
 } from './color-theme';
 import { isSameCalendarDay, isTaskOverdue } from './notification-task-filters';
 import { getCalendarEventSortTimeOnDay, parseCalendarEventTime } from './utils';
@@ -20,21 +23,21 @@ export type PastelWash = {
 };
 
 const CATEGORY_WASH: Record<'work' | 'personal' | 'projects', PastelWash> = {
-  work: { fill: COLOR_PASTEL_LAVENDER, bar: COLOR_PRIMARY },
-  personal: { fill: COLOR_PASTEL_SKY, bar: COLOR_PRIMARY_DARK },
-  projects: { fill: COLOR_PASTEL_MINT, bar: COLOR_PRIMARY_DARK },
+  work: { fill: COLOR_PASTEL_LAVENDER, bar: COLOR_POP_VIOLET },
+  personal: { fill: COLOR_PASTEL_SKY, bar: COLOR_POP_BLUE },
+  projects: { fill: COLOR_PASTEL_MINT, bar: COLOR_POP_LIME },
 };
 
 export function pastelWashForTask(task: Task, options?: { unfinished?: boolean; done?: boolean }): PastelWash {
   if (options?.done || task.status === 'done') {
-    return { fill: COLOR_PASTEL_MINT, bar: COLOR_PRIMARY_DARK };
+    return { fill: COLOR_PASTEL_MINT, bar: COLOR_POP_NEUTRAL };
   }
   if (options?.unfinished) {
-    return { fill: COLOR_PASTEL_PEACH, bar: COLOR_PRIMARY_DARK };
+    return { fill: COLOR_PASTEL_PEACH, bar: COLOR_POP_ORANGE };
   }
   const category = getCategoryFromTags(task.tags);
   if (category) return CATEGORY_WASH[category];
-  return { fill: COLOR_PASTEL_LILAC, bar: COLOR_PRIMARY };
+  return { fill: COLOR_PASTEL_LILAC, bar: COLOR_POP_NEUTRAL };
 }
 
 export function isUnfinishedTask(task: Task, now: Date): boolean {
