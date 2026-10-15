@@ -35,9 +35,9 @@ interface UpgradePromptProps {
 const featureConfig = {
   aiScheduler: {
     iconName: "sparkles",
-    title: "AI Scheduler",
+    title: "Auto Scheduler",
     description:
-      "Let AI intelligently schedule your tasks based on priority, category hours, and your preferences.",
+      "Automatically schedule your tasks based on priority, category hours, and your preferences.",
     benefits: [
       "Smart task scheduling",
       "Respects your category hours",
@@ -54,7 +54,7 @@ const featureConfig = {
       "Weekday/weekend hour settings",
       "Category-specific hours",
       "Better work-life balance",
-      "AI respects your boundaries",
+      "The scheduler respects your boundaries",
     ],
   },
   analytics: {

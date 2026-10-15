@@ -122,7 +122,7 @@ export function estimateTaskHours(
       primaryVerb = cachedAnalysis.primaryVerb;
       
       if (import.meta.env.DEV) {
-        console.log('✅ estimateTaskHours: Using cached AI Analysis effort score', {
+        console.log('✅ estimateTaskHours: Using cached Task Analysis effort score', {
           taskId: task.id,
           taskTitle: task.title,
           cachedEffortScore: effortScore,
@@ -407,7 +407,7 @@ export function getTaskMinutes(
     const cachedAnalysis = getCachedAIAnalysis(task);
     if (cachedAnalysis && cachedAnalysis.estimatedMinutes > 0) {
       if (import.meta.env.DEV) {
-        console.log('✅ getTaskMinutes: Using cached AI Analysis estimated minutes', {
+        console.log('✅ getTaskMinutes: Using cached Task Analysis estimated minutes', {
           taskId: task.id,
           taskTitle: task.title,
           cachedEstimatedMinutes: cachedAnalysis.estimatedMinutes,

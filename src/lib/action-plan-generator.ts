@@ -230,7 +230,7 @@ function generateSteps(
   
   // Log confirmation that both Browser AI and Local Terminology are being used
   if (keywords.length > 0 || phrases.length > 0 || verbs.length > 0 || nouns.length > 0) {
-    console.debug(`✅ AI Action Plan: Using Browser AI + Local Terminology`, {
+    console.debug(`✅ Action Plan: Using Browser AI + Local Terminology`, {
       domain,
       keywordsCount: keywords.length,
       phrasesCount: phrases.length,

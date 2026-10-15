@@ -76,7 +76,7 @@ export const SUBSCRIPTION_UI_TEXT = {
   footer: {
     message: "💡 All plans include unlimited tasks and seamless calendar integration.",
     upgradeText: "Upgrade anytime",
-    upgradeDescription: "to unlock AI-powered scheduling and advanced analytics.",
+    upgradeDescription: "to unlock automatic scheduling and advanced analytics.",
   },
   messages: {
     restoringPurchases: "Restoring purchases...",
@@ -143,7 +143,7 @@ export const SUBSCRIPTION_UI_TEXT = {
       sectionTitle: "Your Features:",
       unlimitedTasks: "Unlimited Tasks",
       customTags: "Custom Tags",
-      aiScheduler: "AI Scheduler",
+      aiScheduler: "Auto Scheduler",
       taskHours: "Task Hours (Weekday/Weekend)",
       analytics: "Analytics Dashboard",
       pomodoroTimer: "Pomodoro Timer",
@@ -287,7 +287,7 @@ export const FREE_TIER_FEATURES: FeatureDefinition[] = [
   },
   {
     icon: "sparkles",
-    text: "Limited AI Scheduler (3 suggestions/week)",
+    text: "Limited Auto Scheduler (3 suggestions/week)",
     included: true,
     highlight: true,
   },
@@ -302,7 +302,7 @@ export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
   { icon: "check", text: "Everything in Free", included: true, isHeader: true },
   {
     icon: "sparkles",
-    text: "Unlimited AI Scheduler",
+    text: "Unlimited Auto Scheduler",
     included: true,
     highlight: true,
   },
@@ -404,7 +404,7 @@ export const PRO_TIER_FEATURES: FeatureDefinition[] = [
 
 // Pro features list for downgrade confirmation
 export const PRO_MONTHLY_FEATURES_LIST = [
-  "Unlimited AI Scheduler",
+  "Unlimited Auto Scheduler",
   "Calendar Sync (1 calendar)",
   "Task Hours & Time Tracking",
   "Auto Task Rollover",

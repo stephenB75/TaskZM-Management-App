@@ -197,8 +197,8 @@ export function AIRecommendationPanel({
   const handleScheduleUnscheduledTasks = async () => {
     // Check if user has access to AI Scheduler feature
     if (!hasFeature('aiScheduler')) {
-      toast.error('AI Scheduler is a Pro feature', {
-        description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
+      toast.error('Auto Scheduler is a Pro feature', {
+        description: 'Upgrade to Pro to unlock automatic task scheduling.',
       });
       return;
     }
@@ -208,8 +208,8 @@ export function AIRecommendationPanel({
       const { hasReachedLimit, getRemainingCount, incrementAIUsage } = require('../lib/ai-scheduler-usage');
       if (hasReachedLimit(features.aiSchedulerLimit)) {
         const remaining = getRemainingCount(features.aiSchedulerLimit);
-        toast.error('AI Scheduler limit reached', {
-          description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} AI suggestions this week. Upgrade to Pro for unlimited AI scheduling.`,
+        toast.error('Auto Scheduler limit reached', {
+          description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} auto-schedule suggestions this week. Upgrade to Pro for unlimited auto scheduling.`,
           action: {
             label: 'Upgrade',
             onClick: () => {
@@ -296,7 +296,7 @@ export function AIRecommendationPanel({
         );
       }
     } catch (error) {
-      console.error('AI scheduling error:', error);
+      console.error('Auto scheduling error:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       const isExtensionError = errorMessage.includes('message channel')
         || errorMessage.includes('listener indicated')
@@ -380,7 +380,7 @@ export function AIRecommendationPanel({
     // Check if user has access to AI Scheduler feature
     if (!hasFeature('aiScheduler')) {
       toast.error('Re-schedule is a Pro feature', {
-        description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
+        description: 'Upgrade to Pro to unlock automatic task rescheduling.',
       });
       return;
     }
@@ -778,7 +778,7 @@ export function AIRecommendationPanel({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="calendar" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
-              Review AI Scheduling Plan
+              Review Auto Scheduling Plan
             </DialogTitle>
             <DialogDescription>
               Choose which suggestions to accept. Your{" "}

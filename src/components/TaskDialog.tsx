@@ -2514,12 +2514,9 @@ export function TaskDialog({
     }
 
     try {
-      await deleteTask(task.id);
-      toast.success("Task deleted", {
-        description: "The task has been permanently deleted.",
-      });
       setShowDeleteConfirm(false);
       onClose();
+      await deleteTask(task.id);
     } catch (error) {
       toast.error("Failed to delete task", {
         description: "Something went wrong. Please try again.",
@@ -2641,7 +2638,7 @@ export function TaskDialog({
         className={cn(
           "max-h-[90vh] min-h-0 overflow-hidden flex flex-col w-[calc(100%-1.5rem)] sm:w-full rounded-2xl p-0 gap-0 !border-0 !bg-background ![background-image:none] !shadow-none",
           DIALOG_MOBILE_SHEET_CLASS,
-          "taskzm-ai-sheet",
+          "taskzm-ai-sheet taskzm-task-dialog",
           TASK_DIALOG_COLORS.dialogMaxWidth,
           "text-foreground dark:text-foreground"
         )}
@@ -2780,12 +2777,12 @@ export function TaskDialog({
                                   const cleanedDescription = generated.description.trim().replace(/^\s+/, '');
                                   setDescription(cleanedDescription);
                                   toast.success('Description regenerated', {
-                                    description: `Regenerated based on ${generated.domain} context. AI Action Plan will update automatically.`,
+                                    description: `Regenerated based on ${generated.domain} context. Action Plan will update automatically.`,
                                   });
                                 } else {
                                   logger.warn('Regenerated description is empty:', generated);
                                   toast.error('Failed to regenerate description', {
-                                    description: 'The AI could not generate a description. Please try again or enter description manually.',
+                                    description: 'Could not generate a description. Please try again or enter description manually.',
                                   });
                                 }
                                 } catch (error) {
@@ -2840,7 +2837,7 @@ export function TaskDialog({
                               try {
                                 // Descriptions use only local + shared terminology (no external AI)
                                 const token = accessToken ?? await getSessionToken();
-                                logger.debug('AI Generate button clicked:', { title, hasAccessToken: !!(accessToken ?? token), effortScore: breakdown?.effortScore });
+                                logger.debug('Auto-generate button clicked:', { title, hasAccessToken: !!(accessToken ?? token), effortScore: breakdown?.effortScore });
                                 const generated = await generateDescription(
                                   title,
                                   token,
@@ -2849,7 +2846,7 @@ export function TaskDialog({
                                   breakdown?.actionPlan?.steps?.map((s) => s.action),
                                   breakdown?.filteredTerminology && breakdown?.domain ? { domain: breakdown.domain, filteredTerminology: breakdown.filteredTerminology } : undefined
                                 );
-                                logger.debug('AI Generate result received:', {
+                                logger.debug('Auto-generate result received:', {
                                 hasDescription: !!generated.description,
                                 descriptionLength: generated.description?.length || 0,
                                 descriptionPreview: generated.description?.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH) || 'empty',
@@ -2886,7 +2883,7 @@ export function TaskDialog({
                                   description: TASK_DIALOG_UI_TEXT.toast.aiDescriptionGeneratedDetail(generated.domain),
                                 });
                               } else {
-                                logger.warn('AI Generate returned empty description:', generated);
+                                logger.warn('Auto-generate returned empty description:', generated);
                                 toast.error(TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailed, {
                                   description: TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailedDetail,
                                 });
@@ -2956,7 +2953,7 @@ export function TaskDialog({
             <TaskOptionSheet activeId={activeOption} onClose={() => setActiveOption(null)}>
                 {activeOption === 'ai' && (
                   <div className="flex flex-col gap-3">
-                  {/* AI Analysis - under task name and description; components constrained to block borders */}
+                  {/* Task Analysis - under task name and description; components constrained to block borders */}
                   {(title.trim() || description.trim()) && (
                     <div className={cn(
                       cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
@@ -3077,7 +3074,7 @@ export function TaskDialog({
                                       onClick={async () => {
                                         setDescription(option.description);
                                         setDescriptionOptions([]);
-                                        toast.success('Description selected', { description: 'AI Action Plan will update automatically based on your description.' });
+                                        toast.success('Description selected', { description: 'Action Plan will update automatically based on your description.' });
                                       }}
                                       title={option.description}
                                     >
@@ -4550,7 +4547,7 @@ export function TaskDialog({
                   variant="ghost"
                   size="sm"
                   onClick={() => void handleShare()}
-                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
+                  className={cn(TASK_DIALOG_COLORS.secondaryAction, "text-foreground h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 flex items-center justify-center")}
                   title={TASK_DIALOG_UI_TEXT.buttonTooltips.share}
                 >
                   <Icon name="link" size={16} className="shrink-0 lg:mr-1.5" />
@@ -4561,7 +4558,7 @@ export function TaskDialog({
                   variant="ghost"
                   size="sm"
                   onClick={handleDuplicate}
-                  className="text-foreground hover:bg-primary/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
+                  className={cn(TASK_DIALOG_COLORS.secondaryAction, "text-foreground h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 flex items-center justify-center")}
                   title={TASK_DIALOG_UI_TEXT.buttonTooltips.duplicate}
                 >
                   <Icon name="copy" size={16} className="shrink-0 lg:mr-1.5" />
@@ -4573,7 +4570,7 @@ export function TaskDialog({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="text-destructive hover:bg-destructive/10 h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 rounded-lg flex items-center justify-center"
+                    className={cn(TASK_DIALOG_COLORS.secondaryAction, "text-destructive [&_svg]:text-destructive dark:[&_svg]:text-destructive h-8 w-8 lg:h-8 lg:w-auto lg:px-3 lg:min-w-0 flex items-center justify-center")}
                     title={TASK_DIALOG_UI_TEXT.buttonTooltips.delete}
                   >
                     <Icon name="trash-2" size={16} className="shrink-0 lg:mr-1.5" />

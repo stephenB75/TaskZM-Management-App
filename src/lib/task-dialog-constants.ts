@@ -129,12 +129,12 @@ export const TASK_DIALOG_UI_TEXT = {
   // Description / AI
   descriptionRedo: 'Redo',
   descriptionRedoTooltip: 'Redo/Regenerate description (replaces current)',
-  aiGenerate: 'AI Generate',
+  aiGenerate: 'Auto-generate',
   aiGenerateTooltip: 'Generate new description (appends to existing)',
-  aiAnalysis: 'AI Analysis',
-  aiAssistUseDuration: 'Use AI duration',
+  aiAnalysis: 'Task Analysis',
+  aiAssistUseDuration: 'Use estimated duration',
   aiAssistAddSubtasks: 'Add suggested steps',
-  aiAssistDurationApplied: 'Duration updated from AI estimate',
+  aiAssistDurationApplied: 'Duration updated from the estimate',
   aiAssistSubtasksAdded: (count: number) =>
     `Added ${count} suggested step${count === 1 ? '' : 's'}`,
   aiAssistPrioritySuggested: (priority: string) =>
@@ -152,10 +152,10 @@ export const TASK_DIALOG_UI_TEXT = {
 
   // Toasts (description generation)
   toast: {
-    aiDescriptionGenerated: 'AI description generated',
-    aiDescriptionGeneratedDetail: (domain: string) => `Generated based on ${domain} context. AI Action Plan will update automatically.`,
+    aiDescriptionGenerated: 'Description generated',
+    aiDescriptionGeneratedDetail: (domain: string) => `Generated based on ${domain} context. Action Plan will update automatically.`,
     aiDescriptionFailed: 'Failed to generate description',
-    aiDescriptionFailedDetail: 'The AI could not generate a description. Please try again or enter description manually.',
+    aiDescriptionFailedDetail: 'Could not generate a description. Please try again or enter description manually.',
     aiDescriptionFailedShort: 'Please try again or enter description manually',
   },
 } as const;
@@ -183,7 +183,7 @@ export const TASK_DIALOG_OPTIONS: Record<TaskDialogOptionId, { label: string; ti
   assign: { label: 'Assign', title: 'Assign to', iconName: 'users' },
   focus: { label: 'Focus', title: 'Pomodoro timer', iconName: 'timer' },
   calendar: { label: 'Calendar', title: 'Calendar', iconName: 'calendar-plus' },
-  ai: { label: 'AI', title: 'AI analysis', iconName: 'sparkles' },
+  ai: { label: 'Assist', title: 'Task analysis', iconName: 'sparkles' },
 };
 
 export const TASK_DIALOG_OPTION_SHEET_TEXT = {
@@ -254,17 +254,27 @@ export const TASK_DIALOG_DIMENSIONS = {
 // Color Classes — aligned with AgendaListCard / task card design
 export const TASK_DIALOG_COLORS = {
   assigneeFallbackGradient: 'bg-gradient-to-br from-primary/20 to-primary/40',
-  minimalCardBg: 'bg-gray-50/60 dark:bg-gray-800/30 border border-gray-200/60 dark:border-gray-600/40',
+  minimalCardBg: 'bg-neutral-100 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700',
   dialogMaxWidth: 'max-w-[95vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl',
   dialogShell: 'bg-card',
   sectionCard: 'bg-card border border-border',
   pillSelected: 'bg-primary/14 text-primary font-semibold',
-  pillUnselected: 'bg-gray-100/90 dark:bg-gray-700/40 text-muted-foreground hover:bg-gray-200/80 dark:hover:bg-gray-600/50',
+  pillUnselected: 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700',
   tabActive: 'bg-primary/12 text-primary font-semibold shadow-sm',
-  tabInactive: 'text-muted-foreground hover:bg-gray-100/90 dark:hover:bg-gray-700/40',
+  tabInactive: 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700',
   footerCancel: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
   footerCreate: 'bg-primary text-primary-foreground hover:bg-primary/90',
-  inputFieldBg: 'bg-gray-50/90 dark:bg-gray-800/70 border border-gray-200/80 dark:border-gray-600/50 shadow-sm placeholder:text-muted-foreground/70',
+  inputFieldBg: 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400',
+  /** Rich-text editor frame and its formatting toolbar. */
+  editorFrame: 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600',
+  editorToolbar: 'bg-neutral-200/70 dark:bg-neutral-700/60 border-neutral-300 dark:border-neutral-600',
+  /** Option bar (Schedule, Priority, …) tray and its tiles. */
+  optionTray: 'rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-1',
+  optionActive: 'bg-card text-foreground shadow-sm',
+  optionInactive: 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-foreground',
+  /** Share / duplicate / delete pills above the footer. */
+  secondaryAction: 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-full',
+  optionSheetHeader: 'bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 rounded-t-2xl',
   contentCardBg: 'bg-card',
   menuLayerBg: 'bg-white dark:bg-gray-900',
   menuLayerBorder: 'border border-gray-200 dark:border-gray-600',

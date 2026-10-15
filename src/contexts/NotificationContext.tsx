@@ -13,11 +13,14 @@ import {
   NOTIFICATION_ERRORS,
   NOTIFICATION_INTERVALS,
   NOTIFICATION_FOREGROUND_DELIVERED_EVENT,
+  NOTIFICATION_STORED_EVENT,
+  NOTIFICATION_ALERT_VARIANTS,
   NATIVE_PLUGINS_READY_EVENT,
   type NotificationSettings,
 } from '../lib/notification-constants';
 import { getUnreadAwardCount } from '../lib/achievement-notifications';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
+import { STORAGE_KEY_POMODORO } from '../lib/business-constants';
 import { createDefaultNotificationContext } from '../lib/context-defaults';
 import {
   requestNotificationPermission as requestNativePermission,
@@ -157,21 +160,34 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       [],
     );
     const dismissedNotifications = new Set(dismissedNotificationsArray);
+    const readNotifications = new Set(
+      getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.readNotifications, []),
+    );
+    const isUnread = (id: string) => !readNotifications.has(id) && !dismissedNotifications.has(id);
     const now = new Date();
 
     const count = (() => {
       if (!settings.showBadge) return 0;
 
       const overdueCount = settings.overdueAlerts
-        ? getOverdueTasks(tasks, { dismissedNotificationIds: dismissedNotifications, now }).length
+        ? getOverdueTasks(tasks, { dismissedNotificationIds: dismissedNotifications, now })
+            .filter((task) => isUnread(`overdue_${task.id}`)).length
         : 0;
       const dueSoonCount = settings.dueDateReminders
-        ? getDueSoonTasks(tasks, settings.reminderTime, { dismissedNotificationIds: dismissedNotifications, now }).length
+        ? getDueSoonTasks(tasks, settings.reminderTime, { dismissedNotificationIds: dismissedNotifications, now })
+            .filter((task) => isUnread(`due-soon_${task.id}`)).length
         : 0;
       const unreadAwardCount =
         settings.includeAchievementsInBadge ? getUnreadAwardCount(user?.id) : 0;
+      const unreadAlertCount = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, [])
+        .filter((item) => !item.read && NOTIFICATION_ALERT_VARIANTS.has(item.type) && isUnread(item.id)).length;
+      const timers = getFromLocalStorage<Record<string, { state?: { sessionsCompleted?: number } }>>(STORAGE_KEY_POMODORO, {});
+      const unreadFocusCount = tasks.filter((task) => {
+        const sessions = timers[task.id]?.state?.sessionsCompleted ?? 0;
+        return task.status !== 'done' && sessions > 0 && isUnread(`pomodoro_${task.id}_${sessions}`);
+      }).length;
 
-      return overdueCount + dueSoonCount + unreadAwardCount;
+      return overdueCount + dueSoonCount + unreadAwardCount + unreadAlertCount + unreadFocusCount;
     })();
 
     setBadgeCount(count);
@@ -214,6 +230,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     updateBadge();
   }, [tasks, settings, updateBadge]);
+
+  useEffect(() => {
+    window.addEventListener(NOTIFICATION_STORED_EVENT, updateBadge);
+    return () => window.removeEventListener(NOTIFICATION_STORED_EVENT, updateBadge);
+  }, [updateBadge]);
 
   useEffect(() => {
     const dismissed = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, []);
@@ -269,18 +290,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (!settings.enabled) return;
       if (getPlatform().isNative) return;
       if (settings.soundEnabled) playDueReminderChime();
-      if (variant === 'overdue') {
-        toast.warning(title, { description: body });
-      } else {
-        toast.info(title, { description: body });
-      }
+      logger.debug('Foreground task alert shown in notification panel', { title, body, variant });
+      updateBadge();
     };
 
     window.addEventListener(NOTIFICATION_FOREGROUND_DELIVERED_EVENT, handleForegroundNativeDelivery);
     return () => {
       window.removeEventListener(NOTIFICATION_FOREGROUND_DELIVERED_EVENT, handleForegroundNativeDelivery);
     };
-  }, [settings.enabled, settings.soundEnabled]);
+  }, [settings.enabled, settings.soundEnabled, updateBadge]);
 
   const deliverTaskAlert = useCallback(
     async (payload: ReturnType<typeof buildOverdueNotificationPayload>, variant: 'overdue' | 'reminder') => {
@@ -291,13 +309,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (variant === 'overdue') {
-        toast.warning(payload.title, { description: payload.body });
-      } else {
-        toast.info(payload.title, { description: payload.body });
-      }
+      // In the foreground the task already has its own card in the notification panel.
+      logger.debug('Foreground task alert shown in notification panel', { title: payload.title, variant });
+      updateBadge();
     },
-    [settings.soundEnabled],
+    [settings.soundEnabled, updateBadge],
   );
 
   const checkAndNotify = useCallback(async () => {
@@ -447,35 +463,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     const platform = getPlatform();
 
-    if (platform.isNative) {
-      void requestPermission().then((granted) => {
-        if (granted) {
-          void syncTaskSchedules();
-        }
-      });
-      return;
-    }
+    // Web asks from the "Enable alerts" banner in the notification panel (needs a user gesture).
+    if (!platform.isNative) return;
 
-    const promptShown = getFromLocalStorage<boolean>(
-      NOTIFICATION_STORAGE_KEYS.taskSystemAlertsPermissionPromptShown,
-      false,
-    );
-    if (promptShown) return;
-
-    saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.taskSystemAlertsPermissionPromptShown, true);
-
-    toast.info(NOTIFICATION_TOAST_MESSAGES.taskSystemAlertsPrompt, {
-      duration: TIMING_CONSTANTS.timeouts.notificationDueNow,
-      action: {
-        label: NOTIFICATION_TOAST_MESSAGES.taskSystemAlertsEnable,
-        onClick: () => {
-          void requestPermission().then((granted) => {
-            if (granted) {
-              void syncTaskSchedules();
-            }
-          });
-        },
-      },
+    void requestPermission().then((granted) => {
+      if (granted) {
+        void syncTaskSchedules();
+      }
     });
   }, [user, settings.enabled, permission, requestPermission, syncTaskSchedules]);
 
@@ -515,7 +509,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       title,
       description,
       timestamp: new Date().toISOString(),
-      read: false,
+      read: !NOTIFICATION_ALERT_VARIANTS.has(type),
     };
     const trimmed = [newNotification, ...toastNotifications].slice(0, 100);
     saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.toastNotifications, trimmed);

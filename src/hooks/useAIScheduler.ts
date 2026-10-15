@@ -1031,7 +1031,7 @@ export function useAIScheduler() {
     
     // Fetch calendar events asynchronously
     const calendarEvents = await fetchCalendarEvents(startDate, endDate);
-    logger.debug('Fetched calendar events for AI scheduling', {
+    logger.debug('Fetched calendar events for auto scheduling', {
       eventCount: calendarEvents.length,
       dateRange: `${getDateString(startDate)} to ${getDateString(endDate)}`,
     });

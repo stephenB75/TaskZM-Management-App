@@ -5,6 +5,7 @@ import { cn } from './ui/utils';
 import { triggerSelectionHaptic } from '../lib/native-haptics';
 import { CLOSE_BUTTON, ICON_SIZE_SM, MOBILE_HOME_TAB_FONT_SIZE, TASK_OPTION_SHEET } from '../lib/layout-constants';
 import {
+  TASK_DIALOG_COLORS,
   TASK_DIALOG_OPTIONS,
   TASK_DIALOG_OPTION_SHEET_TEXT,
   type TaskDialogOptionId,
@@ -29,7 +30,7 @@ export function TaskOptionBar({ items, activeId, onSelect }: TaskOptionBarProps)
     <div
       role="toolbar"
       aria-label={TASK_DIALOG_OPTION_SHEET_TEXT.optionsLabel}
-      className="-mx-1 flex overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className={cn('flex gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', TASK_DIALOG_COLORS.optionTray)}
     >
       {items.map(({ id, indicator, accentColor }) => {
         const option = TASK_DIALOG_OPTIONS[id];
@@ -47,7 +48,7 @@ export function TaskOptionBar({ items, activeId, onSelect }: TaskOptionBarProps)
             }}
             className={cn(
               'relative flex shrink-0 flex-col items-center gap-1 rounded-xl px-1 py-1.5 transition-colors',
-              active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+              active ? TASK_DIALOG_COLORS.optionActive : TASK_DIALOG_COLORS.optionInactive,
             )}
             style={{ minWidth: TASK_OPTION_SHEET.iconButtonMinWidthPx }}
           >
@@ -131,7 +132,7 @@ export function TaskOptionSheet({ activeId, onClose, children }: TaskOptionSheet
           }}
         >
           <div
-            className="flex shrink-0 cursor-grab touch-none flex-col px-4 pb-2 pt-2 active:cursor-grabbing"
+            className={cn('flex shrink-0 cursor-grab touch-none flex-col px-4 pb-2 pt-2 active:cursor-grabbing', TASK_DIALOG_COLORS.optionSheetHeader)}
             onPointerDown={(event) => dragControls.start(event)}
           >
             <button
@@ -164,7 +165,7 @@ export function TaskOptionSheet({ activeId, onClose, children }: TaskOptionSheet
               </button>
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3">{children}</div>
         </motion.section>
       )}
     </AnimatePresence>

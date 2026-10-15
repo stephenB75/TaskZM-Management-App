@@ -14,7 +14,7 @@ export const APP_TOUR_SIDEBAR_ITEMS = [
     id: 'today',
     label: NAVIGATION_UI_TEXT.timeline,
     description:
-      'Your planner home: the timeline of upcoming tasks, the week calendar, and the AI chat side by side.',
+      'Your planner home: the timeline of upcoming tasks, the week calendar, and the scheduler chat side by side.',
   },
   {
     id: 'dashboard',
@@ -32,7 +32,7 @@ export const APP_TOUR_SIDEBAR_ITEMS = [
     id: 'inbox',
     label: NAVIGATION_UI_TEXT.inbox,
     description:
-      'Unscheduled tasks waiting to be planned. Capture ideas here, then schedule with AI or manually.',
+      'Unscheduled tasks waiting to be planned. Capture ideas here, then auto-schedule or manually.',
   },
   {
     id: 'folders',
@@ -57,7 +57,7 @@ export const APP_TOUR_SIDEBAR_ITEMS = [
   {
     id: 'settings',
     label: NAVIGATION_UI_TEXT.settings,
-    description: 'Profile, calendars, notifications, AI scheduling, hours, and preferences.',
+    description: 'Profile, calendars, notifications, auto scheduling, hours, and preferences.',
   },
 ] as const;
 
@@ -81,7 +81,7 @@ export const APP_TOUR_BOTTOM_NAV_ITEMS = [
   {
     id: 'inbox',
     label: NAVIGATION_UI_TEXT.inbox,
-    description: 'Tasks without a time yet, ready for AI scheduling or manual planning.',
+    description: 'Tasks without a time yet, ready for auto scheduling or manual planning.',
   },
 ] as const;
 
@@ -97,7 +97,7 @@ export const APP_TOUR_SETTINGS_SECTIONS = [
     id: 'calendar',
     title: 'Calendar Integrations',
     description: SETTINGS_PANEL_UI_TEXT.sections.calendar.description,
-    detail: 'Connect Google, Apple, or Outlook so events block time when AI schedules.',
+    detail: 'Connect Google, Apple, or Outlook so events block time when the scheduler plans.',
   },
   {
     id: 'notifications',
@@ -113,7 +113,7 @@ export const APP_TOUR_SETTINGS_SECTIONS = [
   },
   {
     id: 'ai-settings',
-    title: 'AI Settings',
+    title: 'Scheduler Settings',
     description: SETTINGS_PANEL_UI_TEXT.sections.aiSettings.description,
     detail: 'Enable auto-scheduling, priority-based placement, and daily hour limits.',
   },
@@ -147,7 +147,7 @@ export const APP_TOUR_UI = {
   welcome: {
     title: 'Welcome to TaskZM!',
     description:
-      'A quick look at navigation, your Today list, the Week board, AI scheduling, and key settings.',
+      'A quick look at navigation, your Today list, the Week board, auto scheduling, and key settings.',
   },
   headerBell: {
     title: 'Notifications',
@@ -163,7 +163,7 @@ export const APP_TOUR_UI = {
     ] as const,
   },
   placeTasks: {
-    title: 'Plan with AI',
+    title: 'Auto Scheduler',
     description: 'Gives a time to tasks that are not on the calendar yet, around your hours and calendar events.',
   },
   sidebarIconIntro: {
@@ -193,7 +193,7 @@ export const APP_TOUR_UI = {
   aiSchedulePreview: {
     title: 'Schedule Preview Dialog',
     description:
-      'After AI Scheduler runs, this dialog lets you review suggestions before anything is saved. Below is an example.',
+      'After Auto Scheduler runs, this dialog lets you review suggestions before anything is saved. Below is an example.',
     bullets: [
       'Each row shows a task, suggested time, and reason',
       'In the real app you select which suggestions to keep',
@@ -209,7 +209,7 @@ export const APP_TOUR_UI = {
   rescheduleDialog: {
     title: 'Re-Schedule Dialog',
     description:
-      'Choose Day, Week, or Month and a target date, then confirm to run AI again on those tasks. An example is shown below.',
+      'Choose Day, Week, or Month and a target date, then confirm to run the scheduler again on those tasks. An example is shown below.',
     bullets: [
       'Day — move tasks from specific date(s)',
       'Week — redistribute an entire week',
@@ -225,7 +225,7 @@ export const APP_TOUR_UI = {
   complete: {
     title: 'You’re Ready!',
     description:
-      'You’ve seen navigation, Today, the Week board, AI scheduling, and settings. Click Get Started to begin.',
+      'You’ve seen navigation, Today, the Week board, auto scheduling, and settings. Click Get Started to begin.',
   },
 } as const;
 

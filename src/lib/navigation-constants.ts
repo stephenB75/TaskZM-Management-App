@@ -17,10 +17,10 @@ export const NAVIGATION_UI_TEXT = {
   team: 'Team',
   analytics: 'Analytics',
   archive: 'Archive',
-  ai: 'AI',
+  ai: 'Scheduler',
   timeline: 'Timeline',
   calendar: 'Calendar',
-  aiPlan: 'AI plan',
+  aiPlan: 'Schedule',
 } as const;
 
 export const AI_PANEL_OPEN_EVENT = 'taskzm-open-ai';
@@ -28,12 +28,12 @@ export const AI_PANEL_OPEN_EVENT = 'taskzm-open-ai';
 export const PLANNER_COMPOSER_FOCUS_EVENT = 'taskzm-planner-focus';
 
 export const AI_PANEL_UI_TEXT = {
-  sheetDescription: 'Let AI plan new tasks or re-plan existing ones.',
-  prompt: 'What should AI do?',
+  sheetDescription: 'Auto-schedule new tasks or re-plan existing ones.',
+  prompt: 'What should the scheduler do?',
   schedule: {
     title: 'Schedule new tasks',
     description: (count: number) =>
-      `${count} open task${count === 1 ? '' : 's'} without a time. AI finds a slot for each one.`,
+      `${count} open task${count === 1 ? '' : 's'} without a time. The scheduler finds a slot for each one.`,
     byPriority: 'Urgent tasks are placed first.',
     nothingToSchedule: 'Every open task already has a time.',
     settingOff: 'Scheduling open tasks is turned off in Settings.',
@@ -46,8 +46,8 @@ export const AI_PANEL_UI_TEXT = {
     rangeLabel: 'Pick what to re-plan',
   },
   disabled: (count: number) =>
-    `AI scheduling is off. Turn it on in Settings to plan your ${count} open task${count === 1 ? '' : 's'}.`,
-  footnote: 'AI uses priority, due dates, your working hours, and calendar events.',
+    `Auto scheduling is off. Turn it on in Settings to plan your ${count} open task${count === 1 ? '' : 's'}.`,
+  footnote: 'The scheduler uses priority, due dates, your working hours, and calendar events.',
   periods: { day: 'Today', week: 'Week', twoWeeks: '2 weeks', month: 'Month' },
   rescheduleRanges: { day: 'A day', week: 'A week', month: 'A month' },
 } as const;
@@ -103,9 +103,9 @@ export const MOBILE_HOME_UI_TEXT = {
   movedToday: 'Moved to today',
   markedDone: 'Marked done',
   noSlot: 'No open time was found. Try again from Settings hours.',
-  aiPro: 'AI Scheduling is a Pro feature',
-  aiDisabled: 'AI Scheduling is disabled',
-  aiDisabledDetail: 'Enable AI scheduling in Settings to use this feature.',
+  aiPro: 'Auto Scheduling is a Pro feature',
+  aiDisabled: 'Auto Scheduling is disabled',
+  aiDisabledDetail: 'Enable auto scheduling in Settings to use this feature.',
 } as const;
 
 export type PlannerRescheduleRange = 'day' | 'week' | 'month';
@@ -126,7 +126,7 @@ export const PLANNER_UI_TEXT = {
     needsTime: 'Needs a time',
     overdue: 'Overdue',
     later: 'Later',
-    planWithAi: 'Plan with AI',
+    planWithAi: 'Auto-schedule',
     empty: 'Your timeline is clear.',
     markDone: (title: string) => `Mark "${title}" done`,
     markOpen: (title: string) => `Mark "${title}" not done`,
@@ -146,8 +146,8 @@ export const PLANNER_UI_TEXT = {
   },
   chat: {
     eyebrow: 'Smart inbox',
-    title: 'Plan with AI',
-    plannerName: 'Planner AI',
+    title: 'Auto Scheduler',
+    plannerName: 'Auto Scheduler',
     you: 'You',
     reschedule: 'Reschedule',
     rescheduleOptions: {
@@ -176,9 +176,10 @@ export const PLANNER_UI_TEXT = {
     send: 'Send',
     voiceStart: 'Dictate',
     voiceStop: 'Stop dictation',
-    footer: 'Planner agent · AI scheduling',
+    footer: 'Rule-based auto scheduler',
     thinking: 'Planning…',
     clear: 'Clear chat',
+    dueOn: (day: string) => `Due ${day}`,
     estimate: (minutes: number) =>
       minutes >= MINUTES_PER_HOUR ? `${Number((minutes / MINUTES_PER_HOUR).toFixed(1))}h` : `${minutes}m`,
   },
@@ -198,7 +199,7 @@ export const PLANNER_UI_TEXT = {
       `Rebalanced ${plural(count, 'task')} across the ${range === 'day' ? 'day' : range === 'week' ? 'week' : 'month'}.`,
     nothingToReschedule: (range: PlannerRescheduleRange) =>
       `There's nothing scheduled this ${range} to move.`,
-    aiUnavailable: 'AI scheduling is off or not on your plan, so new tasks go to the Inbox.',
+    aiUnavailable: 'Auto scheduling is off or not on your plan, so new tasks go to the Inbox.',
     failed: 'Something went wrong while planning. Please try again.',
     taskNotFound: (ref: string) => `I couldn't find a task matching "${ref}".`,
     noTaskInFocus: 'Which task? Tell me its name.',

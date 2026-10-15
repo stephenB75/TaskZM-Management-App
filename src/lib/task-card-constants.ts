@@ -120,12 +120,12 @@ export const TODAY_AGENDA_PRIORITY_INDICATOR_BG: Record<PriorityKey, string> = {
 
 /** Month calendar view: task card border + background per priority (adjusted for visibility) */
 export const MONTH_VIEW_TASK_PRIORITY_STYLES = {
-  urgent: 'border-l-red-400 bg-red-50 dark:bg-red-950/35',
-  high: 'border-l-orange-400 bg-orange-50 dark:bg-orange-950/35',
-  medium: 'border-l-blue-400 bg-blue-50 dark:bg-blue-950/35',
-  /** Low (and default): solid dark bg in dark mode so title/time stay readable (no light gray on white) */
-  low: 'border-l-gray-400 bg-gray-50 dark:bg-gray-700/95 dark:border-gray-600',
-  default: 'border-l-gray-400 bg-gray-50 dark:bg-gray-700/95 dark:border-gray-600',
+  urgent: 'border-l-red-500 bg-neutral-100 dark:bg-neutral-800',
+  high: 'border-l-orange-500 bg-neutral-100 dark:bg-neutral-800',
+  medium: 'border-l-blue-500 bg-neutral-100 dark:bg-neutral-800',
+  /** Low (and default): dark gray marker so it still differs from the gray card */
+  low: 'border-l-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:border-l-neutral-400',
+  default: 'border-l-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:border-l-neutral-400',
 } as const;
 
 /** Month view: text classes for low/default priority in dark mode (readable on dark card) */
@@ -533,7 +533,7 @@ export const TASK_CARD_TEXT = {
   tracking: 'Tracking...',
   tracked: 'tracked',
   nextUp: 'NEXT UP',
-  aiSuggestions: 'AI Suggestions',
+  aiSuggestions: 'Suggestions',
   moreSubtasks: (count: number) => `+${count} more`,
   moreAssigned: (count: number) => `+${count} more`,
   moreSubtasksFull: (count: number) => `+${count} more subtasks`,
@@ -819,7 +819,7 @@ export const TASK_CARD_ASSIGNED_USER_COLORS = {
 
 // Text Colors - Light colors for dark backgrounds in dark mode
 // AI Action Plan text size
-export const TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE = '16px'; // All text in AI Action Plan uses 16px (increased from 12px for better readability when zoomed out)
+export const TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE = '16px'; // All text in Action Plan uses 16px (increased from 12px for better readability when zoomed out)
 /** Tasks under this duration (minutes) show AI Suggestions only in the expanded section */
 export const TASK_CARD_AI_SUGGESTIONS_IN_EXPANDED_MAX_MINUTES = 30;
 
@@ -950,8 +950,8 @@ export const TASK_CARD_EXPANDABLE = {
     marginBottom: 16, // mb-4 = 16px for description and dependencies
     marginBottomHeader: 8, // mb-2 = 8px for description header
     aiSuggestionsMargin: {
-      mobile: 8, // 0.5rem = 8px horizontal margin for AI Suggestions box
-      desktop: 8, // 0.5rem = 8px horizontal margin for AI Suggestions box
+      mobile: 8, // 0.5rem = 8px horizontal margin for Suggestions box
+      desktop: 8, // 0.5rem = 8px horizontal margin for Suggestions box
     },
   },
 } as const;

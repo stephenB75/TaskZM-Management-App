@@ -575,7 +575,7 @@ export const USER_KEYWORD_CONTEXT = {
  * AI function explanation text
  */
 export const AI_FUNCTION_EXPLANATION = {
-  TITLE: "How AI Schedules Tasks:",
+  TITLE: "How Auto Scheduling Works:",
   getDescription: (maxHoursPerDay: number, schedulingPeriodDays: number) => {
     // Build description of daily hour limit options dynamically (no hardcode)
     const hourOptionsList = Object.values(AI_DAILY_HOUR_OPTIONS);
@@ -585,7 +585,7 @@ export const AI_FUNCTION_EXPLANATION = {
       return `${hours}hr (${labels.description.toLowerCase()})`;
     }).join(', ');
     
-    return `The AI scheduler analyzes each task's action verbs, complexity, and priority to estimate duration, then sorts by priority and due dates—scheduling urgent tasks first while respecting your calendar and enforcing your daily work hour limit (currently ${maxHoursPerDay} hours). Tasks are scheduled within your defined category hours, separating weekday and weekend schedules, and you can choose from ${hourOptionsCount} daily hour limits: ${hourOptions}. Tasks are distributed across available days starting from tomorrow, finding optimal time slots within your configured work hours. If a day exceeds your limit, you'll be consulted before proceeding, and tasks that can't be scheduled within ${schedulingPeriodDays} days are flagged for manual scheduling. You can reschedule entire days, weeks, or months with one click, and all schedules can be manually adjusted anytime.`;
+    return `The auto scheduler analyzes each task's action verbs, complexity, and priority to estimate duration, then sorts by priority and due dates—scheduling urgent tasks first while respecting your calendar and enforcing your daily work hour limit (currently ${maxHoursPerDay} hours). Tasks are scheduled within your defined category hours, separating weekday and weekend schedules, and you can choose from ${hourOptionsCount} daily hour limits: ${hourOptions}. Tasks are distributed across available days starting from tomorrow, finding optimal time slots within your configured work hours. If a day exceeds your limit, you'll be consulted before proceeding, and tasks that can't be scheduled within ${schedulingPeriodDays} days are flagged for manual scheduling. You can reschedule entire days, weeks, or months with one click, and all schedules can be manually adjusted anytime.`;
   },
   DEFAULT_WORK_HOURS_EXAMPLE: "9 AM-5 PM", // Example work hours for display
 } as const;
@@ -1266,5 +1266,9 @@ export const PLANNER_CHAT_CONFIG = {
     clockTimePattern: /\b(?:at\s+)?(\d{1,2}):(\d{2})\b/,
     noonPattern: /\bnoon\b/i,
     pmPattern: /^p/i,
+    /** Words that introduce a date/time phrase and go with it when it is stripped from a title. */
+    leadInWords: ['on', 'at', 'by', 'for', 'due', 'this', 'next', 'until', 'to'],
+    /** Day abbreviations that are also ordinary words; only read as days after a lead-in ("on sun"). */
+    ambiguousDayWords: ['sun', 'sat', 'wed', 'mon'],
   },
 } as const;

@@ -828,7 +828,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             {/* Show feature limits for free tier */}
                             {subscription.tier === 'free' && features.aiSchedulerLimit !== undefined && (
                               <p className="text-muted-foreground/70" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_XSMALL, marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
-                                AI Scheduler: {features.aiSchedulerLimit} suggestions/week
+                                Auto Scheduler: {features.aiSchedulerLimit} suggestions/week
                               </p>
                             )}
                             {/* Show feature limits for monthly pro */}
@@ -880,7 +880,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                               <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.customTags}</span>
                             </div>
 
-                            {/* AI Scheduler - PRO only */}
+                            {/* Auto Scheduler - PRO only */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.aiScheduler ? (
                                 <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
@@ -1740,7 +1740,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           value="ai-settings"
           dataTour="settings-ai-settings"
           icon="head-circuit"
-          title="AI Scheduling"
+          title="Auto Scheduling"
           description={SETTINGS_PANEL_UI_TEXT.sections.aiSettings.description}
           badge={!features.aiScheduler ? (
             <Badge variant="secondary" className={`ml-auto ${UI_SETTINGS_BADGE_COLORS.gradientClass} text-primary-foreground`}>
@@ -1757,7 +1757,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       {!features.aiScheduler ? (
                         <div className="space-y-3">
                           <p className="text-sm text-muted-foreground">
-                            Configure AI-powered automatic task scheduling that intelligently organizes your tasks.
+                            Configure automatic, rule-based task scheduling that organizes your tasks around your hours and calendar.
                           </p>
                 
                           <div className={`${UI_SETTINGS_BADGE_COLORS.infoBox.background.className} ${UI_SETTINGS_BADGE_COLORS.infoBox.border.className} rounded-lg p-4`}>
@@ -1782,14 +1782,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                       ) : (
                         <>
                           <p className="text-sm text-muted-foreground">
-                            Configure AI-powered automatic task scheduling
+                            Configure automatic, rule-based task scheduling
                           </p>
             
                       <div className="space-y-3">
                         <SettingsControlGroup>
                         <SettingsToggleRow
                           id="ai-auto-scheduling"
-                          label="Enable AI Auto-Scheduling"
+                          label="Enable Auto-Scheduling"
                           description="Automatically schedule tasks when created"
                           checked={aiSettings.autoSchedulingEnabled}
                           onCheckedChange={toggleAutoScheduling}
@@ -1805,7 +1805,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <SettingsToggleRow
                           id="ai-schedule-unscheduled"
                           label="Schedule Unscheduled Tasks"
-                          description="AI schedules tasks without due dates"
+                          description="Automatically schedules tasks without due dates"
                           checked={aiSettings.scheduleUnscheduledTasks}
                           onCheckedChange={toggleScheduleUnscheduledTasks}
                           disabled={!aiSettings.autoSchedulingEnabled}
@@ -1942,7 +1942,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 <li>• Weekday/weekend hour settings</li>
                                 <li>• Category-specific hours (Work, Personal, Projects)</li>
                                 <li>• Better work-life balance</li>
-                                <li>• AI respects your boundaries</li>
+                                <li>• The scheduler respects your boundaries</li>
                               </ul>
                             </div>
                             <Button 
@@ -2230,7 +2230,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <SettingsToggleRow
                           id="respect-hours"
                           label="Respect Category Hours"
-                          description="AI scheduling will use these time windows for each task category"
+                          description="The scheduler uses these time windows for each task category"
                           checked={hoursSettings.respectHours}
                           onCheckedChange={(checked) => updateHoursSettings({ respectHours: checked })}
                           variant="standalone"
@@ -2242,7 +2242,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                               <strong className="text-foreground">How it works:</strong>
                             </p>
                             <p>
-                              When AI scheduling is enabled, tasks will be scheduled within the time windows you set for each category. 
+                              When auto scheduling is enabled, tasks will be scheduled within the time windows you set for each category. 
                               You can set different hours for weekdays (Mon-Fri) and weekends (Sat-Sun) to maintain work-life balance and optimize your schedule.
                             </p>
                           </SettingsInfoCallout>
@@ -2790,8 +2790,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         <ul className="text-xs text-muted-foreground" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL, marginLeft: SETTINGS_PANEL_MARGIN_LEFT_MEDIUM }}>
                           <li>• Each sidebar icon (or bottom tab on mobile)</li>
                           <li>• Week ↔ Month toggle and calendar views</li>
-                          <li>• AI Scheduler & Re-Schedule buttons and dialogs</li>
-                          <li>• Settings sections — calendars, AI, hours, and more</li>
+                          <li>• Auto Scheduler & Re-Schedule buttons and dialogs</li>
+                          <li>• Settings sections — calendars, scheduling, hours, and more</li>
                         </ul>
                       </div>
 

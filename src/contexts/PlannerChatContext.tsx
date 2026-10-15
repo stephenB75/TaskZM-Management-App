@@ -183,10 +183,14 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
 
     const newTasks = toCommit.map((draft) => draftToTask(draft, user?.id));
     const slots = new Map<string, Date>();
+    newTasks.forEach((task) => {
+      if (task.scheduledDate) slots.set(task.id, new Date(task.scheduledDate));
+    });
+    const toPlace = newTasks.filter((task) => !slots.has(task.id));
     const autoSchedule = canAutoSchedule();
-    if (autoSchedule) {
+    if (autoSchedule && toPlace.length > 0) {
       countUsage();
-      const result = await generateSchedulePlan(newTasks, plannerScheduleWindow(new Date()), { forceCategoryHours: true });
+      const result = await generateSchedulePlan(toPlace, plannerScheduleWindow(new Date()), { forceCategoryHours: true });
       result.scheduled.forEach((plan) => slots.set(plan.task.id, plan.scheduledDate));
     }
 
@@ -204,7 +208,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       const unplaced = newTasks.length - slots.size;
       say(message('planner', [slots.size > 0 ? replies.scheduledMany(slots.size) : '', unplaced > 0 ? replies.unplaced(unplaced) : ''].filter(Boolean).join(' ')));
     }
-    if (!autoSchedule) say(message('planner', replies.aiUnavailable));
+    if (!autoSchedule && toPlace.length > 0) say(message('planner', replies.aiUnavailable));
   }, [addTask, canAutoSchedule, countUsage, generateSchedulePlan, say, user?.id]);
 
   const scheduleInbox = useCallback(() => run(async () => {

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Toaster } from './components/ui/sonner';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { TaskProvider } from './contexts/TaskContext';
 import { LoadingProvider } from './contexts/LoadingContext';
@@ -17,7 +16,7 @@ import AppContent from './AppContent';
 
 /**
  * Wraps the logged-in app in all providers (Subscription, Task, Loading, etc.)
- * and renders DocumentHead, AppContent, and Toaster.
+ * and renders DocumentHead and AppContent.
  * No AuthProvider or AuthScreen here; those live in AuthenticatedApp.
  */
 export default function AuthenticatedAppProviders() {
@@ -36,7 +35,6 @@ export default function AuthenticatedAppProviders() {
                           <DocumentHead />
                           <BiometricLockScreen />
                           <AppContent />
-                          <Toaster />
                         </DragDropProvider>
                       </PomodoroProvider>
                     </SidebarProvider>

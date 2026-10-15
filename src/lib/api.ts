@@ -415,8 +415,9 @@ export async function deleteTask(workspaceId: string, taskId: string): Promise<v
     headers: getHeaders(),
   });
 
+  if (response.status === 404) return;
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json().catch(() => ({}));
     throw new Error(error.error || 'Failed to delete task');
   }
 }

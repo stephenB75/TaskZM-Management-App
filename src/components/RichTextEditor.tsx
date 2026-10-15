@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { cn } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { UI_RICH_TEXT_COLORS } from '../lib/ui-colors';
+import { TASK_DIALOG_COLORS } from '../lib/task-dialog-constants';
 
 interface RichTextEditorProps {
   value: string;
@@ -368,15 +369,16 @@ export function RichTextEditor({
   return (
     <div 
       className={cn(
-        "min-w-0 max-w-full border rounded-xl bg-white/80 dark:bg-background/70 backdrop-blur-sm shadow-sm",
-        "border-primary/10",
+        "min-w-0 max-w-full border rounded-xl shadow-sm",
+        TASK_DIALOG_COLORS.editorFrame,
         className
       )}
     >
       {/* Formatting Toolbar */}
       {!compact && (
       <div className={cn(
-        "flex min-w-0 max-w-full flex-nowrap items-center gap-1 overflow-x-auto p-1 border-b border-primary/10 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 rounded-t-xl",
+        "flex min-w-0 max-w-full flex-nowrap items-center gap-1 overflow-x-auto p-1 border-b rounded-t-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        TASK_DIALOG_COLORS.editorToolbar,
         disabled && "opacity-60 pointer-events-none"
       )}>
         {/* Text Formatting Group */}

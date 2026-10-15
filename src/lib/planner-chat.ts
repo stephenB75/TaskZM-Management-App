@@ -20,6 +20,7 @@ import { COLOR_POP_BLUE, COLOR_POP_LIME, COLOR_POP_NEUTRAL, COLOR_POP_VIOLET } f
 import { DEFAULT_CREATED_BY, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from './task-constants';
 import { generateId, getWeekStart } from './utils';
 import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from './navigation-constants';
+import { parsePlannerWhen, stripPlannerWhen } from './planner-commands';
 import type { Task, TaskPriority } from '../types';
 
 export type PlannerCategory = 'work' | 'personal' | 'projects';
@@ -41,6 +42,8 @@ export interface PlannerDraft {
   priority: TaskPriority;
   category: PlannerCategory | null;
   estimatedMinutes: number;
+  /** Date/time the user wrote ("tomorrow at 3pm"); a time books the task there, a day sets its due date. */
+  when?: { date: string; hasTime: boolean };
 }
 
 export type PlannerIntent =
@@ -102,8 +105,8 @@ export function draftToTask(draft: PlannerDraft, createdBy?: string | null): Tas
     description: '',
     status: DEFAULT_TASK_STATUS,
     priority: draft.priority,
-    dueDate: null,
-    scheduledDate: null,
+    dueDate: draft.when && !draft.when.hasTime ? endOfDay(new Date(draft.when.date)).toISOString() : null,
+    scheduledDate: draft.when?.hasTime ? draft.when.date : null,
     projectId: DEFAULT_PROJECT_ID,
     tags: draft.category ? [draft.category] : [],
     assignedTo: [],
@@ -123,7 +126,10 @@ export function draftToTask(draft: PlannerDraft, createdBy?: string | null): Tas
 export function parsePlannerDrafts(text: string): PlannerDraft[] {
   const drafts: PlannerDraft[] = [];
   for (const line of text.split(PLANNER_CHAT_CONFIG.draftSeparator)) {
-    const title = cleanTitle(line);
+    const when = parsePlannerWhen(line, new Date());
+    const titleWithoutWhen = when ? cleanTitle(stripPlannerWhen(line)) : '';
+    const keepsWhen = titleWithoutWhen.length >= PLANNER_CHAT_CONFIG.minTitleLength;
+    const title = keepsWhen ? titleWithoutWhen : cleanTitle(line);
     if (title.length < PLANNER_CHAT_CONFIG.minTitleLength) continue;
     const draft: PlannerDraft = {
       id: generateId(),
@@ -131,6 +137,7 @@ export function parsePlannerDrafts(text: string): PlannerDraft[] {
       priority: inferPriority(line),
       category: inferCategory(line),
       estimatedMinutes: 0,
+      ...(when && keepsWhen ? { when: { date: when.date.toISOString(), hasTime: when.hasTime } } : {}),
     };
     const stated = explicitMinutes(line);
     draft.estimatedMinutes =
@@ -164,6 +171,13 @@ export function startOfPlannerWeek(date: Date): Date {
   const offset = weekStartsMonday ? (start.getDay() + DAYS_IN_WEEK - 1) % DAYS_IN_WEEK : start.getDay();
   start.setDate(start.getDate() - offset);
   return start;
+}
+
+/** "Fri, Oct 16, 3:00 PM" for a booked time, "Due Fri, Oct 16" for a day only. */
+export function formatDraftWhen(when: NonNullable<PlannerDraft['when']>): string {
+  const date = new Date(when.date);
+  if (when.hasTime) return formatPlannedWhen(date);
+  return PLANNER_UI_TEXT.chat.dueOn(date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }));
 }
 
 export function formatPlannedWhen(date: Date): string {

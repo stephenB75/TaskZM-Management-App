@@ -278,7 +278,7 @@ export function InboxView() {
 
     toast.success("Task added to inbox", {
       description:
-        "You can schedule it later or let AI handle it",
+        "You can schedule it later or let the scheduler handle it",
       playSound: true,
     });
   };
@@ -380,7 +380,7 @@ export function InboxView() {
         setSelectedTaskIds(new Set());
       } else {
         toast.info("No available slots", {
-          description: "AI Scheduler couldn't find openings within the next two weeks.",
+          description: "Auto Scheduler couldn't find openings within the next two weeks.",
         });
       }
 
@@ -526,7 +526,7 @@ export function InboxView() {
         });
       } else {
         toast.info("No available slots", {
-          description: "AI Scheduler couldn't find openings within the next two weeks.",
+          description: "Auto Scheduler couldn't find openings within the next two weeks.",
         });
       }
 

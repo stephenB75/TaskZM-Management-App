@@ -1005,9 +1005,9 @@ export const DASHBOARD_VIEW_HEADER_LABELS = {
   month: 'Month',
   today: 'Today',
   dashboard: 'Dashboard',
-  aiSchedulerSuggestions: 'AI SCHEDULER',
+  aiSchedulerSuggestions: 'AUTO SCHEDULER',
   aiSchedulerSuggestionsShort: 'SCHEDULER',
-  aiSchedulerSuggestionsLong: 'AI SCHEDULER',
+  aiSchedulerSuggestionsLong: 'AUTO SCHEDULER',
   reschedule: 'RE-SCHEDULE',
 } as const;
 
@@ -1179,7 +1179,7 @@ export const TOAST_DURATION_EXTRA_LONG_MS = 10000; // Extra long toast duration 
 
 // App Metadata
 export const APP_TITLE = 'TaskZM - GTD in its simplest form.';
-export const APP_DESCRIPTION = 'TaskZM - GTD in its simplest form. A neurodivergent-friendly task management application with AI-assisted planning.';
+export const APP_DESCRIPTION = 'TaskZM - GTD in its simplest form. A neurodivergent-friendly task management application with automatic scheduling.';
 export const APP_SHORT_NAME = 'TaskZM';
 export const APP_FULL_NAME = 'TaskZM - Neurodivergent-Friendly Task Manager';
 
@@ -1450,7 +1450,7 @@ export const COMPONENT_DIMENSIONS = {
     },
     descriptionTextarea: {
       rows: 3, // rows={3} - initial visible rows (using constant value for consistency)
-      placeholder: 'Add a description... (Editable - AI Action Plan updates automatically as you type)', // Placeholder text (using constant string for consistency)
+      placeholder: 'Add a description... (Editable - Action Plan updates automatically as you type)', // Placeholder text (using constant string for consistency)
       focusClassName: 'focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary', // Focus styles for description textarea (using constant classes for consistency)
       maxHeight: 2000, // Maximum height in pixels (increased to allow unlimited text with scrolling) - using constant value for consistency
       // No character limit - standard practice is to allow unlimited text with proper wrapping

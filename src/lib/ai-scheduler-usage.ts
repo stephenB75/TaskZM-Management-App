@@ -10,7 +10,7 @@ const WEEKLY_LIMIT = FREE_TIER_WEEKLY_AI_LIMIT;
 
 interface UsageData {
   weekStart: string; // ISO date string for Monday of current week
-  count: number; // Number of AI suggestions used this week
+  count: number; // Number of auto-schedule suggestions used this week
 }
 
 /**

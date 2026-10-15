@@ -33,6 +33,7 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'calendar-blank': 'CalendarBlank',
   'calendar-today': 'CalendarCheck',
   'calendar-plus': 'CalendarPlus',
+  'calendar-week': 'Columns',
   'flag': 'Flag',
   'magic-wand': 'MagicWand',
   'microphone': 'Microphone',
@@ -197,7 +198,7 @@ const DUOTONE_ICONS = new Set([
   'sparkle',
   'sparkling',
   'brain',
-  'head-circuit', // Added for AI Suggestions icon
+  'head-circuit', // Added for Suggestions icon
   'circuit', // Added for circuit alias
   'target',
   'trophy',

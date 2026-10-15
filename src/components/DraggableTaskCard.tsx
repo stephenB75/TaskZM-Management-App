@@ -1058,10 +1058,10 @@ export const DraggableTaskCard = React.forwardRef<
                 titleDone: task.status === "done",
               })}
               <div className={cn("flex flex-col flex-1 min-w-0", isExpanded ? "rounded-b-2xl" : "overflow-hidden")}>
-          {/* AI Suggestions - Under headline for tasks 30+ mins; in expanded section for under 30 mins */}
+          {/* Suggestions - Under headline for tasks 30+ mins; in expanded section for under 30 mins */}
           {!isShortTaskForAIPlacement && renderAISuggestions()}
 
-            {/* Tracked time + chevron underneath AI suggestions (Pomodoro lives in footer row) */}
+            {/* Tracked time + chevron underneath auto-schedule suggestions (Pomodoro lives in footer row) */}
           <div className={cn("flex items-center justify-between px-2", isMobile ? "py-1" : "py-1.5")}>
             <div className="flex items-center gap-1.5 flex-1">
               {!timerState.isRunning && !timerState.isPaused && (() => {
@@ -1120,7 +1120,7 @@ export const DraggableTaskCard = React.forwardRef<
               }}
               onClick={(e) => e.stopPropagation()}
             >
-            {/* AI Suggestions - for tasks under 30 mins, shown here when user expands the card */}
+            {/* Suggestions - for tasks under 30 mins, shown here when user expands the card */}
             {isShortTaskForAIPlacement && renderAISuggestions()}
 
             {/* Description Section */}

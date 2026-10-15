@@ -555,7 +555,7 @@ export function DashboardView({
   
   // Track screen size for responsive button sizing
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const [showActionText, setShowActionText] = useState(false); // Show text labels for AI Suggestions and Re-Scheduler
+  const [showActionText, setShowActionText] = useState(false); // Show text labels for Suggestions and Re-Scheduler
   const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.desktop);
   useEffect(() => {
     let resizeTimeoutId: NodeJS.Timeout;
@@ -995,8 +995,8 @@ export function DashboardView({
 
   const handleScheduleUnscheduledTasks = async () => {
     if (!safeHasFeature('aiScheduler')) {
-      toast.error('AI Scheduler is a Pro feature', {
-        description: 'Upgrade to Pro to unlock AI-powered task scheduling.',
+      toast.error('Auto Scheduler is a Pro feature', {
+        description: 'Upgrade to Pro to unlock automatic task scheduling.',
       });
       return;
     }
@@ -1004,8 +1004,8 @@ export function DashboardView({
     if (features?.aiSchedulerLimit !== undefined) {
       const { hasReachedLimit, incrementAIUsage } = require('../lib/ai-scheduler-usage');
       if (hasReachedLimit(features.aiSchedulerLimit)) {
-        toast.error('AI Scheduler limit reached', {
-          description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} AI suggestions this week. Upgrade to Pro for unlimited AI scheduling.`,
+        toast.error('Auto Scheduler limit reached', {
+          description: `You've used ${features.aiSchedulerLimit}/${features.aiSchedulerLimit} auto-schedule suggestions this week. Upgrade to Pro for unlimited auto scheduling.`,
           action: {
             label: 'Upgrade',
             onClick: () => window.dispatchEvent(new CustomEvent('show-pricing-dialog')),
@@ -1027,7 +1027,7 @@ export function DashboardView({
     }
 
     if (!generateSchedulePlan) {
-      toast.error('Unable to start AI Scheduler', {
+      toast.error('Unable to start Auto Scheduler', {
         description: 'Please try again in a moment.',
       });
       return;
@@ -1049,7 +1049,7 @@ export function DashboardView({
 
       if (result.scheduled.length === 0 && result.exceedsLimit.length === 0) {
         toast.info("No available time slots", {
-          description: "AI Scheduler couldn't find any openings within the next two weeks.",
+          description: "Auto Scheduler couldn't find any openings within the next two weeks.",
         });
         return;
       }
@@ -1067,7 +1067,7 @@ export function DashboardView({
         );
       }
     } catch (error) {
-      console.error('AI scheduling error:', error);
+      console.error('Auto scheduling error:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       const isExtensionError = errorMessage.includes('message channel')
         || errorMessage.includes('listener indicated')
@@ -1145,7 +1145,7 @@ export function DashboardView({
     if (isRescheduling) return;
     if (!safeHasFeature('aiScheduler')) {
       toast.error('Re-schedule is a Pro feature', {
-        description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
+        description: 'Upgrade to Pro to unlock automatic task rescheduling.',
       });
       return;
     }
@@ -1165,7 +1165,7 @@ export function DashboardView({
     // Check if user has access to AI Scheduler feature
     if (!safeHasFeature('aiScheduler')) {
       toast.error('Re-schedule is a Pro feature', {
-        description: 'Upgrade to Pro to unlock AI-powered task rescheduling.',
+        description: 'Upgrade to Pro to unlock automatic task rescheduling.',
       });
       return;
     }
@@ -1466,7 +1466,7 @@ export function DashboardView({
               </div>
             )}
 
-            {/* AI Scheduler Buttons - Desktop Only (not mobile/tablet) */}
+            {/* Auto Scheduler Buttons - Desktop Only (not mobile/tablet) */}
             <div
               className={cn(!shouldUseMobileLayout ? 'flex items-center flex-shrink-0' : 'hidden')}
               style={{ gap: isSmallScreen ? HEADER_GAP_SMALL : HEADER_GAP_MEDIUM }}
@@ -1789,10 +1789,10 @@ export function DashboardView({
               <div className={cn("p-2 rounded-lg", UI_INBOX_GRADIENTS.emptyState.className)}>
                 <Icon name="sparkles" size={ICON_SIZE_LG} className="text-primary" />
               </div>
-              AI Recommendations
+              Scheduling Suggestions
             </SheetTitle>
             <SheetDescription>
-              Smart scheduling suggestions powered by AI
+              Suggested time slots from the auto scheduler
             </SheetDescription>
           </SheetHeader>
           <AIRecommendationPanel
@@ -1824,7 +1824,7 @@ export function DashboardView({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="calendar" size={ICON_SIZE_LG} className="text-primary" />
-              Review AI Scheduling Plan
+              Review Auto Scheduling Plan
             </DialogTitle>
             <DialogDescription>
               Choose which suggestions to accept. Your{" "}
@@ -2050,10 +2050,10 @@ export function DashboardView({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Icon name="refresh-cw" size={ICON_SIZE_LG} className="text-primary" />
-              AI Re-schedule Tasks
+              Re-schedule Tasks
             </DialogTitle>
             <DialogDescription>
-              Select a time period and date to reschedule tasks. Tasks will be unscheduled and then rescheduled using AI.
+              Select a time period and date to reschedule tasks. Tasks will be unscheduled and then rescheduled automatically.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

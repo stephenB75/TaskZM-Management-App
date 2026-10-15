@@ -104,6 +104,8 @@ export default function AppContent() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [notificationsSheetOpen, setNotificationsSheetOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [notificationTaskId, setNotificationTaskId] = useState<string | null>(null);
+  const notificationTask = notificationTaskId ? tasks.find((task) => task.id === notificationTaskId) ?? null : null;
   const [scrollHomeWeek, setScrollHomeWeek] = useState(false);
   const [showScheduleResult, setShowScheduleResult] = useState(false);
   const [scheduledTasks, setScheduledTasks] = useState<SchedulePlan[]>([]);
@@ -114,6 +116,7 @@ export default function AppContent() {
   const hasInitializedView = useRef(false);
   const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
   const dashboardViewModeRef = useRef<'week' | 'month'>('week');
+  const [desktopCalendarMode, setDesktopCalendarMode] = useState<'week' | 'month'>('week');
   const mobileScrollRef = useRef<HTMLDivElement>(null);
 
   const handleMobilePullRefresh = useCallback(async () => {
@@ -159,6 +162,7 @@ export default function AppContent() {
         setMobileView('today');
         setAiPanelOpen(false);
         setNotificationsSheetOpen(false);
+        setNotificationTaskId(taskId);
         return;
       }
       setAiPanelOpen(false);
@@ -196,6 +200,8 @@ export default function AppContent() {
       if (shouldUseMobileLayout) {
         setCurrentView('dashboard');
         setMobileView('week');
+      } else {
+        setDesktopCalendarMode(event.detail.mode);
       }
       window.dispatchEvent(new CustomEvent('dashboard-set-view-mode', { 
         detail: { mode: event.detail.mode } 
@@ -533,8 +539,15 @@ export default function AppContent() {
         return;
       }
       setCurrentView('today');
+      setDesktopCalendarMode('month');
       setSidebarOpen(false);
-      setScrollHomeWeek(true);
+      return;
+    }
+
+    if (view === 'today' && !shouldUseMobileLayout) {
+      setCurrentView('today');
+      setDesktopCalendarMode('week');
+      setSidebarOpen(false);
       return;
     }
 
@@ -688,6 +701,7 @@ export default function AppContent() {
         )}
         <AppSidebar 
           currentView={currentView} 
+          calendarMode={desktopCalendarMode}
           onViewChange={handleViewChange}
           open={sidebarOpen}
           onOpenChange={setSidebarOpen}
@@ -815,7 +829,7 @@ export default function AppContent() {
 
           {!shouldUseMobileLayout && (
           <div className="h-full flex-1 overflow-hidden">
-            <PlannerDesktop />
+            <PlannerDesktop mode={desktopCalendarMode} />
           </div>
           )}
         </main>
@@ -860,6 +874,7 @@ export default function AppContent() {
       />
 
       <TaskDialog open={createTaskOpen} onClose={() => setCreateTaskOpen(false)} />
+      <TaskDialog open={Boolean(notificationTask)} task={notificationTask} onClose={() => setNotificationTaskId(null)} />
 
       <Sheet open={aiPanelOpen} onOpenChange={setAiPanelOpen}>
         <SheetContent
@@ -867,7 +882,7 @@ export default function AppContent() {
           className={shouldUseMobileLayout ? 'taskzm-ai-sheet overflow-y-auto bg-background' : 'w-full overflow-y-auto bg-background sm:max-w-md'}
         >
           <SheetHeader className="p-0 pr-10">
-            <SheetTitle>AI</SheetTitle>
+            <SheetTitle>{NAVIGATION_UI_TEXT.ai}</SheetTitle>
             <SheetDescription>{AI_PANEL_UI_TEXT.sheetDescription}</SheetDescription>
           </SheetHeader>
           <Suspense fallback={null}>

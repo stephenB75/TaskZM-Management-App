@@ -191,6 +191,16 @@ function nameIndex(names: readonly string[], word: string): number {
   return names.findIndex((name) => name.startsWith(value));
 }
 
+/** Weekday index for a word, skipping ambiguous abbreviations ("sun hat") unless a lead-in precedes them. */
+function weekdayAt(text: string, word: string, index: number): number {
+  const { when } = CONFIG;
+  const weekday = nameIndex(when.weekdays, word);
+  if (weekday < 0) return -1;
+  if (!(when.ambiguousDayWords as readonly string[]).includes(word.toLowerCase())) return weekday;
+  const previous = text.slice(0, index).trim().split(/\s+/).pop()?.toLowerCase() ?? '';
+  return (when.leadInWords as readonly string[]).includes(previous) ? weekday : -1;
+}
+
 function parseTime(text: string): { hours: number; minutes: number } | null {
   const { when } = CONFIG;
   if (when.noonPattern.test(text)) return { hours: HOURS_PER_HALF_DAY, minutes: 0 };
@@ -254,11 +264,47 @@ function parseDay(text: string, now: Date): Date | null {
   }
   if (when.nextWeekPattern.test(text)) return plus(DAYS_IN_WEEK);
 
-  for (const [word] of text.matchAll(when.wordPattern)) {
-    const weekday = nameIndex(when.weekdays, word);
+  for (const { 0: word, index } of text.matchAll(when.wordPattern)) {
+    const weekday = weekdayAt(text, word, index ?? 0);
     if (weekday >= 0) return plus((weekday - today.getDay() + DAYS_IN_WEEK) % DAYS_IN_WEEK);
   }
   return null;
+}
+
+/** Remove the date/time phrases `parsePlannerWhen` reads, plus lead-in words like "on" or "at". */
+export function stripPlannerWhen(text: string): string {
+  const { when } = CONFIG;
+  const isMonthDay = (match: string) => {
+    const parts = match.match(when.monthDayPattern);
+    return Boolean(parts && nameIndex(when.months, parts[1]) >= 0);
+  };
+  const isWeekday = (match: string, index: number, source: string) => weekdayAt(source, match, index) >= 0;
+  const phrases: Array<{ pattern: RegExp; keep?: (match: string, index: number, source: string) => boolean }> = [
+    { pattern: when.todayPattern },
+    { pattern: when.tomorrowPattern },
+    { pattern: when.inDaysPattern },
+    { pattern: when.nextWeekPattern },
+    { pattern: when.monthDayPattern, keep: (match) => !isMonthDay(match) },
+    { pattern: when.numericDatePattern },
+    { pattern: when.meridiemTimePattern },
+    { pattern: when.clockTimePattern },
+    { pattern: when.noonPattern },
+    { pattern: when.wordPattern, keep: (match, index, source) => !isWeekday(match, index, source) },
+  ];
+
+  const marker = '\u0000';
+  let result = text;
+  for (const { pattern, keep } of phrases) {
+    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+    result = result.replace(new RegExp(pattern.source, flags), (...args: unknown[]) => {
+      const match = args[0] as string;
+      const index = args[args.length - 2] as number;
+      const source = args[args.length - 1] as string;
+      return keep?.(match, index, source) ? match : marker;
+    });
+  }
+  const leadIns = new RegExp(`(?:\\b(?:${when.leadInWords.join('|')})\\s+)*${marker}`, 'gi');
+  return clean(result.replace(leadIns, ' ').replace(/\s+/g, ' ').replace(/\s+([,.;!?])/g, '$1').replace(/[\s,;-]+$/, ''));
 }
 
 export function parsePlannerWhen(text: string, now: Date): PlannerWhen | null {

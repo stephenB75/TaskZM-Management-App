@@ -24,10 +24,10 @@ export const SETTINGS_PANEL_UI_TEXT = {
   },
   priorityLevels: {
     sectionTitle: 'Priority Levels',
-    intro: 'Tasks can be assigned one of four priority levels. These help you and the AI scheduler focus on what matters most.',
+    intro: 'Tasks can be assigned one of four priority levels. These help you and the auto scheduler focus on what matters most.',
     urgent: {
       label: 'Urgent',
-      description: 'Critical items that need immediate attention. Shown first in lists and by the AI when scheduling.',
+      description: 'Critical items that need immediate attention. Shown first in lists and by the scheduler.',
     },
     high: {
       label: 'High',
@@ -46,7 +46,7 @@ export const SETTINGS_PANEL_UI_TEXT = {
     account: 'Account & billing',
     integrations: 'Integrations',
     tasks: 'Tasks & organization',
-    scheduling: 'Scheduling & AI',
+    scheduling: 'Scheduling',
     preferences: 'Display & preferences',
     engagement: 'Achievements & help',
     you: 'You',

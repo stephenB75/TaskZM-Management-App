@@ -913,87 +913,6 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   }
 }
 
-/* Toaster Notifications - Above dialogs and dropdowns so messages are always visible (value must match Z_INDEX.TOAST in layout-constants) */
-[data-sonner-toaster] {
-  z-index: 10001 !important;
-}
-
-/* Top toasts: below status bar / Dynamic Island (viewport-fit=cover + StatusBar overlay).
-   Sonner v2 uses data-y-position + --offset-top / --mobile-offset-top (set via Toaster offset prop). */
-[data-sonner-toaster][data-y-position="top"] {
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  box-sizing: border-box;
-}
-
-[data-sonner-toaster][data-x-position="center"] {
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  right: auto !important;
-  max-width: 420px;
-}
-
-@media (max-width: 600px) {
-  [data-sonner-toaster][data-x-position="center"] {
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%) !important;
-    width: var(--width, min(24rem, calc(100vw - 2rem))) !important;
-    max-width: var(--width, min(24rem, calc(100vw - 2rem))) !important;
-  }
-}
-
-[data-sonner-toast] {
-  animation: slide-down 0.3s ease-out !important;
-  margin-bottom: var(--toast-gap, 8px) !important;
-}
-
-[data-sonner-toast][data-y-position="top"] {
-  margin-top: 0 !important;
-  margin-bottom: var(--toast-gap, 8px) !important;
-}
-
-/* Sonner close (×): keep compact on mobile — do not inherit 44px touch-target minimum */
-[data-sonner-toast] [data-close-button] {
-  min-width: unset !important;
-  min-height: unset !important;
-  width: 1.5rem !important;
-  height: 1.5rem !important;
-  top: 0.5rem !important;
-  right: 0.5rem !important;
-  left: auto !important;
-  transform: none !important;
-  border: 0 !important;
-  border-radius: 0.375rem !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: var(--muted-foreground) !important;
-}
-
-[data-sonner-toast] [data-close-button]:hover {
-  color: var(--foreground) !important;
-}
-
-[data-sonner-toast] [data-close-button] svg {
-  width: 0.875rem !important;
-  height: 0.875rem !important;
-}
-
-[data-sonner-toast] [data-content] {
-  padding-right: 1.5rem;
-}
-
-@keyframes slide-down {
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
 /* ==========================================================================
    AI-first planner: timeline, calendar, and chat (gray/black/white + pastel pops)
    ========================================================================== */
@@ -1012,6 +931,9 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   }
   .planner-shell > .planner-timeline-col {
     display: none;
+  }
+  .planner-shell[data-mode="month"] {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 
@@ -1281,10 +1203,6 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   text-transform: uppercase;
   color: #FFFFFF;
   background: var(--planner-priority);
-}
-.planner-priority[data-priority="low"] {
-  color: var(--muted-foreground);
-  background: var(--muted);
 }
 .planner-inbox-item {
   display: grid;
@@ -1832,8 +1750,8 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   text-align: left;
   font-size: 12px;
   line-height: 1.3;
-  color: #171717;
-  background: var(--planner-fill);
+  color: var(--foreground);
+  background: var(--muted);
   cursor: grab;
   touch-action: none;
 }
@@ -1847,8 +1765,16 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   white-space: nowrap;
 }
 .planner-block small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
-  opacity: 0.7;
+  color: var(--muted-foreground);
+}
+.planner-block .planner-priority {
+  height: 14px;
+  padding: 0 5px;
+  font-size: 8px;
 }
 .planner-block[data-done="true"] {
   opacity: 0.45;
@@ -1886,4 +1812,14 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 }
 .planner-event-dot {
   margin: 12px 0 0 6px;
+}
+
+/* Task dialog: gray-tinted fields so controls read against the white sheet */
+.taskzm-task-dialog {
+  --input-background: #F5F5F5;
+  --input: #D4D4D4;
+}
+.dark .taskzm-task-dialog {
+  --input-background: #262626;
+  --input: #525252;
 }

@@ -729,7 +729,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     try {
       logger.debug(`Loading tasks from server for workspace: ${wsId}`);
       const result = await api.getTasks(wsId);
-      const serverTasks = ensureTaskArray(result.tasks);
+      const pendingDeletes = new Set(getFromLocalStorage<string[]>('pending_task_deletes', [], user?.id));
+      const serverTasks = ensureTaskArray(result.tasks).filter((task) => !pendingDeletes.has(task.id));
+      if (pendingDeletes.size > 0 && !result.error) {
+        void Promise.allSettled(Array.from(pendingDeletes).map((id) => api.deleteTask(wsId, id))).then((outcomes) => {
+          const stillPending = Array.from(pendingDeletes).filter((_, i) => outcomes[i].status === 'rejected');
+          saveToLocalStorage('pending_task_deletes', stillPending, user?.id);
+        });
+      }
       const error = result.error;
       const lastModifiedFromServer = result.lastModified;
       
@@ -2502,79 +2509,55 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }
   }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrenceDate, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]); // Removed syncWithServer from dependencies
 
-  const deleteTask = useCallback(async (taskId: string) => {
-    updateActivity(); // Track demo user activity
-    
-    // Permission check removed to break circular dependency with TeamContext
-    // Permission checks should be handled at component level using useTeam() hook
-    
-    // Delete from Supabase FIRST (source of truth)
-    if (workspaceId && accessToken) {
-      try {
-        await api.deleteTask(workspaceId, taskId);
-        // Reload from server to get the authoritative version
-        await loadTasksFromServer(workspaceId);
-        // Trigger immediate sync to notify other devices (debounced)
-        debouncedSync(false);
-        toast.success('Task deleted');
-      } catch (error) {
-        logger.error('Failed to delete task from server:', error);
-        // Fallback: delete locally
-        setTasks(prev => {
-          const updated = prev.filter(task => task.id !== taskId);
-          saveToLocalStorage('tasks', updated);
-          return updated;
-        });
-        toast.error('Task deleted offline, will sync when online');
-      }
-    } else {
-      // No workspace/auth - delete locally only
-      setTasks(prev => {
-        const updated = prev.filter(task => task.id !== taskId);
-        saveToLocalStorage('tasks', updated);
-        return updated;
-      });
-      toast.success('Task deleted (offline)');
+  const pendingDeletesKey = 'pending_task_deletes';
+
+  const setPendingDeletes = useCallback((update: (prev: Set<string>) => void) => {
+    const pending = new Set(getFromLocalStorage<string[]>(pendingDeletesKey, [], user?.id));
+    update(pending);
+    saveToLocalStorage(pendingDeletesKey, Array.from(pending), user?.id);
+  }, [user?.id]);
+
+  const removeTasksLocally = useCallback((taskIds: string[]) => {
+    const ids = new Set(taskIds);
+    setTasks(prev => {
+      const updated = prev.filter(task => !ids.has(task.id));
+      tasksRef.current = updated;
+      saveToLocalStorage('tasks', updated, user?.id);
+      return updated;
+    });
+  }, [user?.id]);
+
+  /** Removes tasks on screen first, then on the server; failed deletes stay queued so reloads can't resurrect them. */
+  const deleteTasksEverywhere = useCallback(async (taskIds: string[]): Promise<boolean> => {
+    updateActivity();
+    removeTasksLocally(taskIds);
+    if (!workspaceId || !accessToken) return true;
+
+    setPendingDeletes(pending => taskIds.forEach(id => pending.add(id)));
+    const results = await Promise.allSettled(taskIds.map(id => api.deleteTask(workspaceId, id)));
+    const confirmed = taskIds.filter((_, i) => results[i].status === 'fulfilled');
+    setPendingDeletes(pending => confirmed.forEach(id => pending.delete(id)));
+    if (confirmed.length > 0) debouncedSync(false);
+    if (confirmed.length < taskIds.length) {
+      logger.error('Failed to delete tasks from server:', results.filter(r => r.status === 'rejected'));
+      return false;
     }
-  }, [workspaceId, accessToken, updateActivity]);
+    return true;
+  }, [workspaceId, accessToken, updateActivity, removeTasksLocally, setPendingDeletes, debouncedSync]);
+
+  const deleteTask = useCallback(async (taskId: string) => {
+    const synced = await deleteTasksEverywhere([taskId]);
+    if (synced) toast.success('Task deleted');
+    else toast.error('Task deleted on this device, will sync when online');
+  }, [deleteTasksEverywhere]);
 
   const bulkDeleteTasks = useCallback(async (taskIds: string[]) => {
     if (taskIds.length === 0) return;
-    
-    updateActivity(); // Track demo user activity
-    
-    // Delete from Supabase FIRST (source of truth)
-    if (workspaceId && accessToken) {
-      try {
-        // Delete all tasks in parallel
-        await Promise.all(
-          taskIds.map(taskId => api.deleteTask(workspaceId, taskId))
-        );
-        // Reload from server to get the authoritative version
-        await loadTasksFromServer(workspaceId);
-        // Trigger immediate sync to notify other devices (debounced)
-        debouncedSync(false);
-        toast.success(`${taskIds.length} task${taskIds.length === 1 ? '' : 's'} deleted`);
-      } catch (error) {
-        logger.error('Failed to delete tasks from server:', error);
-        // Fallback: delete locally
-        setTasks(prev => {
-          const updated = prev.filter(task => !taskIds.includes(task.id));
-          saveToLocalStorage('tasks', updated);
-          return updated;
-        });
-        toast.error(`${taskIds.length} task${taskIds.length === 1 ? '' : 's'} deleted offline, will sync when online`);
-      }
-    } else {
-      // No workspace/auth - delete locally only
-      setTasks(prev => {
-        const updated = prev.filter(task => !taskIds.includes(task.id));
-        saveToLocalStorage('tasks', updated);
-        return updated;
-      });
-      toast.success(`${taskIds.length} task${taskIds.length === 1 ? '' : 's'} deleted (offline)`);
-    }
-  }, [workspaceId, accessToken, updateActivity]);
+    const label = `${taskIds.length} task${taskIds.length === 1 ? '' : 's'}`;
+    const synced = await deleteTasksEverywhere(taskIds);
+    if (synced) toast.success(`${label} deleted`);
+    else toast.error(`${label} deleted on this device, will sync when online`);
+  }, [deleteTasksEverywhere]);
 
   const addProject = useCallback(async (projectData: Partial<Project>) => {
     const newProject: Project = {

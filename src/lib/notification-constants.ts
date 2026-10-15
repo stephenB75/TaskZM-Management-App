@@ -60,6 +60,10 @@ export const BADGE_DISPLAY_MAX = 9;
 export const NOTIFICATIONS_SHEET_OPEN_EVENT = 'taskzm-open-notifications';
 /** Fired when a scheduled native notification arrives while the app is in the foreground (iOS silent delivery). */
 export const NOTIFICATION_FOREGROUND_DELIVERED_EVENT = 'taskzm-foreground-notification-delivered';
+/** Fired after an app message is stored for the notification panel, so the panel and bell badge refresh. */
+export const NOTIFICATION_STORED_EVENT = 'taskzm-notification-stored';
+/** Stored message types that count toward the bell badge; confirmations are stored as already read. */
+export const NOTIFICATION_ALERT_VARIANTS: ReadonlySet<string> = new Set(['error', 'warning']);
 /** Fired from the iOS shell when local Capacitor plugins (e.g. AppIconBadge) are registered. */
 export const NATIVE_PLUGINS_READY_EVENT = 'taskzm-native-plugins-ready';
 
@@ -109,8 +113,7 @@ export const NOTIFICATION_TOAST_MESSAGES = {
   enabled: 'Notifications enabled',
   permissionDenied: 'Notification permission denied',
   requestFailed: 'Failed to request notification permission',
-  taskSystemAlertsPrompt:
-    'Enable system alerts for due and overdue tasks when TaskZM is in the background? The in-app notification center always works without this.',
+  taskSystemAlertsPrompt: 'Get alerts for due and overdue tasks while TaskZM is in the background.',
   taskSystemAlertsEnable: 'Enable alerts',
   permissionDeniedInfo: 'Permission denied',
   permissionDeniedDescription: 'Check the instructions below to enable notifications in your browser settings.',

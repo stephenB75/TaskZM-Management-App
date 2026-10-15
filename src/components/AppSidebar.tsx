@@ -30,6 +30,8 @@ const RAIL_SECONDARY_START = 4;
 
 interface AppSidebarProps {
   currentView: string;
+  /** Desktop planner layout: week (three columns) or month (calendar spans the rail's width). */
+  calendarMode?: 'week' | 'month';
   onViewChange: (view: string) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -39,6 +41,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({
   currentView,
+  calendarMode = 'week',
   onViewChange,
   open,
   onOpenChange,
@@ -65,8 +68,8 @@ export function AppSidebar({
   const menuItems = [
     {
       id: "today",
-      label: NAVIGATION_UI_TEXT.timeline,
-      iconName: "list-checks",
+      label: shouldUseMobileLayout ? NAVIGATION_UI_TEXT.timeline : NAVIGATION_UI_TEXT.week,
+      iconName: shouldUseMobileLayout ? "list-checks" : "calendar-week",
       badge:
         currentView !== "today" && upcomingAndDueNowCount > 0
           ? upcomingAndDueNowCount
@@ -137,7 +140,7 @@ export function AppSidebar({
           }}
         />
         <p className="text-sm text-muted-foreground text-center">
-          AI-Powered Tasks
+          Auto-Scheduled Tasks
         </p>
       </div>
 
@@ -221,7 +224,11 @@ export function AppSidebar({
             <span className="planner-rail-label">{RAIL_ADD_TASK_LABEL}</span>
           </button>
           {menuItems.map((item, index) => {
-            const active = currentView === item.id;
+            const plannerItemActive =
+              item.id === "today" ? calendarMode === "week" : item.id === "dashboard" ? calendarMode === "month" : false;
+            const active = currentView === "today" && (item.id === "today" || item.id === "dashboard")
+              ? plannerItemActive
+              : currentView === item.id;
             const badge = item.badge !== undefined && item.badge > 0 && !item.pro ? item.badge : 0;
             return (
               <React.Fragment key={item.id}>
@@ -237,7 +244,7 @@ export function AppSidebar({
                   className="planner-rail-btn taskzm-bell"
                   onClick={() => onViewChange(item.id)}
                 >
-                  <Icon name={item.iconName} size={PLANNER_LAYOUT.railIconPx} weight={active ? "fill" : "regular"} />
+                  <Icon name={item.iconName} size={PLANNER_LAYOUT.railIconPx} weight={active ? (item.iconName === "calendar-week" ? "bold" : "fill") : "regular"} />
                   {badge > 0 ? (
                     <span className="planner-rail-badge">{badge > BADGE_DISPLAY_MAX ? `${BADGE_DISPLAY_MAX}+` : badge}</span>
                   ) : null}

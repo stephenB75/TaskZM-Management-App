@@ -104,7 +104,7 @@ export function TermsOfServiceDialog({
                     <li>Unlimited tasks</li>
                     <li>7-Day Kanban & Month View</li>
                     <li>Custom Tags & Organization</li>
-                    <li>Limited AI Scheduler (3 suggestions per week)</li>
+                    <li>Limited Auto Scheduler (3 suggestions per week)</li>
                     <li>Basic Pomodoro Timer (no history/stats)</li>
                     <li>Basic calendar view (read-only, no sync)</li>
                   </ul>
@@ -115,7 +115,7 @@ export function TermsOfServiceDialog({
                   </p>
                   <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
                     <li>Everything in Free</li>
-                    <li>Unlimited AI Scheduler</li>
+                    <li>Unlimited Auto Scheduler</li>
                     <li>Full Calendar Sync (Google, Outlook, Apple - bidirectional)</li>
                     <li>Task Hours & Time Tracking</li>
                     <li>Auto Task Rollover</li>
@@ -240,15 +240,15 @@ export function TermsOfServiceDialog({
                 10. AI Features
               </h3>
               <p className="text-muted-foreground leading-relaxed mb-2">
-                AI scheduling recommendations are provided as
+                auto scheduling recommendations are provided as
                 suggestions only. We do not guarantee the
                 accuracy or suitability of AI-generated
                 schedules. You are responsible for reviewing and
                 adjusting AI recommendations to fit your needs.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Free tier users are limited to 3 AI scheduling suggestions per week. 
-                This limit resets weekly on Monday. Pro subscribers have unlimited AI scheduling.
+                Free tier users are limited to 3 auto scheduling suggestions per week. 
+                This limit resets weekly on Monday. Pro subscribers have unlimited auto scheduling.
               </p>
             </section>
 

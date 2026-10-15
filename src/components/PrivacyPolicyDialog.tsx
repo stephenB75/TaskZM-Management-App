@@ -59,7 +59,7 @@ export function PrivacyPolicyDialog({
                 <li>
                   Send you service updates and notifications
                 </li>
-                <li>Improve AI scheduling recommendations</li>
+                <li>Improve scheduling recommendations</li>
                 <li>Respond to your support requests</li>
               </ul>
             </section>
@@ -102,9 +102,9 @@ export function PrivacyPolicyDialog({
                 5. AI Features
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Our AI scheduling features analyze your task
+                Our auto scheduling features analyze your task
                 patterns locally to provide personalized
-                recommendations. Task data used for AI analysis
+                recommendations. Task data used for Task analysis
                 is processed securely and is not shared with
                 external AI service providers.
               </p>

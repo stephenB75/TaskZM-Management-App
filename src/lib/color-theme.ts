@@ -42,6 +42,8 @@ export const COLOR_POP_ORANGE = '#FDBA74';
 export const COLOR_POP_BLUE = '#93C5FD';
 export const COLOR_POP_PINK = '#F9A8D4';
 export const COLOR_POP_NEUTRAL = '#D4D4D4';
+/** Low priority reads as dark gray so it stays distinct from the gray task surfaces. */
+export const COLOR_PRIORITY_LOW = '#525252';
 
 // Theme-aware tokens (follow light/dark CSS variables in globals.css)
 export const THEME_COLOR = {

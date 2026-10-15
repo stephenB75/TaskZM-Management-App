@@ -38,7 +38,6 @@ export default defineConfig(({ mode }) => {
       'react': path.resolve(__dirname, '../node_modules/react'),
       'react-dom': path.resolve(__dirname, '../node_modules/react-dom'),
       // Resolve versioned package imports
-      'sonner': 'sonner',
       'lucide-react@0.487.0': 'lucide-react',
       'lucide-react@0.469.0': 'lucide-react',
       '@radix-ui/react-dialog@1.1.6': '@radix-ui/react-dialog',

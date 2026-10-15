@@ -1,20 +1,17 @@
 /**
- * Toast Wrapper — drop-in replacement for sonner's `toast`.
+ * Toast Wrapper — keeps the familiar `toast.*` call sites without any in-app pop-ups.
  *
- * Every message is stored for the notification panel ("Updates"). On native iOS/Android
- * nothing renders in-app: the message is delivered as a system notification instead.
- * On web it falls through to sonner.
+ * Every message is stored for the notification panel ("Updates") and delivered as a system
+ * notification (iOS/Android local notification; on web only when permitted and the app is
+ * in the background).
  *
  * import { toast } from '../lib/toast-wrapper';
  */
 
 import type { ReactNode } from 'react';
-import { toast as sonnerToast } from 'sonner';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
-import { NOTIFICATION_STORAGE_KEYS } from './notification-constants';
-import { playNotificationSound } from './toast-sound';
+import { NOTIFICATION_ALERT_VARIANTS, NOTIFICATION_STORAGE_KEYS, NOTIFICATION_STORED_EVENT } from './notification-constants';
 import { MAX_STORED_TOASTS, TOAST_STORAGE_ID_PREFIX } from './toast-constants';
-import { getPlatform } from './platform';
 import { showNotification } from './native-notifications';
 import { logger } from './logger';
 
@@ -44,37 +41,28 @@ const addToastToStorage = (type: ToastVariant, title: string, description?: stri
       title,
       description,
       timestamp: new Date().toISOString(),
-      read: false,
+      read: !NOTIFICATION_ALERT_VARIANTS.has(type),
     };
     saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.toastNotifications, [entry, ...stored].slice(0, MAX_STORED_TOASTS));
+    window.dispatchEvent(new CustomEvent(NOTIFICATION_STORED_EVENT));
   } catch (error) {
     logger.warn('Failed to store toast notification:', error);
   }
 };
 
-const isNative = () => getPlatform().isNative;
-
-let nativeToastCounter = 0;
-const nextNativeId = (): ToastId => `native-toast-${++nativeToastCounter}`;
-
-function deliverNative(title: string, description?: string): void {
-  void showNotification({ title, body: description || title }).catch((error) => {
-    logger.error('Failed to deliver native notification:', error);
-  });
-}
+let toastCounter = 0;
+const nextId = (): ToastId => `toast-${++toastCounter}`;
 
 function emit(variant: ToastVariant, message: ToastMessage, options?: ToastOptions): ToastId {
   const title = asText(message) ?? '';
   const description = asText(options?.description);
-  if (title) addToastToStorage(variant, title, description);
-
-  if (isNative()) {
-    if (title) deliverNative(title, description);
-    return options?.id ?? nextNativeId();
+  if (title) {
+    addToastToStorage(variant, title, description);
+    void showNotification({ title, body: description || title }).catch((error) => {
+      logger.debug('System notification not delivered:', error);
+    });
   }
-
-  if (options?.playSound) playNotificationSound();
-  return sonnerToast[variant](message, options);
+  return options?.id ?? nextId();
 }
 
 function baseToast(message: ToastMessage, options?: ToastOptions): ToastId {
@@ -88,14 +76,10 @@ export const toast = Object.assign(baseToast, {
   warning: (message: ToastMessage, options?: ToastOptions) => emit('warning', message, options),
   message: (message: ToastMessage, options?: ToastOptions) => emit('info', message, options),
 
-  /** Progress states are transient; on native the follow-up success/error becomes the notification. */
-  loading: (message: ToastMessage, options?: ToastOptions): ToastId =>
-    isNative() ? options?.id ?? nextNativeId() : sonnerToast.loading(message, options),
-
-  custom: (...args: Parameters<typeof sonnerToast.custom>): ToastId =>
-    isNative() ? nextNativeId() : sonnerToast.custom(...args),
-
-  dismiss: (toastId?: ToastId) => (isNative() ? toastId : sonnerToast.dismiss(toastId)),
+  /** Progress states are transient; the follow-up success/error becomes the notification. */
+  loading: (_message: ToastMessage, options?: ToastOptions): ToastId => options?.id ?? nextId(),
+  custom: (..._args: unknown[]): ToastId => nextId(),
+  dismiss: (toastId?: ToastId) => toastId,
 
   promise: <T,>(
     promise: Promise<T> | (() => Promise<T>),
@@ -107,31 +91,10 @@ export const toast = Object.assign(baseToast, {
     },
   ) => {
     const run = typeof promise === 'function' ? promise() : promise;
-    const successText = (data: T) =>
-      typeof options.success === 'function' ? options.success(data) : options.success || 'Success';
-    const errorText = (error: any) =>
-      typeof options.error === 'function' ? options.error(error) : options.error || 'Error occurred';
-
-    if (isNative()) {
-      run.then(
-        (data) => emit('success', successText(data)),
-        (error) => emit('error', errorText(error)),
-      );
-      return run;
-    }
-
-    return sonnerToast.promise(run, {
-      ...options,
-      success: (data: T) => {
-        const text = successText(data);
-        addToastToStorage('success', text);
-        return text;
-      },
-      error: (error: any) => {
-        const text = errorText(error);
-        addToastToStorage('error', text);
-        return text;
-      },
-    });
+    run.then(
+      (data) => emit('success', typeof options.success === 'function' ? options.success(data) : options.success || 'Success'),
+      (error) => emit('error', typeof options.error === 'function' ? options.error(error) : options.error || 'Error occurred'),
+    );
+    return run;
   },
 });

@@ -541,7 +541,7 @@ export function AppHeader({
                 </button>
                 <button
                   type="button"
-                  aria-label="AI"
+                  aria-label={NAVIGATION_UI_TEXT.ai}
                   onClick={() => window.dispatchEvent(new CustomEvent('taskzm-open-ai'))}
                   className="inline-flex items-center bg-transparent font-semibold text-primary"
                   style={{
@@ -554,7 +554,7 @@ export function AppHeader({
                     gap: HEADER_GAP_XSMALL,
                   }}
                 >
-                  AI
+                  {NAVIGATION_UI_TEXT.ai}
                 </button>
                 {actions}
               </div>

@@ -112,7 +112,7 @@ export function ActionPlanPanel({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon name="sparkles" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
-          <h3 className="font-semibold text-foreground">AI Task Breakdown</h3>
+          <h3 className="font-semibold text-foreground">Task Breakdown</h3>
         </div>
         <Badge
           variant="outline"

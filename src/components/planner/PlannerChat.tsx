@@ -18,7 +18,7 @@ import {
   type PlannerRescheduleRange,
 } from '../../lib/navigation-constants';
 import { PLANNER_LAYOUT } from '../../lib/layout-constants';
-import { plannerCategoryColor } from '../../lib/planner-chat';
+import { formatDraftWhen, plannerCategoryColor } from '../../lib/planner-chat';
 import { triggerSelectionHaptic } from '../../lib/native-haptics';
 import { PlannerPriorityPill } from './PlannerPriorityPill';
 
@@ -245,7 +245,7 @@ export function PlannerChat({ className }: { className?: string }) {
                     <small>
                       <PlannerPriorityPill priority={draft.priority} />
                       <span className="planner-dot" style={{ background: plannerCategoryColor(draft.category) }} />
-                      {[TEXT.estimate(draft.estimatedMinutes), draft.category].filter(Boolean).join(' · ')}
+                      {[draft.when ? formatDraftWhen(draft.when) : null, TEXT.estimate(draft.estimatedMinutes), draft.category].filter(Boolean).join(' · ')}
                     </small>
                   </div>
                   <div className="flex gap-1">

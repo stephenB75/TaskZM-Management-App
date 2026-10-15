@@ -29,7 +29,7 @@ export const TIMING_CONSTANTS = {
   // Delays (in milliseconds)
   delays: {
     scroll: 100, // Scroll to current time delay
-    aiScheduler: 100, // AI scheduler processing delay
+    aiScheduler: 100, // auto scheduler processing delay
     taskContext: 1000, // Task context update delay
     badgeUpdateFallback: 100, // Fallback delay for badge updates when requestIdleCallback is not available
     splashScreen: [100, 200, 800], // Splash screen animation delays (optimized for faster loading)

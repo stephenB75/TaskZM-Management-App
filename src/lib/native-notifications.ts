@@ -280,7 +280,7 @@ export async function showNotification(options: NotificationOptions): Promise<vo
   if (platform.isNative) {
     try {
       const LocalNotifications = await loadLocalNotifications();
-      const notificationId = options.tag ? tagToNotificationId(options.tag) : Date.now();
+      const notificationId = tagToNotificationId(options.tag ?? `${options.title}_${Date.now()}`);
 
       await LocalNotifications.schedule({
         notifications: [
@@ -499,8 +499,8 @@ export function initNativeNotificationHandlers(): void {
       const LocalNotifications = await loadLocalNotifications();
       await ensureAndroidNotificationChannels(LocalNotifications);
 
-      await LocalNotifications.addListener('localNotificationReceived', (event) => {
-        const extra = event.notification.extra as { taskId?: string; type?: string } | undefined;
+      await LocalNotifications.addListener('localNotificationReceived', (notification) => {
+        const extra = notification?.extra as { taskId?: string; type?: string } | undefined;
         const notifyType = extra?.type === 'overdue' ? 'overdue' : 'reminder';
         if (extra?.taskId) {
           markTaskNotified(extra.taskId, notifyType);
@@ -509,8 +509,8 @@ export function initNativeNotificationHandlers(): void {
           window.dispatchEvent(
             new CustomEvent(NOTIFICATION_FOREGROUND_DELIVERED_EVENT, {
               detail: {
-                title: event.notification.title,
-                body: event.notification.body,
+                title: notification?.title,
+                body: notification?.body,
                 variant: notifyType,
               },
             }),
@@ -519,7 +519,7 @@ export function initNativeNotificationHandlers(): void {
       });
 
       await LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
-        const extra = event.notification.extra as {
+        const extra = event?.notification?.extra as {
           taskId?: string;
           awardId?: string;
           type?: string;
@@ -570,7 +570,10 @@ export async function cancelAllNotifications(): Promise<void> {
   if (platform.isNative) {
     try {
       const LocalNotifications = await loadLocalNotifications();
-      await LocalNotifications.cancelAll();
+      const { notifications } = await LocalNotifications.getPending();
+      if (notifications.length > 0) {
+        await LocalNotifications.cancel({ notifications: notifications.map(({ id }) => ({ id })) });
+      }
     } catch (error) {
       logger.debug('Could not cancel all native notifications:', error);
     }

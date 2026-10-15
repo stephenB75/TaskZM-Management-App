@@ -5,7 +5,7 @@ import { useTasks } from '../../contexts/TaskContext';
 import { useSheetItem } from '../../hooks/useSheetItem';
 import { useCalendarEvents, type CalendarEvent } from '../../hooks/useCalendarEvents';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
-import { homeAgendaOn, isAllDayCalendarEvent, pastelWashForTask, type HomeAgendaItem } from '../../lib/home-task-groups';
+import { homeAgendaOn, isAllDayCalendarEvent, type HomeAgendaItem } from '../../lib/home-task-groups';
 import { MOBILE_HOME_UI_TEXT, PLANNER_UI_TEXT } from '../../lib/navigation-constants';
 import { PLANNER_LAYOUT } from '../../lib/layout-constants';
 import {
@@ -24,6 +24,7 @@ import { TaskDialog } from '../TaskDialog';
 import { MonthCalendarView } from '../MonthCalendarView';
 import { SwipeToComplete } from '../SwipeToComplete';
 import { PlannerTaskRow } from './PlannerTaskRow';
+import { PlannerPriorityPill, plannerPriorityColor } from './PlannerPriorityPill';
 import type { Task } from '../../types';
 
 const TEXT = PLANNER_UI_TEXT.calendar;
@@ -59,60 +60,36 @@ function eventTimeLabel(event: CalendarEvent): string {
   return formatTimeAMPM(parseCalendarEventTime(event.start).toISOString()) ?? '';
 }
 
-const MOBILE_CALENDAR_MODES: readonly CalendarMode[] = ['week'];
-const DESKTOP_CALENDAR_MODES: readonly CalendarMode[] = ['week', 'month'];
-
 function CalendarHeader({
   mode,
-  modes,
-  onModeChange,
   anchor,
   onShift,
   onToday,
 }: {
   mode: CalendarMode;
-  modes: readonly CalendarMode[];
-  onModeChange: (mode: CalendarMode) => void;
   anchor: Date;
   onShift: (direction: 1 | -1) => void;
   onToday: () => void;
 }) {
   return (
-    <header className="planner-header">
+    <header className="planner-header planner-calendar-header">
       <div className="min-w-0">
         <span className="planner-eyebrow">{mode === 'week' ? TEXT.eyebrowWeek : TEXT.eyebrowMonth}</span>
         <h2 className="planner-title">{anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</h2>
       </div>
-      <div className="planner-header-controls">
-        <div className="planner-segment" role="tablist">
-          {modes.map((value) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={mode === value}
-              className="planner-pill"
-              data-active={mode === value ? 'true' : undefined}
-              onClick={() => onModeChange(value)}
-            >
-              {value === 'week' ? TEXT.week : TEXT.month}
-            </button>
-          ))}
+      {mode === 'week' ? (
+        <div className="flex flex-none items-center gap-1">
+          <button type="button" className="planner-icon-btn" aria-label={TEXT.previous} onClick={() => onShift(-1)}>
+            <Icon name="chevron-left" size={PLANNER_LAYOUT.iconPx} />
+          </button>
+          <button type="button" className="planner-pill" onClick={onToday}>
+            {TEXT.today}
+          </button>
+          <button type="button" className="planner-icon-btn" aria-label={TEXT.next} onClick={() => onShift(1)}>
+            <Icon name="chevron-right" size={PLANNER_LAYOUT.iconPx} />
+          </button>
         </div>
-        {mode === 'week' ? (
-          <div className="flex items-center gap-1">
-            <button type="button" className="planner-icon-btn" aria-label={TEXT.previous} onClick={() => onShift(-1)}>
-              <Icon name="chevron-left" size={PLANNER_LAYOUT.iconPx} />
-            </button>
-            <button type="button" className="planner-pill" onClick={onToday}>
-              {TEXT.today}
-            </button>
-            <button type="button" className="planner-icon-btn" aria-label={TEXT.next} onClick={() => onShift(1)}>
-              <Icon name="chevron-right" size={PLANNER_LAYOUT.iconPx} />
-            </button>
-          </div>
-        ) : null}
-      </div>
+      ) : null}
     </header>
   );
 }
@@ -255,7 +232,6 @@ function layoutBlocks(blocks: Omit<PositionedBlock, 'lane' | 'lanes'>[]): Positi
 function WeekTaskBlock({ block, onOpen }: { block: PositionedBlock; onOpen: () => void }) {
   const task = block.task as Task;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
-  const wash = pastelWashForTask(task);
   const width = `calc((100% - ${PLANNER_LAYOUT.blockInsetPx * 2}px) / ${block.lanes})`;
   return (
     <button
@@ -274,12 +250,14 @@ function WeekTaskBlock({ block, onOpen }: { block: PositionedBlock; onOpen: () =
         left: `calc(${PLANNER_LAYOUT.blockInsetPx}px + ${width} * ${block.lane})`,
         width,
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-        ['--planner-fill' as string]: wash.fill,
-        ['--planner-bar' as string]: wash.bar,
+        ['--planner-bar' as string]: plannerPriorityColor(task.priority),
       }}
     >
       <strong>{task.title}</strong>
-      <small>{taskMeta(task)}</small>
+      <small>
+        {taskMeta(task)}
+        <PlannerPriorityPill priority={task.priority} />
+      </small>
     </button>
   );
 }
@@ -475,22 +453,11 @@ function DesktopWeek({ anchor, onOpenTask }: { anchor: Date; onOpenTask: (task: 
   );
 }
 
-export function PlannerCalendar({ className }: { className?: string }) {
+export function PlannerCalendar({ className, mode: requestedMode = 'week' }: { className?: string; mode?: CalendarMode }) {
   const isMobile = useMobileLayout();
   const editor = useSheetItem<Task>();
-  const [selectedMode, setMode] = useState<CalendarMode>('week');
-  const modes: readonly CalendarMode[] = isMobile ? MOBILE_CALENDAR_MODES : DESKTOP_CALENDAR_MODES;
-  const mode: CalendarMode = modes.includes(selectedMode) ? selectedMode : 'week';
+  const mode: CalendarMode = isMobile ? 'week' : requestedMode;
   const [anchor, setAnchor] = useState(() => new Date());
-
-  useEffect(() => {
-    const setViewMode = (event: Event) => {
-      const next = (event as CustomEvent<{ mode: CalendarMode }>).detail?.mode;
-      if (next === 'week' || next === 'month') setMode(next);
-    };
-    window.addEventListener('dashboard-set-view-mode', setViewMode);
-    return () => window.removeEventListener('dashboard-set-view-mode', setViewMode);
-  }, []);
 
   const openTask = (task: Task) => {
     editor.show(task);
@@ -501,8 +468,6 @@ export function PlannerCalendar({ className }: { className?: string }) {
     <section className={`planner-panel ${className ?? ''}`} aria-label={TEXT.week} id="home-week" data-tour="week-board">
       <CalendarHeader
         mode={mode}
-        modes={modes}
-        onModeChange={setMode}
         anchor={anchor}
         onShift={(direction) => setAnchor((current) => addDays(current, direction * DAYS_IN_WEEK))}
         onToday={() => setAnchor(new Date())}

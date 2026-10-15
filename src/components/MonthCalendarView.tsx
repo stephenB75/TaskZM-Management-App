@@ -105,7 +105,7 @@ function DraggableMonthTask({
       {...attributes}
       {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
       className={cn(
-        "text-xs p-1 rounded border-l-2 transition-all relative select-none smooth-drag-transform",
+        "text-xs p-1 rounded border-l-[3px] transition-all relative select-none smooth-drag-transform",
         !isMobile && "cursor-grab hover:shadow-sm active:cursor-grabbing", // Only show drag cursor on desktop
         MONTH_VIEW_TASK_PRIORITY_STYLES[task.priority as keyof typeof MONTH_VIEW_TASK_PRIORITY_STYLES] ?? MONTH_VIEW_TASK_PRIORITY_STYLES.default,
         task.status === "done" && "opacity-60",

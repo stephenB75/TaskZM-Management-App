@@ -102,7 +102,7 @@ function getFeatureName(feature: keyof SubscriptionFeatures): string {
     unlimitedTasks: 'Unlimited Tasks',
     calendar: 'Calendar',
     customTags: 'Custom Tags',
-    aiScheduler: 'AI Scheduler',
+    aiScheduler: 'Auto Scheduler',
     taskHours: 'Task Hours & Time Tracking',
     analytics: 'Analytics Dashboard',
     taskRollover: 'Auto Task Rollover',

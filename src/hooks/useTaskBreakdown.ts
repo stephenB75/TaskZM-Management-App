@@ -153,7 +153,7 @@ export function useTaskBreakdown(
           
           // Validate that domain is defined
           if (!aiContext.domain || (aiContext.domain !== 'business' && aiContext.domain !== 'home' && aiContext.domain !== 'personal' && aiContext.domain !== 'world' && aiContext.domain !== 'mixed')) {
-            console.error('AI Analysis: Invalid domain detected, using fallback', { 
+            console.error('Task Analysis: Invalid domain detected, using fallback', { 
               domain: aiContext.domain, 
               title: title.substring(0, LOGGING_CONFIG.MAX_LOG_TEXT_LENGTH),
               description: description.substring(0, LOGGING_CONFIG.MAX_LOG_TEXT_LENGTH)
@@ -167,12 +167,12 @@ export function useTaskBreakdown(
             };
           }
         } catch (error) {
-          console.error('AI Analysis: Error creating AI context (async), falling back to sync context:', error);
+          console.error('Task Analysis: Error creating AI context (async), falling back to sync context:', error);
           // Fall back to sync context (local + cached shared terminology only)
           try {
             aiContext = createAIContextSync(title, description);
           } catch (syncError) {
-            console.error('AI Analysis: Sync context failed, using minimal fallback:', syncError);
+            console.error('Task Analysis: Sync context failed, using minimal fallback:', syncError);
             const defaultDomain = DEFAULT_TASK_DOMAIN;
             aiContext = {
             domain: defaultDomain,
@@ -207,7 +207,7 @@ export function useTaskBreakdown(
         
         // Log for debugging (only in development)
         if (process.env.NODE_ENV === 'development') {
-          console.log('AI Analysis: Creating context with effort score', {
+          console.log('Task Analysis: Creating context with effort score', {
             title: title.substring(0, LOGGING_CONFIG.MAX_LOG_TEXT_LENGTH),
             description: description.substring(0, LOGGING_CONFIG.MAX_LOG_TEXT_LENGTH),
             domain: aiContext.domain,
@@ -325,7 +325,7 @@ export function useTaskBreakdown(
         );
 
         if (process.env.NODE_ENV === 'development') {
-          console.log('AI Analysis: Breakdown generated', {
+          console.log('Task Analysis: Breakdown generated', {
             estimatedMinutes: result.estimatedMinutes,
             effortScore: result.effortScore,
             domain: result.domain,
@@ -338,7 +338,7 @@ export function useTaskBreakdown(
         setIsLoading(false);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Failed to analyze breakdown');
-        console.error('AI Analysis: Error in breakdown analysis', error);
+        console.error('Task Analysis: Error in breakdown analysis', error);
         setError(error);
         setIsLoading(false);
         setBreakdown(null); // Ensure breakdown is null on error

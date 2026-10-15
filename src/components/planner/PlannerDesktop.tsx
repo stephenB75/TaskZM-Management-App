@@ -4,8 +4,15 @@ import { PlannerTimeline } from './PlannerTimeline';
 import { PlannerCalendar } from './PlannerCalendar';
 import { PlannerChat } from './PlannerChat';
 
-/** Desktop planner: timeline, calendar, and AI chat side by side. */
-export function PlannerDesktop() {
+/** Desktop planner: week shows timeline, calendar, and scheduler chat; month gives the calendar the full width. */
+export function PlannerDesktop({ mode }: { mode: 'week' | 'month' }) {
+  if (mode === 'month') {
+    return (
+      <div className="planner-shell" data-mode="month" style={{ gridTemplateColumns: PLANNER_LAYOUT.calendarColumn }}>
+        <PlannerCalendar mode="month" />
+      </div>
+    );
+  }
   return (
     <div
       className="planner-shell"
@@ -14,7 +21,7 @@ export function PlannerDesktop() {
       }}
     >
       <PlannerTimeline className="planner-timeline-col" />
-      <PlannerCalendar />
+      <PlannerCalendar mode="week" />
       <PlannerChat />
     </div>
   );

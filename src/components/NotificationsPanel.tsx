@@ -22,6 +22,7 @@ import { UI_INBOX_GRADIENTS, UI_NOTIFICATIONS_PANEL_GRADIENTS } from "../lib/ui-
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { NotificationCard, type NotificationCardItem } from "./NotificationCard";
+import { getPlatform } from "../lib/platform";
 import {
   NOTIFICATION_STORAGE_KEYS,
   NOTIFICATION_TITLES,
@@ -31,6 +32,9 @@ import {
   NOTIFICATION_TIME_FORMATS,
   NOTIFICATION_FILTER_OPTIONS,
   NOTIFICATION_PANEL,
+  NOTIFICATION_STORED_EVENT,
+  NOTIFICATION_OPEN_TASK_EVENT,
+  NOTIFICATION_TOAST_MESSAGES,
   groupNotificationsByDate,
 } from "../lib/notification-constants";
 import {
@@ -47,7 +51,16 @@ interface NotificationsPanelProps {
 
 export function NotificationsPanel({ embedded = false }: NotificationsPanelProps = {}) {
   const { tasks } = useTasks();
-  const { settings, getToastNotifications, markToastAsRead, clearToastNotification, updateBadge } = useNotifications();
+  const {
+    settings,
+    permission,
+    requestPermission,
+    getToastNotifications,
+    markToastAsRead,
+    clearToastNotification,
+    updateBadge,
+  } = useNotifications();
+  const showAlertsPrompt = settings.enabled && permission === 'default' && !getPlatform().isNative;
   const { getTimerState } = usePomodoro();
   const { earnedAwards, awards } = useAwards();
   const shouldUseMobileLayout = useMobileLayout();
@@ -79,12 +92,22 @@ export function NotificationsPanel({ embedded = false }: NotificationsPanelProps
   // Save read notifications to localStorage
   useEffect(() => {
     localStorage.setItem(NOTIFICATION_STORAGE_KEYS.readNotifications, JSON.stringify(Array.from(readNotifications)));
-  }, [readNotifications]);
+    updateBadge();
+  }, [readNotifications, updateBadge]);
 
   // Save dismissed notifications to localStorage
   useEffect(() => {
     localStorage.setItem(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, JSON.stringify(Array.from(dismissedNotifications)));
-  }, [dismissedNotifications]);
+    updateBadge();
+  }, [dismissedNotifications, updateBadge]);
+
+  // Pick up app messages stored while the panel is open
+  const [storedVersion, setStoredVersion] = useState(0);
+  useEffect(() => {
+    const onStored = () => setStoredVersion((version) => version + 1);
+    window.addEventListener(NOTIFICATION_STORED_EVENT, onStored);
+    return () => window.removeEventListener(NOTIFICATION_STORED_EVENT, onStored);
+  }, []);
 
   // Track last seen Pomodoro session counts to detect new completions
   const [lastSeenSessions, setLastSeenSessions] = useState<Record<string, number>>(
@@ -271,7 +294,7 @@ export function NotificationsPanel({ embedded = false }: NotificationsPanelProps
     }
     
     setNotifications(newNotifications);
-  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions, getToastNotifications, earnedAwards, awards, lastSeenAwards]);
+  }, [tasks, settings, readNotifications, dismissedNotifications, getTimerState, lastSeenSessions, getToastNotifications, earnedAwards, awards, lastSeenAwards, storedVersion]);
 
   const filteredNotifications = notifications.filter((notif) => {
     if (filterType === "all") return true;
@@ -456,7 +479,14 @@ export function NotificationsPanel({ embedded = false }: NotificationsPanelProps
                       notification={notification}
                       selected={selectedNotificationIds.has(notification.id)}
                       onToggleSelect={() => handleToggleSelect(notification.id)}
-                      onMarkAsRead={() => markAsRead(notification.id)}
+                      onMarkAsRead={() => {
+                        markAsRead(notification.id);
+                        if (notification.taskId) {
+                          window.dispatchEvent(
+                            new CustomEvent(NOTIFICATION_OPEN_TASK_EVENT, { detail: { taskId: notification.taskId } }),
+                          );
+                        }
+                      }}
                       onDismiss={() => clearNotification(notification.id)}
                       checkboxSizePx={checkboxSizePx}
                       visualSizePx={visualSizePx}
@@ -560,6 +590,19 @@ export function NotificationsPanel({ embedded = false }: NotificationsPanelProps
               : 'px-4 md:px-8 py-3 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm',
           )}
         >
+          {showAlertsPrompt && (
+            <div className="mb-3 flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-100 px-3 py-2.5 dark:border-neutral-700 dark:bg-neutral-800">
+              <Icon name="bell" size={ICON_SIZE_MD} className="shrink-0 text-foreground" />
+              <p className="m-0 flex-1 text-sm text-foreground">{NOTIFICATION_TOAST_MESSAGES.taskSystemAlertsPrompt}</p>
+              <Button
+                size="sm"
+                className="h-8 shrink-0 rounded-full px-3 text-xs font-semibold"
+                onClick={() => void requestPermission()}
+              >
+                {NOTIFICATION_TOAST_MESSAGES.taskSystemAlertsEnable}
+              </Button>
+            </div>
+          )}
           <div
             className="flex flex-wrap"
             style={{ gap: NOTIFICATION_PANEL.filterChipGapPx }}
