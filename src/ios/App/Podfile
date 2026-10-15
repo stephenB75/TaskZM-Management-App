@@ -274,8 +274,27 @@ def silence_capacitor_cordova_wkprocesspool_deprecations
   end
 end
 
+# Archive builds embed frameworks through a relative symlink in UninstalledProducts; plain
+# `readlink` returns that relative path and rsync fails with "(l)stat: No such file".
+def resolve_embedded_framework_symlinks(installer)
+  installer.aggregate_targets.each do |aggregate_target|
+    script = File.join(
+      installer.sandbox.root,
+      'Target Support Files',
+      aggregate_target.name,
+      "#{aggregate_target.name}-frameworks.sh",
+    )
+    next unless File.exist?(script)
+
+    contents = File.read(script)
+    patched = contents.gsub('source="$(readlink "${source}")"', 'source="$(readlink -f "${source}")"')
+    File.write(script, patched) unless patched == contents
+  end
+end
+
 post_install do |installer|
   assertDeploymentTarget(installer)
+  resolve_embedded_framework_symlinks(installer)
   patch_capacitor_cordova_framework_headers
   patch_capacitor_framework_headers
   silence_capacitor_cordova_wkprocesspool_deprecations
