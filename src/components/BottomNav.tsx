@@ -126,7 +126,7 @@ export function BottomNav({
     {
       id: "ai",
       label: NAVIGATION_UI_TEXT.ai,
-      iconName: "sparkle",
+      iconName: "magic-wand",
       onClick: () => {
         if (tourActive) return;
         triggerHaptic();

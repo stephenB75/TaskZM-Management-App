@@ -21,6 +21,8 @@ export const PUSH_CONFIG = {
   },
   defaultKeyId: 'W3QFFC6SFU',
   defaultBundleId: 'com.app.taskzm.com',
+  /** APNs reasons meaning "wrong environment" (token or key); try the other host before failing. */
+  retryOtherEnvironmentReasons: new Set(['BadDeviceToken', 'BadEnvironmentKeyInToken']),
   /** APNs rejects provider tokens older than 1 hour; refresh well before that. */
   jwtRefreshMs: 50 * MS_PER_MINUTE,
   defaultReminderMinutes: 60,
@@ -201,7 +203,7 @@ async function sendToDevice(device: DeviceRow, message: PushMessage): Promise<Se
   for (const environment of order) {
     last = await postToApns(device.token, environment, message);
     if (last.status === 200) return { ok: true, environment };
-    if (last.reason !== 'BadDeviceToken') break;
+    if (!PUSH_CONFIG.retryOtherEnvironmentReasons.has(last.reason)) break;
   }
 
   const dropToken =

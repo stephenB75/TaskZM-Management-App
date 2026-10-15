@@ -49,7 +49,7 @@ import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { NOTIFICATION_OPEN_TASK_EVENT, NOTIFICATIONS_SHEET_OPEN_EVENT } from './lib/notification-constants';
-import { NAVIGATION_UI_TEXT } from './lib/navigation-constants';
+import { AI_PANEL_UI_TEXT, NAVIGATION_UI_TEXT } from './lib/navigation-constants';
 import { clearCalendarEventsCache } from './lib/calendar-events-cache';
 import { MOBILE_DEEP_LINK_PATHS } from './lib/mobile-constants';
 import { getTodayAgendaBadgeCount } from './lib/notification-task-filters';
@@ -1055,7 +1055,7 @@ export default function AppContent() {
         >
           <SheetHeader className="p-0 pr-10">
             <SheetTitle>AI</SheetTitle>
-            <SheetDescription>Scheduling suggestions for open tasks.</SheetDescription>
+            <SheetDescription>{AI_PANEL_UI_TEXT.sheetDescription}</SheetDescription>
           </SheetHeader>
           <Suspense fallback={null}>
             <AIRecommendationPanel onClose={() => setAiPanelOpen(false)} />

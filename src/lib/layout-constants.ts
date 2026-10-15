@@ -564,6 +564,20 @@ export const SWIPE_COMPLETE_THRESHOLD_PX = 96;
 export const SWIPE_COMPLETE_ELASTIC = 0.6;
 /** Card offset that counts as a drag rather than a tap. */
 export const SWIPE_TAP_SLOP_PX = 6;
+
+/** Task dialog option panels that slide up beneath the notes. */
+export const TASK_OPTION_SHEET = {
+  collapsedHeight: '62%',
+  dialogHeightWhenOpen: '86dvh',
+  dragThresholdPx: 60,
+  dragElastic: 0.15,
+  slideSeconds: 0.32,
+  resizeMs: 220,
+  handleWidthPx: 40,
+  handleHeightPx: 5,
+  iconPx: 22,
+  iconButtonMinWidthPx: 56,
+} as const;
 export const MOBILE_HOME_DAY_RULE_PX = 2;
 export const MOBILE_HOME_SUMMARY_NUMBER_SIZE = '2.5rem';
 export const MOBILE_HOME_SUMMARY_COMPACT_NUMBER_SIZE = '1.25rem';

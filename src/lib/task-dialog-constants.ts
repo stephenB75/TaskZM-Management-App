@@ -160,6 +160,43 @@ export const TASK_DIALOG_UI_TEXT = {
   },
 } as const;
 
+export type TaskDialogOptionId =
+  | 'schedule'
+  | 'priority'
+  | 'subtasks'
+  | 'tags'
+  | 'repeat'
+  | 'dependencies'
+  | 'assign'
+  | 'focus'
+  | 'calendar'
+  | 'ai';
+
+/** Inline option icons under the notes; each opens its own slide-up panel. */
+export const TASK_DIALOG_OPTIONS: Record<TaskDialogOptionId, { label: string; title: string; iconName: string }> = {
+  schedule: { label: 'Schedule', title: 'Schedule', iconName: 'calendar' },
+  priority: { label: 'Priority', title: 'Priority and status', iconName: 'flag' },
+  subtasks: { label: 'Subtasks', title: 'Subtasks', iconName: 'list-checks' },
+  tags: { label: 'Tags', title: 'Folder and tags', iconName: 'tag' },
+  repeat: { label: 'Repeat', title: 'Repeat', iconName: 'repeat' },
+  dependencies: { label: 'Depends', title: 'Dependencies', iconName: 'link-2' },
+  assign: { label: 'Assign', title: 'Assign to', iconName: 'users' },
+  focus: { label: 'Focus', title: 'Pomodoro timer', iconName: 'timer' },
+  calendar: { label: 'Calendar', title: 'Calendar', iconName: 'calendar-plus' },
+  ai: { label: 'AI', title: 'AI analysis', iconName: 'sparkles' },
+};
+
+export const TASK_DIALOG_OPTION_SHEET_TEXT = {
+  expand: 'Expand',
+  collapse: 'Collapse',
+  close: 'Close options',
+  optionsLabel: 'Task options',
+  calendarSyncLabel: 'Add to connected calendars',
+  calendarSyncHint: 'When this task has a time, it is copied to:',
+  calendarNoTime: 'Pick a date in Schedule to add this task to your calendar.',
+  calendarProviders: { google: 'Google Calendar', apple: 'Apple Calendar' },
+} as const;
+
 // Font Sizes
 export const TASK_DIALOG_FONT_SIZES = {
   calendarDayHeader: '0.625rem', // text-[10px] = 10px = 0.625rem

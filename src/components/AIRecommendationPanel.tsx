@@ -24,13 +24,6 @@ import { Checkbox } from "./ui/checkbox";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { Calendar as CalendarComponent } from "./ui/calendar";
 import {
   Popover,
@@ -58,6 +51,7 @@ import {
 import { toast } from '../lib/toast-wrapper';
 import { cn } from "../lib/utils";
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
+import { AI_PANEL_UI_TEXT } from "../lib/navigation-constants";
 import type { SchedulePlan, ScheduleResult } from "../hooks/useAIScheduler";
 import type { Task } from "../types";
 
@@ -962,171 +956,140 @@ export function AIRecommendationPanel({
         </DialogContent>
       </Dialog>
 
-      <div className="min-h-0" data-tour="ai-scheduler-section">
-        {/* AI Scheduler Action */}
+      <div className="flex min-h-0 flex-col gap-3" data-tour="ai-scheduler-section">
         {(() => {
-          const unscheduledTasks = getUnscheduledTasks();
-          const unscheduledCount = unscheduledTasks.length;
+          const unscheduledCount = getUnscheduledTasks().length;
 
-          // Show scheduler when AI scheduling is enabled
-          if (aiSettings.autoSchedulingEnabled) {
-            // Show full scheduler with schedule button when there are unscheduled tasks and scheduling is enabled
-            const showScheduleButton = unscheduledCount > 0 && aiSettings.scheduleUnscheduledTasks;
-            
+          if (!aiSettings.autoSchedulingEnabled) {
             return (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
+              <p className="m-0 rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
+                {AI_PANEL_UI_TEXT.disabled(unscheduledCount)}
+              </p>
+            );
+          }
+
+          const canSchedule = unscheduledCount > 0 && aiSettings.scheduleUnscheduledTasks;
+          const periods = ['day', 'week', 'twoWeeks', 'month'] as const;
+          const ranges = ['day', 'week', 'month'] as const;
+
+          return (
+            <>
+              <p className="m-0 text-sm font-medium text-muted-foreground">{AI_PANEL_UI_TEXT.prompt}</p>
+
+              <motion.section
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6"
+                className="flex flex-col gap-3 rounded-2xl bg-primary/10 p-4"
               >
-                <Card className={cn("p-4 border-2 border-primary/20", UI_INBOX_GRADIENTS.card.className)}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Icon name="brain" size={ICON_SIZE_LG} weight="duotone" className="text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm">
-                        AI Smart Scheduler
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {showScheduleButton ? (
-                          <>
-                            {unscheduledCount} task
-                            {unscheduledCount === 1 ? "" : "s"}{" "}
-                            ready to schedule
-                            {aiSettings.priorityBasedScheduling &&
-                              " by priority (Urgent → High → Medium → Low)"}
-                          </>
-                        ) : (
-                          "Schedule and reschedule your tasks using AI"
-                        )}
-                      </p>
-                    </div>
+                <div className="flex items-start gap-3">
+                  <Icon name="magic-wand" size={ICON_SIZE_LG} weight="duotone" className="shrink-0 text-primary" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="m-0 text-base font-semibold">{AI_PANEL_UI_TEXT.schedule.title}</h3>
+                    <p className="m-0 text-sm text-muted-foreground">
+                      {!aiSettings.scheduleUnscheduledTasks
+                        ? AI_PANEL_UI_TEXT.schedule.settingOff
+                        : unscheduledCount === 0
+                          ? AI_PANEL_UI_TEXT.schedule.nothingToSchedule
+                          : AI_PANEL_UI_TEXT.schedule.description(unscheduledCount)}
+                      {canSchedule && aiSettings.priorityBasedScheduling && ` ${AI_PANEL_UI_TEXT.schedule.byPriority}`}
+                    </p>
                   </div>
-                  <div className="space-y-3">
-                    {showScheduleButton && (
-                      <>
-                        {/* Period Selector for AI Suggestions */}
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                          <Select
-                            value={suggestionPeriod}
-                            onValueChange={(value) => setSuggestionPeriod(value as 'day' | 'week' | 'month' | 'twoWeeks')}
+                </div>
+                {canSchedule && (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs font-medium text-muted-foreground">{AI_PANEL_UI_TEXT.schedule.periodLabel}</span>
+                      <div role="radiogroup" className="grid grid-cols-4 gap-1 rounded-xl bg-background/70 p-1">
+                        {periods.map((period) => (
+                          <button
+                            key={period}
+                            type="button"
+                            role="radio"
+                            aria-checked={suggestionPeriod === period}
+                            onClick={() => setSuggestionPeriod(period)}
+                            className={cn(
+                              'rounded-lg px-1 py-1.5 text-xs font-medium transition-colors',
+                              suggestionPeriod === period ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                            )}
                           >
-                            <SelectTrigger className="h-9 w-full rounded-xl text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="day">Today</SelectItem>
-                              <SelectItem value="week">This Week</SelectItem>
-                              <SelectItem value="month">This Month</SelectItem>
-                              <SelectItem value="twoWeeks">Two Weeks</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {(suggestionPeriod === 'day' || suggestionPeriod === 'week' || suggestionPeriod === 'month') && (
-                            <Popover open={suggestionDateOpen} onOpenChange={setSuggestionDateOpen}>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-9 w-full rounded-xl text-xs sm:flex-1"
-                                >
-                                  <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className="mr-1" />
-                                  {suggestionDate?.toLocaleDateString('en-US', {
-                                    month: suggestionPeriod === 'month' ? 'long' : 'short',
-                                    day: suggestionPeriod !== 'month' ? 'numeric' : undefined,
-                                    year: 'numeric'
-                                  })}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <CalendarComponent
-                                  mode="single"
-                                  selected={suggestionDate}
-                                  onSelect={(date) => {
-                                    setSuggestionDate(date);
-                                    setSuggestionDateOpen(false);
-                                  }}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          )}
-                        </div>
-                        <Button
-                          onClick={handleScheduleUnscheduledTasks}
-                          className="w-full rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                          size="default"
-                        >
-                          <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="mr-2" />
-                          {aiSettings.priorityBasedScheduling
-                            ? "Schedule by Priority"
-                            : "Schedule Tasks"}
-                        </Button>
-                      </>
+                            {AI_PANEL_UI_TEXT.periods[period]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {suggestionPeriod !== 'twoWeeks' && (
+                      <Popover open={suggestionDateOpen} onOpenChange={setSuggestionDateOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-9 w-full text-xs">
+                            <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className="mr-1" />
+                            {suggestionDate?.toLocaleDateString('en-US', {
+                              month: suggestionPeriod === 'month' ? 'long' : 'short',
+                              day: suggestionPeriod !== 'month' ? 'numeric' : undefined,
+                              year: 'numeric',
+                            })}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={suggestionDate}
+                            onSelect={(date) => {
+                              setSuggestionDate(date);
+                              setSuggestionDateOpen(false);
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     )}
-                    
-                    {/* Reschedule Options - Always show when AI scheduling is enabled */}
-                    <div className="space-y-2" data-tour="ai-reschedule-section">
-                      <span className="text-xs font-medium text-muted-foreground">Reschedule</span>
-                      <Select
+                    <Button onClick={handleScheduleUnscheduledTasks} disabled={isScheduling} className="w-full">
+                      <Icon name="magic-wand" size={ICON_SIZE_MD} weight="duotone" className="mr-1" />
+                      {AI_PANEL_UI_TEXT.schedule.action(unscheduledCount)}
+                    </Button>
+                  </>
+                )}
+              </motion.section>
+
+              <motion.section
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-3 rounded-2xl bg-muted/60 p-4"
+                data-tour="ai-reschedule-section"
+              >
+                <div className="flex items-start gap-3">
+                  <Icon name="calendar-dots" size={ICON_SIZE_LG} weight="duotone" className="shrink-0 text-primary" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="m-0 text-base font-semibold">{AI_PANEL_UI_TEXT.reschedule.title}</h3>
+                    <p className="m-0 text-sm text-muted-foreground">{AI_PANEL_UI_TEXT.reschedule.description}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">{AI_PANEL_UI_TEXT.reschedule.rangeLabel}</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ranges.map((range) => (
+                      <Button
+                        key={range}
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         disabled={isScheduling}
-                        onValueChange={(value) => {
-                          setRescheduleType(value as 'day' | 'week' | 'month');
+                        onClick={() => {
+                          setRescheduleType(range);
                           setSelectedDate(new Date());
                           setShowRescheduleDialog(true);
                         }}
                       >
-                        <SelectTrigger className="h-9 rounded-xl text-sm">
-                          <SelectValue placeholder="Choose a range" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="day">Day</SelectItem>
-                          <SelectItem value="week">Week</SelectItem>
-                          <SelectItem value="month">Month</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        {AI_PANEL_UI_TEXT.rescheduleRanges[range]}
+                      </Button>
+                    ))}
                   </div>
-                </Card>
-              </motion.div>
-            );
-          }
-
-          // Show info message when AI scheduling is disabled but there are unscheduled tasks
-          if (
-            unscheduledCount > 0 &&
-            !aiSettings.autoSchedulingEnabled
-          ) {
-            return (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6"
-              >
-                <Card className="p-4 border border-muted bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <Icon name="sparkles" size={ICON_SIZE_LG} weight="duotone" className="text-muted-foreground" />
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">
-                        AI scheduling is disabled. Enable it in
-                        Settings to automatically schedule your{" "}
-                        {unscheduledCount} unscheduled task
-                        {unscheduledCount === 1 ? "" : "s"}.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            );
-          }
-
-          return null;
+                </div>
+              </motion.section>
+            </>
+          );
         })()}
 
-        {/* AI Scheduler Info */}
-        <p className="text-xs text-muted-foreground">
-          The scheduler uses priority, due dates, and status. Turn on priority-based scheduling in Settings when you want that order.
-        </p>
+        <p className="m-0 text-xs text-muted-foreground">{AI_PANEL_UI_TEXT.footnote}</p>
       </div>
     </>
   );

@@ -31,13 +31,13 @@ import {
   SelectValue,
 } from "./ui/select";
 import { UI_GRADIENT_COLORS, UI_FOLDER_COLORS } from "../lib/ui-colors";
-import { Z_INDEX, MAX_HEIGHT, ICON_SIZE_XS, DIALOG_MOBILE_SHEET_CLASS, CLOSE_BUTTON } from "../lib/layout-constants";
+import { Z_INDEX, MAX_HEIGHT, ICON_SIZE_XS, DIALOG_MOBILE_SHEET_CLASS, CLOSE_BUTTON, TASK_OPTION_SHEET } from "../lib/layout-constants";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { CheckboxSwitch as Switch } from "./ui/checkbox-switch";
 import { Slider } from "./ui/slider";
-import { Tabs, TabsContent } from "./ui/tabs";
+import { TaskOptionBar, TaskOptionSheet } from "./TaskOptionSheet";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { PomodoroTimer } from "./PomodoroTimer";
 import { EmojiPickerPopover } from "./EmojiPickerPopover";
@@ -98,9 +98,8 @@ import {
 } from "../lib/new-task-ai-assist";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS, MOBILE_HOME_LABEL_GAP, MOBILE_HOME_SECTION_GAP } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
-import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS, getTaskDialogPriorityAccent } from "../lib/task-dialog-constants";
+import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS, getTaskDialogPriorityAccent, TASK_DIALOG_OPTIONS, TASK_DIALOG_OPTION_SHEET_TEXT, type TaskDialogOptionId } from "../lib/task-dialog-constants";
 import { AGENDA_LIST_CARD } from "../lib/agenda-list-card-constants";
-import { TaskDialogSection } from "./task-dialog/TaskDialogSection";
 import { useIsMobile } from "./ui/use-mobile";
 import type {
   Task,
@@ -739,11 +738,12 @@ export function TaskDialog({
   const [scheduledMinutes, setScheduledMinutes] = useState("");
   const [timeFormat, setTimeFormat] = useState<"12hr" | "24hr">("12hr");
   const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
-  const [activeTab, setActiveTab] = useState<string>("basic");
-  const [showSettings, setShowSettings] = useState(false);
+  const [activeOption, setActiveOption] = useState<TaskDialogOptionId | null>(null);
+  const [syncToCalendar, setSyncToCalendar] = useState(true);
   useEffect(() => {
     if (!open) return;
-    setShowSettings(false);
+    setActiveOption(null);
+    setSyncToCalendar(true);
     const viewport = window.visualViewport;
     if (!viewport) return;
     const keepFieldVisible = () => {
@@ -2312,7 +2312,7 @@ export function TaskDialog({
     }
 
     // Auto-sync to calendar if task has scheduled date and calendar is connected
-    if (finalScheduledDate && hasFeature('calendarSync')) {
+    if (finalScheduledDate && syncToCalendar && hasFeature('calendarSync')) {
       // Only sync to Google and Apple Calendar
       const providersToSync: Array<'google' | 'apple'> = [];
       if (calendarStatus.google) providersToSync.push('google');
@@ -2645,6 +2645,8 @@ export function TaskDialog({
           TASK_DIALOG_COLORS.dialogMaxWidth,
           "text-foreground dark:text-foreground"
         )}
+        data-task-options-open={activeOption ? 'true' : undefined}
+        style={activeOption ? { height: TASK_OPTION_SHEET.dialogHeightWhenOpen } : undefined}
       >
         {/* Dialog shell — white card style matching agenda task cards */}
         <div
@@ -2674,11 +2676,7 @@ export function TaskDialog({
             <Icon name="x" size={CLOSE_BUTTON.iconPx} aria-hidden />
           </button>
           <DialogTitle className="sr-only">
-          {activeTab === 'basic'
-            ? TASK_DIALOG_UI_TEXT.taskInfoTitle
-            : activeTab === 'scheduling'
-              ? TASK_DIALOG_UI_TEXT.schedule.desktop
-              : TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
+          {activeOption ? TASK_DIALOG_OPTIONS[activeOption].title : TASK_DIALOG_UI_TEXT.taskInfoTitle}
         </DialogTitle>
         <form
           noValidate
@@ -2693,68 +2691,8 @@ export function TaskDialog({
               Editing recurring series. Changes here apply to all occurrences.
             </p>
           )}
-          {!showSettings ? (
-            <div className="flex min-h-0 flex-col overflow-y-auto" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
-              <div className="flex flex-col" style={{ gap: MOBILE_HOME_LABEL_GAP }}>
-                <Label htmlFor="task-notes-title">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
-                <Input
-                  id="task-notes-title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  className="rounded-xl"
-                />
-              </div>
-              <div className="flex flex-col" style={{ gap: MOBILE_HOME_LABEL_GAP }}>
-                <Label htmlFor="task-notes">{TASK_DIALOG_UI_TEXT.notesHeading}</Label>
-                <RichTextEditor
-                  compact
-                  value={description}
-                  onChange={setDescription}
-                  rows={4}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowSettings(true)}
-                className="w-full rounded-xl border border-border bg-transparent px-3 py-2 text-left text-sm font-medium text-primary"
-              >
-                {TASK_DIALOG_UI_TEXT.taskSettings}
-              </button>
-            </div>
-          ) : (
-          <>
-          <button
-            type="button"
-            onClick={() => setShowSettings(false)}
-            className="mb-2 w-full rounded-xl border border-border bg-transparent px-3 py-2 text-left text-sm font-medium text-primary"
-          >
-            {TASK_DIALOG_UI_TEXT.backToNotes}
-          </button>
-          {/* Tabbed Interface - single column (reference: no right menu) */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 flex overflow-hidden flex-col">
-              <div className="shrink-0 px-1 pb-2">
-                <Select value={activeTab} onValueChange={setActiveTab}>
-                  <SelectTrigger className="h-9 rounded-xl text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="basic">{TASK_DIALOG_UI_TEXT.groupWhat}</SelectItem>
-                    <SelectItem value="scheduling">{TASK_DIALOG_UI_TEXT.groupWhen}</SelectItem>
-                    <SelectItem value="organization">{TASK_DIALOG_UI_TEXT.groupSteps}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className={cn(
-                "flex-1 overflow-y-auto min-w-0",
-                TASK_DIALOG_MINIMAL_SPACING.contentPadding
-              )}>
-                <TabsContent value="basic" className={cn("mt-0 flex flex-col min-w-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
-                  <TaskDialogSection
-                    accentColor={getTaskDialogPriorityAccent(priority)}
-                    title={TASK_DIALOG_UI_TEXT.taskInfoTitle}
-                    className={TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY}
-                  >
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-1" style={{ gap: MOBILE_HOME_SECTION_GAP }}>
                   <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
                     <div className="flex items-center justify-between gap-2">
                       <Label htmlFor="title" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.taskNameMinimal}</Label>
@@ -2996,7 +2934,28 @@ export function TaskDialog({
                     )}
                   />
                   </div>
-
+              <TaskOptionBar
+                activeId={activeOption}
+                onSelect={(id) => setActiveOption((current) => (current === id ? null : id))}
+                items={[
+                  { id: 'schedule', indicator: Boolean(scheduledDate || dueDate) },
+                  { id: 'priority', accentColor: getTaskDialogPriorityAccent(priority) },
+                  { id: 'subtasks', indicator: subtasks.length },
+                  { id: 'tags', indicator: tags.length || Boolean(folderId) },
+                  { id: 'repeat', indicator: recurrenceType !== 'none' },
+                  { id: 'dependencies', indicator: dependencies.length },
+                  ...(teamMembers.length > 0 ? [{ id: 'assign' as const, indicator: assignedTo.length }] : []),
+                  ...(task ? [{ id: 'focus' as const }] : []),
+                  ...(calendarStatus.google || calendarStatus.apple
+                    ? [{ id: 'calendar' as const, indicator: syncToCalendar && Boolean(scheduledDate) }]
+                    : []),
+                  ...(title.trim() || description.trim() ? [{ id: 'ai' as const }] : []),
+                ]}
+              />
+            </div>
+            <TaskOptionSheet activeId={activeOption} onClose={() => setActiveOption(null)}>
+                {activeOption === 'ai' && (
+                  <div className="flex flex-col gap-3">
                   {/* AI Analysis - under task name and description; components constrained to block borders */}
                   {(title.trim() || description.trim()) && (
                     <div className={cn(
@@ -3196,7 +3155,10 @@ export function TaskDialog({
                       ) : null}
                     </div>
                   )}
-
+                  </div>
+                )}
+                {activeOption === 'priority' && (
+                  <div className="flex flex-col gap-3">
                   <div className={TASK_DIALOG_MINIMAL_SPACING.fieldSpaceY}>
                     <Label className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.status}</Label>
                     <Select
@@ -3235,16 +3197,10 @@ export function TaskDialog({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  </TaskDialogSection>
-                </TabsContent>
-
-                <TabsContent value="scheduling" className={cn("mt-0 flex flex-col min-w-0", TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY)}>
-                  <TaskDialogSection
-                    accentColor={getTaskDialogPriorityAccent(priority)}
-                    title={TASK_DIALOG_UI_TEXT.schedule.desktop}
-                    className={TASK_DIALOG_MINIMAL_SPACING.basicContentSpaceY}
-                  >
+                  </div>
+                )}
+                {activeOption === 'schedule' && (
+                  <div className="flex flex-col gap-3">
                   {(scheduledDate || dueDate) && (() => {
                     const activeDate = activeDateField === 'scheduled' ? scheduledDate : dueDate;
                     if (!activeDate) return null;
@@ -3698,16 +3654,10 @@ export function TaskDialog({
                         )}
                       </div>
                     )}
-                  </TaskDialogSection>
-              </TabsContent>
-
-              {/* Organization & Advanced Tab - Folder, Tags, Subtasks, etc. */}
-                <TabsContent value="organization" className={cn("mt-0 flex flex-col min-w-0", TASK_DIALOG_MINIMAL_SPACING.cardSpaceY)}>
-                  <TaskDialogSection
-                    accentColor={getTaskDialogPriorityAccent(priority)}
-                    title={TASK_DIALOG_UI_TEXT.organize.header ?? TASK_DIALOG_UI_TEXT.organize.desktop}
-                    className={TASK_DIALOG_MINIMAL_SPACING.cardSpaceY}
-                  >
+                  </div>
+                )}
+                {activeOption === 'tags' && (
+                  <div className="flex flex-col gap-3">
                   {folders.length > 0 && (
                     <div className={cn(
                       cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
@@ -3860,17 +3810,16 @@ export function TaskDialog({
                       </div>
                     )}
                   </div>
-
+                  </div>
+                )}
+                {activeOption === 'subtasks' && (
+                  <div className="flex flex-col gap-3">
                 {/* Step 4: Create Subtask */}
                 <div className={cn(
                   cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
-                  cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-3"),
-                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                  cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-3")
                 )}>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">4</span>
-                    </div>
                     <Label className="text-base font-semibold text-foreground flex items-center gap-2">
                       <Icon name="list-checks" size={ICON_SIZE_MD} className="text-primary" />
                       Create Subtask
@@ -3964,13 +3913,15 @@ export function TaskDialog({
                   )}
                 </div>
 
-                <Separator className="bg-primary/20" />
+                  </div>
+                )}
+                {activeOption === 'repeat' && (
+                  <div className="flex flex-col gap-3">
 
                 {/* Recurrence with Toggle - Moved from Advanced */}
                 <div className={cn(
                   cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
-                  "p-4 sm:p-5 space-y-4 sm:space-y-5",
-                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                  "p-4 sm:p-5 space-y-4 sm:space-y-5"
                 )}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -4139,8 +4090,7 @@ export function TaskDialog({
                           <Label className="text-xs text-muted-foreground">Ends</Label>
                           <div className={cn(
                             cn("w-full flex justify-center", TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
-                            cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "py-2"),
-                            "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                            cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "py-2")
                           )}>
                             <SingleDateMiniCalendar
                               selectedDate={recurrenceEndDate}
@@ -4182,13 +4132,15 @@ export function TaskDialog({
                   )}
                 </div>
 
-                <Separator className="bg-primary/20" />
+                  </div>
+                )}
+                {activeOption === 'dependencies' && (
+                  <div className="flex flex-col gap-3">
 
                 {/* Task Dependencies - Pro Yearly Feature */}
                 <div className={cn(
                   cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
-                  cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
-                  "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                  cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2")
                 )}>
                   <div className="flex items-center gap-2">
                     <Icon name="link-2" size={ICON_SIZE_MD} className="text-primary" />
@@ -4335,14 +4287,16 @@ export function TaskDialog({
                   )}
                 </div>
 
-                <Separator className="bg-primary/20" />
+                  </div>
+                )}
+                {activeOption === 'assign' && (
+                  <div className="flex flex-col gap-3">
 
                 {/* Team Assignment - Moved from Advanced */}
                 {teamMembers.length > 0 && (
                   <div className={cn(
                     cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
-                    cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
-                    "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                    cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2")
                   )}>
                     <div className="flex items-center gap-2">
                       <Icon name="users" size={ICON_SIZE_MD} className="text-primary" />
@@ -4450,7 +4404,10 @@ export function TaskDialog({
                   </div>
                 )}
 
-                <Separator className="bg-primary/20" />
+                  </div>
+                )}
+                {activeOption === 'focus' && (
+                  <div className="flex flex-col gap-3">
 
                 {/* Pomodoro Timer - Moved from Advanced. Use form's estimated time so duration matches what user sees and can start from dialog. */}
                 {task && hasFeature("pomodoroTimer") && (() => {
@@ -4482,8 +4439,7 @@ export function TaskDialog({
                   return (
                     <div className={cn(
                     cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl"),
-                    cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2"),
-                    "border-2 border-primary/20 shadow-md hover:shadow-lg transition-shadow"
+                    cn(TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2")
                   )}>
                       <Label className="text-sm font-semibold flex items-center gap-2">
                         🍅 Pomodoro Timer
@@ -4524,15 +4480,33 @@ export function TaskDialog({
                     )}
                   </p>
                 )}
-                  </TaskDialogSection>
-                </TabsContent>
-
-                {/* Advanced Tab - Removed (merged into Organization) */}
-              </div>
+                  </div>
+                )}
+                {activeOption === 'calendar' && (
+                  <div className="flex flex-col gap-3">
+                    <label className="flex items-center justify-between gap-3 rounded-xl bg-muted/60 px-3 py-3">
+                      <span className="text-sm font-medium">{TASK_DIALOG_OPTION_SHEET_TEXT.calendarSyncLabel}</span>
+                      <Switch checked={syncToCalendar} onCheckedChange={setSyncToCalendar} />
+                    </label>
+                    {scheduledDate ? (
+                      <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                        <p className="m-0 text-sm">{TASK_DIALOG_OPTION_SHEET_TEXT.calendarSyncHint}</p>
+                        {(['google', 'apple'] as const)
+                          .filter((provider) => calendarStatus[provider])
+                          .map((provider) => (
+                            <span key={provider} className="flex items-center gap-2 text-foreground">
+                              <Icon name="calendar-plus" size={ICON_SIZE_SM} className="text-primary" aria-hidden />
+                              {TASK_DIALOG_OPTION_SHEET_TEXT.calendarProviders[provider]}
+                            </span>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="m-0 text-sm text-muted-foreground">{TASK_DIALOG_OPTION_SHEET_TEXT.calendarNoTime}</p>
+                    )}
+                  </div>
+                )}
+              </TaskOptionSheet>
             </div>
-          </Tabs>
-          </>
-          )}
 
           {/* Apply to series: when editing a series occurrence, optionally apply shared fields to all in series */}
           {isSeriesOccurrence && task && (

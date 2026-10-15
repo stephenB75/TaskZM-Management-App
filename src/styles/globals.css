@@ -326,6 +326,12 @@ html[data-keyboard-open="true"] {
     padding: 1rem 1rem 1.25rem !important;
   }
 
+  /* Task dialog grows to full sheet height while an option panel is open. */
+  [data-slot="dialog-content"][data-task-options-open="true"] {
+    height: calc(100dvh - var(--dialog-above-nav) - env(safe-area-inset-top, 0px) - 1rem) !important;
+    max-height: calc(100dvh - var(--dialog-above-nav) - env(safe-area-inset-top, 0px) - 1rem) !important;
+  }
+
   [data-slot="dialog-overlay"],
   [data-slot="sheet-overlay"] {
     bottom: var(--dialog-above-nav);

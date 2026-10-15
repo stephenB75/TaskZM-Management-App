@@ -21,6 +21,31 @@ export const NAVIGATION_UI_TEXT = {
 
 export const AI_PANEL_OPEN_EVENT = 'taskzm-open-ai';
 
+export const AI_PANEL_UI_TEXT = {
+  sheetDescription: 'Let AI plan new tasks or re-plan existing ones.',
+  prompt: 'What should AI do?',
+  schedule: {
+    title: 'Schedule new tasks',
+    description: (count: number) =>
+      `${count} open task${count === 1 ? '' : 's'} without a time. AI finds a slot for each one.`,
+    byPriority: 'Urgent tasks are placed first.',
+    nothingToSchedule: 'Every open task already has a time.',
+    settingOff: 'Scheduling open tasks is turned off in Settings.',
+    periodLabel: 'Plan across',
+    action: (count: number) => `Schedule ${count} task${count === 1 ? '' : 's'}`,
+  },
+  reschedule: {
+    title: 'Reschedule planned tasks',
+    description: 'Move tasks that already have a time to better slots, for example after a busy day.',
+    rangeLabel: 'Pick what to re-plan',
+  },
+  disabled: (count: number) =>
+    `AI scheduling is off. Turn it on in Settings to plan your ${count} open task${count === 1 ? '' : 's'}.`,
+  footnote: 'AI uses priority, due dates, your working hours, and calendar events.',
+  periods: { day: 'Today', week: 'Week', twoWeeks: '2 weeks', month: 'Month' },
+  rescheduleRanges: { day: 'A day', week: 'A week', month: 'A month' },
+} as const;
+
 export const MOBILE_HOME_UI_TEXT = {
   tabs: {
     schedule: 'Schedule',

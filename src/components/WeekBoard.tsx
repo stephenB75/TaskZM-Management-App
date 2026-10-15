@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useTasks } from '../contexts/TaskContext';
 import { DroppableColumn } from './DroppableColumn';
+import { SwipeToComplete } from './SwipeToComplete';
 import { PastelEventCard, PastelTaskCard } from './PastelTaskCard';
 import { TaskDialog } from './TaskDialog';
 import { homeAgendaOn } from '../lib/home-task-groups';
@@ -260,7 +261,7 @@ export function WeekBoard({
             })}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <DroppableColumn id={getDateString(selected)} fillHeight className="h-full min-h-0">
+            <div className="h-full min-h-0">
               <h2 style={{ margin: 0, fontSize: MOBILE_HOME_BODY_FONT_SIZE, fontWeight: 500 }}>
                 {selected.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
               </h2>
@@ -271,7 +272,9 @@ export function WeekBoard({
                   selectedAgenda.map((item) =>
                     item.kind === 'task' ? (
                       <li key={item.key} id={`home-task-${item.task.id}`} style={{ scrollMarginTop: HEADER_HEIGHT }}>
-                        <DraggableWeekCard task={item.task} onOpen={() => openTask(item.task)} />
+                        <SwipeToComplete task={item.task}>
+                          <PastelTaskCard task={item.task} onOpen={() => openTask(item.task)} />
+                        </SwipeToComplete>
                       </li>
                     ) : (
                       <li key={item.key}>
@@ -281,7 +284,7 @@ export function WeekBoard({
                   )
                 )}
               </ul>
-            </DroppableColumn>
+            </div>
           </div>
         </>
       )}
