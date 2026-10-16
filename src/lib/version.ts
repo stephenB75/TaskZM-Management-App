@@ -8,7 +8,7 @@
 export const APP_VERSION = '2.0.0';
 export const VERSION_NAME = 'TaskZM 2.0';
 export const VERSION_DATE = 'October 9, 2026';
-export const BUILD_NUMBER = '20261009-1';
+export const BUILD_NUMBER = '20261015-1';
 
 /** Stable release stamp for cache purge (version + build). */
 export function getAppReleaseStamp(): string {
