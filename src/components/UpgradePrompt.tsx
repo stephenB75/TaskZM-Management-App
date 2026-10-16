@@ -226,7 +226,7 @@ export function UpgradePrompt({
           <AlertDialogCancel>{SUBSCRIPTION_UI_TEXT.upgradePrompt.maybeLater}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleUpgrade}
-            className={`${UI_UPGRADE_PROMPT_COLORS.accentClass} ${UI_UPGRADE_PROMPT_COLORS.accentHoverClass} text-gray-800 dark:text-white`}
+            className="bg-foreground text-background hover:bg-foreground/90 [&_svg]:text-background"
           >
             <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="mr-2" />
             {SUBSCRIPTION_UI_TEXT.upgradePrompt.upgradeToPro}

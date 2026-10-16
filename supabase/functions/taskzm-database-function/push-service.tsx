@@ -200,14 +200,21 @@ async function sendToDevice(device: DeviceRow, message: PushMessage): Promise<Se
     : ['production', 'sandbox'];
 
   let last = { status: 0, reason: '' };
+  let environmentRejections = 0;
   for (const environment of order) {
     last = await postToApns(device.token, environment, message);
     if (last.status === 200) return { ok: true, environment };
     if (!PUSH_CONFIG.retryOtherEnvironmentReasons.has(last.reason)) break;
+    environmentRejections++;
   }
 
+  // Rejected by both hosts: the token belongs to an environment this key cannot sign for.
+  const unusableInAnyEnvironment = order.length > 1 && environmentRejections === order.length;
   const dropToken =
-    last.status === 410 || last.reason === 'BadDeviceToken' || last.reason === 'Unregistered';
+    last.status === 410 ||
+    last.reason === 'BadDeviceToken' ||
+    last.reason === 'Unregistered' ||
+    unusableInAnyEnvironment;
   return { ok: false, status: last.status, reason: last.reason, dropToken };
 }
 

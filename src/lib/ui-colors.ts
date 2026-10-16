@@ -91,8 +91,7 @@ export const UI_PRICING_GRADIENT_COLORS = {
     from: '#171717',
     via: '#A3A3A3',
     to: '#E5E5E5',
-    // Tailwind class: bg-gradient-to-r from-[#171717] via-[#A3A3A3] to-[#E5E5E5] bg-clip-text text-transparent
-    className: 'bg-gradient-to-r from-[#171717] via-[#A3A3A3] to-[#E5E5E5] bg-clip-text text-transparent',
+    className: 'text-foreground',
   },
 } as const;
 
@@ -120,7 +119,7 @@ export const UI_PRICING_DIALOG_COLORS = {
     from: '#171717',
     via: '#A3A3A3',
     to: '#D4D4D4',
-    className: 'bg-gradient-to-r from-[#171717] via-[#A3A3A3] to-[#D4D4D4] bg-clip-text text-transparent',
+    className: 'text-foreground',
   },
   cardGradient: {
     from: '#171717',
@@ -195,8 +194,7 @@ export const UI_AUTH_GRADIENT_COLORS = {
     from: '#262626',
     via: '#A3A3A3',
     to: '#E5E5E5',
-    // Tailwind class: bg-gradient-to-r from-[#262626] via-[#A3A3A3] to-[#E5E5E5] bg-clip-text text-transparent
-    className: 'bg-gradient-to-r from-[#262626] via-[#A3A3A3] to-[#E5E5E5] bg-clip-text text-transparent',
+    className: 'text-foreground',
   },
   icon: {
     from: '#262626',
@@ -484,7 +482,7 @@ export const UI_AWARD_STAT_GRADIENTS = {
     textGradient: {
       from: 'from-neutral-600',
       to: 'to-neutral-600',
-      className: 'bg-gradient-to-r from-neutral-600 to-neutral-600 bg-clip-text text-transparent',
+      className: 'text-foreground',
     },
   },
   earned: {

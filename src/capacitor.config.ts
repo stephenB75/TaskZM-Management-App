@@ -42,7 +42,7 @@ const config: CapacitorConfig = {
       sound: 'default',
     },
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'banner', 'list'],
+      presentationOptions: ['badge', 'sound', 'alert'],
     },
   },
   ios: {
