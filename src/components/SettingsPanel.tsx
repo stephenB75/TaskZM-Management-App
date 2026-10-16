@@ -224,7 +224,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   const { subscription, features, cancelSubscription, refreshSubscription, isLoading: isSubscriptionLoading } = useSubscription();
   const { calendarStatus, isSyncing: isCalendarSyncing, lastSync: lastCalendarSync, connectingProvider, disconnectingProvider, connectCalendar, disconnectCalendar, syncAllTasks: syncAllTasksToCalendar, checkCalendarStatus } = useCalendar();
   const { awards, earnedAwards, getAwardProgress } = useAwards();
-  const { permission, settings: notificationSettings, badgeCount, enableNotifications, refreshPermission, updateSettings: updateNotificationSettings } = useNotifications();
+  const { permission, settings: notificationSettings, enableNotifications, refreshPermission, updateSettings: updateNotificationSettings } = useNotifications();
   const [dayType, setDayType] = useState<'weekday' | 'weekend'>('weekday');
   const [showPricingDialog, setShowPricingDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
@@ -853,7 +853,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         {subscription.tier === 'pro' && subscription.endDate && (
                           <div className="text-xs text-muted-foreground" style={{ display: 'flex', flexDirection: 'column', gap: SETTINGS_PANEL_SPACING_XSMALL }}>
                             {subscription.cancelAtPeriodEnd ? (
-                              <p className="text-amber-600 dark:text-amber-400">
+                              <p className="text-neutral-600 dark:text-neutral-400">
                                 {SUBSCRIPTION_UI_TEXT.settings.subscriptionDetails.expires} {new Date(subscription.endDate).toLocaleDateString()}
                               </p>
                             ) : (
@@ -870,20 +870,20 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           <div className="grid" style={{ gap: SETTINGS_PANEL_SPACING_MEDIUM }}>
                             {/* Unlimited Tasks - Available for all */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-                              <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                              <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.unlimitedTasks}</span>
                             </div>
 
                             {/* Custom Tags - Available for all */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
-                              <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                              <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               <span className="min-w-0 flex-1 break-words" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>{SUBSCRIPTION_UI_TEXT.settings.features.customTags}</span>
                             </div>
 
                             {/* Auto Scheduler - PRO only */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.aiScheduler ? (
-                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               ) : (
                                 <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                               )}
@@ -903,7 +903,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             {/* Task Hours - PRO only */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.taskHours ? (
-                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               ) : (
                                 <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                               )}
@@ -920,7 +920,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             {/* Analytics - PRO only */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.analytics ? (
-                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               ) : (
                                 <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                               )}
@@ -943,7 +943,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             {/* Pomodoro Timer - PRO only */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.pomodoroTimer ? (
-                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               ) : (
                                 <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                               )}
@@ -960,7 +960,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             {/* Team Features - PRO only */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.teamFeatures ? (
-                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               ) : (
                                 <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                               )}
@@ -977,7 +977,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             {/* Calendar Sync - PRO only */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.calendarSync ? (
-                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               ) : (
                                 <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                               )}
@@ -1000,7 +1000,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             {/* Recurring Tasks - PRO (Monthly with limit, Yearly unlimited) */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.recurringTasks ? (
-                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               ) : (
                                 <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                               )}
@@ -1023,7 +1023,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             {/* Task Rollover - PRO only */}
                             <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                               {features.taskRollover ? (
-                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                               ) : (
                                 <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                               )}
@@ -1047,7 +1047,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 {/* Task Templates - PRO YEARLY only */}
                                 <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                                   {features.taskTemplates ? (
-                                    <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                    <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                                   ) : (
                                     <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                                   )}
@@ -1064,7 +1064,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 {/* Task Dependencies - PRO YEARLY only */}
                                 <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                                   {features.taskDependencies ? (
-                                    <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                    <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                                   ) : (
                                     <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                                   )}
@@ -1081,7 +1081,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                 {/* Multiple Workspaces - PRO YEARLY only */}
                                 <div className="flex items-center min-w-0" style={{ gap: SETTINGS_PANEL_GAP_MEDIUM }}>
                                   {features.multipleWorkspaces ? (
-                                    <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                                    <Icon name="check" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" />
                                   ) : (
                                     <Icon name="x" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-gray-400 dark:text-muted-foreground flex-shrink-0" />
                                   )}
@@ -1129,14 +1129,14 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             <Separator style={{ marginTop: SETTINGS_PANEL_SEPARATOR_MARGIN_Y, marginBottom: SETTINGS_PANEL_SEPARATOR_MARGIN_Y }} />
                   
                             {subscription.cancelAtPeriodEnd && (
-                              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg" style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
+                              <div className="bg-neutral-50 dark:bg-neutral-950/20 border border-neutral-200 dark:border-neutral-800 rounded-lg" style={{ padding: SETTINGS_PANEL_PADDING_MEDIUM, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_MEDIUM }}>
                                 <div className="flex items-start" style={{ gap: SETTINGS_PANEL_GAP_SMALL }}>
-                                  <Icon name="info" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-amber-600 dark:text-amber-400 flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
+                                  <Icon name="info" size={SETTINGS_PANEL_ICON_SIZE_MEDIUM} className="text-neutral-600 dark:text-neutral-400 flex-shrink-0" style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_XSMALL }} />
                                   <div>
-                                    <p className="font-medium text-amber-800 dark:text-amber-200" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
+                                    <p className="font-medium text-neutral-800 dark:text-neutral-200" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL, marginBottom: SETTINGS_PANEL_MARGIN_BOTTOM_SMALL }}>
                                       {SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelled.title}
                                     </p>
-                                    <p className="text-amber-700 dark:text-amber-300" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
+                                    <p className="text-neutral-700 dark:text-neutral-300" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_SMALL }}>
                                       {SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelled.message(subscription.endDate)}
                                     </p>
                                   </div>
@@ -1370,11 +1370,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           icon="bell"
           title="Notifications"
           description={SETTINGS_PANEL_UI_TEXT.sections.notifications.description}
-          badge={badgeCount > 0 ? (
-            <Badge variant="destructive" className="ml-auto flex-shrink-0 text-xs">
-              {badgeCount}
-            </Badge>
-          ) : undefined}
         >
 
                       <SettingsGroup>
@@ -1611,20 +1606,6 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           </div>
                         </SettingsControlGroup>
                       </SettingsGroup>
-
-                      {notificationSettings.showBadge && badgeCount > 0 && (
-                        <SettingsStatusCard tone="primary">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_MEDIUM }}>{NOTIFICATION_PANEL_TEXT.badge.currentBadgeCount}</span>
-                            <Badge variant="destructive" style={{ fontSize: SETTINGS_PANEL_TEXT_SIZE_BASE, paddingLeft: SETTINGS_PANEL_BADGE_PADDING_LEFT, paddingRight: SETTINGS_PANEL_BADGE_PADDING_RIGHT, paddingTop: SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL, paddingBottom: SETTINGS_PANEL_PADDING_Y_EXTRA_SMALL }}>
-                              {badgeCount}
-                            </Badge>
-                          </div>
-                          <p className={`${SETTINGS_PANEL_TEXT_SIZES.helper} text-muted-foreground`} style={{ marginTop: SETTINGS_PANEL_MARGIN_TOP_SMALL }}>
-                            {badgeCount === 1 ? NOTIFICATION_PANEL_TEXT.badge.taskNeedsAttention : NOTIFICATION_PANEL_TEXT.badge.tasksNeedAttention}
-                          </p>
-                        </SettingsStatusCard>
-                      )}
           
         </SettingsSection>
 
@@ -2400,7 +2381,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                         {/* Summary Stats - Moved to Top */}
                         <div className="grid grid-cols-3 gap-3">
                           <div className={`text-center p-3 ${UI_AWARD_STAT_GRADIENTS.completion.className}`}>
-                            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{earnedAwards.length}</div>
+                            <div className="text-2xl font-bold bg-gradient-to-r from-neutral-600 to-neutral-600 bg-clip-text text-transparent">{earnedAwards.length}</div>
                             <div className={`${SETTINGS_PANEL_TEXT_SIZES.awardLabel} text-muted-foreground mt-0.5 font-medium`}>Earned</div>
                           </div>
                           <div className={`text-center p-3 ${UI_AWARD_STAT_GRADIENTS.earned.className}`}>
@@ -2408,7 +2389,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                             <div className={`${SETTINGS_PANEL_TEXT_SIZES.awardLabel} text-muted-foreground mt-0.5 font-medium`}>Complete</div>
                           </div>
                           <div className={`text-center p-3 ${UI_AWARD_STAT_GRADIENTS.remaining.className}`}>
-                            <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{awards.length - earnedAwards.length}</div>
+                            <div className="text-2xl font-bold bg-gradient-to-r from-neutral-600 to-neutral-600 bg-clip-text text-transparent">{awards.length - earnedAwards.length}</div>
                             <div className={`${SETTINGS_PANEL_TEXT_SIZES.awardLabel} text-muted-foreground mt-0.5 font-medium`}>Remaining</div>
                           </div>
                         </div>
@@ -2421,7 +2402,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           <AccordionItem value="completion" className="px-3">
                             <AccordionTrigger className="hover:no-underline py-3">
                               <div className="flex items-center gap-3 w-full">
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neutral-500 to-neutral-600 flex items-center justify-center flex-shrink-0">
                                   <Icon name="target" size={ICON_SIZE_MD} weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                                 </div>
                                 <div className="flex-1 text-left">
@@ -2452,7 +2433,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                       className={`
                                         group p-3 rounded-lg border transition-all duration-300
                                         ${isEarned 
-                                          ? 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/40 dark:to-cyan-950/40 border-blue-200 dark:border-blue-800/50' 
+                                          ? 'bg-gradient-to-br from-neutral-50 to-neutral-50 dark:from-neutral-950/40 dark:to-neutral-950/40 border-neutral-200 dark:border-neutral-800/50' 
                                           : 'bg-card border-border/50 hover:border-border'
                                         }
                                       `}
@@ -2461,7 +2442,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                         <div className={`
                                           flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all
                                           ${isEarned 
-                                            ? 'bg-gradient-to-br from-blue-500 to-cyan-600' 
+                                            ? 'bg-gradient-to-br from-neutral-500 to-neutral-600' 
                                             : 'bg-muted/50 group-hover:bg-muted'
                                           }
                                         `}>
@@ -2469,10 +2450,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-start justify-between gap-1 mb-1">
-                                            <div className={`text-sm font-medium ${isEarned ? 'text-blue-700 dark:text-blue-300' : ''}`}>
+                                            <div className={`text-sm font-medium ${isEarned ? 'text-neutral-700 dark:text-neutral-300' : ''}`}>
                                               {award.name}
                                             </div>
-                                            {isEarned && <Icon name="award" size={ICON_SIZE_SM} weight="duotone" className="text-blue-500 flex-shrink-0" />}
+                                            {isEarned && <Icon name="award" size={ICON_SIZE_SM} weight="duotone" className="text-neutral-500 flex-shrink-0" />}
                                             {!isEarned && <Icon name="lock" size={ICON_SIZE_SM} className="text-muted-foreground/50 flex-shrink-0" />}
                                           </div>
                                           <div className="text-xs text-muted-foreground">
@@ -2486,7 +2467,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                               </div>
                                               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                                 <div 
-                                                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+                                                  className="h-full bg-gradient-to-r from-neutral-500 to-neutral-500 transition-all duration-300"
                                                   style={{ width: `${progress.percentage}%` }}
                                                 />
                                               </div>
@@ -2505,7 +2486,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           <AccordionItem value="streak" className="px-3">
                             <AccordionTrigger className="hover:no-underline py-3">
                               <div className="flex items-center gap-3 w-full">
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neutral-500 to-neutral-600 flex items-center justify-center flex-shrink-0">
                                   <Icon name="trending-up" size={ICON_SIZE_MD} weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                                 </div>
                                 <div className="flex-1 text-left">
@@ -2536,7 +2517,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                       className={`
                                         group p-3 rounded-lg border transition-all duration-300
                                         ${isEarned 
-                                          ? 'bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/40 dark:to-red-950/40 border-orange-200 dark:border-orange-800/50' 
+                                          ? 'bg-gradient-to-br from-neutral-50 to-neutral-50 dark:from-neutral-950/40 dark:to-neutral-950/40 border-neutral-200 dark:border-neutral-800/50' 
                                           : 'bg-card border-border/50 hover:border-border'
                                         }
                                       `}
@@ -2545,7 +2526,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                         <div className={`
                                           flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all
                                           ${isEarned 
-                                            ? 'bg-gradient-to-br from-orange-500 to-red-600' 
+                                            ? 'bg-gradient-to-br from-neutral-500 to-neutral-600' 
                                             : 'bg-muted/50 group-hover:bg-muted'
                                           }
                                         `}>
@@ -2553,10 +2534,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-start justify-between gap-1 mb-1">
-                                            <div className={`text-sm font-medium ${isEarned ? 'text-orange-700 dark:text-orange-300' : ''}`}>
+                                            <div className={`text-sm font-medium ${isEarned ? 'text-neutral-700 dark:text-neutral-300' : ''}`}>
                                               {award.name}
                                             </div>
-                                            {isEarned && <Icon name="award" size={14} weight="duotone" className="text-orange-500 flex-shrink-0" />}
+                                            {isEarned && <Icon name="award" size={14} weight="duotone" className="text-neutral-500 flex-shrink-0" />}
                                             {!isEarned && <Icon name="lock" size={ICON_SIZE_SM} className="text-muted-foreground/50 flex-shrink-0" />}
                                           </div>
                                           <div className="text-xs text-muted-foreground">
@@ -2570,7 +2551,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                               </div>
                                               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                                 <div 
-                                                  className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300"
+                                                  className="h-full bg-gradient-to-r from-neutral-500 to-neutral-500 transition-all duration-300"
                                                   style={{ width: `${progress.percentage}%` }}
                                                 />
                                               </div>
@@ -2589,7 +2570,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           <AccordionItem value="focus" className="px-3">
                             <AccordionTrigger className="hover:no-underline py-3">
                               <div className="flex items-center gap-3 w-full">
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neutral-500 to-neutral-600 flex items-center justify-center flex-shrink-0">
                                   <Icon name="timer" size={ICON_SIZE_MD} weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                                 </div>
                                 <div className="flex-1 text-left">
@@ -2629,7 +2610,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                         <div className={`
                                           flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all
                                           ${isEarned 
-                                            ? 'bg-gradient-to-br from-purple-500 to-pink-600' 
+                                            ? 'bg-gradient-to-br from-neutral-500 to-neutral-600' 
                                             : 'bg-muted/50 group-hover:bg-muted'
                                           }
                                         `}>
@@ -2637,10 +2618,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-start justify-between gap-1 mb-1">
-                                            <div className={`text-sm font-medium ${isEarned ? 'text-purple-700 dark:text-purple-300' : ''}`}>
+                                            <div className={`text-sm font-medium ${isEarned ? 'text-neutral-700 dark:text-neutral-300' : ''}`}>
                                               {award.name}
                                             </div>
-                                            {isEarned && <Icon name="award" size={14} weight="duotone" className="text-purple-500 flex-shrink-0" />}
+                                            {isEarned && <Icon name="award" size={14} weight="duotone" className="text-neutral-500 flex-shrink-0" />}
                                             {!isEarned && <Icon name="lock" size={ICON_SIZE_SM} className="text-muted-foreground/50 flex-shrink-0" />}
                                           </div>
                                           <div className="text-xs text-muted-foreground">
@@ -2654,7 +2635,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                               </div>
                                               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                                 <div 
-                                                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+                                                  className="h-full bg-gradient-to-r from-neutral-500 to-neutral-500 transition-all duration-300"
                                                   style={{ width: `${progress.percentage}%` }}
                                                 />
                                               </div>
@@ -2673,7 +2654,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           <AccordionItem value="special" className="px-3">
                             <AccordionTrigger className="hover:no-underline py-3">
                               <div className="flex items-center gap-3 w-full">
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-neutral-500 to-neutral-600 flex items-center justify-center flex-shrink-0">
                                   <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" style={{ color: COLOR_TEXT_WHITE }} />
                                 </div>
                                 <div className="flex-1 text-left">
@@ -2715,7 +2696,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                         <div className={`
                                           flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all
                                           ${isEarned 
-                                            ? 'bg-gradient-to-br from-pink-500 to-purple-600' 
+                                            ? 'bg-gradient-to-br from-neutral-500 to-neutral-600' 
                                             : 'bg-muted/50 group-hover:bg-muted'
                                           }
                                         `}>
@@ -2723,10 +2704,10 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-start justify-between gap-1 mb-1">
-                                            <div className={`text-sm font-medium ${isEarned ? 'text-pink-700 dark:text-pink-300' : ''}`}>
+                                            <div className={`text-sm font-medium ${isEarned ? 'text-neutral-700 dark:text-neutral-300' : ''}`}>
                                               {award.name}
                                             </div>
-                                            {isEarned && <Icon name="award" size={14} weight="duotone" className="text-pink-500 flex-shrink-0" />}
+                                            {isEarned && <Icon name="award" size={14} weight="duotone" className="text-neutral-500 flex-shrink-0" />}
                                             {!isEarned && <Icon name="lock" size={ICON_SIZE_SM} className="text-muted-foreground/50 flex-shrink-0" />}
                                           </div>
                                           <div className="text-xs text-muted-foreground">

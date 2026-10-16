@@ -33,7 +33,7 @@ import { KANBAN_DAY_COLORS } from './kanban-constants';
 export const TASK_CARD_PRIORITY_COLORS = {
   urgent: {
     line: '#EF4444', // Red
-    badge: 'bg-red-50 dark:bg-red-900/70 text-red-700 dark:text-red-100 border-red-200 dark:border-red-700',
+    badge: 'bg-red-500 dark:bg-red-600 text-white border-red-500 dark:border-red-600',
     tab: {
       light: '#F87171', // red-400 - medium tone for good contrast with dark text
       dark: 'rgba(220, 38, 38, 0.9)', // red-600/90 - more saturated
@@ -41,7 +41,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
   },
   high: {
     line: '#F97316', // Orange
-    badge: 'bg-orange-50 dark:bg-orange-900/70 text-orange-700 dark:text-orange-100 border-orange-200 dark:border-orange-700',
+    badge: 'bg-orange-500 dark:bg-orange-600 text-white border-orange-500 dark:border-orange-600',
     tab: {
       light: '#FB923C', // orange-400 - medium tone for good contrast with dark text
       dark: 'rgba(234, 88, 12, 0.9)', // orange-600/90 - more saturated
@@ -49,7 +49,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
   },
   medium: {
     line: '#3B82F6', // Blue
-    badge: 'bg-blue-50 dark:bg-blue-900/70 text-blue-700 dark:text-blue-100 border-blue-200 dark:border-blue-700',
+    badge: 'bg-blue-500 dark:bg-blue-600 text-white border-blue-500 dark:border-blue-600',
     tab: {
       light: '#60A5FA', // blue-400 - medium tone for good contrast with dark text
       dark: 'rgba(37, 99, 235, 0.9)', // blue-600/90 - more saturated
@@ -57,7 +57,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
   },
   low: {
     line: '#9CA3AF', // Grey
-    badge: 'bg-gray-50 dark:bg-gray-700/70 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600',
+    badge: 'bg-neutral-600 dark:bg-neutral-500 text-white border-neutral-600 dark:border-neutral-500',
     tab: {
       light: '#9CA3AF', // gray-400 - medium tone for good contrast with dark text
       dark: 'rgba(107, 114, 128, 0.9)', // gray-500/90 - more visible
@@ -65,7 +65,7 @@ export const TASK_CARD_PRIORITY_COLORS = {
   },
   default: {
     line: '#E5E7EB',
-    badge: 'bg-gray-50 dark:bg-gray-700/70 text-gray-600 dark:text-gray-200 border-gray-200 dark:border-gray-600',
+    badge: 'bg-neutral-500 dark:bg-neutral-600 text-white border-neutral-500 dark:border-neutral-600',
     tab: {
       light: '#9CA3AF', // gray-400 - medium tone for good contrast with dark text
       dark: 'rgba(107, 114, 128, 0.7)', // gray-500/70
@@ -138,12 +138,12 @@ export const MONTH_VIEW_LOW_PRIORITY_DARK_TEXT = {
 // Tag Colors
 export const TASK_CARD_TAG_COLORS = {
   background: {
-    light: '#EBF5FB',
-    dark: 'rgba(59, 130, 246, 0.2)', // blue-500 with 20% opacity for dark mode
+    light: '#F5F5F5',
+    dark: 'rgba(255, 255, 255, 0.1)',
   },
   text: {
-    light: '#1565C0',
-    dark: '#60A5FA', // blue-400 for dark mode
+    light: '#262626',
+    dark: '#E5E5E5',
   },
 } as const;
 

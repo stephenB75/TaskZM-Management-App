@@ -31,13 +31,17 @@ import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from '../lib/toast-wrapper';
 import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
-import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, COMPONENT_DIMENSIONS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
+import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES, MONTH_VIEW_LOW_PRIORITY_DARK_TEXT } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
 import type { Task } from "../types";
 
 interface MonthCalendarViewProps {
   mobileMode?: boolean;
+  /** Month to show when the parent owns navigation. */
+  date?: Date;
+  /** Hide the built-in month header when the parent renders its own. */
+  hideHeader?: boolean;
 }
 
 interface DayTasks {
@@ -105,7 +109,7 @@ function DraggableMonthTask({
       {...attributes}
       {...(isMobile ? {} : listeners)} // Only apply drag listeners on desktop
       className={cn(
-        "text-xs p-1 rounded border-l-[3px] transition-all relative select-none smooth-drag-transform",
+        "text-xs p-1 rounded-r rounded-l-none border-l-[3px] transition-all relative select-none smooth-drag-transform",
         !isMobile && "cursor-grab hover:shadow-sm active:cursor-grabbing", // Only show drag cursor on desktop
         MONTH_VIEW_TASK_PRIORITY_STYLES[task.priority as keyof typeof MONTH_VIEW_TASK_PRIORITY_STYLES] ?? MONTH_VIEW_TASK_PRIORITY_STYLES.default,
         task.status === "done" && "opacity-60",
@@ -190,112 +194,28 @@ interface CalendarEventData {
   isRecurring?: boolean; // Flag indicating if this is a recurring event
 }
 
-// Simple hash function for consistent color assignment based on title
-function hashEventTitle(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash);
-}
-
-// Map Apple Calendar hex colors to app theme color indices
-function getColorIndexFromHex(hexColor: string): number {
-  if (!hexColor) return 0;
-  const hex = hexColor.replace('#', '').toUpperCase();
-  
-  // Map common Apple Calendar colors to our palette indices
-  const colorMappings: { [key: string]: number } = {
-    // Reds/Pinks -> Rose (4)
-    'FF3B30': 4, 'FF2D55': 4, 'FF6B6B': 4, 'E91E63': 4,
-    // Oranges -> Orange (7)
-    'FF9500': 7, 'FF6600': 7, 'FF7043': 7, 'F57C00': 7,
-    // Yellows/Ambers -> Amber (3)
-    'FFCC00': 3, 'FFC107': 3, 'FFD700': 3, 'FFEB3B': 3,
-    // Greens -> Emerald (1)
-    '4CD964': 1, '34C759': 1, '28CD41': 1, '00C853': 1, '4CAF50': 1,
-    // Teals/Cyans -> Teal (5)
-    '5AC8FA': 5, '00BCD4': 5, '009688': 5, '1ABC9C': 5,
-    // Blues -> Sky (0)
-    '007AFF': 0, '5856D6': 0, '0A84FF': 0, '2196F3': 0, '64D2FF': 0,
-    // Purples -> Violet (2)
-    'AF52DE': 2, '9C27B0': 2, 'BF5AF2': 2, '5E35B1': 2, '673AB7': 2,
-    // Magentas/Fuchsias -> Fuchsia (6)
-    'FF2D92': 6, 'E040FB': 6, 'EA80FC': 6, 'FF00FF': 6,
-  };
-  
-  if (colorMappings[hex]) return colorMappings[hex];
-  
-  // Parse RGB and classify by hue
-  try {
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    
-    if (r > g && r > b) {
-      if (g > b * 1.5) return 7; // Orange
-      return 4; // Rose
-    }
-    if (g > r && g > b) {
-      if (b > r) return 5; // Teal
-      return 1; // Emerald
-    }
-    if (b > r && b > g) {
-      if (r > g * 1.3) return 2; // Violet
-      return 0; // Sky
-    }
-    if (r > 200 && g > 150 && b < 100) return 3; // Amber
-  } catch { /* fallback */ }
-  
-  return 0;
-}
-
-// Pastel color palette for calendar events
-const monthEventColorPalette = [
-  { border: 'border-l-sky-500', bg: 'from-sky-50 to-sky-100 dark:from-sky-950/60 dark:to-sky-900/40', icon: 'text-sky-600 dark:text-sky-400', text: 'text-sky-900 dark:text-sky-100', muted: 'text-sky-600 dark:text-sky-300' },
-  { border: 'border-l-emerald-500', bg: 'from-emerald-50 to-emerald-100 dark:from-emerald-950/60 dark:to-emerald-900/40', icon: 'text-emerald-600 dark:text-emerald-400', text: 'text-emerald-900 dark:text-emerald-100', muted: 'text-emerald-600 dark:text-emerald-300' },
-  { border: 'border-l-violet-500', bg: 'from-violet-50 to-violet-100 dark:from-violet-950/60 dark:to-violet-900/40', icon: 'text-violet-600 dark:text-violet-400', text: 'text-violet-900 dark:text-violet-100', muted: 'text-violet-600 dark:text-violet-300' },
-  { border: 'border-l-amber-500', bg: 'from-amber-50 to-amber-100 dark:from-amber-950/60 dark:to-amber-900/40', icon: 'text-amber-600 dark:text-amber-400', text: 'text-amber-900 dark:text-amber-100', muted: 'text-amber-600 dark:text-amber-300' },
-  { border: 'border-l-rose-500', bg: 'from-rose-50 to-rose-100 dark:from-rose-950/60 dark:to-rose-900/40', icon: 'text-rose-600 dark:text-rose-400', text: 'text-rose-900 dark:text-rose-100', muted: 'text-rose-600 dark:text-rose-300' },
-  { border: 'border-l-teal-500', bg: 'from-teal-50 to-teal-100 dark:from-teal-950/60 dark:to-teal-900/40', icon: 'text-teal-600 dark:text-teal-400', text: 'text-teal-900 dark:text-teal-100', muted: 'text-teal-600 dark:text-teal-300' },
-  { border: 'border-l-fuchsia-500', bg: 'from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-950/60 dark:to-fuchsia-900/40', icon: 'text-fuchsia-600 dark:text-fuchsia-400', text: 'text-fuchsia-900 dark:text-fuchsia-100', muted: 'text-fuchsia-600 dark:text-fuchsia-300' },
-  { border: 'border-l-orange-500', bg: 'from-orange-50 to-orange-100 dark:from-orange-950/60 dark:to-orange-900/40', icon: 'text-orange-600 dark:text-orange-400', text: 'text-orange-900 dark:text-orange-100', muted: 'text-orange-600 dark:text-orange-300' },
-];
-
 function MonthCalendarEvent({ event }: { event: CalendarEventData }) {
   const startTime = parseCalendarEventTime(event.start).toLocaleTimeString([], { 
     hour: 'numeric', 
     minute: '2-digit', 
     hour12: true 
   });
-  
-  // Get color based on calendar color (if provided) or fallback to title hash
-  const colorIndex = event.calendarColor 
-    ? getColorIndexFromHex(event.calendarColor)
-    : hashEventTitle(event.title) % monthEventColorPalette.length;
-  const colors = monthEventColorPalette[colorIndex];
-  
+
   return (
     <div
-      className={cn(
-        "text-xs p-1 rounded border-l-2 transition-all relative select-none",
-        colors.border,
-        "bg-gradient-to-br",
-        colors.bg
-      )}
+      className="text-xs p-1 rounded-r rounded-l-none border-l-2 border-l-neutral-500 transition-all relative select-none bg-neutral-200 dark:bg-neutral-700"
+      style={event.calendarColor ? { borderLeftColor: event.calendarColor } : undefined}
       title={`${event.title}${event.location ? ` - ${event.location}` : ''}`}
     >
       <div className="flex items-start gap-1">
-        <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className={cn("flex-shrink-0 mt-0.5", colors.icon)} />
+        <Icon name="calendar" size={ICON_SIZE_XS} weight="duotone" className="flex-shrink-0 mt-0.5 text-neutral-500 dark:text-neutral-400" />
         <div className="flex-1 min-w-0">
-          <p className={cn("truncate font-medium leading-tight text-[11px]", colors.text)}>
+          <p className="truncate font-medium leading-tight text-[11px] text-neutral-900 dark:text-neutral-100">
             {event.title}
           </p>
           <div className="flex items-center gap-0.5 mt-0.5">
-            <Icon name="clock" size={8} className={cn("flex-shrink-0", colors.icon)} />
-            <span className={cn("text-[9px] leading-none", colors.muted)}>
+            <Icon name="clock" size={8} className="flex-shrink-0 text-neutral-500 dark:text-neutral-400" />
+            <span className="text-[9px] leading-none text-neutral-600 dark:text-neutral-300">
               {startTime}
             </span>
           </div>
@@ -371,7 +291,7 @@ function DroppableDay({
           dayData.isToday &&
             "ring-2 ring-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg",
           !dayData.isCurrentMonth && "opacity-50 bg-muted/30",
-          isOver && "ring-2 ring-[#7B68EE] bg-[#7B68EE]/10",
+          isOver && "ring-2 ring-neutral-500 bg-neutral-500/10",
         )}
       >
         {/* Day number */}
@@ -398,7 +318,7 @@ function DroppableDay({
               {calendarEvents.length > 0 && (
                 <Badge
                   variant="secondary"
-                  className="h-3.5 md:h-4 text-[9px] md:text-[10px] px-0.5 md:px-1 bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 flex-shrink-0"
+                  className="h-3.5 md:h-4 text-[9px] md:text-[10px] px-0.5 md:px-1 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 flex-shrink-0"
                 >
                   {calendarEvents.length}
                 </Badge>
@@ -453,12 +373,15 @@ function DroppableDay({
 
 export function MonthCalendarView({
   mobileMode = false,
+  date,
+  hideHeader = false,
 }: MonthCalendarViewProps) {
   const { tasks, updateTask } = useTasks();
   const { activeId } = useDragDrop();
   const { accessToken } = useAuth();
   const { calendarStatus } = useCalendar();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [internalDate, setCurrentDate] = useState(new Date());
+  const currentDate = date ?? internalDate;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(
     null,
@@ -540,10 +463,6 @@ export function MonthCalendarView({
     }, 100);
   };
 
-  const zoomOut = () => {
-    setExpandedDays(new Set());
-  };
-
   // Auto-scroll to today when component mounts or when returning to current month
   useEffect(() => {
     const today = new Date();
@@ -562,31 +481,6 @@ export function MonthCalendarView({
     }
   }, [currentDate, expandedDays.size]);
 
-  // On desktop, when any day is expanded, zoom out to show full month
-  useEffect(() => {
-    if (!mobileMode && expandedDays.size > 0) {
-      // Scroll to top to show entire calendar
-      setTimeout(() => {
-        if (scrollAreaRef.current) {
-          // Try multiple ways to access the scroll container
-          const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
-          if (scrollElement) {
-            scrollElement.scrollTo({
-              top: 0,
-              behavior: 'smooth',
-            });
-          } else {
-            // Fallback: try direct scroll
-            const scrollContainer = scrollAreaRef.current.querySelector('.overflow-auto') || scrollAreaRef.current;
-            (scrollContainer as HTMLElement)?.scrollTo?.({
-              top: 0,
-              behavior: 'smooth',
-            });
-          }
-        }
-      }, 150);
-    }
-  }, [expandedDays.size, mobileMode]);
   const handleTaskClick = (task: Task) => {
     if (!task?.id) {
       toast.error('Invalid task data');
@@ -765,6 +659,7 @@ export function MonthCalendarView({
   return (
     <div className={cn("flex flex-col", mobileMode ? "flex-1 min-h-0" : "h-full", MAIN_BG_GRADIENT_CLASS)} data-month-calendar="true" data-tour="month-calendar-view">
       {/* Calendar Header - dark mode: solid dark bar with light text/icons for visibility */}
+      {!hideHeader && (
       <motion.div
         className="flex-shrink-0 px-4 py-3 border-b border-primary/10 bg-white/70 dark:bg-gray-800/95 dark:border-gray-700 backdrop-blur-md"
         initial={{ opacity: 0, y: -10 }}
@@ -786,18 +681,6 @@ export function MonthCalendarView({
             >
               Today
             </Button>
-            {!mobileMode && expandedDays.size > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={zoomOut}
-                className="rounded-full text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10 dark:border-primary/50 dark:text-primary-foreground dark:hover:bg-primary/30"
-                title="Zoom out to normal view"
-              >
-                <Icon name="zoom-out" size={14} />
-                Zoom Out
-              </Button>
-            )}
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -819,19 +702,13 @@ export function MonthCalendarView({
           </div>
         </div>
       </motion.div>
+      )}
 
       {/* Calendar Grid */}
       <div className={cn("flex-1 px-1 py-2 md:p-3", !mobileMode && "overflow-hidden")}>
         <div className={cn("w-full flex flex-col", mobileMode ? "min-h-0" : "h-full")}>
-          {/* Wrapper that includes both headers and calendar days for zoom */}
-          <div 
-            className={cn(
-              "flex flex-col h-full transition-transform duration-500 ease-in-out",
-              !mobileMode && expandedDays.size > 0 && "origin-top"
-            )}
-            style={!mobileMode && expandedDays.size > 0 ? { transform: `scale(${COMPONENT_DIMENSIONS.monthCalendarExpandedScale})` } : undefined}
-          >
-            {/* Week day headers - now included in zoom */}
+          <div className="flex flex-col h-full">
+            {/* Week day headers */}
             <div className="grid grid-cols-7 gap-0 md:gap-2 mb-1 md:mb-2 flex-shrink-0 w-full">
               {weekDays.map((day) => (
                 <div
@@ -864,8 +741,8 @@ export function MonthCalendarView({
                   <motion.div
                     key={`${dayData.date.toISOString()}-${index}`}
                     ref={dayData.isToday ? todayRef : null}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.01 }}
                     className="min-h-[90px] md:min-h-[100px] w-full aspect-square md:aspect-auto"
                   >
@@ -899,10 +776,7 @@ export function MonthCalendarView({
                   className={cn(
                     "grid grid-cols-7 gap-0 md:gap-1.5 pb-4 w-full"
                   )}
-                  style={{
-                    // Adjust padding when scaled to maintain proper spacing
-                      paddingBottom: expandedDays.size > 0 ? MOBILE_PADDING_BOTTOM : PANEL_PADDING_BOTTOM,
-                  }}
+                  style={{ paddingBottom: PANEL_PADDING_BOTTOM }}
                 >
               {calendarDays.map((dayData, index) => {
                 const dateString = dayData.date
@@ -912,8 +786,8 @@ export function MonthCalendarView({
                   <motion.div
                     key={`${dayData.date.toISOString()}-${index}`}
                     ref={dayData.isToday ? todayRef : null}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.01 }}
                     className="min-h-[90px] md:min-h-[100px] w-full aspect-square md:aspect-auto"
                   >

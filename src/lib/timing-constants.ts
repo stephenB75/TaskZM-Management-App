@@ -179,6 +179,12 @@ export const TIMING_CONSTANTS = {
     cloudForegroundReleaseCheckMs: 30 * 1000,
   },
 
+  // Auth profile freshness across devices
+  auth: {
+    /** Min interval between server profile refetches when the app returns to the foreground. */
+    profileForegroundRefreshMs: 15 * 1000,
+  },
+
   // Service Worker update checking
   serviceWorker: {
     updateCheckInterval: 4 * 60 * 60 * 1000, // 4 hours - Check for updates in background (increased to prevent random refreshes)

@@ -16,7 +16,8 @@ import {
   TWO_WEEKS_DAYS,
 } from './business-constants';
 import { estimateTaskHours } from './daily-hours-utils';
-import { COLOR_POP_BLUE, COLOR_POP_LIME, COLOR_POP_NEUTRAL, COLOR_POP_VIOLET } from './color-theme';
+import { COLOR_POP_NEUTRAL } from './color-theme';
+import { tagShade } from './tag-shades';
 import { DEFAULT_CREATED_BY, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from './task-constants';
 import { generateId, getWeekStart } from './utils';
 import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from './navigation-constants';
@@ -25,15 +26,9 @@ import type { Task, TaskPriority } from '../types';
 
 export type PlannerCategory = 'work' | 'personal' | 'projects';
 
-const CATEGORY_POP: Record<PlannerCategory, string> = {
-  work: COLOR_POP_VIOLET,
-  personal: COLOR_POP_BLUE,
-  projects: COLOR_POP_LIME,
-};
-
-/** Pastel dot for a task category (neutral when uncategorized). */
+/** Gray dot for a task category, unique per category (neutral when uncategorized). */
 export function plannerCategoryColor(category: PlannerCategory | null): string {
-  return category ? CATEGORY_POP[category] : COLOR_POP_NEUTRAL;
+  return category ? tagShade(category) : COLOR_POP_NEUTRAL;
 }
 
 export interface PlannerDraft {

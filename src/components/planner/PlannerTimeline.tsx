@@ -83,9 +83,16 @@ export function PlannerTimeline({ className, onPlanWithAi }: { className?: strin
   const now = useMemo(() => new Date(), [tasks]);
 
   const upNext = useMemo(() => findUpNext(tasks, now), [tasks, now]);
-  const overdue = useMemo(() => tasks.filter((task) => isUnfinishedTask(task, now)), [tasks, now]);
+  const overdue = useMemo(
+    () => tasks.filter((task) => task.id !== upNext?.id && isUnfinishedTask(task, now)),
+    [tasks, now, upNext],
+  );
   const needsTime = useMemo(() => tasksToPlace(tasks, overdue), [tasks, overdue]);
-  const groups = useMemo(() => groupByWeek(tasks, now), [tasks, now]);
+  const groups = useMemo(() => {
+    const shown = new Set(overdue.map((task) => task.id));
+    if (upNext) shown.add(upNext.id);
+    return groupByWeek(tasks.filter((task) => !shown.has(task.id)), now);
+  }, [tasks, now, upNext, overdue]);
   const isEmpty = groups.length === 0 && needsTime.length === 0 && overdue.length === 0;
 
   const planWithAi = () => {
@@ -99,7 +106,6 @@ export function PlannerTimeline({ className, onPlanWithAi }: { className?: strin
     <section className={`planner-panel ${className ?? ''}`} aria-label={TEXT.title}>
       <header className="planner-header">
         <div className="min-w-0">
-          <span className="planner-eyebrow">{TEXT.eyebrow}</span>
           <h2 className="planner-title">{TEXT.title}</h2>
         </div>
       </header>

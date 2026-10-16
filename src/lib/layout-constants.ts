@@ -1690,6 +1690,7 @@ export const PLANNER_LAYOUT = {
   railWidthPx: SIDEBAR_WIDTH,
   railIconPx: 22,
   railButtonPx: 44,
+  railLogoPx: 56,
   timelineColumn: 'minmax(260px, 320px)',
   calendarColumn: 'minmax(0, 1fr)',
   chatColumn: 'minmax(300px, 360px)',

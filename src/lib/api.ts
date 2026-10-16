@@ -410,9 +410,8 @@ export async function saveTask(workspaceId: string, task: Task): Promise<Task> {
 }
 
 export async function deleteTask(workspaceId: string, taskId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/tasks/${workspaceId}/${taskId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/tasks/${workspaceId}/${taskId}`, {
     method: 'DELETE',
-    headers: getHeaders(),
   });
 
   if (response.status === 404) return;

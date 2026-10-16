@@ -70,16 +70,13 @@ export function ArchiveTaskCard({
         : null;
 
   const headerAction = (
-    <div className="flex items-center gap-0.5 flex-shrink-0 opacity-70 group-hover/card:opacity-100 transition-opacity">
+    <div className="flex items-center gap-1 flex-shrink-0">
       <button
         type="button"
         onClick={onRestore}
         onPointerDown={(e) => e.stopPropagation()}
-        className="flex-shrink-0 hover:opacity-70 transition-opacity flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-        style={{
-          width: ARCHIVE_SECTION.actionButtonSizePx,
-          height: ARCHIVE_SECTION.actionButtonSizePx,
-        }}
+        className="flex-shrink-0 flex items-center justify-center rounded-full border border-border bg-card px-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        style={{ height: ARCHIVE_SECTION.actionButtonSizePx }}
         aria-label={ARCHIVE_UI_TEXT.restoreTask}
         title={ARCHIVE_UI_TEXT.restoreTask}
       >
@@ -89,11 +86,8 @@ export function ArchiveTaskCard({
         type="button"
         onClick={onDelete}
         onPointerDown={(e) => e.stopPropagation()}
-        className="flex-shrink-0 hover:opacity-70 transition-opacity flex items-center justify-center rounded-md text-destructive/80 hover:text-destructive"
-        style={{
-          width: ARCHIVE_SECTION.actionButtonSizePx,
-          height: ARCHIVE_SECTION.actionButtonSizePx,
-        }}
+        className="flex-shrink-0 flex items-center justify-center rounded-full border border-border bg-card px-2.5 text-foreground transition-colors hover:bg-muted"
+        style={{ height: ARCHIVE_SECTION.actionButtonSizePx }}
         aria-label={ARCHIVE_UI_TEXT.deleteTask}
         title={ARCHIVE_UI_TEXT.deleteTask}
       >

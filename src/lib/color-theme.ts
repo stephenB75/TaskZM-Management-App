@@ -45,6 +45,10 @@ export const COLOR_POP_NEUTRAL = '#D4D4D4';
 /** Low priority reads as dark gray so it stays distinct from the gray task surfaces. */
 export const COLOR_PRIORITY_LOW = '#525252';
 
+/** Lightness range (HSL %) for per-tag gray shades; dark mode mirrors it so dots stay visible. */
+export const TAG_SHADE_LIGHTNESS = { minPercent: 12, maxPercent: 68 } as const;
+export const TAG_SHADE_STORAGE_KEY = 'taskzm_tag_shades';
+
 // Theme-aware tokens (follow light/dark CSS variables in globals.css)
 export const THEME_COLOR = {
   page: 'var(--background)',
@@ -77,11 +81,11 @@ export const COLOR_WARNING = '#F59E0B'; // Orange for warnings
 export const COLOR_INFO = '#3B82F6'; // Blue for info
 
 // Award Colors (for gamification)
-export const COLOR_AWARD_COMMON = '#3B82F6'; // Blue for common awards
-export const COLOR_AWARD_RARE = '#8B5CF6'; // Purple for rare awards
-export const COLOR_AWARD_EPIC = '#F59E0B'; // Orange for epic awards
-export const COLOR_AWARD_LEGENDARY = '#EF4444'; // Red for legendary awards
-export const COLOR_AWARD_STREAK = '#F97316'; // Orange-red for streak awards
+export const COLOR_AWARD_COMMON = '#737373';
+export const COLOR_AWARD_RARE = '#525252';
+export const COLOR_AWARD_EPIC = '#404040';
+export const COLOR_AWARD_LEGENDARY = '#171717';
+export const COLOR_AWARD_STREAK = '#262626';
 
 // Text Colors
 export const COLOR_TEXT_PRIMARY = '#1F2937'; // Dark gray for primary text
@@ -103,20 +107,20 @@ export const COLOR_BADGE_RED = '#EF4444'; // Red for badges/notifications
 export const COLOR_BADGE_BLUE = '#3B82F6'; // Blue for badges
 
 // Project Default Color
-export const COLOR_PROJECT_DEFAULT = '#3B82F6'; // Blue for default project
+export const COLOR_PROJECT_DEFAULT = '#525252';
 
 // Folder Default Color
-export const COLOR_FOLDER_DEFAULT = '#3B82F6'; // Blue for default folder
+export const COLOR_FOLDER_DEFAULT = '#525252';
 
-// Folder Color Options
-export const COLOR_FOLDER_BLUE = '#3B82F6'; // Blue
-export const COLOR_FOLDER_PURPLE = '#8B5CF6'; // Purple
-export const COLOR_FOLDER_PINK = '#EC4899'; // Pink
-export const COLOR_FOLDER_AMBER = '#F59E0B'; // Amber
-export const COLOR_FOLDER_GREEN = '#10B981'; // Green
-export const COLOR_FOLDER_RED = '#EF4444'; // Red
-export const COLOR_FOLDER_CYAN = '#06B6D4'; // Cyan
-export const COLOR_FOLDER_ORANGE = '#F97316'; // Orange
+// Folder Color Options (grayscale; names kept for stored references)
+export const COLOR_FOLDER_BLUE = '#171717';
+export const COLOR_FOLDER_PURPLE = '#262626';
+export const COLOR_FOLDER_PINK = '#404040';
+export const COLOR_FOLDER_AMBER = '#525252';
+export const COLOR_FOLDER_GREEN = '#737373';
+export const COLOR_FOLDER_RED = '#8A8A8A';
+export const COLOR_FOLDER_CYAN = '#A3A3A3';
+export const COLOR_FOLDER_ORANGE = '#BDBDBD';
 
 // Folder Color Options Array (for color picker)
 export const FOLDER_COLOR_OPTIONS = [
@@ -131,19 +135,19 @@ export const FOLDER_COLOR_OPTIONS = [
 ];
 
 // Team Role Colors
-export const COLOR_ROLE_ADMIN = '#8B5CF6'; // Purple for admin role
-export const COLOR_ROLE_MEMBER = '#3B82F6'; // Blue for member role
+export const COLOR_ROLE_ADMIN = '#171717';
+export const COLOR_ROLE_MEMBER = '#525252';
 export const COLOR_ROLE_VIEWER = '#9CA3AF'; // Gray for viewer role
 
 // Status Badge Colors (for team invitations)
-export const COLOR_STATUS_EXPIRED_RED = '#EF4444'; // Red for expired invitations
-export const COLOR_STATUS_PENDING_AMBER = '#F59E0B'; // Amber for pending invitations
+export const COLOR_STATUS_EXPIRED_RED = '#171717';
+export const COLOR_STATUS_PENDING_AMBER = '#525252';
 export const COLOR_STATUS_DECLINED_GRAY = '#6B7280'; // Gray for declined invitations
 
 // Task Status Colors (for team member stats)
-export const COLOR_TASK_COMPLETED_GREEN = '#10B981'; // Green for completed tasks
-export const COLOR_TASK_IN_PROGRESS_AMBER = '#F59E0B'; // Amber for in-progress tasks
-export const COLOR_TASK_TODO_BLUE = '#3B82F6'; // Blue for todo tasks
+export const COLOR_TASK_COMPLETED_GREEN = '#171717';
+export const COLOR_TASK_IN_PROGRESS_AMBER = '#525252';
+export const COLOR_TASK_TODO_BLUE = '#A3A3A3';
 
 // Helper function to get color with opacity
 export const getColorWithOpacity = (color: string, opacity: number): string => {

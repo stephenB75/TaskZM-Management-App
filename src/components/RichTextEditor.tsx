@@ -269,6 +269,9 @@ export function RichTextEditor({
       case 'lowercase':
         transformSelection((text) => text.toLowerCase());
         break;
+      case 'toggleCase':
+        transformSelection((text) => (text === text.toUpperCase() ? text.toLowerCase() : text.toUpperCase()));
+        break;
       case 'bullet':
         // Toggle unordered list - execCommand automatically toggles
         execCommand('insertUnorderedList');
@@ -585,18 +588,8 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className="h-6 w-6 rounded-full p-0 leading-none"
-          onClick={() => formatText('uppercase')}
-          title="Uppercase"
-        >
-          <Icon name="type" size={ICON_SIZE_MD} />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 rounded-full p-0 leading-none"
-          onClick={() => formatText('lowercase')}
-          title="Lowercase"
+          onClick={() => formatText('toggleCase')}
+          title="Change case (UPPER / lower)"
         >
           <Icon name="type" size={ICON_SIZE_MD} />
         </Button>

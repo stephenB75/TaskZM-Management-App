@@ -31,15 +31,9 @@ import {
   Z_INDEX,
 } from "../lib/layout-constants";
 import { NAVIGATION_UI_TEXT } from "../lib/navigation-constants";
-import { COLOR_TEXT_WHITE } from "../lib/color-theme";
+import { THEME_COLOR } from "../lib/color-theme";
 import { triggerSelectionHaptic } from "../lib/native-haptics";
 import { BADGE_DISPLAY_MAX } from "../lib/notification-constants";
-import {
-  COLOR_PASTEL_MINT,
-  COLOR_PASTEL_SKY,
-  COLOR_PASTEL_LILAC,
-  COLOR_BADGE_RED,
-} from "../lib/color-theme";
 
 interface BottomNavProps {
   currentView: string;
@@ -158,7 +152,7 @@ export function BottomNav({
           className="absolute top-0 left-0 right-0 animate-pulse" 
           style={{ 
             height: NAV_BAR_SYNC_INDICATOR_HEIGHT,
-            background: `linear-gradient(to right, ${COLOR_PASTEL_MINT}, ${COLOR_PASTEL_SKY}, ${COLOR_PASTEL_LILAC})`
+            background: THEME_COLOR.textMuted
           }}
         />
       )}
@@ -179,9 +173,10 @@ export function BottomNav({
             <button
               key={item.id}
               data-tour={`bottom-nav-${item.id}`}
+              data-active={item.active ? "true" : undefined}
               onClick={item.onClick}
               className={cn(
-                "relative flex h-full w-full min-w-0 max-w-full flex-col items-center justify-center overflow-visible rounded-xl",
+                "taskzm-nav-btn relative flex h-full w-full min-w-0 max-w-full flex-col items-center justify-center overflow-visible rounded-xl",
                 "touch-manipulation transition-transform ease-out",
                 item.active && "text-pop-lime-ink",
                 !item.active && "text-muted-foreground",
@@ -218,14 +213,14 @@ export function BottomNav({
                   name={item.iconName}
                   size={NAV_BAR_ICON_SIZE}
                   weight={item.active ? "fill" : "regular"}
-                  className="relative z-10" 
+                  className="taskzm-nav-icon relative z-10" 
                 />
                 {item.badge !== undefined && item.badge > 0 && (
                   <span 
                     className="absolute font-bold rounded-full flex items-center justify-center border-white z-30 shadow-lg"
                     style={{ 
-                      color: COLOR_TEXT_WHITE,
-                      backgroundColor: COLOR_BADGE_RED,
+                      color: THEME_COLOR.page,
+                      backgroundColor: THEME_COLOR.text,
                       fontSize: NAV_BAR_BADGE_TEXT_SIZE,
                       width: NAV_BAR_BADGE_SIZE,
                       height: NAV_BAR_BADGE_SIZE,

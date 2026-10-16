@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 // Icons migrated to Icon component
+import { triggerSelectionHaptic } from "../lib/native-haptics";
 import { Icon } from "./Icon";
 import { useTasks } from "../contexts/TaskContext";
 import { usePermissions } from "../hooks/usePermissions";
@@ -71,6 +72,38 @@ const getTwoWeekDateRange = () => {
   end.setHours(END_OF_DAY_HOUR, END_OF_DAY_MINUTE, END_OF_DAY_SECOND, END_OF_DAY_MILLISECOND);
   return { startDate: start, endDate: end };
 };
+
+
+interface InboxHeaderPillProps {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  busy?: boolean;
+  className?: string;
+}
+
+function InboxHeaderPill({ icon, label, onClick, disabled, busy, className }: InboxHeaderPillProps) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void triggerSelectionHaptic();
+        onClick();
+      }}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "inline-flex h-8 min-w-8 flex-shrink-0 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-2 sm:h-9 sm:min-w-9 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5",
+        className,
+      )}
+    >
+      <Icon name={icon} size={ICON_SIZE_MD} className={cn("flex-shrink-0", busy && "animate-pulse")} />
+      <span className="hidden whitespace-nowrap sm:inline">{label}</span>
+    </button>
+  );
+}
 
 export function InboxView() {
   const { tasks, addTask, bulkDeleteTasks, updateTask, isLoading } = useTasks();
@@ -736,7 +769,7 @@ export function InboxView() {
             {selectedTaskIds.size > 0 ? (
               <>
                 <p 
-                  className="text-muted-foreground text-right"
+                  className="hidden text-muted-foreground text-right sm:block"
                   style={{ 
                     fontSize: HEADER_DESCRIPTION_SIZE,
                     marginBottom: HEADER_DESCRIPTION_MARGIN_TOP,
@@ -747,185 +780,55 @@ export function InboxView() {
                     : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
                   }
                 </p>
-                <div className="flex items-center flex-wrap flex-shrink-0" style={{ gap: HEADER_GAP_SMALL }}>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        onClick={handleSelectAll}
-                        className="cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80"
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleSelectAll();
-                          }
-                        }}
-                      >
-                        <Icon 
-                          name="check-square"
-                          size={ICON_SIZE_XL}
-                          className="text-primary dark:text-primary-foreground flex-shrink-0"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{selectedTaskIds.size === sortedTasks.length ? "Deselect All" : "Select All"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        onClick={isScheduling || !permissions.canEditTask ? undefined : handleScheduleSelected}
-                        className={cn(
-                          "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
-                          (isScheduling || !permissions.canEditTask) && "opacity-50 cursor-not-allowed"
-                        )}
-                        role="button"
-                        tabIndex={isScheduling || !permissions.canEditTask ? -1 : 0}
-                        onKeyDown={(e) => {
-                          if (isScheduling || !permissions.canEditTask) return;
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleScheduleSelected();
-                          }
-                        }}
-                      >
-                        <Icon 
-                          name="head-circuit"
-                          size={ICON_SIZE_XL}
-                          weight="duotone"
-                          className={cn(
-                            "text-primary dark:text-primary-foreground flex-shrink-0",
-                            isScheduling && "animate-spin"
-                          )}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Schedule ({selectedTaskIds.size})</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        onClick={!permissions.canEditTask ? undefined : handleUnscheduleSelected}
-                        className={cn(
-                          "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
-                          !permissions.canEditTask && "opacity-50 cursor-not-allowed"
-                        )}
-                        role="button"
-                        tabIndex={!permissions.canEditTask ? -1 : 0}
-                        onKeyDown={(e) => {
-                          if (!permissions.canEditTask) return;
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleUnscheduleSelected();
-                          }
-                        }}
-                      >
-                        <Icon 
-                          name="calendar"
-                          size={ICON_SIZE_XL}
-                          weight="duotone"
-                          className="text-primary dark:text-primary-foreground flex-shrink-0"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Unschedule ({selectedTaskIds.size})</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        onClick={() => {
-                          if (!permissions.canDeleteTask) {
-                            toast.error('Permission Denied', {
-                              description: 'Viewer role does not have permission to delete tasks. Please contact an admin.',
-                            });
-                            return;
-                          }
-                          setShowBulkDeleteConfirm(true);
-                        }}
-                        className={cn(
-                          "cursor-pointer flex items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
-                          !permissions.canDeleteTask && "opacity-50 cursor-not-allowed"
-                        )}
-                        role="button"
-                        tabIndex={!permissions.canDeleteTask ? -1 : 0}
-                        onKeyDown={(e) => {
-                          if (!permissions.canDeleteTask) return;
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setShowBulkDeleteConfirm(true);
-                          }
-                        }}
-                      >
-                        <Icon 
-                          name="trash-2"
-                          size={ICON_SIZE_XL}
-                          className="text-destructive flex-shrink-0"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete ({selectedTaskIds.size})</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div className="flex items-center flex-wrap flex-shrink-0 justify-end" style={{ gap: HEADER_GAP_SMALL }}>
+                  <InboxHeaderPill
+                    icon="check-square"
+                    label={selectedTaskIds.size === sortedTasks.length ? "Deselect all" : "Select all"}
+                    onClick={handleSelectAll}
+                  />
+                  {showScheduled ? (
+                    <InboxHeaderPill
+                      icon="calendar"
+                      label={`Unschedule (${selectedTaskIds.size})`}
+                      disabled={!permissions.canEditTask}
+                      onClick={handleUnscheduleSelected}
+                    />
+                  ) : (
+                    <InboxHeaderPill
+                      icon="sparkle"
+                      label={`Schedule (${selectedTaskIds.size})`}
+                      disabled={isScheduling || !permissions.canEditTask}
+                      busy={isScheduling}
+                      onClick={handleScheduleSelected}
+                    />
+                  )}
+                  <InboxHeaderPill
+                    icon="trash-2"
+                    label={`Delete (${selectedTaskIds.size})`}
+                    onClick={() => {
+                      if (!permissions.canDeleteTask) {
+                        toast.error('Permission Denied', {
+                          description: 'Viewer role does not have permission to delete tasks. Please contact an admin.',
+                        });
+                        return;
+                      }
+                      setShowBulkDeleteConfirm(true);
+                    }}
+                  />
                 </div>
               </>
             ) : (
               <>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        onClick={() => {
-                          if (!permissions.canCreateTask) {
-                            toast.error('Permission Denied', {
-                              description: 'Viewer role does not have permission to create tasks. Please contact an admin.',
-                            });
-                            return;
-                          }
-                          setSelectedTask(undefined);
-                          setIsTaskDialogOpen(true);
-                        }}
-                        className={cn(
-                          "hidden sm:flex cursor-pointer items-center justify-center flex-shrink-0 transition-opacity hover:opacity-80",
-                          !permissions.canCreateTask && "opacity-50 cursor-not-allowed"
-                        )}
-                        role="button"
-                        tabIndex={!permissions.canCreateTask ? -1 : 0}
-                        onKeyDown={(e) => {
-                          if (!permissions.canCreateTask) return;
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setSelectedTask(undefined);
-                            setIsTaskDialogOpen(true);
-                          }
-                        }}
-                      >
-                        <Icon 
-                          name="check-square"
-                          size={ICON_SIZE_XL}
-                          className="text-primary dark:text-primary-foreground flex-shrink-0"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>New Task</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <InboxHeaderPill
+                  icon="plus"
+                  label="New task"
+                  className="hidden sm:inline-flex"
+                  disabled={!permissions.canCreateTask}
+                  onClick={() => {
+                    setSelectedTask(undefined);
+                    setIsTaskDialogOpen(true);
+                  }}
+                />
               </>
             )}
           </div>

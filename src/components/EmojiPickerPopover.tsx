@@ -2,16 +2,14 @@
 
 import React, { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
-import { ScrollArea } from "./ui/scroll-area";
+import { Icon } from "./Icon";
+import { ICON_SIZE_MD } from "../lib/layout-constants";
 
-/** Curated emojis for task title/description – task-relevant and common. No hardcoded UI strings. */
-const EMOJI_GRID = [
-  "✅", "📋", "📌", "⏰", "🎯", "💡", "📅", "⭐", "🔥", "💪",
-  "👍", "📝", "🔔", "📂", "🏷️", "👤", "🕐", "✔️", "❗", "❓",
-  "😀", "😊", "🎉", "💼", "📧", "🔗", "📊", "💰", "🏠", "🚀",
-  "❤️", "🙏", "✨", "🌟", "💬", "📱", "🖥️", "📈", "🎨", "🔒",
+/** Small curated set of task markers (status, time, context) so the picker fits without scrolling. */
+const TASK_EMOJIS = [
+  "✅", "📌", "⏰", "🎯", "🔥", "⭐",
+  "💡", "📝", "📅", "💼", "🏠", "🚀",
 ];
 
 export interface EmojiPickerPopoverProps {
@@ -38,37 +36,34 @@ export function EmojiPickerPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         {children ?? (
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="icon"
-            className={cn("h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground", triggerClassName)}
+            className={cn(
+              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+              open && "bg-muted text-foreground",
+              triggerClassName,
+            )}
             title={triggerTitle}
             aria-label={triggerTitle}
           >
-            <span className="text-base leading-none" aria-hidden>😀</span>
-          </Button>
+            <Icon name="smiley-wink" size={ICON_SIZE_MD} />
+          </button>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-2" align="start" sideOffset={6}>
-        <ScrollArea className="h-[200px] w-[240px] pr-2">
-          <div className="grid grid-cols-5 gap-0.5">
-            {EMOJI_GRID.map((emoji, i) => (
-              <button
-                key={`${emoji}-${i}`}
-                type="button"
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded text-lg",
-                  "hover:bg-muted focus:bg-muted focus:outline-none"
-                )}
-                onClick={() => handleSelect(emoji)}
-                aria-label={`Insert ${emoji}`}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
+      <PopoverContent className="w-auto rounded-2xl p-1.5" align="end" sideOffset={6}>
+        <div className="grid grid-cols-6 gap-0.5">
+          {TASK_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-lg hover:bg-muted focus:bg-muted focus:outline-none"
+              onClick={() => handleSelect(emoji)}
+              aria-label={`Insert ${emoji}`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
       </PopoverContent>
     </Popover>
   );

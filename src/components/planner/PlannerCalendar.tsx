@@ -77,19 +77,17 @@ function CalendarHeader({
         <span className="planner-eyebrow">{mode === 'week' ? TEXT.eyebrowWeek : TEXT.eyebrowMonth}</span>
         <h2 className="planner-title">{anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</h2>
       </div>
-      {mode === 'week' ? (
-        <div className="flex flex-none items-center gap-1">
-          <button type="button" className="planner-icon-btn" aria-label={TEXT.previous} onClick={() => onShift(-1)}>
-            <Icon name="chevron-left" size={PLANNER_LAYOUT.iconPx} />
-          </button>
-          <button type="button" className="planner-pill" onClick={onToday}>
-            {TEXT.today}
-          </button>
-          <button type="button" className="planner-icon-btn" aria-label={TEXT.next} onClick={() => onShift(1)}>
-            <Icon name="chevron-right" size={PLANNER_LAYOUT.iconPx} />
-          </button>
-        </div>
-      ) : null}
+      <div className="flex flex-none items-center gap-1">
+        <button type="button" className="planner-icon-btn" aria-label={TEXT.previous} onClick={() => onShift(-1)}>
+          <Icon name="chevron-left" size={PLANNER_LAYOUT.iconPx} />
+        </button>
+        <button type="button" className="planner-pill" onClick={onToday}>
+          {TEXT.today}
+        </button>
+        <button type="button" className="planner-icon-btn" aria-label={TEXT.next} onClick={() => onShift(1)}>
+          <Icon name="chevron-right" size={PLANNER_LAYOUT.iconPx} />
+        </button>
+      </div>
     </header>
   );
 }
@@ -469,12 +467,18 @@ export function PlannerCalendar({ className, mode: requestedMode = 'week' }: { c
       <CalendarHeader
         mode={mode}
         anchor={anchor}
-        onShift={(direction) => setAnchor((current) => addDays(current, direction * DAYS_IN_WEEK))}
+        onShift={(direction) =>
+          setAnchor((current) =>
+            mode === 'month'
+              ? new Date(current.getFullYear(), current.getMonth() + direction, 1)
+              : addDays(current, direction * DAYS_IN_WEEK),
+          )
+        }
         onToday={() => setAnchor(new Date())}
       />
       {mode === 'month' ? (
         <div className="planner-scroll">
-          <MonthCalendarView mobileMode={isMobile} />
+          <MonthCalendarView mobileMode={isMobile} date={anchor} hideHeader />
         </div>
       ) : isMobile ? (
         <MobileWeek anchor={anchor} onOpenTask={openTask} />

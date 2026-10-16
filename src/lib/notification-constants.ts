@@ -373,6 +373,10 @@ export const NOTIFICATION_CARD = {
   unreadDotSizePx: AGENDA_LIST_CARD.dotSizePx,
   dismissButtonSizePx: 24,
   unreadRingClass: 'ring-1 ring-primary/25 shadow-sm',
+  selectLabel: (title: string) => `Select "${title}"`,
+  deselectLabel: (title: string) => `Deselect "${title}"`,
+  unreadLabel: 'Unread',
+  dismissLabel: 'Dismiss notification',
 } as const;
 
 function startOfDay(date: Date): Date {

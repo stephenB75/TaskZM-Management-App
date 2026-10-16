@@ -458,13 +458,7 @@ export function NotificationsPanel({ embedded = false }: NotificationsPanelProps
                 {group.items.length}
               </span>
             </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: NOTIFICATION_PANEL.listGapPx,
-              }}
-            >
+            <div className="taskzm-notification-list flex flex-col">
               <AnimatePresence mode="popLayout">
                 {group.items.map((notification, index) => (
                   <motion.div

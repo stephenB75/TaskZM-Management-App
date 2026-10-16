@@ -125,6 +125,29 @@ function applyRecurringOccurrenceIdsMigrationIfNeeded(taskList: Task[]): Task[] 
   return next;
 }
 
+const PENDING_DELETES_KEY = 'pending_task_deletes';
+
+function readPendingDeletes(userId?: string): Set<string> {
+  return new Set(getFromLocalStorage<string[]>(PENDING_DELETES_KEY, [], userId));
+}
+
+function updatePendingDeletes(userId: string | undefined, update: (pending: Set<string>) => void) {
+  const pending = readPendingDeletes(userId);
+  update(pending);
+  saveToLocalStorage(PENDING_DELETES_KEY, Array.from(pending), userId);
+}
+
+/** Sends queued deletes to the server and dequeues only the ones it confirmed. */
+async function flushPendingDeletes(wsId: string, taskIds: string[], userId?: string): Promise<string[]> {
+  if (taskIds.length === 0) return [];
+  const outcomes = await Promise.allSettled(taskIds.map((id) => api.deleteTask(wsId, id)));
+  const confirmed = taskIds.filter((_, i) => outcomes[i].status === 'fulfilled');
+  updatePendingDeletes(userId, (pending) => confirmed.forEach((id) => pending.delete(id)));
+  const failures = outcomes.filter((o) => o.status === 'rejected');
+  if (failures.length > 0) logger.error('Failed to delete tasks from server:', failures);
+  return confirmed;
+}
+
 export function TaskProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
   const { hasFeature } = useSubscription();
@@ -729,13 +752,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     try {
       logger.debug(`Loading tasks from server for workspace: ${wsId}`);
       const result = await api.getTasks(wsId);
-      const pendingDeletes = new Set(getFromLocalStorage<string[]>('pending_task_deletes', [], user?.id));
+      const pendingDeletes = readPendingDeletes(user?.id);
       const serverTasks = ensureTaskArray(result.tasks).filter((task) => !pendingDeletes.has(task.id));
       if (pendingDeletes.size > 0 && !result.error) {
-        void Promise.allSettled(Array.from(pendingDeletes).map((id) => api.deleteTask(wsId, id))).then((outcomes) => {
-          const stillPending = Array.from(pendingDeletes).filter((_, i) => outcomes[i].status === 'rejected');
-          saveToLocalStorage('pending_task_deletes', stillPending, user?.id);
-        });
+        void flushPendingDeletes(wsId, Array.from(pendingDeletes), user?.id);
       }
       const error = result.error;
       const lastModifiedFromServer = result.lastModified;
@@ -757,20 +777,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           return final;
         }
         
-        // For other errors, fall back to localStorage if available
-        const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
+        // For other errors, fall back to localStorage if available. Never push this copy back up:
+        // it can be stale and would resurrect tasks deleted on another device.
+        const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id))
+          .filter((task) => !pendingDeletes.has(task.id));
         if (savedTasks.length > 0) {
           logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
           const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
           setTasks(ensureTaskArray(final));
           saveToLocalStorage('tasks', final, user?.id);
-          // Try to push local tasks to server in background so they persist when GET is failing
-          Promise.all(
-            final.map((task) =>
-              api.saveTask(wsId, task).then(() => logger.debug('Pushed local task to server:', task.id)).catch((err) => logger.debug('Push local task failed:', task.id, err))
-            )
-          ).catch(() => {});
           const now = Date.now();
           const COOLDOWN_MS = 10000; // Only show this toast once per 10s so duplicate load calls don't stack
           if (now - lastLoadTasksOfflineToastRef.current > COOLDOWN_MS) {
@@ -821,7 +837,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         let final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
 
         // Merge with localStorage: prefer local version when it's newer so changes persist after refresh
-        const localTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
+        const localTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id))
+          .filter((task) => !pendingDeletes.has(task.id));
         if (localTasks.length > 0) {
           const serverById = new Map(final.map((t) => [t.id, t]));
           const merged: Task[] = [];
@@ -857,7 +874,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       } else {
         // No server data - this is valid (workspace exists but has no tasks)
         logger.info('No tasks found on server (workspace may be empty)');
-        const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
+        // Only never-synced local tasks are uploaded; anything else missing from the server was deleted.
+        const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id))
+          .filter((task) => !pendingDeletes.has(task.id) && (task.createdBy === 'local' || !task.createdBy));
         if (savedTasks.length > 0) {
           logger.info(`Found ${savedTasks.length} tasks in localStorage, syncing to server`);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
@@ -1478,6 +1497,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           : WORKSPACE_SYNC_INTERVAL_IDLE_MS;
         if (syncIntervalRef.current !== desiredInterval) {
           setSyncInterval(desiredInterval);
+        }
+
+        const pendingDeletes = readPendingDeletes(user?.id);
+        if (pendingDeletes.size > 0) {
+          serverTasks = serverTasks.filter((task) => !pendingDeletes.has(task.id));
+          void flushPendingDeletes(targetWorkspaceId, Array.from(pendingDeletes), user?.id);
         }
 
         // Server is source of truth - only update state if data actually changed
@@ -2509,14 +2534,6 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }
   }, [tasks, workspaceId, accessToken, updateActivity, calculateNextOccurrenceDate, ensureWorkspace, createWorkspaceIfNeeded, loadTasksFromServer, debouncedSync]); // Removed syncWithServer from dependencies
 
-  const pendingDeletesKey = 'pending_task_deletes';
-
-  const setPendingDeletes = useCallback((update: (prev: Set<string>) => void) => {
-    const pending = new Set(getFromLocalStorage<string[]>(pendingDeletesKey, [], user?.id));
-    update(pending);
-    saveToLocalStorage(pendingDeletesKey, Array.from(pending), user?.id);
-  }, [user?.id]);
-
   const removeTasksLocally = useCallback((taskIds: string[]) => {
     const ids = new Set(taskIds);
     setTasks(prev => {
@@ -2531,19 +2548,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const deleteTasksEverywhere = useCallback(async (taskIds: string[]): Promise<boolean> => {
     updateActivity();
     removeTasksLocally(taskIds);
-    if (!workspaceId || !accessToken) return true;
+    updatePendingDeletes(user?.id, pending => taskIds.forEach(id => pending.add(id)));
+    if (!workspaceId) return true;
 
-    setPendingDeletes(pending => taskIds.forEach(id => pending.add(id)));
-    const results = await Promise.allSettled(taskIds.map(id => api.deleteTask(workspaceId, id)));
-    const confirmed = taskIds.filter((_, i) => results[i].status === 'fulfilled');
-    setPendingDeletes(pending => confirmed.forEach(id => pending.delete(id)));
+    const confirmed = await flushPendingDeletes(workspaceId, taskIds, user?.id);
     if (confirmed.length > 0) debouncedSync(false);
-    if (confirmed.length < taskIds.length) {
-      logger.error('Failed to delete tasks from server:', results.filter(r => r.status === 'rejected'));
-      return false;
-    }
-    return true;
-  }, [workspaceId, accessToken, updateActivity, removeTasksLocally, setPendingDeletes, debouncedSync]);
+    return confirmed.length === taskIds.length;
+  }, [workspaceId, user?.id, updateActivity, removeTasksLocally, debouncedSync]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     const synced = await deleteTasksEverywhere([taskId]);

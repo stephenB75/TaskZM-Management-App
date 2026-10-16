@@ -212,15 +212,18 @@ export function AppSidebar({
             src={isDark ? taskzmLogoGray : taskzmLogoBlack}
             alt="TaskZM"
             className="object-contain"
-            style={{ width: PLANNER_LAYOUT.railButtonPx, height: 'auto', marginBottom: PLANNER_LAYOUT.sectionGapPx }}
+            style={{ width: PLANNER_LAYOUT.railLogoPx, height: 'auto', marginBottom: PLANNER_LAYOUT.sectionGapPx }}
           />
           <button
             type="button"
             className="planner-rail-btn planner-rail-brand"
             aria-label={RAIL_ADD_TASK_LABEL}
-            onClick={() => window.dispatchEvent(new CustomEvent('taskzm-add-task'))}
+            onClick={() => {
+              void triggerSelectionHaptic();
+              window.dispatchEvent(new CustomEvent('taskzm-add-task'));
+            }}
           >
-            <Icon name="plus" size={PLANNER_LAYOUT.railIconPx} weight="bold" />
+            <Icon name="plus" size={PLANNER_LAYOUT.railIconPx} weight="bold" className="taskzm-nav-icon" />
             <span className="planner-rail-label">{RAIL_ADD_TASK_LABEL}</span>
           </button>
           {menuItems.map((item, index) => {
@@ -242,9 +245,12 @@ export function AppSidebar({
                   data-active={active ? "true" : undefined}
                   data-alert={item.id === "notifications" && badge > 0 ? "true" : undefined}
                   className="planner-rail-btn taskzm-bell"
-                  onClick={() => onViewChange(item.id)}
+                  onClick={() => {
+                    void triggerSelectionHaptic();
+                    onViewChange(item.id);
+                  }}
                 >
-                  <Icon name={item.iconName} size={PLANNER_LAYOUT.railIconPx} weight={active ? (item.iconName === "calendar-week" ? "bold" : "fill") : "regular"} />
+                  <Icon name={item.iconName} size={PLANNER_LAYOUT.railIconPx} weight={active ? (item.iconName === "calendar-week" ? "bold" : "fill") : "regular"} className="taskzm-nav-icon" />
                   {badge > 0 ? (
                     <span className="planner-rail-badge">{badge > BADGE_DISPLAY_MAX ? `${BADGE_DISPLAY_MAX}+` : badge}</span>
                   ) : null}

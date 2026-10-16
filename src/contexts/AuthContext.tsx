@@ -6,6 +6,7 @@ import { clearUserLocalStorage } from '../lib/utils';
 import { removePushRegistrationFromServer } from '../lib/native-push-notifications';
 import { API_BASE } from '../lib/api';
 import { publicAnonKey } from '../utils/supabase/info';
+import { TIMING_CONSTANTS } from '../lib/timing-constants';
 import type { User } from '../types';
 
 interface AuthContextType {
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         logger.debug('Auth state changed:', event);
         
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           if (session) {
             const userData: User = {
               id: session.user.id,
@@ -367,6 +368,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Track demo user activity (update timestamp on interactions)
   // Activity is now tracked via useDemoActivity hook which is called on user interactions
+
+  // Session metadata is cached per device; refetch on foreground so profile edits made elsewhere show up promptly.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    let lastRefresh = Date.now();
+    const refreshProfile = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastRefresh < TIMING_CONSTANTS.auth.profileForegroundRefreshMs) return;
+      lastRefresh = now;
+      void supabase.auth.getUser().then(({ data, error }: {
+        data: { user: { id: string; user_metadata?: { name?: string; avatar?: string } } | null };
+        error: unknown;
+      }) => {
+        if (error || !data.user || data.user.id !== userId) return;
+        const name = data.user.user_metadata?.name || 'User';
+        const avatar = data.user.user_metadata?.avatar || undefined;
+        setUser((current) =>
+          current && current.id === userId && (current.name !== name || current.avatar !== avatar)
+            ? { ...current, name, avatar }
+            : current,
+        );
+      });
+    };
+    document.addEventListener('visibilitychange', refreshProfile);
+    window.addEventListener('focus', refreshProfile);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshProfile);
+      window.removeEventListener('focus', refreshProfile);
+    };
+  }, [userId]);
 
   const getSessionToken = useCallback(async (): Promise<string | null> => {
     const { data: { session } } = await supabase.auth.getSession();

@@ -30,7 +30,8 @@ export function TaskOptionBar({ items, activeId, onSelect }: TaskOptionBarProps)
     <div
       role="toolbar"
       aria-label={TASK_DIALOG_OPTION_SHEET_TEXT.optionsLabel}
-      className={cn('flex gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', TASK_DIALOG_COLORS.optionTray)}
+      className={cn('grid gap-0.5', TASK_DIALOG_COLORS.optionTray)}
+      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
     >
       {items.map(({ id, indicator, accentColor }) => {
         const option = TASK_DIALOG_OPTIONS[id];
@@ -47,10 +48,9 @@ export function TaskOptionBar({ items, activeId, onSelect }: TaskOptionBarProps)
               onSelect(id);
             }}
             className={cn(
-              'relative flex shrink-0 flex-col items-center gap-1 rounded-xl px-1 py-1.5 transition-colors',
+              'relative flex min-w-0 flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 transition-colors',
               active ? TASK_DIALOG_COLORS.optionActive : TASK_DIALOG_COLORS.optionInactive,
             )}
-            style={{ minWidth: TASK_OPTION_SHEET.iconButtonMinWidthPx }}
           >
             <span className="relative">
               <Icon
@@ -67,7 +67,7 @@ export function TaskOptionBar({ items, activeId, onSelect }: TaskOptionBarProps)
               )}
               {dot && <span className="absolute -right-1 -top-0.5 size-2 rounded-full bg-primary" aria-hidden />}
             </span>
-            <span className="font-medium leading-none" style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE }}>
+            <span className="w-full truncate text-center font-medium leading-none" style={{ fontSize: MOBILE_HOME_TAB_FONT_SIZE }}>
               {option.label}
             </span>
           </button>
