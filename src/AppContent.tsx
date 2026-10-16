@@ -42,6 +42,7 @@ import { useAIScheduler, type SchedulePlan } from './hooks/useAIScheduler';
 import { useAwardChecker } from './hooks/useAwardChecker';
 import { useDemoActivity } from './hooks/useDemoActivity';
 import { useMobileLayout } from './hooks/useMobileLayout';
+import { useDualPaneLayout } from './hooks/useDualPaneLayout';
 import { TIMING_CONSTANTS } from './lib/timing-constants';
 import { NOTIFICATION_OPEN_TASK_EVENT, NOTIFICATIONS_SHEET_OPEN_EVENT } from './lib/notification-constants';
 import { AI_PANEL_UI_TEXT, NAVIGATION_UI_TEXT, PLANNER_COMPOSER_FOCUS_EVENT } from './lib/navigation-constants';
@@ -128,6 +129,8 @@ export default function AppContent() {
     shouldUseMobileLayout &&
     (currentView === 'today' || (currentView === 'dashboard' && mobileView === 'week'));
   const isPlannerTab = currentView === 'today' || currentView === 'dashboard' || currentView === 'ai';
+  const dualPaneAvailable = useDualPaneLayout();
+  const showDualPane = shouldUseMobileLayout && dualPaneAvailable && (currentView === 'today' || currentView === 'dashboard');
   
   // When mobile layout is shown and user is authenticated, trigger a sync so mobile gets latest tasks from server
   const mobileSyncDoneRef = useRef(false);
@@ -739,10 +742,19 @@ export default function AppContent() {
               } as React.CSSProperties}
             >
               <Suspense fallback={<ViewFallback />}>
-                {currentView === 'today' && (
-                  <PlannerTimeline onPlanWithAi={() => setCurrentView('ai')} />
+                {showDualPane ? (
+                  <div className="planner-dual-pane">
+                    <PlannerTimeline onPlanWithAi={() => setCurrentView('ai')} />
+                    <PlannerCalendar />
+                  </div>
+                ) : (
+                  <>
+                    {currentView === 'today' && (
+                      <PlannerTimeline onPlanWithAi={() => setCurrentView('ai')} />
+                    )}
+                    {currentView === 'dashboard' && <PlannerCalendar />}
+                  </>
                 )}
-                {currentView === 'dashboard' && <PlannerCalendar />}
                 {currentView === 'ai' && <PlannerChat />}
                 {currentView === 'notifications' && <NotificationsPanel />}
                 {currentView === 'inbox' && <InboxView />}

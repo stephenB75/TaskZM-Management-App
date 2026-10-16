@@ -23,7 +23,8 @@ import type { Task } from "../types";
 import { UI_GRADIENT_COLORS, UI_TODAY_AGENDA_STATUS_COLORS } from "../lib/ui-colors";
 import { TASK_CALCULATION_CONSTANTS } from "../lib/task-calculation-constants";
 import { TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS, TASK_CARD_LAYOUT_METRICS, TASK_CARD_TIMELINE, TASK_CARD_PRIORITY_COLORS, TODAY_AGENDA_PRIORITY_INDICATOR_BG } from "../lib/task-card-constants";
-import { TODAY_AGENDA_TEXT, TODAY_AGENDA_EVENT_ACCENT_HEX } from "../lib/today-agenda-constants";
+import { TODAY_AGENDA_TEXT } from "../lib/today-agenda-constants";
+import { COLOR_CALENDAR_EVENT_ACCENT } from "../lib/color-theme";
 import {
   getTodayAgendaCompactRowHeightPx,
   formatTodayAgendaMinutesLabel,
@@ -777,10 +778,7 @@ export function TodayAgendaView({
     if (item.type === 'task' && item.task) {
       return TASK_CARD_PRIORITY_COLORS[item.task.priority]?.line ?? TASK_CARD_PRIORITY_COLORS.default.line;
     }
-    if (item.type === 'event' && item.event?.calendarColor) {
-      return item.event.calendarColor;
-    }
-    return TODAY_AGENDA_EVENT_ACCENT_HEX;
+    return COLOR_CALENDAR_EVENT_ACCENT;
   }, []);
 
   /** Hybrid timeline: compact list (sparse) or duration blocks (dense) with spine, dots, and hour grid. */

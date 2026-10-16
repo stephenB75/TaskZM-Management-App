@@ -203,8 +203,7 @@ function MonthCalendarEvent({ event }: { event: CalendarEventData }) {
 
   return (
     <div
-      className="text-xs p-1 rounded-r rounded-l-none border-l-2 border-l-neutral-500 transition-all relative select-none bg-neutral-200 dark:bg-neutral-700"
-      style={event.calendarColor ? { borderLeftColor: event.calendarColor } : undefined}
+      className="planner-event-chip text-xs p-1 rounded-r rounded-l-none border-l-[3px] transition-all relative select-none"
       title={`${event.title}${event.location ? ` - ${event.location}` : ''}`}
     >
       <div className="flex items-start gap-1">

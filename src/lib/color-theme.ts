@@ -45,6 +45,10 @@ export const COLOR_POP_NEUTRAL = '#D4D4D4';
 /** Low priority reads as dark gray so it stays distinct from the gray task surfaces. */
 export const COLOR_PRIORITY_LOW = '#525252';
 
+/** Imported calendar events use one app color (defined per theme in globals.css), not each provider's color. */
+export const COLOR_CALENDAR_EVENT_ACCENT = 'var(--planner-event-bar)';
+export const COLOR_CALENDAR_EVENT_SURFACE = 'var(--planner-event-bg)';
+
 /** Lightness range (HSL %) for per-tag gray shades; dark mode mirrors it so dots stay visible. */
 export const TAG_SHADE_LIGHTNESS = { minPercent: 12, maxPercent: 68 } as const;
 export const TAG_SHADE_STORAGE_KEY = 'taskzm_tag_shades';

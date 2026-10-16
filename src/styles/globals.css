@@ -43,6 +43,9 @@
   --pop-orange-ink: #9A3412;
   --pop-blue: #BFDBFE;
   --pop-blue-ink: #1E3A8A;
+  /* Imported calendar events: the app's blue pop instead of each provider's raw color */
+  --planner-event-bg: color-mix(in srgb, var(--pop-blue) 45%, #FFFFFF);
+  --planner-event-bar: color-mix(in srgb, var(--pop-blue-ink) 65%, var(--pop-blue));
 
   /* Main theme colors */
   --background: #FAFAFA;
@@ -106,6 +109,8 @@
   --pop-orange-ink: #FED7AA;
   --pop-blue: #1E3150;
   --pop-blue-ink: #BFDBFE;
+  --planner-event-bg: color-mix(in srgb, var(--pop-blue) 70%, #0A0A0A);
+  --planner-event-bar: color-mix(in srgb, var(--pop-blue-ink) 70%, var(--pop-blue));
 
   --background: #0A0A0A;
   --foreground: #F5F5F5;
@@ -949,6 +954,27 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   }
 }
 
+/* Foldables / dual-screen: Upcoming and Calendar side by side inside the mobile layout */
+.planner-dual-pane {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  background: var(--card);
+}
+.planner-dual-pane > * + * {
+  border-left: 1px solid var(--border);
+}
+@media (horizontal-viewport-segments: 2) {
+  .planner-dual-pane {
+    grid-template-columns: env(viewport-segment-width 0 0) env(viewport-segment-width 1 0);
+    column-gap: calc(env(viewport-segment-left 1 0) - env(viewport-segment-right 0 0));
+  }
+  .planner-dual-pane > * + * {
+    border-left: 0;
+  }
+}
+
 .planner-panel {
   display: flex;
   flex-direction: column;
@@ -1272,6 +1298,31 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 }
 .planner-tl-item[data-done="true"] .planner-tl-body {
   opacity: 0.45;
+}
+.planner-archive-item {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: start;
+  padding-left: 0;
+  padding-right: 0;
+  border-radius: 12px;
+}
+.planner-archive-item::before {
+  left: 13px;
+}
+.planner-archive-item[data-selected="true"] {
+  background: var(--muted);
+}
+.planner-archive-item[data-done="true"] .planner-tl-body {
+  opacity: 0.7;
+}
+.planner-archive-actions {
+  display: flex;
+  gap: 4px;
+  padding-right: 4px;
+}
+.planner-archive-actions .planner-pill {
+  height: 28px;
+  padding: 0 10px;
 }
 .planner-tl-item[data-done="true"] .planner-tl-body strong {
   text-decoration: line-through;
@@ -1773,7 +1824,9 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: var(--muted);
+  border-left: 3px solid var(--planner-event-bar);
+  border-radius: 0 6px 6px 0;
+  background: var(--planner-event-bg);
 }
 .planner-week-gutter {
   position: relative;
@@ -1850,8 +1903,9 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   text-decoration: line-through;
 }
 .planner-block[data-event="true"] {
+  --planner-bar: var(--planner-event-bar);
   color: var(--foreground);
-  background: repeating-linear-gradient(135deg, var(--muted), var(--muted) 6px, var(--card) 6px, var(--card) 12px);
+  background: var(--planner-event-bg);
   cursor: default;
 }
 .planner-now-line {
@@ -1879,6 +1933,11 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 }
 .planner-event-dot {
   margin: 12px 0 0 6px;
+  background: var(--planner-event-bar);
+}
+.planner-event-chip {
+  border-left-color: var(--planner-event-bar) !important;
+  background: var(--planner-event-bg) !important;
 }
 
 /* Task dialog: gray-tinted fields so controls read against the white sheet */

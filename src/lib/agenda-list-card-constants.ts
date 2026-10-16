@@ -3,7 +3,12 @@
  * Used by Today Agenda task and calendar event cards.
  */
 
-import { COLOR_TEXT_PRIMARY, COLOR_TEXT_WHITE } from './color-theme';
+import {
+  COLOR_CALENDAR_EVENT_ACCENT,
+  COLOR_CALENDAR_EVENT_SURFACE,
+  COLOR_TEXT_PRIMARY,
+  COLOR_TEXT_WHITE,
+} from './color-theme';
 
 /** Relative luminance above which a solid badge switches to dark text. */
 const BADGE_LIGHT_BACKGROUND_LUMINANCE = 0.6;
@@ -88,6 +93,13 @@ export const AGENDA_LIST_CARD_UI = {
 } as const;
 
 export function getAgendaCardBadgeStyles(accentColor: string) {
+  if (accentColor === COLOR_CALENDAR_EVENT_ACCENT) {
+    return {
+      dotColor: accentColor,
+      badgeBackground: COLOR_CALENDAR_EVENT_SURFACE,
+      badgeText: 'var(--foreground)',
+    };
+  }
   return {
     dotColor: accentColor,
     badgeBackground: accentColor,

@@ -458,6 +458,10 @@ export const DESCRIPTION_GENERATION_CONFIG = {
     partialStemMatch: 0.7, // Partial stem match similarity (stem contains another)
     wordRelationshipThreshold: 0.6, // Minimum similarity threshold for word relationship
     phraseMatchThreshold: 0.7, // Minimum percentage of phrase words that must match (70%)
+    /** Words shorter than this only match exactly (stops "pr", "up", "in" matching inside other words). */
+    minFuzzyWordLength: 3,
+    /** A word only fuzzy-matches a longer word it starts (renew → renewing) when it covers this share of it. */
+    minPrefixCoverage: 0.6,
   },
   // Variation configuration for description generation
   variation: {
@@ -1044,6 +1048,7 @@ export const DOMAIN_SCORING_WEIGHTS = {
   KEYWORD: 1.0, // Weight for keyword matches
   PHRASE: 2.0, // Weight for phrase matches (more specific)
   VERB: 1.5, // Weight for verb matches (action-oriented)
+  NOUN: 1.5, // Weight for noun matches (the object of a task usually decides its context)
   CONTEXT_KEYWORD: 2.5, // Weight for context-specific keywords (INCREASED - higher priority for technical terms)
   CONTEXT_PHRASE: 4.0, // Weight for context-specific phrases (INCREASED - highest priority for technical phrases)
   // Fuzzy match multipliers (applied when using fuzzy matching instead of exact matching)

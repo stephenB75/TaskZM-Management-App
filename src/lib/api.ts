@@ -5,6 +5,7 @@ import type { Domain } from './domain-types';
 import { supabase } from './supabase-client';
 
 import { API_BASE } from './api-base';
+import { TIMING_CONSTANTS } from './timing-constants';
 import { TEAM_PANEL_UI_TEXT } from './team-panel-constants';
 
 /**
@@ -253,11 +254,23 @@ export async function getTasks(
     // Note: If-Modified-Since header removed due to CORS policy restrictions
     // Using query parameter instead for conditional requests
 
-    const response = await fetchWithAuthRetry(url, {
-      method: 'GET',
-      headers,
-      cache: 'no-store', // Prevent browsers (e.g. Edge) from using cached response; avoids tasks "disappearing" when sync overwrites with stale/empty cache
-    });
+    const fetchList = () =>
+      fetchWithAuthRetry(url, {
+        method: 'GET',
+        headers,
+        cache: 'no-store', // Prevent browsers (e.g. Edge) from using cached response; avoids tasks "disappearing" when sync overwrites with stale/empty cache
+      });
+    let response: Response | null = null;
+    const retryDelays = TIMING_CONSTANTS.taskFetch.networkRetryDelaysMs;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        response = await fetchList();
+        break;
+      } catch (fetchError) {
+        if (attempt >= retryDelays.length) throw fetchError;
+        await new Promise((resolve) => setTimeout(resolve, retryDelays[attempt]));
+      }
+    }
     const lastModifiedHeader = response.headers.get('last-modified') || undefined;
 
     // Handle 304 Not Modified (no changes)

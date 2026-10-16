@@ -95,7 +95,7 @@ function CalendarHeader({
 function AgendaEventRow({ event }: { event: CalendarEvent }) {
   return (
     <div className="planner-tl-item">
-      <span className="planner-dot planner-event-dot" style={{ background: event.calendarColor || 'var(--muted-foreground)' }} aria-hidden />
+      <span className="planner-dot planner-event-dot" aria-hidden />
       <div className="planner-tl-body" style={{ cursor: 'default' }}>
         <small>{eventTimeLabel(event)}</small>
         <strong>{event.title}</strong>
@@ -300,7 +300,6 @@ function WeekDayColumn({
               height: block.height,
               left: `calc(${PLANNER_LAYOUT.blockInsetPx}px + (100% - ${PLANNER_LAYOUT.blockInsetPx * 2}px) / ${block.lanes} * ${block.lane})`,
               width: `calc((100% - ${PLANNER_LAYOUT.blockInsetPx * 2}px) / ${block.lanes})`,
-              ['--planner-bar' as string]: block.event?.calendarColor || 'var(--muted-foreground)',
             }}
           >
             <strong>{block.event?.title}</strong>

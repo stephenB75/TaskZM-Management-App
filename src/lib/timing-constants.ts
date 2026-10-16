@@ -110,6 +110,8 @@ export const TIMING_CONSTANTS = {
     minRecurrenceInterval: 1, // Minimum recurrence interval
     maxRecurrenceInterval: 365, // Maximum recurrence interval (1 year)
     maxOccurrences: 365, // Maximum number of occurrences to pre-create for a recurring task
+    /** Cap on occurrences pre-created when a new recurring series is saved from the task dialog. */
+    maxSeriesOccurrencesOnCreate: 90,
     syncInterval: 5 * 60 * 1000, // 5 minutes - Calendar sync interval
     minAutoSyncInterval: 2 * 60 * 1000, // 2 minutes - Minimum time between auto syncs
     cacheDuration: 5 * 60 * 1000, // 5 minutes - Calendar status cache duration
@@ -177,6 +179,20 @@ export const TIMING_CONSTANTS = {
   native: {
     /** Min interval between foreground release checks (native cloud WebView). */
     cloudForegroundReleaseCheckMs: 30 * 1000,
+  },
+
+  // Task list fetch resilience (app resume / wake from sleep often has a brief network gap)
+  taskFetch: {
+    /** Delays before each retry of a task-list fetch that failed at the network level. */
+    networkRetryDelaysMs: [800, 2500],
+  },
+
+  // Recurring series saves (one request per task; batched so large series don't stall the app)
+  taskSave: {
+    /** Parallel task saves per batch when a recurring series is created or edited. */
+    seriesBatchSize: 6,
+    /** Delay before retrying series tasks whose save failed. */
+    seriesRetryDelayMs: 1500,
   },
 
   // Auth profile freshness across devices

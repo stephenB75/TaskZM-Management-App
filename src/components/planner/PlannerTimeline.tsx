@@ -1,5 +1,9 @@
 import React, { useMemo } from 'react';
 import { useTasks } from '../../contexts/TaskContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { PLANNER_LAYOUT } from '../../lib/layout-constants';
+import taskzmLogoBlack from '../../assets/Taskzm_Logo_BLK-removebg.png';
+import taskzmLogoGray from '../../assets/taskzm-logo-gray.png';
 import { usePlannerChat } from '../../contexts/PlannerChatContext';
 import { useSheetItem } from '../../hooks/useSheetItem';
 import { isUnfinishedTask, tasksToPlace } from '../../lib/home-task-groups';
@@ -76,7 +80,18 @@ function groupByWeek(tasks: Task[], now: Date): TimelineGroup[] {
     .map(([index, items]) => ({ key: `week-${index}`, label: weekLabel(index), tasks: items }));
 }
 
-export function PlannerTimeline({ className, onPlanWithAi }: { className?: string; onPlanWithAi?: () => void }) {
+export function PlannerTimeline({
+  className,
+  onPlanWithAi,
+  showBrand = false,
+}: {
+  className?: string;
+  onPlanWithAi?: () => void;
+  /** Desktop shows the wordmark here; mobile already has it in the top bar. */
+  showBrand?: boolean;
+}) {
+  const { actualTheme } = useTheme();
+  const isDark = actualTheme === 'dark';
   const { tasks } = useTasks();
   const { scheduleInbox, busy } = usePlannerChat();
   const editor = useSheetItem<Task>();
@@ -105,9 +120,21 @@ export function PlannerTimeline({ className, onPlanWithAi }: { className?: strin
   return (
     <section className={`planner-panel ${className ?? ''}`} aria-label={TEXT.title}>
       <header className="planner-header">
-        <div className="min-w-0">
-          <h2 className="planner-title">{TEXT.title}</h2>
-        </div>
+        {showBrand ? (
+          <div className="min-w-0">
+            <img
+              src={isDark ? taskzmLogoGray : taskzmLogoBlack}
+              alt="TaskZM"
+              className="block object-contain object-left"
+              style={{ height: PLANNER_LAYOUT.timelineLogoHeightPx, width: 'auto', maxWidth: '100%' }}
+            />
+            <h2 className="planner-eyebrow" style={{ margin: `${PLANNER_LAYOUT.brandTitleGapPx}px 0 0` }}>{TEXT.title}</h2>
+          </div>
+        ) : (
+          <div className="min-w-0">
+            <h2 className="planner-title">{TEXT.title}</h2>
+          </div>
+        )}
       </header>
 
       <div className="planner-scroll">

@@ -25,6 +25,7 @@ import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black 
 import taskzmLogoGray from "../assets/taskzm-logo-gray.png";  // Gray logo for dark mode
 
 const RAIL_ADD_TASK_LABEL = "Add task";
+const RAIL_BRAND_MARK_SRC = "/icons/icon-192.png";
 /** Rail items from this index on (folders, team, …) sit below a divider. */
 const RAIL_SECONDARY_START = 4;
 
@@ -176,7 +177,7 @@ export function AppSidebar({
                 {item.pro && (
                   <Badge
                     variant="secondary"
-                    className="ml-auto bg-gradient-to-r from-[#D4C5F9] to-[#B4E4CE] text-primary-foreground text-[10px] px-1.5 py-0"
+                    className="ml-auto bg-foreground text-background text-[10px] px-1.5 py-0"
                   >
                     PRO
                   </Badge>
@@ -209,10 +210,10 @@ export function AppSidebar({
           style={{ zIndex: SIDEBAR_Z_INDEX, width: SIDEBAR_WIDTH }}
         >
           <img
-            src={isDark ? taskzmLogoGray : taskzmLogoBlack}
+            src={RAIL_BRAND_MARK_SRC}
             alt="TaskZM"
             className="object-contain"
-            style={{ width: PLANNER_LAYOUT.railLogoPx, height: 'auto', marginBottom: PLANNER_LAYOUT.sectionGapPx }}
+            style={{ width: PLANNER_LAYOUT.railLogoPx, height: PLANNER_LAYOUT.railLogoPx, marginBottom: PLANNER_LAYOUT.sectionGapPx }}
           />
           <button
             type="button"
@@ -250,7 +251,7 @@ export function AppSidebar({
                     onViewChange(item.id);
                   }}
                 >
-                  <Icon name={item.iconName} size={PLANNER_LAYOUT.railIconPx} weight={active ? (item.iconName === "calendar-week" ? "bold" : "fill") : "regular"} className="taskzm-nav-icon" />
+                  <Icon name={item.iconName} size={PLANNER_LAYOUT.railIconPx} weight={active ? "fill" : "regular"} className="taskzm-nav-icon" />
                   {badge > 0 ? (
                     <span className="planner-rail-badge">{badge > BADGE_DISPLAY_MAX ? `${BADGE_DISPLAY_MAX}+` : badge}</span>
                   ) : null}

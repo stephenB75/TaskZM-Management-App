@@ -181,10 +181,16 @@ export const TASK_DIALOG_OPTIONS: Record<TaskDialogOptionId, { label: string; ti
   repeat: { label: 'Repeat', title: 'Repeat', iconName: 'repeat' },
   dependencies: { label: 'Depends', title: 'Dependencies', iconName: 'link-2' },
   assign: { label: 'Assign', title: 'Assign to', iconName: 'users' },
-  focus: { label: 'Focus', title: 'Pomodoro timer', iconName: 'timer' },
+  focus: { label: 'Pomodoro', title: 'Pomodoro timer', iconName: 'timer' },
   calendar: { label: 'Calendar', title: 'Calendar', iconName: 'calendar-plus' },
   ai: { label: 'Assist', title: 'Task analysis', iconName: 'sparkles' },
 };
+
+export const TASK_DIALOG_FOCUS_TEXT = {
+  lockedTitle: 'Pomodoro timer is a Pro feature',
+  lockedBody: 'Time focused work sessions with breaks and log the minutes to this task.',
+  upgrade: 'Upgrade to Pro',
+} as const;
 
 export const TASK_DIALOG_OPTION_SHEET_TEXT = {
   expand: 'Expand',

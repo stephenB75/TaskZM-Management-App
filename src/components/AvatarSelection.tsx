@@ -1,5 +1,5 @@
 /**
- * Avatar Selection — IconScout faceless characters with TaskZM pastels.
+ * Avatar Selection — TaskZM's inclusive people avatars.
  */
 
 import React from 'react';
@@ -34,6 +34,8 @@ interface AvatarSelectionProps {
   previewSeed?: string;
   /** Enable vertical scroll for the grid (use inside dialogs on mobile) */
   scrollable?: boolean;
+  /** Hide when the host dialog already shows the description in its header */
+  showDescription?: boolean;
 }
 
 function AvatarGrid({
@@ -75,7 +77,7 @@ function AvatarGrid({
             <img
               src={getAvatarAssetPath(option)}
               alt={option.label}
-              className="block h-full w-full object-contain object-center p-1.5"
+              className="block h-full w-full object-cover object-center"
               loading="lazy"
               draggable={false}
             />
@@ -122,14 +124,17 @@ export function AvatarSelection({
   className,
   previewSeed = 'User',
   scrollable = false,
+  showDescription = true,
 }: AvatarSelectionProps) {
   const resolvedSelection = resolveAvatarOption(selectedAvatar, previewSeed).id;
 
   return (
     <div className={cn('w-full min-w-0', className)}>
-      <p className="mb-3 text-center text-[11px] leading-snug text-muted-foreground sm:text-xs">
-        {AVATAR_UI_TEXT.selectAvatarDescription}
-      </p>
+      {showDescription && (
+        <p className="mb-3 text-center text-[11px] leading-snug text-muted-foreground sm:text-xs">
+          {AVATAR_UI_TEXT.selectAvatarDescription}
+        </p>
+      )}
 
       <div
         className={cn(
@@ -146,9 +151,11 @@ export function AvatarSelection({
         >
           {Array.from({ length: ICONSCOUT_CATEGORY_COUNT }, (_, categoryIndex) => (
             <section key={categoryIndex}>
-              <h4 className={AVATAR_SELECTION_SECTION_LABEL_CLASS}>
-                {ICONSCOUT_CATEGORY_LABELS[categoryIndex]}
-              </h4>
+              {ICONSCOUT_CATEGORY_COUNT > 1 && (
+                <h4 className={AVATAR_SELECTION_SECTION_LABEL_CLASS}>
+                  {ICONSCOUT_CATEGORY_LABELS[categoryIndex]}
+                </h4>
+              )}
               <AvatarGrid
                 options={getAvatarOptionsByCategory(categoryIndex)}
                 resolvedSelection={resolvedSelection}

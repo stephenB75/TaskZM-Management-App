@@ -1336,33 +1336,56 @@ const CONTEXT_KEYWORDS: Record<Domain, string[]> = {
     'work', 'office', 'professional', 'corporate', 'workplace', 'colleague', 'coworker', 
     'business', 'company', 'organization', 'enterprise', 'firm',
     // Technical/programming keywords (HIGH PRIORITY for business domain - INCREASED coverage)
-    'test', 'testing', 'tests', 'conduct test', 'test code', 'code test', 'codebase', 'code base', 
+    // Only unambiguous technical terms: everyday words like "fix", "file", "update", or "design" also describe home/personal tasks.
+    'conduct test', 'test code', 'code test', 'codebase', 'code base', 'unit test', 'test suite',
     'software', 'application', 'app', 'development', 'programming', 'coding', 
-    'debug', 'debugging', 'bug', 'fix', 'bugfix', 'feature', 'implementation', 
-    'deployment', 'release', 'version', 'update', 'patch', 'api', 'database', 
-    'backend', 'frontend', 'ui', 'ux', 'interface', 'component', 'dialog', 'box', 
-    'section', 'module', 'function', 'method', 'class', 'file', 'repository', 
-    'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr', 'technical', 
-    'architecture', 'design', 'specification', 'requirement', 'spec', 'task dialog',
-    'dialog box', 'task code', 'code base', 'base for', 'for the task',
+    'debug', 'debugging', 'bug', 'bugs', 'bugfix', 'feature', 'implementation', 
+    'deployment', 'release', 'api', 'database', 
+    'backend', 'frontend', 'ui', 'ux', 'component', 'dialog', 
+    'module', 'repository', 
+    'repo', 'git', 'commit', 'merge', 'pull request', 'pr', 'technical', 
+    'architecture', 'specification', 'requirement', 'spec', 'task dialog',
+    'dialog box', 'task code', 'sprint', 'standup', 'stakeholder', 'roadmap', 'okr', 'kpi',
+    'client', 'invoice', 'proposal', 'quarterly', 'manager', 'team meeting',
     // Presentation / content keywords
     'slide', 'deck', 'slides', 'presentation deck', 'slide deck',
     // Product/Project Management keywords
     'prd', 'product requirements document', 'product requirement', 'requirements document',
-    're-occurring', 'recurring', 'recurring issue', 'recurring task', 'recurring problem',
-    'recurrence', 'recurrence issue', 'recurrence problem', 'recurring bug',
-    'issue', 'issues', 'problem', 'problems', 'bug', 'bugs', 'error', 'errors',
-    'fix issue', 'fix problem', 'resolve issue', 'resolve problem', 'troubleshoot issue'
+    'recurring issue', 'recurring bug',
+    'fix bug', 'resolve issue', 'troubleshoot issue'
   ],
-  home: ['household', 'residential', 'domestic', 'homeowner', 'home', 'house', 'residence'],
+  home: [
+    'household', 'residential', 'domestic', 'homeowner', 'home', 'house', 'residence',
+    'kitchen', 'bathroom', 'bedroom', 'garage', 'garden', 'yard', 'lawn', 'sink', 'toilet',
+    'laundry', 'dishes', 'groceries', 'grocery', 'plumber', 'landlord', 'rent', 'mortgage',
+    'chores', 'vacuum', 'trash', 'recycling',
+  ],
   personal: [
     'self', 'individual', 'myself', 'personal', 'private', 'self-care', 'wellbeing',
     // Medical/health context keywords (HIGH PRIORITY)
-    'doctor', 'physician', 'medical', 'health', 'appointment', 'appt', 'checkup', 'healthcare'
+    'doctor', 'physician', 'medical', 'health', 'appointment', 'appt', 'checkup', 'healthcare',
+    'dentist', 'dental', 'gym', 'workout', 'haircut', 'therapy', 'passport',
+    // Family and relationships
+    'mom', 'mum', 'dad', 'mother', 'father', 'parents', 'family', 'kids', 'son', 'daughter',
+    'wife', 'husband', 'partner', 'friend', 'friends', 'grandma', 'grandpa', 'birthday', 'anniversary',
+    'wedding', 'vacation', 'taxes',
   ],
-  world: ['international', 'global', 'overseas', 'abroad', 'foreign', 'cross-border'],
+  world: [
+    'international', 'global', 'overseas', 'abroad', 'foreign', 'cross-border',
+    'volunteer', 'volunteering', 'charity', 'donate', 'donation', 'nonprofit', 'food bank',
+    'community', 'election', 'vote', 'voting', 'climate', 'news',
+  ],
   mixed: [],
 };
+
+/** Tech terms that rule out home/world. Kept to unambiguous ones ("fix", "test", "file", "patch" fit chores too). */
+const TECH_ONLY_TERMS = [
+  'code', 'codebase', 'code base', 'software', 'application', 'app',
+  'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'bugfix',
+  'implementation', 'deployment', 'api', 'database', 'backend', 'frontend', 'ui', 'ux',
+  'repository', 'repo', 'git', 'pull request', 'pr', 'technical', 'architecture',
+  'specification', 'spec',
+];
 
 /**
  * Negative keywords that exclude certain domains when present
@@ -1377,27 +1400,10 @@ const NEGATIVE_KEYWORDS: Record<Domain, string[]> = {
     'prescription', 'medication', 'pharmacy', 'hospital visit', 'clinic visit',
     'dental appointment', 'dental checkup', 'eye exam', 'vision test', 'hearing test'
   ],
-  home: [
-    'work meeting', 'office', 'business', 'professional', 'corporate',
-    // Technical/programming terms - these should NOT be categorized as home
-    'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
-    'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'fix', 'bugfix',
-    'feature', 'implementation', 'deployment', 'release', 'version', 'update', 'patch',
-    'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
-    'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
-    'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
-    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec'
-  ],
+  home: ['work meeting', 'office', 'business', 'professional', 'corporate', ...TECH_ONLY_TERMS],
   personal: ['work', 'office', 'business', 'corporate', 'professional'],
   world: [
-    // Technical/programming terms - these should NOT be categorized as world
-    'test', 'testing', 'code', 'codebase', 'code base', 'software', 'application', 'app',
-    'development', 'programming', 'coding', 'debug', 'debugging', 'bug', 'fix', 'bugfix',
-    'feature', 'implementation', 'deployment', 'release', 'version', 'update', 'patch',
-    'api', 'database', 'backend', 'frontend', 'ui', 'ux', 'interface', 'component',
-    'dialog', 'box', 'section', 'module', 'function', 'method', 'class', 'file',
-    'repository', 'repo', 'git', 'commit', 'branch', 'merge', 'pull request', 'pr',
-    'technical', 'architecture', 'design', 'specification', 'requirement', 'spec',
+    ...TECH_ONLY_TERMS,
     // Workout/fitness terms - these should NOT be categorized as world
     'workout', 'fitness', 'exercise', 'gym', 'training', 'cardio', 'strength'
   ],
@@ -1441,30 +1447,53 @@ function calculateContextBonus(
  * Helper function for fuzzy word matching in domain detection
  * Uses similarity scoring to match words even with variations
  */
+const termDomainCountsCache = new WeakMap<object, Map<string, number>>();
+
+/** Number of domains whose keywords, verbs, or nouns list each term. */
+function getTermDomainCounts(terminologies: Partial<Record<Domain, DomainTerminology>>): Map<string, number> {
+  const cached = termDomainCountsCache.get(terminologies);
+  if (cached) return cached;
+  const counts = new Map<string, number>();
+  for (const [domain, terminology] of Object.entries(terminologies)) {
+    if (domain === 'mixed' || !terminology) continue;
+    const terms = new Set(
+      [...terminology.keywords, ...terminology.verbs, ...(terminology.nouns ?? [])].map((t) => t.toLowerCase()),
+    );
+    terms.forEach((term) => counts.set(term, (counts.get(term) ?? 0) + 1));
+  }
+  termDomainCountsCache.set(terminologies, counts);
+  return counts;
+}
+
+const FUZZY_STOP_WORDS = new Set<string>((DESCRIPTION_GENERATION_CONFIG.stopWords ?? []) as readonly string[]);
+
+/** True when the shorter word starts the longer one and covers enough of it (renew/renewing, not app/appointment). */
+function isCoveringPrefix(a: string, b: string): boolean {
+  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+  return (
+    longer.startsWith(shorter) &&
+    shorter.length / longer.length >= DESCRIPTION_GENERATION_CONFIG.wordSimilarity.minPrefixCoverage
+  );
+}
+
 function calculateWordSimilarity(word1: string, word2: string): number {
+  const { wordSimilarity } = DESCRIPTION_GENERATION_CONFIG;
   const w1 = word1.toLowerCase();
   const w2 = word2.toLowerCase();
-  if (w1 === w2) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch;
-  if (w1.includes(w2) || w2.includes(w1)) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.substringMatch;
-  
-  // Check for common prefixes/suffixes
-  const minLen = Math.min(w1.length, w2.length);
-  let commonChars = 0;
-  for (let i = 0; i < minLen; i++) {
-    if (w1[i] === w2[i]) commonChars++;
-  }
-  const prefixSimilarity = commonChars / Math.max(w1.length, w2.length);
-  
-  // Check for stem similarity (remove common suffixes)
+  if (w1 === w2) return wordSimilarity.exactMatch;
+  // Short words and filler words are too ambiguous to fuzzy-match ("the" ⊂ "authentication", "mom" ≈ "mop").
+  if (Math.min(w1.length, w2.length) < wordSimilarity.minFuzzyWordLength) return 0;
+  if (FUZZY_STOP_WORDS.has(w1) || FUZZY_STOP_WORDS.has(w2)) return 0;
+
+  if (isCoveringPrefix(w1, w2)) return wordSimilarity.substringMatch;
+
   const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly)$/, '');
   const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-  const stemMatch = stem1 === stem2 
-    ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactStemMatch 
-    : (stem1.includes(stem2) || stem2.includes(stem1) 
-      ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.partialStemMatch 
-      : 0);
-  
-  return Math.max(prefixSimilarity, stemMatch);
+  if (stem1 === stem2) return wordSimilarity.exactStemMatch;
+  if (Math.min(stem1.length, stem2.length) >= wordSimilarity.minFuzzyWordLength && isCoveringPrefix(stem1, stem2)) {
+    return wordSimilarity.partialStemMatch;
+  }
+  return 0;
 }
 
 /**
@@ -1561,6 +1590,7 @@ export function detectDomain(
     .replace(/\bphys\.?\b/gi, 'physician');
   const textWords = text.split(/\s+/).filter(w => w.length >= 2);
   const normalizedTextWords = normalizedTextForMatching.split(/\s+/).filter(w => w.length >= 2);
+  const cleanTextWords = normalizedTextWords.map((w) => w.replace(/^[^\w]+|[^\w]+$/g, ''));
 
   logger.debug(`🔍 Domain Detection: Analyzing text="${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`, {
     titleLength: title.length,
@@ -1595,6 +1625,10 @@ export function detectDomain(
     mixed: [],
   };
 
+  const termDomainCounts = getTermDomainCounts(terminologies);
+  // A term listed under every domain ("call", "fix", "book") says little about context, so it's split between them.
+  const distinctiveness = (term: string) => 1 / Math.max(1, termDomainCounts.get(term.toLowerCase()) ?? 1);
+
   // Check each domain (use merged terminology when provided so shared terms are included)
   for (const [domainKey, terminology] of Object.entries(terminologies)) {
     if (domainKey === 'mixed' || !terminology) continue;
@@ -1612,7 +1646,7 @@ export function detectDomain(
         .replace(/\bphys\./gi, 'physician');
       
       // Try exact match first
-      const exactRegex = new RegExp(negativeKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const exactRegex = new RegExp(`\\b${negativeKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
       if (exactRegex.test(normalizedText)) {
         logger.debug(`🚫 Domain Detection: Negative keyword "${negativeKw}" found for ${domain}, excluding domain`);
         hasNegativeKeyword = true;
@@ -1644,11 +1678,34 @@ export function detectDomain(
     }
     if (hasNegativeKeyword) continue;
 
+    // Each word of the task scores at most once per term list, so "renew" can't also earn points as "renewal", "renewing", …
+    const makeWordClaimer = () => {
+      const claimed = new Set<number>();
+      return (term: string, mode: 'exact' | 'prefix' | 'fuzzy'): boolean => {
+        // Multi-word terms are matched as whole phrases by the caller's regex; fuzzy word matching doesn't apply.
+        if (term.includes(' ')) return mode !== 'fuzzy';
+        const t = term.toLowerCase();
+        const index = cleanTextWords.findIndex(
+          (w, i) =>
+            !claimed.has(i) &&
+            (mode === 'exact' ? w === t : mode === 'prefix' ? w.startsWith(t) : areWordsRelated(w, t)),
+        );
+        if (index === -1) return false;
+        claimed.add(index);
+        return true;
+      };
+    };
+    const claimContextWord = makeWordClaimer();
+    const claimKeywordWord = makeWordClaimer();
+    const claimVerbWord = makeWordClaimer();
+    const claimNounWord = makeWordClaimer();
+
     // IMPROVED: Check context-specific keywords with fuzzy matching (use normalized text so "appt" matches "appointment")
     const contextKws = CONTEXT_KEYWORDS[domain];
     for (const keyword of contextKws) {
       const exactRegex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
       if (exactRegex.test(normalizedTextForMatching)) {
+        if (!claimContextWord(keyword, 'exact')) continue;
         const weight = DOMAIN_SCORING_WEIGHTS.CONTEXT_KEYWORD;
         matchedTerms[domain] += weight;
         contextKeywords[domain].push(keyword);
@@ -1657,7 +1714,7 @@ export function detectDomain(
         }
         logger.debug(`✅ Domain Detection: Context keyword "${keyword}" matched for ${domain} (+${weight} points)`);
       } else {
-        const fuzzyMatch = normalizedTextWords.some(tw => areWordsRelated(tw, keyword));
+        const fuzzyMatch = !keyword.includes(' ') && claimContextWord(keyword, 'fuzzy');
         if (fuzzyMatch) {
           const weight = DOMAIN_SCORING_WEIGHTS.CONTEXT_KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_CONTEXT_KEYWORD_MULTIPLIER;
           matchedTerms[domain] += weight;
@@ -1676,7 +1733,8 @@ export function detectDomain(
       const kwEscaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const exactRegex = new RegExp(keyword.split(/\s+/).length > 1 ? kwEscaped : `\\b${kwEscaped}\\b`, 'i');
       if (exactRegex.test(normalizedTextForMatching)) {
-        matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD;
+        if (!claimKeywordWord(keyword, 'exact')) continue;
+        matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * distinctiveness(keyword);
         if (!foundKeywords.includes(keyword)) {
           foundKeywords.push(keyword);
         }
@@ -1689,9 +1747,9 @@ export function detectDomain(
             }
           }
         } else {
-          const fuzzyMatch = normalizedTextWords.some(tw => areWordsRelated(tw, keyword));
+          const fuzzyMatch = claimKeywordWord(keyword, 'fuzzy');
           if (fuzzyMatch) {
-            matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_KEYWORD_MULTIPLIER;
+            matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.KEYWORD * DOMAIN_SCORING_WEIGHTS.FUZZY_KEYWORD_MULTIPLIER * distinctiveness(keyword);
             if (!foundKeywords.includes(keyword)) {
               foundKeywords.push(keyword);
             }
@@ -1732,23 +1790,34 @@ export function detectDomain(
     for (const verb of terminology.verbs) {
       const exactRegex = new RegExp(`\\b${verb.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\w*\\b`, 'i');
       if (exactRegex.test(normalizedTextForMatching)) {
-        matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.VERB;
+        if (!claimVerbWord(verb, 'prefix')) continue;
+        matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.VERB * distinctiveness(verb);
         if (!foundKeywords.includes(verb)) {
           foundKeywords.push(verb);
         }
       } else {
-        const verbBase = verb.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-        const fuzzyMatch = normalizedTextWords.some(tw => {
-          const twBase = tw.replace(/(ing|ed|s|es|er|est|ly)$/, '');
-          return areWordsRelated(tw, verb) || areWordsRelated(twBase, verbBase);
-        });
+        const fuzzyMatch = claimVerbWord(verb, 'fuzzy');
         if (fuzzyMatch) {
-          matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.VERB * DOMAIN_SCORING_WEIGHTS.FUZZY_VERB_MULTIPLIER;
+          matchedTerms[domain] += DOMAIN_SCORING_WEIGHTS.VERB * DOMAIN_SCORING_WEIGHTS.FUZZY_VERB_MULTIPLIER * distinctiveness(verb);
           if (!foundKeywords.includes(verb)) {
             foundKeywords.push(verb);
           }
         }
       }
+    }
+
+    // Nouns carry most of a task's context ("mom", "sink", "passport"); verbs alone are often generic.
+    const countedTerms = new Set(terminology.keywords.map((k) => k.toLowerCase()));
+    for (const noun of terminology.nouns ?? []) {
+      const nounLower = noun.toLowerCase();
+      if (countedTerms.has(nounLower)) continue;
+      const nounRegex = new RegExp(`\\b${noun.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      const exact = nounRegex.test(normalizedTextForMatching) && claimNounWord(noun, 'exact');
+      const fuzzy = !exact && !noun.includes(' ') && claimNounWord(noun, 'fuzzy');
+      if (!exact && !fuzzy) continue;
+      const weight = DOMAIN_SCORING_WEIGHTS.NOUN * (fuzzy ? DOMAIN_SCORING_WEIGHTS.FUZZY_KEYWORD_MULTIPLIER : 1);
+      matchedTerms[domain] += weight * distinctiveness(noun);
+      if (!foundKeywords.includes(noun)) foundKeywords.push(noun);
     }
     
     // Apply context bonus for keywords that appear near each other (use normalized text)

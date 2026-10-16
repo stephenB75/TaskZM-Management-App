@@ -232,6 +232,18 @@ export const VIEWPORT_BREAKPOINTS = {
   // Desktop: 1280px and above (use desktop layout - multi-column)
 } as const;
 
+/**
+ * Foldables and dual-screen phones (Galaxy Z Fold inner screen, Surface Duo spanned, iPad portrait).
+ * Inside the mobile layout, wide or two-segment viewports show Upcoming and Calendar side by side;
+ * a reported hinge splits the panes at the fold.
+ */
+const FOLDABLE_DUAL_PANE_MIN_WIDTH_PX = 680;
+export const FOLDABLE_LAYOUT = {
+  dualPaneMinWidthPx: FOLDABLE_DUAL_PANE_MIN_WIDTH_PX,
+  dualPaneQuery: `(min-width: ${FOLDABLE_DUAL_PANE_MIN_WIDTH_PX}px)`,
+  twoSegmentQuery: '(horizontal-viewport-segments: 2)',
+} as const;
+
 /** Checkbox and mark-as-complete button: minimum tap target (px). Mobile and tablet use MIN_TOUCH_TARGET_PX. */
 export const CHECKBOX_AND_MARK_COMPLETE_SIZE_PX = {
   mobile: MIN_TOUCH_TARGET_PX,
@@ -895,6 +907,11 @@ export const SETTINGS_PANEL_CONTROL_GROUP_PADDING_X = '1rem';
 export const SETTINGS_PANEL_LIST_ROW_PADDING_Y = '0.875rem';
 export const SETTINGS_PANEL_CATEGORY_ACCENT_WIDTH = '3px';
 export const SETTINGS_PANEL_EDIT_BUTTON_SIZE = '2rem'; // w-8 h-8 = 2rem (32px) - size for edit avatar button
+/** Profile avatar edit: small visible badge inside a full 44px tap area that hangs off the avatar's corner. */
+export const SETTINGS_PANEL_AVATAR_EDIT_HIT_SIZE = '2.75rem';
+export const SETTINGS_PANEL_AVATAR_EDIT_HIT_OFFSET = '-0.625rem';
+export const SETTINGS_PANEL_AVATAR_EDIT_BADGE_SIZE = '1.625rem';
+export const SETTINGS_PANEL_AVATAR_EDIT_ICON_SIZE = 12;
 export const SETTINGS_PANEL_START_TOUR_ICON_SIZE = '0.8rem'; // 20% smaller than standard medium icon
 export const SETTINGS_PANEL_AVATAR_SIZE = '4rem'; // w-16 h-16 = 4rem
 export const SETTINGS_PANEL_INPUT_HEIGHT = '2.25rem'; // h-9 = 2.25rem
@@ -1690,7 +1707,11 @@ export const PLANNER_LAYOUT = {
   railWidthPx: SIDEBAR_WIDTH,
   railIconPx: 22,
   railButtonPx: 44,
-  railLogoPx: 56,
+  /** Square brand mark at the top of the desktop rail. */
+  railLogoPx: 40,
+  /** Wordmark height in the desktop timeline header (the wordmark is ~6:1, so it needs a wide column). */
+  timelineLogoHeightPx: 24,
+  brandTitleGapPx: 6,
   timelineColumn: 'minmax(260px, 320px)',
   calendarColumn: 'minmax(0, 1fr)',
   chatColumn: 'minmax(300px, 360px)',
@@ -1720,4 +1741,6 @@ export const PLANNER_LAYOUT = {
   dayColumnMinPx: 96,
   blockInsetPx: 3,
   allDayRowMinPx: 28,
+  /** Aligns the archive bulk-select box with the first text line of the row. */
+  archiveSelectOffsetPx: 4,
 } as const;

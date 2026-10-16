@@ -5,7 +5,7 @@
  * description enhancement, and domain-specific insights.
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Task } from '../types';
 import { type Domain } from '../lib/domain-terminology';
 import { analyzeDescription, type DescriptionAnalysis } from '../lib/description-analyzer';
@@ -47,6 +47,11 @@ interface UseTaskBreakdownOptions {
 /**
  * Simple text hash for caching
  */
+/** Title and description joined with a separator so "Call" + "mom" and "Call mom" + "" don't share a cache entry. */
+function breakdownText(title: string, description: string): string {
+  return title.trim() || description.trim() ? `${title.trim()}\u0000${description.trim()}` : '';
+}
+
 function hashText(text: string): string {
   let hash = 0;
   for (let i = 0; i < text.length; i++) {
@@ -78,10 +83,12 @@ export function useTaskBreakdown(
   const [breakdown, setBreakdown] = useState<TaskBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  // Analysis is async; only the newest request may publish, so a slow run for older text can't overwrite newer results.
+  const latestRequestRef = useRef(0);
 
   // Create cache key
   const cacheKey = useMemo(() => {
-    const text = `${title}${description}`.trim();
+    const text = breakdownText(title, description);
     return text.length > 0 ? hashText(text) : '';
   }, [title, description]);
 
@@ -100,17 +107,15 @@ export function useTaskBreakdown(
       return;
     }
 
-    const text = `${title}${description}`.trim();
-    if (!text || text.length === 0) {
+    const currentText = breakdownText(title, description);
+    if (!currentText) {
       setBreakdown(null);
       setIsLoading(false);
       return;
     }
 
-    // Check cache directly using current text (not from closure)
-    // Recompute hash to ensure we're using current values
-    const currentText = `${title}${description}`.trim();
-    const hashKey = currentText.length > 0 ? hashText(currentText) : '';
+    const requestId = ++latestRequestRef.current;
+    const hashKey = hashText(currentText);
     if (hashKey && breakdownCache.has(hashKey)) {
       const cached = breakdownCache.get(hashKey);
       if (cached) {
@@ -301,7 +306,7 @@ export function useTaskBreakdown(
         };
 
         // Cache result using current hash (not from closure)
-        const resultHashKey = currentText.length > 0 ? hashText(currentText) : '';
+        const resultHashKey = hashKey;
         if (resultHashKey) {
           breakdownCache.set(resultHashKey, result);
           // Limit cache size
@@ -334,9 +339,11 @@ export function useTaskBreakdown(
           });
         }
 
+        if (requestId !== latestRequestRef.current) return;
         setBreakdown(result);
         setIsLoading(false);
       } catch (err) {
+        if (requestId !== latestRequestRef.current) return;
         const error = err instanceof Error ? err : new Error('Failed to analyze breakdown');
         console.error('Task Analysis: Error in breakdown analysis', error);
         setError(error);
@@ -357,8 +364,8 @@ export function useTaskBreakdown(
       return;
     }
 
-    const text = `${title}${description}`.trim();
-    if (!text || text.length === 0) {
+    if (!breakdownText(title, description)) {
+      latestRequestRef.current += 1;
       setBreakdown(null);
       setIsLoading(false);
       return;
@@ -366,6 +373,7 @@ export function useTaskBreakdown(
 
     // Check cache immediately using current cacheKey (not from closure)
     if (cacheKey && cachedBreakdown) {
+      latestRequestRef.current += 1;
       setBreakdown(cachedBreakdown);
       setIsLoading(false);
       return;

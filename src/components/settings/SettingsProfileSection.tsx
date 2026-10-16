@@ -11,7 +11,10 @@ import { SettingsField } from './SettingsField';
 import { SettingsGroup } from './SettingsGroup';
 import {
   SETTINGS_PANEL_CONTROL_GROUP_PADDING_X,
-  SETTINGS_PANEL_EDIT_BUTTON_SIZE,
+  SETTINGS_PANEL_AVATAR_EDIT_BADGE_SIZE,
+  SETTINGS_PANEL_AVATAR_EDIT_HIT_OFFSET,
+  SETTINGS_PANEL_AVATAR_EDIT_HIT_SIZE,
+  SETTINGS_PANEL_AVATAR_EDIT_ICON_SIZE,
   SETTINGS_PANEL_ICON_SIZE_SMALL,
   SETTINGS_PANEL_INPUT_HEIGHT,
   SETTINGS_PANEL_LIST_ROW_PADDING_Y,
@@ -110,21 +113,29 @@ export function SettingsProfileSection({
               showRing
               className="border-[3px] border-background shadow-md ring-0"
             />
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="icon"
-              className="absolute -bottom-0.5 -right-0.5 rounded-lg bg-card shadow-md hover:bg-muted"
+              className="group absolute flex items-end justify-end border-0 bg-transparent p-0"
               style={{
-                width: SETTINGS_PANEL_EDIT_BUTTON_SIZE,
-                height: SETTINGS_PANEL_EDIT_BUTTON_SIZE,
+                right: SETTINGS_PANEL_AVATAR_EDIT_HIT_OFFSET,
+                bottom: SETTINGS_PANEL_AVATAR_EDIT_HIT_OFFSET,
+                width: SETTINGS_PANEL_AVATAR_EDIT_HIT_SIZE,
+                height: SETTINGS_PANEL_AVATAR_EDIT_HIT_SIZE,
               }}
               onClick={onChangeAvatar}
               title={AVATAR_UI_TEXT.changeAvatar}
               aria-label={AVATAR_UI_TEXT.changeAvatar}
             >
-              <Icon name="edit" size={SETTINGS_PANEL_ICON_SIZE_SMALL} />
-            </Button>
+              <span
+                className="flex items-center justify-center rounded-full border-2 border-background bg-foreground text-background shadow-sm transition-transform group-hover:scale-105"
+                style={{
+                  width: SETTINGS_PANEL_AVATAR_EDIT_BADGE_SIZE,
+                  height: SETTINGS_PANEL_AVATAR_EDIT_BADGE_SIZE,
+                }}
+              >
+                <Icon name="edit" size={SETTINGS_PANEL_AVATAR_EDIT_ICON_SIZE} weight="bold" />
+              </span>
+            </button>
           </div>
 
           <div className="min-w-0 flex-1 text-center sm:text-left">

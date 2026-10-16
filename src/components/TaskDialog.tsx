@@ -99,7 +99,7 @@ import {
 } from "../lib/new-task-ai-assist";
 import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS, MOBILE_HOME_LABEL_GAP, MOBILE_HOME_SECTION_GAP } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
-import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS, getTaskDialogPriorityAccent, TASK_DIALOG_OPTIONS, TASK_DIALOG_OPTION_SHEET_TEXT, type TaskDialogOptionId } from "../lib/task-dialog-constants";
+import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS, getTaskDialogPriorityAccent, TASK_DIALOG_OPTIONS, TASK_DIALOG_OPTION_SHEET_TEXT, TASK_DIALOG_FOCUS_TEXT, type TaskDialogOptionId } from "../lib/task-dialog-constants";
 import { AGENDA_LIST_CARD } from "../lib/agenda-list-card-constants";
 import { useIsMobile } from "./ui/use-mobile";
 import type {
@@ -664,7 +664,7 @@ export function TaskDialog({
 }: TaskDialogProps) {
   const { accessToken, getSessionToken, user } = useAuth();
   const isMobile = useIsMobile();
-  const [subtaskCheckboxSize, setSubtaskCheckboxSize] = useState(TASK_DIALOG_SUBTASK_CHECKBOX_SIZE.laptop);
+  const [subtaskCheckboxSize, setSubtaskCheckboxSize] = useState<string>(TASK_DIALOG_SUBTASK_CHECKBOX_SIZE.laptop);
   useEffect(() => {
     const update = () => {
       const w = typeof window !== 'undefined' ? window.innerWidth : VIEWPORT_BREAKPOINTS.tablet;
@@ -1337,7 +1337,7 @@ export function TaskDialog({
     let cancelled = false;
     const timeoutId = setTimeout(async () => {
       // Double-check conditions after debounce (description might have been set by AI)
-      if (cancelled || description.trim() || isGeneratingDescription) {
+      if (cancelled || !breakdown || description.trim() || isGeneratingDescription) {
         setIsLoadingDescriptionOptions(false);
         return;
       }
@@ -2078,6 +2078,26 @@ export function TaskDialog({
       }
     }
 
+    // Each occurrence keeps its own date; only a changed time of day carries across the series.
+    const applyUpdatesToSeries = async (seriesIds: string[], shared: Partial<Task>) => {
+      const newTime = finalScheduledDate ? new Date(finalScheduledDate) : null;
+      const byId = new Map((tasks ?? []).map((t) => [t.id, t]));
+      const { seriesBatchSize } = TIMING_CONSTANTS.taskSave;
+      for (let i = 0; i < seriesIds.length; i += seriesBatchSize) {
+        await Promise.all(
+          seriesIds.slice(i, i + seriesBatchSize).map((id) => {
+            const existing = byId.get(id)?.scheduledDate;
+            const shifted = existing && newTime ? new Date(existing) : null;
+            if (shifted && newTime && !isNaN(shifted.getTime())) {
+              shifted.setHours(newTime.getHours(), newTime.getMinutes(), 0, 0);
+              return updateTask(id, { ...shared, scheduledDate: shifted.toISOString() });
+            }
+            return updateTask(id, shared);
+          }),
+        );
+      }
+    };
+
     // No conflict, proceed with submission
     let savedTask: Task;
     if (task) {
@@ -2180,12 +2200,7 @@ export function TaskDialog({
             assignedTo: taskData.assignedTo,
             folderId: taskData.folderId ?? null,
           };
-          if (finalScheduledDate) {
-            seriesUpdates.scheduledDate = finalScheduledDate;
-          }
-          for (const id of seriesIds) {
-            await updateTask(id, seriesUpdates);
-          }
+          await applyUpdatesToSeries(seriesIds, seriesUpdates);
           if (seriesIds.length > 0) {
             toast.success('Updated this occurrence and the rest of the series', {
               description: `${seriesIds.length + 1} tasks updated.`,
@@ -2215,12 +2230,7 @@ export function TaskDialog({
             assignedTo: taskData.assignedTo,
             folderId: taskData.folderId ?? null,
           };
-          if (finalScheduledDate) {
-            seriesUpdates.scheduledDate = finalScheduledDate;
-          }
-          for (const id of seriesIds) {
-            await updateTask(id, seriesUpdates);
-          }
+          await applyUpdatesToSeries(seriesIds, seriesUpdates);
           if (seriesIds.length > 0) {
             toast.success('Updated this occurrence and the rest of the series', {
               description: `${seriesIds.length + 1} tasks updated.`,
@@ -2235,7 +2245,10 @@ export function TaskDialog({
       if (isNewRecurringSeries && taskData.scheduledDate) {
         const baseId = generateId();
         const startDate = finalScheduledDate ? new Date(finalScheduledDate) : new Date(taskData.scheduledDate);
-        const maxCount = Math.min(TIMING_CONSTANTS.calendar.maxOccurrences ?? 52, 90);
+        const maxCount = Math.min(
+          TIMING_CONSTANTS.calendar.maxOccurrences,
+          TIMING_CONSTANTS.calendar.maxSeriesOccurrencesOnCreate,
+        );
         let occurrenceDates = getOccurrenceDates(recurrence, startDate, {
           maxCount,
           endDate: recurrence.endDate ?? undefined,
@@ -3687,7 +3700,7 @@ export function TaskDialog({
                       <Icon name="repeat" size={ICON_SIZE_MD} className="text-primary" />
                       <Label className="text-sm font-semibold">Repeat Task</Label>
                       {!hasFeature('recurringTasks') && (
-                        <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
+                        <Badge variant="secondary" className="ml-2 bg-foreground text-background">
                           PRO
                         </Badge>
                       )}
@@ -3905,7 +3918,7 @@ export function TaskDialog({
                     <Icon name="link-2" size={ICON_SIZE_MD} className="text-primary" />
                     <Label className="text-sm font-semibold">Dependencies</Label>
                     {!hasFeature('taskDependencies') && (
-                      <Badge variant="secondary" className="ml-2 bg-gradient-to-r from-primary/20 to-primary/30 text-primary-foreground">
+                      <Badge variant="secondary" className="ml-2 bg-foreground text-background">
                         PRO YEARLY
                       </Badge>
                     )}
@@ -4226,6 +4239,23 @@ export function TaskDialog({
                     </div>
                   );
                 })()}
+                {task && !hasFeature("pomodoroTimer") && (
+                  <div className={cn(TASK_DIALOG_COLORS.inputFieldBg, "text-foreground rounded-xl", TASK_DIALOG_MINIMAL_SPACING.cardPadding, "space-y-2")}>
+                    <p className="text-sm font-semibold">{TASK_DIALOG_FOCUS_TEXT.lockedTitle}</p>
+                    <p className="text-xs text-muted-foreground">{TASK_DIALOG_FOCUS_TEXT.lockedBody}</p>
+                    <Button
+                      type="button"
+                      className="w-full rounded-full"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('showUpgradePrompt', {
+                          detail: { feature: 'pomodoroTimer' }
+                        }));
+                      }}
+                    >
+                      {TASK_DIALOG_FOCUS_TEXT.upgrade}
+                    </Button>
+                  </div>
+                )}
                 {/* Series time summary when not showing Pomodoro (so series tasks always see time) */}
                 {task && isSeriesOccurrence && !hasFeature("pomodoroTimer") && (seriesTotalMinutes > 0 || (task.actualTime ?? 0) > 0) && (
                   <p className="text-xs text-muted-foreground">

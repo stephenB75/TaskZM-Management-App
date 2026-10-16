@@ -587,35 +587,6 @@ export function stripOffTopicSentences(description: string, taskName: string): s
 }
 
 /**
- * Calculate Levenshtein distance between two strings
- * Used for better fuzzy matching
- */
-function levenshteinDistance(str1: string, str2: string): number {
-  const m = str1.length;
-  const n = str2.length;
-  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
-  
-  for (let i = 0; i <= m; i++) dp[i][0] = i;
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
-  
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (str1[i - 1] === str2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1];
-      } else {
-        dp[i][j] = Math.min(
-          dp[i - 1][j] + 1,     // deletion
-          dp[i][j - 1] + 1,     // insertion
-          dp[i - 1][j - 1] + 1  // substitution
-        );
-      }
-    }
-  }
-  
-  return dp[m][n];
-}
-
-/**
  * Enhanced word similarity with conceptual relationships
  * Maps common synonyms and related concepts for better context matching
  */
@@ -678,74 +649,33 @@ function areConceptsRelated(word1: string, word2: string): boolean {
 }
 
 /**
- * Helper function for improved fuzzy matching
- * Calculates similarity score between two words using multiple algorithms
- */
-function calculateWordSimilarity(word1: string, word2: string): number {
-  const w1 = word1.toLowerCase();
-  const w2 = word2.toLowerCase();
-  if (w1 === w2) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch;
-  if (w1.includes(w2) || w2.includes(w1)) return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.substringMatch;
-  
-  // Check conceptual relationships (synonyms, related concepts)
-  if (areConceptsRelated(w1, w2)) {
-    const RELATED_CONCEPT_SIMILARITY_MULTIPLIER = 0.9; // High similarity for related concepts
-    return DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactMatch * RELATED_CONCEPT_SIMILARITY_MULTIPLIER;
-  }
-  
-  // Levenshtein distance-based similarity
-  const maxLen = Math.max(w1.length, w2.length);
-  if (maxLen === 0) return 0;
-  const distance = levenshteinDistance(w1, w2);
-  const levenshteinSimilarity = 1 - (distance / maxLen);
-  
-  // Check for common prefixes/suffixes
-  const minLen = Math.min(w1.length, w2.length);
-  let commonChars = 0;
-  for (let i = 0; i < minLen; i++) {
-    if (w1[i] === w2[i]) commonChars++;
-  }
-  const prefixSimilarity = commonChars / Math.max(w1.length, w2.length);
-  
-  // Enhanced stem similarity (remove common suffixes and check)
-  const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly|tion|sion|ment|ness|ity|able|ible)$/, '');
-  const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly|tion|sion|ment|ness|ity|able|ible)$/, '');
-  const stemMatch = stem1 === stem2 
-    ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.exactStemMatch 
-    : (stem1.includes(stem2) || stem2.includes(stem1) 
-        ? DESCRIPTION_GENERATION_CONFIG.wordSimilarity.partialStemMatch 
-        : 0);
-  
-  // Return the maximum similarity from all methods
-  return Math.max(levenshteinSimilarity, prefixSimilarity, stemMatch);
-}
-
-/**
  * Helper function to check if words are semantically related
  * Uses fuzzy matching, conceptual relationships, and similarity algorithms
  */
 function areWordsRelated(word1: string, word2: string): boolean {
+  const { minFuzzyWordLength, minPrefixCoverage } = DESCRIPTION_GENERATION_CONFIG.wordSimilarity;
   const w1 = word1.toLowerCase();
   const w2 = word2.toLowerCase();
-  
-  // Exact match or substring
-  if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) return true;
-  
+  if (w1 === w2) return true;
+  // Short words only match exactly: "pr" or "app" inside "prepare"/"appointment" is not a relationship.
+  if (Math.min(w1.length, w2.length) < minFuzzyWordLength) return false;
+
+  const coversPrefix = (a: string, b: string) => {
+    const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
+    return shorter.length >= minFuzzyWordLength && longer.startsWith(shorter) && shorter.length / longer.length >= minPrefixCoverage;
+  };
+  if (coversPrefix(w1, w2)) return true;
+
   // Check conceptual relationships (synonyms, related concepts)
   if (areConceptsRelated(w1, w2)) return true;
-  
+
   // Enhanced stem matching (more suffix patterns)
   const stem1 = w1.replace(/(ing|ed|s|es|er|est|ly|tion|sion|ment|ness|ity|able|ible)$/, '');
   const stem2 = w2.replace(/(ing|ed|s|es|er|est|ly|tion|sion|ment|ness|ity|able|ible)$/, '');
-  if (stem1 === stem2 || stem1.includes(stem2) || stem2.includes(stem1)) return true;
-  
+  if (stem1 === stem2 || coversPrefix(stem1, stem2)) return true;
+
   // Check if stems are conceptually related
-  if (stem1 !== w1 || stem2 !== w2) {
-    if (areConceptsRelated(stem1, stem2)) return true;
-  }
-  
-  // Similarity threshold (now with improved algorithm)
-  return calculateWordSimilarity(w1, w2) >= DESCRIPTION_GENERATION_CONFIG.wordSimilarity.relationshipThreshold;
+  return (stem1 !== w1 || stem2 !== w2) && areConceptsRelated(stem1, stem2);
 }
 
 /**

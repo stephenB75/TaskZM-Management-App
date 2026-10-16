@@ -2956,6 +2956,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                 onAvatarSelect={setProfileAvatar}
                 previewSeed={profileName.trim() || user?.name || user?.email || 'User'}
                 scrollable
+                showDescription={false}
               />
             </div>
           </div>

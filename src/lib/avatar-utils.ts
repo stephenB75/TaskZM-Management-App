@@ -1,5 +1,6 @@
 import {
   AVATAR_ID_PREFIX,
+  AVATAR_ICONSCOUT_PREFIX,
   AVATAR_ICON54_PREFIX,
   AVATAR_LEGACY_PREFIXES,
   AVATAR_LORELEI_PREFIX,
@@ -28,7 +29,7 @@ function hashString(value: string): number {
   return Math.abs(hash);
 }
 
-function parseIconScoutId(avatar: string): string | null {
+function parsePackAvatarId(avatar: string): string | null {
   if (!avatar.startsWith(AVATAR_ID_PREFIX)) return null;
 
   const direct = getAvatarOptionById(avatar);
@@ -95,6 +96,9 @@ function parseLegacyBundledAvatarIndex(avatar: string): number | null {
     if (!avatar.startsWith(prefix)) continue;
     const suffix = avatar.slice(prefix.length);
     const parsed = Number.parseInt(suffix, 10);
+    if (prefix === AVATAR_ICONSCOUT_PREFIX && !Number.isNaN(parsed) && parsed >= 1) {
+      return (parsed - 1) % AVATAR_OPTIONS.length;
+    }
     if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= AVATAR_OPTIONS.length) {
       return parsed - 1;
     }
@@ -105,7 +109,7 @@ function parseLegacyBundledAvatarIndex(avatar: string): number | null {
 export function isLegacyAvatarUrl(avatar?: string): boolean {
   if (!avatar) return false;
   if (avatar.startsWith(AVATAR_PRESET_PREFIX)) return true;
-  if (parseIconScoutId(avatar)) return false;
+  if (parsePackAvatarId(avatar)) return false;
   if (parseIcon54Id(avatar)) return true;
   if (parseMultiavatarId(avatar)) return true;
   if (parseLegacyBundledAvatarIndex(avatar) !== null) return true;
@@ -119,8 +123,8 @@ export function isLegacyAvatarUrl(avatar?: string): boolean {
 export function parseAvatarId(avatar?: string): string | null {
   if (!avatar) return null;
 
-  const iconScoutId = parseIconScoutId(avatar);
-  if (iconScoutId) return iconScoutId;
+  const packId = parsePackAvatarId(avatar);
+  if (packId) return packId;
 
   const icon54Id = parseIcon54Id(avatar);
   if (icon54Id) return icon54Id;

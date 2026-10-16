@@ -41,7 +41,7 @@ export function UserProfileAvatar({
       <img
         src={imageUrl}
         alt={alt || `${name} avatar`}
-        className="block h-full w-full object-contain object-center p-1"
+        className="block h-full w-full object-cover object-center"
         loading="lazy"
         draggable={false}
       />

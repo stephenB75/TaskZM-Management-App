@@ -9,6 +9,7 @@ import {
 } from './ui/tooltip';
 import { cn, parseCalendarEventTime, getTimeAndPeriod } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
+import { COLOR_CALENDAR_EVENT_ACCENT } from '../lib/color-theme';
 import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR, MINUTES_PER_DAY } from '../lib/business-constants';
 import { CALENDAR_EVENT_FONT_SIZES, CALENDAR_EVENT_DIMENSIONS, CALENDAR_EVENT_UI_TEXT } from '../lib/calendar-event-constants';
 import { CALENDAR_PROVIDER_EVENT_SOURCE_LABELS, type CalendarProviderId } from '../lib/calendar-integration-constants';
@@ -335,7 +336,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
 
   const providerLabel = `${CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]}${CALENDAR_EVENT_UI_TEXT.calendarLabelSuffix}`;
   const timeAndPeriod = !allDay ? getTimeAndPeriod(start) : null;
-  const accentDotColor = palette.dotHex;
+  const accentDotColor = COLOR_CALENDAR_EVENT_ACCENT;
 
   const agendaCard = (options: { compact?: boolean; hideTime?: boolean; micro?: boolean; timelineEmbedded?: boolean }) => {
     const card = (
@@ -440,7 +441,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
         }}
       >
         <AgendaListCard
-          accentColor={palette.dotHex}
+          accentColor={accentDotColor}
           badgeLabel={CALENDAR_EVENT_UI_TEXT.kanbanTabLabel}
           title={title}
           subtitle={location || undefined}

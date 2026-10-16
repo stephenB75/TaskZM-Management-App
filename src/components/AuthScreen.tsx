@@ -80,7 +80,9 @@ function getPasswordStrength(password: string): { strength: 'weak' | 'medium' | 
   return { strength, score, feedback };
 }
 
-
+/** Both auth tabs share one size so the active pill never grows past the bar on switch. */
+const AUTH_TAB_TRIGGER_CLASS =
+  "flex-1 h-9 min-h-9 rounded-full border-0 px-3 md:px-4 text-xs md:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm";
 
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
@@ -526,16 +528,16 @@ export function AuthScreen() {
                       AUTH_UI_TEXT.signUp.description
                     )}
                   </CardDescription>
-                  <TabsList className="w-full h-8 sm:h-9 md:h-10 p-1 gap-1 bg-muted rounded-lg flex items-center">
+                  <TabsList className="w-full h-auto p-1 gap-1 bg-muted rounded-full flex items-stretch">
                     <TabsTrigger
                       value="signin"
-                      className="flex-1 h-6 sm:h-7 md:h-8 px-2 sm:px-3 md:px-4 text-[11px] sm:text-xs md:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                      className={AUTH_TAB_TRIGGER_CLASS}
                     >
                       {AUTH_UI_TEXT.signIn.title}
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="flex-1 h-6 sm:h-7 md:h-8 px-2 sm:px-3 md:px-4 text-[11px] sm:text-xs md:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                      className={AUTH_TAB_TRIGGER_CLASS}
                     >
                       {AUTH_UI_TEXT.signUp.title}
                     </TabsTrigger>
@@ -973,24 +975,6 @@ export function AuthScreen() {
                               AUTH_UI_TEXT.signUp.button
                             )}
                           </Button>
-                      </div>
-
-                      {/* Info message */}
-                      <div className="text-center text-[10px] sm:text-xs md:text-sm text-gray-600 dark:text-muted-foreground rounded-lg p-2 sm:p-3"
-                        style={{
-                          backgroundColor: AUTH_COLORS.card.tabs.from,
-                        } as React.CSSProperties}
-                      >
-                        <span className="inline-flex items-center gap-1 flex-wrap justify-center">
-                          <Icon 
-                            name="sparkles" 
-                            size={ICON_SIZE_MD} 
-                            weight="duotone" 
-                            className="flex-shrink-0" 
-                            style={{ color: AUTH_COLORS.primary } as React.CSSProperties}
-                          />
-                          <span>Free forever • Pro features available • No credit card required</span>
-                        </span>
                       </div>
                     </motion.form>
                   </TabsContent>

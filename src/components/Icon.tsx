@@ -8,6 +8,7 @@ import React from 'react';
 import { PhosphorIcons } from './phosphor-icons';
 import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY } from '../lib/color-theme';
 import { ICON_SIZE_XL } from '../lib/layout-constants';
+import { CalendarWeekIcon } from './icons/CalendarWeekIcon';
 
 const DEFAULT_ICON_SIZE = ICON_SIZE_XL;
 
@@ -33,7 +34,6 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'calendar-blank': 'CalendarBlank',
   'calendar-today': 'CalendarCheck',
   'calendar-plus': 'CalendarPlus',
-  'calendar-week': 'Columns',
   'flag': 'Flag',
   'magic-wand': 'MagicWand',
   'microphone': 'Microphone',
@@ -192,6 +192,11 @@ const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   'linkedin': 'LinkedinLogo',
 };
 
+// App-specific glyphs with no Phosphor equivalent
+const CUSTOM_ICONS: Record<string, typeof CalendarWeekIcon> = {
+  'calendar-week': CalendarWeekIcon,
+};
+
 // Icons that should use duotone by default for better visual appeal
 const DUOTONE_ICONS = new Set([
   'sparkles',
@@ -246,6 +251,19 @@ function Icon({
       ? parseFloat(size.replace('rem', '')) * 16 // Convert rem to pixels (1rem = 16px)
       : parseInt(size.replace(/[^0-9]/g, ''), 10) || DEFAULT_ICON_SIZE
     : size || DEFAULT_ICON_SIZE;
+
+  const CustomIcon = CUSTOM_ICONS[name.toLowerCase()];
+  if (CustomIcon) {
+    return (
+      <CustomIcon
+        size={sizeNum}
+        weight={weight || 'regular'}
+        color={color != null && color !== '' ? color : 'currentColor'}
+        className={className || undefined}
+        style={style}
+      />
+    );
+  }
 
   // Get Phosphor icon name
   const phosphorIconName = ICON_NAME_MAP[name.toLowerCase()] || 

@@ -20,7 +20,7 @@ export function PlannerDesktop({ mode }: { mode: 'week' | 'month' }) {
         gridTemplateColumns: `${PLANNER_LAYOUT.timelineColumn} ${PLANNER_LAYOUT.calendarColumn} ${PLANNER_LAYOUT.chatColumn}`,
       }}
     >
-      <PlannerTimeline className="planner-timeline-col" />
+      <PlannerTimeline className="planner-timeline-col" showBrand />
       <PlannerCalendar mode="week" />
       <PlannerChat />
     </div>

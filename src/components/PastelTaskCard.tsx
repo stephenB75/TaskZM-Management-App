@@ -19,7 +19,7 @@ import {
   MOBILE_HOME_TASK_BAR_PX,
   MOBILE_HOME_TIMELINE_LABEL_WIDTH,
 } from '../lib/layout-constants';
-import { COLOR_PRIMARY, THEME_COLOR } from '../lib/color-theme';
+import { COLOR_CALENDAR_EVENT_ACCENT, THEME_COLOR } from '../lib/color-theme';
 import { getTaskDialogPriorityAccent } from '../lib/task-dialog-constants';
 import { AGENDA_LIST_CARD, getAgendaCardBadgeStyles } from '../lib/agenda-list-card-constants';
 import { triggerSelectionHaptic } from '../lib/native-haptics';
@@ -132,7 +132,7 @@ function eventTimeRange(event: CalendarEvent): string {
 
 /** Read-only calendar event shown in the same shape as a task card, tagged as a calendar event. */
 export function PastelEventCard({ event, hideTime, fullTitle }: { event: CalendarEvent; hideTime?: boolean; fullTitle?: boolean }) {
-  const accent = event.calendarColor || COLOR_PRIMARY;
+  const accent = COLOR_CALENDAR_EVENT_ACCENT;
   const detail = [hideTime ? '' : eventTimeRange(event), event.location ?? ''].filter(Boolean).join(' · ');
   return (
     <div

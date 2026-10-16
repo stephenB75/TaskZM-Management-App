@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, startTransition } from 'react';
 import { toast } from '../lib/toast-wrapper';
+import { NOTIFICATION_MESSAGES, NOTIFICATION_TITLES } from '../lib/notification-constants';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 // Removed TeamContext import to break circular dependency
@@ -146,6 +147,29 @@ async function flushPendingDeletes(wsId: string, taskIds: string[], userId?: str
   const failures = outcomes.filter((o) => o.status === 'rejected');
   if (failures.length > 0) logger.error('Failed to delete tasks from server:', failures);
   return confirmed;
+}
+
+/** Ids of tasks created on this device that the server has not confirmed yet. */
+const PENDING_SAVES_KEY = 'pending_task_saves';
+
+function readPendingSaves(userId?: string): Set<string> {
+  return new Set(getFromLocalStorage<string[]>(PENDING_SAVES_KEY, [], userId));
+}
+
+function updatePendingSaves(userId: string | undefined, update: (pending: Set<string>) => void) {
+  const pending = readPendingSaves(userId);
+  update(pending);
+  saveToLocalStorage(PENDING_SAVES_KEY, Array.from(pending), userId);
+}
+
+/** Re-sends queued task creates and dequeues only the ones the server confirmed. */
+async function flushPendingSaves(wsId: string, taskList: Task[], userId?: string): Promise<void> {
+  if (taskList.length === 0) return;
+  const outcomes = await Promise.allSettled(taskList.map((t) => api.saveTask(wsId, t)));
+  const confirmed = taskList.filter((_, i) => outcomes[i].status === 'fulfilled').map((t) => t.id);
+  updatePendingSaves(userId, (pending) => confirmed.forEach((id) => pending.delete(id)));
+  const failures = outcomes.filter((o) => o.status === 'rejected');
+  if (failures.length > 0) logger.error('Failed to sync queued tasks to server:', failures);
 }
 
 export function TaskProvider({ children }: { children: ReactNode }) {
@@ -852,9 +876,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             const serverTime = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
             merged.push(localTime > serverTime ? local : t);
           }
-          const localOnly = localTasks.filter((l) => !serverById.has(l.id) && (l.createdBy === 'local' || !l.createdBy));
+          const pendingSaves = readPendingSaves(user?.id);
+          const localOnly = localTasks.filter(
+            (l) => !serverById.has(l.id) && (l.createdBy === 'local' || !l.createdBy || pendingSaves.has(l.id)),
+          );
           for (const t of localOnly) merged.push(t);
           if (merged.length > 0) final = merged;
+          const unsynced = localOnly.filter((t) => pendingSaves.has(t.id));
+          if (unsynced.length > 0) void flushPendingSaves(wsId, unsynced, user?.id);
         }
 
         setTasks(ensureTaskArray(final));
@@ -875,8 +904,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // No server data - this is valid (workspace exists but has no tasks)
         logger.info('No tasks found on server (workspace may be empty)');
         // Only never-synced local tasks are uploaded; anything else missing from the server was deleted.
+        const pendingSaves = readPendingSaves(user?.id);
         const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id))
-          .filter((task) => !pendingDeletes.has(task.id) && (task.createdBy === 'local' || !task.createdBy));
+          .filter((task) => !pendingDeletes.has(task.id) && (task.createdBy === 'local' || !task.createdBy || pendingSaves.has(task.id)));
         if (savedTasks.length > 0) {
           logger.info(`Found ${savedTasks.length} tasks in localStorage, syncing to server`);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
@@ -887,6 +917,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           for (const task of final) {
             try {
               await api.saveTask(wsId, task);
+              updatePendingSaves(user?.id, (pending) => pending.delete(task.id));
               logger.debug(`Synced local task ${task.id} to server`);
             } catch (err) {
               logger.error(`Failed to sync task ${task.id}:`, err);
@@ -927,19 +958,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       // Unexpected error (shouldn't happen with new error handling, but keep as safety net)
       logger.error('Unexpected error loading tasks from server:', error);
-      const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
+      const pendingDeletes = readPendingDeletes(user?.id);
+      const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id))
+        .filter((task) => !pendingDeletes.has(task.id));
       if (savedTasks.length > 0) {
         logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
         const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
         const final = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
         setTasks(ensureTaskArray(final));
         saveToLocalStorage('tasks', final, user?.id);
-        // Try to push local tasks to server in background
-        Promise.all(
-          final.map((task) =>
-            api.saveTask(wsId, task).then(() => logger.debug('Pushed local task to server:', task.id)).catch((err) => logger.debug('Push local task failed:', task.id, err))
-          )
-        ).catch(() => {});
         const now = Date.now();
         const COOLDOWN_MS = 10000;
         if (now - lastLoadTasksOfflineToastRef.current > COOLDOWN_MS) {
@@ -1508,6 +1535,17 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // Server is source of truth - only update state if data actually changed
         // This prevents unnecessary re-renders that feel like refreshes
         const currentTasks = tasksRef.current; // Get current tasks from ref (avoids dependency issues)
+
+        const pendingSaves = readPendingSaves(user?.id);
+        if (pendingSaves.size > 0) {
+          const serverIds = new Set(serverTasks.map((t) => t.id));
+          const unsynced = currentTasks.filter((t) => pendingSaves.has(t.id) && !serverIds.has(t.id));
+          if (unsynced.length > 0) serverTasks = [...serverTasks, ...unsynced];
+          const confirmedIds = Array.from(pendingSaves).filter((id) => serverIds.has(id));
+          if (confirmedIds.length > 0) {
+            updatePendingSaves(user?.id, (pending) => confirmedIds.forEach((id) => pending.delete(id)));
+          }
+        }
         const tasksChanged = !areTasksEqual(currentTasks, serverTasks);
 
         // Safeguard: do not overwrite local tasks with empty server response when we have local tasks.
@@ -2066,6 +2104,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Save to Supabase (source of truth); optimistic add first for instant UI
     if (currentWorkspaceId && accessToken) {
       const validWorkspaceId = currentWorkspaceId;
+      const markSaved = () => updatePendingSaves(user?.id, (pending) => pending.delete(taskId));
+      updatePendingSaves(user?.id, (pending) => pending.add(taskId));
       try {
         // Optimistic add so the new task appears immediately
         setTasks(prev => {
@@ -2075,6 +2115,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         });
 
         await api.saveTask(validWorkspaceId, newTask);
+        markSaved();
 
         debouncedSync(false);
         toast.success('Task created', { playSound: true });
@@ -2087,6 +2128,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         const retrySave = () => {
           api.saveTask(validWorkspaceId, newTask)
             .then(() => {
+              markSaved();
               debouncedSync(false);
               toast.success('Task saved');
             })
@@ -2107,11 +2149,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             if (retryWorkspaceId) {
               logger.info('Workspace created, retrying task save with workspace ID:', retryWorkspaceId);
               setTasks(prev => {
+                if (prev.some((t) => t.id === newTask.id)) return prev;
                 const updated = [...prev, newTask];
                 saveToLocalStorage('tasks', updated);
                 return updated;
               });
               await api.saveTask(retryWorkspaceId, newTask);
+              markSaved();
               debouncedSync(false);
               toast.success('Task created', { playSound: true });
               return;
@@ -2156,21 +2200,42 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       currentWorkspaceId = validWorkspaceId;
     }
     if (currentWorkspaceId && accessToken) {
-      try {
-        setTasks((prev) => {
-          const updated = [...prev, ...seriesTasks];
-          saveToLocalStorage('tasks', updated);
-          return updated;
-        });
-        for (const t of seriesTasks) {
-          await api.saveTask(currentWorkspaceId!, t);
+      const wsId = currentWorkspaceId;
+      setTasks((prev) => {
+        const updated = [...prev, ...seriesTasks];
+        saveToLocalStorage('tasks', updated, user?.id);
+        return updated;
+      });
+      updatePendingSaves(user?.id, (pending) => seriesTasks.forEach((t) => pending.add(t.id)));
+      const { seriesBatchSize, seriesRetryDelayMs } = TIMING_CONSTANTS.taskSave;
+      const saveBatched = async (batch: Task[]): Promise<Task[]> => {
+        const failed: Task[] = [];
+        for (let i = 0; i < batch.length; i += seriesBatchSize) {
+          const chunk = batch.slice(i, i + seriesBatchSize);
+          const results = await Promise.allSettled(chunk.map((t) => api.saveTask(wsId, t)));
+          const saved: string[] = [];
+          results.forEach((r, idx) => {
+            if (r.status === 'rejected') failed.push(chunk[idx]);
+            else saved.push(chunk[idx].id);
+          });
+          updatePendingSaves(user?.id, (pending) => saved.forEach((id) => pending.delete(id)));
         }
-        debouncedSync(false);
+        return failed;
+      };
+      let failed = await saveBatched(seriesTasks);
+      if (failed.length > 0) {
+        logger.warn(`Retrying ${failed.length} series task saves`);
+        await new Promise((resolve) => setTimeout(resolve, seriesRetryDelayMs));
+        failed = await saveBatched(failed);
+      }
+      debouncedSync(false);
+      if (failed.length === 0) {
         toast.success(seriesTasks.length === 1 ? 'Task created' : `Series created: ${seriesTasks.length} tasks`, { playSound: true });
-      } catch (error) {
-        logger.error('Failed to save task series', error);
-        await loadTasksFromServer(currentWorkspaceId!).catch(() => {});
-        toast.error('Failed to create series. Please try again.');
+      } else {
+        logger.error(`Failed to save ${failed.length} of ${seriesTasks.length} series tasks`);
+        toast.error('Saved locally; will sync when connection is restored.', {
+          description: 'Your task is stored on this device.',
+        });
       }
     } else {
       setTasks((prev) => {
@@ -2180,7 +2245,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       });
       toast.success(seriesTasks.length === 1 ? 'Task created (offline)' : `Series created: ${seriesTasks.length} tasks (offline)`, { playSound: true });
     }
-  }, [user, workspaceId, accessToken, updateActivity, ensureWorkspace, loadTasksFromServer, debouncedSync]);
+  }, [user, workspaceId, accessToken, updateActivity, ensureWorkspace, debouncedSync]);
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     updateActivity(); // Track demo user activity
@@ -2295,6 +2360,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       ...baseUpdates,
       ...statusUpdates
     };
+
+    if (isBeingMarkedComplete) {
+      toast.success(NOTIFICATION_TITLES.taskCompleted, {
+        description: NOTIFICATION_MESSAGES.taskCompleted(currentTask.title || NOTIFICATION_MESSAGES.defaultTaskTitle),
+      });
+    }
     
     // Handle recurring task completion: create completed occurrence only (don't advance to next occurrence)
     // UPDATED: When closing a recurring task, only close the current occurrence, don't create next occurrence
@@ -2549,6 +2620,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     updateActivity();
     removeTasksLocally(taskIds);
     updatePendingDeletes(user?.id, pending => taskIds.forEach(id => pending.add(id)));
+    updatePendingSaves(user?.id, pending => taskIds.forEach(id => pending.delete(id)));
     if (!workspaceId) return true;
 
     const confirmed = await flushPendingDeletes(workspaceId, taskIds, user?.id);
