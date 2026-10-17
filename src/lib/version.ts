@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '2.0.0';
-export const VERSION_NAME = 'TaskZM 2.0';
-export const VERSION_DATE = 'October 9, 2026';
-export const BUILD_NUMBER = '20261015-1';
+export const APP_VERSION = '2.0.1';
+export const VERSION_NAME = 'TaskZM 2.0.1';
+export const VERSION_DATE = 'October 17, 2026';
+export const BUILD_NUMBER = '20261017-1';
 
 /** Stable release stamp for cache purge (version + build). */
 export function getAppReleaseStamp(): string {
@@ -88,6 +88,22 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '2.0.1',
+    date: 'October 17, 2026',
+    name: 'TaskZM 2.0.1',
+    changes: [
+      'Google & Outlook calendar connect: secure sign-in flow that returns to the app (web popup closes, iOS deep-links back)',
+      'Outlook shows all events in range, including ongoing recurring meetings; Google loads every page of events',
+      'Imported events keep the color set in your Google, Outlook or Apple calendar across every view',
+      'Tasks are no longer pushed to Google/Outlook (read-only import), so no more "view-only" toast on save',
+      'Task dialog: layered option sheet with stacked tool buttons; AI description buttons removed',
+      'More emoji sections in the emoji picker',
+      'Timeline header fits the logo and "Upcoming" on one row',
+      'Desktop calendar: clearer task and event colors',
+      'Phones stay in portrait mode',
+    ],
+  },
   {
     version: '2.0.0',
     date: 'October 9, 2026',
