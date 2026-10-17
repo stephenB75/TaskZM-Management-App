@@ -391,6 +391,14 @@ function DesktopWeek({ anchor, onOpenTask }: { anchor: Date; onOpenTask: (task: 
     el.scrollTop = Math.max(0, (now.getHours() - startHour - 1) * PLANNER_LAYOUT.hourHeightPx);
   }, [startHour]);
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    const todayHead = el?.querySelector<HTMLElement>('.planner-week-head > [data-today="true"]');
+    if (!el || !todayHead) return;
+    const overflow = todayHead.getBoundingClientRect().right - el.getBoundingClientRect().right + el.scrollLeft;
+    el.scrollLeft = Math.max(0, overflow);
+  }, [todayKey, days]);
+
   const columns = `${PLANNER_LAYOUT.timeGutterPx}px repeat(${DAYS_IN_WEEK}, minmax(${PLANNER_LAYOUT.dayColumnMinPx}px, 1fr))`;
   const hasAllDay = perDay.some(({ allDay }) => allDay.length > 0);
 
