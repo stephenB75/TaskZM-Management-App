@@ -49,6 +49,11 @@ export const CALENDAR_OAUTH_MESSAGE_TYPES = {
   error: 'calendar-oauth-error',
 } as const;
 
+/** Web page the edge function redirects Google/Outlook OAuth back to (must match mobile-oauth-helpers.ts). */
+export const CALENDAR_OAUTH_RETURN_PATH = '/calendar-oauth';
+/** Same-origin channel the OAuth popup uses to report back (popup.opener is severed by Google's COOP). */
+export const CALENDAR_OAUTH_BROADCAST_CHANNEL = 'taskzm-calendar-oauth';
+
 /** Display names for calendar providers (toasts, labels). */
 export const CALENDAR_PROVIDER_DISPLAY_NAMES: Record<CalendarProviderId, string> = {
   google: 'Google',

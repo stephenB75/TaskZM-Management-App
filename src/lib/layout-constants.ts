@@ -589,6 +589,8 @@ export const TASK_OPTION_SHEET = {
   handleHeightPx: 5,
   iconPx: 22,
   iconButtonMinWidthPx: 56,
+  /** Options wrap into rows of this many so every label fits. */
+  barColumns: 4,
 } as const;
 export const MOBILE_HOME_DAY_RULE_PX = 2;
 export const MOBILE_HOME_SUMMARY_NUMBER_SIZE = '2.5rem';
@@ -1467,7 +1469,7 @@ export const COMPONENT_DIMENSIONS = {
     },
     descriptionTextarea: {
       rows: 3, // rows={3} - initial visible rows (using constant value for consistency)
-      placeholder: 'Add a description... (Editable - Action Plan updates automatically as you type)', // Placeholder text (using constant string for consistency)
+      placeholder: 'Add a description…',
       focusClassName: 'focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary', // Focus styles for description textarea (using constant classes for consistency)
       maxHeight: 2000, // Maximum height in pixels (increased to allow unlimited text with scrolling) - using constant value for consistency
       // No character limit - standard practice is to allow unlimited text with proper wrapping
@@ -1712,6 +1714,8 @@ export const PLANNER_LAYOUT = {
   /** Wordmark height in the desktop timeline header (the wordmark is ~6:1, so it needs a wide column). */
   timelineLogoHeightPx: 24,
   brandTitleGapPx: 6,
+  /** Wordmark share of the timeline header row; the rest keeps the "Upcoming" label on the same line. */
+  timelineLogoMaxWidth: '60%',
   timelineColumn: 'minmax(260px, 320px)',
   calendarColumn: 'minmax(0, 1fr)',
   chatColumn: 'minmax(300px, 360px)',
@@ -1740,6 +1744,8 @@ export const PLANNER_LAYOUT = {
   timeGutterPx: 52,
   dayColumnMinPx: 96,
   blockInsetPx: 3,
+  /** Week-grid blocks shorter than this can't fit title + meta on two lines, so they render on one. */
+  blockCompactMaxPx: 40,
   allDayRowMinPx: 28,
   /** Aligns the archive bulk-select box with the first text line of the row. */
   archiveSelectOffsetPx: 4,

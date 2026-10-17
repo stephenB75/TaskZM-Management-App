@@ -80,26 +80,20 @@ import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../l
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
 import { DEFAULT_TASK_STATUS } from "../lib/task-constants";
-import { generateDescription, generateDescriptionOptions, buildDescriptionFromUserPhrases, type SuggestiveTermSet } from "../lib/description-generator";
 import {
-  DESCRIPTION_GENERATION_CONFIG,
-  DESCRIPTION_OPTIONS_DEBOUNCE_MS,
   TASK_BREAKDOWN_DEBOUNCE_MS,
   TASK_BREAKDOWN_TITLE_ONLY_DEBOUNCE_MS,
   EFFORT_SCORE_THRESHOLDS,
-  DESCRIPTION_UI_CONFIG,
   NEW_TASK_AI_ASSIST,
 } from "../lib/ai-config";
 import {
   canAutoApplyBreakdownDuration,
-  getBreakdownGenerationContext,
-  shouldOfferDescriptionOptions,
   splitMinutesToDurationFields,
   suggestPriorityFromEffort,
 } from "../lib/new-task-ai-assist";
-import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, SETTINGS_PANEL_GAP_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS, MOBILE_HOME_LABEL_GAP, MOBILE_HOME_SECTION_GAP } from "../lib/layout-constants";
+import { SETTINGS_PANEL_ICON_SIZE_MEDIUM, SETTINGS_PANEL_ICON_SIZE_SMALL, COMPONENT_DIMENSIONS, ICON_SIZE_SM, ICON_SIZE_MD, TASK_DIALOG_SUBTASK_CHECKBOX_SIZE, VIEWPORT_BREAKPOINTS, MOBILE_HOME_LABEL_GAP, MOBILE_HOME_SECTION_GAP } from "../lib/layout-constants";
 import { COLOR_TEXT_WHITE } from "../lib/color-theme";
-import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, TASK_DIALOG_TRANSITIONS, TASK_DIALOG_CALCULATIONS, getTaskDialogPriorityAccent, TASK_DIALOG_OPTIONS, TASK_DIALOG_OPTION_SHEET_TEXT, TASK_DIALOG_FOCUS_TEXT, type TaskDialogOptionId } from "../lib/task-dialog-constants";
+import { TASK_DIALOG_UI_TEXT, TASK_DIALOG_FONT_SIZES, TASK_DIALOG_DIMENSIONS, TASK_DIALOG_COLORS, TASK_DIALOG_MENU_WIDTH, TASK_DIALOG_SECTION_SPACING, TASK_DIALOG_MINIMAL_SPACING, TASK_DIALOG_CALENDAR, TASK_DIALOG_TIMEZONE, getTaskDialogPriorityAccent, TASK_DIALOG_OPTIONS, TASK_DIALOG_OPTION_SHEET_TEXT, TASK_DIALOG_FOCUS_TEXT, type TaskDialogOptionId } from "../lib/task-dialog-constants";
 import { AGENDA_LIST_CARD } from "../lib/agenda-list-card-constants";
 import { useIsMobile } from "./ui/use-mobile";
 import type {
@@ -860,9 +854,6 @@ export function TaskDialog({
   // 2. When title has content and description is empty → generate description options using effort score
   // 3. User selects description → useTaskBreakdown automatically regenerates action plan (watches description)
   // 4. Action plan subtasks are created from the chosen description
-  const [descriptionOptions, setDescriptionOptions] = useState<Array<{ description: string; domain: string; confidence: number }>>([]);
-  const [isLoadingDescriptionOptions, setIsLoadingDescriptionOptions] = useState(false);
-  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
   // Helper function to update scheduled time
   const updateScheduledTime = (
@@ -1303,99 +1294,6 @@ export function TaskDialog({
     estimatedMinutes,
     priority,
   ]);
-
-  // Generate description options when title changes and breakdown has effort score
-  // AI Flow Step 2: Uses keywords/phrases from user input (title) to analyze effort and suggest descriptions
-  // The breakdown hook (Step 1) extracts keywords/phrases and determines effort score from the title
-  // This effect generates description options based on that effort score
-  useEffect(() => {
-    // Only generate options if:
-    // 1. Dialog is open
-    // 2. Title has content (user has entered task title)
-    // 3. Description is empty (so we show options for user to choose)
-    // 4. Breakdown has effort score (meaning keywords/phrases were analyzed from title)
-    // 5. Not currently loading breakdown
-    // 6. Not currently generating description (prevent conflicts)
-    // CRITICAL: Check description first to prevent race conditions when AI generates description
-    if (
-      !shouldOfferDescriptionOptions(
-        title,
-        description,
-        breakdown,
-        isBreakdownLoading,
-        isGeneratingDescription,
-      ) ||
-      !open
-    ) {
-      setDescriptionOptions([]);
-      setIsLoadingDescriptionOptions(false);
-      return;
-    }
-
-    // Debounce description option generation
-    setIsLoadingDescriptionOptions(true);
-    let cancelled = false;
-    const timeoutId = setTimeout(async () => {
-      // Double-check conditions after debounce (description might have been set by AI)
-      if (cancelled || !breakdown || description.trim() || isGeneratingDescription) {
-        setIsLoadingDescriptionOptions(false);
-        return;
-      }
-      
-      try {
-        logger.debug('AI: Generating description options from title keywords/phrases', {
-          title,
-          effortScore: breakdown.effortScore,
-          domain: breakdown.domain,
-          keywordsExtracted: 'Yes (via useTaskBreakdown)',
-        });
-
-        // Use session token when available so OpenAI (server) is tried first
-        const token = accessToken ?? await getSessionToken();
-
-        // Generate description options using effort score from breakdown
-        // generateDescriptionOptions internally uses extractKeywordsFromTaskName and 
-        // extractTermsFromTaskNameWithBrowserAI to extract keywords/phrases from title
-        // The effort score adjusts the detail level of descriptions (low effort = concise, high effort = detailed)
-        const breakdownContext = getBreakdownGenerationContext(breakdown);
-        const options = await generateDescriptionOptions(
-          title,
-          breakdown.effortScore,
-          token,
-          description,
-          breakdown.actionPlan?.steps?.map((s) => s.action),
-          breakdownContext,
-        );
-
-        // Triple-check conditions after async operation (description might have been set during async call)
-        if (cancelled || description.trim() || isGeneratingDescription) {
-          setIsLoadingDescriptionOptions(false);
-          return;
-        }
-
-        logger.debug('AI: Description options generated', {
-          count: options.length,
-          options: options.map(o => ({ domain: o.domain, confidence: o.confidence })),
-        });
-
-        setDescriptionOptions(options);
-      } catch (error) {
-        if (cancelled) return;
-        logger.error('AI: Failed to generate description options:', error);
-        setDescriptionOptions([]);
-      } finally {
-        if (!cancelled) {
-          setIsLoadingDescriptionOptions(false);
-        }
-      }
-    }, DESCRIPTION_OPTIONS_DEBOUNCE_MS); // Debounce delay after breakdown is ready
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-      setIsLoadingDescriptionOptions(false);
-    };
-  }, [open, title, description, breakdown, isBreakdownLoading, isGeneratingDescription, accessToken, getSessionToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2325,11 +2223,10 @@ export function TaskDialog({
       }
     }
 
-    // Auto-sync to calendar if task has scheduled date and calendar is connected
+    // Auto-sync to calendar if task has scheduled date and calendar is connected.
+    // Google/Outlook are connected read-only (import only), so tasks are not written there.
     if (finalScheduledDate && syncToCalendar && hasFeature('calendarSync')) {
-      // Only sync to Google and Apple Calendar
-      const providersToSync: Array<'google' | 'apple'> = [];
-      if (calendarStatus.google) providersToSync.push('google');
+      const providersToSync: Array<'apple'> = [];
       if (calendarStatus.apple) providersToSync.push('apple');
       
       if (providersToSync.length > 0) {
@@ -2743,187 +2640,6 @@ export function TaskDialog({
                     <div className="flex items-center gap-1 min-w-0">
                       <Label htmlFor="description" className="text-xs sm:text-sm font-bold text-foreground">{TASK_DIALOG_UI_TEXT.descriptionMinimal}</Label>
                     </div>
-                    {title.trim() && (
-                      <div className="flex items-center gap-1">
-                        {/* Redo/Regenerate Description Button - Only show if description exists */}
-                        {description.trim() && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={isGeneratingDescription || isBreakdownLoading}
-                            onClick={() => {
-                              if (isGeneratingDescription) return; // Prevent multiple clicks
-                              setIsGeneratingDescription(true);
-                              // Defer async operation to avoid blocking click handler
-                              setTimeout(async () => {
-                                try {
-                                  // Use session token when available so OpenAI (server) is tried first
-                                  const token = accessToken ?? await getSessionToken();
-                                  // Force regeneration by passing empty description to get fresh result
-                                  // This ensures we get a new/modified description rather than reusing the existing one
-                                  const generated = await generateDescription(
-                                    title,
-                                    token,
-                                    '',
-                                    breakdown?.effortScore,
-                                    breakdown?.actionPlan?.steps?.map((s) => s.action),
-                                    breakdown?.filteredTerminology && breakdown?.domain ? { domain: breakdown.domain, filteredTerminology: breakdown.filteredTerminology } : undefined
-                                  );
-                                logger.debug('AI Refresh description result:', { 
-                                  hasDescription: !!generated.description, 
-                                  descriptionLength: generated.description?.length || 0,
-                                  confidence: generated.confidence,
-                                  domain: generated.domain,
-                                  previousDescription: description.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH),
-                                  newDescription: generated.description?.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)
-                                });
-                                
-                                if (generated.description && generated.description.trim().length > 0) {
-                                  // Replace existing description with regenerated one
-                                  // Ensure description starts at first line (remove leading whitespace)
-                                  const cleanedDescription = generated.description.trim().replace(/^\s+/, '');
-                                  setDescription(cleanedDescription);
-                                  toast.success('Description regenerated', {
-                                    description: `Regenerated based on ${generated.domain} context. Action Plan will update automatically.`,
-                                  });
-                                } else {
-                                  logger.warn('Regenerated description is empty:', generated);
-                                  toast.error('Failed to regenerate description', {
-                                    description: 'Could not generate a description. Please try again or enter description manually.',
-                                  });
-                                }
-                                } catch (error) {
-                                  logger.warn('Description regeneration failed:', error);
-                                  toast.error('Failed to regenerate description', {
-                                    description: 'Please try again',
-                                  });
-                                } finally {
-                                  setIsGeneratingDescription(false);
-                                }
-                              }, 0); // Defer to next event loop tick
-                            }}
-                            className={cn(
-                              "border-2 border-primary/30 dark:border-primary/50",
-                              "hover:border-primary/50 dark:hover:border-primary/70",
-                              "hover:bg-accent/50 dark:hover:bg-accent/30",
-                              `transition-all ${TASK_DIALOG_TRANSITIONS.BUTTON_HOVER_DURATION_CLASS}`,
-                              "font-medium",
-                              isGeneratingDescription && "opacity-50 cursor-not-allowed"
-                            )}
-                            style={{ 
-                              height: COMPONENT_DIMENSIONS.taskDialog.aiButton.height,
-                              paddingLeft: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
-                              paddingRight: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
-                              fontSize: COMPONENT_DIMENSIONS.taskDialog.aiButton.textSize,
-                              gap: SETTINGS_PANEL_GAP_SMALL 
-                            }}
-                            title={TASK_DIALOG_UI_TEXT.descriptionRedoTooltip}
-                          >
-                            <Icon 
-                              name="arrow-clockwise"
-                              size={COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize}
-                              weight={isGeneratingDescription ? "regular" : "duotone"}
-                              className={cn(
-                                isGeneratingDescription && "animate-spin"
-                              )}
-                            />
-                            <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.descriptionRedo}</span>
-                          </Button>
-                        )}
-                        {/* Generate New Description Button - Appends to existing or creates new */}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={isGeneratingDescription || isBreakdownLoading}
-                          onClick={() => {
-                            if (isGeneratingDescription) return; // Prevent multiple clicks
-                            setIsGeneratingDescription(true);
-                            // Defer async operation to avoid blocking click handler
-                            setTimeout(async () => {
-                              try {
-                                // Descriptions use only local + shared terminology (no external AI)
-                                const token = accessToken ?? await getSessionToken();
-                                logger.debug('Auto-generate button clicked:', { title, hasAccessToken: !!(accessToken ?? token), effortScore: breakdown?.effortScore });
-                                const generated = await generateDescription(
-                                  title,
-                                  token,
-                                  description,
-                                  breakdown?.effortScore,
-                                  breakdown?.actionPlan?.steps?.map((s) => s.action),
-                                  breakdown?.filteredTerminology && breakdown?.domain ? { domain: breakdown.domain, filteredTerminology: breakdown.filteredTerminology } : undefined
-                                );
-                                logger.debug('Auto-generate result received:', {
-                                hasDescription: !!generated.description,
-                                descriptionLength: generated.description?.length || 0,
-                                descriptionPreview: generated.description?.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH) || 'empty',
-                                confidence: generated.confidence,
-                                domain: generated.domain
-                              });
-                              
-                              if (generated.description && generated.description.trim().length > 0) {
-                                const newDescription = description 
-                                  ? `${description}${DESCRIPTION_GENERATION_CONFIG.descriptionSeparator}${generated.description}`
-                                  : generated.description;
-                                
-                                logger.debug('Setting description:', { 
-                                  oldLength: description.length,
-                                  newLength: newDescription.length,
-                                  newDescriptionPreview: newDescription.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH),
-                                  oldDescription: description.substring(0, Math.floor(DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH * TASK_DIALOG_CALCULATIONS.DESCRIPTION_PREVIEW_RATIO)),
-                                  newDescription: newDescription.substring(0, Math.floor(DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH * TASK_DIALOG_CALCULATIONS.DESCRIPTION_PREVIEW_RATIO))
-                                });
-                                
-                                setDescription(newDescription);
-                                
-                                // Log after state update to verify it was set (only in development)
-                                if (process.env.NODE_ENV === 'development') {
-                                  setTimeout(() => {
-                                    logger.debug('Description state after update:', { 
-                                      currentDescription: description,
-                                      expectedDescription: newDescription.substring(0, DESCRIPTION_UI_CONFIG.DESCRIPTION_PREVIEW_LENGTH)
-                                    });
-                                  }, TIMING_CONSTANTS.STATE_UPDATE_LOG_DELAY);
-                                }
-                                
-                                toast.success(TASK_DIALOG_UI_TEXT.toast.aiDescriptionGenerated, {
-                                  description: TASK_DIALOG_UI_TEXT.toast.aiDescriptionGeneratedDetail(generated.domain),
-                                });
-                              } else {
-                                logger.warn('Auto-generate returned empty description:', generated);
-                                toast.error(TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailed, {
-                                  description: TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailedDetail,
-                                });
-                              }
-                              } catch (error) {
-                                logger.warn('Description generation failed:', error);
-                                toast.error(TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailed, {
-                                  description: TASK_DIALOG_UI_TEXT.toast.aiDescriptionFailedShort,
-                                });
-                              } finally {
-                                setIsGeneratingDescription(false);
-                              }
-                            }, 0); // Defer to next event loop tick
-                          }}
-                          style={{ 
-                            height: COMPONENT_DIMENSIONS.taskDialog.aiButton.height,
-                            paddingLeft: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
-                            paddingRight: COMPONENT_DIMENSIONS.taskDialog.aiButton.paddingX,
-                            fontSize: COMPONENT_DIMENSIONS.taskDialog.aiButton.textSize,
-                            gap: SETTINGS_PANEL_GAP_SMALL 
-                          }}
-                          title={TASK_DIALOG_UI_TEXT.aiGenerateTooltip}
-                        >
-                          <Icon 
-                            name="sparkles" 
-                            size={COMPONENT_DIMENSIONS.taskDialog.aiButton.iconSize} 
-                            weight="duotone"
-                          />
-                          <span className="hidden lg:inline">{TASK_DIALOG_UI_TEXT.aiGenerate}</span>
-                        </Button>
-                      </div>
-                    )}
                   </div>
                   <RichTextEditor
                     value={description}

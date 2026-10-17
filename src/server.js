@@ -8,7 +8,7 @@
 
 import { createServer } from 'http';
 import { readFileSync, existsSync, statSync } from 'fs';
-import { join, extname } from 'path';
+import { join, extname, resolve, sep } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -52,15 +52,25 @@ const STATIC_PATHS = [
   '/sitemap.xml',
 ];
 
+// Extensionless files that must still be served with a specific type
+const SPECIAL_MIME_TYPES = {
+  '/.well-known/apple-app-site-association': 'application/json',
+};
+
 function getMimeType(path) {
   const ext = extname(path);
   return MIME_TYPES[ext] || 'application/octet-stream';
 }
 
 function serveStaticFile(path, res) {
-  const filePath = join(DIST_DIR, path);
-  
-  if (!existsSync(filePath)) {
+  let filePath;
+  try {
+    filePath = resolve(DIST_DIR, `.${decodeURIComponent(path)}`);
+  } catch {
+    return false;
+  }
+
+  if (!filePath.startsWith(DIST_DIR + sep) || !existsSync(filePath)) {
     return false;
   }
 
@@ -71,7 +81,7 @@ function serveStaticFile(path, res) {
 
   try {
     const content = readFileSync(filePath);
-    const mimeType = getMimeType(filePath);
+    const mimeType = SPECIAL_MIME_TYPES[path] || getMimeType(filePath);
     
     // Set headers for PWA files
     const headers = {
@@ -162,11 +172,9 @@ const server = createServer((req, res) => {
     return;
   }
 
-  // Serve known static files
-  if (STATIC_PATHS.includes(pathname)) {
-    if (serveStaticFile(pathname, res)) {
-      return;
-    }
+  // Serve any other real file from dist (icons, logos, .well-known, etc.)
+  if (pathname !== '/' && serveStaticFile(pathname, res)) {
+    return;
   }
 
   // For all other routes, serve index.html (SPA routing)

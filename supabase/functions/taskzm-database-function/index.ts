@@ -16,7 +16,7 @@ import {
   getGoogleRedirectUri,
   mapGoogleTokenExchangeError,
 } from "./google-oauth-config.ts";
-import { buildOAuthState, parseOAuthState, calendarOAuthResultHtml } from "./mobile-oauth-helpers.ts";
+import { buildOAuthState, parseOAuthState, buildCalendarOAuthReturnUrl, type OAuthCalendarProvider } from "./mobile-oauth-helpers.ts";
 
 // ============================================================================
 // APP INITIALIZATION
@@ -2681,7 +2681,7 @@ app.get("/taskzm-database-function/calendar/google/auth", async (c) => {
     authUrl.searchParams.set('access_type', 'offline');
     authUrl.searchParams.set('prompt', 'consent');
     const platform = c.req.query('platform');
-    authUrl.searchParams.set('state', buildOAuthState(userId, platform));
+    authUrl.searchParams.set('state', await buildOAuthState(userId, platform, c.req.header('origin')));
 
     console.log('Google OAuth URL generated successfully for user:', userId, 'redirect_uri:', oauthConfig.redirectUri);
     return c.json({ authUrl: authUrl.toString() });
@@ -2744,167 +2744,8 @@ app.post("/taskzm-database-function/calendar/google/use-supabase-tokens", async 
   }
 });
 
-// Google Calendar OAuth callback
-app.get("/taskzm-database-function/calendar/google/callback", async (c) => {
-  try {
-    const code = c.req.query('code');
-    const stateParam = c.req.query('state');
-    const { userId, isNative } = parseOAuthState(stateParam);
-    const error = c.req.query('error');
-    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
-
-    console.log('Google OAuth callback received:', { 
-      hasCode: !!code, 
-      hasUserId: !!userId, 
-      error,
-      queryParams: Object.fromEntries(c.req.url.split('?')[1]?.split('&').map(p => p.split('=')) || [])
-    });
-
-    if (error) {
-      return c.html(calendarOAuthResultHtml({
-        provider: 'google',
-        success: false,
-        error,
-        isNative,
-        appUrl,
-      }));
-    }
-
-    if (!code || !userId) {
-      return c.html(calendarOAuthResultHtml({
-        provider: 'google',
-        success: false,
-        error: 'Missing authorization code or user ID',
-        isNative,
-        appUrl,
-      }));
-    }
-
-    const oauthConfig = getGoogleOAuthConfig();
-    console.log('Google OAuth callback token exchange redirect_uri:', oauthConfig?.redirectUri ?? 'null');
-
-    if (!oauthConfig) {
-      return c.html(calendarOAuthResultHtml({
-        provider: 'google',
-        success: false,
-        error: 'Google OAuth not configured',
-        isNative,
-        appUrl,
-      }));
-    }
-
-    // Exchange code for tokens
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: oauthConfig.clientId,
-        client_secret: oauthConfig.clientSecret,
-        redirect_uri: oauthConfig.redirectUri,
-        grant_type: 'authorization_code',
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      const userMessage = mapGoogleTokenExchangeError(errorText);
-      console.log('Google token exchange failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-        diagnostics: getGoogleOAuthConfigDiagnostics(),
-      });
-      const escapedMessage = userMessage.replace(/'/g, "\\'").replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const bodyEscaped = userMessage.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      // Return HTML page that closes popup and notifies parent of error
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
-        provider: 'google',
-        error: '${escapedMessage}'
-      }, '*');
-      window.close();
-    } else {
-      window.location.href = '${Deno.env.get('APP_URL') || 'https://taskzm.app'}';
-    }
-  </script>
-  <p>Connection failed: ${bodyEscaped} This window will close automatically.</p>
-</body>
-</html>`;
-      return c.html(html);
-    }
-
-    const data = await response.json();
-
-    console.log('Google token exchange successful for user:', userId);
-
-    // Store tokens with error handling
-    const tokens: calendarSync.CalendarTokens = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: Date.now() + (data.expires_in * 1000),
-      provider: 'google',
-    };
-
-    try {
-      await calendarSync.storeCalendarTokens(userId, 'google', tokens);
-      console.log('Google Calendar tokens stored successfully for user:', userId);
-
-      return c.html(calendarOAuthResultHtml({
-        provider: 'google',
-        success: true,
-        isNative,
-        appUrl,
-      }));
-    } catch (storageError) {
-      console.error('Error storing Google Calendar tokens:', storageError);
-      return c.html(calendarOAuthResultHtml({
-        provider: 'google',
-        success: false,
-        error: 'Failed to store calendar tokens. Please try again.',
-        isNative,
-        appUrl,
-      }));
-    }
-  } catch (error) {
-    // CRITICAL FIX: Catch all errors and return HTML with postMessage instead of JSON
-    // This ensures the parent window always receives notification
-    console.error('Error in Google OAuth callback:', error);
-    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
-    const errorHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Calendar Connection Failed</title>
-</head>
-<body>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        type: 'calendar-oauth-error', 
-        provider: 'google',
-        error: '${String(getErrorMessage(error)).replace(/'/g, "\\'").replace(/"/g, '&quot;')}'
-      }, '*');
-      setTimeout(() => {
-        window.close();
-      }, 200);
-    } else {
-      window.location.href = '${appUrl}';
-    }
-  </script>
-  <p>Connection failed: ${String(getErrorMessage(error)).replace(/</g, '&lt;').replace(/>/g, '&gt;')}. This window will close automatically.</p>
-</body>
-</html>`;
-    return c.html(errorHtml);
-  }
-});
+// Google Calendar OAuth callback: hand the code back to the app, which exchanges it as the signed-in user.
+app.get("/taskzm-database-function/calendar/google/callback", (c) => calendarOAuthCallback(c, 'google'));
 
 // Sync Google Calendar events from Google to database (import calendar events)
 app.post("/taskzm-database-function/calendar/google/sync", async (c) => {
@@ -2984,7 +2825,7 @@ app.get("/taskzm-database-function/calendar/outlook/auth", async (c) => {
     authUrl.searchParams.set('scope', scopes.join(' '));
     authUrl.searchParams.set('response_mode', 'query');
     const platform = c.req.query('platform');
-    authUrl.searchParams.set('state', buildOAuthState(userId, platform));
+    authUrl.searchParams.set('state', await buildOAuthState(userId, platform, c.req.header('origin')));
 
     return c.json({ authUrl: authUrl.toString() });
   } catch (error) {
@@ -2993,93 +2834,117 @@ app.get("/taskzm-database-function/calendar/outlook/auth", async (c) => {
   }
 });
 
-// Outlook Calendar OAuth callback
-app.get("/taskzm-database-function/calendar/outlook/callback", async (c) => {
+// Outlook Calendar OAuth callback: hand the code back to the app, which exchanges it as the signed-in user.
+app.get("/taskzm-database-function/calendar/outlook/callback", (c) => calendarOAuthCallback(c, 'outlook'));
+
+/**
+ * Provider redirect target. Never stores tokens: it only forwards the code (or error) to the app
+ * that started the flow. Redirects work even though Supabase serves HTML from functions as text.
+ */
+async function calendarOAuthCallback(c: any, provider: OAuthCalendarProvider) {
+  const rawState = c.req.query('state') ?? '';
+  const state = await parseOAuthState(rawState);
+  const providerError = c.req.query('error_description') || c.req.query('error');
+  const code = c.req.query('code');
+  if (providerError) {
+    return c.redirect(buildCalendarOAuthReturnUrl(provider, state, { error: String(providerError) }), 302);
+  }
+  if (!state) {
+    return c.redirect(buildCalendarOAuthReturnUrl(provider, null, { error: 'This connection link expired. Please try connecting again.' }), 302);
+  }
+  if (!code) {
+    return c.redirect(buildCalendarOAuthReturnUrl(provider, state, { error: 'Missing authorization code' }), 302);
+  }
+  return c.redirect(buildCalendarOAuthReturnUrl(provider, state, { code, rawState }), 302);
+}
+
+async function exchangeGoogleCode(code: string): Promise<calendarSync.CalendarTokens> {
+  const oauthConfig = getGoogleOAuthConfig();
+  if (!oauthConfig) throw new Error('Google OAuth not configured');
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: oauthConfig.clientId,
+      client_secret: oauthConfig.clientSecret,
+      redirect_uri: oauthConfig.redirectUri,
+      grant_type: 'authorization_code',
+    }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.log('Google token exchange failed:', { status: response.status, error: errorText, diagnostics: getGoogleOAuthConfigDiagnostics() });
+    throw new Error(mapGoogleTokenExchangeError(errorText));
+  }
+  const data = await response.json();
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresAt: Date.now() + data.expires_in * 1000,
+    provider: 'google',
+  };
+}
+
+async function exchangeOutlookCode(code: string): Promise<calendarSync.CalendarTokens> {
+  const clientId = Deno.env.get('OUTLOOK_CLIENT_ID');
+  const clientSecret = Deno.env.get('OUTLOOK_CLIENT_SECRET');
+  const redirectUri = Deno.env.get('OUTLOOK_REDIRECT_URI');
+  if (!clientId || !clientSecret || !redirectUri) throw new Error('Outlook OAuth not configured');
+  const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+      scope: 'https://graph.microsoft.com/Calendars.Read offline_access',
+    }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.log('Outlook token exchange failed:', { status: response.status, error: errorText });
+    throw new Error('Microsoft rejected the sign-in. Please try connecting again.');
+  }
+  const data = await response.json();
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresAt: Date.now() + data.expires_in * 1000,
+    provider: 'outlook',
+  };
+}
+
+// Finish Google/Outlook OAuth: only the user the state was issued to may attach these tokens.
+app.post("/taskzm-database-function/calendar/:provider/exchange", async (c) => {
   try {
-    const code = c.req.query('code');
-    const stateParam = c.req.query('state');
-    const { userId, isNative } = parseOAuthState(stateParam);
-    const error = c.req.query('error');
-    const appUrl = Deno.env.get('APP_URL') || 'https://taskzm.app';
-
-    if (error) {
-      return c.html(calendarOAuthResultHtml({
-        provider: 'outlook',
-        success: false,
-        error,
-        isNative,
-        appUrl,
-      }));
+    const provider = c.req.param('provider');
+    if (provider !== 'google' && provider !== 'outlook') {
+      return c.json({ success: false, error: 'Unsupported provider' }, 400);
     }
-
-    if (!code || !userId) {
-      return c.html(calendarOAuthResultHtml({
-        provider: 'outlook',
-        success: false,
-        error: 'Missing authorization code or user ID',
-        isNative,
-        appUrl,
-      }));
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401);
     }
-
-    const clientId = Deno.env.get('OUTLOOK_CLIENT_ID');
-    const clientSecret = Deno.env.get('OUTLOOK_CLIENT_SECRET');
-    const redirectUri = Deno.env.get('OUTLOOK_REDIRECT_URI');
-
-    if (!clientId || !clientSecret || !redirectUri) {
-      return c.html(calendarOAuthResultHtml({
-        provider: 'outlook',
-        success: false,
-        error: 'Outlook OAuth not configured',
-        isNative,
-        appUrl,
-      }));
+    const body = await c.req.json().catch(() => ({}));
+    const code = typeof body?.code === 'string' ? body.code : '';
+    const state = await parseOAuthState(typeof body?.state === 'string' ? body.state : '');
+    if (!code || !state) {
+      return c.json({ success: false, error: 'This connection link expired. Please try connecting again.' }, 400);
     }
-
-    // Exchange code for tokens
-    const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-        scope: 'https://graph.microsoft.com/Calendars.Read offline_access',
-      }),
-    });
-
-    if (!response.ok) {
-      return c.html(calendarOAuthResultHtml({
-        provider: 'outlook',
-        success: false,
-        error: 'Failed to exchange authorization code',
-        isNative,
-        appUrl,
-      }));
+    if (state.userId !== userId) {
+      console.warn('Calendar OAuth exchange rejected: state issued to a different user', { provider, userId });
+      return c.json({ success: false, error: 'This connection was started from a different TaskZM account.' }, 403);
     }
-
-    const data = await response.json();
-
-    const tokens: calendarSync.CalendarTokens = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: Date.now() + (data.expires_in * 1000),
-      provider: 'outlook',
-    };
-
-    await calendarSync.storeCalendarTokens(userId, 'outlook', tokens);
-
-    return c.html(calendarOAuthResultHtml({
-      provider: 'outlook',
-      success: true,
-      isNative,
-      appUrl,
-    }));
+    const tokens = provider === 'google' ? await exchangeGoogleCode(code) : await exchangeOutlookCode(code);
+    await calendarSync.storeCalendarTokens(userId, provider, tokens);
+    console.log(`${provider} Calendar tokens stored for user:`, userId);
+    return c.json({ success: true });
   } catch (error) {
-    console.log('Error in Outlook OAuth callback:', error);
-    return c.json({ error: getErrorMessage(error) }, 500);
+    console.error('Calendar OAuth exchange error:', error);
+    return c.json({ success: false, error: getErrorMessage(error) }, 500);
   }
 });
 

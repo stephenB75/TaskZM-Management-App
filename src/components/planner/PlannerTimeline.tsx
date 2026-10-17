@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 import { useTasks } from '../../contexts/TaskContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PLANNER_LAYOUT } from '../../lib/layout-constants';
-import taskzmLogoBlack from '../../assets/Taskzm_Logo_BLK-removebg.png';
-import taskzmLogoGray from '../../assets/taskzm-logo-gray.png';
+import taskzmLogoBlack from '../../assets/taskzm-wordmark-black.png';
+import taskzmLogoGray from '../../assets/taskzm-wordmark-gray.png';
 import { usePlannerChat } from '../../contexts/PlannerChatContext';
 import { useSheetItem } from '../../hooks/useSheetItem';
 import { isUnfinishedTask, tasksToPlace } from '../../lib/home-task-groups';
@@ -121,14 +121,14 @@ export function PlannerTimeline({
     <section className={`planner-panel ${className ?? ''}`} aria-label={TEXT.title}>
       <header className="planner-header">
         {showBrand ? (
-          <div className="min-w-0">
+          <div className="flex min-w-0 flex-1 items-center justify-between" style={{ gap: PLANNER_LAYOUT.brandTitleGapPx }}>
             <img
               src={isDark ? taskzmLogoGray : taskzmLogoBlack}
               alt="TaskZM"
-              className="block object-contain object-left"
-              style={{ height: PLANNER_LAYOUT.timelineLogoHeightPx, width: 'auto', maxWidth: '100%' }}
+              className="block min-w-0 object-contain object-left"
+              style={{ height: PLANNER_LAYOUT.timelineLogoHeightPx, width: 'auto', maxWidth: PLANNER_LAYOUT.timelineLogoMaxWidth }}
             />
-            <h2 className="planner-eyebrow" style={{ margin: `${PLANNER_LAYOUT.brandTitleGapPx}px 0 0` }}>{TEXT.title}</h2>
+            <h2 className="planner-eyebrow shrink-0" style={{ margin: 0 }}>{TEXT.title}</h2>
           </div>
         ) : (
           <div className="min-w-0">

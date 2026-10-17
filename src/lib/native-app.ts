@@ -14,20 +14,15 @@ import {
   MOBILE_UNIVERSAL_LINK_HOST,
 } from './mobile-constants';
 import { NOTIFICATION_OPEN_TASK_EVENT } from './notification-constants';
-import { CALENDAR_OAUTH_MESSAGE_TYPES } from './calendar-integration-constants';
-import type { CalendarProviderId } from './calendar-integration-constants';
 import { clearCalendarEventsCache } from './calendar-events-cache';
+import { resolveCalendarOAuthReturn, type CalendarOAuthResult } from './calendar-oauth-return';
 import {
   ensureNativeBuildIsCurrent,
   nativeCloudReleaseChangedSince,
 } from './native-cache';
 import { TIMING_CONSTANTS } from './timing-constants';
 
-type CalendarOAuthCallback = (result: {
-  type: typeof CALENDAR_OAUTH_MESSAGE_TYPES.success | typeof CALENDAR_OAUTH_MESSAGE_TYPES.error;
-  provider: CalendarProviderId;
-  error?: string;
-}) => void;
+type CalendarOAuthCallback = (result: CalendarOAuthResult) => void;
 
 let calendarOAuthCallback: CalendarOAuthCallback | null = null;
 
@@ -68,26 +63,11 @@ function handleTaskDeepLink(parsed: URL): void {
 }
 
 function handleCalendarOAuthDeepLink(parsed: URL): void {
-  const provider = parsed.searchParams.get('provider') as CalendarProviderId | null;
-  const status = parsed.searchParams.get('status');
-  const error = parsed.searchParams.get('error') ?? undefined;
-
-  if (!provider || !calendarOAuthCallback) return;
-
   void Browser.close().catch(() => undefined);
 
-  if (status === 'success') {
-    calendarOAuthCallback({
-      type: CALENDAR_OAUTH_MESSAGE_TYPES.success,
-      provider,
-    });
-  } else {
-    calendarOAuthCallback({
-      type: CALENDAR_OAUTH_MESSAGE_TYPES.error,
-      provider,
-      error: error ?? 'Calendar connection failed',
-    });
-  }
+  void resolveCalendarOAuthReturn(parsed.searchParams).then((result) => {
+    if (result) calendarOAuthCallback?.(result);
+  });
 }
 
 function handleAuthDeepLink(parsed: URL): void {

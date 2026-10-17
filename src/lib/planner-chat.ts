@@ -22,7 +22,8 @@ import { DEFAULT_CREATED_BY, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from '
 import { generateId, getWeekStart } from './utils';
 import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from './navigation-constants';
 import { parsePlannerWhen, stripPlannerWhen } from './planner-commands';
-import type { Task, TaskPriority } from '../types';
+import { estimateWithSubtasks, improveTitle, splitClauses, splitInlineSteps, suggestSubtasks } from './planner-analysis';
+import type { Subtask, Task, TaskPriority } from '../types';
 
 export type PlannerCategory = 'work' | 'personal' | 'projects';
 
@@ -39,6 +40,8 @@ export interface PlannerDraft {
   estimatedMinutes: number;
   /** Date/time the user wrote ("tomorrow at 3pm"); a time books the task there, a day sets its due date. */
   when?: { date: string; hasTime: boolean };
+  /** Steps the planner found or suggested; created as subtasks when the draft is accepted. */
+  subtasks?: string[];
 }
 
 export type PlannerIntent =
@@ -112,33 +115,52 @@ export function draftToTask(draft: PlannerDraft, createdBy?: string | null): Tas
     estimatedTime: draft.estimatedMinutes,
     actualTime: null,
     dependencies: [],
-    subtasks: [],
+    subtasks: (draft.subtasks ?? []).map((title): Subtask => ({ id: generateId(), title, completed: false, createdAt: now })),
     recurrence: RECURRENCE_NONE_CONFIG,
     notes: '',
   };
 }
 
+/** One draft from one task's text: tidied title, estimate, and subtasks when the task is bigger. */
+function buildDraft(source: string): PlannerDraft | null {
+  const inline = splitInlineSteps(source);
+  const titleSource = inline ? inline.title : source;
+  const when = parsePlannerWhen(source, new Date());
+  const titleWithoutWhen = when ? cleanTitle(stripPlannerWhen(titleSource)) : '';
+  const keepsWhen = titleWithoutWhen.length >= PLANNER_CHAT_CONFIG.minTitleLength;
+  const title = improveTitle(keepsWhen ? titleWithoutWhen : cleanTitle(titleSource));
+  if (title.length < PLANNER_CHAT_CONFIG.minTitleLength) return null;
+  const draft: PlannerDraft = {
+    id: generateId(),
+    title,
+    priority: inferPriority(source),
+    category: inferCategory(source),
+    estimatedMinutes: 0,
+    ...(when && keepsWhen ? { when: { date: when.date.toISOString(), hasTime: when.hasTime } } : {}),
+  };
+  const baseMinutes = Math.round(estimateTaskHours({ ...draftToTask(draft), estimatedTime: null }) * MINUTES_PER_HOUR);
+  const suggestion = inline ? null : suggestSubtasks(title);
+  const subtasks = inline?.steps ?? suggestion?.steps ?? [];
+  if (subtasks.length > 0) draft.subtasks = subtasks;
+  draft.estimatedMinutes =
+    explicitMinutes(source) ??
+    (subtasks.length > 0 ? estimateWithSubtasks(baseMinutes, subtasks.length, suggestion?.minutesPerStep) : baseMinutes);
+  return draft;
+}
+
 export function parsePlannerDrafts(text: string): PlannerDraft[] {
   const drafts: PlannerDraft[] = [];
-  for (const line of text.split(PLANNER_CHAT_CONFIG.draftSeparator)) {
-    const when = parsePlannerWhen(line, new Date());
-    const titleWithoutWhen = when ? cleanTitle(stripPlannerWhen(line)) : '';
-    const keepsWhen = titleWithoutWhen.length >= PLANNER_CHAT_CONFIG.minTitleLength;
-    const title = keepsWhen ? titleWithoutWhen : cleanTitle(line);
-    if (title.length < PLANNER_CHAT_CONFIG.minTitleLength) continue;
-    const draft: PlannerDraft = {
-      id: generateId(),
-      title,
-      priority: inferPriority(line),
-      category: inferCategory(line),
-      estimatedMinutes: 0,
-      ...(when && keepsWhen ? { when: { date: when.date.toISOString(), hasTime: when.hasTime } } : {}),
-    };
-    const stated = explicitMinutes(line);
-    draft.estimatedMinutes =
-      stated ?? Math.round(estimateTaskHours({ ...draftToTask(draft), estimatedTime: null }) * MINUTES_PER_HOUR);
-    drafts.push(draft);
-    if (drafts.length >= PLANNER_CHAT_CONFIG.maxDraftsPerMessage) break;
+  for (const rawLine of text.split(PLANNER_CHAT_CONFIG.draftSeparator)) {
+    const line = rawLine.replace(PLANNER_CHAT_CONFIG.listMarker, '').trim();
+    if (!line) continue;
+    // A line with its own steps stays one task; otherwise each clause can be its own task.
+    const pieces = splitInlineSteps(line) ? [line] : splitClauses(line);
+    for (const piece of pieces) {
+      const draft = buildDraft(piece);
+      if (!draft) continue;
+      drafts.push(draft);
+      if (drafts.length >= PLANNER_CHAT_CONFIG.maxDraftsPerMessage) return drafts;
+    }
   }
   return drafts;
 }

@@ -1210,6 +1210,10 @@ export const PLANNER_CHAT_CONFIG = {
     subtasks: /^(?:add|create)\s+(?:the\s+)?(?:subtasks?|steps?)\s+(?:to|for|on)\s+(.+?)\s*:\s*([\s\S]+)$/i,
     /** Groups: task, subtask list. */
     breakDown: /^break\s+(.+?)\s+(?:down\s+)?into\s*:?\s*([\s\S]+)$/i,
+    /** Group: task. The planner works out the subtasks itself ("break down the website redo"). */
+    breakDownAuto: /^(?:(?:break|split)\s+(?:down|up)|add\s+(?:subtasks|steps)\s+(?:to|for))\s+(.+?)(?:\s+into\s+(?:subtasks|steps|smaller\s+(?:tasks|steps)))?$/i,
+    /** Group: task. */
+    breakDownAutoTrailing: /^break\s+(.+?)\s+(?:down|up)(?:\s+into\s+(?:subtasks|steps|smaller\s+(?:tasks|steps)))?$/i,
     /** Groups: tags, task. */
     addTags: /^add\s+(?:the\s+)?tags?\s+(.+?)\s+to\s+(.+)$/i,
     /** Groups: task, tags. */
@@ -1276,4 +1280,72 @@ export const PLANNER_CHAT_CONFIG = {
     /** Day abbreviations that are also ordinary words; only read as days after a lead-in ("on sun"). */
     ambiguousDayWords: ['sun', 'sat', 'wed', 'mon'],
   },
+} as const;
+
+/** Planner analysis: tidy drafted tasks and break bigger ones into subtasks (rule-based, runs on device). */
+export const PLANNER_ANALYSIS_CONFIG = {
+  /** Breaks inside a sentence that start another task ("redo the site, also call mom", "…. Then email Sam"). */
+  clauseSeparator: /(?<=[a-z0-9)])[.!]\s+(?=[A-Za-z])|,?\s+(?:and\s+)?also\s+|,\s*(?:then|plus)\s+|\s+and\s+then\s+/i,
+  /** Filler that doesn't belong in a task title; stripped repeatedly from the start. */
+  fillerPrefix: /^(?:(?:i|we)\s+(?:really\s+)?(?:need|have|want|got|ought)\s+to\s+|(?:i|we)\s+(?:should|must|will|have\s+got\s+to)\s+|(?:i'?ll|we'?ll|gotta|need\s+to|have\s+to|got\s+to|want\s+to)\s+|(?:don'?t\s+forget|remember|make\s+sure)\s+to\s+|(?:todo|to-do|task|reminder)\s*[:-]\s*|please\s+|(?:and|also|then|plus)\s+)/i,
+  /** A title followed by its own steps: "Plan party: invite guests, order cake" or "… including a, b and c". Groups: title, steps. */
+  inlineStepsPattern: /^(.+?)\s*(?::|\s[-–—]\s|\s+(?:including|incl\.?|such as|which means|steps?:?))\s+(.+)$/i,
+  /** Inline steps only count as subtasks when there are at least this many. */
+  minInlineSteps: 2,
+  maxSubtasks: 8,
+  /** Extra time per subtask on top of the base estimate, so broken-down tasks aren't booked too short. */
+  minutesPerStepFloor: 15,
+  /** Common bigger tasks and the steps they usually take. Checked in order; the first match wins. */
+  templates: [
+    {
+      pattern: /\b(?:build|redo|redesign|rebuild|revamp|create|develop|launch|make|update|set\s*up)\b.*\b(?:website|web\s*site|site|landing\s+page|app|feature|prototype|dashboard|portal|online\s+store|shop)\b/i,
+      minutesPerStep: 60,
+      steps: ['Gather requirements and content', 'Sketch the layout and design', 'Build the pages and features', 'Test on desktop and mobile', 'Launch and share it'],
+    },
+    {
+      pattern: /\b(?:tax(?:es)?|tax\s+return|bookkeeping|expense\s+report|year[-\s]end\s+accounts?)\b/i,
+      minutesPerStep: 30,
+      steps: ['Gather statements, receipts and last year’s return', 'Categorize income and expenses', 'Fill in the forms', 'Review totals and deductions', 'Submit and save a copy'],
+    },
+    {
+      pattern: /\b(?:presentation|deck|slides|pitch|keynote|talk|webinar)\b/i,
+      minutesPerStep: 30,
+      steps: ['Define the audience and main message', 'Outline the slides', 'Build the slides', 'Rehearse it', 'Share or present'],
+    },
+    {
+      pattern: /\b(?:write|draft|prepare|finish|create)\b.*\b(?:report|proposal|article|blog(?:\s+post)?|post|essay|paper|newsletter|documentation|docs|plan|strategy|brief|chapter|book)\b/i,
+      minutesPerStep: 30,
+      steps: ['Collect notes and sources', 'Outline the key points', 'Write the first draft', 'Review and edit', 'Share or publish it'],
+    },
+    {
+      pattern: /\b(?:plan|organi[sz]e|host|throw|arrange|book)\b.*\b(?:party|event|wedding|birthday|dinner|meetup|offsite|retreat|trip|vacation|holiday|conference|reunion)\b/i,
+      minutesPerStep: 30,
+      steps: ['Set the date and budget', 'Make the guest or attendee list', 'Book the venue or travel', 'Arrange food, supplies and details', 'Send invites and confirm'],
+    },
+    {
+      pattern: /\b(?:move|moving|declutter|deep\s+clean|spring\s+clean|clean\s+out|organi[sz]e|renovate|paint)\b.*\b(?:house|home|apartment|flat|garage|closet|office|room|kitchen|basement|attic|yard)\b/i,
+      minutesPerStep: 45,
+      steps: ['Pick the areas to tackle', 'Get the supplies you need', 'Sort what to keep, donate or toss', 'Work through each area', 'Take away donations and trash'],
+    },
+    {
+      pattern: /\b(?:hire|recruit|onboard)\b/i,
+      minutesPerStep: 45,
+      steps: ['Write the role description', 'Post the role', 'Screen applicants', 'Interview candidates', 'Make the offer'],
+    },
+    {
+      pattern: /\b(?:study|revise|prepare|prep)\b.*\b(?:exam|test|course|certification|interview|quiz|finals)\b/i,
+      minutesPerStep: 45,
+      steps: ['Gather the material', 'Make a study plan', 'Work through the material', 'Practice with questions', 'Review weak spots'],
+    },
+    {
+      pattern: /\b(?:research|compare|choose|pick|find|shop\s+for|buy)\b.*\b(?:options|vendors?|suppliers?|tools?|providers?|software|laptop|computer|phone|car|insurance|school|daycare|contractor|apartment|house)\b/i,
+      minutesPerStep: 30,
+      steps: ['Write down what you need and the budget', 'List the options', 'Compare features, reviews and prices', 'Decide and follow through'],
+    },
+    {
+      pattern: /\b(?:launch|campaign|marketing|promote|announce)\b/i,
+      minutesPerStep: 45,
+      steps: ['Define the goal and audience', 'Prepare the content and assets', 'Schedule the announcements', 'Launch it', 'Review the results'],
+    },
+  ] as ReadonlyArray<{ pattern: RegExp; minutesPerStep: number; steps: readonly string[] }>,
 } as const;

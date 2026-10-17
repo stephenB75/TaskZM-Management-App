@@ -5,7 +5,7 @@ import { useSubscription } from './SubscriptionContext';
 import { useTasks } from './TaskContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
-import { CALENDAR_OAUTH_ORIGINS, CALENDAR_OAUTH_MESSAGE_TYPES, CALENDAR_PROVIDER_DISPLAY_NAMES, CALENDAR_PROVIDERS, CALDAV_TRANSIENT_STATUSES, type CalendarProviderId } from '../lib/calendar-integration-constants';
+import { CALENDAR_OAUTH_BROADCAST_CHANNEL, CALENDAR_OAUTH_ORIGINS, CALENDAR_OAUTH_MESSAGE_TYPES, CALENDAR_PROVIDER_DISPLAY_NAMES, CALENDAR_PROVIDERS, CALDAV_TRANSIENT_STATUSES, type CalendarProviderId } from '../lib/calendar-integration-constants';
 import { RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { supabase } from '../lib/supabase-client';
 import { TIMING_CONSTANTS, DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
@@ -585,31 +585,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         }
         
         try {
-          // Ignore messages from browser extensions and other origins
-          // Only process messages from our own origin or the OAuth callback
-          const allowedOrigins = [
-            window.location.origin,
-            `https://${projectId}.supabase.co`,
-            CALENDAR_OAUTH_ORIGINS.google,
-            CALENDAR_OAUTH_ORIGINS.microsoft,
-            CALENDAR_OAUTH_ORIGINS.apple,
-          ];
-          
-          // ENHANCED: More lenient origin check for OAuth callbacks
-          // The callback page is served from Supabase functions, so we need to allow that origin
-          // CRITICAL FIX: Process calendar OAuth messages regardless of origin if they match type and provider
-          // This is safe because we validate the message type and provider, and the message comes from our callback page
-          const isAllowedOrigin = !event.origin || allowedOrigins.some(origin => {
-            // Check if origin matches exactly or starts with allowed origin
-            return event.origin === origin || event.origin.startsWith(origin);
-          });
-          
-          // CRITICAL FIX: Always process calendar OAuth messages if they match type and provider
-          // The origin check is for security, but we've already validated the message type and provider
-          // If it's a calendar OAuth message with matching provider, it's from our callback page
-          if (!isAllowedOrigin) {
-            console.warn('[Calendar OAuth] Message from unexpected origin:', event.origin, 'but processing anyway for calendar OAuth message');
-            // Still process the message - it's validated by type and provider
+          // The OAuth return page is served from our own origin; anything else could spoof a result.
+          if (event.origin !== window.location.origin) {
+            console.warn('[Calendar OAuth] Ignoring message from unexpected origin:', event.origin);
+            return;
           }
           
           // Additional validation: ensure message has required fields
@@ -623,6 +602,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           
           // Clean up listeners immediately (synchronous, fast)
           window.removeEventListener('message', messageHandler);
+          oauthChannel?.close();
           if (checkPopupInterval) {
             clearInterval(checkPopupInterval);
           }
@@ -694,6 +674,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           if (!messageReceived) {
             messageReceived = true;
             window.removeEventListener('message', messageHandler);
+            oauthChannel?.close();
             if (checkPopupInterval) {
               clearInterval(checkPopupInterval);
             }
@@ -713,6 +694,14 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       };
 
       window.addEventListener('message', messageHandler);
+      const oauthChannel = typeof BroadcastChannel === 'undefined'
+        ? null
+        : new BroadcastChannel(CALENDAR_OAUTH_BROADCAST_CHANNEL);
+      if (oauthChannel) {
+        oauthChannel.onmessage = (event) => {
+          messageHandler(new MessageEvent('message', { data: event.data, origin: window.location.origin }));
+        };
+      }
 
       // Fallback: Check if popup is closed (user might have closed it manually)
       // ENHANCED: Also check for successful completion even if message wasn't received

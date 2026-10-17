@@ -1551,6 +1551,20 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   color: var(--muted-foreground);
   text-transform: capitalize;
 }
+.planner-draft:has(.planner-draft-steps) {
+  align-items: start;
+}
+.planner-draft-steps {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+  list-style: disc;
+}
+.planner-draft-steps li::marker {
+  color: var(--border);
+}
 .planner-composer {
   flex: none;
   margin: 12px;
@@ -1824,9 +1838,9 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-left: 3px solid var(--planner-event-bar);
+  border-left: 3px solid color-mix(in srgb, var(--foreground) 32%, var(--background));
   border-radius: 0 6px 6px 0;
-  background: var(--planner-event-bg);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--background));
 }
 .planner-week-gutter {
   position: relative;
@@ -1871,24 +1885,50 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   font-size: 12px;
   line-height: 1.3;
   color: var(--foreground);
-  background: var(--muted);
+  background: color-mix(in srgb, var(--planner-bar) 20%, var(--background));
   cursor: grab;
   touch-action: none;
+}
+.dark .planner-block {
+  background: color-mix(in srgb, var(--planner-bar) 30%, var(--background));
 }
 .planner-block:active {
   cursor: grabbing;
 }
 .planner-block strong {
+  flex-shrink: 0;
   overflow: hidden;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.planner-block[data-compact="true"] {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding-block: 0;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.planner-block[data-compact="true"] strong {
+  max-width: 100%;
+}
+.planner-block[data-compact="true"] small {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+.planner-block[data-compact="true"] .planner-priority {
+  display: none;
+}
 .planner-block small {
   display: flex;
   align-items: center;
   gap: 4px;
+  overflow: hidden;
   font-size: 10px;
+  white-space: nowrap;
   color: var(--muted-foreground);
 }
 .planner-block .planner-priority {
@@ -1902,10 +1942,13 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 .planner-block[data-done="true"] strong {
   text-decoration: line-through;
 }
-.planner-block[data-event="true"] {
-  --planner-bar: var(--planner-event-bar);
+/* Calendar events stay neutral so priority-tinted tasks (including blue "medium") stand apart. */
+.planner-block[data-event="true"],
+.dark .planner-block[data-event="true"] {
+  --planner-bar: color-mix(in srgb, var(--foreground) 32%, var(--background));
   color: var(--foreground);
-  background: var(--planner-event-bg);
+  background: color-mix(in srgb, var(--foreground) 3%, var(--background));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 12%, transparent);
   cursor: default;
 }
 .planner-now-line {
@@ -1938,6 +1981,44 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 .planner-event-chip {
   border-left-color: var(--planner-event-bar) !important;
   background: var(--planner-event-bg) !important;
+}
+
+/* Task option sheet: shaded layer over the dialog, two tab edges stacked behind it, white cards on top. */
+.taskzm-option-sheet {
+  --option-sheet-surface: color-mix(in srgb, var(--foreground) 5%, var(--card));
+  background: var(--option-sheet-surface);
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  box-shadow: 0 -14px 34px -14px rgba(0, 0, 0, 0.32);
+}
+.taskzm-option-sheet::before,
+.taskzm-option-sheet::after {
+  content: "";
+  position: absolute;
+  height: 7px;
+  border-radius: 14px 14px 0 0;
+  pointer-events: none;
+}
+.taskzm-option-sheet::before {
+  top: -8px;
+  height: 8px;
+  inset-inline: 14px;
+  background: color-mix(in srgb, var(--foreground) 16%, var(--card));
+  box-shadow: 0 -4px 10px -6px rgba(0, 0, 0, 0.25);
+}
+.taskzm-option-sheet::after {
+  top: -15px;
+  inset-inline: 30px;
+  background: color-mix(in srgb, var(--foreground) 10%, var(--card));
+}
+.dark .taskzm-option-sheet {
+  --option-sheet-surface: color-mix(in srgb, var(--foreground) 4%, var(--card));
+  box-shadow: 0 -14px 34px -14px rgba(0, 0, 0, 0.7);
+}
+.taskzm-option-sheet-body .bg-neutral-100 {
+  background-color: var(--card);
+}
+.dark .taskzm-option-sheet-body .bg-neutral-100 {
+  background-color: color-mix(in srgb, var(--foreground) 9%, var(--card));
 }
 
 /* Task dialog: gray-tinted fields so controls read against the white sheet */

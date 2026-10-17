@@ -165,6 +165,7 @@ export const PLANNER_UI_TEXT = {
     ],
     openTask: 'Open task',
     draftsTitle: 'Draft tasks to confirm',
+    draftSubtasks: 'Subtasks',
     accept: 'Accept',
     skip: 'Skip',
     acceptAll: 'Accept all',
@@ -184,10 +185,19 @@ export const PLANNER_UI_TEXT = {
       minutes >= MINUTES_PER_HOUR ? `${Number((minutes / MINUTES_PER_HOUR).toFixed(1))}h` : `${minutes}m`,
   },
   replies: {
-    drafted: (count: number) =>
-      count === 1
-        ? "I drafted 1 task. Accept it and I'll find it a time."
-        : `I drafted ${plural(count, 'task')}. Accept the ones you want and I'll find each a time.`,
+    drafted: (count: number, withSteps = 0) =>
+      [
+        count === 1
+          ? "I drafted 1 task. Accept it and I'll find it a time."
+          : `I drafted ${plural(count, 'task')}. Accept the ones you want and I'll find each a time.`,
+        withSteps === 0
+          ? ''
+          : count === 1
+            ? 'It was big, so I broke it into subtasks.'
+            : `${plural(withSteps, 'bigger task')} ${withSteps === 1 ? 'is' : 'are'} broken into subtasks.`,
+      ]
+        .filter(Boolean)
+        .join(' '),
     nothingFound: "I couldn't find any tasks in that. Try one task per line.",
     scheduledOne: (title: string, when: string) => `Booked "${title}" for ${when}.`,
     addedToInbox: (title: string) => `Added "${title}" to your Inbox. It needs a time.`,
@@ -213,6 +223,11 @@ export const PLANNER_UI_TEXT = {
     pomodoroUnavailable: 'The focus timer is not on your plan.',
     pomodoroDone: (title: string) => `"${title}" is already done. Reopen it first to focus on it.`,
     subtasksAdded: (count: number, title: string) => `Added ${plural(count, 'subtask')} to "${title}".`,
+    brokenDown: (steps: string[], title: string) =>
+      `Broke "${title}" into ${plural(steps.length, 'subtask')}: ${steps.join(', ')}.`,
+    noBreakdown: (title: string) =>
+      `"${title}" reads like a single step. To split it, list the steps: "break ${title} into step one, step two".`,
+    alreadyBrokenDown: (title: string) => `"${title}" already has those subtasks.`,
     tagsAdded: (tags: string[], title: string) => `Tagged "${title}" with ${tags.map((tag) => `#${tag}`).join(', ')}.`,
     tagsCreated: (tags: string[]) => `Created ${tags.map((tag) => `#${tag}`).join(', ')}.`,
     tagsExist: (tags: string[]) => `${tags.map((tag) => `#${tag}`).join(', ')} already exist.`,

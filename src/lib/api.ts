@@ -226,6 +226,13 @@ export async function getWorkspace(workspaceId: string) {
 }
 
 // Task API
+const NETWORK_FETCH_ERROR_MESSAGE = 'Failed to fetch - check your internet connection';
+
+/** True when `getTasks` failed because the request never reached the server (offline, waking from sleep). */
+export function isNetworkFetchError(error: Error | undefined): boolean {
+  return error?.message === NETWORK_FETCH_ERROR_MESSAGE;
+}
+
 export async function getTasks(
   workspaceId: string,
   options?: {
@@ -334,7 +341,7 @@ export async function getTasks(
       // Network errors are logged in TaskContext with backoff, so we suppress repeated warnings here
       // Only log at debug level to avoid console spam
       logger.debug('Network error fetching tasks:', { workspaceId, error: errorObj.message });
-      return { tasks: [], error: new Error('Failed to fetch - check your internet connection') };
+      return { tasks: [], error: new Error(NETWORK_FETCH_ERROR_MESSAGE) };
     }
     
     logger.warn('Backend unavailable:', { workspaceId, error: errorObj.message });

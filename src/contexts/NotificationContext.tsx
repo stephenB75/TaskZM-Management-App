@@ -56,7 +56,10 @@ interface ToastNotification {
 interface NotificationContextType {
   permission: NotificationPermission;
   settings: NotificationSettings;
+  /** App icon badge: respects the "Show badge" and achievements-in-badge settings. */
   badgeCount: number;
+  /** Unread items in the notification panel; drives the in-app bell regardless of icon badge settings. */
+  unreadCount: number;
   requestPermission: () => Promise<boolean>;
   refreshPermission: () => Promise<NotificationPermission>;
   enableNotifications: () => Promise<boolean>;
@@ -94,6 +97,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     };
   });
   const [badgeCount, setBadgeCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const checkPermission = async () => {
@@ -166,9 +170,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const isUnread = (id: string) => !readNotifications.has(id) && !dismissedNotifications.has(id);
     const now = new Date();
 
-    const count = (() => {
-      if (!settings.showBadge) return 0;
-
+    const counts = (() => {
       const overdueCount = settings.overdueAlerts
         ? getOverdueTasks(tasks, { dismissedNotificationIds: dismissedNotifications, now })
             .filter((task) => isUnread(`overdue_${task.id}`)).length
@@ -177,8 +179,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         ? getDueSoonTasks(tasks, settings.reminderTime, { dismissedNotificationIds: dismissedNotifications, now })
             .filter((task) => isUnread(`due-soon_${task.id}`)).length
         : 0;
-      const unreadAwardCount =
-        settings.includeAchievementsInBadge ? getUnreadAwardCount(user?.id) : 0;
+      const unreadAwardCount = getUnreadAwardCount(user?.id);
       const unreadAlertCount = getFromLocalStorage<ToastNotification[]>(NOTIFICATION_STORAGE_KEYS.toastNotifications, [])
         .filter((item) => !item.read && NOTIFICATION_ALERT_VARIANTS.has(item.type) && isUnread(item.id)).length;
       const timers = getFromLocalStorage<Record<string, { state?: { sessionsCompleted?: number } }>>(STORAGE_KEY_POMODORO, {});
@@ -187,9 +188,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         return task.status !== 'done' && sessions > 0 && isUnread(`pomodoro_${task.id}_${sessions}`);
       }).length;
 
-      return overdueCount + dueSoonCount + unreadAwardCount + unreadAlertCount + unreadFocusCount;
+      const withoutAwards = overdueCount + dueSoonCount + unreadAlertCount + unreadFocusCount;
+      return { all: withoutAwards + unreadAwardCount, withoutAwards };
     })();
 
+    const count = !settings.showBadge
+      ? 0
+      : settings.includeAchievementsInBadge ? counts.all : counts.withoutAwards;
+
+    setUnreadCount(counts.all);
     setBadgeCount(count);
 
     if (isAppIconBadgeSupported()) {
@@ -544,6 +551,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         permission,
         settings,
         badgeCount,
+        unreadCount,
         requestPermission,
         refreshPermission,
         enableNotifications,

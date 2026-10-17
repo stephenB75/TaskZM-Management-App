@@ -185,6 +185,10 @@ export const TIMING_CONSTANTS = {
   taskFetch: {
     /** Delays before each retry of a task-list fetch that failed at the network level. */
     networkRetryDelaysMs: [800, 2500],
+    /** Quiet background reloads after a load still fails at the network level; tasks on screen are kept meanwhile. */
+    backgroundRetryDelaysMs: [5000, 15000, 45000],
+    /** Min gap between "offline" notifications when several loads fail together. */
+    offlineNoticeCooldownMs: 10 * 1000,
   },
 
   // Recurring series saves (one request per task; batched so large series don't stall the app)

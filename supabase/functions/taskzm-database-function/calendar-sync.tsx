@@ -32,6 +32,9 @@ const END_OF_DAY_SECOND = 59; // Second for end of day normalization
 const END_OF_DAY_MILLISECOND = 999; // Millisecond for end of day normalization
 const DEFAULT_CALENDAR_TIMEZONE = 'America/New_York';
 const GOOGLE_CALENDAR_MAX_RESULTS = 2500;
+/** Upper bound on result pages followed per provider request (Google pageToken / Graph nextLink). */
+const CALENDAR_API_MAX_PAGES = 10;
+const OUTLOOK_CALENDAR_PAGE_SIZE = 100;
 /** Max rows pulled from calendar_events per request (safety cap). */
 const CALENDAR_DB_QUERY_MAX_ROWS = 5000;
 /** Cap expanded occurrences returned per request (avoids Supabase 546 resource limits). */
@@ -282,7 +285,8 @@ async function refreshOutlookToken(tokens: CalendarTokens): Promise<CalendarToke
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to refresh Outlook token: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to refresh Outlook token: ${response.status} ${errorText}`);
   }
 
   const data = await response.json();
@@ -290,6 +294,7 @@ async function refreshOutlookToken(tokens: CalendarTokens): Promise<CalendarToke
   return {
     ...tokens,
     accessToken: data.access_token,
+    refreshToken: data.refresh_token || tokens.refreshToken,
     expiresAt: Date.now() + (data.expires_in * 1000),
   };
 }
@@ -1625,20 +1630,27 @@ async function getGoogleCalendarEvents(
   baseUrl.searchParams.set('timeZone', resolvedTimezone);
   baseUrl.searchParams.set('maxResults', String(GOOGLE_CALENDAR_MAX_RESULTS));
 
-  const response = await fetch(baseUrl.toString(), {
-    headers: {
-      'Authorization': `Bearer ${tokens.accessToken}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch Google Calendar events');
+  const items: any[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < CALENDAR_API_MAX_PAGES; page++) {
+    if (pageToken) baseUrl.searchParams.set('pageToken', pageToken);
+    const response = await fetch(baseUrl.toString(), {
+      headers: {
+        'Authorization': `Bearer ${tokens.accessToken}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Google Calendar events: ${response.status}`);
+    }
+    const data = await response.json();
+    items.push(...(data.items || []));
+    pageToken = data.nextPageToken;
+    if (!pageToken) break;
   }
 
-  const data = await response.json();
   const results: CalendarEvent[] = [];
 
-  for (const event of data.items || []) {
+  for (const event of items) {
     const times = resolveGoogleApiEventTimes(event);
     if (!times) continue;
 
@@ -1770,49 +1782,52 @@ async function getOutlookCalendarEvents(
   userTimezone: string = DEFAULT_CALENDAR_TIMEZONE
 ): Promise<CalendarEvent[]> {
   const resolvedTimezone = resolveUserTimezone(userTimezone);
-  // Fetch base recurring events (not expanded instances)
-  // Use /events endpoint with $filter to get series masters
-  const url = new URL('https://graph.microsoft.com/v1.0/me/calendar/events');
-  // Overlap filter — events that span the query window, not only those fully inside it
-  url.searchParams.set(
-    '$filter',
-    `start/dateTime le '${endDate}' and end/dateTime ge '${startDate}'`,
-  );
-  url.searchParams.set('$select', 'id,subject,body,start,end,location,recurrence,seriesMasterId,type');
+  // calendarView returns every event overlapping the window, with recurring series already
+  // expanded into occurrences (series masters that began earlier are included too).
+  const url = new URL('https://graph.microsoft.com/v1.0/me/calendarView');
+  url.searchParams.set('startDateTime', startDate);
+  url.searchParams.set('endDateTime', endDate);
+  url.searchParams.set('$select', 'id,subject,bodyPreview,start,end,location,seriesMasterId,type,isAllDay,isCancelled,showAs');
   url.searchParams.set('$orderby', 'start/dateTime');
+  url.searchParams.set('$top', String(OUTLOOK_CALENDAR_PAGE_SIZE));
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      'Authorization': `Bearer ${tokens.accessToken}`,
-      'Prefer': `outlook.timezone="${resolvedTimezone}"`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch Outlook Calendar events');
+  const items: any[] = [];
+  let nextUrl: string | undefined = url.toString();
+  for (let page = 0; nextUrl && page < CALENDAR_API_MAX_PAGES; page++) {
+    const response = await fetch(nextUrl, {
+      headers: {
+        'Authorization': `Bearer ${tokens.accessToken}`,
+        'Prefer': `outlook.timezone="${resolvedTimezone}"`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Outlook Calendar events: ${response.status}`);
+    }
+    const data = await response.json();
+    items.push(...(data.value || []));
+    nextUrl = data['@odata.nextLink'];
   }
-
-  const data = await response.json();
-  
   // Default Outlook/Microsoft 365 calendar color (no per-event color in Graph)
   const OUTLOOK_DEFAULT_CALENDAR_COLOR = '#0078D4';
 
   const results: CalendarEvent[] = [];
-  for (const event of data.value || []) {
+  for (const event of items) {
+    if (event.isCancelled) continue;
     const start = event?.start?.dateTime;
     if (!start) continue;
     const end = event?.end?.dateTime
       ? event.end.dateTime
       : ensureEventEndTime(start, event?.end?.dateTime);
 
-    const isRecurring = event.type === 'seriesMaster' || !!event.recurrence;
-    const rrule = isRecurring ? convertOutlookRecurrenceToRRULE(event.recurrence) : undefined;
-    const recurrenceBaseId = event.seriesMasterId || (isRecurring ? event.id : undefined);
+    // Occurrences are already expanded by calendarView, so no rrule (avoids re-expanding them).
+    const isRecurring = Boolean(event.seriesMasterId);
+    const rrule = undefined;
+    const recurrenceBaseId = event.seriesMasterId || undefined;
 
     results.push({
       id: `outlook_${event.id}`,
       title: event.subject || 'Calendar Event',
-      description: event.body?.content,
+      description: event.bodyPreview,
       start,
       end,
       location: event.location?.displayName,

@@ -30,6 +30,7 @@ import {
   type PlannerCommand,
 } from '../lib/planner-commands';
 import { getCategoryFromTags } from '../lib/ai-config';
+import { suggestSubtasks } from '../lib/planner-analysis';
 import {
   MILLISECONDS_PER_MINUTE,
   POMODORO_WORK_DURATION,
@@ -90,7 +91,7 @@ function message(role: PlannerMessage['role'], text: string, taskId?: string): P
 }
 
 /** Commands whose wording also reads like a new task ("Finish the report", "Schedule dentist for Friday"). */
-const DRAFT_FALLBACK_KINDS = new Set<PlannerCommand['kind']>(['done', 'move', 'find', 'duplicate', 'rename']);
+const DRAFT_FALLBACK_KINDS = new Set<PlannerCommand['kind']>(['done', 'move', 'find', 'duplicate', 'rename', 'breakDown']);
 
 function dayLabel(date: Date): string {
   return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
@@ -359,6 +360,18 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
         reply(replies.subtasksAdded(added.length, task.title), task.id);
         return true;
       }
+      case 'breakDown': {
+        const suggestion = suggestSubtasks(`${task.title} ${task.description ?? ''}`);
+        if (!suggestion) return reply(replies.noBreakdown(task.title), task.id), true;
+        const existing = new Set(task.subtasks.map((item) => item.title.trim().toLowerCase()));
+        const steps = suggestion.steps.filter((step) => !existing.has(step.toLowerCase()));
+        if (steps.length === 0) return reply(replies.alreadyBrokenDown(task.title), task.id), true;
+        const now = new Date().toISOString();
+        const added = steps.map((title): Subtask => ({ id: generateId(), title, completed: false, createdAt: now }));
+        await updateTask(task.id, { subtasks: [...task.subtasks, ...added] });
+        reply(replies.brokenDown(steps, task.title), task.id);
+        return true;
+      }
       case 'tags': {
         const tags = command.tags.map(normalizeTag);
         for (const tag of tags.filter((item) => !availableTags.includes(item))) await addAvailableTag(tag);
@@ -423,7 +436,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       return;
     }
     setState((prev) => ({ ...prev, drafts: [...prev.drafts, ...drafts] }));
-    say(message('planner', replies.drafted(drafts.length)));
+    say(message('planner', replies.drafted(drafts.length, drafts.filter((draft) => draft.subtasks?.length).length)));
   }, [say]);
 
   const send = useCallback(async (text: string) => {
@@ -452,7 +465,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       await reschedule(intent.range);
       return;
     }
-    addDrafts(intent.drafts);
+    addDrafts(command?.kind === 'breakDown' ? parsePlannerDrafts(command.ref) : intent.drafts);
   }, [addDrafts, reschedule, run, runCommand, say, scheduleInbox]);
 
   const analyzeContext = useCallback((text: string) => {

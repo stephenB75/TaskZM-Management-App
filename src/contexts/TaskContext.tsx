@@ -232,6 +232,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const syncWithServerRef = useRef<((wsId?: string, silent?: boolean) => Promise<void>) | null>(null); // Store latest sync function to avoid dependency issues
   const lastErrorToastRef = useRef<{ message: string; timestamp: number } | null>(null); // Track last error toast to prevent duplicates
   const lastLoadTasksOfflineToastRef = useRef<number>(0); // Cooldown for "using offline data" toast (avoid duplicate when load runs twice)
+  const taskLoadRetryAttemptRef = useRef<number>(0); // Background reloads used since the last successful task load
+  const taskLoadRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastNetworkErrorLogRef = useRef<number>(0); // Track last network error log time to suppress repeated warnings
   // Lock to prevent concurrent next occurrence creation for the same recurring task
   const nextOccurrenceCreationLock = useRef<Set<string>>(new Set());
@@ -376,15 +378,32 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!workspaceId || !user?.id || !accessToken) return;
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && prevVisibilityRef.current === 'hidden') {
+      if (
+        document.visibilityState === 'visible' &&
+        prevVisibilityRef.current === 'hidden' &&
+        navigator.onLine
+      ) {
         loadTasksFromServer(workspaceId).catch((err) => {
           logger.debug('Visibility refetch tasks failed:', err);
         });
       }
       prevVisibilityRef.current = document.visibilityState;
     };
+    const onOnline = () => {
+      const loadPending = taskLoadRetryTimerRef.current !== null || taskLoadRetryAttemptRef.current > 0;
+      clearTaskLoadRetry();
+      if (!loadPending) return;
+      loadTasksFromServer(workspaceId).catch((err) => {
+        logger.debug('Online refetch tasks failed:', err);
+      });
+    };
     document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('online', onOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('online', onOnline);
+      clearTaskLoadRetry();
+    };
   }, [workspaceId, user?.id, accessToken]);
 
   // Persist current tasks to localStorage on unload so changes survive refresh
@@ -758,6 +777,35 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     return filteredTasks;
   }
 
+  function clearTaskLoadRetry() {
+    taskLoadRetryAttemptRef.current = 0;
+    if (taskLoadRetryTimerRef.current) {
+      clearTimeout(taskLoadRetryTimerRef.current);
+      taskLoadRetryTimerRef.current = null;
+    }
+  }
+
+  function scheduleTaskLoadRetry(wsId: string) {
+    if (taskLoadRetryTimerRef.current) return;
+    const delays = TIMING_CONSTANTS.taskFetch.backgroundRetryDelaysMs;
+    const attempt = taskLoadRetryAttemptRef.current;
+    if (attempt >= delays.length) {
+      const now = Date.now();
+      if (now - lastLoadTasksOfflineToastRef.current > TIMING_CONSTANTS.taskFetch.offlineNoticeCooldownMs) {
+        lastLoadTasksOfflineToastRef.current = now;
+        toast.warning("You're offline — showing saved tasks", {
+          description: 'TaskZM will refresh automatically when the connection is back.',
+        });
+      }
+      return;
+    }
+    taskLoadRetryTimerRef.current = setTimeout(() => {
+      taskLoadRetryTimerRef.current = null;
+      taskLoadRetryAttemptRef.current = attempt + 1;
+      loadTasksFromServer(wsId).catch((err) => logger.debug('Background task reload failed:', err));
+    }, delays[attempt]);
+  }
+
   // Load tasks from Supabase (source of truth)
   async function loadTasksFromServer(wsId: string): Promise<Task[]> {
     // Validate workspace ID
@@ -805,6 +853,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         // it can be stale and would resurrect tasks deleted on another device.
         const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id))
           .filter((task) => !pendingDeletes.has(task.id));
+
+        // Request never reached the server (offline / waking from sleep): keep what is on screen,
+        // reload quietly, and only notify if the connection stays down.
+        if (api.isNetworkFetchError(error)) {
+          let shown = tasksRef.current;
+          if (shown.length === 0 && savedTasks.length > 0) {
+            const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
+            shown = applyRecurringOccurrenceIdsMigrationIfNeeded(migratedTasks);
+            setTasks(ensureTaskArray(shown));
+          }
+          scheduleTaskLoadRetry(wsId);
+          return shown;
+        }
+
         if (savedTasks.length > 0) {
           logger.warn(`Using ${savedTasks.length} tasks from localStorage as fallback`);
           const { tasks: migratedTasks } = migrateOrphanRecurringSeries(savedTasks);
@@ -812,8 +874,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           setTasks(ensureTaskArray(final));
           saveToLocalStorage('tasks', final, user?.id);
           const now = Date.now();
-          const COOLDOWN_MS = 10000; // Only show this toast once per 10s so duplicate load calls don't stack
-          if (now - lastLoadTasksOfflineToastRef.current > COOLDOWN_MS) {
+          if (now - lastLoadTasksOfflineToastRef.current > TIMING_CONSTANTS.taskFetch.offlineNoticeCooldownMs) {
             lastLoadTasksOfflineToastRef.current = now;
             toast.error('Failed to load tasks from server, using offline data', {
               description: /not iterable|is not iterable/i.test(String(error?.message))
@@ -832,6 +893,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
       }
       
+      clearTaskLoadRetry();
+
       // No error - process the tasks
       if (serverTasks && Array.isArray(serverTasks) && serverTasks.length > 0) {
         // Deduplicate recurring task occurrences before using server data
@@ -968,8 +1031,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         setTasks(ensureTaskArray(final));
         saveToLocalStorage('tasks', final, user?.id);
         const now = Date.now();
-        const COOLDOWN_MS = 10000;
-        if (now - lastLoadTasksOfflineToastRef.current > COOLDOWN_MS) {
+        if (now - lastLoadTasksOfflineToastRef.current > TIMING_CONSTANTS.taskFetch.offlineNoticeCooldownMs) {
           lastLoadTasksOfflineToastRef.current = now;
           toast.error('Failed to load tasks from server, using offline data', {
             description: /not iterable|is not iterable/i.test(String(error instanceof Error ? error.message : ''))

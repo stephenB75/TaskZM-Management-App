@@ -119,7 +119,7 @@ export function AppHeader({
   const { isSyncing, lastSync, workspaceId } = useTasks();
   const { user } = useAuth();
   const { toggleSidebar } = useSidebar();
-  const { badgeCount } = useNotifications();
+  const { unreadCount: badgeCount } = useNotifications();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === 'dark';
   const shouldUseMobileLayout = useMobileLayout(); // Determine if device should use mobile layout (includes tablets)

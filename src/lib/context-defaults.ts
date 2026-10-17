@@ -408,6 +408,7 @@ export function createDefaultNotificationContext() {
       includeAchievementsInBadge: true,
     },
     badgeCount: 0,
+    unreadCount: 0,
     requestPermission: async () => false,
     refreshPermission: async () => 'default' as NotificationPermission,
     enableNotifications: async () => false,

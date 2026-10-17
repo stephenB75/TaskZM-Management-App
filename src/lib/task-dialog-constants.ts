@@ -276,11 +276,11 @@ export const TASK_DIALOG_COLORS = {
   editorToolbar: 'bg-neutral-200/70 dark:bg-neutral-700/60 border-neutral-300 dark:border-neutral-600',
   /** Option bar (Schedule, Priority, …) tray and its tiles. */
   optionTray: 'rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-1',
-  optionActive: 'bg-card text-foreground shadow-sm',
-  optionInactive: 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-foreground',
+  optionActive: 'bg-foreground text-background shadow-sm',
+  optionInactive: 'bg-card text-neutral-700 dark:text-neutral-200 shadow-[0_1px_2px_rgba(0,0,0,0.06)] hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:text-foreground',
   /** Share / duplicate / delete pills above the footer. */
   secondaryAction: 'bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-full',
-  optionSheetHeader: 'bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 rounded-t-2xl',
+  optionSheetHeader: 'bg-neutral-200/70 dark:bg-neutral-800 border-b border-neutral-300/70 dark:border-neutral-700 rounded-t-2xl',
   contentCardBg: 'bg-card',
   menuLayerBg: 'bg-white dark:bg-gray-900',
   menuLayerBorder: 'border border-gray-200 dark:border-gray-600',

@@ -1,6 +1,6 @@
 /**
  * Planner chat commands on existing tasks: find a task from a loose reference, then adjust it
- * (move, rename, priority, duration, done), start focus, add subtasks or tags, assign, or duplicate.
+ * (move, rename, priority, duration, done), start focus, add or suggest subtasks, tag, assign, or duplicate.
  */
 
 import { PLANNER_CHAT_CONFIG } from './ai-config';
@@ -13,6 +13,7 @@ const PATTERNS = CONFIG.commandPatterns;
 export type PlannerCommand =
   | { kind: 'pomodoro'; ref: string }
   | { kind: 'subtasks'; ref: string; items: string[] }
+  | { kind: 'breakDown'; ref: string }
   | { kind: 'tags'; ref: string; tags: string[] }
   | { kind: 'createTags'; tags: string[] }
   | { kind: 'assign'; ref: string; member: string }
@@ -60,6 +61,10 @@ export function parsePlannerCommand(text: string): PlannerCommand | null {
 
   if ((match = input.match(PATTERNS.pomodoro)) || (match = input.match(PATTERNS.focus))) {
     return { kind: 'pomodoro', ref: clean(match[1]) };
+  }
+  if ((match = input.match(PATTERNS.breakDownAuto)) || (match = input.match(PATTERNS.breakDownAutoTrailing))) {
+    const ref = clean(match[1]);
+    if (!/\binto\b|:/i.test(ref)) return { kind: 'breakDown', ref };
   }
   if ((match = input.match(PATTERNS.subtasks)) || (match = input.match(PATTERNS.breakDown))) {
     const items = splitList(match[2]);

@@ -23,9 +23,9 @@ import { triggerSelectionHaptic } from "../lib/native-haptics";
 import { BADGE_DISPLAY_MAX } from "../lib/notification-constants";
 import taskzmLogoBlack from "../assets/Taskzm_Logo_BLK-removebg.png";  // Black logo for light mode
 import taskzmLogoGray from "../assets/taskzm-logo-gray.png";  // Gray logo for dark mode
+import RAIL_BRAND_MARK_SRC from "../assets/taskzm-mark.png";
 
 const RAIL_ADD_TASK_LABEL = "Add task";
-const RAIL_BRAND_MARK_SRC = "/icons/icon-192.png";
 /** Rail items from this index on (folders, team, …) sit below a divider. */
 const RAIL_SECONDARY_START = 4;
 
@@ -54,7 +54,7 @@ export function AppSidebar({
   const { tasks } = useTasks();
   const { teamMembers } = useTeam();
   const { hasFeature } = useSubscription();
-  const { badgeCount } = useNotifications();
+  const { unreadCount: badgeCount } = useNotifications();
   const shouldUseMobileLayout = useMobileLayout(); // Use mobile layout for tablets too
   const completedCount = tasks.filter(
     (t: { status: string }) => t.status === "done",

@@ -247,6 +247,13 @@ export function PlannerChat({ className }: { className?: string }) {
                       <span className="planner-dot" style={{ background: plannerCategoryColor(draft.category) }} />
                       {[draft.when ? formatDraftWhen(draft.when) : null, TEXT.estimate(draft.estimatedMinutes), draft.category].filter(Boolean).join(' · ')}
                     </small>
+                    {draft.subtasks?.length ? (
+                      <ul className="planner-draft-steps" aria-label={TEXT.draftSubtasks}>
+                        {draft.subtasks.map((step) => (
+                          <li key={step}>{step}</li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </div>
                   <div className="flex gap-1">
                     <button type="button" className="planner-pill" onClick={() => skipDraft(draft.id)} disabled={busy}>

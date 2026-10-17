@@ -465,6 +465,7 @@ import { initNativeNotificationHandlers } from './lib/native-notifications';
 import { initNativePushNotifications } from './lib/native-push-notifications';
 import { ensureNativeBuildIsCurrent } from './lib/native-cache';
 import { ensureWebReleaseIsCurrent } from './lib/app-release-cache';
+import { handleCalendarOAuthReturnPage } from './lib/calendar-oauth-return';
 
 // Platform detection
 const isNative = Capacitor.isNativePlatform();
@@ -987,6 +988,10 @@ function renderApp(): void {
 }
 
 async function bootstrapApp(): Promise<void> {
+  if (!isNative && (await handleCalendarOAuthReturnPage())) {
+    return;
+  }
+
   if (isNative) {
     try {
       const needsReload = await ensureNativeBuildIsCurrent();

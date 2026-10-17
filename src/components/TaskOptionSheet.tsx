@@ -30,8 +30,8 @@ export function TaskOptionBar({ items, activeId, onSelect }: TaskOptionBarProps)
     <div
       role="toolbar"
       aria-label={TASK_DIALOG_OPTION_SHEET_TEXT.optionsLabel}
-      className={cn('grid gap-0.5', TASK_DIALOG_COLORS.optionTray)}
-      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      className={cn('grid gap-1', TASK_DIALOG_COLORS.optionTray)}
+      style={{ gridTemplateColumns: `repeat(${Math.min(items.length, TASK_OPTION_SHEET.barColumns)}, minmax(0, 1fr))` }}
     >
       {items.map(({ id, indicator, accentColor }) => {
         const option = TASK_DIALOG_OPTIONS[id];
@@ -48,7 +48,7 @@ export function TaskOptionBar({ items, activeId, onSelect }: TaskOptionBarProps)
               onSelect(id);
             }}
             className={cn(
-              'relative flex min-w-0 flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 transition-colors',
+              'relative flex min-w-0 flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition-colors',
               active ? TASK_DIALOG_COLORS.optionActive : TASK_DIALOG_COLORS.optionInactive,
             )}
           >
@@ -125,7 +125,7 @@ export function TaskOptionSheet({ activeId, onClose, children }: TaskOptionSheet
           dragElastic={TASK_OPTION_SHEET.dragElastic}
           dragSnapToOrigin
           onDragEnd={handleDragEnd}
-          className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl bg-card shadow-[0_-10px_30px_-12px_rgba(0,0,0,0.25)]"
+          className="taskzm-option-sheet absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl"
           style={{
             height: expanded ? '100%' : TASK_OPTION_SHEET.collapsedHeight,
             transition: `height ${TASK_OPTION_SHEET.resizeMs}ms ease-out`,
@@ -165,7 +165,7 @@ export function TaskOptionSheet({ activeId, onClose, children }: TaskOptionSheet
               </button>
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3">{children}</div>
+          <div className="taskzm-option-sheet-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3">{children}</div>
         </motion.section>
       )}
     </AnimatePresence>

@@ -239,6 +239,8 @@ function WeekTaskBlock({ block, onOpen }: { block: PositionedBlock; onOpen: () =
       data-task-id={task.id}
       data-done={task.status === 'done' ? 'true' : undefined}
       data-dragging={isDragging ? 'true' : undefined}
+      data-compact={block.height < PLANNER_LAYOUT.blockCompactMaxPx ? 'true' : undefined}
+      title={task.title}
       onClick={onOpen}
       {...listeners}
       {...attributes}
@@ -295,6 +297,8 @@ function WeekDayColumn({
             key={block.key}
             className="planner-block"
             data-event="true"
+            data-compact={block.height < PLANNER_LAYOUT.blockCompactMaxPx ? 'true' : undefined}
+            title={block.event ? `${block.event.title} · ${eventTimeLabel(block.event)}` : undefined}
             style={{
               top: block.top,
               height: block.height,
