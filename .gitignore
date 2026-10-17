@@ -9,6 +9,7 @@ coverage/
 playwright/.auth/
 test-results/
 playwright-report/
+/screenshots/
 
 # Production
 dist/

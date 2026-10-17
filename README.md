@@ -412,12 +412,13 @@ npm run screenshots
 
 ### Utility Scripts
 
-The `scripts/` directory contains diagnostic and verification tools:
+The `scripts/` directory contains build, release and setup tools:
 
-- `verify-app.js` / `verify-connections.js` — system verification
-- `test-database-functions.js` — Edge Function testing
-- `diagnose-workspace.js` / `diagnose-account-sync.js` — debugging
-- `comprehensive-system-check.js` — full system health check
+- `bump-build-number.js`, `sync-ios-xcode-version.js`, `sync-android-version.js` — version and build numbers
+- `sync-all-platforms.sh`, `write-build-info.js`, `update-service-worker-cache.js` — build and platform sync
+- `ios-fresh-build.sh`, `patch-capacitor-wkprocesspool.cjs` — iOS build helpers
+- `deploy-functions.sh`, `setup-google-calendar-secrets.sh` — Supabase Edge Functions and secrets
+- `generate-icons-with-padding.js`, `generate-people-avatars.mjs` — app icon and avatar assets
 
 ---
 
