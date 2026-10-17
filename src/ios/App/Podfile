@@ -274,6 +274,36 @@ def silence_capacitor_cordova_wkprocesspool_deprecations
   end
 end
 
+# Static analyzer findings in Capacitor 6 sources: CAPPlugin's initializer skips [super init],
+# and Keyboard's _updateFrame reads an unset frame when no window is found.
+def patch_capacitor_analyzer_findings
+  marker = 'TASKZM_ANALYZER_FIX'
+  node_modules = File.expand_path('../../node_modules', __dir__)
+
+  plugin_impl = File.join(node_modules, '@capacitor/ios/Capacitor/Capacitor/CAPPlugin.m')
+  if File.exist?(plugin_impl)
+    impl = File.read(plugin_impl)
+    unless impl.include?(marker)
+      patched = impl.sub(
+        "pluginName:(NSString *)pluginName {\n  self.bridge = bridge;",
+        "pluginName:(NSString *)pluginName {\n  self = [super init]; /* #{marker} */\n  if (!self) { return nil; }\n  self.bridge = bridge;",
+      )
+      File.write(plugin_impl, patched) if patched != impl
+    end
+  end
+
+  keyboard_impl = File.join(node_modules, '@capacitor/keyboard/ios/Sources/KeyboardPlugin/Keyboard.m')
+  if File.exist?(keyboard_impl)
+    impl = File.read(keyboard_impl)
+    unless impl.include?(marker)
+      patched = impl
+        .sub('  CGRect f, wf = CGRectZero;', "  CGRect f = CGRectZero, wf = CGRectZero; /* #{marker} */")
+        .sub("  if (window) {\n    f = [window bounds];\n  }", "  if (!window) {\n    return;\n  }\n  f = [window bounds];")
+      File.write(keyboard_impl, patched) if patched != impl
+    end
+  end
+end
+
 # Archive builds embed frameworks through a relative symlink in UninstalledProducts; plain
 # `readlink` returns that relative path and rsync fails with "(l)stat: No such file".
 def resolve_embedded_framework_symlinks(installer)
@@ -298,6 +328,7 @@ post_install do |installer|
   patch_capacitor_cordova_framework_headers
   patch_capacitor_framework_headers
   silence_capacitor_cordova_wkprocesspool_deprecations
+  patch_capacitor_analyzer_findings
 
   installer.pods_project.build_configurations.each do |config|
     disable_module_verifier!(config)
