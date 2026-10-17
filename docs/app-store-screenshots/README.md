@@ -5,9 +5,11 @@ Upload the files in `iphone-6.9/` and `ipad-13/` to App Store Connect in filenam
 | Folder | App Store Connect slot | Size |
 |---|---|---|
 | `iphone-6.9/` | iPhone 6.9" Display | 1320 × 2868 (portrait) |
+| `iphone-6.5/` | iPhone 6.5" Display | 1284 × 2778 (portrait) |
 | `ipad-13/` | iPad 13" Display | 2752 × 2064 (landscape) |
+| `ipad-12.9/` | iPad 12.9" Display | 2732 × 2048 (landscape) |
 
-App Store Connect scales the 6.9" set down for smaller iPhones and the 13" set for smaller iPads.
+Each folder only fits its own device tab in App Store Connect; dropping a set into a different tab gives a "dimensions are wrong" error. Uploading the 6.9" and 13" sets is enough, since App Store Connect scales them down for smaller devices. Use the 6.5" and 12.9" sets only if App Store Connect asks for those tabs.
 
 ## Captions
 
