@@ -117,6 +117,8 @@ export async function syncGoogleCalendarsToDatabase(
     
     console.log(`[Google Calendar Sync] Fetched ${googleEvents.length} events from Google Calendar`);
 
+    const primaryColor = await calendarSync.getGooglePrimaryCalendarColor(refreshedTokens.accessToken);
+
     // Convert Google events to our CalendarEvent format
     const allEvents: CalendarEvent[] = [];
     
@@ -144,7 +146,7 @@ export async function syncGoogleCalendarsToDatabase(
           location: event.location,
           provider: 'google' as const,
           providerEventId: event.id,
-          calendarColor: googleColorIdToHex(event.colorId),
+          calendarColor: googleColorIdToHex(event.colorId) ?? primaryColor,
           rrule,
           recurrenceBaseId: event.recurringEventId || (isRecurring ? event.id : undefined),
           isRecurring,

@@ -43,7 +43,7 @@
   --pop-orange-ink: #9A3412;
   --pop-blue: #BFDBFE;
   --pop-blue-ink: #1E3A8A;
-  /* Imported calendar events: the app's blue pop instead of each provider's raw color */
+  /* Imported calendar events without a provider color (others use their calendar's color via --event-color) */
   --planner-event-bg: color-mix(in srgb, var(--pop-blue) 45%, #FFFFFF);
   --planner-event-bar: color-mix(in srgb, var(--pop-blue-ink) 65%, var(--pop-blue));
 
@@ -1838,9 +1838,13 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-left: 3px solid color-mix(in srgb, var(--foreground) 32%, var(--background));
+  --planner-bar: var(--event-color, var(--planner-event-bar));
+  border-left: 3px solid var(--planner-bar);
   border-radius: 0 6px 6px 0;
-  background: color-mix(in srgb, var(--foreground) 6%, var(--background));
+  background: color-mix(in srgb, var(--planner-bar) 16%, var(--background));
+}
+.dark .planner-week-allday span {
+  background: color-mix(in srgb, var(--planner-bar) 26%, var(--background));
 }
 .planner-week-gutter {
   position: relative;
@@ -1942,14 +1946,16 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 .planner-block[data-done="true"] strong {
   text-decoration: line-through;
 }
-/* Calendar events stay neutral so priority-tinted tasks (including blue "medium") stand apart. */
-.planner-block[data-event="true"],
-.dark .planner-block[data-event="true"] {
-  --planner-bar: color-mix(in srgb, var(--foreground) 32%, var(--background));
+/* Calendar events show the color set in the user's calendar (--event-color); the outline sets them apart from tinted tasks. */
+.planner-block[data-event="true"] {
+  --planner-bar: var(--event-color, var(--planner-event-bar));
   color: var(--foreground);
-  background: color-mix(in srgb, var(--foreground) 3%, var(--background));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 12%, transparent);
+  background: color-mix(in srgb, var(--planner-bar) 16%, var(--background));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--planner-bar) 35%, transparent);
   cursor: default;
+}
+.dark .planner-block[data-event="true"] {
+  background: color-mix(in srgb, var(--planner-bar) 26%, var(--background));
 }
 .planner-now-line {
   position: absolute;
@@ -1976,11 +1982,14 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 }
 .planner-event-dot {
   margin: 12px 0 0 6px;
-  background: var(--planner-event-bar);
+  background: var(--event-color, var(--planner-event-bar));
 }
 .planner-event-chip {
-  border-left-color: var(--planner-event-bar) !important;
-  background: var(--planner-event-bg) !important;
+  border-left-color: var(--event-color, var(--planner-event-bar)) !important;
+  background: color-mix(in srgb, var(--event-color, var(--planner-event-bar)) 16%, var(--background)) !important;
+}
+.dark .planner-event-chip {
+  background: color-mix(in srgb, var(--event-color, var(--planner-event-bar)) 26%, var(--background)) !important;
 }
 
 /* Task option sheet: shaded layer over the dialog, two tab edges stacked behind it, white cards on top. */

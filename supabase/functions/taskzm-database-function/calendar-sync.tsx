@@ -1603,6 +1603,50 @@ function googleColorIdToHex(colorId: string | number | undefined): string | unde
   return GOOGLE_EVENT_COLOR_ID_TO_HEX[String(colorId)];
 }
 
+/** Color the user picked for their primary Google calendar (events without their own colorId show in it). */
+export async function getGooglePrimaryCalendarColor(accessToken: string): Promise<string | undefined> {
+  try {
+    const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList/primary', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) return undefined;
+    const data = await response.json();
+    return typeof data?.backgroundColor === 'string' ? data.backgroundColor : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// Outlook calendar color presets (Graph `calendarColor` enum) to the hex Outlook shows.
+const OUTLOOK_CALENDAR_COLOR_TO_HEX: Record<string, string> = {
+  auto: '#0078D4',
+  lightBlue: '#0078D4',
+  lightGreen: '#13A10E',
+  lightOrange: '#F7630C',
+  lightGray: '#7A7574',
+  lightYellow: '#FCE100',
+  lightTeal: '#00B7C3',
+  lightPink: '#E3008C',
+  lightBrown: '#8E562E',
+  lightRed: '#D13438',
+};
+const OUTLOOK_DEFAULT_CALENDAR_COLOR = OUTLOOK_CALENDAR_COLOR_TO_HEX.auto;
+
+/** Color of the user's default Outlook calendar (custom hexColor, else the preset). */
+export async function getOutlookDefaultCalendarColor(accessToken: string): Promise<string> {
+  try {
+    const response = await fetch('https://graph.microsoft.com/v1.0/me/calendar?$select=hexColor,color', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) return OUTLOOK_DEFAULT_CALENDAR_COLOR;
+    const data = await response.json();
+    if (typeof data?.hexColor === 'string' && data.hexColor) return data.hexColor;
+    return OUTLOOK_CALENDAR_COLOR_TO_HEX[data?.color] ?? OUTLOOK_DEFAULT_CALENDAR_COLOR;
+  } catch {
+    return OUTLOOK_DEFAULT_CALENDAR_COLOR;
+  }
+}
+
 /**
  * Get Google Calendar events
  */
@@ -1648,6 +1692,7 @@ async function getGoogleCalendarEvents(
     if (!pageToken) break;
   }
 
+  const primaryColor = await getGooglePrimaryCalendarColor(tokens.accessToken);
   const results: CalendarEvent[] = [];
 
   for (const event of items) {
@@ -1670,7 +1715,7 @@ async function getGoogleCalendarEvents(
       location: event.location,
       provider: 'google',
       providerEventId: event.id,
-      calendarColor: googleColorIdToHex(event.colorId),
+      calendarColor: googleColorIdToHex(event.colorId) ?? primaryColor,
       rrule,
       recurrenceBaseId,
       isRecurring,
@@ -1794,7 +1839,7 @@ async function getOutlookCalendarEvents(
   const items: any[] = [];
   let nextUrl: string | undefined = url.toString();
   for (let page = 0; nextUrl && page < CALENDAR_API_MAX_PAGES; page++) {
-    const response = await fetch(nextUrl, {
+    const response: Response = await fetch(nextUrl, {
       headers: {
         'Authorization': `Bearer ${tokens.accessToken}`,
         'Prefer': `outlook.timezone="${resolvedTimezone}"`,
@@ -1803,13 +1848,11 @@ async function getOutlookCalendarEvents(
     if (!response.ok) {
       throw new Error(`Failed to fetch Outlook Calendar events: ${response.status}`);
     }
-    const data = await response.json();
+    const data: { value?: any[]; '@odata.nextLink'?: string } = await response.json();
     items.push(...(data.value || []));
     nextUrl = data['@odata.nextLink'];
   }
-  // Default Outlook/Microsoft 365 calendar color (no per-event color in Graph)
-  const OUTLOOK_DEFAULT_CALENDAR_COLOR = '#0078D4';
-
+  const calendarColor = await getOutlookDefaultCalendarColor(tokens.accessToken);
   const results: CalendarEvent[] = [];
   for (const event of items) {
     if (event.isCancelled) continue;
@@ -1833,7 +1876,7 @@ async function getOutlookCalendarEvents(
       location: event.location?.displayName,
       provider: 'outlook',
       providerEventId: event.id,
-      calendarColor: OUTLOOK_DEFAULT_CALENDAR_COLOR,
+      calendarColor,
       rrule,
       recurrenceBaseId,
       isRecurring,

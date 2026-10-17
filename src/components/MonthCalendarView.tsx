@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { motion } from "motion/react";
+import { calendarEventColorStyle } from "../lib/calendar-event-color";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -204,6 +205,7 @@ function MonthCalendarEvent({ event }: { event: CalendarEventData }) {
   return (
     <div
       className="planner-event-chip text-xs p-1 rounded-r rounded-l-none border-l-[3px] transition-all relative select-none"
+      style={calendarEventColorStyle(event.calendarColor)}
       title={`${event.title}${event.location ? ` - ${event.location}` : ''}`}
     >
       <div className="flex items-start gap-1">

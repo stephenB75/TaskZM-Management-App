@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { calendarEventColorStyle } from '../../lib/calendar-event-color';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { Icon } from '../Icon';
 import { useTasks } from '../../contexts/TaskContext';
@@ -95,7 +96,7 @@ function CalendarHeader({
 function AgendaEventRow({ event }: { event: CalendarEvent }) {
   return (
     <div className="planner-tl-item">
-      <span className="planner-dot planner-event-dot" aria-hidden />
+      <span className="planner-dot planner-event-dot" style={calendarEventColorStyle(event.calendarColor)} aria-hidden />
       <div className="planner-tl-body" style={{ cursor: 'default' }}>
         <small>{eventTimeLabel(event)}</small>
         <strong>{event.title}</strong>
@@ -300,6 +301,7 @@ function WeekDayColumn({
             data-compact={block.height < PLANNER_LAYOUT.blockCompactMaxPx ? 'true' : undefined}
             title={block.event ? `${block.event.title} · ${eventTimeLabel(block.event)}` : undefined}
             style={{
+              ...calendarEventColorStyle(block.event?.calendarColor),
               top: block.top,
               height: block.height,
               left: `calc(${PLANNER_LAYOUT.blockInsetPx}px + (100% - ${PLANNER_LAYOUT.blockInsetPx * 2}px) / ${block.lanes} * ${block.lane})`,
@@ -427,7 +429,7 @@ function DesktopWeek({ anchor, onOpenTask }: { anchor: Date; onOpenTask: (task: 
             {perDay.map(({ day, allDay }) => (
               <div key={`allday-${getDateString(day)}`} className="planner-week-allday">
                 {allDay.map((item) => (
-                  <span key={item.key} title={item.event.title}>
+                  <span key={item.key} title={item.event.title} style={calendarEventColorStyle(item.event.calendarColor)}>
                     {item.event.title}
                   </span>
                 ))}
