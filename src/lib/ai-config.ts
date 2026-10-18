@@ -602,11 +602,10 @@ export const AI_FUNCTION_EXPLANATION = {
 export const MIN_HOURS_PER_DAY = 5;
 
 /**
- * Warning threshold for daily hours
- * Shows warning when hours reach this threshold
- * Default: 4 hours
+ * Share of the user's daily hour limit at which "approaching limit" warnings start
+ * (4h of the default 5h limit), so the warning scales with the selected limit.
  */
-export const DAILY_HOURS_WARNING_THRESHOLD = 4;
+export const DAILY_HOURS_WARNING_RATIO = 0.8;
 
 // ============================================================================
 // Date Range Configuration

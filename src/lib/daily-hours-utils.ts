@@ -3,7 +3,7 @@ import { isDateInRecurrence } from './recurrence';
 import { analyzeTaskVerbs, calculateComplexity, applyVerbSpecificAdjustments } from './verb-analysis';
 import {
   MAX_HOURS_PER_DAY,
-  DAILY_HOURS_WARNING_THRESHOLD,
+  DAILY_HOURS_WARNING_RATIO,
   BASE_TASK_DURATION_MINUTES,
   MIN_TASK_DURATION_MINUTES,
   MAX_TASK_DURATION_MINUTES,
@@ -305,7 +305,7 @@ export function checkDailyLimit(
   const newTotalHours = currentHours + taskHours;
   
   return {
-    wouldExceed: newTotalHours >= maxHoursPerDay,
+    wouldExceed: newTotalHours > maxHoursPerDay,
     currentHours,
     newTotalHours,
   };
@@ -325,11 +325,12 @@ export function getDailyHoursWarningLevel(
 ): 'none' | 'warning' | 'error' {
   const newTotal = currentHours + taskHours;
   
-  if (newTotal >= maxHoursPerDay) {
+  if (newTotal > maxHoursPerDay) {
     return 'error'; // Would exceed limit
   }
   
-  if (currentHours >= DAILY_HOURS_WARNING_THRESHOLD || newTotal >= DAILY_HOURS_WARNING_THRESHOLD) {
+  const warningThreshold = maxHoursPerDay * DAILY_HOURS_WARNING_RATIO;
+  if (currentHours >= warningThreshold || newTotal >= warningThreshold) {
     return 'warning'; // Close to limit
   }
   

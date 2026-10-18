@@ -59,6 +59,7 @@ import {
   END_OF_DAY_SECOND,
   END_OF_DAY_MILLISECOND,
   AI_SCHEDULER_MAX_END_HOUR,
+  AI_SCHEDULER_MIN_START_HOUR,
 } from '../lib/business-constants';
 import type { Task, RecurrenceConfig } from '../types';
 
@@ -299,6 +300,33 @@ export function useAIScheduler() {
 
   // Helper: Check if date is weekend
   const isWeekend = isWeekendDate;
+
+  const isCategoryRuleActive = (forceCategoryHours: boolean): boolean =>
+    forceCategoryHours || hoursSettings.respectHours;
+
+  /**
+   * Category window (minutes from midnight) the slot must fit, mirroring getCategoryTimeSlot:
+   * forced scheduling falls back to the default category and default hours when none are enabled.
+   */
+  const getEnforcedCategoryWindow = (
+    task: Task,
+    date: Date,
+    forceCategoryHours: boolean,
+  ): { start: number; end: number } | null => {
+    if (!isCategoryRuleActive(forceCategoryHours)) return null;
+    let category = getTaskCategory(task);
+    if (!category && forceCategoryHours) category = DEFAULT_TASK_CATEGORY;
+    if (!category) return null;
+    const dayHours = isWeekend(date) ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
+    const window = dayHours[category];
+    if (window?.enabled) {
+      return { start: parseTimeToMinutes(window.start), end: parseTimeToMinutes(window.end) };
+    }
+    if (!forceCategoryHours) return null;
+    const defaultStartHour = DEFAULT_CATEGORY_HOURS[category] || DEFAULT_CATEGORY_HOURS[DEFAULT_TASK_CATEGORY];
+    const defaultEndHour = Math.min(defaultStartHour + DEFAULT_CATEGORY_WORK_WINDOW_HOURS, AI_SCHEDULER_MAX_END_HOUR);
+    return { start: defaultStartHour * MINUTES_PER_HOUR, end: defaultEndHour * MINUTES_PER_HOUR };
+  };
 
   // Helper: Parse time string (HH:mm) to hours and minutes
   const parseTime = (timeStr: string): { hours: number; minutes: number } => {
@@ -2179,22 +2207,7 @@ export function useAIScheduler() {
           const isToday = scheduleDateKey === todayDateKey;
           
           // Get category hours for the task - ALWAYS use them if available
-          let categoryHours = getCategoryHoursForTask(task, scheduleDate, hoursSettings);
-          
-          // If forceCategoryHours is enabled, try to get category hours even if respectHours is disabled
-          if (!categoryHours && options?.forceCategoryHours) {
-            const category = getTaskCategory(task);
-            if (category) {
-              const isWeekendDate = isWeekend(scheduleDate);
-              const dayHours = isWeekendDate ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
-              const catHours = dayHours[category];
-              if (catHours && catHours.enabled) {
-                const startMinutes = parseTimeToMinutes(catHours.start);
-                const endMinutes = parseTimeToMinutes(catHours.end);
-                categoryHours = { start: startMinutes, end: endMinutes };
-              }
-            }
-          }
+          const categoryHours = getEnforcedCategoryWindow(task, scheduleDate, shouldForceCategoryHours);
           
           // Find the actual available slot using findNextAvailableSlot
           // This ensures we find open slots, respect current time for today, and use category hours
@@ -2546,8 +2559,23 @@ export function useAIScheduler() {
             } else {
               reason = `${effectiveCategoryTime.reason} - placed in available slot`;
             }
+          } else if (categoryHours) {
+            logger.warn('No available slot within category hours on this day, trying next day', {
+              taskId: task.id,
+              taskTitle: task.title,
+              isRecurringTask,
+              scheduleDate: getDateString(scheduleDate),
+            });
+            scheduleDate.setDate(scheduleDate.getDate() + 1);
+            scheduleDate.setHours(0, 0, 0, 0);
+            if (isRecurringTask) {
+              while (scheduleDate <= endDate && !isDateInRecurrence(task, scheduleDate)) {
+                scheduleDate.setDate(scheduleDate.getDate() + 1);
+              }
+            }
+            continue;
           } else {
-            // No slot found within category hours - try again WITHOUT category hour constraints
+            // No category window applies - widen the search to any open slot on this day
             // CRITICAL: We MUST find a conflict-free slot, never use the proposed time if it conflicts
               logger.warn('No available slot found within category hours, trying without constraints', {
                 taskId: task.id,
@@ -2599,7 +2627,7 @@ export function useAIScheduler() {
               
               // Last resort: try to find a slot starting from the earliest time
               const earliestTime = new Date(scheduleDate);
-              earliestTime.setHours(6, 0, 0, 0); // Start from 6 AM
+              earliestTime.setHours(AI_SCHEDULER_MIN_START_HOUR, 0, 0, 0);
               const dayCalendarEventsForLastResort = calendarEventsForDay(scheduleDate);
               const lastResortSlot = findNextAvailableSlot(
                 task.id,
@@ -3346,7 +3374,7 @@ export function useAIScheduler() {
           updatedValidTasksForDay, // Use updated list with all tasks from plan
           buildAISchedulerSlotOptions({
             ensureAfterCurrentTime: finalSafeguardIsToday,
-            categoryHours: undefined, // Remove constraints for final check
+            categoryHours: getEnforcedCategoryWindow(task, scheduleDate, shouldForceCategoryHours) ?? undefined,
             calendarEvents: finalSafeguardCalendarEvents, // Include calendar events
           })
         );
@@ -3742,6 +3770,23 @@ export function useAIScheduler() {
               taskTitle: task.title,
               adjustedTime: scheduleDate.toISOString(),
             });
+          }
+        }
+        if (!isRecurringTask) {
+          const finalWindow = getEnforcedCategoryWindow(task, scheduleDate, shouldForceCategoryHours);
+          const finalStartMinutes = scheduleDate.getHours() * MINUTES_PER_HOUR + scheduleDate.getMinutes();
+          if (
+            finalWindow &&
+            (finalStartMinutes < finalWindow.start || finalStartMinutes + taskDurationMinutes > finalWindow.end)
+          ) {
+            logger.warn('Final time falls outside category hours, trying next day', {
+              taskId: task.id,
+              taskTitle: task.title,
+              scheduledTime: scheduleDate.toISOString(),
+            });
+            scheduleDate.setDate(scheduleDate.getDate() + 1);
+            scheduleDate.setHours(0, 0, 0, 0);
+            continue;
           }
         }
         break;

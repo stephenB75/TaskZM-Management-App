@@ -246,7 +246,10 @@ function findSlotAfterObstacles(
     [],
     { ...options, categoryHours: undefined },
   );
-  if (slot.getHours() < HOURS_PER_DAY) {
+  if (
+    slot.getHours() < HOURS_PER_DAY &&
+    fitsCategoryHours(slot.getTime(), taskDurationMinutes, options?.categoryHours)
+  ) {
     return slot;
   }
   return null;
@@ -320,14 +323,10 @@ export function resolveSchedulingSlot(
   );
   if (gapSlot) return gapSlot;
 
-  slot = findNextAvailableSlot(
-    taskId,
-    requestedTime,
-    taskDurationMinutes,
-    allTasks,
-    { ...options, categoryHours: undefined },
-  );
-  if (slot.getHours() < HOURS_PER_DAY) return slot;
+  if (!options?.categoryHours) {
+    slot = findNextAvailableSlot(taskId, requestedTime, taskDurationMinutes, allTasks, options);
+    if (slot.getHours() < HOURS_PER_DAY) return slot;
+  }
 
   const forced = findSlotAfterObstacles(
     targetDate,
