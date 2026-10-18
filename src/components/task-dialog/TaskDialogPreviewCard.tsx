@@ -1,6 +1,6 @@
 import React from 'react';
 import { AgendaListCard } from '../AgendaListCard';
-import { getTimeAndPeriod } from '../../lib/utils';
+import { getDisplayTimeAndPeriod } from '../../lib/utils';
 import {
   getTaskDialogPriorityAccent,
   TASK_DIALOG_UI_TEXT,
@@ -51,7 +51,7 @@ export function TaskDialogPreviewCard({
     timeSource = date.toISOString();
   }
 
-  const timeAndPeriod = timeSource ? getTimeAndPeriod(timeSource) : null;
+  const timeAndPeriod = timeSource ? getDisplayTimeAndPeriod(timeSource) : null;
   const subtitle = description
     ? description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
     : null;

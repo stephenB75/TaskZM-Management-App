@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
-import { cn, formatTimeAMPM, getTimeAndPeriod, getInitials, getAbbreviatedDisplayName, sanitizeHTML, hasHTMLTags, calculateProgress, getDateString, calculateRecurringTaskSeriesTotalTime } from "../lib/utils";
+import { cn, formatTimeAMPM, getDisplayTimeAndPeriod, getInitials, getAbbreviatedDisplayName, sanitizeHTML, hasHTMLTags, calculateProgress, getDateString, calculateRecurringTaskSeriesTotalTime } from "../lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
@@ -756,7 +756,7 @@ export const DraggableTaskCard = React.forwardRef<
       );
     };
 
-    const agendaTimeAndPeriod = getTimeAndPeriod(task.scheduledDate || task.dueDate || null);
+    const agendaTimeAndPeriod = getDisplayTimeAndPeriod(task.scheduledDate || task.dueDate || null);
     const agendaAccentColor = getPriorityLineColor(task.priority);
     const agendaTaskSubtitle = task.description
       ? task.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()

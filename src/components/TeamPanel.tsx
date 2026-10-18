@@ -1088,6 +1088,7 @@ export function TeamPanel() {
                   height: TEAM_PANEL_BUTTON_SIZE_SMALL,
                   width: TEAM_PANEL_BUTTON_SIZE_SMALL,
                 }}
+                data-close-button
                 onClick={() => setSearchQuery('')}
               >
                 <Icon name="x" size={TEAM_PANEL_ICON_SIZE_MEDIUM} />

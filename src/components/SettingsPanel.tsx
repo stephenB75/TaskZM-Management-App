@@ -58,6 +58,7 @@ import {
 } from '../lib/native-biometrics';
 import {
   isPushNotificationsPreferenceEnabled,
+  isRemotePushSupported,
   setPushNotificationsEnabled,
 } from '../lib/native-push-notifications';
 import { toast } from '../lib/toast-wrapper';
@@ -202,6 +203,7 @@ import {
 } from '../lib/layout-constants';
 import { NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS } from '../lib/notification-constants';
 import { getInitials } from '../lib/utils';
+import { STORAGE_KEY_TIME_FORMAT, STORAGE_KEY_WEEK_START } from '../lib/business-constants';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
 import { isNativePurchasedSubscriptionStore, openNativeSubscriptionManagement } from '../lib/subscription-billing';
 import { CALENDAR_PROVIDERS, CALENDAR_SETTINGS_LABELS, CALENDAR_SETTINGS_UI } from '../lib/calendar-integration-constants';
@@ -349,22 +351,22 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
   
   // Date, Time & Theme settings state
   const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(() => {
-    const stored = localStorage.getItem('time-format');
+    const stored = localStorage.getItem(STORAGE_KEY_TIME_FORMAT);
     return (stored === '12h' || stored === '24h') ? stored : '12h';
   });
   const [weekStart, setWeekStart] = useState<'sunday' | 'monday'>(() => {
-    const stored = localStorage.getItem('week-start');
+    const stored = localStorage.getItem(STORAGE_KEY_WEEK_START);
     return (stored === 'sunday' || stored === 'monday') ? stored : 'sunday';
   });
   
   // Persist timeFormat to localStorage
   useEffect(() => {
-    localStorage.setItem('time-format', timeFormat);
+    localStorage.setItem(STORAGE_KEY_TIME_FORMAT, timeFormat);
   }, [timeFormat]);
   
   // Persist weekStart to localStorage
   useEffect(() => {
-    localStorage.setItem('week-start', weekStart);
+    localStorage.setItem(STORAGE_KEY_WEEK_START, weekStart);
   }, [weekStart]);
   
   // Pricing state (dynamically fetched from RevenueCat)
@@ -744,6 +746,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
         {isNativeApp ? (
         <SettingsSection
           value="app-security"
+          dataTour="settings-app-security"
           icon="lock"
           title={SETTINGS_PANEL_UI_TEXT.security.sectionTitle}
           description={SETTINGS_PANEL_UI_TEXT.sections.security.description}
@@ -764,6 +767,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               disabled={!biometricAvailable}
               touchTarget
             />
+            {isRemotePushSupported() && (
             <SettingsToggleRow
               id="push-notifications-remote"
               label={SETTINGS_PANEL_UI_TEXT.security.pushNotifications.label}
@@ -774,7 +778,8 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
               }}
               touchTarget
             />
-            {pushNotificationsEnabled && (
+            )}
+            {isRemotePushSupported() && pushNotificationsEnabled && (
               <Button
                 type="button"
                 variant="ghost"
@@ -1680,6 +1685,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
 
         <SettingsSection
           value="priority-levels"
+          dataTour="settings-priority-levels"
           icon="flag"
           title={SETTINGS_PANEL_UI_TEXT.priorityLevels.sectionTitle}
           description={SETTINGS_PANEL_UI_TEXT.sections.priorityLevels.description}
@@ -2365,7 +2371,7 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
           icon="trophy"
           title="Awards & Achievements"
           description={SETTINGS_PANEL_UI_TEXT.sections.awards.description}
-          dataTour="awards-section"
+          dataTour="settings-awards"
           badge={
             <Badge variant="secondary" className="ml-auto bg-muted text-muted-foreground text-xs">
               {earnedAwards.length}/{awards.length}

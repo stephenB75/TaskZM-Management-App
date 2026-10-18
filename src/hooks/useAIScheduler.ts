@@ -13,6 +13,7 @@ import { logger } from '../lib/logger';
 import { TIMING_CONSTANTS, getBrowserTimezone } from '../lib/timing-constants';
 import { isDateInRecurrence } from '../lib/recurrence';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
+import { resolveCalendarProvidersForFetch } from '../lib/calendar-status';
 import {
   MIN_HOURS_PER_DAY,
   DEFAULT_SCHEDULING_PERIOD_DAYS,
@@ -79,7 +80,7 @@ export function useAIScheduler() {
   const { tasks, updateTask, hoursSettings } = useTasks();
   const { settings: aiSettings } = useAI();
   const { calendarStatus } = useCalendar();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [isScheduling, setIsScheduling] = useState(false);
   
   // Fetch calendar events for a date range
@@ -89,10 +90,7 @@ export function useAIScheduler() {
     const events: ConflictCalendarEvent[] = [];
     
     // Fetch events from all connected calendar providers
-    const providers: Array<'google' | 'apple' | 'outlook'> = [];
-    if (calendarStatus.google) providers.push('google');
-    if (calendarStatus.apple) providers.push('apple');
-    if (calendarStatus.outlook) providers.push('outlook');
+    const providers = resolveCalendarProvidersForFetch(calendarStatus, user?.id);
     
     for (const provider of providers) {
       try {
@@ -873,8 +871,8 @@ export function useAIScheduler() {
       
       // Try to find a gap before the conflicts that fits the task
       // We'll check gaps between existing tasks, working backwards from the first conflict
-      for (let i = sameCategoryTasksForConflictCheck.length - 1; i >= 0; i--) {
-        const taskBeforeGap = sameCategoryTasksForConflictCheck[i];
+      for (let i = scheduledTasksForConflictCheck.length - 1; i >= 0; i--) {
+        const taskBeforeGap = scheduledTasksForConflictCheck[i];
         const gapEnd = taskBeforeGap.start - AI_SCHEDULING_PREP_BUFFER_MS; // Gap ends before next item with prep time
         
         // Find the task before this one (or category start if this is the first task)
@@ -882,7 +880,7 @@ export function useAIScheduler() {
         if (i === 0) {
           gapStart = earliestAllowedTime.getTime();
         } else {
-          const prevTask = sameCategoryTasksForConflictCheck[i - 1];
+          const prevTask = scheduledTasksForConflictCheck[i - 1];
           gapStart = expandTaskBlockEndForSchedulingPrep(prevTask.end, AI_SCHEDULING_PREP_BUFFER_MS);
         }
         
@@ -1114,22 +1112,17 @@ export function useAIScheduler() {
       }
     });
 
-    // Sort tasks by priority and status for intelligent scheduling
-    // ALWAYS prioritize urgent and high priority tasks first, regardless of settings
+    // Sort by status, then priority when Priority-Based Scheduling is on (AI_SCHEDULING_GUIDELINES), then due date
     let sortedTasks = [...unscheduledTasks].sort((a, b) => {
-      // ALWAYS prioritize urgent and high, regardless of priorityBasedScheduling setting
-      const aPriority = PRIORITY_WEIGHTS[a.priority] || 1;
-      const bPriority = PRIORITY_WEIGHTS[b.priority] || 1;
-      
       const aStatus = STATUS_WEIGHTS[a.status] || 0;
       const bStatus = STATUS_WEIGHTS[b.status] || 0;
-      
-      // First sort by status (in-progress first)
       if (aStatus !== bStatus) return bStatus - aStatus;
-      
-      // Then by priority (urgent first, then high, medium, low)
-      // This ensures urgent and high priority tasks are always scheduled first
-      if (aPriority !== bPriority) return bPriority - aPriority;
+
+      if (aiSettings.priorityBasedScheduling) {
+        const aPriority = PRIORITY_WEIGHTS[a.priority] || 1;
+        const bPriority = PRIORITY_WEIGHTS[b.priority] || 1;
+        if (aPriority !== bPriority) return bPriority - aPriority;
+      }
     
       // Then by due date (if exists)
       if (a.dueDate && b.dueDate) {
@@ -1144,18 +1137,12 @@ export function useAIScheduler() {
     
     // Shuffle tasks if requested (for rescheduling to create variety)
     if (options?.shuffle) {
-      // For rescheduling, perform a more complete shuffle while maintaining critical priorities
-      // Keep urgent, high priority, and in-progress tasks at the front, but shuffle everything else more thoroughly
-      const priorityTasks = sortedTasks.filter(t => 
-        t.priority === 'urgent' || 
-        t.priority === 'high' || 
+      // For rescheduling, shuffle while keeping in-progress (and, with Priority-Based Scheduling, urgent/high) tasks first
+      const isPinned = (t: Task) =>
         t.status === 'in-progress'
-      );
-      const otherTasks = sortedTasks.filter(t => 
-        t.priority !== 'urgent' && 
-        t.priority !== 'high' && 
-        t.status !== 'in-progress'
-      );
+        || (aiSettings.priorityBasedScheduling && (t.priority === 'urgent' || t.priority === 'high'));
+      const priorityTasks = sortedTasks.filter(isPinned);
+      const otherTasks = sortedTasks.filter(t => !isPinned(t));
       
       // Shuffle the non-priority tasks more thoroughly
       const shuffledOther = shuffleArray(otherTasks);

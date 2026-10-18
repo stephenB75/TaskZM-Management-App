@@ -211,6 +211,7 @@ export function AnalyticsPanel({ onClose }: AnalyticsPanelProps) {
             <Button
               variant="ghost"
               size="icon"
+              data-close-button
               onClick={onClose}
               disabled={isGeneratingPDF}
               className={ANALYTICS_PANEL_LAYOUT.headerActionButtonClass}

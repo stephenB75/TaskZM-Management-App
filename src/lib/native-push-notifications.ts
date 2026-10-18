@@ -5,7 +5,7 @@
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { MOBILE_STORAGE_KEYS } from './mobile-constants';
-import { NOTIFICATION_OPEN_TASK_EVENT, IOS_APNS_KEY_ID } from './notification-constants';
+import { NOTIFICATION_OPEN_TASK_EVENT, IOS_APNS_KEY_ID, PUSH_SERVER_REMINDERS_CHANGED_EVENT } from './notification-constants';
 import { getFromLocalStorage, saveToLocalStorage } from './utils';
 import { logger } from './logger';
 import { getPlatform } from './platform';
@@ -18,6 +18,23 @@ import {
 let pushHandlersRegistered = false;
 let latestPushPreferences: PushRegistrationPreferences | null = null;
 
+/**
+ * Remote push is APNs-only: the server has no FCM sender and the Android app ships without
+ * google-services.json, where PushNotifications.register() would crash natively.
+ */
+export function isRemotePushSupported(): boolean {
+  const platform = getPlatform();
+  return platform.isNative && platform.isIOS;
+}
+
+function setServerRemindersActive(active: boolean): void {
+  const previous = isServerPushRemindersActive();
+  saveToLocalStorage(MOBILE_STORAGE_KEYS.pushServerReminders, active);
+  if (previous !== active) {
+    window.dispatchEvent(new CustomEvent(PUSH_SERVER_REMINDERS_CHANGED_EVENT));
+  }
+}
+
 /** True when the server confirmed it delivers due-soon/overdue alerts to this device. */
 export function isServerPushRemindersActive(): boolean {
   return getFromLocalStorage<boolean>(MOBILE_STORAGE_KEYS.pushServerReminders, false);
@@ -29,8 +46,7 @@ export function isServerPushRemindersActive(): boolean {
  */
 export async function syncPushRegistration(preferences?: PushRegistrationPreferences): Promise<void> {
   if (preferences) latestPushPreferences = preferences;
-  const platform = getPlatform();
-  if (!platform.isNative || !platform.isIOS) return;
+  if (!isRemotePushSupported()) return;
 
   if (!latestPushPreferences || !isPushNotificationsPreferenceEnabled()) return;
 
@@ -47,12 +63,12 @@ export async function syncPushRegistration(preferences?: PushRegistrationPrefere
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     preferences: latestPushPreferences,
   });
-  saveToLocalStorage(MOBILE_STORAGE_KEYS.pushServerReminders, result.success && result.serverReminders);
+  setServerRemindersActive(result.success && result.serverReminders);
 }
 
 /** Stop server pushes to this device (logout or push disabled). */
 export async function removePushRegistrationFromServer(): Promise<void> {
-  saveToLocalStorage(MOBILE_STORAGE_KEYS.pushServerReminders, false);
+  setServerRemindersActive(false);
   const token = getStoredPushDeviceToken();
   if (token) await unregisterPushDeviceToken(token);
 }
@@ -85,7 +101,7 @@ function extractTaskIdFromPushData(data: Record<string, unknown> | undefined): s
 
 /** Register push listeners and request permission (native only). */
 export async function initNativePushNotifications(): Promise<void> {
-  if (!Capacitor.isNativePlatform() || pushHandlersRegistered) return;
+  if (!isRemotePushSupported() || pushHandlersRegistered) return;
   pushHandlersRegistered = true;
 
   await PushNotifications.addListener('registration', (token) => {
@@ -115,7 +131,7 @@ export async function initNativePushNotifications(): Promise<void> {
 }
 
 export async function registerForPushNotifications(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return false;
+  if (!isRemotePushSupported()) return false;
 
   try {
     let permissions = await PushNotifications.checkPermissions();
@@ -152,7 +168,7 @@ export async function unregisterPushNotifications(): Promise<void> {
 export async function setPushNotificationsEnabled(enabled: boolean): Promise<boolean> {
   setPushNotificationsPreferenceEnabled(enabled);
 
-  if (!Capacitor.isNativePlatform()) return false;
+  if (!isRemotePushSupported()) return false;
 
   if (!enabled) {
     await removePushRegistrationFromServer();

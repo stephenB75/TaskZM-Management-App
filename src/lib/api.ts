@@ -1584,6 +1584,7 @@ export interface PushRegistrationPreferences {
   dueDateReminders: boolean;
   overdueAlerts: boolean;
   reminderTime: number;
+  soundEnabled: boolean;
 }
 
 /** Store this device's APNs token server-side. `serverReminders` is true once the server sends task reminders. */

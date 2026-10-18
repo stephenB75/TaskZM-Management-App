@@ -86,7 +86,7 @@ export async function deliverAchievementUnlock(
 
   updateBadge();
 
-  if (!settings.enabled || !settings.achievementCelebrations) {
+  if (!settings.enabled) {
     return;
   }
 
@@ -94,6 +94,7 @@ export async function deliverAchievementUnlock(
   const inForeground = isAppInForeground();
 
   if (inForeground) {
+    if (!settings.achievementCelebrations) return;
     if (settings.achievementHaptics) {
       void triggerCelebrationHaptic(award.rarity);
     }

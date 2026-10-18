@@ -352,6 +352,7 @@ export function FoldersPanel({ onFolderSelect }: FoldersPanelProps) {
                 height: FOLDER_PANEL_BUTTON_SIZE_SMALL,
                 width: FOLDER_PANEL_BUTTON_SIZE_SMALL
               }}
+              data-close-button
               onClick={() => setSearchQuery("")}
             >
               <Icon name="x" size={FOLDER_PANEL_ICON_SIZE_SMALL} />

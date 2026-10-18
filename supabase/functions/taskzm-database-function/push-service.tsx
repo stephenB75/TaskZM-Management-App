@@ -58,6 +58,7 @@ export interface PushPreferences {
   dueDateReminders: boolean;
   overdueAlerts: boolean;
   reminderTime: number;
+  soundEnabled: boolean;
 }
 
 interface DeviceRow {
@@ -166,6 +167,7 @@ async function postToApns(
   token: string,
   environment: ApnsEnvironment,
   message: PushMessage,
+  silent: boolean,
 ): Promise<{ status: number; reason: string }> {
   const { bundleId } = apnsCredentials();
   const headers: Record<string, string> = {
@@ -183,7 +185,7 @@ async function postToApns(
     method: 'POST',
     headers,
     body: JSON.stringify({
-      aps: { alert: { title: message.title, body: message.body }, sound: 'default' },
+      aps: { alert: { title: message.title, body: message.body }, ...(silent ? {} : { sound: 'default' }) },
       ...(message.data ?? {}),
     }),
   });
@@ -201,8 +203,9 @@ async function sendToDevice(device: DeviceRow, message: PushMessage): Promise<Se
 
   let last = { status: 0, reason: '' };
   let environmentRejections = 0;
+  const silent = !normalizePreferences(device.preferences).soundEnabled;
   for (const environment of order) {
-    last = await postToApns(device.token, environment, message);
+    last = await postToApns(device.token, environment, message, silent);
     if (last.status === 200) return { ok: true, environment };
     if (!PUSH_CONFIG.retryOtherEnvironmentReasons.has(last.reason)) break;
     environmentRejections++;
@@ -258,6 +261,7 @@ function normalizePreferences(input: Partial<PushPreferences> | undefined): Push
       typeof input?.reminderTime === 'number' && input.reminderTime >= 0
         ? input.reminderTime
         : PUSH_CONFIG.defaultReminderMinutes,
+    soundEnabled: input?.soundEnabled !== false,
   };
 }
 

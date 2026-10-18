@@ -75,11 +75,22 @@ export const MOBILE_NOTIFICATION_CHANNELS = {
   achievements: 'achievements',
 } as const;
 
+/** Low-importance (no sound) twins used when Settings → Sound is off; Android channel sound can't change after creation. */
+export const MOBILE_SILENT_NOTIFICATION_CHANNELS: Record<string, string> = {
+  [MOBILE_NOTIFICATION_CHANNELS.tasks]: 'task_alerts_silent',
+  [MOBILE_NOTIFICATION_CHANNELS.achievements]: 'achievements_silent',
+};
+
 /** Android notification channel display names. */
 export const MOBILE_NOTIFICATION_CHANNEL_LABELS = {
   tasks: 'Task reminders',
   achievements: 'Achievements',
+  tasksSilent: 'Task reminders (silent)',
+  achievementsSilent: 'Achievements (silent)',
 } as const;
+
+/** Android NotificationManager importance levels (LOW shows without sound). */
+export const ANDROID_CHANNEL_IMPORTANCE = { high: 4, low: 2 } as const;
 
 /** LocalStorage keys used only on Capacitor native platforms. */
 export const MOBILE_STORAGE_KEYS = {

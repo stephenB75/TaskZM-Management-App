@@ -147,6 +147,7 @@ export function TaskOptionSheet({ activeId, onClose, children }: TaskOptionSheet
               <h3 className="m-0 flex-1 text-base font-semibold">{option.title}</h3>
               <button
                 type="button"
+                data-close-button
                 onClick={() => setExpanded((value) => !value)}
                 aria-label={expanded ? TASK_DIALOG_OPTION_SHEET_TEXT.collapse : TASK_DIALOG_OPTION_SHEET_TEXT.expand}
                 className="flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
@@ -156,6 +157,7 @@ export function TaskOptionSheet({ activeId, onClose, children }: TaskOptionSheet
               </button>
               <button
                 type="button"
+                data-close-button
                 onClick={onClose}
                 aria-label={TASK_DIALOG_OPTION_SHEET_TEXT.close}
                 className="flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"

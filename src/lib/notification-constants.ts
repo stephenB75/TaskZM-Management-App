@@ -62,6 +62,8 @@ export const NOTIFICATIONS_SHEET_OPEN_EVENT = 'taskzm-open-notifications';
 export const NOTIFICATION_FOREGROUND_DELIVERED_EVENT = 'taskzm-foreground-notification-delivered';
 /** Fired after an app message is stored for the notification panel, so the panel and bell badge refresh. */
 export const NOTIFICATION_STORED_EVENT = 'taskzm-notification-stored';
+/** Fired when server push takes over (or hands back) due/overdue reminders, so local schedules re-sync. */
+export const PUSH_SERVER_REMINDERS_CHANGED_EVENT = 'taskzm-push-server-reminders-changed';
 /** Stored message types that count toward the bell badge; confirmations are stored as already read. */
 export const NOTIFICATION_ALERT_VARIANTS: ReadonlySet<string> = new Set(['error', 'warning']);
 /** Fired from the iOS shell when local Capacitor plugins (e.g. AppIconBadge) are registered. */

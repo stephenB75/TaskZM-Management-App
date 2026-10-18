@@ -19,7 +19,7 @@ import { estimateTaskHours } from './daily-hours-utils';
 import { COLOR_POP_NEUTRAL } from './color-theme';
 import { tagShade } from './tag-shades';
 import { DEFAULT_CREATED_BY, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from './task-constants';
-import { generateId, getWeekStart } from './utils';
+import { generateId, getClockHourCycle, getWeekStart } from './utils';
 import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from './navigation-constants';
 import { parsePlannerWhen, stripPlannerWhen } from './planner-commands';
 import { estimateWithSubtasks, improveTitle, splitClauses, splitInlineSteps, suggestSubtasks } from './planner-analysis';
@@ -204,6 +204,7 @@ export function formatPlannedWhen(date: Date): string {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    hourCycle: getClockHourCycle(),
   });
 }
 

@@ -14,7 +14,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
-import { cn } from "../lib/utils";
+import { cn, formatClockTime, getClockHourCycle } from "../lib/utils";
 import type { SchedulePlan } from "../hooks/useAIScheduler";
 
 interface AIScheduleResultDialogProps {
@@ -39,9 +39,9 @@ export function AIScheduleResultDialog({
       date.toDateString() === tomorrow.toDateString();
 
     if (isToday)
-      return `Today at ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
+      return `Today at ${formatClockTime(date)}`;
     if (isTomorrow)
-      return `Tomorrow at ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
+      return `Tomorrow at ${formatClockTime(date)}`;
 
     return date.toLocaleDateString("en-US", {
       weekday: "short",
@@ -49,6 +49,7 @@ export function AIScheduleResultDialog({
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
+      hourCycle: getClockHourCycle(),
     });
   };
 

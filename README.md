@@ -418,7 +418,7 @@ The `scripts/` directory contains build, release and setup tools:
 - `sync-all-platforms.sh`, `write-build-info.js`, `update-service-worker-cache.js` — build and platform sync
 - `ios-fresh-build.sh`, `patch-capacitor-wkprocesspool.cjs` — iOS build helpers
 - `deploy-functions.sh`, `setup-google-calendar-secrets.sh` — Supabase Edge Functions and secrets
-- `generate-icons-with-padding.js`, `generate-people-avatars.mjs` — app icon and avatar assets
+- `generate-icons-with-padding.js` — app icon assets (profile avatars live in `src/assets/user_profiles/`)
 
 ---
 

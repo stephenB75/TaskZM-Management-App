@@ -3,7 +3,7 @@ import { DndContext, DragStartEvent, DragEndEvent, DragOverEvent, DragOverlay, c
 import { useTasks } from './TaskContext';
 import { useCalendarEventsByDate } from '../hooks/useCalendarEvents';
 import { KANBAN_TIME } from '../lib/kanban-constants';
-import { isTaskBlocked, getIncompleteDependencies, cn, getDateString } from '../lib/utils';
+import { isTaskBlocked, getIncompleteDependencies, cn, getDateString, formatClockTime } from '../lib/utils';
 import { findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate, buildManualSchedulingSlotOptions } from '../lib/time-conflict';
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from '../lib/daily-hours-utils';
 import { useAI } from './AIContext';
@@ -13,7 +13,7 @@ import { TASK_CALCULATION_CONSTANTS } from '../lib/task-calculation-constants';
 import { TASK_CARD_LAYOUT_METRICS, TASK_CARD_HEIGHT_CONFIG, TASK_CARD_CALCULATIONS } from '../lib/task-card-constants';
 import { TIMELINE_PADDING, VIEWPORT_BREAKPOINTS, TODAY_AGENDA_TIMELINE } from '../lib/layout-constants';
 import { TIMING_CONSTANTS } from '../lib/timing-constants';
-import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
+import { AI_DAILY_HOUR_OPTIONS, TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { MINUTES_PER_HOUR, HOURS_PER_DAY, MILLISECONDS_PER_MINUTE, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { toast } from '../lib/toast-wrapper';
 import {
@@ -639,7 +639,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
       const finalDateString = getDateString(finalTime);
       const noSlotOnRequestedDay = finalDateString !== requestedDateString || finalTime.getHours() >= HOURS_PER_DAY;
       if (noSlotOnRequestedDay) {
-        const maxHours = aiSettings.maxHoursPerDay ?? 5;
+        const maxHours = aiSettings.maxHoursPerDay ?? AI_DAILY_HOUR_OPTIONS.FIVE_HOURS;
         toast.error('No available time slots', {
           description: `No available slots on this day after current time within category hours and ${maxHours}-hour limit. Try another day or free up time.`,
         });
@@ -1185,7 +1185,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                     <div className="flex items-center gap-3 text-xs font-semibold">
                       {activeTask.scheduledDate && (
                         <span className="text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
-                          {new Date(activeTask.scheduledDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                          {formatClockTime(new Date(activeTask.scheduledDate))}
                         </span>
                       )}
                       {activeTask.estimatedTime && (
@@ -1229,7 +1229,7 @@ export function DragDropProvider({ children }: DragDropProviderProps) {
                   <div className="flex items-center gap-3 text-xs font-semibold">
                     {activeTask.scheduledDate && (
                       <span className="text-primary dark:text-primary-foreground bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded">
-                        {new Date(activeTask.scheduledDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        {formatClockTime(new Date(activeTask.scheduledDate))}
                       </span>
                     )}
                     {activeTask.estimatedTime && (

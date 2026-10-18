@@ -110,6 +110,14 @@ function renderStepContent(meta: AppTourStepMeta, isMobile: boolean): React.Reac
           <TourBullets items={APP_TOUR_UI.weekView.bullets} />
         </div>
       );
+    case APP_TOUR_STEP_KEYS.taskDetails:
+      return (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">{APP_TOUR_UI.taskDetails.title}</h3>
+          <p className="text-sm text-muted-foreground mb-1">{APP_TOUR_UI.taskDetails.description}</p>
+          <TourBullets items={APP_TOUR_UI.taskDetails.bullets} />
+        </div>
+      );
     case APP_TOUR_STEP_KEYS.aiSchedulerButton:
       return (
         <div>

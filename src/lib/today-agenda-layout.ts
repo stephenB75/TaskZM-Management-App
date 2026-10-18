@@ -3,6 +3,7 @@
  */
 
 import { MINUTES_PER_HOUR, MILLISECONDS_PER_MINUTE } from './business-constants';
+import { formatClockTime } from './utils';
 import {
   TODAY_AGENDA_TIMELINE,
   getTodayAgendaTimelineBlockHeightPx,
@@ -716,8 +717,7 @@ export function formatTodayAgendaMinutesLabel(minutesFromStart: number): string 
   const totalMins = startHour * MINUTES_PER_HOUR + minutesFromStart;
   const h = Math.floor(totalMins / MINUTES_PER_HOUR);
   const min = totalMins % MINUTES_PER_HOUR;
-  if (h === endHour && min === 0) return '12:00 AM';
-  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  const ampm = h < 12 ? 'AM' : 'PM';
-  return `${hour12}:${min.toString().padStart(2, '0')} ${ampm}`;
+  const label = new Date();
+  label.setHours(h === endHour && min === 0 ? 0 : h, min, 0, 0);
+  return formatClockTime(label);
 }

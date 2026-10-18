@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn, getTimeAndPeriod } from '../lib/utils';
+import { cn, getDisplayTimeAndPeriod, getTimeAndPeriod } from '../lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { AGENDA_LIST_CARD_UI } from '../lib/agenda-list-card-constants';
 import { getCategoryFromTags } from '../lib/ai-config';
@@ -21,11 +21,12 @@ function getInboxMeta(task: Task): string {
   const parts: string[] = [];
   const when = task.scheduledDate ?? task.dueDate;
   if (when) {
-    const time = getTimeAndPeriod(when);
+    const time = getDisplayTimeAndPeriod(when);
     if (!task.scheduledDate && task.dueDate && isMidnightDueDate(task.dueDate)) {
       parts.push(`Due ${formatDueDateLabel(task.dueDate)}`);
     } else if (time) {
-      parts.push(task.scheduledDate ? `${time.timePart} ${time.period}` : `Due ${formatDueDateLabel(when)} · ${time.timePart} ${time.period}`);
+      const clock = time.period ? `${time.timePart} ${time.period}` : time.timePart;
+      parts.push(task.scheduledDate ? clock : `Due ${formatDueDateLabel(when)} · ${clock}`);
     }
   }
   if (task.status === 'in-progress') parts.push('Active');

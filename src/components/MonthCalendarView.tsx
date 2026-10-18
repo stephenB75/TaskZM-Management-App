@@ -26,12 +26,12 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { cn, prepareTaskForDialog, parseCalendarEventTime, getDateString, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, dateStringToLocalDate, getTaskSortTimeOnDay, getCalendarEventSortTimeOnDay, compareChronologicalItemsOnDay } from "../lib/utils";
+import { cn, prepareTaskForDialog, parseCalendarEventTime, getDateString, isSeriesBaseTask, hasSeriesOccurrenceForDate, dedupeTasksForDay, dateStringToLocalDate, getTaskSortTimeOnDay, getCalendarEventSortTimeOnDay, compareChronologicalItemsOnDay, getWeekStart, formatClockTime } from "../lib/utils";
 import { isDateInRecurrence } from "../lib/recurrence";
 import { DraggableTaskCard } from "./DraggableTaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { toast } from '../lib/toast-wrapper';
-import { MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
+import { DAYS_IN_WEEK, MINUTES_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
 import { getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth, NAV_BAR_BOTTOM_PADDING_MOBILE, MOBILE_PADDING_BOTTOM, PANEL_PADDING_BOTTOM, ICON_SIZE_LG, ICON_SIZE_XS, ICON_SIZE_SM, MAIN_BG_GRADIENT_CLASS, VIEWPORT_BREAKPOINTS } from "../lib/layout-constants";
 import { TASK_CARD_ICON_COLORS, MONTH_VIEW_TASK_PRIORITY_STYLES, MONTH_VIEW_LOW_PRIORITY_DARK_TEXT } from "../lib/task-card-constants";
 import { useTheme } from "../contexts/ThemeContext";
@@ -162,13 +162,7 @@ function DraggableMonthTask({
               )}>
                 <Icon name="clock" size={8} className="flex-shrink-0" />
                 <span className="text-[9px] leading-none">
-                  {new Date(
-                    task.scheduledDate,
-                  ).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}
+                  {formatClockTime(new Date(task.scheduledDate))}
                 </span>
               </div>
             )}
@@ -196,11 +190,7 @@ interface CalendarEventData {
 }
 
 function MonthCalendarEvent({ event }: { event: CalendarEventData }) {
-  const startTime = parseCalendarEventTime(event.start).toLocaleTimeString([], { 
-    hour: 'numeric', 
-    minute: '2-digit', 
-    hour12: true 
-  });
+  const startTime = formatClockTime(parseCalendarEventTime(event.start));
 
   return (
     <div
@@ -579,6 +569,8 @@ export function MonthCalendarView({
     }
   };
 
+  const weekStartsOnMonday = getWeekStart() === "monday";
+
   const calendarDays = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -588,11 +580,12 @@ export function MonthCalendarView({
     // Last day of the month
     const lastDay = new Date(year, month + 1, 0);
 
+    const weekOffset = weekStartsOnMonday ? 1 : 0;
     // Days to show from previous month
-    const startDay = firstDay.getDay(); // 0 = Sunday
+    const startDay = (firstDay.getDay() - weekOffset + DAYS_IN_WEEK) % DAYS_IN_WEEK;
 
     // Days to show from next month
-    const endDay = 6 - lastDay.getDay();
+    const endDay = DAYS_IN_WEEK - 1 - ((lastDay.getDay() - weekOffset + DAYS_IN_WEEK) % DAYS_IN_WEEK);
 
     const days: DayTasks[] = [];
     const today = new Date();
@@ -640,22 +633,16 @@ export function MonthCalendarView({
     }
 
     return days;
-  }, [currentDate, tasks]);
+  }, [currentDate, tasks, weekStartsOnMonday]);
 
   const monthName = currentDate.toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   });
 
-  const weekDays = [
-    "Sun",
-    "Mon",
-    "Tue",
-    "Wed",
-    "Thu",
-    "Fri",
-    "Sat",
-  ];
+  const weekDays = weekStartsOnMonday
+    ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <div className={cn("flex flex-col", mobileMode ? "flex-1 min-h-0" : "h-full", MAIN_BG_GRADIENT_CLASS)} data-month-calendar="true" data-tour="month-calendar-view">

@@ -162,4 +162,7 @@ export const AWARD_STREAK_LOOKBACK_DAYS = 365;
 // Storage Keys
 export const STORAGE_KEY_POMODORO = 'pomodoro-timers';
 export const STORAGE_KEY_NOTIFICATION_SETTINGS = 'notificationSettings';
+export const STORAGE_KEY_TIME_FORMAT = 'time-format';
+export const STORAGE_KEY_WEEK_START = 'week-start';
+export const STORAGE_KEY_AI_SETTINGS = 'ai-settings';
 

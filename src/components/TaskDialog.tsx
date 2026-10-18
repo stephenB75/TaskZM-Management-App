@@ -54,9 +54,13 @@ import {
   getInitials,
   getAbbreviatedDisplayName,
   calculateRecurringTaskSeriesTotalTime,
+  getTimeFormat,
+  getClockHourCycle,
+  daysSinceWeekStart,
+  rotateWeekdayLabels,
 } from "../lib/utils";
 import { getOccurrenceDates } from "../lib/recurrence";
-import { MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, DATE_ONLY_PARSE_SUFFIX, DEFAULT_PROJECT_ID, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
+import { DAYS_IN_WEEK, MINUTES_PER_HOUR, HOURS_PER_DAY, DEFAULT_WEEKDAY_WORK_START, MILLISECONDS_PER_MINUTE, DATE_ONLY_PARSE_SUFFIX, DEFAULT_PROJECT_ID, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from "../lib/business-constants";
 import { useTasks } from "../contexts/TaskContext";
 import { useTeam } from "../contexts/TeamContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
@@ -76,6 +80,10 @@ import { TOAST_DURATION_SHORT_MS, TOAST_DURATION_DEFAULT_MS, TOAST_DURATION_MEDI
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
 import { findNextAvailableSlot, formatTime, filterCalendarEventsForDayFromByDate, buildManualSchedulingSlotOptions } from "../lib/time-conflict";
 import { getCategoryHoursForTask } from "../lib/category-hours-utils";
+import { AI_DAILY_HOUR_OPTIONS } from "../lib/ai-config";
+import { useAIScheduler } from "../hooks/useAIScheduler";
+import { hasReachedLimit, incrementAIUsage } from "../lib/ai-scheduler-usage";
+import { plannerScheduleWindow } from "../lib/planner-chat";
 import { checkDailyLimit, getDailyHoursWarningLevel, getTaskMinutes } from "../lib/daily-hours-utils";
 import { useTaskBreakdown } from "../hooks/useTaskBreakdown";
 import { ActionPlanPanel } from "./ActionPlanPanel";
@@ -181,17 +189,19 @@ function FixedMiniCalendar({
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
     const firstDay = new Date(year, month, 1);
-    const startDay = firstDay.getDay(); // 0 = Sunday
+    const startDay = daysSinceWeekStart(firstDay);
     
     const days: Date[] = [];
     const startDate = new Date(year, month, 1);
+    startDate.setDate(startDate.getDate() - startDay);
     
-    // Adjust to start from a Sunday
-    const daysToSubtract = startDay;
-    startDate.setDate(startDate.getDate() - daysToSubtract);
-    
-    // Generate calendar grid days (5 weeks = 35 days)
-    for (let i = 0; i < TASK_DIALOG_CALENDAR.DAYS_IN_GRID; i++) {
+    // Whole weeks covering the month (5 or 6 rows), never fewer than the default grid
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const gridDays = Math.max(
+      TASK_DIALOG_CALENDAR.DAYS_IN_GRID,
+      Math.ceil((startDay + daysInMonth) / DAYS_IN_WEEK) * DAYS_IN_WEEK,
+    );
+    for (let i = 0; i < gridDays; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       days.push(date);
@@ -234,7 +244,7 @@ function FixedMiniCalendar({
            date.getFullYear() === viewDate.getFullYear();
   };
 
-  const weekDays = TASK_DIALOG_CALENDAR.WEEK_DAYS_SHORT;
+  const weekDays = rotateWeekdayLabels(TASK_DIALOG_CALENDAR.WEEK_DAYS_SHORT);
   const activeDate = activeField === "scheduled" ? scheduledDate : dueDate;
 
   return (
@@ -469,17 +479,19 @@ function SingleDateMiniCalendar({
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
     const firstDay = new Date(year, month, 1);
-    const startDay = firstDay.getDay(); // 0 = Sunday
+    const startDay = daysSinceWeekStart(firstDay);
     
     const days: Date[] = [];
     const startDate = new Date(year, month, 1);
+    startDate.setDate(startDate.getDate() - startDay);
     
-    // Adjust to start from a Sunday
-    const daysToSubtract = startDay;
-    startDate.setDate(startDate.getDate() - daysToSubtract);
-    
-    // Generate calendar grid days (5 weeks = 35 days)
-    for (let i = 0; i < TASK_DIALOG_CALENDAR.DAYS_IN_GRID; i++) {
+    // Whole weeks covering the month (5 or 6 rows), never fewer than the default grid
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const gridDays = Math.max(
+      TASK_DIALOG_CALENDAR.DAYS_IN_GRID,
+      Math.ceil((startDay + daysInMonth) / DAYS_IN_WEEK) * DAYS_IN_WEEK,
+    );
+    for (let i = 0; i < gridDays; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       days.push(date);
@@ -521,7 +533,7 @@ function SingleDateMiniCalendar({
            date.getFullYear() === viewDate.getFullYear();
   };
 
-  const weekDays = TASK_DIALOG_CALENDAR.WEEK_DAYS_SHORT;
+  const weekDays = rotateWeekdayLabels(TASK_DIALOG_CALENDAR.WEEK_DAYS_SHORT);
 
   return (
     <div className="w-full bg-card/80 dark:border dark:border-border text-foreground rounded-lg p-3">
@@ -648,6 +660,10 @@ function SingleDateMiniCalendar({
   );
 }
 
+function getPreferredDialogTimeFormat(): "12hr" | "24hr" {
+  return getTimeFormat() === "24h" ? "24hr" : "12hr";
+}
+
 export function TaskDialog({
   open,
   onClose,
@@ -688,6 +704,12 @@ export function TaskDialog({
   const { hasFeature, features } = useSubscription();
   const { calendarStatus, syncTask: syncTaskToCalendar } = useCalendar();
   const { settings: aiSettings } = useAI();
+  const { generateSchedulePlan } = useAIScheduler();
+  const canAutoScheduleOnCreate = () =>
+    hasFeature('aiScheduler')
+    && aiSettings.autoSchedulingEnabled
+    && aiSettings.scheduleUnscheduledTasks
+    && !(features.aiSchedulerLimit !== undefined && hasReachedLimit(features.aiSchedulerLimit));
   const permissionsResult = usePermissions();
   const permissions = permissionsResult || {
     canCreateTask: true,
@@ -731,7 +753,7 @@ export function TaskDialog({
   const [scheduledTime, setScheduledTime] = useState("");
   const [scheduledHours, setScheduledHours] = useState("");
   const [scheduledMinutes, setScheduledMinutes] = useState("");
-  const [timeFormat, setTimeFormat] = useState<"12hr" | "24hr">("12hr");
+  const [timeFormat, setTimeFormat] = useState<"12hr" | "24hr">(getPreferredDialogTimeFormat);
   const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
   const [activeOption, setActiveOption] = useState<TaskDialogOptionId | null>(null);
   const [syncToCalendar, setSyncToCalendar] = useState(true);
@@ -856,6 +878,17 @@ export function TaskDialog({
   // 4. Action plan subtasks are created from the chosen description
 
   // Helper function to update scheduled time
+  const applyLoadedClockHours = (hours: number) => {
+    setTimePeriod(hours < 12 ? "AM" : "PM");
+    if (getPreferredDialogTimeFormat() === "24hr") {
+      setScheduledHours(hours.toString());
+      setTimeFormat("24hr");
+      return;
+    }
+    setScheduledHours((hours % 12 || 12).toString());
+    setTimeFormat("12hr");
+  };
+
   const updateScheduledTime = (
     hours: string,
     minutes: string,
@@ -985,24 +1018,7 @@ export function TaskDialog({
               const hours = date.getHours();
               const minutes = date.getMinutes();
               
-              // Determine format and period based on hours
-              if (hours === 0) {
-                setScheduledHours("12");
-                setTimePeriod("AM");
-                setTimeFormat("12hr");
-              } else if (hours < 12) {
-                setScheduledHours(hours.toString());
-                setTimePeriod("AM");
-                setTimeFormat("12hr");
-              } else if (hours === 12) {
-                setScheduledHours("12");
-                setTimePeriod("PM");
-                setTimeFormat("12hr");
-              } else {
-                setScheduledHours((hours - 12).toString());
-                setTimePeriod("PM");
-                setTimeFormat("12hr");
-              }
+              applyLoadedClockHours(hours);
               
               setScheduledMinutes(minutes.toString().padStart(2, "0"));
               setScheduledTime(`${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`);
@@ -1015,7 +1031,7 @@ export function TaskDialog({
               setScheduledTime("");
               setScheduledHours("");
               setScheduledMinutes("");
-              setTimeFormat("12hr");
+              setTimeFormat(getPreferredDialogTimeFormat());
               setTimePeriod("AM");
             }
           } catch (e) {
@@ -1027,7 +1043,7 @@ export function TaskDialog({
             setScheduledTime("");
             setScheduledHours("");
             setScheduledMinutes("");
-            setTimeFormat("12hr");
+            setTimeFormat(getPreferredDialogTimeFormat());
             setTimePeriod("AM");
           }
         } else {
@@ -1038,7 +1054,7 @@ export function TaskDialog({
           setScheduledTime("");
           setScheduledHours("");
           setScheduledMinutes("");
-          setTimeFormat("12hr");
+          setTimeFormat(getPreferredDialogTimeFormat());
           setTimePeriod("AM");
         }
 
@@ -1111,23 +1127,7 @@ export function TaskDialog({
             setScheduledYear(dateToShow.getFullYear().toString());
             const hours = dateToShow.getHours();
             const minutes = dateToShow.getMinutes();
-            if (hours === 0) {
-              setScheduledHours("12");
-              setTimePeriod("AM");
-              setTimeFormat("12hr");
-            } else if (hours < 12) {
-              setScheduledHours(hours.toString());
-              setTimePeriod("AM");
-              setTimeFormat("12hr");
-            } else if (hours === 12) {
-              setScheduledHours("12");
-              setTimePeriod("PM");
-              setTimeFormat("12hr");
-            } else {
-              setScheduledHours((hours - 12).toString());
-              setTimePeriod("PM");
-              setTimeFormat("12hr");
-            }
+            applyLoadedClockHours(hours);
             setScheduledMinutes(minutes.toString().padStart(2, "0"));
             setScheduledTime(`${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`);
           }
@@ -1229,7 +1229,7 @@ export function TaskDialog({
       setScheduledTime(""); // No default time - let AI choose based on parameters
       setScheduledHours("");
       setScheduledMinutes("");
-      setTimeFormat("12hr");
+      setTimeFormat(getPreferredDialogTimeFormat());
       setTimePeriod("AM");
       setDependencies([]);
       setTimezone("local");
@@ -1766,6 +1766,32 @@ export function TaskDialog({
       assignedTo,
     };
 
+    // Settings → Auto Scheduling: "Automatically schedule tasks when created"
+    if (!task?.id && !finalScheduledDate && recurrenceConfig.type === "none" && canAutoScheduleOnCreate()) {
+      const nowIso = new Date().toISOString();
+      const draft = {
+        ...taskData,
+        id: generateId(),
+        projectId: projectId || DEFAULT_PROJECT_ID,
+        createdBy: user?.id || 'local',
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        completedAt: null,
+        actualTime: null,
+      } as Task;
+      try {
+        if (features.aiSchedulerLimit !== undefined) incrementAIUsage();
+        const plan = await generateSchedulePlan([draft], plannerScheduleWindow(new Date()), { forceCategoryHours: true });
+        const slot = plan.scheduled[0]?.scheduledDate;
+        if (slot) {
+          finalScheduledDate = slot.toISOString();
+          taskData.scheduledDate = finalScheduledDate;
+        }
+      } catch (error) {
+        logger.warn('Auto-schedule on create failed; task stays in Inbox', error);
+      }
+    }
+
     // Check if user is actually changing the scheduled time
     // If editing an existing task, compare with original scheduled time
     // Declare outside the if block to ensure it's accessible
@@ -1831,7 +1857,7 @@ export function TaskDialog({
           setConflictDialogOpen(true);
           return;
         } else {
-          const maxHours = aiSettings.maxHoursPerDay ?? 5;
+          const maxHours = aiSettings.maxHoursPerDay ?? AI_DAILY_HOUR_OPTIONS.FIVE_HOURS;
           toast.error('No available time slots', {
             description: `No available slots after current time within category hours and ${maxHours}-hour limit. Try a later time or another day.`,
           });
@@ -2520,7 +2546,7 @@ export function TaskDialog({
       const formatter = new Intl.DateTimeFormat("en-US", {
         hour: "numeric",
         minute: "2-digit",
-        hour12: true,
+        hourCycle: getClockHourCycle(),
         timeZone: timezone,
       });
       return formatter.format(date);
@@ -3388,6 +3414,7 @@ export function TaskDialog({
                               type="button"
                               variant="ghost"
                               size="sm"
+                              data-close-button
                               onClick={() => removeSubtask(subtask.id)}
                               className="h-7 w-7 p-0 flex-shrink-0"
                               aria-label="Remove subtask"
@@ -3745,8 +3772,10 @@ export function TaskDialog({
                                   type="button"
                                   variant="ghost"
                                   size="sm"
+                                  data-close-button
                                   onClick={() => removeDependency(depId)}
                                   className="h-7 w-7 p-0 flex-shrink-0"
+                                  aria-label="Remove dependency"
                                 >
                                   <Icon name="x" size={ICON_SIZE_MD} />
                                 </Button>

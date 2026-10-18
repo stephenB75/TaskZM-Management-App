@@ -14,6 +14,7 @@ import {
   NOTIFICATION_INTERVALS,
   NOTIFICATION_FOREGROUND_DELIVERED_EVENT,
   NOTIFICATION_STORED_EVENT,
+  PUSH_SERVER_REMINDERS_CHANGED_EVENT,
   NOTIFICATION_ALERT_VARIANTS,
   NATIVE_PLUGINS_READY_EVENT,
   type NotificationSettings,
@@ -192,7 +193,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return { all: withoutAwards + unreadAwardCount, withoutAwards };
     })();
 
-    const count = !settings.showBadge
+    const count = !settings.enabled || !settings.showBadge
       ? 0
       : settings.includeAchievementsInBadge ? counts.all : counts.withoutAwards;
 
@@ -239,6 +240,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [tasks, settings, updateBadge]);
 
   useEffect(() => {
+    const resync = () => { void syncTaskSchedulesRef.current(); };
+    window.addEventListener(PUSH_SERVER_REMINDERS_CHANGED_EVENT, resync);
+    return () => window.removeEventListener(PUSH_SERVER_REMINDERS_CHANGED_EVENT, resync);
+  }, []);
+
+  useEffect(() => {
     window.addEventListener(NOTIFICATION_STORED_EVENT, updateBadge);
     return () => window.removeEventListener(NOTIFICATION_STORED_EVENT, updateBadge);
   }, [updateBadge]);
@@ -273,8 +280,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       dueDateReminders: settings.dueDateReminders,
       overdueAlerts: settings.overdueAlerts,
       reminderTime: settings.reminderTime,
+      soundEnabled: settings.soundEnabled,
     }).then(() => syncTaskSchedulesRef.current());
-  }, [user?.id, settings.enabled, settings.dueDateReminders, settings.overdueAlerts, settings.reminderTime]);
+  }, [user?.id, settings.enabled, settings.dueDateReminders, settings.overdueAlerts, settings.reminderTime, settings.soundEnabled]);
 
   useEffect(() => {
     const handleNativePluginsReady = () => {
@@ -421,11 +429,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       });
     }
   }, [tasks, settings, permission, user, deliverTaskAlert]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => updateBadge(), TIMING_CONSTANTS.delays.notificationCheck);
-    return () => clearTimeout(timeoutId);
-  }, [tasks, settings, updateBadge]);
 
   useEffect(() => {
     const refreshOnResume = () => {

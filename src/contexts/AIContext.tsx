@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { getFromLocalStorage, saveToLocalStorage } from '../lib/utils';
 import { createDefaultAIContext } from '../lib/context-defaults';
 import { AI_DAILY_HOUR_OPTIONS } from '../lib/ai-config';
+import { STORAGE_KEY_AI_SETTINGS } from '../lib/business-constants';
 
 interface AISettings {
   autoSchedulingEnabled: boolean;
@@ -29,12 +30,17 @@ const DEFAULT_AI_SETTINGS: AISettings = {
 
 export function AIProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AISettings>(() => {
-    return getFromLocalStorage<AISettings>('ai-settings', DEFAULT_AI_SETTINGS);
+    const stored = getFromLocalStorage<Partial<AISettings>>(STORAGE_KEY_AI_SETTINGS, DEFAULT_AI_SETTINGS);
+    const merged = { ...DEFAULT_AI_SETTINGS, ...stored };
+    if (!Number.isFinite(merged.maxHoursPerDay) || merged.maxHoursPerDay <= 0) {
+      merged.maxHoursPerDay = DEFAULT_AI_SETTINGS.maxHoursPerDay;
+    }
+    return merged;
   });
 
   // Persist settings to localStorage
   useEffect(() => {
-    saveToLocalStorage('ai-settings', settings);
+    saveToLocalStorage(STORAGE_KEY_AI_SETTINGS, settings);
   }, [settings]);
 
   const updateSettings = (updates: Partial<AISettings>) => {

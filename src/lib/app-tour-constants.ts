@@ -7,6 +7,7 @@ import { NAVIGATION_UI_TEXT } from './navigation-constants';
 import { SETTINGS_PANEL_UI_TEXT } from './settings-panel-constants';
 import { DASHBOARD_VIEW_HEADER_LABELS, TOUR_CONSTANTS } from './layout-constants';
 import { TIMING_CONSTANTS } from './timing-constants';
+import { Capacitor } from '@capacitor/core';
 
 /** Sidebar icon tour stops (desktop) — order matches AppSidebar menuItems. */
 export const APP_TOUR_SIDEBAR_ITEMS = [
@@ -20,13 +21,13 @@ export const APP_TOUR_SIDEBAR_ITEMS = [
     id: 'dashboard',
     label: NAVIGATION_UI_TEXT.calendar,
     description:
-      'The week calendar. Drag a task onto another day to move it; calendar events show alongside your tasks.',
+      'The week or month calendar. Drag a task onto another day to move it; connected calendar events show in their own calendar colors.',
   },
   {
     id: 'notifications',
     label: NAVIGATION_UI_TEXT.notifications,
     description:
-      'Due-soon, overdue, and system alerts. Badge counts show how many need attention.',
+      'Due-soon, overdue, and system alerts. Badge counts show how many need attention, and you can clear them in one tap.',
   },
   {
     id: 'inbox',
@@ -71,7 +72,7 @@ export const APP_TOUR_BOTTOM_NAV_ITEMS = [
   {
     id: 'week',
     label: NAVIGATION_UI_TEXT.calendar,
-    description: 'Pick a day to see its tasks and calendar events.',
+    description: 'Switch between week and month, then pick a day to see its tasks and color-coded calendar events.',
   },
   {
     id: 'ai',
@@ -91,13 +92,20 @@ export const APP_TOUR_SETTINGS_SECTIONS = [
     id: 'user-profile',
     title: SETTINGS_PANEL_UI_TEXT.profile.userProfile,
     description: SETTINGS_PANEL_UI_TEXT.sections.userProfile.description,
-    detail: 'Update your name, avatar, email, plan, and sign out.',
+    detail: 'Update your name, profile picture, email, plan, and sign out.',
+  },
+  {
+    id: 'app-security',
+    title: SETTINGS_PANEL_UI_TEXT.security.sectionTitle,
+    description: SETTINGS_PANEL_UI_TEXT.sections.security.description,
+    detail: 'Lock TaskZM with your fingerprint or face, and on iPhone turn on push notifications for reminders.',
+    nativeOnly: true,
   },
   {
     id: 'calendar',
     title: 'Calendar Integrations',
     description: SETTINGS_PANEL_UI_TEXT.sections.calendar.description,
-    detail: 'Connect Google, Apple, or Outlook so events block time when the scheduler plans.',
+    detail: 'Connect Google, Apple, or Outlook. Events keep their calendar color and block time when the scheduler plans.',
   },
   {
     id: 'notifications',
@@ -110,6 +118,12 @@ export const APP_TOUR_SETTINGS_SECTIONS = [
     title: 'Tags',
     description: SETTINGS_PANEL_UI_TEXT.sections.tags.description,
     detail: 'Create and manage tags for filtering tasks across views.',
+  },
+  {
+    id: 'priority-levels',
+    title: SETTINGS_PANEL_UI_TEXT.priorityLevels.sectionTitle,
+    description: SETTINGS_PANEL_UI_TEXT.sections.priorityLevels.description,
+    detail: 'See what Urgent, High, Medium, and Low mean. The scheduler places higher priorities first.',
   },
   {
     id: 'ai-settings',
@@ -136,6 +150,12 @@ export const APP_TOUR_SETTINGS_SECTIONS = [
     detail: 'Choose 12h/24h time, week start day, and appearance.',
   },
   {
+    id: 'awards',
+    title: 'Awards & Achievements',
+    description: SETTINGS_PANEL_UI_TEXT.sections.awards.description,
+    detail: 'Earn badges for streaks and completed tasks, and track your progress.',
+  },
+  {
     id: 'app-tour',
     title: 'App Tour',
     description: SETTINGS_PANEL_UI_TEXT.sections.appTour.description,
@@ -147,7 +167,7 @@ export const APP_TOUR_UI = {
   welcome: {
     title: 'Welcome to TaskZM!',
     description:
-      'A quick look at navigation, your Today list, the Week board, auto scheduling, and key settings.',
+      'A quick look at navigation, your Timeline, the Calendar, task details, auto scheduling, and key settings.',
   },
   headerBell: {
     title: 'Notifications',
@@ -158,6 +178,7 @@ export const APP_TOUR_UI = {
     description: 'Upcoming tasks grouped by week, with what is up next highlighted at the top.',
     bullets: [
       'Tap the circle to mark a task done',
+      'On a phone, swipe a task right to complete it',
       'Tap a task to edit it',
       'Tasks without a time wait under Needs a time',
     ] as const,
@@ -181,7 +202,18 @@ export const APP_TOUR_UI = {
     bullets: [
       'On desktop, drag a task onto another day to move it',
       'Tap a task to edit details and subtasks',
-      'Calendar events are read-only',
+      'Calendar events are read-only and use their calendar colors',
+    ] as const,
+  },
+  taskDetails: {
+    title: 'Task Details',
+    description:
+      'Open any task to edit it. The task dialog and its options sheet keep everything in one place.',
+    bullets: [
+      'Pick an emoji from grouped sections to label the task',
+      'Add subtasks, tags, dependencies, and a repeat schedule',
+      'Start a Pomodoro focus timer right from the task',
+      'Set a category so the scheduler uses the right hours',
     ] as const,
   },
   aiSchedulerButton: {
@@ -225,7 +257,7 @@ export const APP_TOUR_UI = {
   complete: {
     title: 'You’re Ready!',
     description:
-      'You’ve seen navigation, Today, the Week board, auto scheduling, and settings. Click Get Started to begin.',
+      'You’ve seen navigation, the Timeline, the Calendar, task details, auto scheduling, and settings. Click Get Started to begin.',
   },
 } as const;
 
@@ -368,6 +400,7 @@ export const APP_TOUR_STEP_KEYS = {
   todayAgenda: 'todayAgenda',
   placeTasks: 'placeTasks',
   weekView: 'weekView',
+  taskDetails: 'taskDetails',
   aiSchedulerButton: 'aiSchedulerButton',
   aiSchedulePreview: 'aiSchedulePreview',
   aiReschedulerButton: 'aiReschedulerButton',
@@ -460,6 +493,12 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
       placement: 'top',
     },
     {
+      stepKey: APP_TOUR_STEP_KEYS.taskDetails,
+      target: APP_TOUR_TARGETS.body,
+      placement: 'center',
+      disableBeacon: true,
+    },
+    {
       stepKey: APP_TOUR_STEP_KEYS.aiSchedulerButton,
       target: APP_TOUR_TARGETS.aiSchedulerSection,
       placement: isMobile ? 'top' : 'left',
@@ -486,7 +525,9 @@ export function buildAppTourStepDefs(isMobile: boolean): AppTourStepMeta[] {
     },
   );
 
+  const isNativeApp = Capacitor.isNativePlatform();
   for (const section of APP_TOUR_SETTINGS_SECTIONS) {
+    if ('nativeOnly' in section && section.nativeOnly && !isNativeApp) continue;
     steps.push({
       stepKey: APP_TOUR_STEP_KEYS.settingsSection,
       target: settingsSectionTarget(section.id),

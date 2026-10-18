@@ -69,6 +69,8 @@ export const TIMING_CONSTANTS = {
     programmaticScrollComplete: 600, // Timeout for programmatic scroll completion (smooth scroll ~500ms + buffer)
     scrollDetectionDebounce: 50, // Debounce delay for detecting user-initiated scroll vs programmatic scroll
     calendarEventsDebounce: 200, // Debounce delay for calendar events fetch (faster for today view)
+    /** Coalesce rapid hours/rollover edits (e.g. typing a time) into one server save. */
+    settingsSaveDebounce: 600,
   },
   
   // Timeouts (in milliseconds)

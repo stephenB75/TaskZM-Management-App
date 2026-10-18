@@ -9,7 +9,7 @@ import { useAI } from "../contexts/AIContext";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAIScheduler } from "../hooks/useAIScheduler";
 import { useTheme } from "../contexts/ThemeContext";
-import { TWO_WEEK_DAYS_OFFSET } from "../lib/ai-config";
+import { AI_DAILY_HOUR_OPTIONS, TWO_WEEK_DAYS_OFFSET } from "../lib/ai-config";
 import {
   END_OF_DAY_HOUR,
   END_OF_DAY_MINUTE,
@@ -49,7 +49,7 @@ import {
   AlertDialogAction,
 } from "./ui/alert-dialog";
 import { toast } from '../lib/toast-wrapper';
-import { cn } from "../lib/utils";
+import { cn, formatClockTime, getClockHourCycle } from "../lib/utils";
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
 import { AI_PANEL_UI_TEXT } from "../lib/navigation-constants";
 import type { SchedulePlan, ScheduleResult } from "../hooks/useAIScheduler";
@@ -288,7 +288,7 @@ export function AIRecommendationPanel({
       // Show warning if tasks exceed limit (no available slots)
       if (result.exceedsLimit.length > 0) {
         toast.warning(
-          `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} exceed the ${aiSettings.maxHoursPerDay ?? 5}-hour daily limit`,
+          `${result.exceedsLimit.length} task${result.exceedsLimit.length === 1 ? '' : 's'} exceed the ${aiSettings.maxHoursPerDay ?? AI_DAILY_HOUR_OPTIONS.FIVE_HOURS}-hour daily limit`,
           {
             description: 'These tasks will need to be scheduled manually.',
             duration: 5000,
@@ -525,9 +525,9 @@ export function AIRecommendationPanel({
       date.toDateString() === tomorrow.toDateString();
 
     if (isToday)
-      return `Today at ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
+      return `Today at ${formatClockTime(date)}`;
     if (isTomorrow)
-      return `Tomorrow at ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
+      return `Tomorrow at ${formatClockTime(date)}`;
 
     return date.toLocaleDateString("en-US", {
       weekday: "short",
@@ -535,6 +535,7 @@ export function AIRecommendationPanel({
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
+      hourCycle: getClockHourCycle(),
     });
   };
 
@@ -560,13 +561,13 @@ export function AIRecommendationPanel({
             <AlertDialogDescription asChild>
               <div className="space-y-3 pt-2">
                 <p>
-                  Some days in the schedule exceed the {aiSettings.maxHoursPerDay ?? 5}-hour daily limit.
+                  Some days in the schedule exceed the {aiSettings.maxHoursPerDay ?? AI_DAILY_HOUR_OPTIONS.FIVE_HOURS}-hour daily limit.
                   Would you like to proceed with scheduling anyway?
                 </p>
                 {exceedsLimitData && exceedsLimitData.days.length > 0 && (
                   <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 space-y-2">
                     <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                      Days exceeding {aiSettings.maxHoursPerDay ?? 5} hours:
+                      Days exceeding {aiSettings.maxHoursPerDay ?? AI_DAILY_HOUR_OPTIONS.FIVE_HOURS} hours:
                     </p>
                     <ul className="space-y-1 text-sm text-orange-800 dark:text-orange-200">
                       {exceedsLimitData.days.map((day, idx) => (

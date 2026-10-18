@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { logger } from './logger';
 import type { Task, TaskPriority, TaskStatus, RecurrenceConfig } from '../types';
-import { MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_DAY, MINUTES_PER_HOUR, HOURS_PER_DAY, DAYS_IN_WEEK, PERCENTAGE_MULTIPLIER, SECONDS_PER_MINUTE, SECONDS_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from './business-constants';
+import { MILLISECONDS_PER_MINUTE, MILLISECONDS_PER_HOUR, MILLISECONDS_PER_DAY, MINUTES_PER_HOUR, HOURS_PER_DAY, DAYS_IN_WEEK, PERCENTAGE_MULTIPLIER, SECONDS_PER_MINUTE, SECONDS_PER_HOUR, RECURRENCE_OCCURRENCE_ID_SUFFIX_SUBTASKS, RECURRENCE_OCCURRENCE_ID_SUFFIX_COMPLETED, RECURRENCE_NONE_CONFIG, RECURRENCE_SERIES_OCCURRENCE_SEPARATOR, STORAGE_KEY_TIME_FORMAT, STORAGE_KEY_WEEK_START } from './business-constants';
 import { isDateInRecurrence } from './recurrence';
 
 export function cn(...inputs: ClassValue[]) {
@@ -16,17 +16,49 @@ export function formatDate(dateStr: string | null): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function formatTime(dateStr: string): string {
-  const date = parseChronologicalTimeSource(dateStr);
+export type TimeFormatPreference = '12h' | '24h';
+
+/** Settings → Date, Time & Theme clock preference; defaults to 12h. */
+export function getTimeFormat(): TimeFormatPreference {
+  try {
+    return localStorage.getItem(STORAGE_KEY_TIME_FORMAT) === '24h' ? '24h' : '12h';
+  } catch {
+    return '12h';
+  }
+}
+
+/** Clock time for display, honoring the user's 12h/24h setting. */
+export function formatClockTime(date: Date): string {
   if (isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const use24h = getTimeFormat() === '24h';
+  return date.toLocaleTimeString('en-US', {
+    hour: use24h ? '2-digit' : 'numeric',
+    minute: '2-digit',
+    hourCycle: use24h ? 'h23' : 'h12',
+  });
+}
+
+export function getClockHourCycle(): 'h12' | 'h23' {
+  return getTimeFormat() === '24h' ? 'h23' : 'h12';
+}
+
+/** Hour-only label (e.g. calendar gutter): "9 AM" or "09:00". */
+export function formatHourLabel(date: Date): string {
+  if (getTimeFormat() === '24h') {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  }
+  return date.toLocaleTimeString('en-US', { hour: 'numeric' });
+}
+
+export function formatTime(dateStr: string): string {
+  return formatClockTime(parseChronologicalTimeSource(dateStr));
 }
 
 export function formatTimeAMPM(dateStr: string | null): string | null {
   if (!dateStr) return null;
   const date = parseChronologicalTimeSource(dateStr);
   if (isNaN(date.getTime())) return null;
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return formatClockTime(date);
 }
 
 /** Returns time part (e.g. "11:00") and period ("AM" | "PM") for styling AM/PM separately. */
@@ -40,6 +72,17 @@ export function getTimeAndPeriod(dateStr: string | null): { timePart: string; pe
   const minutes = date.getMinutes();
   const timePart = `${hour12}:${minutes.toString().padStart(2, '0')}`;
   return { timePart, period };
+}
+
+/** Like getTimeAndPeriod, but for display: 24h users get "14:05" with no period. */
+export function getDisplayTimeAndPeriod(
+  dateStr: string | null,
+): { timePart: string; period: 'AM' | 'PM' | null } | null {
+  if (getTimeFormat() === '12h') return getTimeAndPeriod(dateStr);
+  if (!dateStr) return null;
+  const date = parseChronologicalTimeSource(dateStr);
+  if (isNaN(date.getTime())) return null;
+  return { timePart: formatClockTime(date), period: null };
 }
 
 export function formatRelativeTime(dateStr: string): string {
@@ -754,8 +797,24 @@ export function clearUserLocalStorage(): void {
  * @returns 'sunday' | 'monday' - defaults to 'sunday'
  */
 export function getWeekStart(): 'sunday' | 'monday' {
-  const stored = localStorage.getItem('week-start');
+  const stored = localStorage.getItem(STORAGE_KEY_WEEK_START);
   return (stored === 'sunday' || stored === 'monday') ? stored : 'sunday';
+}
+
+/** 0 when weeks start on Sunday, 1 when on Monday (matches Date#getDay). */
+export function getWeekStartDayIndex(): number {
+  return getWeekStart() === 'monday' ? 1 : 0;
+}
+
+/** Days between `date` and the first day of its week (0–6), honoring the week-start setting. */
+export function daysSinceWeekStart(date: Date): number {
+  return (date.getDay() - getWeekStartDayIndex() + DAYS_IN_WEEK) % DAYS_IN_WEEK;
+}
+
+/** Rotate Sunday-first weekday labels to the user's week start. */
+export function rotateWeekdayLabels<T>(sundayFirst: readonly T[]): T[] {
+  const offset = getWeekStartDayIndex();
+  return [...sundayFirst.slice(offset), ...sundayFirst.slice(0, offset)];
 }
 
 export function getFromLocalStorage<T>(key: string, defaultValue: T, userId?: string | null): T {

@@ -13,6 +13,7 @@ import {
   TIME_PERIODS,
 } from "./business-constants";
 import { COLOR_PRIMARY } from "./color-theme";
+import { daysSinceWeekStart } from "./utils";
 import {
   ANALYTICS_CHART_SERIES,
   ANALYTICS_COMPLETION_RATE,
@@ -187,7 +188,7 @@ export function getTimeAttributionDate(task: Task): Date | null {
 
 function getWeekStart(weekOffset: number): Date {
   const start = startOfDay(new Date());
-  start.setDate(start.getDate() - start.getDay() + weekOffset * DAYS_IN_WEEK);
+  start.setDate(start.getDate() - daysSinceWeekStart(start) + weekOffset * DAYS_IN_WEEK);
   return start;
 }
 

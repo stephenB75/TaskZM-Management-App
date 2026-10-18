@@ -69,7 +69,7 @@ import {
 } from '../lib/business-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
-import { createDefaultTaskContext } from '../lib/context-defaults';
+import { createDefaultRolloverSettings, createDefaultTaskContext } from '../lib/context-defaults';
 
 interface TaskContextType {
   tasks: Task[];
@@ -203,7 +203,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     showCompleted: true,
   });
   const [isLoading, setIsLoading] = useState(true); // Track workspace loading state
-  const [hoursSettings, setHoursSettings] = useState<HoursSettings>({
+  const [hoursSettings, setHoursSettings] = useState<HoursSettings>(() => ({
     weekdayHours: {
       work: { start: DEFAULT_WEEKDAY_WORK_START, end: DEFAULT_WEEKDAY_WORK_END, enabled: true },
       personal: { start: DEFAULT_WEEKDAY_PERSONAL_START, end: DEFAULT_WEEKDAY_PERSONAL_END, enabled: true },
@@ -215,11 +215,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       projects: { start: DEFAULT_WEEKEND_PROJECTS_START, end: DEFAULT_WEEKEND_PROJECTS_END, enabled: true },
     },
     respectHours: true,
-  });
-  const [rolloverSettings, setRolloverSettings] = useState<RolloverSettings>({
-    autoRollover: true,
-    askBeforeRolling: false,
-  });
+    ...getFromLocalStorage<Partial<HoursSettings>>('hoursSettings', {}),
+  }));
+  const [rolloverSettings, setRolloverSettings] = useState<RolloverSettings>(() => ({
+    ...createDefaultRolloverSettings(),
+    ...getFromLocalStorage<Partial<RolloverSettings>>('rolloverSettings', {}),
+  }));
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -3312,63 +3313,88 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaceId, accessToken, folders, tasks, availableTags, updateTask, removeAvailableTag, ensureWorkspace, createWorkspaceIfNeeded, setWorkspaceId, debouncedSync]);
 
-  const updateHoursSettings = useCallback(async (settings: Partial<HoursSettings>) => {
-    const updatedSettings = { ...hoursSettings, ...settings };
+  const hoursSettingsRef = useRef(hoursSettings);
+  hoursSettingsRef.current = hoursSettings;
+  const rolloverSettingsRef = useRef(rolloverSettings);
+  rolloverSettingsRef.current = rolloverSettings;
+  const hoursSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rolloverSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Save to Supabase FIRST (source of truth)
-    if (workspaceId && accessToken) {
-      try {
-        await api.saveSettings(workspaceId, { hoursSettings: updatedSettings });
-        // Reload from server to get the authoritative version
-        await syncSettingsFromServer(workspaceId);
-        toast.success('Hours settings updated');
-      } catch (error) {
-        logger.error('Failed to sync hours settings:', error);
-        // Fallback: save locally
-        setHoursSettings(updatedSettings);
-        saveToLocalStorage('hoursSettings', updatedSettings);
-        toast.error('Hours settings saved offline, will sync when online');
-      }
-    } else {
-      // No workspace/auth - save locally only
-      setHoursSettings(updatedSettings);
-      saveToLocalStorage('hoursSettings', updatedSettings);
+  useEffect(() => () => {
+    if (hoursSaveTimerRef.current) clearTimeout(hoursSaveTimerRef.current);
+    if (rolloverSaveTimerRef.current) clearTimeout(rolloverSaveTimerRef.current);
+  }, []);
+
+  const updateHoursSettings = useCallback(async (settings: Partial<HoursSettings>) => {
+    const updatedSettings = { ...hoursSettingsRef.current, ...settings };
+    hoursSettingsRef.current = updatedSettings;
+    setHoursSettings(updatedSettings);
+    saveToLocalStorage('hoursSettings', updatedSettings);
+
+    if (hoursSaveTimerRef.current) clearTimeout(hoursSaveTimerRef.current);
+    if (!workspaceId || !accessToken) {
       toast.success('Hours settings updated (offline)');
+      return;
     }
-  }, [hoursSettings, workspaceId, accessToken]);
+    hoursSaveTimerRef.current = setTimeout(() => {
+      hoursSaveTimerRef.current = null;
+      api.saveSettings(workspaceId, { hoursSettings: hoursSettingsRef.current })
+        .then(() => toast.success('Hours settings updated'))
+        .catch((error) => {
+          logger.error('Failed to sync hours settings:', error);
+          toast.error('Hours settings saved offline, will sync when online');
+        });
+    }, TIMING_CONSTANTS.delays.settingsSaveDebounce);
+  }, [workspaceId, accessToken]);
 
   const updateRolloverSettings = useCallback(async (settings: Partial<RolloverSettings>) => {
-    const updatedSettings = { ...rolloverSettings, ...settings };
+    const updatedSettings = { ...rolloverSettingsRef.current, ...settings };
+    rolloverSettingsRef.current = updatedSettings;
+    setRolloverSettings(updatedSettings);
+    saveToLocalStorage('rolloverSettings', updatedSettings);
 
-    // Save to Supabase FIRST (source of truth)
-    if (workspaceId && accessToken) {
-      try {
-        await api.saveSettings(workspaceId, { rolloverSettings: updatedSettings });
-        // Reload from server to get the authoritative version
-        await syncSettingsFromServer(workspaceId);
-        toast.success('Rollover settings updated');
-      } catch (error) {
-        logger.error('Failed to sync rollover settings:', error);
-        // Fallback: save locally
-        setRolloverSettings(updatedSettings);
-        saveToLocalStorage('rolloverSettings', updatedSettings);
-        toast.error('Rollover settings saved offline, will sync when online');
-      }
-    } else {
-      // No workspace/auth - save locally only
-      setRolloverSettings(updatedSettings);
-      saveToLocalStorage('rolloverSettings', updatedSettings);
+    if (rolloverSaveTimerRef.current) clearTimeout(rolloverSaveTimerRef.current);
+    if (!workspaceId || !accessToken) {
       toast.success('Rollover settings updated (offline)');
+      return;
     }
-  }, [rolloverSettings, workspaceId, accessToken]);
+    rolloverSaveTimerRef.current = setTimeout(() => {
+      rolloverSaveTimerRef.current = null;
+      api.saveSettings(workspaceId, { rolloverSettings: rolloverSettingsRef.current })
+        .then(() => toast.success('Rollover settings updated'))
+        .catch((error) => {
+          logger.error('Failed to sync rollover settings:', error);
+          toast.error('Rollover settings saved offline, will sync when online');
+        });
+    }, TIMING_CONSTANTS.delays.settingsSaveDebounce);
+  }, [workspaceId, accessToken]);
 
   // Task Rollover: Check for incomplete tasks from previous days and roll them over
   // Use a ref to track if we've already checked today to prevent duplicate notifications
   const rolloverCheckedRef = React.useRef<string>('');
+  const [rolloverDay, setRolloverDay] = useState(() => getDateString(new Date()));
+
+  // Re-evaluate rollover when the calendar day changes while the app stays open (midnight or resume).
+  useEffect(() => {
+    const refreshDay = () => setRolloverDay(getDateString(new Date()));
+    const nextMidnight = new Date();
+    nextMidnight.setHours(HOURS_PER_DAY, 0, 0, 0);
+    const timer = setTimeout(refreshDay, nextMidnight.getTime() - Date.now() + TIMING_CONSTANTS.delays.rolloverCheck);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshDay();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [rolloverDay]);
+
+  const canRollover = hasFeature('taskRollover');
 
   useEffect(() => {
     // Gate: Task rollover requires Pro subscription
-    if (!hasFeature('taskRollover')) return;
+    if (!canRollover) return;
     if (!rolloverSettings.autoRollover || !user) return;
 
     const today = new Date();
@@ -3552,7 +3578,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }, TIMING_CONSTANTS.delays.rolloverCheck);
     
     return () => clearTimeout(timer);
-  }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask, tasks.length]);
+  }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask, tasks, rolloverDay, canRollover]);
 
   return (
     <TaskContext.Provider

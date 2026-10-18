@@ -11,6 +11,8 @@ import {
   MOBILE_NOTIFICATION_ICON_COLOR,
   MOBILE_NOTIFICATION_CHANNELS,
   MOBILE_NOTIFICATION_CHANNEL_LABELS,
+  MOBILE_SILENT_NOTIFICATION_CHANNELS,
+  ANDROID_CHANNEL_IMPORTANCE,
 } from './mobile-constants';
 import { logger } from './logger';
 import {
@@ -24,7 +26,7 @@ import {
   SCHEDULED_NOTIFICATION_PREFIXES,
   IOS_PENDING_NOTIFICATION_LIMIT,
 } from './notification-constants';
-import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR } from './business-constants';
+import { MILLISECONDS_PER_MINUTE, MINUTES_PER_HOUR, STORAGE_KEY_NOTIFICATION_SETTINGS } from './business-constants';
 import { isAppInForeground, shouldUseSystemNotification } from './app-visibility';
 import { TIMING_CONSTANTS } from './timing-constants';
 import {
@@ -133,8 +135,18 @@ function getAndroidNotificationFields(channelId?: string): {
   return {
     smallIcon: MOBILE_NOTIFICATION_SMALL_ICON,
     iconColor: MOBILE_NOTIFICATION_ICON_COLOR,
-    channelId: channelId ?? MOBILE_NOTIFICATION_CHANNELS.tasks,
+    channelId: resolveSoundAwareChannel(channelId ?? MOBILE_NOTIFICATION_CHANNELS.tasks),
   };
+}
+
+function resolveSoundAwareChannel(channelId: string): string {
+  if (isNotificationSoundEnabled()) return channelId;
+  return MOBILE_SILENT_NOTIFICATION_CHANNELS[channelId] ?? channelId;
+}
+
+/** iOS plays no sound when `sound` is omitted from a local notification. */
+function notificationSoundFields(): { sound?: string } {
+  return isNotificationSoundEnabled() ? { sound: 'default' } : {};
 }
 
 type LocalNotificationsPlugin = Awaited<ReturnType<typeof loadLocalNotifications>>;
@@ -165,7 +177,7 @@ async function ensureAndroidNotificationChannels(
       id: MOBILE_NOTIFICATION_CHANNELS.tasks,
       name: MOBILE_NOTIFICATION_CHANNEL_LABELS.tasks,
       description: 'Due date reminders and overdue task alerts',
-      importance: 4,
+      importance: ANDROID_CHANNEL_IMPORTANCE.high,
       visibility: 1,
       sound: 'default',
     }),
@@ -173,9 +185,23 @@ async function ensureAndroidNotificationChannels(
       id: MOBILE_NOTIFICATION_CHANNELS.achievements,
       name: MOBILE_NOTIFICATION_CHANNEL_LABELS.achievements,
       description: 'Achievement unlocked alerts',
-      importance: 4,
+      importance: ANDROID_CHANNEL_IMPORTANCE.high,
       visibility: 1,
       sound: 'default',
+    }),
+    createChannel.call(LocalNotifications, {
+      id: MOBILE_SILENT_NOTIFICATION_CHANNELS[MOBILE_NOTIFICATION_CHANNELS.tasks],
+      name: MOBILE_NOTIFICATION_CHANNEL_LABELS.tasksSilent,
+      description: 'Task reminders when sound is turned off in Settings',
+      importance: ANDROID_CHANNEL_IMPORTANCE.low,
+      visibility: 1,
+    }),
+    createChannel.call(LocalNotifications, {
+      id: MOBILE_SILENT_NOTIFICATION_CHANNELS[MOBILE_NOTIFICATION_CHANNELS.achievements],
+      name: MOBILE_NOTIFICATION_CHANNEL_LABELS.achievementsSilent,
+      description: 'Achievement alerts when sound is turned off in Settings',
+      importance: ANDROID_CHANNEL_IMPORTANCE.low,
+      visibility: 1,
     }),
   ]);
 }
@@ -267,6 +293,15 @@ export async function getNotificationPermission(): Promise<'granted' | 'denied' 
   return Notification.permission as 'granted' | 'denied' | 'default';
 }
 
+function isNotificationSoundEnabled(): boolean {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY_NOTIFICATION_SETTINGS) ?? '{}');
+    return stored?.soundEnabled !== false;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Show a notification (uses native on iOS/Android, browser on web)
  */
@@ -288,7 +323,7 @@ export async function showNotification(options: NotificationOptions): Promise<vo
             id: notificationId,
             title: options.title,
             body: options.body,
-            sound: 'default',
+            ...notificationSoundFields(),
             actionTypeId: '',
             extra: options.data ?? {},
             ...(platform.isIOS && { summary: options.title }),
@@ -320,6 +355,7 @@ export async function showNotification(options: NotificationOptions): Promise<vo
       badge: NOTIFICATION_ICONS.badge,
       tag: options.tag,
       requireInteraction: options.requireInteraction ?? false,
+      silent: !isNotificationSoundEnabled(),
       data: options.data,
     });
 
@@ -395,7 +431,7 @@ export async function syncScheduledTaskNotifications(
       title: string;
       body: string;
       schedule: { at: Date; allowWhileIdle?: boolean };
-      sound: string;
+      sound?: string;
       extra: Record<string, unknown>;
       summary?: string;
       silent?: boolean;
@@ -426,7 +462,7 @@ export async function syncScheduledTaskNotifications(
             title: copy.title,
             body: copy.body,
             schedule: { at: reminderAt, allowWhileIdle: true },
-            sound: 'default',
+            ...notificationSoundFields(),
             extra: { taskId: task.id, type: 'reminder' },
             ...(platform.isIOS && { summary: copy.title }),
             ...(platform.isAndroid && getAndroidNotificationFields(MOBILE_NOTIFICATION_CHANNELS.tasks)),
@@ -452,7 +488,7 @@ export async function syncScheduledTaskNotifications(
             title: NOTIFICATION_TITLES.taskOverdue,
             body: NOTIFICATION_MESSAGES.taskWasDue(task.title, dateText),
             schedule: { at: overdueAt, allowWhileIdle: true },
-            sound: 'default',
+            ...notificationSoundFields(),
             extra: { taskId: task.id, type: 'overdue' },
             ...(platform.isIOS && { summary: NOTIFICATION_TITLES.taskOverdue }),
             ...(platform.isAndroid && getAndroidNotificationFields(MOBILE_NOTIFICATION_CHANNELS.tasks)),

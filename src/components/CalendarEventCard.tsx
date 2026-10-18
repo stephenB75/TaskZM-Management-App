@@ -7,7 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from './ui/tooltip';
-import { cn, parseCalendarEventTime, getTimeAndPeriod } from '../lib/utils';
+import { cn, parseCalendarEventTime, formatClockTime, getDisplayTimeAndPeriod } from '../lib/utils';
 import { useTheme } from '../contexts/ThemeContext';
 import { COLOR_CALENDAR_EVENT_SURFACE } from '../lib/color-theme';
 import { getCalendarEventAccent } from '../lib/calendar-event-color';
@@ -71,9 +71,7 @@ function getDurationMinutes(start: string, end: string): number {
 
 // Format time to AM/PM in user's local timezone (uses parseCalendarEventTime so UTC-from-API displays correctly)
 function formatTimeAMPM(isoString: string): string {
-  const date = parseCalendarEventTime(isoString);
-  if (isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  return formatClockTime(parseCalendarEventTime(isoString));
 }
 
 // True if event is date-only (YYYY-MM-DD) or spans full day (24h and starts at midnight local)
@@ -119,7 +117,7 @@ export function CalendarEventCard({ title, start, end, location, provider, calen
   const contentPaddingLeft = isMobile ? CALENDAR_EVENT_DIMENSIONS.contentPadding.left.mobile : CALENDAR_EVENT_DIMENSIONS.contentPadding.left.desktop;
 
   const providerLabel = `${CALENDAR_PROVIDER_EVENT_SOURCE_LABELS[provider]}${CALENDAR_EVENT_UI_TEXT.calendarLabelSuffix}`;
-  const timeAndPeriod = !allDay ? getTimeAndPeriod(start) : null;
+  const timeAndPeriod = !allDay ? getDisplayTimeAndPeriod(start) : null;
   const accentDotColor = getCalendarEventAccent(calendarColor);
 
   const agendaCard = (options: { compact?: boolean; hideTime?: boolean; micro?: boolean; timelineEmbedded?: boolean }) => {

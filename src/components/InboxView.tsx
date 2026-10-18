@@ -6,6 +6,8 @@ import { Icon } from "./Icon";
 import { useTasks } from "../contexts/TaskContext";
 import { usePermissions } from "../hooks/usePermissions";
 import { useAIScheduler } from "../hooks/useAIScheduler";
+import { useAI } from "../contexts/AIContext";
+import { AI_PANEL_UI_TEXT } from "../lib/navigation-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
 import { PRIORITY_WEIGHTS } from "../lib/ai-config";
 import {
@@ -118,6 +120,7 @@ export function InboxView() {
     role: 'admin' as const,
   };
   const { scheduleAllTasks, generateSchedulePlan, applySchedulePlan, isScheduling } = useAIScheduler();
+  const { settings: aiSettings } = useAI();
   const shouldUseMobileLayout = useMobileLayout();
   const orientation = useOrientation();
   const isLandscape = orientation === 'landscape';
@@ -344,6 +347,14 @@ export function InboxView() {
       });
       return;
     }
+    if (!aiSettings.autoSchedulingEnabled || !aiSettings.scheduleUnscheduledTasks) {
+      toast.info(
+        aiSettings.autoSchedulingEnabled
+          ? AI_PANEL_UI_TEXT.schedule.settingOff
+          : AI_PANEL_UI_TEXT.disabled(selectedTaskIds.size),
+      );
+      return;
+    }
     if (selectedTaskIds.size === 0) {
       toast.info("No tasks selected", {
         description: "Please select tasks to schedule",
@@ -447,7 +458,7 @@ export function InboxView() {
       // Reset flag when done
       isSchedulingRef.current = false;
     }
-  }, [permissions.canEditTask, selectedTaskIds, sortedTasks, generateSchedulePlan, applySchedulePlan, isScheduling]);
+  }, [permissions.canEditTask, aiSettings, selectedTaskIds, sortedTasks, generateSchedulePlan, applySchedulePlan, isScheduling]);
 
   const handleUnscheduleSelected = useCallback(async () => {
     if (!permissions.canEditTask) {
@@ -510,6 +521,14 @@ export function InboxView() {
       toast.error('Permission Denied', {
         description: 'Viewer role does not have permission to edit tasks. Please contact an admin.',
       });
+      return;
+    }
+    if (!aiSettings.autoSchedulingEnabled || !aiSettings.scheduleUnscheduledTasks) {
+      toast.info(
+        aiSettings.autoSchedulingEnabled
+          ? AI_PANEL_UI_TEXT.schedule.settingOff
+          : AI_PANEL_UI_TEXT.disabled(unscheduledTasks.length),
+      );
       return;
     }
     logger.debug('handleScheduleAll called', { unscheduledTasksCount: unscheduledTasks.length });
@@ -592,7 +611,7 @@ export function InboxView() {
       // Reset flag when done
       isSchedulingRef.current = false;
     }
-  }, [permissions.canEditTask, unscheduledTasks, scheduleAllTasks, isScheduling]);
+  }, [permissions.canEditTask, aiSettings, unscheduledTasks, scheduleAllTasks, isScheduling]);
 
   const handleToggleSelect = (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();

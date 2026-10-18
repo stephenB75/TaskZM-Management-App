@@ -17,7 +17,7 @@ import {
   PLANNER_GRID_MIN_BLOCK_MINUTES,
   PLANNER_GRID_START_HOUR,
 } from '../../lib/business-constants';
-import { formatTimeAMPM, getDateString, parseCalendarEventTime } from '../../lib/utils';
+import { formatHourLabel, formatTimeAMPM, getDateString, parseCalendarEventTime } from '../../lib/utils';
 import { startOfPlannerWeek } from '../../lib/planner-chat';
 import { revealTaskAboveDialog } from '../../lib/reveal-editing-task';
 import { triggerSelectionHaptic } from '../../lib/native-haptics';
@@ -443,7 +443,7 @@ function DesktopWeek({ anchor, onOpenTask }: { anchor: Date; onOpenTask: (task: 
             label.setHours(startHour + index, 0, 0, 0);
             return (
               <span key={index} style={{ top: index * PLANNER_LAYOUT.hourHeightPx }}>
-                {index === 0 ? '' : label.toLocaleTimeString(undefined, { hour: 'numeric' })}
+                {index === 0 ? '' : formatHourLabel(label)}
               </span>
             );
           })}

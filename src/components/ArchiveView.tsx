@@ -21,7 +21,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { ArchiveTaskCard } from "./ArchiveTaskCard";
-import { cn, prepareTaskForDialog } from "../lib/utils";
+import { cn, daysSinceWeekStart, prepareTaskForDialog } from "../lib/utils";
 import { useMobileLayout } from "../hooks/useMobileLayout";
 import { toast } from '../lib/toast-wrapper';
 import { UI_INBOX_GRADIENTS } from "../lib/ui-colors";
@@ -93,12 +93,12 @@ export function ArchiveView() {
         return completedDate >= yesterday && completedDate < today;
       case "this-week": {
         const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
+        weekStart.setDate(today.getDate() - daysSinceWeekStart(today));
         return completedDate >= weekStart;
       }
       case "last-week": {
         const lastWeekEnd = new Date(today);
-        lastWeekEnd.setDate(today.getDate() - today.getDay());
+        lastWeekEnd.setDate(today.getDate() - daysSinceWeekStart(today));
         const lastWeekStart = new Date(lastWeekEnd);
         lastWeekStart.setDate(lastWeekEnd.getDate() - 7);
         return completedDate >= lastWeekStart && completedDate < lastWeekEnd;
