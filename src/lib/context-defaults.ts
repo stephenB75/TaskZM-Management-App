@@ -78,6 +78,26 @@ export function createDefaultHoursSettings(): HoursSettings {
   };
 }
 
+/** Stored or server hours settings layered onto defaults, filling any missing category or field. */
+export function mergeHoursSettings(stored?: Partial<HoursSettings> | null): HoursSettings {
+  const defaults = createDefaultHoursSettings();
+  if (!stored) return defaults;
+  const mergeDay = (
+    base: HoursSettings['weekdayHours'],
+    override?: Partial<HoursSettings['weekdayHours']>,
+  ): HoursSettings['weekdayHours'] => ({
+    work: { ...base.work, ...override?.work },
+    personal: { ...base.personal, ...override?.personal },
+    projects: { ...base.projects, ...override?.projects },
+  });
+  return {
+    ...defaults,
+    ...stored,
+    weekdayHours: mergeDay(defaults.weekdayHours, stored.weekdayHours),
+    weekendHours: mergeDay(defaults.weekendHours, stored.weekendHours),
+  };
+}
+
 /**
  * Create default RolloverSettings
  */

@@ -305,6 +305,20 @@ export function useAIScheduler() {
     forceCategoryHours || hoursSettings.respectHours;
 
   /**
+   * Whether the user's category hours allow this category on the date's day type.
+   * A category switched off on both weekdays and weekends may use any day (default hours apply).
+   */
+  const isDayAllowedForCategory = (task: Task, date: Date, forceCategoryHours: boolean): boolean => {
+    if (!isCategoryRuleActive(forceCategoryHours)) return true;
+    const category = getTaskCategory(task);
+    if (!category) return true;
+    const weekdayEnabled = !!hoursSettings.weekdayHours[category]?.enabled;
+    const weekendEnabled = !!hoursSettings.weekendHours[category]?.enabled;
+    if (!weekdayEnabled && !weekendEnabled) return true;
+    return isWeekend(date) ? weekendEnabled : weekdayEnabled;
+  };
+
+  /**
    * Category window (minutes from midnight) the slot must fit, mirroring getCategoryTimeSlot:
    * forced scheduling falls back to the default category and default hours when none are enabled.
    */
@@ -1417,52 +1431,19 @@ export function useAIScheduler() {
         }
       }
       
-      // ALWAYS enforce weekend avoidance for work/projects tasks (unconditional rule)
       const category = getTaskCategory(task);
-      // Define preferWeekend in outer scope so it's available in both blocks below
-      const preferWeekend = category === 'personal';
-      
-      if (category) {
-        const testDate = new Date(baseDate);
-        testDate.setDate(testDate.getDate() + daysToAdd);
-        const isCurrentWeekend = isWeekend(baseDate);
-        
-        // Work and projects should ALWAYS avoid weekends, personal prefers weekends
-        const shouldAvoidWeekend = (category === 'work' || category === 'projects') && isCurrentWeekend;
-        
-        // If work/projects task is scheduled on weekend, ALWAYS try to find a weekday
-        if (shouldAvoidWeekend) {
-          const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY) : DEFAULT_SCHEDULING_PERIOD_DAYS;
-          const preferredDaysToAdd = findNextPreferredDay(baseDate, false, maxSearchDays); // false = prefer weekday
-          
-          // Only switch days if we found a weekday and it's within the date range
-          const preferredDate = new Date(baseDate);
-          preferredDate.setDate(preferredDate.getDate() + preferredDaysToAdd);
-          const isWithinRange = !dateRange || (preferredDate >= startDate && preferredDate <= endDate);
-          
-          if (isWithinRange && preferredDaysToAdd < daysToAdd + maxSearchDays) {
-            daysToAdd = preferredDaysToAdd;
-            if (!reason.includes('Due date') && !reason.includes('minimum hours')) {
-              reason = `${category.charAt(0).toUpperCase() + category.slice(1)} task - scheduled for weekday (avoiding weekend)`;
-            }
-          }
-        }
-      }
-      
+      const forceCategoryDays = options?.forceCategoryHours ?? false;
+
       // Apply category-based date preference if respectHours is enabled OR forceCategoryHours is true
       if (hoursSettings.respectHours || options?.forceCategoryHours) {
         if (category) {
           const testDate = new Date(baseDate);
           testDate.setDate(testDate.getDate() + daysToAdd);
           
-          // Check if category hours are enabled for the current day type
+          // Category hours are off for this day type: move to the other day type
           const isCurrentWeekend = isWeekend(testDate);
-          const dayHours = isCurrentWeekend ? hoursSettings.weekendHours : hoursSettings.weekdayHours;
-          const categoryHours = dayHours[category];
-          
-          // If category hours are disabled for the current day type, try to find a preferred day
-          // When forceCategoryHours is true, we should still try to schedule on appropriate days
-          if (!categoryHours.enabled) {
+          const preferWeekend = !isCurrentWeekend;
+          if (!isDayAllowedForCategory(task, testDate, forceCategoryDays)) {
             const maxSearchDays = dateRange ? Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY) : DEFAULT_WEEK_RESCHEDULE_DAYS;
             const preferredDaysToAdd = findNextPreferredDay(baseDate, preferWeekend, maxSearchDays);
             
@@ -1611,11 +1592,10 @@ export function useAIScheduler() {
           const dateKey = getDateKey(currentDate);
           const currentHours = dailyHours.get(dateKey) || 0;
           
-          // ALWAYS skip weekends for work and projects tasks (unconditional rule)
-          const shouldSkipWeekend = (getTaskCategory(task) === 'work' || getTaskCategory(task) === 'projects') &&
-                                    isWeekend(currentDate);
+          const dayBlockedByCategory = !isRecurringTask &&
+            !isDayAllowedForCategory(task, currentDate, options?.forceCategoryHours ?? false);
           
-          if (!shouldSkipWeekend && currentHours < MIN_HOURS_PER_DAY) {
+          if (!dayBlockedByCategory && currentHours < MIN_HOURS_PER_DAY) {
             const hoursNeeded = MIN_HOURS_PER_DAY - currentHours;
             daysNeedingHours.push({
               date: new Date(currentDate),
@@ -1677,13 +1657,8 @@ export function useAIScheduler() {
             continue;
           }
           
-          // ALWAYS skip weekends for work and projects tasks (unconditional rule)
-          const category = getTaskCategory(task);
-          if (category === 'work' || category === 'projects') {
-            const isTestWeekend = isWeekend(testDate);
-            if (isTestWeekend) {
-              continue;
-            }
+          if (!isRecurringTask && !isDayAllowedForCategory(task, testDate, options?.forceCategoryHours ?? false)) {
+            continue;
           }
           
           // Check if this day has space for the task (within maxHoursPerDay limit)
@@ -1836,6 +1811,11 @@ export function useAIScheduler() {
         // See: src/guidelines/AI_SCHEDULING_GUIDELINES.md Section 4
         // Search for an available slot within the two-week span; never default to next-day 12 AM
         while (scheduleDate <= endDate) {
+        if (!isRecurringTask && !isDayAllowedForCategory(task, scheduleDate, options?.forceCategoryHours ?? false)) {
+          scheduleDate.setDate(scheduleDate.getDate() + 1);
+          scheduleDate.setHours(0, 0, 0, 0);
+          continue;
+        }
         const dateKey = getDateKey(scheduleDate);
         // GUIDELINE 2: FIND AVAILABLE TIME - Get all tasks for the target date
         // Must include: existing tasks + tasks in current plan + recurring tasks that apply to this date

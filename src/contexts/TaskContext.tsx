@@ -69,7 +69,7 @@ import {
 } from '../lib/business-constants';
 import { TIME_ROUNDING_INTERVAL_MINUTES } from '../lib/ai-config';
 import { COLOR_PROJECT_DEFAULT } from '../lib/color-theme';
-import { createDefaultRolloverSettings, createDefaultTaskContext } from '../lib/context-defaults';
+import { createDefaultRolloverSettings, createDefaultTaskContext, mergeHoursSettings } from '../lib/context-defaults';
 
 interface TaskContextType {
   tasks: Task[];
@@ -203,20 +203,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     showCompleted: true,
   });
   const [isLoading, setIsLoading] = useState(true); // Track workspace loading state
-  const [hoursSettings, setHoursSettings] = useState<HoursSettings>(() => ({
-    weekdayHours: {
-      work: { start: DEFAULT_WEEKDAY_WORK_START, end: DEFAULT_WEEKDAY_WORK_END, enabled: true },
-      personal: { start: DEFAULT_WEEKDAY_PERSONAL_START, end: DEFAULT_WEEKDAY_PERSONAL_END, enabled: true },
-      projects: { start: DEFAULT_WEEKDAY_PROJECTS_START, end: DEFAULT_WEEKDAY_PROJECTS_END, enabled: true },
-    },
-    weekendHours: {
-      work: { start: DEFAULT_WEEKEND_WORK_START, end: DEFAULT_WEEKEND_WORK_END, enabled: false },
-      personal: { start: DEFAULT_WEEKEND_PERSONAL_START, end: DEFAULT_WEEKEND_PERSONAL_END, enabled: true },
-      projects: { start: DEFAULT_WEEKEND_PROJECTS_START, end: DEFAULT_WEEKEND_PROJECTS_END, enabled: true },
-    },
-    respectHours: true,
-    ...getFromLocalStorage<Partial<HoursSettings>>('hoursSettings', {}),
-  }));
+  const [hoursSettings, setHoursSettings] = useState<HoursSettings>(() =>
+    mergeHoursSettings(getFromLocalStorage<Partial<HoursSettings> | null>('hoursSettings', null)),
+  );
   const [rolloverSettings, setRolloverSettings] = useState<RolloverSettings>(() => ({
     ...createDefaultRolloverSettings(),
     ...getFromLocalStorage<Partial<RolloverSettings>>('rolloverSettings', {}),
@@ -1355,9 +1344,12 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      if (settings.hoursSettings) {
-        setHoursSettings(settings.hoursSettings);
-        saveToLocalStorage('hoursSettings', settings.hoursSettings);
+      // A pending local save is newer than the server copy; applying it would undo the user's change.
+      if (settings.hoursSettings && !hoursSaveTimerRef.current) {
+        const merged = mergeHoursSettings(settings.hoursSettings);
+        hoursSettingsRef.current = merged;
+        setHoursSettings(merged);
+        saveToLocalStorage('hoursSettings', merged);
       }
       
       if (settings.rolloverSettings) {
