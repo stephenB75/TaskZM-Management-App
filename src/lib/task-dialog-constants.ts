@@ -145,6 +145,8 @@ export const TASK_DIALOG_UI_TEXT = {
   selectOrAddTag: 'Select or add tag...',
   noFolder: 'No folder',
   addDependency: 'Add dependency...',
+  noDependencyCandidates: 'No other open tasks to depend on',
+  invalidDependencies: 'Invalid dependencies',
   addAssignee: 'Add assignee...',
   selectHour: 'Hour',
   selectMin: 'Min',

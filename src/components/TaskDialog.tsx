@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
 import {
@@ -50,6 +50,7 @@ import {
   getOccurrenceDateString,
   generateId,
   validateDependencies,
+  hasCircularDependency,
   getIncompleteDependencies,
   getInitials,
   getAbbreviatedDisplayName,
@@ -745,7 +746,7 @@ export function TaskDialog({
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editingSubtaskValue, setEditingSubtaskValue] = useState("");
   const [selectedAssigneeValue, setSelectedAssigneeValue] = useState<string>("");
-  const [selectedDependencyValue, setSelectedDependencyValue] = useState<string>("");
+  const [dependencyError, setDependencyError] = useState<string | null>(null);
   const [subtaskInput, setSubtaskInput] = useState("");
   const [estimatedTime, setEstimatedTime] = useState("");
   const [estimatedHours, setEstimatedHours] = useState("0");
@@ -1221,7 +1222,7 @@ export function TaskDialog({
       setTagInput("");
       setSelectedTagValue("");
       setSelectedAssigneeValue("");
-      setSelectedDependencyValue("");
+      setDependencyError(null);
       setSubtasks([]);
       setEstimatedTime("");
       setEstimatedHours("0");
@@ -1495,7 +1496,9 @@ export function TaskDialog({
     );
 
     if (!validation.valid) {
-      toast.error("Invalid Dependencies", {
+      setDependencyError(validation.error ?? TASK_DIALOG_UI_TEXT.invalidDependencies);
+      setActiveOption('dependencies');
+      toast.error(TASK_DIALOG_UI_TEXT.invalidDependencies, {
         description: validation.error,
       });
       return;
@@ -2432,11 +2435,13 @@ export function TaskDialog({
   const addDependency = (taskId: string) => {
     if (!dependencies.includes(taskId)) {
       setDependencies([...dependencies, taskId]);
+      setDependencyError(null);
     }
   };
 
   const removeDependency = (taskId: string) => {
     setDependencies(dependencies.filter((id) => id !== taskId));
+    setDependencyError(null);
   };
 
   const handleDelete = async () => {
@@ -2532,10 +2537,23 @@ export function TaskDialog({
     }
   };
 
-  // Get available tasks for dependencies (exclude self and completed tasks)
-  const availableTasksForDependencies = Array.isArray(tasks) ? tasks.filter(
-    (t) => t && t.id && t.id !== task?.id && t.status !== "done",
-  ) : [];
+  // One entry per recurring series (its next open occurrence); excludes self, own series, done tasks and cycles
+  const availableTasksForDependencies = useMemo(() => {
+    if (!Array.isArray(tasks)) return [];
+    const ownSeriesKey = task?.id ? getSeriesBaseId(task.id) ?? task.id : null;
+    const bySeries = new Map<string, Task>();
+    for (const t of tasks) {
+      if (!t?.id || t.status === "done" || dependencies.includes(t.id)) continue;
+      const seriesKey = getSeriesBaseId(t.id) ?? t.id;
+      if (seriesKey === ownSeriesKey) continue;
+      if (task?.id && hasCircularDependency(task.id, t.id, tasks)) continue;
+      const existing = bySeries.get(seriesKey);
+      if (!existing || (t.scheduledDate ?? "") < (existing.scheduledDate ?? "")) {
+        bySeries.set(seriesKey, t);
+      }
+    }
+    return Array.from(bySeries.values());
+  }, [tasks, task?.id, dependencies]);
 
   // Convert time between timezones
   const getTimezoneDisplay = () => {
@@ -3675,20 +3693,17 @@ export function TaskDialog({
                   {hasFeature('taskDependencies') ? (
                     <>
                       <Select
-                        value={selectedDependencyValue || undefined}
+                        key={dependencies.join(",")}
+                        disabled={availableTasksForDependencies.length === 0}
                         onValueChange={(value) => {
-                          if (value && !dependencies.includes(value)) {
-                            addDependency(value);
-                            setSelectedDependencyValue("");
-                          }
+                          if (value) addDependency(value);
                         }}
                       >
                         <SelectTrigger className={cn(TASK_DIALOG_COLORS.inputFieldBg, "h-10 text-foreground border-2 border-primary/30 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20")}>
-                          <SelectValue placeholder={TASK_DIALOG_UI_TEXT.addDependency} />
+                          <SelectValue placeholder={availableTasksForDependencies.length === 0 ? TASK_DIALOG_UI_TEXT.noDependencyCandidates : TASK_DIALOG_UI_TEXT.addDependency} />
                         </SelectTrigger>
                         <SelectContent style={{ zIndex: Z_INDEX.SELECT_CONTENT }}>
                           {availableTasksForDependencies
-                            .filter((t) => !dependencies.includes(t.id))
                             .map((t) => (
                               <SelectItem key={t.id} value={t.id}>
                                 <div className="flex items-center gap-2">
@@ -3706,6 +3721,10 @@ export function TaskDialog({
                             ))}
                         </SelectContent>
                       </Select>
+
+                      {dependencyError && (
+                        <p role="alert" className="text-xs text-destructive">{dependencyError}</p>
+                      )}
 
                       {dependencies.length > 0 && (
                         <div className="space-y-2 mt-3">

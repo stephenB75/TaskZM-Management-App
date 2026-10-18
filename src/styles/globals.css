@@ -1600,8 +1600,15 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 .planner-composer details summary::-webkit-details-marker {
   display: none;
 }
+.planner-context-hint {
+  margin: 0 6px 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
 .planner-composer details textarea {
-  min-height: 72px;
+  min-height: 120px;
+  resize: vertical;
   margin-bottom: 6px;
   border-radius: 12px;
   background: var(--muted);

@@ -15,6 +15,7 @@ import {
   draftToTask,
   endOfDay,
   formatPlannedWhen,
+  parseBrainDump,
   parsePlannerDrafts,
   plannerScheduleWindow,
   plannerSummary,
@@ -468,10 +469,22 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
     addDrafts(command?.kind === 'breakDown' ? parsePlannerDrafts(command.ref) : intent.drafts);
   }, [addDrafts, reschedule, run, runCommand, say, scheduleInbox]);
 
+  // Brain dumps only ever create drafts; they never run commands or edit existing tasks.
   const analyzeContext = useCallback((text: string) => {
-    if (!text.trim()) return;
-    addDrafts(parsePlannerDrafts(text));
-  }, [addDrafts]);
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const { brainDumpPreviewChars } = PLANNER_CHAT_CONFIG;
+    say(message('user', trimmed.length > brainDumpPreviewChars ? `${trimmed.slice(0, brainDumpPreviewChars).trimEnd()}…` : trimmed));
+    const openTitles = tasksRef.current.filter((task) => task.status !== 'done').map((task) => task.title);
+    const { drafts, skippedNotes, skippedDuplicates } = parseBrainDump(trimmed, openTitles);
+    if (drafts.length > 0) setState((prev) => ({ ...prev, drafts: [...prev.drafts, ...drafts] }));
+    say(message('planner', PLANNER_UI_TEXT.replies.brainDump({
+      tasks: drafts.length,
+      withSteps: drafts.filter((draft) => draft.subtasks?.length).length,
+      notes: skippedNotes,
+      duplicates: skippedDuplicates,
+    })));
+  }, [say]);
 
   const acceptDraft = useCallback((id: string) => run(async () => {
     const draft = state.drafts.find((item) => item.id === id);

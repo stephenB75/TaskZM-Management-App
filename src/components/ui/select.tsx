@@ -64,7 +64,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "bg-[var(--input-background)] text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 relative max-h-(--radix-select-content-available-height) origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto border border-input shadow-sm pointer-events-auto",
+          "bg-[var(--input-background)] text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 relative max-h-[var(--radix-select-content-available-height)] origin-[var(--radix-select-content-transform-origin)] overflow-x-hidden overflow-y-auto border border-input shadow-sm pointer-events-auto",
           position === "popper"
             ? "w-[var(--radix-select-trigger-width)] rounded-xl data-[side=bottom]:rounded-t-none data-[side=bottom]:border-t-0 data-[side=top]:rounded-b-none data-[side=top]:border-b-0"
             : "min-w-[8rem] rounded-md",

@@ -3,7 +3,7 @@
  * Scheduling itself always goes through useAIScheduler (daily limits, category hours, calendar events).
  */
 
-import { PLANNER_CHAT_CONFIG } from './ai-config';
+import { PLANNER_ANALYSIS_CONFIG, PLANNER_CHAT_CONFIG } from './ai-config';
 import {
   DAYS_IN_WEEK,
   DEFAULT_PROJECT_ID,
@@ -22,7 +22,15 @@ import { DEFAULT_CREATED_BY, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from '
 import { generateId, getClockHourCycle, getWeekStart } from './utils';
 import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from './navigation-constants';
 import { parsePlannerWhen, stripPlannerWhen } from './planner-commands';
-import { estimateWithSubtasks, improveTitle, splitClauses, splitInlineSteps, suggestSubtasks } from './planner-analysis';
+import {
+  estimateWithSubtasks,
+  improveTitle,
+  isNoteSentence,
+  splitClauses,
+  splitInlineSteps,
+  suggestSubtasks,
+  taskTitleKey,
+} from './planner-analysis';
 import type { Subtask, Task, TaskPriority } from '../types';
 
 export type PlannerCategory = 'work' | 'personal' | 'projects';
@@ -71,7 +79,8 @@ function inferPriority(title: string): TaskPriority {
 }
 
 function inferCategory(title: string): PlannerCategory | null {
-  const { categoryPatterns } = PLANNER_CHAT_CONFIG;
+  const { categoryPatterns, personalFirstPattern } = PLANNER_CHAT_CONFIG;
+  if (personalFirstPattern.test(title)) return 'personal';
   if (categoryPatterns.work.test(title)) return 'work';
   if (categoryPatterns.personal.test(title)) return 'personal';
   if (categoryPatterns.projects.test(title)) return 'projects';
@@ -91,7 +100,7 @@ function cleanTitle(raw: string): string {
   const withoutDuration = withoutMarker
     .replace(PLANNER_CHAT_CONFIG.durationPattern, '')
     .replace(PLANNER_CHAT_CONFIG.priorityTagPattern, '');
-  return withoutDuration.replace(/\s{2,}/g, ' ').replace(/[\s,.(-]+$/, '').replace(/\(\s*\)/g, '').trim();
+  return withoutDuration.replace(/\s{2,}/g, ' ').replace(/[\s,.?(-]+$/, '').replace(/\(\s*\)/g, '').trim();
 }
 
 /** Build a full Task (unsaved) so the scheduler and estimator can work with a draft. */
@@ -122,8 +131,9 @@ export function draftToTask(draft: PlannerDraft, createdBy?: string | null): Tas
 }
 
 /** One draft from one task's text: tidied title, estimate, and subtasks when the task is bigger. */
-function buildDraft(source: string): PlannerDraft | null {
-  const inline = splitInlineSteps(source);
+function buildDraft(source: string, explicitSteps?: string[]): PlannerDraft | null {
+  const listedSteps = explicitSteps?.map(improveTitle).filter(Boolean).slice(0, PLANNER_ANALYSIS_CONFIG.maxSubtasks);
+  const inline = listedSteps?.length ? { title: source, steps: listedSteps } : splitInlineSteps(source);
   const titleSource = inline ? inline.title : source;
   const when = parsePlannerWhen(source, new Date());
   const titleWithoutWhen = when ? cleanTitle(stripPlannerWhen(titleSource)) : '';
@@ -148,21 +158,108 @@ function buildDraft(source: string): PlannerDraft | null {
   return draft;
 }
 
-export function parsePlannerDrafts(text: string): PlannerDraft[] {
-  const drafts: PlannerDraft[] = [];
+/** Task-sized pieces of one line: a line with its own steps stays one task; otherwise each clause can be its own task. */
+function linePieces(text: string): string[] {
+  const pieces: string[] = [];
   for (const rawLine of text.split(PLANNER_CHAT_CONFIG.draftSeparator)) {
     const line = rawLine.replace(PLANNER_CHAT_CONFIG.listMarker, '').trim();
     if (!line) continue;
-    // A line with its own steps stays one task; otherwise each clause can be its own task.
-    const pieces = splitInlineSteps(line) ? [line] : splitClauses(line);
-    for (const piece of pieces) {
-      const draft = buildDraft(piece);
-      if (!draft) continue;
-      drafts.push(draft);
-      if (drafts.length >= PLANNER_CHAT_CONFIG.maxDraftsPerMessage) return drafts;
-    }
+    pieces.push(...(splitInlineSteps(line) ? [line] : splitClauses(line)));
+  }
+  return pieces;
+}
+
+export function parsePlannerDrafts(text: string): PlannerDraft[] {
+  const drafts: PlannerDraft[] = [];
+  for (const piece of linePieces(text)) {
+    const draft = buildDraft(piece);
+    if (!draft) continue;
+    drafts.push(draft);
+    if (drafts.length >= PLANNER_CHAT_CONFIG.maxDraftsPerMessage) return drafts;
   }
   return drafts;
+}
+
+export interface BrainDumpResult {
+  drafts: PlannerDraft[];
+  /** Sentences left out because they read like notes or feelings. */
+  skippedNotes: number;
+  /** Tasks left out because they repeat one in the dump or one already open. */
+  skippedDuplicates: number;
+}
+
+interface BrainDumpBlock {
+  text: string;
+  indent: number;
+  isHeader: boolean;
+  steps: string[];
+}
+
+/** Group a brain dump into blocks: a "Header:" line or a less-indented line owns the bulleted/indented lines under it. */
+function groupBrainDump(text: string): BrainDumpBlock[] {
+  const blocks: BrainDumpBlock[] = [];
+  let parent: BrainDumpBlock | null = null;
+  for (const raw of text.split(/\r?\n/)) {
+    if (!raw.trim()) {
+      parent = null;
+      continue;
+    }
+    const indent = (raw.match(/^\s*/)?.[0] ?? '').replace(/\t/g, '  ').length;
+    const isListItem = PLANNER_CHAT_CONFIG.listMarker.test(raw);
+    const content = raw.replace(PLANNER_CHAT_CONFIG.listMarker, '').trim();
+    if (parent && (indent > parent.indent || (parent.isHeader && isListItem))) {
+      parent.steps.push(content);
+      continue;
+    }
+    const block: BrainDumpBlock = {
+      text: content,
+      indent,
+      isHeader: PLANNER_ANALYSIS_CONFIG.groupHeaderPattern.test(content),
+      steps: [],
+    };
+    blocks.push(block);
+    parent = block;
+  }
+  return blocks;
+}
+
+/**
+ * Turn a messy brain dump (notes, an email, a rambling list) into clean draft tasks: headers and indented
+ * lists become a task with subtasks, notes and feelings are left out, and repeats of open tasks are skipped.
+ */
+export function parseBrainDump(text: string, existingTitles: string[] = []): BrainDumpResult {
+  const seen = new Set(existingTitles.map(taskTitleKey));
+  const drafts: PlannerDraft[] = [];
+  let skippedNotes = 0;
+  let skippedDuplicates = 0;
+
+  const push = (draft: PlannerDraft | null) => {
+    if (!draft) return;
+    const key = taskTitleKey(draft.title);
+    if (seen.has(key)) {
+      skippedDuplicates += 1;
+      return;
+    }
+    seen.add(key);
+    drafts.push(draft);
+  };
+
+  for (const block of groupBrainDump(text)) {
+    if (drafts.length >= PLANNER_CHAT_CONFIG.maxDraftsPerBrainDump) break;
+    if (block.steps.length > 0) {
+      push(buildDraft(block.text.replace(PLANNER_ANALYSIS_CONFIG.groupHeaderPattern, ''), block.steps));
+      continue;
+    }
+    for (const piece of linePieces(block.text)) {
+      if (drafts.length >= PLANNER_CHAT_CONFIG.maxDraftsPerBrainDump) break;
+      if (isNoteSentence(piece)) {
+        skippedNotes += 1;
+        continue;
+      }
+      push(buildDraft(piece));
+    }
+  }
+  return { drafts, skippedNotes, skippedDuplicates };
 }
 
 export function endOfDay(date: Date): Date {

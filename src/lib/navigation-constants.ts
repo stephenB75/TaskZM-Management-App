@@ -52,6 +52,22 @@ export const AI_PANEL_UI_TEXT = {
   rescheduleRanges: { day: 'A day', week: 'A week', month: 'A month' },
 } as const;
 
+export const SCHEDULE_RESULT_UI_TEXT = {
+  title: (count: number) =>
+    count > 0 ? `Scheduled ${count} task${count === 1 ? '' : 's'}` : 'No tasks could be scheduled',
+  description: 'Times follow your category hours, daily hour limit, and calendar events.',
+  unscheduledHeading: (count: number) => `${count} task${count === 1 ? '' : 's'} still need a time`,
+  reasons: {
+    dailyLimit: (hours: number) => `Adding it would go over your ${hours}h daily limit on every allowed day.`,
+    noCategorySlot: (category: string | null) =>
+      category
+        ? `No free time inside ${category} hours on the days allowed for ${category} tasks.`
+        : 'No free time on any day in the next two weeks.',
+  },
+  fixHint: 'To fit more, raise the daily hour limit or widen category hours in Settings, or schedule these by hand.',
+  done: 'Done',
+} as const;
+
 export const MOBILE_HOME_UI_TEXT = {
   tabs: {
     schedule: 'Schedule',
@@ -171,9 +187,10 @@ export const PLANNER_UI_TEXT = {
     acceptAll: 'Accept all',
     skipAll: 'Skip all',
     composerPlaceholder: 'Add tasks or ask the planner…',
-    addContext: 'Add context',
-    contextPlaceholder: 'Paste notes, an email, or a brain dump…',
-    analyzeContext: 'Analyze context',
+    addContext: 'Brain dump',
+    contextHint: 'Paste anything messy. Each idea becomes a clean task, and a "Header:" or indented list becomes one task with subtasks. Nothing is saved until you accept it.',
+    contextPlaceholder: 'Notes, an email, or everything on your mind…',
+    analyzeContext: 'Turn into tasks',
     send: 'Send',
     voiceStart: 'Dictate',
     voiceStop: 'Stop dictation',
@@ -199,6 +216,22 @@ export const PLANNER_UI_TEXT = {
         .filter(Boolean)
         .join(' '),
     nothingFound: "I couldn't find any tasks in that. Try one task per line.",
+    brainDump: ({ tasks, withSteps, notes, duplicates }: { tasks: number; withSteps: number; notes: number; duplicates: number }) =>
+      [
+        tasks === 0
+          ? "I couldn't find tasks in that. Try listing actions, like \"Email Sam about the invoice\"."
+          : `I turned that into ${plural(tasks, 'clean task')}.`,
+        withSteps === 0
+          ? ''
+          : withSteps === 1
+            ? '1 bigger task is broken into subtasks.'
+            : `${withSteps} bigger tasks are broken into subtasks.`,
+        notes === 0 ? '' : `I left out ${plural(notes, 'line')} that read like notes, not tasks.`,
+        duplicates === 0 ? '' : `${plural(duplicates, 'task')} ${duplicates === 1 ? 'was' : 'were'} already on your list, so I skipped ${duplicates === 1 ? 'it' : 'them'}.`,
+        tasks === 0 ? '' : "Review the drafts below and accept the ones you want. I'll find each a time.",
+      ]
+        .filter(Boolean)
+        .join(' '),
     scheduledOne: (title: string, when: string) => `Booked "${title}" for ${when}.`,
     addedToInbox: (title: string) => `Added "${title}" to your Inbox. It needs a time.`,
     scheduledMany: (count: number) => `Booked ${plural(count, 'task')} into open slots.`,

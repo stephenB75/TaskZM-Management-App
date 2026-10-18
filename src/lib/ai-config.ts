@@ -1172,6 +1172,10 @@ export const PLANNER_CHAT_CONFIG = {
   /** Leading list markers stripped from each draft line. */
   listMarker: /^\s*(?:[-*•]|\d+[.)])\s*/,
   maxDraftsPerMessage: 12,
+  /** A brain dump is usually longer than a chat message, so it may produce more drafts. */
+  maxDraftsPerBrainDump: 20,
+  /** Characters of a brain dump echoed back as the user's chat bubble. */
+  brainDumpPreviewChars: 280,
   minTitleLength: 2,
   maxStoredMessages: 50,
   storageKey: 'taskzm_planner_chat',
@@ -1188,6 +1192,8 @@ export const PLANNER_CHAT_CONFIG = {
     high: /\b(today|tonight|deadline|due|important|high priority)\b/i,
     low: /\b(someday|maybe|eventually|low priority|whenever)\b/i,
   },
+  /** Checked before the other categories so "call mom" or "plan the trip" isn't filed as work or a project. */
+  personalFirstPattern: /\b(mom|mum|dad|parents?|kids?|wife|husband|partner|grandma|grandpa|sister|brother|friends?|vet|haircut|trip|vacation|holiday|passport)\b/i,
   categoryPatterns: {
     work: /\b(meeting|client|report|email|call|review|deck|presentation|standup|invoice|proposal|deploy|code|ship|interview|sync)\b/i,
     personal: /\b(gym|workout|doctor|dentist|groceries|laundry|clean|family|birthday|dinner|run|walk|pay|bills|errand|appointment)\b/i,
@@ -1284,9 +1290,17 @@ export const PLANNER_CHAT_CONFIG = {
 /** Planner analysis: tidy drafted tasks and break bigger ones into subtasks (rule-based, runs on device). */
 export const PLANNER_ANALYSIS_CONFIG = {
   /** Breaks inside a sentence that start another task ("redo the site, also call mom", "…. Then email Sam"). */
-  clauseSeparator: /(?<=[a-z0-9)])[.!]\s+(?=[A-Za-z])|,?\s+(?:and\s+)?also\s+|,\s*(?:then|plus)\s+|\s+and\s+then\s+/i,
+  clauseSeparator: /(?<=[a-z0-9)][.!?])\s+(?=[A-Za-z])|,?\s+(?:and\s+)?also\s+|,\s*(?:then|plus)\s+|\s+and\s+then\s+|\s+and\s+(?:maybe|probably|perhaps)?\s*(?=(?:call|email|text|message|reply|send|book|buy|order|pay|fix|finish|submit|renew|schedule|cancel|return|pick\s+up|follow\s+up|clean|prepare|review|check|update|write|draft|file|read|meet)\b)/i,
   /** Filler that doesn't belong in a task title; stripped repeatedly from the start. */
-  fillerPrefix: /^(?:(?:i|we)\s+(?:really\s+)?(?:need|have|want|got|ought)\s+to\s+|(?:i|we)\s+(?:should|must|will|have\s+got\s+to)\s+|(?:i'?ll|we'?ll|gotta|need\s+to|have\s+to|got\s+to|want\s+to)\s+|(?:don'?t\s+forget|remember|make\s+sure)\s+to\s+|(?:todo|to-do|task|reminder)\s*[:-]\s*|please\s+|(?:and|also|then|plus)\s+)/i,
+  fillerPrefix: /^(?:(?:i|we)\s+(?:really\s+)?(?:need|have|want|got|ought)\s+to\s+|(?:i\s+think\s+)?(?:i|we)\s+(?:should|must|will|could|might|have\s+got\s+to)\s+|(?:i'?m|i\s+am|we'?re|we\s+are)?\s*going\s+to\s+|(?:maybe|probably|perhaps|eventually|definitely|really|actually|finally)\s+|i\s+think\s+|(?:i'?ll|we'?ll|gotta|need\s+to|have\s+to|got\s+to|want\s+to)\s+|(?:don'?t\s+forget|remember|make\s+sure)\s+to\s+|(?:todo|to-do|task|reminder)\s*[:-]\s*|please\s+|(?:and|also|then|plus)\s+)/i,
+  /** Trailing filler dropped from a title ("…at some point", "…asap"); priority is still read from the original text. */
+  fillerSuffix: /\s+(?:at\s+some\s+point|sometime(?:\s+soon)?|soon(?:ish)?|asap|if\s+(?:i|we)\s+can|if\s+possible|when\s+(?:i|we)\s+(?:get|have)\s+(?:a\s+chance|time)|or\s+something|lol)$/i,
+  /** Brain-dump sentences that read like a note or feeling rather than a task ("I'm so behind", "Not sure why…"). */
+  noteSentencePattern: /^(?:i'?m|i\s+am|i\s+feel|feeling|it'?s|it\s+is|this\s+(?:is|week|month|weekend)|that\s+(?:is|was)|there'?s|there\s+(?:is|are)|ugh|honestly|lol|wow|so\s+(?:much|many|tired|busy|stressed)|not\s+sure|idk|fyi|note\b|notes?\s*:)/i,
+  /** Words that make a sentence a task even when it starts like a note ("I'm going to call Sam", "Is it time to renew…? need to check"). */
+  actionCuePattern: /\b(?:need|needs|have|has|must|should|got|gotta|want|going)\s+to\b|\b(?:remember|don'?t\s+forget|make\s+sure)\b|\b(?:todo|to-do)\b/i,
+  /** A brain-dump line ending with a colon heads the bulleted lines below it ("Website:"). */
+  groupHeaderPattern: /:\s*$/,
   /** A title followed by its own steps: "Plan party: invite guests, order cake" or "… including a, b and c". Groups: title, steps. */
   inlineStepsPattern: /^(.+?)\s*(?::|\s[-–—]\s|\s+(?:including|incl\.?|such as|which means|steps?:?))\s+(.+)$/i,
   /** Inline steps only count as subtasks when there are at least this many. */

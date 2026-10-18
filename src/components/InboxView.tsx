@@ -5,7 +5,8 @@ import { triggerSelectionHaptic } from "../lib/native-haptics";
 import { Icon } from "./Icon";
 import { useTasks } from "../contexts/TaskContext";
 import { usePermissions } from "../hooks/usePermissions";
-import { useAIScheduler } from "../hooks/useAIScheduler";
+import { useAIScheduler, type SchedulePlan, type UnscheduledTask } from "../hooks/useAIScheduler";
+import { AIScheduleResultDialog } from "./AIScheduleResultDialog";
 import { useAI } from "../contexts/AIContext";
 import { AI_PANEL_UI_TEXT } from "../lib/navigation-constants";
 import { getTaskMinutes } from "../lib/daily-hours-utils";
@@ -163,6 +164,10 @@ export function InboxView() {
   const [quickAddTitle, setQuickAddTitle] = useState("");
   const [showScheduled, setShowScheduled] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [scheduleResult, setScheduleResult] = useState<{
+    scheduled: SchedulePlan[];
+    unscheduled: UnscheduledTask[];
+  } | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Today's date for calendar events (stable per calendar day)
@@ -436,6 +441,9 @@ export function InboxView() {
           },
         );
       }
+      if (result) {
+        setScheduleResult({ scheduled: result.scheduled ?? [], unscheduled: result.unscheduled ?? [] });
+      }
     } catch (error) {
       toast.dismiss(loadingToast);
       logger.error('Error in handleScheduleSelected:', error);
@@ -589,6 +597,9 @@ export function InboxView() {
             description: "No remaining time within the next two weeks for these tasks.",
           },
         );
+      }
+      if (result) {
+        setScheduleResult({ scheduled: result.scheduled ?? [], unscheduled: result.unscheduled ?? [] });
       }
     } catch (error) {
       toast.dismiss(loadingToast);
@@ -768,38 +779,34 @@ export function InboxView() {
         title="Inbox"
         panelOpen={true}
         isSidePanelHeader={true}
-        description={selectedTaskIds.size > 0 
-          ? undefined 
-          : (showScheduled 
-            ? `${unscheduledTasks.length} scheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
-            : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
-          )
+        description={showScheduled 
+          ? `${unscheduledTasks.length} scheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
+          : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
         }
         hideDesktopLogo
         actions={
-          <div className={cn(
-            "flex flex-shrink-0 max-w-full",
-            selectedTaskIds.size > 0 ? "flex-col items-end" : "items-center flex-wrap gap-1"
-          )} style={{ 
-            gap: !shouldUseMobileLayout
-              ? HEADER_GAP_XSMALL // Reduced gap for desktop to prevent overlap (4px)
-              : HEADER_GAP_SMALL 
-          }}>
-            {selectedTaskIds.size > 0 ? (
-              <>
-                <p 
-                  className="hidden text-muted-foreground text-right sm:block"
-                  style={{ 
-                    fontSize: HEADER_DESCRIPTION_SIZE,
-                    marginBottom: HEADER_DESCRIPTION_MARGIN_TOP,
-                  }}
-                >
-                  {showScheduled 
-                    ? `${unscheduledTasks.length} scheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
-                    : `${unscheduledTasks.length} unscheduled task${unscheduledTasks.length === 1 ? "" : "s"}`
-                  }
-                </p>
-                <div className="flex items-center flex-wrap flex-shrink-0 justify-end" style={{ gap: HEADER_GAP_SMALL }}>
+          <InboxHeaderPill
+            icon="plus"
+            label="New task"
+            className="hidden sm:inline-flex"
+            disabled={!permissions.canCreateTask}
+            onClick={() => {
+              setSelectedTask(undefined);
+              setIsTaskDialogOpen(true);
+            }}
+          />
+        }
+      />
+
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Quick Add and Filters Section */}
+        <div 
+          className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0"
+          style={shouldUseMobileLayout ? undefined : undefined} // App.tsx scroll container handles top spacing on mobile - no extra padding needed
+        >
+          <div className="flex flex-col gap-4">
+            {selectedTaskIds.size > 0 && (
+              <div className="flex flex-wrap items-center" style={{ gap: HEADER_GAP_SMALL }} data-testid="inbox-selection-actions">
                   <InboxHeaderPill
                     icon="check-square"
                     label={selectedTaskIds.size === sortedTasks.length ? "Deselect all" : "Select all"}
@@ -835,32 +842,7 @@ export function InboxView() {
                     }}
                   />
                 </div>
-              </>
-            ) : (
-              <>
-                <InboxHeaderPill
-                  icon="plus"
-                  label="New task"
-                  className="hidden sm:inline-flex"
-                  disabled={!permissions.canCreateTask}
-                  onClick={() => {
-                    setSelectedTask(undefined);
-                    setIsTaskDialogOpen(true);
-                  }}
-                />
-              </>
             )}
-          </div>
-        }
-      />
-
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Quick Add and Filters Section */}
-        <div 
-          className="px-4 md:px-8 py-6 border-b border-primary/10 bg-white/50 dark:bg-background/50 backdrop-blur-sm flex-shrink-0"
-          style={shouldUseMobileLayout ? undefined : undefined} // App.tsx scroll container handles top spacing on mobile - no extra padding needed
-        >
-          <div className="flex flex-col gap-4">
             {/* Filters */}
             <div className="flex flex-col gap-3">
               <div className="relative">
@@ -1015,6 +997,16 @@ export function InboxView() {
       </div>
 
       {/* Task Dialog */}
+      <AIScheduleResultDialog
+        open={scheduleResult !== null}
+        onOpenChange={(open) => {
+          if (!open) setScheduleResult(null);
+        }}
+        scheduledTasks={scheduleResult?.scheduled ?? []}
+        unscheduledTasks={scheduleResult?.unscheduled ?? []}
+        maxHoursPerDay={aiSettings.maxHoursPerDay}
+      />
+
       <TaskDialog
         open={isTaskDialogOpen}
         onClose={() => {

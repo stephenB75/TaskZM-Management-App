@@ -297,13 +297,14 @@ export function PlannerChat({ className }: { className?: string }) {
             <Icon name="plus" size={PLANNER_LAYOUT.iconXsPx} />
             {TEXT.addContext}
           </summary>
+          <p className="planner-context-hint">{TEXT.contextHint}</p>
           <textarea
             value={context}
             onChange={(event) => setContext(event.target.value)}
             placeholder={TEXT.contextPlaceholder}
             aria-label={TEXT.addContext}
           />
-          <button type="button" className="planner-pill mb-2" onClick={submitContext} disabled={!context.trim()}>
+          <button type="button" className="planner-pill mb-2" onClick={submitContext} disabled={!context.trim() || busy}>
             <Icon name="sparkles" size={PLANNER_LAYOUT.iconXsPx} />
             {TEXT.analyzeContext}
           </button>

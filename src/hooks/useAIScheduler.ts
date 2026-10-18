@@ -71,10 +71,18 @@ export interface SchedulePlan {
   reason?: string;
 }
 
+export type UnscheduledReason = 'dailyLimit' | 'noCategorySlot';
+
+export interface UnscheduledTask {
+  task: Task;
+  reason: UnscheduledReason;
+}
+
 export interface ScheduleResult {
   scheduled: SchedulePlan[];
-  exceedsLimit: Task[]; // Tasks that exceed the daily limit
+  exceedsLimit: Task[]; // Tasks that could not be placed in the period
   daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }>; // Days that exceed the daily limit
+  unscheduled?: UnscheduledTask[];
 }
 
 export function useAIScheduler() {
@@ -1196,6 +1204,7 @@ export function useAIScheduler() {
     
     const plan: SchedulePlan[] = [];
     const exceedsLimit: Task[] = [];
+    const unscheduled: UnscheduledTask[] = [];
     const daysExceedingLimit: Array<{ date: string; hours: number; tasks: Task[] }> = [];
     
     // Use startDate as the base for scheduling (selected date for rescheduling, or tomorrow for new scheduling)
@@ -1703,6 +1712,7 @@ export function useAIScheduler() {
           });
         }
         exceedsLimit.push(task);
+        unscheduled.push({ task, reason: 'dailyLimit' });
       }
       
       // NOTE: Removed the "FINAL SAFEGUARD" that forced recurring tasks to schedule even when exceeding limits
@@ -3773,6 +3783,8 @@ export function useAIScheduler() {
         } // end while (scheduleDate <= endDate)
         if (scheduleDate > endDate) {
           logger.warn('No available slot in two-week span', { taskId: task.id, taskTitle: task.title });
+          exceedsLimit.push(task);
+          unscheduled.push({ task, reason: 'noCategorySlot' });
           return;
         }
         const taskWithScheduledDate = {
@@ -3857,7 +3869,7 @@ export function useAIScheduler() {
       }
     }
 
-    return { scheduled: plan, exceedsLimit, daysExceedingLimit };
+    return { scheduled: plan, exceedsLimit, daysExceedingLimit, unscheduled };
   };
 
   const applySchedulePlan = async (plan: SchedulePlan[], manageState: boolean = true): Promise<void> => {

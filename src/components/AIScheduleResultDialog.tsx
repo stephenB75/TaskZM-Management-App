@@ -15,19 +15,30 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { cn, formatClockTime, getClockHourCycle } from "../lib/utils";
-import type { SchedulePlan } from "../hooks/useAIScheduler";
+import { getTaskCategory } from "../lib/category-hours-utils";
+import { SCHEDULE_RESULT_UI_TEXT } from "../lib/navigation-constants";
+import type { SchedulePlan, UnscheduledTask } from "../hooks/useAIScheduler";
 
 interface AIScheduleResultDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   scheduledTasks: SchedulePlan[];
+  unscheduledTasks?: UnscheduledTask[];
+  maxHoursPerDay?: number;
 }
 
 export function AIScheduleResultDialog({
   open,
   onOpenChange,
   scheduledTasks,
+  unscheduledTasks = [],
+  maxHoursPerDay,
 }: AIScheduleResultDialogProps) {
+  const describeReason = ({ task, reason }: UnscheduledTask) =>
+    reason === "dailyLimit" && maxHoursPerDay
+      ? SCHEDULE_RESULT_UI_TEXT.reasons.dailyLimit(maxHoursPerDay)
+      : SCHEDULE_RESULT_UI_TEXT.reasons.noCategorySlot(getTaskCategory(task));
+
   const formatScheduleDate = (date: Date) => {
     const today = new Date();
     const tomorrow = new Date(today);
@@ -58,20 +69,28 @@ export function AIScheduleResultDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] rounded-2xl border-0 bg-background shadow-none">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E6D5F0] to-[#C9E4F7] flex items-center justify-center">
-              <Icon name="check" size={ICON_SIZE_LG} className="text-primary" />
-            </div>
-            <span>Tasks Scheduled Successfully!</span>
+            <Icon name={scheduledTasks.length > 0 ? "check" : "alert-circle"} size={ICON_SIZE_LG} className="text-primary" />
+            <span>{SCHEDULE_RESULT_UI_TEXT.title(scheduledTasks.length)}</span>
           </DialogTitle>
-          <DialogDescription>
-            AI scheduled {scheduledTasks.length} task
-            {scheduledTasks.length === 1 ? "" : "s"} across
-            upcoming days
-          </DialogDescription>
+          <DialogDescription>{SCHEDULE_RESULT_UI_TEXT.description}</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[55vh] pr-4">
           <div className="space-y-3">
+            {unscheduledTasks.length > 0 && (
+              <div className="space-y-2 pb-2">
+                <h4 className="text-sm font-medium">
+                  {SCHEDULE_RESULT_UI_TEXT.unscheduledHeading(unscheduledTasks.length)}
+                </h4>
+                {unscheduledTasks.map((item) => (
+                  <Card key={item.task.id} className="p-3 border-border">
+                    <p className="text-sm font-medium">{item.task.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{describeReason(item)}</p>
+                  </Card>
+                ))}
+                <p className="text-xs text-muted-foreground">{SCHEDULE_RESULT_UI_TEXT.fixHint}</p>
+              </div>
+            )}
             {scheduledTasks.map(
               ({ task, scheduledDate, reason }, index) => (
                 <motion.div
@@ -179,15 +198,9 @@ export function AIScheduleResultDialog({
         </ScrollArea>
 
         <div className="flex items-center justify-between pt-4 border-t">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Icon name="sparkles" size={ICON_SIZE_MD} weight="duotone" className="text-primary" />
-            <span>Tasks distributed intelligently</span>
-          </div>
-          <Button
-            onClick={() => onOpenChange(false)}
-            className="rounded-full bg-gradient-to-r from-[#E6D5F0] to-[#C9E4F7] hover:from-[#C9E4F7] hover:to-[#E6D5F0]"
-          >
-            Done
+          <span />
+          <Button onClick={() => onOpenChange(false)} className="rounded-full">
+            {SCHEDULE_RESULT_UI_TEXT.done}
           </Button>
         </div>
       </DialogContent>

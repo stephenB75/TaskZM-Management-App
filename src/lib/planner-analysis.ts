@@ -27,11 +27,22 @@ export function improveTitle(title: string): string {
   let next = title.trim();
   for (let previous = ''; previous !== next; ) {
     previous = next;
-    next = next.replace(CONFIG.fillerPrefix, '').trim();
+    next = next.replace(CONFIG.fillerPrefix, '').replace(/[\s,;:.!?-]+$/, '').replace(CONFIG.fillerSuffix, '').trim();
   }
-  next = next.replace(/[\s,;:.!-]+$/, '');
   if (!next) return title.trim();
   return next.charAt(0).toUpperCase() + next.slice(1);
+}
+
+/** True when a brain-dump sentence reads like a note or feeling rather than something to do. */
+export function isNoteSentence(text: string): boolean {
+  const trimmed = text.trim();
+  if (CONFIG.actionCuePattern.test(trimmed)) return false;
+  return CONFIG.noteSentencePattern.test(trimmed) || /\?\s*$/.test(trimmed);
+}
+
+/** Case- and punctuation-insensitive key, so "Call mom." and "call Mom" count as the same task. */
+export function taskTitleKey(title: string): string {
+  return title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 }
 
 /** A title followed by its own steps ("Plan party: invite guests, order cake"). */
