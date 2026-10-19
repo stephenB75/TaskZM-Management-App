@@ -183,6 +183,12 @@ export const TIMING_CONSTANTS = {
     cloudForegroundReleaseCheckMs: 30 * 1000,
   },
 
+  // Session token freshness (the auto-refresh timer is paused while the app is dormant)
+  authToken: {
+    /** Refresh the access token before a request when it expires within this window. */
+    refreshMarginMs: 60 * 1000,
+  },
+
   // Task list fetch resilience (app resume / wake from sleep often has a brief network gap)
   taskFetch: {
     /** Delays before each retry of a task-list fetch that failed at the network level. */

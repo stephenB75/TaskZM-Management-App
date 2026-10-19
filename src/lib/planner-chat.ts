@@ -23,9 +23,12 @@ import { generateId, getClockHourCycle, getWeekStart } from './utils';
 import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from './navigation-constants';
 import { parsePlannerWhen, stripPlannerWhen } from './planner-commands';
 import {
+  cleanSteps,
   estimateWithSubtasks,
   improveTitle,
   isNoteSentence,
+  normalizeShorthand,
+  splitTitleDetail,
   splitClauses,
   splitInlineSteps,
   suggestSubtasks,
@@ -50,6 +53,8 @@ export interface PlannerDraft {
   when?: { date: string; hasTime: boolean };
   /** Steps the planner found or suggested; created as subtasks when the draft is accepted. */
   subtasks?: string[];
+  /** Cleaned full sentence kept as the task description when the title had to be shortened. */
+  notes?: string;
 }
 
 export type PlannerIntent =
@@ -109,7 +114,7 @@ export function draftToTask(draft: PlannerDraft, createdBy?: string | null): Tas
   return {
     id: draft.id,
     title: draft.title,
-    description: '',
+    description: draft.notes ?? '',
     status: DEFAULT_TASK_STATUS,
     priority: draft.priority,
     dueDate: draft.when && !draft.when.hasTime ? endOfDay(new Date(draft.when.date)).toISOString() : null,
@@ -131,18 +136,21 @@ export function draftToTask(draft: PlannerDraft, createdBy?: string | null): Tas
 }
 
 /** One draft from one task's text: tidied title, estimate, and subtasks when the task is bigger. */
-function buildDraft(source: string, explicitSteps?: string[]): PlannerDraft | null {
-  const listedSteps = explicitSteps?.map(improveTitle).filter(Boolean).slice(0, PLANNER_ANALYSIS_CONFIG.maxSubtasks);
+function buildDraft(rawSource: string, explicitSteps?: string[]): PlannerDraft | null {
+  const source = normalizeShorthand(rawSource);
+  const listedSteps = explicitSteps?.slice(0, PLANNER_ANALYSIS_CONFIG.maxSubtasks);
   const inline = listedSteps?.length ? { title: source, steps: listedSteps } : splitInlineSteps(source);
   const titleSource = inline ? inline.title : source;
   const when = parsePlannerWhen(source, new Date());
   const titleWithoutWhen = when ? cleanTitle(stripPlannerWhen(titleSource)) : '';
   const keepsWhen = titleWithoutWhen.length >= PLANNER_CHAT_CONFIG.minTitleLength;
-  const title = improveTitle(keepsWhen ? titleWithoutWhen : cleanTitle(titleSource));
+  const { title: shortTitle, detail } = splitTitleDetail(keepsWhen ? titleWithoutWhen : cleanTitle(titleSource));
+  const title = improveTitle(shortTitle);
   if (title.length < PLANNER_CHAT_CONFIG.minTitleLength) return null;
   const draft: PlannerDraft = {
     id: generateId(),
     title,
+    ...(detail ? { notes: detail } : {}),
     priority: inferPriority(source),
     category: inferCategory(source),
     estimatedMinutes: 0,
@@ -150,7 +158,7 @@ function buildDraft(source: string, explicitSteps?: string[]): PlannerDraft | nu
   };
   const baseMinutes = Math.round(estimateTaskHours({ ...draftToTask(draft), estimatedTime: null }) * MINUTES_PER_HOUR);
   const suggestion = inline ? null : suggestSubtasks(title);
-  const subtasks = inline?.steps ?? suggestion?.steps ?? [];
+  const subtasks = cleanSteps(inline?.steps ?? suggestion?.steps ?? [], title);
   if (subtasks.length > 0) draft.subtasks = subtasks;
   draft.estimatedMinutes =
     explicitMinutes(source) ??

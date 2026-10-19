@@ -12,9 +12,11 @@ import {
   PERCENTAGE_MULTIPLIER,
   TIME_PERIODS,
 } from "./business-constants";
-import { COLOR_PRIMARY } from "./color-theme";
+import { COLOR_PRIMARY, getColorWithOpacity } from "./color-theme";
+import { tagShade } from "./tag-shades";
 import { daysSinceWeekStart } from "./utils";
 import {
+  ANALYTICS_CHART_LAYOUT,
   ANALYTICS_CHART_SERIES,
   ANALYTICS_COMPLETION_RATE,
   ANALYTICS_DEFAULT_CHART_DAYS,
@@ -23,7 +25,6 @@ import {
   ANALYTICS_LABELS,
   ANALYTICS_LIMITS,
   ANALYTICS_STATUS,
-  ANALYTICS_TAG_BAR_COLORS,
   ANALYTICS_TIME_FORMAT,
   ANALYTICS_TREND,
   formatAnalyticsPercent,
@@ -106,6 +107,15 @@ export interface AnalyticsResult {
   projectProgress: AnalyticsProjectRow[];
   avgCompletionTime: number;
   statusDistribution: AnalyticsStatusSlice[];
+  /** Completed tasks that had a due date, and how many of those finished by it. */
+  dueCompleted: number;
+  onTimeCompleted: number;
+  onTimeRate: number;
+  /** Open tasks whose due date has passed. */
+  overdueOpen: number;
+  /** Completed tasks with both an estimate and tracked time, and the average overrun (+) or underrun (−) in percent. */
+  estimatedTasks: number;
+  estimateOverrunPercent: number;
   hasAnyData: boolean;
 }
 
@@ -134,6 +144,12 @@ const EMPTY_ANALYTICS: AnalyticsResult = {
   projectProgress: [],
   avgCompletionTime: 0,
   statusDistribution: [],
+  dueCompleted: 0,
+  onTimeCompleted: 0,
+  onTimeRate: 0,
+  overdueOpen: 0,
+  estimatedTasks: 0,
+  estimateOverrunPercent: 0,
   hasAnyData: false,
 };
 
@@ -234,15 +250,6 @@ function formatHourBucketShortLabel(startHour: number, endHour: number): string 
   return `${formatHourLabelShort(startHour)}${ANALYTICS_TIME_FORMAT.hourRangeSeparator}${formatHourLabelShort(endHour % HOURS_PER_DAY)}`;
 }
 
-const TIME_BUCKET_COLORS = [
-  ANALYTICS_STATUS.inProgress.color,
-  ANALYTICS_CHART_SERIES.created.color,
-  ANALYTICS_CHART_SERIES.completed.color,
-  ANALYTICS_STATUS.completed.color,
-  COLOR_PRIMARY,
-  ANALYTICS_STATUS.onHold.color,
-] as const;
-
 function buildHourBuckets(hourCounts: number[]): AnalyticsTimeBucket[] {
   const buckets: AnalyticsTimeBucket[] = [];
   for (let index = 0; index < ANALYTICS_HOUR_BUCKET_COUNT; index += 1) {
@@ -254,7 +261,7 @@ function buildHourBuckets(hourCounts: number[]): AnalyticsTimeBucket[] {
       name: formatHourBucketLabel(startHour, endHour),
       shortName: formatHourBucketShortLabel(startHour, endHour),
       value,
-      color: TIME_BUCKET_COLORS[index % TIME_BUCKET_COLORS.length],
+      color: getColorWithOpacity(ANALYTICS_CHART_SERIES.completed.color, ANALYTICS_CHART_LAYOUT.timeBucketIdleOpacity),
       startHour,
       endHour,
     });
@@ -392,6 +399,7 @@ export function computeAnalytics(
     buckets.length > 0
       ? buckets.reduce((peak, bucket) => (bucket.value > peak.value ? bucket : peak), buckets[0])
       : null;
+  if (peakBucket) peakBucket.color = ANALYTICS_CHART_SERIES.completed.color;
 
   const typeCount: Record<string, number> = {};
   filteredTasks.forEach((task) => {
@@ -403,10 +411,10 @@ export function computeAnalytics(
   });
   const taggedTaskTotal = Object.values(typeCount).reduce((sum, count) => sum + count, 0);
   const taskTypes: AnalyticsTagSlice[] = Object.entries(typeCount)
-    .map(([name, value], index) => ({
+    .map(([name, value]) => ({
       name,
       value,
-      color: ANALYTICS_TAG_BAR_COLORS[index % ANALYTICS_TAG_BAR_COLORS.length],
+      color: tagShade(name),
       percent: taggedTaskTotal > 0 ? (value / taggedTaskTotal) * PERCENTAGE_MULTIPLIER : 0,
     }))
     .sort((a, b) => b.value - a.value)
@@ -470,9 +478,42 @@ export function computeAnalytics(
         MILLISECONDS_PER_DAY
       : 0;
 
+  const now = Date.now();
+  let dueCompleted = 0;
+  let onTimeCompleted = 0;
+  let overdueOpen = 0;
+  let estimatedTasks = 0;
+  let overrunSum = 0;
+  filteredTasks.forEach((task) => {
+    const dueDate = parseDate(task.dueDate);
+    // A task finished any time on its due day counts as on time.
+    const due = dueDate ? new Date(startOfDay(dueDate).getTime() + MILLISECONDS_PER_DAY - 1) : null;
+    const completed = parseDate(task.completedAt);
+    if (task.status === "done") {
+      if (due && completed) {
+        dueCompleted += 1;
+        if (completed.getTime() <= due.getTime()) onTimeCompleted += 1;
+      }
+      const estimate = task.estimatedTime ?? 0;
+      const actual = task.actualTime ?? 0;
+      if (estimate > 0 && actual > 0) {
+        estimatedTasks += 1;
+        overrunSum += (actual - estimate) / estimate;
+      }
+    } else if (due && due.getTime() < now) {
+      overdueOpen += 1;
+    }
+  });
+
   return {
     chartDays,
     dateRangeLabel: getAnalyticsDateRangeLabel(dateRangeLimit),
+    dueCompleted,
+    onTimeCompleted,
+    onTimeRate: dueCompleted > 0 ? (onTimeCompleted / dueCompleted) * PERCENTAGE_MULTIPLIER : 0,
+    overdueOpen,
+    estimatedTasks,
+    estimateOverrunPercent: estimatedTasks > 0 ? Math.round((overrunSum / estimatedTasks) * PERCENTAGE_MULTIPLIER) : 0,
     totalTimeTracked,
     tasksWithTime: tasksWithTime.length,
     avgTimePerTask,

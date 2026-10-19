@@ -22,15 +22,82 @@ export function splitClauses(line: string): string[] {
     .filter(Boolean);
 }
 
-/** Drop filler ("I need to", "don't forget to"), trailing punctuation, and capitalize. */
+/** Lower shouted text and expand texting shorthand so the rest of the parser (dates, verbs) sees full words. */
+export function normalizeShorthand(text: string): string {
+  const base = isShouting(text) ? text.toLowerCase() : text;
+  return CONFIG.shorthand.reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), base);
+}
+
+/** Even spacing and punctuation: no space before commas, one space after, no doubled marks. */
+function tidyPunctuation(text: string): string {
+  return text
+    .replace(/\s+([,;:.!?])/g, '$1')
+    .replace(/([,;:])(?=[A-Za-z])/g, '$1 ')
+    .replace(/([!?.,])\1+/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/** Shouted input ("CALL MOM") is lowered before cleanup. */
+function isShouting(text: string): boolean {
+  const letters = text.replace(/[^A-Za-z]/g, '');
+  return letters.length > 3 && letters === letters.toUpperCase();
+}
+
+/** A lone "i" becomes "I" and the first letter is capitalized. */
+function toSentenceCase(text: string): string {
+  const base = text.replace(/\bi\b/g, 'I');
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
+/** "Calling mom" → "call mom"; leaves titles that already start with a command alone. */
+function toImperative(text: string): string {
+  const match = text.match(/^([A-Za-z]+)\b/);
+  const verb = match ? CONFIG.imperativeVerbs[match[1].toLowerCase()] : undefined;
+  return verb ? verb + text.slice(match![1].length) : text;
+}
+
+/** Drop filler ("I need to", "don't forget to"), expand shorthand, use a command verb, and fix casing and punctuation. */
 export function improveTitle(title: string): string {
-  let next = title.trim();
+  let next = tidyPunctuation(normalizeShorthand(title.trim()));
   for (let previous = ''; previous !== next; ) {
     previous = next;
     next = next.replace(CONFIG.fillerPrefix, '').replace(/[\s,;:.!?-]+$/, '').replace(CONFIG.fillerSuffix, '').trim();
   }
   if (!next) return title.trim();
-  return next.charAt(0).toUpperCase() + next.slice(1);
+  return toSentenceCase(toImperative(next));
+}
+
+/** A full sentence for a task description: cleaned like a title, ending with a period. */
+export function toSentence(text: string): string {
+  const cleaned = improveTitle(text);
+  return /[.!?]$/.test(cleaned) ? cleaned : `${cleaned}.`;
+}
+
+/**
+ * Long, run-on items keep a short title and move the reason or detail into the description:
+ * "Email Sam about the invoice because the total is wrong again" → "Email Sam about the invoice".
+ */
+export function splitTitleDetail(text: string): { title: string; detail: string | null } {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= CONFIG.maxTitleWords) return { title: text, detail: null };
+  const match = text.match(CONFIG.detailClausePattern);
+  if (!match || match.index === undefined || match.index === 0) return { title: text, detail: null };
+  return { title: text.slice(0, match.index), detail: toSentence(text) };
+}
+
+/** Clean subtask titles, dropping blanks, repeats, and any step that just restates the task. */
+export function cleanSteps(steps: string[], taskTitle: string): string[] {
+  const seen = new Set([taskTitleKey(taskTitle)]);
+  const out: string[] = [];
+  for (const step of steps) {
+    const cleaned = improveTitle(step);
+    const key = taskTitleKey(cleaned);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(cleaned);
+  }
+  return out;
 }
 
 /** True when a brain-dump sentence reads like a note or feeling rather than something to do. */

@@ -50,9 +50,60 @@ function sanitizeResponseError(body: string, status: number): string {
   return trimmed || `Request failed (${status})`;
 }
 
+// Concurrent requests after a long sleep share one refresh; parallel refreshes would race on the rotating refresh token.
+let refreshInFlight: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.refreshSession();
+        const token = !error && session?.access_token
+          ? session.access_token
+          : (await supabase.auth.getSession()).data.session?.access_token ?? null;
+        if (token) setAccessToken(token);
+        return token;
+      } catch (e) {
+        logger.debug('Session refresh failed:', e);
+        return null;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+  }
+  return refreshInFlight;
+}
+
+/** Refresh first when the stored session is expired or about to expire (e.g. the app was dormant). */
+async function ensureFreshAccessToken(): Promise<void> {
+  if (!accessToken) return;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const expiresAtMs = (session.expires_at ?? 0) * 1000;
+    if (expiresAtMs - Date.now() <= TIMING_CONSTANTS.authToken.refreshMarginMs) {
+      await refreshAccessToken();
+    } else if (session.access_token !== accessToken) {
+      setAccessToken(session.access_token);
+    }
+  } catch (e) {
+    logger.debug('Session freshness check failed:', e);
+  }
+}
+
+/** True while a signed-in session can still be recovered (used to avoid "sign in again" for transient 401s). */
+export async function hasRecoverableSession(): Promise<boolean> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return Boolean(session?.refresh_token);
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Fetch with optional retry on 401: forces session refresh then retries once with new token.
- * Use for authenticated endpoints so expired tokens don't cause permanent 401.
+ * Authenticated fetch: refreshes a stale token before sending, and on 401 refreshes once and retries.
+ * The Authorization header always carries the current token, even if the caller built headers earlier.
  * GET requests default to cache: 'no-store' to avoid stale UI after user actions (workspaces, tasks, etc.).
  */
 async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Response> {
@@ -60,19 +111,16 @@ async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Respo
   const isGet = method === 'GET';
   const cacheOption = isGet && !(init && 'cache' in init) ? { cache: 'no-store' as RequestCache } : {};
   const mergedInit = { ...init, ...cacheOption };
-  const headers = { ...getHeaders(), ...(mergedInit.headers as Record<string, string>) };
-  let response = await fetch(url, { ...mergedInit, headers });
+  const withCurrentToken = () => {
+    const current = getHeaders();
+    return { ...current, ...(mergedInit.headers as Record<string, string>), Authorization: current.Authorization };
+  };
+  await ensureFreshAccessToken();
+  let response = await fetch(url, { ...mergedInit, headers: withCurrentToken() });
   if (response.status === 401) {
-    try {
-      // Force refresh so we get a new access token if the current one expired
-      const { data: { session }, error } = await supabase.auth.refreshSession();
-      const token = !error && session?.access_token ? session.access_token : (await supabase.auth.getSession()).data.session?.access_token;
-      if (token) {
-        setAccessToken(token);
-        response = await fetch(url, { ...mergedInit, headers: { ...getHeaders(), ...(mergedInit.headers as Record<string, string>) } });
-      }
-    } catch (e) {
-      logger.debug('Session refresh on 401 failed:', e);
+    const token = await refreshAccessToken();
+    if (token) {
+      response = await fetch(url, { ...mergedInit, headers: withCurrentToken() });
     }
   }
   return response;
@@ -154,7 +202,7 @@ export async function getUserWorkspaces() {
 
 export async function createWorkspace(name: string): Promise<string> {
   try {
-    const response = await fetch(`${API_BASE}/user/workspaces`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/user/workspaces`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ name }),
@@ -211,7 +259,7 @@ export async function createWorkspace(name: string): Promise<string> {
 }
 
 export async function getWorkspace(workspaceId: string) {
-  const response = await fetch(`${API_BASE}/workspace/${workspaceId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/workspace/${workspaceId}`, {
     method: 'GET',
     headers: getHeaders(),
     cache: 'no-store',
@@ -444,7 +492,7 @@ export async function deleteTask(workspaceId: string, taskId: string): Promise<v
 // Activity API
 export async function getActivities(workspaceId: string): Promise<Activity[]> {
   try {
-    const response = await fetch(`${API_BASE}/activities/${workspaceId}`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/activities/${workspaceId}`, {
       method: 'GET',
       headers: getHeaders(),
       cache: 'no-store',
@@ -466,7 +514,7 @@ export async function getActivities(workspaceId: string): Promise<Activity[]> {
 
 // Time Tracking API
 export async function saveTimeTrackingSession(workspaceId: string, session: TimeTrackingSession): Promise<TimeTrackingSession> {
-  const response = await fetch(`${API_BASE}/time-tracking/${workspaceId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/time-tracking/${workspaceId}`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(session),
@@ -482,7 +530,7 @@ export async function saveTimeTrackingSession(workspaceId: string, session: Time
 }
 
 export async function getTimeTrackingSessions(workspaceId: string): Promise<TimeTrackingSession[]> {
-  const response = await fetch(`${API_BASE}/time-tracking/${workspaceId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/time-tracking/${workspaceId}`, {
     method: 'GET',
     headers: getHeaders(),
     cache: 'no-store',
@@ -519,7 +567,7 @@ export async function getProjects(
     // Note: If-Modified-Since header removed due to CORS policy restrictions
     // Using query parameter instead for conditional requests
 
-    const response = await fetch(url, {
+    const response = await fetchWithAuthRetry(url, {
       method: 'GET',
       headers,
       cache: 'no-store',
@@ -555,7 +603,7 @@ export async function getProjects(
 }
 
 export async function saveProject(workspaceId: string, project: any) {
-  const response = await fetch(`${API_BASE}/projects/${workspaceId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/projects/${workspaceId}`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(project),
@@ -571,7 +619,7 @@ export async function saveProject(workspaceId: string, project: any) {
 }
 
 export async function deleteProject(workspaceId: string, projectId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/projects/${workspaceId}/${projectId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/projects/${workspaceId}/${projectId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -610,7 +658,7 @@ export async function getFolders(
     // Note: If-Modified-Since header removed due to CORS policy restrictions
     // Using query parameter instead for conditional requests
 
-    const response = await fetch(url, {
+    const response = await fetchWithAuthRetry(url, {
       method: 'GET',
       headers,
       cache: 'no-store',
@@ -675,7 +723,7 @@ export async function saveFolder(workspaceId: string, folder: Partial<Folder>): 
     throw new Error('Invalid workspace ID');
   }
 
-  const response = await fetch(`${API_BASE}/folders/${workspaceId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/folders/${workspaceId}`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(folder),
@@ -731,7 +779,7 @@ export async function saveFolder(workspaceId: string, folder: Partial<Folder>): 
 }
 
 export async function updateFolder(workspaceId: string, folderId: string, updates: Partial<Folder>): Promise<Folder> {
-  const response = await fetch(`${API_BASE}/folders/${workspaceId}/${folderId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/folders/${workspaceId}/${folderId}`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify(updates),
@@ -752,7 +800,7 @@ export async function deleteFolder(workspaceId: string, folderId: string): Promi
     throw new Error('Invalid workspace ID');
   }
 
-  const response = await fetch(`${API_BASE}/folders/${workspaceId}/${folderId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/folders/${workspaceId}/${folderId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -794,7 +842,7 @@ export async function deleteFolder(workspaceId: string, folderId: string): Promi
 // Settings API
 export async function getSettings(workspaceId: string) {
   try {
-    const response = await fetch(`${API_BASE}/settings/${workspaceId}`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/settings/${workspaceId}`, {
       method: 'GET',
       headers: getHeaders(),
       cache: 'no-store',
@@ -821,7 +869,7 @@ export async function getSettings(workspaceId: string) {
 
 export async function saveSettings(workspaceId: string, settings: any) {
   try {
-    const response = await fetch(`${API_BASE}/settings/${workspaceId}`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/settings/${workspaceId}`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(settings),
@@ -864,7 +912,7 @@ export async function saveSettings(workspaceId: string, settings: any) {
 
 // Subscription API
 export async function getSubscription() {
-  const response = await fetch(`${API_BASE}/subscription`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/subscription`, {
     method: 'GET',
     headers: getHeaders(),
     cache: 'no-store',
@@ -895,7 +943,7 @@ export async function getSubscription() {
 }
 
 export async function saveSubscription(subscription: any) {
-  const response = await fetch(`${API_BASE}/subscription`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/subscription`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(subscription),
@@ -924,7 +972,7 @@ export async function inviteTeamMember(
       throw new Error('Invalid workspace ID');
     }
 
-    const response = await fetch(`${API_BASE}/team/${workspaceId}/invite`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/team/${workspaceId}/invite`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -1003,7 +1051,7 @@ export async function getTeamMembers(workspaceId: string) {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/team/${workspaceId}/members`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/team/${workspaceId}/members`, {
       method: 'GET',
       headers: getHeaders(),
       cache: 'no-store',
@@ -1066,7 +1114,7 @@ export async function getTeamMembers(workspaceId: string) {
 }
 
 export async function removeTeamMember(workspaceId: string, memberId: string) {
-  const response = await fetch(`${API_BASE}/team/${workspaceId}/members/${memberId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/team/${workspaceId}/members/${memberId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -1080,7 +1128,7 @@ export async function removeTeamMember(workspaceId: string, memberId: string) {
 }
 
 export async function updateTeamMemberRole(workspaceId: string, memberId: string, role: 'admin' | 'member' | 'viewer') {
-  const response = await fetch(`${API_BASE}/team/${workspaceId}/members/${memberId}/role`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/team/${workspaceId}/members/${memberId}/role`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify({ role }),
@@ -1095,7 +1143,7 @@ export async function updateTeamMemberRole(workspaceId: string, memberId: string
 }
 
 export async function removeTeamMemberFromTeam(teamId: string, memberId: string) {
-  const response = await fetch(`${API_BASE}/teams/${teamId}/members/${memberId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/teams/${teamId}/members/${memberId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -1113,7 +1161,7 @@ export async function updateTeamMemberRoleInTeam(
   memberId: string,
   role: 'admin' | 'member' | 'viewer',
 ) {
-  const response = await fetch(`${API_BASE}/teams/${teamId}/members/${memberId}/role`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/teams/${teamId}/members/${memberId}/role`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify({ role }),
@@ -1129,7 +1177,7 @@ export async function updateTeamMemberRoleInTeam(
 
 // Team Management API Functions
 export async function createTeam(workspaceId: string, name: string, description?: string) {
-  const response = await fetch(`${API_BASE}/teams/${workspaceId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/teams/${workspaceId}`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ name, description }),
@@ -1150,7 +1198,7 @@ export async function createTeam(workspaceId: string, name: string, description?
 }
 
 export async function updateTeam(teamId: string, name: string, description?: string) {
-  const response = await fetch(`${API_BASE}/teams/${teamId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/teams/${teamId}`, {
     method: 'PUT',
     headers: getHeaders(),
     body: JSON.stringify({ name, description }),
@@ -1171,7 +1219,7 @@ export async function updateTeam(teamId: string, name: string, description?: str
 }
 
 export async function deleteTeam(teamId: string) {
-  const response = await fetch(`${API_BASE}/teams/${teamId}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/teams/${teamId}`, {
     method: 'DELETE',
     headers: getHeaders(),
   });
@@ -1192,7 +1240,7 @@ export async function deleteTeam(teamId: string) {
 
 export async function getTeams(workspaceId: string) {
   try {
-    const response = await fetch(`${API_BASE}/teams/${workspaceId}`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/teams/${workspaceId}`, {
       method: 'GET',
       headers: getHeaders(),
       cache: 'no-store',
@@ -1220,7 +1268,7 @@ export async function getTeams(workspaceId: string) {
 
 export async function getTeamMembersByTeam(teamId: string) {
   try {
-    const response = await fetch(`${API_BASE}/teams/${teamId}/members`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/teams/${teamId}/members`, {
       method: 'GET',
       headers: getHeaders(),
       cache: 'no-store',
@@ -1261,7 +1309,7 @@ export async function getTeamMembersByTeam(teamId: string) {
 }
 
 export async function inviteTeamMemberToTeam(teamId: string, email: string, name: string, role: 'admin' | 'member' | 'viewer' = 'member', avatar?: string) {
-  const response = await fetch(`${API_BASE}/teams/${teamId}/invite`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/teams/${teamId}/invite`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ email, name, role, avatar }),
@@ -1283,7 +1331,7 @@ export async function inviteTeamMemberToTeam(teamId: string, email: string, name
 
 // Admin API functions
 export async function getAdminUserInfo(email: string) {
-  const response = await fetch(`${API_BASE}/admin/get-user/${encodeURIComponent(email)}`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/admin/get-user/${encodeURIComponent(email)}`, {
     method: 'GET',
     headers: getHeaders(),
     cache: 'no-store',
@@ -1298,7 +1346,7 @@ export async function getAdminUserInfo(email: string) {
 }
 
 export async function setUserAccess(email: string, role?: 'admin' | 'member' | 'viewer', tier?: 'pro' | 'free') {
-  const response = await fetch(`${API_BASE}/admin/set-user-access`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/admin/set-user-access`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ email, role, tier }),
@@ -1313,7 +1361,7 @@ export async function setUserAccess(email: string, role?: 'admin' | 'member' | '
 }
 
 export async function validateInvitation(token: string) {
-  const response = await fetch(`${API_BASE}/team/invitations/validate`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/team/invitations/validate`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ token }),
@@ -1328,7 +1376,7 @@ export async function validateInvitation(token: string) {
 }
 
 export async function acceptInvitation(token: string, password?: string) {
-  const response = await fetch(`${API_BASE}/team/invitations/accept`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/team/invitations/accept`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ token, password }),
@@ -1343,7 +1391,7 @@ export async function acceptInvitation(token: string, password?: string) {
 }
 
 export async function resendInvitation(workspaceId: string, invitationToken: string) {
-  const response = await fetch(`${API_BASE}/team/${workspaceId}/invitations/resend`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/team/${workspaceId}/invitations/resend`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ token: invitationToken }),
@@ -1358,7 +1406,7 @@ export async function resendInvitation(workspaceId: string, invitationToken: str
 }
 
 export async function declineInvitation(workspaceId: string, invitationToken: string) {
-  const response = await fetch(`${API_BASE}/team/${workspaceId}/invitations/decline`, {
+  const response = await fetchWithAuthRetry(`${API_BASE}/team/${workspaceId}/invitations/decline`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ token: invitationToken }),
@@ -1388,7 +1436,7 @@ const EMPTY_TERMINOLOGY: SharedTerminology = { keywords: [], phrases: [], verbs:
  */
 export async function getAllSharedTerminology(): Promise<Record<Exclude<Domain, 'mixed'>, SharedTerminology>> {
   try {
-    const response = await fetch(`${API_BASE}/shared-terminology`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/shared-terminology`, {
       method: 'GET',
       headers: getHeaders(),
       cache: 'no-store',
@@ -1431,7 +1479,7 @@ export async function getSharedTerminology(domain: Domain): Promise<SharedTermin
       return { keywords: [], phrases: [], verbs: [], nouns: [] };
     }
 
-    const response = await fetch(`${API_BASE}/shared-terminology/${domain}`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/shared-terminology/${domain}`, {
       method: 'GET',
       headers: getHeaders(),
       cache: 'no-store',
@@ -1481,7 +1529,7 @@ export async function saveSharedTerminology(
       return { success: false, saved: 0, skipped: keywords.length + phrases.length + verbs.length + nouns.length };
     }
 
-    const response = await fetch(`${API_BASE}/shared-terminology`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/shared-terminology`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -1512,7 +1560,7 @@ export async function saveSharedTerminology(
  */
 export async function getUserAwards(): Promise<UserAward[]> {
   try {
-    const response = await fetch(`${API_BASE}/user/awards`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/user/awards`, {
       method: 'GET',
       headers: getHeaders(),
       cache: 'no-store',
@@ -1537,7 +1585,7 @@ export async function getUserAwards(): Promise<UserAward[]> {
  */
 export async function saveUserAwards(awards: UserAward[]): Promise<{ success: boolean; saved: number }> {
   try {
-    const response = await fetch(`${API_BASE}/user/awards`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/user/awards`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ awards }),
@@ -1561,7 +1609,7 @@ export async function saveUserAwards(awards: UserAward[]): Promise<{ success: bo
  */
 export async function saveUserAward(award: UserAward): Promise<{ success: boolean }> {
   try {
-    const response = await fetch(`${API_BASE}/user/awards/single`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/user/awards/single`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ award }),
@@ -1595,7 +1643,7 @@ export async function registerPushDeviceToken(payload: {
   preferences: PushRegistrationPreferences;
 }): Promise<{ success: boolean; serverReminders: boolean }> {
   try {
-    const response = await fetch(`${API_BASE}/user/push-token`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/user/push-token`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(payload),
@@ -1614,7 +1662,7 @@ export async function registerPushDeviceToken(payload: {
 
 export async function unregisterPushDeviceToken(token: string): Promise<void> {
   try {
-    await fetch(`${API_BASE}/user/push-token`, {
+    await fetchWithAuthRetry(`${API_BASE}/user/push-token`, {
       method: 'DELETE',
       headers: getHeaders(),
       body: JSON.stringify({ token }),
@@ -1627,7 +1675,7 @@ export async function unregisterPushDeviceToken(token: string): Promise<void> {
 /** Ask the server to send a test push to every registered device for this user. */
 export async function sendTestPushNotification(): Promise<{ sent: number; devices: number; error?: string }> {
   try {
-    const response = await fetch(`${API_BASE}/user/push-test`, {
+    const response = await fetchWithAuthRetry(`${API_BASE}/user/push-test`, {
       method: 'POST',
       headers: getHeaders(),
     });

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, startTransition } from 'react';
 import { toast } from '../lib/toast-wrapper';
-import { NOTIFICATION_MESSAGES, NOTIFICATION_TITLES } from '../lib/notification-constants';
+import { NOTIFICATION_MESSAGES, NOTIFICATION_TITLES, ROLLOVER_UI_TEXT } from '../lib/notification-constants';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 // Removed TeamContext import to break circular dependency
@@ -100,6 +100,10 @@ interface TaskContextType {
   setViewConfig: (config: ViewConfig) => void;
   updateHoursSettings: (settings: Partial<HoursSettings>) => Promise<void>;
   updateRolloverSettings: (settings: Partial<RolloverSettings>) => Promise<void>;
+  /** Tasks waiting on the ask-before-rolling prompt; empty when there is nothing to confirm. */
+  pendingRollover: Task[];
+  confirmRollover: () => Promise<void>;
+  dismissRollover: () => void;
   syncWithServer: () => Promise<void>;
   ensureWorkspace: () => Promise<string | null>;
 }
@@ -828,8 +832,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         
         // Check it's an authentication error
         if (error.message.includes('Authentication')) {
-          toast.error('Authentication failed', {
-            description: 'Please sign in again to continue.',
+          void api.hasRecoverableSession().then((recoverable) => {
+            if (recoverable) return;
+            toast.error('Authentication failed', {
+              description: 'Please sign in again to continue.',
+            });
           });
           // Don't fall back to localStorage for auth errors
           const savedTasks = ensureTaskArray(getFromLocalStorage<Task[]>('tasks', [], user?.id));
@@ -1481,8 +1488,11 @@ export function TaskProvider({ children }: { children: ReactNode }) {
             
             if (shouldShowError) {
               if (error.message.includes('Authentication')) {
-                toast.error('Authentication failed', {
-                  description: 'Please sign in again to continue.',
+                void api.hasRecoverableSession().then((recoverable) => {
+                  if (recoverable) return;
+                  toast.error('Authentication failed', {
+                    description: 'Please sign in again to continue.',
+                  });
                 });
                 lastErrorToastRef.current = { message: 'Authentication failed', timestamp: now };
               } else {
@@ -3383,194 +3393,92 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   }, [rolloverDay]);
 
   const canRollover = hasFeature('taskRollover');
+  const [pendingRollover, setPendingRollover] = useState<Task[]>([]);
+
+  const performRollover = useCallback(async (tasksToRollover: Task[]) => {
+    // Guideline: recurring tasks are never rolled over (safety filter on top of the selection below).
+    const validTasks = tasksToRollover.filter((task) => !task.recurrence || task.recurrence.type === 'none');
+    const moved: string[] = [];
+    const failed: string[] = [];
+    for (const task of validTasks) {
+      try {
+        // Clearing scheduledDate moves the task to the Inbox and keeps its due date, priority, etc.
+        await updateTask(task.id, { scheduledDate: null });
+        moved.push(task.title);
+      } catch (error) {
+        logger.error('Failed to move task to inbox:', task.id, task.title, error);
+        failed.push(task.title);
+      }
+    }
+    if (moved.length > 0 && failed.length === 0) {
+      toast.success(ROLLOVER_UI_TEXT.movedTitle(moved.length), {
+        description: ROLLOVER_UI_TEXT.movedBody(moved),
+        duration: TOAST_DURATION_MEDIUM_MS,
+      });
+    } else if (moved.length > 0) {
+      toast.warning(ROLLOVER_UI_TEXT.partialTitle(moved.length), {
+        description: ROLLOVER_UI_TEXT.failedBody(failed),
+        duration: TOAST_DURATION_LONG_MS,
+      });
+    } else if (failed.length > 0) {
+      toast.error(ROLLOVER_UI_TEXT.failedTitle(failed.length), {
+        description: ROLLOVER_UI_TEXT.failedBody(failed),
+        duration: TOAST_DURATION_LONG_MS,
+      });
+    }
+  }, [updateTask]);
+
+  const confirmRollover = useCallback(async () => {
+    const pending = pendingRollover;
+    setPendingRollover([]);
+    await performRollover(pending);
+  }, [pendingRollover, performRollover]);
+
+  const dismissRollover = useCallback(() => setPendingRollover([]), []);
 
   useEffect(() => {
     // Gate: Task rollover requires Pro subscription
     if (!canRollover) return;
     if (!rolloverSettings.autoRollover || !user) return;
+    // Wait for the task list so an empty first render doesn't use up today's check.
+    if (isLoading) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayString = getDateString(today);
+    const todayString = getDateString(new Date());
+    const lastCheck = getFromLocalStorage<string>(ROLLOVER_UI_TEXT.lastCheckStorageKey, '', user.id);
+    if (lastCheck === todayString || rolloverCheckedRef.current === todayString) return;
 
-    // Check if we've already run rollover today (check both localStorage and ref)
-    const lastCheck = getFromLocalStorage<string>('lastRolloverCheck', '');
-    const hasCheckedToday = lastCheck === todayString || rolloverCheckedRef.current === todayString;
-    
-    if (hasCheckedToday) {
-      return; // Already checked today, don't run again
-    }
-
-    const checkAndRolloverTasks = () => {
-      // Find incomplete tasks that should roll over to inbox
-      // Tasks roll over if:
-      // 1. They have a scheduledDate that has passed (before today), OR
-      // 2. They have a dueDate that has passed (before today, even if no scheduledDate)
-      // 3. They are not completed (status !== 'done')
-      // 4. They are not already in inbox (scheduledDate === null/undefined means already in inbox)
-      // 5. They are NOT recurring tasks (rollover rule does not apply to recurring tasks)
-      // Guideline: Recurring tasks are never rolled over; they use their own recurrence scheduling.
-      // Note: Rollover occurs after midnight when the date changes, rolling over tasks from previous days
-      const tasksToRollover = tasks.filter(task => {
-        // Skip completed tasks
+    const timer = setTimeout(() => {
+      // Roll over incomplete, non-recurring tasks whose scheduled day is before today.
+      // Inbox tasks (no scheduledDate) and tasks already moved to today or later stay put.
+      const tasksToRollover = tasks.filter((task) => {
         if (task.status === 'done') return false;
-        
-        // Do not apply rollover to recurring tasks (guideline: recurring tasks excluded from rollover)
         if (task.recurrence && task.recurrence.type !== 'none') return false;
-        
-        // Skip tasks already in inbox (scheduledDate === null/undefined means already in inbox)
-        // Tasks already in inbox don't need to be rolled over again
-        if (task.scheduledDate === null || task.scheduledDate === undefined) return false;
-        
-        // Check if task has a scheduledDate or dueDate that has passed (before today)
-        let hasPassedDate = false;
-        
-        // Priority 1: Check scheduledDate if it exists
-        // Roll over tasks when scheduledDate is before today (has passed)
-        if (task.scheduledDate) {
-          try {
-            const taskDate = new Date(task.scheduledDate);
-            // Validate date is not invalid
-            if (isNaN(taskDate.getTime())) {
-              logger.warn('Invalid scheduledDate in task:', task.id, task.scheduledDate);
-              return false;
-            }
-            taskDate.setHours(0, 0, 0, 0);
-            const taskDateString = getDateString(taskDate);
-            // Only roll over if date is BEFORE today (not today or future)
-            // After midnight, tasks from previous days will be rolled over
-            hasPassedDate = taskDateString < todayString;
-          } catch (error) {
-            logger.error('Error parsing scheduledDate:', task.id, task.scheduledDate, error);
-            return false;
-          }
-        }
-        
-        // Priority 2: If scheduledDate hasn't passed or doesn't exist, check dueDate
-        // Roll over tasks when dueDate is before today (has passed)
-        if (!hasPassedDate && task.dueDate) {
-          try {
-            const dueDate = new Date(task.dueDate);
-            // Validate date is not invalid
-            if (isNaN(dueDate.getTime())) {
-              logger.warn('Invalid dueDate in task:', task.id, task.dueDate);
-              return false;
-            }
-            dueDate.setHours(0, 0, 0, 0);
-            const dueDateString = getDateString(dueDate);
-            // Only roll over if date is BEFORE today (not today or future)
-            // After midnight, tasks with due dates from previous days will be rolled over
-            hasPassedDate = dueDateString < todayString;
-          } catch (error) {
-            logger.error('Error parsing dueDate:', task.id, task.dueDate, error);
-            return false;
-          }
-        }
-        
-        // Task should roll over if it has a passed date (before today)
-        return hasPassedDate;
-      });
-
-      if (tasksToRollover.length > 0) {
-        // Mark that we've checked today IMMEDIATELY to prevent duplicate notifications
-        rolloverCheckedRef.current = todayString;
-        saveToLocalStorage('lastRolloverCheck', todayString);
-
-        if (rolloverSettings.askBeforeRolling) {
-          // Show confirmation dialog
-          const taskTitles = tasksToRollover.slice(0, 3).map(t => t.title).join(', ');
-          const more = tasksToRollover.length > 3 ? ` and ${tasksToRollover.length - 3} more` : '';
-          
-          toast.info('🔄 Task Rollover', {
-            description: `Move ${tasksToRollover.length} incomplete task(s) to inbox? (${taskTitles}${more})`,
-            action: {
-              label: 'Move to Inbox',
-              onClick: () => performRollover(tasksToRollover, todayString),
-            },
-            cancel: {
-              label: 'Skip',
-              onClick: () => {
-                // Already marked as checked above, no need to do it again
-              },
-            },
-            duration: TOAST_DURATION_EXTRA_LONG_MS,
-          });
-        } else {
-          // Automatically roll over without asking
-          performRollover(tasksToRollover, todayString);
-        }
-      } else {
-        // No tasks to rollover, but mark that we've checked today
-        rolloverCheckedRef.current = todayString;
-        saveToLocalStorage('lastRolloverCheck', todayString);
-      }
-    };
-
-    const performRollover = async (tasksToRollover: Task[], todayString: string) => {
-      let movedCount = 0;
-      let failedCount = 0;
-      const failedTasks: string[] = [];
-      
-      // Move tasks to inbox by setting scheduledDate to null
-      // Guideline: Recurring tasks are never rolled over; safety filter to exclude any recurring task
-      const validTasksToRollover = tasksToRollover.filter(task => {
-        if (task.recurrence && task.recurrence.type !== 'none') {
-          logger.warn('Attempted to roll over recurring task, skipping (rollover does not apply to recurring tasks):', task.id, task.title);
+        if (!task.scheduledDate) return false;
+        const scheduled = new Date(task.scheduledDate);
+        if (isNaN(scheduled.getTime())) {
+          logger.warn('Invalid scheduledDate in task:', task.id, task.scheduledDate);
           return false;
         }
-        return true;
+        return getDateString(scheduled) < todayString;
       });
-      
-      for (const task of validTasksToRollover) {
-        try {
-          // Set scheduledDate to null to make it unscheduled (moves to inbox)
-          // This preserves the task's other properties (dueDate, priority, etc.)
-          await updateTask(task.id, { scheduledDate: null });
-          movedCount++;
-          logger.debug('Task rolled over to inbox:', task.id, task.title);
-        } catch (error) {
-          logger.error('Failed to move task to inbox:', task.id, task.title, error);
-          failedCount++;
-          failedTasks.push(task.title);
-        }
-      }
-      
-      // Show appropriate alert based on results
-      if (movedCount > 0 && failedCount === 0) {
-        // All tasks moved successfully
-        toast.success(`✅ Moved ${movedCount} task${movedCount !== 1 ? 's' : ''} to inbox`, {
-          description: movedCount === 1 
-            ? 'The task has been moved to your inbox'
-            : 'All tasks have been moved to your inbox',
-          duration: TOAST_DURATION_MEDIUM_MS,
-        });
-      } else if (movedCount > 0 && failedCount > 0) {
-        // Some tasks moved, some failed
-        toast.warning(`⚠️ Moved ${movedCount} task${movedCount !== 1 ? 's' : ''} to inbox`, {
-          description: `Failed to move ${failedCount} task${failedCount !== 1 ? 's' : ''}: ${failedTasks.slice(0, 3).join(', ')}${failedTasks.length > 3 ? '...' : ''}`,
-          duration: TOAST_DURATION_LONG_MS,
-        });
-      } else if (failedCount > 0) {
-        // All tasks failed
-        toast.error(`❌ Failed to move tasks to inbox`, {
-          description: `Could not move ${failedCount} task${failedCount !== 1 ? 's' : ''} to inbox. Please try again.`,
-          duration: TOAST_DURATION_LONG_MS,
-        });
-      }
-      
-      // Ensure we're marked as checked (should already be set, but double-check)
-      rolloverCheckedRef.current = todayString;
-      saveToLocalStorage('lastRolloverCheck', todayString);
-    };
 
-    // Run rollover check after a short delay (to allow UI to load)
-    // Also re-run when tasks change (but only if we haven't checked today)
-    const timer = setTimeout(() => {
-      checkAndRolloverTasks();
+      rolloverCheckedRef.current = todayString;
+      saveToLocalStorage(ROLLOVER_UI_TEXT.lastCheckStorageKey, todayString, user.id);
+      if (tasksToRollover.length === 0) return;
+
+      if (rolloverSettings.askBeforeRolling) {
+        setPendingRollover(tasksToRollover);
+        toast.info(ROLLOVER_UI_TEXT.reviewTitle(tasksToRollover.length), {
+          description: ROLLOVER_UI_TEXT.reviewBody,
+          duration: TOAST_DURATION_EXTRA_LONG_MS,
+        });
+      } else {
+        void performRollover(tasksToRollover);
+      }
     }, TIMING_CONSTANTS.delays.rolloverCheck);
-    
+
     return () => clearTimeout(timer);
-  }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, updateTask, tasks, rolloverDay, canRollover]);
+  }, [rolloverSettings.autoRollover, rolloverSettings.askBeforeRolling, user?.id, isLoading, performRollover, tasks, rolloverDay, canRollover]);
 
   return (
     <TaskContext.Provider
@@ -3602,6 +3510,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         setViewConfig,
         updateHoursSettings,
         updateRolloverSettings,
+        pendingRollover,
+        confirmRollover,
+        dismissRollover,
         syncWithServer,
         ensureWorkspace,
         addTaskSeries,

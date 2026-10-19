@@ -1554,6 +1554,12 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 .planner-draft:has(.planner-draft-steps) {
   align-items: start;
 }
+.planner-draft-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
 .planner-draft-steps {
   margin: 6px 0 0;
   padding-left: 16px;

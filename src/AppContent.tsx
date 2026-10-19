@@ -25,6 +25,7 @@ import { PlannerChat } from './components/planner/PlannerChat';
 import { PlannerChatProvider } from './contexts/PlannerChatContext';
 import { TaskDialog } from './components/TaskDialog';
 import { NativePullToRefresh } from './components/NativePullToRefresh';
+import { RolloverPromptDialog } from './components/RolloverPromptDialog';
 import { AIScheduleResultDialog } from './components/AIScheduleResultDialog';
 import { PricingDialog } from './components/PricingDialog';
 import { UpgradePrompt } from './components/UpgradePrompt';
@@ -877,6 +878,8 @@ export default function AppContent() {
       />
 
       <AwardCelebration />
+
+      <RolloverPromptDialog />
 
       <AppTour
         run={runTour}

@@ -440,3 +440,33 @@ export function groupNotificationsByDate<T extends { timestamp: Date }>(items: T
       items: groups.get(key) ?? [],
     }));
 }
+
+const rolloverTaskCount = (count: number) => `${count} unfinished task${count === 1 ? '' : 's'}`;
+
+/** Quoted task names for rollover messages: "A", "B" and 2 more. */
+export function formatRolloverTaskList(titles: string[], shown = ROLLOVER_UI_TEXT.listedTitles): string {
+  const quoted = titles.slice(0, shown).map((title) => `"${title}"`);
+  const rest = titles.length - quoted.length;
+  if (rest > 0) return `${quoted.join(', ')} and ${rest} more`;
+  if (quoted.length <= 1) return quoted.join('');
+  return `${quoted.slice(0, -1).join(', ')} and ${quoted[quoted.length - 1]}`;
+}
+
+/** Rollover notifications and the ask-before-rolling prompt. */
+export const ROLLOVER_UI_TEXT = {
+  listedTitles: 3,
+  lastCheckStorageKey: 'lastRolloverCheck',
+  movedTitle: (count: number) => `Moved ${rolloverTaskCount(count)} to your Inbox`,
+  movedBody: (titles: string[]) =>
+    `${formatRolloverTaskList(titles)} ${titles.length === 1 ? "wasn't" : "weren't"} finished on ${titles.length === 1 ? 'its' : 'their'} day. Pick a new time from the Inbox.`,
+  partialTitle: (moved: number) => `Moved ${rolloverTaskCount(moved)} to your Inbox`,
+  failedTitle: (count: number) => `Couldn't move ${rolloverTaskCount(count)}`,
+  failedBody: (titles: string[]) => `${formatRolloverTaskList(titles)} stayed where ${titles.length === 1 ? 'it was' : 'they were'}. Try again from the Inbox.`,
+  reviewTitle: (count: number) => `${rolloverTaskCount(count)} from earlier`,
+  reviewBody: 'Open TaskZM to move them to your Inbox or keep them where they are.',
+  promptTitle: (count: number) => `Roll over ${rolloverTaskCount(count)}?`,
+  promptDescription:
+    "These weren't finished on their scheduled day. Move them to your Inbox to pick a new time, or keep them where they are.",
+  promptKeep: 'Keep',
+  promptMove: 'Move to Inbox',
+} as const;

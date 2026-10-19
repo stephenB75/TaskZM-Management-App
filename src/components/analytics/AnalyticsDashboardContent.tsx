@@ -32,9 +32,11 @@ import {
   ANALYTICS_METRIC_TITLES,
   ANALYTICS_METRIC_COLORS,
   ANALYTICS_METRIC_ICONS,
+  ANALYTICS_ON_TIME_WARNING_PERCENT,
   ANALYTICS_PDF_CONFIG,
   ANALYTICS_THEME,
   formatAnalyticsHoursAxis,
+  formatAnalyticsPercent,
 } from "../../lib/analytics-constants";
 import {
   AnalyticsResult,
@@ -44,7 +46,7 @@ import {
   formatAnalyticsTrendPercent,
   getAnalyticsLegendPercent,
 } from "../../lib/analytics-utils";
-import { MINUTES_PER_HOUR } from "../../lib/business-constants";
+import { MINUTES_PER_HOUR, PERCENTAGE_MULTIPLIER } from "../../lib/business-constants";
 import { COLOR_ERROR, COLOR_SUCCESS, getColorWithOpacity } from "../../lib/color-theme";
 import { cn } from "../../lib/utils";
 
@@ -293,6 +295,28 @@ export function AnalyticsDashboardContent({
           iconName={ANALYTICS_METRIC_ICONS.thisWeek}
           color={ANALYTICS_METRIC_COLORS.thisWeek}
           trend={analytics.weeklyTimeTrend}
+        />
+        <MetricCard
+          title={ANALYTICS_METRIC_TITLES.onTime}
+          value={analytics.dueCompleted > 0 ? formatAnalyticsPercent(analytics.onTimeRate) : "—"}
+          subtitle={ANALYTICS_METRIC_TITLES.onTimeSubtitle(analytics.overdueOpen)}
+          iconName={ANALYTICS_METRIC_ICONS.onTime}
+          color={
+            analytics.dueCompleted > 0 && analytics.onTimeRate < ANALYTICS_ON_TIME_WARNING_PERCENT
+              ? ANALYTICS_METRIC_COLORS.onTimeLow
+              : ANALYTICS_METRIC_COLORS.onTime
+          }
+        />
+        <MetricCard
+          title={ANALYTICS_METRIC_TITLES.estimateAccuracy}
+          value={
+            analytics.estimatedTasks > 0
+              ? formatAnalyticsPercent(Math.max(0, PERCENTAGE_MULTIPLIER - Math.abs(analytics.estimateOverrunPercent)))
+              : "—"
+          }
+          subtitle={ANALYTICS_METRIC_TITLES.estimateAccuracySubtitle(analytics.estimatedTasks, analytics.estimateOverrunPercent)}
+          iconName={ANALYTICS_METRIC_ICONS.estimateAccuracy}
+          color={ANALYTICS_METRIC_COLORS.estimateAccuracy}
         />
       </div>
 

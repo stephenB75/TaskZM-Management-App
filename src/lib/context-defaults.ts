@@ -8,6 +8,7 @@
 
 import type {
   HoursSettings,
+  Task,
   RolloverSettings,
   ViewConfig,
   TaskFilters,
@@ -351,6 +352,9 @@ export function createDefaultTaskContext() {
     setViewConfig: () => {},
     updateHoursSettings: async () => {},
     updateRolloverSettings: async () => {},
+    pendingRollover: [] as Task[],
+    confirmRollover: async () => {},
+    dismissRollover: () => {},
     syncWithServer: async () => {},
     ensureWorkspace: async () => null,
   };

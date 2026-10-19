@@ -1299,6 +1299,41 @@ export const PLANNER_ANALYSIS_CONFIG = {
   noteSentencePattern: /^(?:i'?m|i\s+am|i\s+feel|feeling|it'?s|it\s+is|this\s+(?:is|week|month|weekend)|that\s+(?:is|was)|there'?s|there\s+(?:is|are)|ugh|honestly|lol|wow|so\s+(?:much|many|tired|busy|stressed)|not\s+sure|idk|fyi|note\b|notes?\s*:)/i,
   /** Words that make a sentence a task even when it starts like a note ("I'm going to call Sam", "Is it time to renew…? need to check"). */
   actionCuePattern: /\b(?:need|needs|have|has|must|should|got|gotta|want|going)\s+to\b|\b(?:remember|don'?t\s+forget|make\s+sure)\b|\b(?:todo|to-do)\b/i,
+  /** Shorthand expanded before parsing, so dates and wording read cleanly ("tmrw" → "tomorrow", "w/" → "with"). */
+  shorthand: [
+    [/\btmrw\b|\btmr\b|\btmrow\b/gi, 'tomorrow'],
+    [/\btdy\b/gi, 'today'],
+    [/\btonite\b/gi, 'tonight'],
+    [/\bw\/o\b/gi, 'without'],
+    [/\bw\/(?=\s|$)/gi, 'with'],
+    [/\bb\/c\b/gi, 'because'],
+    [/\s&\s/g, ' and '],
+    [/\b(?:pls|plz)\b/gi, 'please'],
+    [/\bappt\b/gi, 'appointment'],
+    [/\bmtg\b/gi, 'meeting'],
+    [/\bmsg\b/gi, 'message'],
+    [/\bre:\s*/gi, 'about '],
+    [/\babt\b/gi, 'about'],
+    [/\bdont\b/gi, "don't"],
+    [/\bcant\b/gi, "can't"],
+    [/\bwont\b/gi, "won't"],
+    [/\bim\b/gi, "I'm"],
+    [/\bive\b/gi, "I've"],
+  ] as ReadonlyArray<readonly [RegExp, string]>,
+  /** A leading "-ing" verb becomes a command ("Calling mom" → "Call mom"). Nouns like "meeting" are left alone. */
+  imperativeVerbs: {
+    calling: 'call', emailing: 'email', texting: 'text', messaging: 'message', writing: 'write', finishing: 'finish',
+    booking: 'book', buying: 'buy', fixing: 'fix', updating: 'update', reviewing: 'review', preparing: 'prepare',
+    scheduling: 'schedule', cleaning: 'clean', picking: 'pick', sending: 'send', paying: 'pay', ordering: 'order',
+    planning: 'plan', making: 'make', getting: 'get', reading: 'read', checking: 'check', organizing: 'organize',
+    organising: 'organise', submitting: 'submit', renewing: 'renew', replying: 'reply', drafting: 'draft',
+    cancelling: 'cancel', canceling: 'cancel', returning: 'return', researching: 'research', finding: 'find',
+    following: 'follow', filing: 'file', sorting: 'sort', packing: 'pack', starting: 'start', creating: 'create',
+  } as Readonly<Record<string, string>>,
+  /** Titles longer than this many words are shortened at a reason clause; the full sentence becomes the description. */
+  maxTitleWords: 9,
+  /** Where a long item's reason or detail begins ("…because…", "…so that…"). */
+  detailClausePattern: /\s+(?:because|since|so\s+that|so\s+we|so\s+i|in\s+order\s+to|which|as\s+(?:he|she|they|we|it)|otherwise|but)\s+/i,
   /** A brain-dump line ending with a colon heads the bulleted lines below it ("Website:"). */
   groupHeaderPattern: /:\s*$/,
   /** A title followed by its own steps: "Plan party: invite guests, order cake" or "… including a, b and c". Groups: title, steps. */

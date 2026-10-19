@@ -28,6 +28,9 @@ export const COLOR_PASTEL_SAGE_BORDER = '#A3A3A3'; // Neutral border
 export const COLOR_ANALYTICS_GREEN = '#10B981'; // Success green (matches COLOR_SUCCESS)
 export const COLOR_ANALYTICS_BLUE = '#3B82F6'; // Info blue (matches COLOR_INFO)
 export const COLOR_ANALYTICS_ORANGE = '#F59E0B'; // Warning orange (matches COLOR_WARNING)
+export const COLOR_ANALYTICS_VIOLET = '#8B5CF6'; // Analytics-only accent so each KPI keeps its own hue
+export const COLOR_ANALYTICS_PINK = '#EC4899'; // Analytics-only accent so each KPI keeps its own hue
+export const COLOR_ANALYTICS_TEAL = '#14B8A6'; // Analytics-only accent so each KPI keeps its own hue
 
 // Background Colors
 export const COLOR_BACKGROUND_LIGHT = '#FAFAFA'; // Light neutral background

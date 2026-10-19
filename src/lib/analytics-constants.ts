@@ -10,20 +10,16 @@ import {
   PERCENTAGE_MULTIPLIER,
 } from "./business-constants";
 import {
-  COLOR_ANALYTICS_BLUE,
-  COLOR_ANALYTICS_GREEN,
   COLOR_ANALYTICS_ORANGE,
+  COLOR_ANALYTICS_PINK,
+  COLOR_ANALYTICS_TEAL,
+  COLOR_ANALYTICS_VIOLET,
   COLOR_BACKGROUND_DARK_COLOR,
+  COLOR_ERROR,
   COLOR_BACKGROUND_GRAY,
   COLOR_BACKGROUND_WHITE,
   COLOR_BORDER_LIGHT,
   COLOR_INFO,
-  COLOR_PASTEL_LAVENDER,
-  COLOR_PASTEL_LILAC,
-  COLOR_PASTEL_MINT,
-  COLOR_PASTEL_PEACH,
-  COLOR_PASTEL_PINK,
-  COLOR_PASTEL_SKY,
   COLOR_PRIMARY,
   COLOR_SUCCESS,
   COLOR_TEXT_MUTED,
@@ -54,27 +50,14 @@ export const ANALYTICS_LIMITS = {
 export const ANALYTICS_STATUS = {
   completed: { label: "Completed", color: COLOR_SUCCESS },
   inProgress: { label: "In Progress", color: COLOR_WARNING },
-  todo: { label: "Todo", color: COLOR_INFO },
+  todo: { label: "Todo", color: COLOR_PRIMARY },
   onHold: { label: "On Hold", color: COLOR_ANALYTICS_ORANGE },
 } as const;
 
-export const ANALYTICS_TAG_BAR_COLORS = [
-  COLOR_PRIMARY,
-  COLOR_ANALYTICS_BLUE,
-  COLOR_ANALYTICS_GREEN,
-  COLOR_ANALYTICS_ORANGE,
-  COLOR_PASTEL_LAVENDER,
-  COLOR_PASTEL_SKY,
-  COLOR_PASTEL_MINT,
-  COLOR_PASTEL_PEACH,
-  COLOR_PASTEL_LILAC,
-  COLOR_PASTEL_PINK,
-] as const;
-
 export const ANALYTICS_CHART_SERIES = {
-  created: { name: "Created", color: COLOR_INFO },
+  created: { name: "Created", color: COLOR_PRIMARY },
   completed: { name: "Completed", color: COLOR_SUCCESS },
-  hours: { name: "Hours", color: COLOR_PRIMARY },
+  hours: { name: "Hours", color: COLOR_INFO },
   tasksCompleted: { name: "Tasks completed", color: COLOR_TEXT_SECONDARY },
 } as const;
 
@@ -146,6 +129,8 @@ export const ANALYTICS_CHART_LAYOUT = {
     barRadiusEndPx: 6,
     margin: { top: 5, right: 10, left: 60, bottom: 0 },
   },
+  /** Non-peak time-of-day bars are a faded version of the peak bar's color. */
+  timeBucketIdleOpacity: 0.4,
   axisTickFontSizePx: 10,
   gridStrokeDasharray: "3 3",
   cartesianVertical: false,
@@ -209,6 +194,17 @@ export const ANALYTICS_METRIC_TITLES = {
   tasksWithTime: (count: number) => `${count} tasks with time`,
   completedThisWeek: (count: number) => `${count} completed`,
   completionRateSuffix: " rate",
+  onTime: "On time",
+  onTimeSubtitle: (overdue: number) => (overdue === 0 ? "Nothing overdue" : `${overdue} overdue now`),
+  estimateAccuracy: "Estimate accuracy",
+  estimateAccuracySubtitle: (count: number, overrunPercent: number) =>
+    count === 0
+      ? "Track time on estimated tasks"
+      : overrunPercent > 0
+        ? `Tasks run ${overrunPercent}% over`
+        : overrunPercent < 0
+          ? `Tasks run ${Math.abs(overrunPercent)}% under`
+          : `${count} tasks on estimate`,
 } as const;
 
 export const ANALYTICS_METRIC_ICONS = {
@@ -218,16 +214,25 @@ export const ANALYTICS_METRIC_ICONS = {
   timeTracked: "timer",
   thisWeek: "calendar",
   avgCompletion: "clock",
+  onTime: "calendar-check",
+  estimateAccuracy: "gauge",
 } as const;
 
+/** One hue per KPI; status-backed cards reuse their status color so cards and charts agree. */
 export const ANALYTICS_METRIC_COLORS = {
   totalTasks: COLOR_PRIMARY,
   completed: COLOR_SUCCESS,
   inProgress: COLOR_WARNING,
   timeTracked: COLOR_INFO,
-  thisWeek: COLOR_ANALYTICS_ORANGE,
-  avgCompletion: COLOR_ANALYTICS_BLUE,
+  thisWeek: COLOR_ANALYTICS_PINK,
+  avgCompletion: COLOR_ANALYTICS_VIOLET,
+  onTime: COLOR_ANALYTICS_TEAL,
+  onTimeLow: COLOR_ERROR,
+  estimateAccuracy: COLOR_ANALYTICS_ORANGE,
 } as const;
+
+/** Below this on-time share the On time card switches to the warning color. */
+export const ANALYTICS_ON_TIME_WARNING_PERCENT = 50;
 
 export const ANALYTICS_TREND = {
   /** Treat |change| below this as flat (no arrow) */
