@@ -55,6 +55,26 @@ def configure_pod_target_settings(config, suppress_third_party_warnings: false)
   config.build_settings['OTHER_CFLAGS'] = other_cflags
 end
 
+# "Update to recommended settings" would re-enable script sandboxing, explicit modules,
+# debug dylibs and the module verifier, which break the Capacitor/CocoaPods build.
+# Record that the installed Xcode already reviewed both projects so the prompt stays away.
+def installed_xcode_upgrade_check
+  version = `xcodebuild -version 2>/dev/null`[/Xcode (\d+)\.(\d+)/]
+  return nil unless version
+
+  major, minor = version.scan(/\d+/).map(&:to_i)
+  (major * 100 + minor * 10).to_s
+end
+
+def mark_upgrade_checked!(project)
+  check = installed_xcode_upgrade_check
+  return unless check
+
+  attributes = project.root_object.attributes
+  attributes['LastUpgradeCheck'] = check
+  attributes['LastSwiftUpdateCheck'] = check
+end
+
 def fix_cocoapods_script_phases(project)
   project.native_targets.each do |target|
     target.shell_script_build_phases.each do |phase|
@@ -333,6 +353,7 @@ post_install do |installer|
   installer.pods_project.build_configurations.each do |config|
     disable_module_verifier!(config)
   end
+  mark_upgrade_checked!(installer.pods_project)
 
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
@@ -358,6 +379,7 @@ post_install do |installer|
         )
       end
     end
+    mark_upgrade_checked!(aggregate_target.user_project)
     aggregate_target.user_project.save
   end
 end
