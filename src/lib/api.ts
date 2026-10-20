@@ -126,6 +126,23 @@ async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Respo
   return response;
 }
 
+/**
+ * Same refresh-and-retry as API calls, for edge-function routes called outside this module
+ * (calendar). Only the Authorization header is set; caller headers are kept as-is.
+ */
+export async function authorizedFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const withCurrentToken = () => ({
+    ...(init.headers as Record<string, string> | undefined),
+    Authorization: `Bearer ${accessToken || publicAnonKey}`,
+  });
+  await ensureFreshAccessToken();
+  let response = await fetch(url, { ...init, headers: withCurrentToken() });
+  if (response.status === 401 && (await refreshAccessToken())) {
+    response = await fetch(url, { ...init, headers: withCurrentToken() });
+  }
+  return response;
+}
+
 // Auth API
 export async function signup(email: string, password: string, name: string) {
   const response = await fetch(`${API_BASE}/signup`, {

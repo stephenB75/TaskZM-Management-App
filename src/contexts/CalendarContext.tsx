@@ -8,6 +8,7 @@ import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { CALENDAR_OAUTH_BROADCAST_CHANNEL, CALENDAR_OAUTH_ORIGINS, CALENDAR_OAUTH_MESSAGE_TYPES, CALENDAR_PROVIDER_DISPLAY_NAMES, CALENDAR_PROVIDERS, CALDAV_TRANSIENT_STATUSES, type CalendarProviderId } from '../lib/calendar-integration-constants';
 import { RECURRENCE_SERIES_OCCURRENCE_SEPARATOR } from '../lib/business-constants';
 import { supabase } from '../lib/supabase-client';
+import { authorizedFetch } from '../lib/api';
 import { TIMING_CONSTANTS, DEFAULT_FALLBACK_TIMEZONE } from '../lib/timing-constants';
 import { AppleCalDAVSetupDialog } from '../components/AppleCalDAVSetupDialog';
 import { clearCalendarEventsCache } from '../lib/calendar-events-cache';
@@ -151,11 +152,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/status`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+      const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/status`);
 
       if (response.ok) {
         const data = await response.json();
@@ -297,11 +294,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/test`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+      const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/apple/test`);
 
       const data = await response.json();
       
@@ -421,10 +414,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
           
           if (providerToken) {
             // Try to use Supabase Google tokens for calendar
-            const response = await fetch(`${CALENDAR_API_BASE}/calendar/google/use-supabase-tokens`, {
+            const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/google/use-supabase-tokens`, {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
@@ -468,11 +460,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       const authQuery = getPlatform().isNative
         ? `?platform=${MOBILE_CALENDAR_AUTH_PLATFORM_PARAM}`
         : '';
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/${provider}/auth${authQuery}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+      const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/${provider}/auth${authQuery}`);
 
       if (!response.ok) {
         let errorMessage = 'Failed to initiate OAuth';
@@ -770,12 +758,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         ? `${CALENDAR_API_BASE}/calendar/apple/caldav`
         : `${CALENDAR_API_BASE}/calendar/${provider}`;
       
-      const response = await fetch(endpoint, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+      const response = await authorizedFetch(endpoint, { method: 'DELETE' });
 
       if (!response.ok) {
         throw new Error('Failed to disconnect calendar');
@@ -851,10 +834,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     try {
       setIsSyncing(true);
 
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/sync-task`, {
+      const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/sync-task`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ task, provider, workspaceId }),
@@ -919,10 +901,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         calendarHref?: string,
         skipDeletions?: boolean,
       ): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> => {
-        const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
+        const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -942,9 +923,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
       let statusCalendars: Array<{ href?: string }> = [];
       try {
-        const statusResp = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/status`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+        const statusResp = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/status`);
         if (statusResp.ok) {
           const statusJson = await statusResp.json();
           statusCalendars = Array.isArray(statusJson.selectedCalendars)
@@ -1124,10 +1103,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
       // Auto-detect user's timezone from browser
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_FALLBACK_TIMEZONE;
       
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/google/sync`, {
+      const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/google/sync`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ userTimezone }),
@@ -1221,10 +1199,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         description: 'This may take a moment',
       });
 
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/sync-all`, {
+      const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/sync-all`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ workspaceId, provider }),

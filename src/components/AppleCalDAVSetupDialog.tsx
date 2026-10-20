@@ -21,6 +21,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { CALENDAR_API_BASE } from '../lib/calendar-api-base';
 import { APPLE_ID_BASE_URL, APPLE_ID_DISPLAY_NAME, APPLE_CALENDAR_FALLBACK_COLOR, ICLOUD_EMAIL_PLACEHOLDER, CALDAV_TRANSIENT_STATUSES } from '../lib/calendar-integration-constants';
 import { DEFAULT_FALLBACK_TIMEZONE, TIMING_CONSTANTS } from '../lib/timing-constants';
+import { authorizedFetch } from '../lib/api';
 
 interface AppleCalDAVSetupDialogProps {
   open: boolean;
@@ -65,10 +66,9 @@ export function AppleCalDAVSetupDialog({
     setError(null);
 
     try {
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/test`, {
+      const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/test`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, appPassword }),
@@ -98,10 +98,9 @@ export function AppleCalDAVSetupDialog({
     setError(null);
 
     try {
-      const response = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/discover`, {
+      const response = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/discover`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, appPassword }),
@@ -151,10 +150,9 @@ export function AppleCalDAVSetupDialog({
 
     try {
       // Save credentials and selected calendars
-      const saveResponse = await fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/save`, {
+      const saveResponse = await authorizedFetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/save`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -183,10 +181,9 @@ export function AppleCalDAVSetupDialog({
       type SyncData = { success?: boolean; error?: string; errors?: string[]; created?: number };
       const syncCalendar = async (calendarHref: string): Promise<SyncData> => {
         const request = () =>
-          fetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
+          authorizedFetch(`${CALENDAR_API_BASE}/calendar/apple/caldav/sync`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ userTimezone, calendarHref, skipDeletions: false }),

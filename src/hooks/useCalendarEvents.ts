@@ -15,6 +15,7 @@ import { getDateString, parseCalendarEventTime, dateStringToLocalDate, getCalend
 import { applyRecurrenceTimeCorrections } from '../lib/calendar-recurrence-utils';
 import { expandCalendarEventsForRange } from '../lib/calendar-rrule-expansion';
 import { fetchAppleCalendarEventsFromDb } from '../lib/apple-calendar-db';
+import { authorizedFetch } from '../lib/api';
 import { resolveCalendarProvidersForFetch, getActiveCalendarProviders, type CalendarProviderKey } from '../lib/calendar-status';
 
 /** Bump when calendar event time/recurrence handling changes (invalidates in-memory cache). */
@@ -318,13 +319,8 @@ async function fetchProviderEventsOnce(
         endDate,
         userTimezone,
       });
-      const resp = await fetch(
+      const resp = await authorizedFetch(
         `${CALENDAR_API_BASE}/calendar/events/${provider}?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
       );
 
       if (!resp.ok) {
