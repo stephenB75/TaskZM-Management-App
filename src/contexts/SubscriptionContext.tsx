@@ -6,6 +6,7 @@ import { toast } from '../lib/toast-wrapper';
 import { SUBSCRIPTION_UI_TEXT, SUBSCRIPTION_STORAGE_KEY_PREFIX, SUBSCRIPTION_SYNC_INTERVAL } from '../lib/subscription-constants';
 import { configureRevenueCat, resetRevenueCat, getCustomerInfo as getRevenueCatCustomerInfo, isRevenueCatConfigured } from '../lib/revenuecat';
 import { DAYS_IN_MONTH_APPROX } from '../lib/business-constants';
+import { isRevenueCatProEntitlementId } from '../lib/mobile-constants';
 import { createDefaultSubscriptionContext } from '../lib/context-defaults';
 import {
   inferBillingPeriodFromProductId,
@@ -169,7 +170,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const entitlements = customerInfo?.entitlements?.active;
       if (!entitlements) return current;
 
-      const proKey = Object.keys(entitlements).find((key) => key.toLowerCase().includes('pro'));
+      const proKey = Object.keys(entitlements).find(isRevenueCatProEntitlementId);
       if (!proKey) {
         return current;
       }

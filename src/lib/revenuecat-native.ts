@@ -5,7 +5,7 @@
 import { Purchases, LOG_LEVEL, type PurchasesPackage } from '@revenuecat/purchases-capacitor';
 import { getPlatform } from './platform';
 import { logger } from './logger';
-import { REVENUECAT_PRO_ENTITLEMENT_ID } from './mobile-constants';
+import { REVENUECAT_PRO_ENTITLEMENT_ID, isRevenueCatProEntitlementId } from './mobile-constants';
 import {
   collectAllOfferingPackages,
   getPackageProductId,
@@ -172,7 +172,7 @@ export async function purchaseProSubscription(
     const hasPro =
       entitlements &&
       (entitlements[REVENUECAT_PRO_ENTITLEMENT_ID] ||
-        Object.keys(entitlements).some((k) => k.toLowerCase().includes('pro')));
+        Object.keys(entitlements).some(isRevenueCatProEntitlementId));
 
     if (!hasPro) {
       return { success: false, error: 'Purchase completed but Pro entitlement not active.' };

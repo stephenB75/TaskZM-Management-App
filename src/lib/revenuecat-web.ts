@@ -4,6 +4,7 @@
  */
 
 import { REVENUECAT_YEARLY_OFFERING_ID } from './subscription-constants';
+import { isRevenueCatProEntitlementId } from './mobile-constants';
 import {
   collectAllOfferingPackages,
   resolveSubscriptionPackage,
@@ -953,9 +954,7 @@ export async function purchaseProSubscription(
     
     const hasProEntitlement = entitlementKeys.some((key) => {
       const keyLower = key.toLowerCase();
-      const matches = keyLower.includes('pro') || 
-             keyLower === 'pro-monthly' || 
-             keyLower === 'pro-yearly';
+      const matches = isRevenueCatProEntitlementId(keyLower);
       if (matches) {
         console.log(`✅ Found Pro entitlement: ${key}`);
       }

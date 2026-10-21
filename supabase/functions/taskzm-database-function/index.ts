@@ -4270,7 +4270,8 @@ function normalizeRevenueCatSubscriptionStore(raw: string | null | undefined): s
 const REVENUECAT_CONFIG = {
   apiBase: 'https://api.revenuecat.com/v1',
   proEntitlementId: 'pro',
-  paidStores: ['stripe', 'app_store', 'play_store'],
+  proEntitlementKeywords: ['pro', 'monthly', 'yearly', 'annual', 'lifetime'],
+  paidStores: ['stripe', 'app_store', 'play_store', 'promotional'],
   anonymousIdPrefix: '$RCAnonymousID:',
 } as const;
 
@@ -4327,9 +4328,12 @@ async function syncSubscriptionFromRevenueCat(
 
   const { subscriber } = await response.json();
   const entitlements: Record<string, any> = subscriber?.entitlements ?? {};
-  const entitlement =
-    entitlements[REVENUECAT_CONFIG.proEntitlementId] ??
-    Object.entries(entitlements).find(([id]) => id.toLowerCase().includes('pro'))?.[1];
+  const entitlementEntry =
+    Object.entries(entitlements).find(([id]) => id === REVENUECAT_CONFIG.proEntitlementId) ??
+    Object.entries(entitlements).find(([id]) =>
+      REVENUECAT_CONFIG.proEntitlementKeywords.some((keyword) => id.toLowerCase().includes(keyword))
+    );
+  const entitlement = entitlementEntry?.[1];
 
   if (!entitlement) {
     const currentStore = normalizeRevenueCatSubscriptionStore(await kv.get(`user:${userId}:subscription_store`));
@@ -4364,7 +4368,9 @@ async function syncSubscriptionFromRevenueCat(
     startDate: entitlement.purchase_date ?? null,
     endDate,
     cancelAtPeriodEnd: isActive && willCancel,
-    billingPeriod: isActive ? inferBillingPeriodFromProductId(productId) : null,
+    billingPeriod: isActive
+      ? inferBillingPeriodFromProductId(productId) ?? inferBillingPeriodFromEntitlementIds([entitlementEntry![0]])
+      : null,
     purchaseStore: normalizeRevenueCatSubscriptionStore(storeSubscription?.store ?? nonSubscription?.store),
     managementUrl: subscriber?.management_url ?? null,
   };

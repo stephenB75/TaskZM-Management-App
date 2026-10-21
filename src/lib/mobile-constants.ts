@@ -42,6 +42,14 @@ export const MOBILE_CALENDAR_AUTH_PLATFORM_PARAM = 'native';
 /** RevenueCat entitlement identifier (must match RevenueCat dashboard). */
 export const REVENUECAT_PRO_ENTITLEMENT_ID = 'pro';
 
+/** Entitlement ids that grant Pro (dashboard and promotional grants use e.g. "Yearly", "PRO-Monthly"). */
+export const REVENUECAT_PRO_ENTITLEMENT_KEYWORDS = ['pro', 'monthly', 'yearly', 'annual', 'lifetime'] as const;
+
+export function isRevenueCatProEntitlementId(id: string): boolean {
+  const lower = id.toLowerCase();
+  return REVENUECAT_PRO_ENTITLEMENT_KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
 /** App Store listing URL — set when app is live. */
 export const APP_STORE_URL = '';
 
