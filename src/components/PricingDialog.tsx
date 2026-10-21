@@ -7,19 +7,16 @@ import {
   DialogDescription,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 // Icons migrated to Icon component
 import { Icon } from "./Icon";
-import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XS } from "../lib/layout-constants";
+import { ICON_SIZE_SM, ICON_SIZE_MD, ICON_SIZE_XS } from "../lib/layout-constants";
 import { useSubscription } from "../contexts/SubscriptionContext";
 import { useAuth } from "../contexts/AuthContext";
-import { COLOR_PRIMARY, COLOR_PRIMARY_LIGHT, COLOR_PASTEL_LAVENDER, COLOR_PASTEL_SKY, COLOR_PASTEL_MINT, COLOR_TEXT_WHITE } from "../lib/color-theme";
 import { toast } from '../lib/toast-wrapper';
 import { motion } from "motion/react";
 import { getPlatform } from "../lib/platform";
 import { cn } from "../lib/utils";
 import { TIMING_CONSTANTS } from "../lib/timing-constants";
-import { UI_PRICING_DIALOG_COLORS, UI_PRICING_GRADIENT_COLORS } from "../lib/ui-colors";
 import { PRICING_DIALOG_TEXT_SIZES } from "../lib/text-size-constants";
 import {
   SUBSCRIPTION_UI_TEXT,
@@ -28,7 +25,6 @@ import {
   PRO_YEARLY_FEATURES,
   PRO_MONTHLY_FEATURES_LIST,
   PRO_YEARLY_FEATURES_LIST,
-  FEATURES_DISPLAY_LIMIT,
 } from "../lib/subscription-constants";
 import * as api from "../lib/api";
 import { getOfferings, restorePurchases, configureRevenueCat, purchaseProSubscription, isRevenueCatConfigured, isNativeStoreBilling, supportsBillingChannelChoice, getSubscriptionBillingChannel, setSubscriptionBillingChannel, type SubscriptionBillingChannel } from "../lib/revenuecat";
@@ -562,427 +558,295 @@ export function PricingDialog({
   };
 
 
-  const freeTierFeatures = FREE_TIER_FEATURES;
-  const monthlyProFeatures = PRO_MONTHLY_FEATURES;
-  const yearlyProFeatures = PRO_YEARLY_FEATURES;
+  const isFreePlan = subscription.tier === "free";
+  const isMonthlyPlan = subscription.tier === "pro" && subscription.billingPeriod === "monthly";
+  const isYearlyPlan = subscription.tier === "pro" && subscription.billingPeriod === "yearly";
+  const textSizes = PRICING_DIALOG_TEXT_SIZES;
+  const secondsToMs = TIMING_CONSTANTS.timeConversions.secondsToMs;
+
+  const billingNote = isNativeStoreBilling()
+    ? SUBSCRIPTION_UI_TEXT.native.billingNotice
+    : supportsBillingChannelChoice()
+      ? `${SUBSCRIPTION_UI_TEXT.native.webBillingNotice} ${SUBSCRIPTION_UI_TEXT.native.countryHint}`
+      : SUBSCRIPTION_UI_TEXT.native.countryHint;
+
+  const primaryButtonClass = "bg-foreground text-background hover:opacity-90 [&_svg]:text-background";
+  const secondaryButtonClass = "border border-border bg-background text-foreground hover:bg-muted disabled:opacity-60";
+  const ctaClass = `mt-5 h-11 w-full rounded-full ${textSizes.body} font-semibold`;
+
+  const cardMotion = (order: number) => ({
+    initial: { opacity: 0, y: 12 },
+    animate: { opacity: 1, y: 0 },
+    transition: {
+      duration: TIMING_CONSTANTS.animations.medium / secondsToMs,
+      delay: (order * TIMING_CONSTANTS.animations.default) / (2 * secondsToMs),
+    },
+  });
+
+  const cardClass = (isCurrent: boolean, isFeatured = false) =>
+    cn(
+      "relative flex flex-col rounded-2xl bg-card p-5 md:p-6",
+      isFeatured ? "border-2 border-foreground shadow-lg" : "border border-border",
+      isCurrent && !isFeatured && "border-2 border-muted-foreground"
+    );
+
+  const renderPill = (label: React.ReactNode, tone: "solid" | "muted") => (
+    <span
+      className={cn(
+        `inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 ${textSizes.pill} font-medium whitespace-nowrap`,
+        tone === "solid" ? "bg-foreground text-background [&_svg]:text-background" : "border border-border bg-muted text-foreground"
+      )}
+    >
+      {label}
+    </span>
+  );
+
+  const renderFeatures = (features: typeof FREE_TIER_FEATURES) => {
+    const header = features.find((f) => f.isHeader);
+    return (
+      <div className="mt-6 border-t border-border pt-5">
+        <p className={`${textSizes.detail} mb-4 font-semibold uppercase tracking-wide text-muted-foreground`}>
+          {header ? `${header.text}:` : SUBSCRIPTION_UI_TEXT.planCards.includedLabel}
+        </p>
+        <ul className="space-y-3.5">
+          {features
+            .filter((f) => !f.isHeader)
+            .map((feature) => (
+              <li key={feature.text} className="flex items-start gap-3">
+                <Icon name="check" size={ICON_SIZE_MD} weight="bold" className="mt-0.5 flex-shrink-0 text-foreground" />
+                <div className="min-w-0">
+                  <p className={`${textSizes.body} font-medium leading-snug text-foreground`}>{feature.text}</p>
+                  {feature.detail && (
+                    <p className={`${textSizes.detail} mt-0.5 leading-snug text-muted-foreground`}>{feature.detail}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+        </ul>
+      </div>
+    );
+  };
+
+  const renderPrice = (price: string, unit: string, helper: React.ReactNode) => (
+    <div className="mt-5">
+      <div className="flex items-baseline gap-1">
+        <span className={`${textSizes.price} font-bold tracking-tight text-foreground`}>{price}</span>
+        <span className={`${textSizes.body} text-muted-foreground`}>{unit}</span>
+      </div>
+      <div className={`${textSizes.detail} mt-1.5 flex min-h-[1.25rem] flex-wrap items-center gap-2 text-muted-foreground`}>
+        {helper}
+      </div>
+    </div>
+  );
+
+  const renderSpinnerLabel = (label: string) => (
+    <span className="flex items-center justify-center gap-2">
+      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      <span>{label}</span>
+    </span>
+  );
+
+  const renderUnavailable = (label: string, order: number) => (
+    <motion.div
+      {...cardMotion(order)}
+      className="flex min-h-[12rem] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted p-6"
+    >
+      <p className={`${textSizes.body} text-center text-muted-foreground`}>
+        {isLoadingOfferings ? SUBSCRIPTION_UI_TEXT.planCards.loading : label}
+      </p>
+    </motion.div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[850px] max-h-[95vh] overflow-y-auto rounded-2xl border-0 bg-background p-0 shadow-none md:p-0">
-        <div className="p-3 md:p-4">
-          <div className="mb-3 md:mb-4">
-            <DialogHeader className="text-center">
-              <DialogTitle className={`text-lg md:text-xl font-bold ${UI_PRICING_DIALOG_COLORS.titleGradient.className} mb-1`}>
-                {SUBSCRIPTION_UI_TEXT.title}
-              </DialogTitle>
-              <DialogDescription className={`${PRICING_DIALOG_TEXT_SIZES.description} mt-1 text-muted-foreground`}>
-                {SUBSCRIPTION_UI_TEXT.description}
-              </DialogDescription>
-            </DialogHeader>
-          </div>
+      <DialogContent className="max-h-[92vh] max-w-[95vw] overflow-y-auto rounded-3xl border-0 bg-background p-0 shadow-none sm:max-w-[90vw] sm:p-0 lg:max-w-[1040px]">
+        <div className="p-5 sm:p-8">
+          <DialogHeader className="mb-6 text-center sm:text-center">
+            <DialogTitle className={`${textSizes.title} font-bold tracking-tight text-foreground`}>
+              {SUBSCRIPTION_UI_TEXT.title}
+            </DialogTitle>
+            <DialogDescription className={`${textSizes.subtitle} mt-2 text-muted-foreground`}>
+              {SUBSCRIPTION_UI_TEXT.description}
+            </DialogDescription>
+          </DialogHeader>
+
+          {supportsBillingChannelChoice() && (
+            <div className="mb-5 flex flex-col items-center gap-2">
+              <p className={`${textSizes.detail} font-medium text-muted-foreground`}>
+                {SUBSCRIPTION_UI_TEXT.native.billingMethodTitle}
+              </p>
+              <div className="grid w-full max-w-md grid-cols-2 gap-1 rounded-2xl bg-muted p-1 sm:rounded-full">
+                {([
+                  ['native-store', SUBSCRIPTION_UI_TEXT.native.billingMethodNative],
+                  ['web', SUBSCRIPTION_UI_TEXT.native.billingMethodWeb],
+                ] as const).map(([channel, label]) => (
+                  <button
+                    key={channel}
+                    type="button"
+                    aria-pressed={billingChannel === channel}
+                    onClick={() => setBillingChannel(channel)}
+                    className={cn(
+                      `rounded-xl px-3 py-2 ${textSizes.body} font-medium leading-tight transition-colors sm:rounded-full`,
+                      billingChannel === channel
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {offeringsError && (
-            <div className={`mb-3 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-3 py-1.5 ${PRICING_DIALOG_TEXT_SIZES.description} text-red-700 dark:text-red-300`}>
+            <div className={`mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 ${textSizes.body} text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300`}>
               {offeringsError}
             </div>
           )}
 
-          {supportsBillingChannelChoice() && (
-          <div className="mb-3 md:mb-4">
-            <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-muted-foreground mb-2 font-medium`}>
-              {SUBSCRIPTION_UI_TEXT.native.billingMethodTitle}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant={billingChannel === 'native-store' ? 'default' : 'outline'}
-                className="w-full"
-                onClick={() => setBillingChannel('native-store')}
-              >
-                {SUBSCRIPTION_UI_TEXT.native.billingMethodNative}
-              </Button>
-              <Button
-                type="button"
-                variant={billingChannel === 'web' ? 'default' : 'outline'}
-                className="w-full"
-                onClick={() => setBillingChannel('web')}
-              >
-                {SUBSCRIPTION_UI_TEXT.native.billingMethodWeb}
-              </Button>
-            </div>
+          <div className={`mb-6 flex items-start gap-3 rounded-xl bg-muted px-4 py-3 ${textSizes.body} leading-relaxed text-muted-foreground`}>
+            <Icon name="info" size={ICON_SIZE_MD} className="mt-0.5 flex-shrink-0 text-foreground" />
+            <p>{billingNote}</p>
           </div>
-          )}
 
-          {/* Payment form country selection hint - web Stripe checkout only */}
-          {!isNativeStoreBilling() && (
-          <div className="mb-3 md:mb-4">
-            <div className="p-2.5 md:p-3 bg-amber-50/90 dark:bg-amber-900/30 rounded-lg border-2 border-amber-300 dark:border-amber-700/60 shadow-sm">
-              <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-amber-800 dark:text-amber-200 leading-snug font-medium`}>
-                💡 <span className="font-semibold">Important:</span> Please select your country first in the payment form to properly fill out payment details.
-              </p>
-            </div>
-          </div>
-          )}
-
-          {isNativeStoreBilling() && (
-          <div className="mb-3 md:mb-4">
-            <div className="p-2.5 md:p-3 bg-blue-50/90 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800/60 shadow-sm">
-              <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-blue-900 dark:text-blue-100 leading-snug`}>
-                {SUBSCRIPTION_UI_TEXT.native.billingNotice}
-              </p>
-            </div>
-          </div>
-          )}
-
-          {!isNativeStoreBilling() && supportsBillingChannelChoice() && (
-          <div className="mb-3 md:mb-4">
-            <div className="p-2.5 md:p-3 bg-slate-50/90 dark:bg-slate-900/30 rounded-lg border border-slate-200 dark:border-slate-700/60 shadow-sm">
-              <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-slate-800 dark:text-slate-100 leading-snug`}>
-                {SUBSCRIPTION_UI_TEXT.native.webBillingNotice}
-              </p>
-            </div>
-          </div>
-          )}
-
-          <div className={cn("grid gap-2.5 md:gap-3 max-w-full", "grid-cols-1 md:grid-cols-3")}>
-            {/* Free Tier */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4 }}
-              className={cn(
-                "relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 bg-white dark:bg-card hover:border-gray-300 dark:hover:border-border transition-all duration-300 shadow-md hover:shadow-lg flex flex-col",
-                subscription.tier === "free"
-                  ? `${UI_PRICING_DIALOG_COLORS.accentBorderClass} ring-2 ${UI_PRICING_DIALOG_COLORS.accentRingClass} ${UI_PRICING_DIALOG_COLORS.accentDarkBorderClass} ${UI_PRICING_DIALOG_COLORS.accentDarkRingClass}`
-                  : "border-gray-200 dark:border-border"
-              )}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-foreground mb-0.5">{SUBSCRIPTION_UI_TEXT.free.title}</h3>
-                  <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
-                </div>
-                {subscription.tier === "free" && (
-                  <Badge className={`${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentTextClass} ${UI_PRICING_DIALOG_COLORS.accentBorderClass} ${PRICING_DIALOG_TEXT_SIZES.badge} px-1.5 py-0.5 shadow-sm flex-shrink-0 ml-1.5`}>
-                    {SUBSCRIPTION_UI_TEXT.free.button.current}
-                  </Badge>
-                )}
+          <div className="grid grid-cols-1 gap-6 pt-3 lg:grid-cols-3 lg:gap-5">
+            {/* Free */}
+            <motion.div {...cardMotion(0)} className={cardClass(isFreePlan)}>
+              <div className="flex min-h-[1.75rem] flex-wrap items-center gap-2">
+                <h3 className={`${textSizes.planName} font-semibold text-foreground`}>{SUBSCRIPTION_UI_TEXT.free.title}</h3>
+                {isFreePlan && renderPill(SUBSCRIPTION_UI_TEXT.free.button.current, "muted")}
               </div>
-
-              <div className="mb-2.5">
-                <div className="flex items-baseline gap-1 mb-0.5">
-                  <span className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-foreground">{SUBSCRIPTION_UI_TEXT.free.price}</span>
-                  <span className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.free.priceUnit}</span>
-                </div>
-                <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.free.description}</p>
-              </div>
-
-              <ul className="space-y-1.5 mb-2.5 flex-1 min-h-0 overflow-y-auto">
-                {freeTierFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-1.5 group">
-                    <div className={`flex-shrink-0 w-3.5 h-3.5 rounded-full ${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentDarkClass} flex items-center justify-center mt-0.5`}>
-                      <Icon name={feature.icon} size={8} className="w-2 h-2 text-gray-800 dark:text-foreground" />
-                    </div>
-                    <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground leading-snug`}>
-                      {feature.text}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
+              <p className={`${textSizes.body} mt-1 text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.free.subtitle}</p>
+              {renderPrice(SUBSCRIPTION_UI_TEXT.free.price, SUBSCRIPTION_UI_TEXT.free.priceUnit, SUBSCRIPTION_UI_TEXT.free.description)}
               <Button
                 variant="outline"
-                className={cn(
-                  `w-full border-2 ${PRICING_DIALOG_TEXT_SIZES.description} py-1.5 font-medium transition-all duration-200`,
-                  subscription.tier === "free"
-                    ? `${UI_PRICING_DIALOG_COLORS.accentBorderClass} ${UI_PRICING_DIALOG_COLORS.accentBgClass} text-gray-700 dark:text-foreground cursor-default`
-                    : "border-gray-300 dark:border-border text-gray-700 dark:text-foreground hover:bg-gray-50 dark:hover:bg-card"
-                )}
-                disabled={subscription.tier === "free" || isDowngrading}
+                className={cn(ctaClass, secondaryButtonClass)}
+                disabled={isFreePlan || isDowngrading}
                 onClick={subscription.tier === "pro" ? handleDowngrade : undefined}
               >
-                {isDowngrading ? (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
-                    <span className={PRICING_DIALOG_TEXT_SIZES.small}>{SUBSCRIPTION_UI_TEXT.pro.button.downgrading}</span>
-                  </span>
-                ) : subscription.tier === "free" ? (
-                  SUBSCRIPTION_UI_TEXT.free.button.current
-                ) : (
-                  SUBSCRIPTION_UI_TEXT.free.button.downgrade
-                )}
+                {isDowngrading
+                  ? renderSpinnerLabel(SUBSCRIPTION_UI_TEXT.pro.button.downgrading)
+                  : isFreePlan
+                    ? SUBSCRIPTION_UI_TEXT.free.button.current
+                    : SUBSCRIPTION_UI_TEXT.free.button.downgrade}
               </Button>
+              {renderFeatures(FREE_TIER_FEATURES)}
             </motion.div>
 
-            {/* Monthly Pro Tier */}
+            {/* Pro Monthly */}
             {monthlyOffering ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-                className={cn(
-                  `relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 ${UI_PRICING_DIALOG_COLORS.cardGradient.light.className} ${UI_PRICING_DIALOG_COLORS.cardGradient.dark.className} overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col`,
-                  subscription.tier === "pro" && subscription.billingPeriod === "monthly"
-                    ? `${UI_PRICING_DIALOG_COLORS.cardBorder.primary} ring-2 ${UI_PRICING_DIALOG_COLORS.cardBorder.primaryRing}`
-                    : UI_PRICING_DIALOG_COLORS.cardBorder.primary
+              <motion.div {...cardMotion(1)} className={cardClass(isMonthlyPlan)}>
+                <div className="flex min-h-[1.75rem] flex-wrap items-center gap-2">
+                  <h3 className={`${textSizes.planName} font-semibold text-foreground`}>{monthlyOffering.title}</h3>
+                  {isMonthlyPlan && renderPill(SUBSCRIPTION_UI_TEXT.pro.button.current, "muted")}
+                </div>
+                <p className={`${textSizes.body} mt-1 line-clamp-1 text-muted-foreground`}>
+                  {formatDescription(monthlyOffering.description)}
+                </p>
+                {renderPrice(
+                  formatPrice(monthlyOffering.priceString),
+                  SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month,
+                  SUBSCRIPTION_UI_TEXT.planCards.monthly.billingPeriod
                 )}
-              >
-                <div className={`absolute top-0 right-0 w-20 h-20 ${UI_PRICING_DIALOG_COLORS.decorativeBlur.light.className} rounded-bl-full blur-xl pointer-events-none`} />
-                
-                {subscription.tier === "pro" && subscription.billingPeriod === "monthly" && (
-                  <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
-                    <Badge className={`${UI_PRICING_DIALOG_COLORS.primaryClass} border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`} style={{ color: COLOR_TEXT_WHITE }}>
-                      {SUBSCRIPTION_UI_TEXT.pro.button.current}
-                    </Badge>
-                  </div>
-                )}
-                
-                <div className="relative z-10 flex flex-col flex-1 min-h-0">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0 pr-6">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <h3 className={`text-base md:text-lg font-semibold ${UI_PRICING_GRADIENT_COLORS.text.className}`}>
-                          {monthlyOffering.title}
-                        </h3>
-                        <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" className={`${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
-                      </div>
-                      <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground line-clamp-1`}>
-                        {formatDescription(monthlyOffering.description)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mb-2.5">
-                    <div className="flex items-baseline gap-1 mb-0.5">
-                      <span className={`text-xl md:text-2xl font-semibold ${UI_PRICING_GRADIENT_COLORS.text.className}`}>
-                        {formatPrice(monthlyOffering.priceString)}
-                      </span>
-                      <span className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.month}</span>
-                    </div>
-                  </div>
-
-                <ul className="space-y-1 mb-2.5 flex-1 min-h-0 overflow-y-auto">
-                  {monthlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
-                    <li key={index} className="flex items-start gap-1.5">
-                      <div className={cn(
-                        "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5",
-                        feature.highlight
-                          ? UI_PRICING_GRADIENT_COLORS.primaryBr.className
-                          : `${UI_PRICING_DIALOG_COLORS.accentClass} ${UI_PRICING_DIALOG_COLORS.accentDarkClass}`
-                      )}>
-                        <Icon 
-                          name={feature.icon} 
-                          size={6} 
-                          className={cn(
-                            "w-1.5 h-1.5",
-                            feature.highlight ? "" : "text-gray-800 dark:text-foreground"
-                          )} 
-                        />
-                      </div>
-                      <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground leading-snug`}>
-                        {feature.text}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
                 <Button
-                  className={cn(
-                    `w-full shadow-md hover:shadow-lg transition-all duration-300 ${PRICING_DIALOG_TEXT_SIZES.description} font-medium py-1.5 relative z-20`,
-                    subscription.tier === "pro" && subscription.billingPeriod === "monthly"
-                      ? `${UI_PRICING_DIALOG_COLORS.primaryClass} ${UI_PRICING_DIALOG_COLORS.primaryHoverClass} cursor-default`
-                      : `${UI_PRICING_DIALOG_COLORS.buttonGradient.className} ${UI_PRICING_DIALOG_COLORS.buttonGradient.hover.className}`
-                  )}
-                  style={{ color: COLOR_TEXT_WHITE }}
-                  disabled={(subscription.tier === "pro" && subscription.billingPeriod === "monthly") || isUpgrading}
+                  variant={isMonthlyPlan ? "outline" : "default"}
+                  className={cn(ctaClass, isMonthlyPlan ? secondaryButtonClass : primaryButtonClass)}
+                  disabled={isMonthlyPlan || isUpgrading}
                   onClick={handleUpgradeMonthly}
                 >
-                  {isUpgrading ? (
-                    <span className="flex items-center justify-center gap-1.5">
-                      <div className="w-2.5 h-2.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: COLOR_TEXT_WHITE }} />
-                      <span className={PRICING_DIALOG_TEXT_SIZES.small}>{SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing}</span>
-                    </span>
-                  ) : subscription.tier === "pro" && subscription.billingPeriod === "monthly" ? (
-                    SUBSCRIPTION_UI_TEXT.pro.button.current
-                  ) : subscription.tier === "pro" ? (
-                    SUBSCRIPTION_UI_TEXT.planCards.monthly.button.switch
-                  ) : (
-                    <span className="flex items-center justify-center gap-1.5">
-                      <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" />
-                      <span>{SUBSCRIPTION_UI_TEXT.planCards.monthly.button.upgrade}</span>
-                    </span>
-                  )}
+                  {isUpgrading
+                    ? renderSpinnerLabel(SUBSCRIPTION_UI_TEXT.planCards.monthly.button.processing)
+                    : isMonthlyPlan
+                      ? SUBSCRIPTION_UI_TEXT.pro.button.current
+                      : subscription.tier === "pro"
+                        ? SUBSCRIPTION_UI_TEXT.planCards.monthly.button.switch
+                        : SUBSCRIPTION_UI_TEXT.planCards.monthly.button.upgrade}
                 </Button>
-              </div>
-            </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-                className="relative border-2 border-gray-300 dark:border-border rounded-lg md:rounded-xl p-3 md:p-4 bg-gray-50 dark:bg-card overflow-hidden flex flex-col opacity-50"
-              >
-                <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-4">
-                  <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-muted-foreground text-center`}>
-                    {isLoadingOfferings ? SUBSCRIPTION_UI_TEXT.planCards.loading : SUBSCRIPTION_UI_TEXT.planCards.monthly.notAvailable}
-                  </p>
-                </div>
+                {renderFeatures(PRO_MONTHLY_FEATURES)}
               </motion.div>
+            ) : (
+              renderUnavailable(SUBSCRIPTION_UI_TEXT.planCards.monthly.notAvailable, 1)
             )}
 
-            {/* Yearly Pro Tier */}
+            {/* Pro Yearly */}
             {yearlyOffering ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className={cn(
-                  `relative border-2 rounded-lg md:rounded-xl p-3 md:p-4 ${UI_PRICING_DIALOG_COLORS.cardGradient.medium.className} ${UI_PRICING_DIALOG_COLORS.cardGradient.mediumDark.className} overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col`,
-                  subscription.tier === "pro" && subscription.billingPeriod === "yearly"
-                    ? `${UI_PRICING_DIALOG_COLORS.cardBorder.primary} ring-2 ${UI_PRICING_DIALOG_COLORS.cardBorder.primaryRing}`
-                    : UI_PRICING_DIALOG_COLORS.cardBorder.primary
-                )}
-              >
-                <div className={`absolute top-0 right-0 w-20 h-20 ${UI_PRICING_DIALOG_COLORS.decorativeBlur.medium.className} rounded-bl-full blur-xl pointer-events-none`} />
-              
-              <div className="absolute top-1.5 right-1.5 z-20 flex flex-col gap-0.5 pointer-events-none">
-                {subscription.tier === "pro" && subscription.billingPeriod === "yearly" && (
-                  <Badge className={`${UI_PRICING_DIALOG_COLORS.primaryClass} border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium mb-0.5`} style={{ color: COLOR_TEXT_WHITE }}>
-                    {SUBSCRIPTION_UI_TEXT.pro.button.current}
-                  </Badge>
-                )}
-                <Badge className={`${UI_PRICING_DIALOG_COLORS.buttonGradient.className} border-0 shadow-md px-1.5 py-0.5 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium`} style={{ color: COLOR_TEXT_WHITE }}>
-                  <Icon name="crown" size={ICON_SIZE_XS} className="mr-0.5" style={{ color: COLOR_TEXT_WHITE }} />
-                  {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
-                </Badge>
-              </div>
-
-              <div className="relative z-10 flex flex-col flex-1 min-h-0">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1 min-w-0 pr-6">
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <h3 className="text-base md:text-lg font-semibold bg-gradient-to-r" style={{ backgroundImage: `linear-gradient(to right, ${COLOR_PRIMARY}, ${COLOR_PRIMARY_LIGHT})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                        {yearlyOffering.title}
-                      </h3>
-                      <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" className={`${UI_PRICING_DIALOG_COLORS.primaryTextClass} animate-pulse flex-shrink-0`} />
-                    </div>
-                    <p className="text-[10px] md:text-xs text-muted-foreground line-clamp-1">
-                      {formatDescription(yearlyOffering.description)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-2.5">
-                  <div className="flex items-baseline gap-1 mb-0.5">
-                    <span className={`text-xl md:text-2xl font-semibold ${UI_PRICING_GRADIENT_COLORS.text.className}`}>
-                      {formatPrice(yearlyOffering.priceString)}
-                    </span>
-                    <span className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground`}>{SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year}</span>
-                  </div>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {savings.percent > 0 && (
-                      <Badge className={`${UI_PRICING_DIALOG_COLORS.badgeGradient.className} text-gray-800 ${PRICING_DIALOG_TEXT_SIZES.badge} font-medium px-1 py-0.5`}>
-                        {isLoadingOfferings ? 'Loading…' : SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings.percent, savings.amount)}
-                      </Badge>
-                    )}
-                    <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} font-medium ${UI_PRICING_DIALOG_COLORS.primaryTextClass}`}>
-                      {isLoadingOfferings
-                        ? 'Loading…'
-                        : SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(getYearlyPerMonthPrice())}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <p className={`${PRICING_DIALOG_TEXT_SIZES.helper} text-muted-foreground italic text-center`}>
-                    Includes all features from Free and Monthly plans
-                  </p>
-                </div>
-
-                <ul className="space-y-1 mb-2.5 flex-1 min-h-0 overflow-y-auto">
-                  {/* Show only Yearly-exclusive features (monthly features are shown in monthly column) */}
-                  {yearlyProFeatures.filter(f => !f.isHeader).map((feature, index) => (
-                    <li key={`yearly-${index}`} className="flex items-start gap-1.5">
-                      <div className={cn(
-                        "flex-shrink-0 w-3 h-3 rounded-full flex items-center justify-center mt-0.5"
-                      )} style={{ backgroundImage: `linear-gradient(to bottom right, ${COLOR_PRIMARY}, ${COLOR_PRIMARY_LIGHT})` }}>
-                        <Icon name={feature.icon} size={6} className="w-1.5 h-1.5" style={{ color: COLOR_TEXT_WHITE }} />
-                      </div>
-                      <span className={`${PRICING_DIALOG_TEXT_SIZES.description} text-gray-700 dark:text-foreground font-medium leading-snug`}>
-                        {feature.text}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  className={cn(
-                    `w-full shadow-md hover:shadow-lg transition-all duration-300 ${PRICING_DIALOG_TEXT_SIZES.description} font-medium py-1.5 relative z-20`,
-                    subscription.tier === "pro" && subscription.billingPeriod === "yearly"
-                      ? `${UI_PRICING_DIALOG_COLORS.primaryClass} ${UI_PRICING_DIALOG_COLORS.primaryHoverClass} cursor-default`
-                      : `${UI_PRICING_DIALOG_COLORS.buttonGradient.className} ${UI_PRICING_DIALOG_COLORS.buttonGradient.hover.className}`
+              <motion.div {...cardMotion(2)} className={cardClass(isYearlyPlan, true)}>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  {renderPill(
+                    <>
+                      <Icon name="crown" size={ICON_SIZE_XS} />
+                      {SUBSCRIPTION_UI_TEXT.planCards.yearly.badge}
+                    </>,
+                    "solid"
                   )}
-                  style={{ color: COLOR_TEXT_WHITE }}
-                  disabled={(subscription.tier === "pro" && subscription.billingPeriod === "yearly") || isUpgrading}
+                </div>
+                <div className="flex min-h-[1.75rem] flex-wrap items-center gap-2">
+                  <h3 className={`${textSizes.planName} font-semibold text-foreground`}>{yearlyOffering.title}</h3>
+                  {isYearlyPlan && renderPill(SUBSCRIPTION_UI_TEXT.pro.button.current, "muted")}
+                </div>
+                <p className={`${textSizes.body} mt-1 line-clamp-1 text-muted-foreground`}>
+                  {formatDescription(yearlyOffering.description)}
+                </p>
+                {renderPrice(
+                  formatPrice(yearlyOffering.priceString),
+                  SUBSCRIPTION_UI_TEXT.planCards.priceUnits.year,
+                  isLoadingOfferings ? (
+                    SUBSCRIPTION_UI_TEXT.planCards.loading
+                  ) : (
+                    <>
+                      <span className="font-medium text-foreground">
+                        {SUBSCRIPTION_UI_TEXT.planCards.yearly.perMonthLabel(getYearlyPerMonthPrice())}
+                      </span>
+                      {savings.percent > 0 &&
+                        renderPill(SUBSCRIPTION_UI_TEXT.planCards.yearly.savingsLabel(savings.percent, savings.amount), "muted")}
+                    </>
+                  )
+                )}
+                <Button
+                  variant={isYearlyPlan ? "outline" : "default"}
+                  className={cn(ctaClass, isYearlyPlan ? secondaryButtonClass : primaryButtonClass)}
+                  disabled={isYearlyPlan || isUpgrading}
                   onClick={handleUpgradeYearly}
                 >
-                  {isUpgrading ? (
-                    <span className="flex items-center justify-center gap-1.5">
-                      <div className="w-2.5 h-2.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: COLOR_TEXT_WHITE }} />
-                      <span className={PRICING_DIALOG_TEXT_SIZES.small}>{SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing}</span>
-                    </span>
-                  ) : subscription.tier === "pro" && subscription.billingPeriod === "yearly" ? (
-                    SUBSCRIPTION_UI_TEXT.pro.button.current
-                  ) : subscription.tier === "pro" ? (
-                    SUBSCRIPTION_UI_TEXT.planCards.yearly.button.switch
-                  ) : (
-                    <span className="flex items-center justify-center gap-1.5">
-                      <Icon name="sparkles" size={ICON_SIZE_XS} weight="duotone" />
-                      <span>{SUBSCRIPTION_UI_TEXT.planCards.yearly.button.upgrade}</span>
-                    </span>
-                  )}
+                  {isUpgrading
+                    ? renderSpinnerLabel(SUBSCRIPTION_UI_TEXT.planCards.yearly.button.processing)
+                    : isYearlyPlan
+                      ? SUBSCRIPTION_UI_TEXT.pro.button.current
+                      : subscription.tier === "pro"
+                        ? SUBSCRIPTION_UI_TEXT.planCards.yearly.button.switch
+                        : (
+                          <span className="flex items-center justify-center gap-2">
+                            <Icon name="sparkles" size={ICON_SIZE_SM} weight="duotone" />
+                            <span>{SUBSCRIPTION_UI_TEXT.planCards.yearly.button.upgrade}</span>
+                          </span>
+                        )}
                 </Button>
-              </div>
-            </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className="relative border-2 border-gray-300 dark:border-border rounded-lg md:rounded-xl p-3 md:p-4 bg-gray-50 dark:bg-card overflow-hidden flex flex-col opacity-50"
-              >
-                <div className="relative z-10 flex flex-col flex-1 items-center justify-center py-4">
-                  <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-muted-foreground text-center`}>
-                    {isLoadingOfferings ? SUBSCRIPTION_UI_TEXT.planCards.loading : SUBSCRIPTION_UI_TEXT.planCards.yearly.notAvailable}
-                  </p>
-                </div>
+                {renderFeatures(PRO_YEARLY_FEATURES)}
               </motion.div>
+            ) : (
+              renderUnavailable(SUBSCRIPTION_UI_TEXT.planCards.yearly.notAvailable, 2)
             )}
           </div>
 
-          <div className="mt-2 md:mt-3 space-y-2">
-            {(user?.id) && (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  disabled={isRestoring}
-                  onClick={handleRestore}
-                >
-                  {isRestoring ? SUBSCRIPTION_UI_TEXT.messages.restoringPurchases : SUBSCRIPTION_UI_TEXT.native.restorePurchases}
-                </Button>
-              </div>
+          <div className="mt-6 flex flex-col items-center gap-3 border-t border-border pt-5 sm:flex-row sm:justify-between">
+            <p className={`${textSizes.body} text-center leading-relaxed text-muted-foreground sm:text-left`}>
+              {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
+              <span className="font-medium text-foreground">{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
+              {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
+            </p>
+            {user?.id && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={`flex-shrink-0 rounded-full px-4 ${textSizes.body}`}
+                disabled={isRestoring}
+                onClick={handleRestore}
+              >
+                {isRestoring ? SUBSCRIPTION_UI_TEXT.messages.restoringPurchases : SUBSCRIPTION_UI_TEXT.native.restorePurchases}
+              </Button>
             )}
-
-            <div className="p-2 md:p-2.5 rounded-lg border shadow-md backdrop-blur-sm dark:from-[#4A4A5E]/60 dark:via-[#3E3E52]/60 dark:to-[#3E3E52]/60" style={{ backgroundImage: `linear-gradient(to right, ${COLOR_PASTEL_LAVENDER}66, ${COLOR_PASTEL_SKY}66, ${COLOR_PASTEL_MINT}66)`, borderColor: `${COLOR_PRIMARY}4D` }}>
-              <p className={`${PRICING_DIALOG_TEXT_SIZES.description} text-center text-gray-700 dark:text-foreground leading-snug`}>
-                {SUBSCRIPTION_UI_TEXT.footer.message}{' '}
-                <span className="font-medium" style={{ color: COLOR_PRIMARY }}>{SUBSCRIPTION_UI_TEXT.footer.upgradeText}</span>{' '}
-                {SUBSCRIPTION_UI_TEXT.footer.upgradeDescription}
-              </p>
-            </div>
           </div>
         </div>
       </DialogContent>

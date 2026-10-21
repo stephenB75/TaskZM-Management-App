@@ -24,6 +24,13 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
+/** RevenueCat web SDK returns Date objects; the native (Capacitor) SDK returns ISO strings. */
+function toIsoDate(value: unknown): string | undefined {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
+  if (typeof value === 'string' && value !== '') return value;
+  return undefined;
+}
+
 // Feature matrix based on tier and billing period
 const getFeatures = (tier: SubscriptionTier, billingPeriod?: 'monthly' | 'yearly' | null): SubscriptionFeatures => {
   if (tier === 'pro') {
@@ -115,6 +122,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       cancelAtPeriodEnd: data?.cancelAtPeriodEnd || false,
       billingPeriod: data?.billingPeriod || null, // monthly, yearly, or null
       purchaseStore: data?.purchaseStore || null,
+      managementUrl: data?.managementUrl || null,
     };
   };
 
@@ -211,10 +219,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       }
 
       return {
+        ...current,
         tier: 'pro',
         status: entitlement.willRenew ? 'active' : 'canceled',
-        startDate: entitlement.latestPurchaseDate?.toISOString?.() ?? current.startDate,
-        endDate: entitlement.expirationDate?.toISOString?.() ?? current.endDate,
+        startDate: toIsoDate(entitlement.latestPurchaseDate) ?? current.startDate,
+        endDate: toIsoDate(entitlement.expirationDate) ?? current.endDate,
         cancelAtPeriodEnd: !entitlement.willRenew,
         billingPeriod: billingPeriod,
       };
@@ -254,8 +263,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       // 1. Backend database (source of truth)
       // 2. localStorage (cache only, last resort for offline)
       
-      // Fetch from database
-      const serverSubscription = await api.getSubscription();
+      // Foreground loads (app open, after purchase/restore, manual refresh) re-sync from RevenueCat on the server
+      const serverSubscription = silent
+        ? await api.getSubscription()
+        : await api.syncSubscription().catch(() => api.getSubscription());
       
       if (serverSubscription) {
         const normalized = normalizeSubscription(serverSubscription);

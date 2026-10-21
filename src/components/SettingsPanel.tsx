@@ -205,7 +205,7 @@ import { NOTIFICATION_PANEL_TEXT, NOTIFICATION_REMINDER_TIME_OPTIONS } from '../
 import { getInitials } from '../lib/utils';
 import { STORAGE_KEY_TIME_FORMAT, STORAGE_KEY_WEEK_START } from '../lib/business-constants';
 import { SUBSCRIPTION_UI_TEXT, PRO_FEATURES_COUNT } from '../lib/subscription-constants';
-import { isNativePurchasedSubscriptionStore, openNativeSubscriptionManagement } from '../lib/subscription-billing';
+import { isNativePurchasedSubscriptionStore, openNativeSubscriptionManagement, openWebSubscriptionManagement } from '../lib/subscription-billing';
 import { CALENDAR_PROVIDERS, CALENDAR_SETTINGS_LABELS, CALENDAR_SETTINGS_UI } from '../lib/calendar-integration-constants';
 import { getBrowserTimezone } from '../lib/timing-constants';
 import { configureRevenueCat, getOfferings, isRevenueCatConfigured } from '../lib/revenuecat';
@@ -1202,6 +1202,22 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                                     >
                                       <Icon name="external-link" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
                                       {SUBSCRIPTION_UI_TEXT.native.manageInStore}
+                                    </Button>
+                                  ) : subscription.managementUrl ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="flex-1 text-muted-foreground hover:text-foreground"
+                                      onClick={() => {
+                                        void openWebSubscriptionManagement(subscription.managementUrl as string).catch(() => {
+                                          toast.error(SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailed, {
+                                            description: SUBSCRIPTION_UI_TEXT.settings.subscriptionCancelFailedDesc,
+                                          });
+                                        });
+                                      }}
+                                    >
+                                      <Icon name="external-link" size={SETTINGS_PANEL_ICON_SIZE_SMALL} style={{ marginRight: SETTINGS_PANEL_MARGIN_RIGHT_SMALL }} />
+                                      {SUBSCRIPTION_UI_TEXT.native.manageWebBilling}
                                     </Button>
                                   ) : (
                                   <Button 

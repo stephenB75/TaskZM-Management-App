@@ -29,7 +29,7 @@ export function normalizeSubscriptionPurchaseStore(
   const lower = raw.toLowerCase().replace(/-/g, '_');
   if (lower.includes('app_store') || lower === 'appstore') return 'app_store';
   if (lower.includes('play_store') || lower === 'playstore') return 'play_store';
-  if (lower.includes('stripe')) return 'stripe';
+  if (lower.includes('stripe') || lower === 'rc_billing') return 'stripe';
   if (lower.includes('demo')) return 'demo_account';
   if (lower.includes('admin')) return 'admin_granted';
   return lower;
@@ -60,4 +60,13 @@ export async function openNativeSubscriptionManagement(): Promise<void> {
   }
 
   window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+/** Open RevenueCat's customer portal, where web (card) subscribers change or cancel their plan. */
+export async function openWebSubscriptionManagement(managementUrl: string): Promise<void> {
+  if (getPlatform().isNative) {
+    await Browser.open({ url: managementUrl });
+    return;
+  }
+  window.open(managementUrl, '_blank', 'noopener,noreferrer');
 }

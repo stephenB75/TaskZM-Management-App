@@ -74,7 +74,7 @@ export const SUBSCRIPTION_UI_TEXT = {
     yearly: "Yearly",
   },
   footer: {
-    message: "💡 All plans include unlimited tasks and seamless calendar integration.",
+    message: "All plans include unlimited tasks and seamless calendar integration.",
     upgradeText: "Upgrade anytime",
     upgradeDescription: "to unlock automatic scheduling and advanced analytics.",
   },
@@ -227,6 +227,7 @@ export const SUBSCRIPTION_UI_TEXT = {
       year: "/year",
     },
     moreFeaturesLabel: "more features",
+    includedLabel: "What's included",
   },
   configuration: {
     errorTitle: "Configuration Error",
@@ -258,7 +259,9 @@ export const SUBSCRIPTION_UI_TEXT = {
     billingMethodTitle: 'Choose payment method',
     billingMethodNative: 'App Store / Google Play',
     billingMethodWeb: 'Pay with card (web)',
+    countryHint: 'At checkout, select your country first so the payment form shows the right fields.',
     manageInStore: 'Manage in App Store / Google Play',
+    manageWebBilling: 'Manage or cancel billing',
     manageInStoreHint:
       'This subscription is billed through your device store. Cancel or change plan in your Apple or Google subscription settings.',
   },
@@ -268,6 +271,7 @@ export const SUBSCRIPTION_UI_TEXT = {
 export interface FeatureDefinition {
   icon: string; // Icon name for use with Icon component
   text: string;
+  detail?: string;
   included: boolean;
   highlight?: boolean;
   isHeader?: boolean;
@@ -275,125 +279,57 @@ export interface FeatureDefinition {
 
 export const FREE_TIER_FEATURES: FeatureDefinition[] = [
   { icon: "check", text: "Unlimited tasks", included: true },
-  {
-    icon: "calendar",
-    text: "7-Day Kanban & Month View",
-    included: true,
-  },
-  {
-    icon: "tag",
-    text: "Custom Tags & Organization",
-    included: true,
-  },
+  { icon: "calendar", text: "7-day Kanban & month view", included: true },
+  { icon: "tag", text: "Custom tags & organization", included: true },
   {
     icon: "sparkles",
-    text: "Limited Auto Scheduler (3 suggestions/week)",
+    text: "Auto Scheduler",
+    detail: "3 suggestions per week",
     included: true,
     highlight: true,
   },
-  {
-    icon: "timer",
-    text: "Basic Pomodoro Timer",
-    included: true,
-  },
+  { icon: "timer", text: "Basic Pomodoro timer", included: true },
 ];
 
 export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
-  { icon: "check", text: "Everything in Free", included: true, isHeader: true },
-  {
-    icon: "sparkles",
-    text: "Unlimited Auto Scheduler",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: "calendar",
-    text: "Calendar Sync (1 calendar connection)",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: "zap",
-    text: "Task Hours & Time Tracking",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: "rotate-ccw",
-    text: "Auto Task Rollover",
-    included: true,
-    highlight: true,
-  },
+  { icon: "check", text: "Everything in Free, plus", included: true, isHeader: true },
+  { icon: "sparkles", text: "Unlimited Auto Scheduler", included: true, highlight: true },
+  { icon: "calendar", text: "Calendar sync", detail: "1 calendar connection", included: true, highlight: true },
+  { icon: "zap", text: "Task hours & time tracking", included: true, highlight: true },
+  { icon: "rotate-ccw", text: "Auto task rollover", included: true, highlight: true },
   {
     icon: "timer",
-    text: "Advanced Pomodoro (history, stats, custom intervals)",
+    text: "Advanced Pomodoro",
+    detail: "History, stats and custom intervals",
     included: true,
     highlight: true,
   },
-  {
-    icon: "bar-chart",
-    text: "Analytics Dashboard (30-day history)",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: "repeat",
-    text: "Recurring Tasks (up to 5 active recurring tasks)",
-    included: true,
-    highlight: true,
-  },
+  { icon: "bar-chart", text: "Analytics dashboard", detail: "30-day history", included: true, highlight: true },
+  { icon: "repeat", text: "Recurring tasks", detail: "Up to 5 active", included: true, highlight: true },
 ];
 
 export const PRO_YEARLY_FEATURES: FeatureDefinition[] = [
-  { icon: "check", text: "Everything in Pro Monthly", included: true, isHeader: true },
-  {
-    icon: "repeat",
-    text: "Unlimited Recurring Tasks (remove 5-task limit)",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: "calendar",
-    text: "Unlimited Calendar Connections (remove 1-calendar limit)",
-    included: true,
-    highlight: true,
-  },
+  { icon: "check", text: "Everything in Pro Monthly, plus", included: true, isHeader: true },
+  { icon: "repeat", text: "Unlimited recurring tasks", included: true, highlight: true },
+  { icon: "calendar", text: "Unlimited calendar connections", included: true, highlight: true },
   {
     icon: "users",
-    text: "Team Collaboration (unlimited members, role-based access)",
+    text: "Team collaboration",
+    detail: "Unlimited members, role-based access",
     included: true,
     highlight: true,
   },
-  {
-    icon: "bar-chart",
-    text: "Unlimited Analytics History (lifetime data retention)",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: "file-text",
-    text: "Task Templates (save and reuse task patterns)",
-    included: true,
-    highlight: true,
-  },
-  {
-    icon: "link",
-    text: "Task Dependencies (link related tasks, project workflows)",
-    included: true,
-    highlight: true,
-  },
+  { icon: "bar-chart", text: "Lifetime analytics history", included: true, highlight: true },
+  { icon: "file-text", text: "Task templates", detail: "Save and reuse task patterns", included: true, highlight: true },
+  { icon: "link", text: "Task dependencies", detail: "Link related tasks into workflows", included: true, highlight: true },
   {
     icon: "folder-tree",
-    text: "Multiple Workspaces (organize by department/project)",
+    text: "Multiple workspaces",
+    detail: "Organize by department or project",
     included: true,
     highlight: true,
   },
-  {
-    icon: "crown",
-    text: "Priority Support & Early Access to New Features",
-    included: true,
-    highlight: true,
-  },
+  { icon: "crown", text: "Priority support & early access", included: true, highlight: true },
 ];
 
 // Legacy: Keep PRO_TIER_FEATURES for backward compatibility (combines Monthly + Yearly)

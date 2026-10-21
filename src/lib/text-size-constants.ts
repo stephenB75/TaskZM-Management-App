@@ -68,6 +68,13 @@ export const PRICING_DIALOG_TEXT_SIZES = {
   badge: 'text-[9px] md:text-[10px]', // text-[9px] md:text-[10px] - Badge text
   helper: 'text-[10px] md:text-xs', // text-[10px] md:text-xs - Helper text
   small: 'text-[10px] md:text-[11px]', // text-[10px] md:text-[11px] - Small responsive text
+  title: 'text-2xl md:text-3xl', // Dialog title
+  subtitle: 'text-sm md:text-base', // Dialog subtitle
+  planName: 'text-lg', // Plan card name
+  price: 'text-4xl', // Plan price figure
+  body: 'text-sm', // Feature names, notes, buttons
+  detail: 'text-xs', // Feature detail and plan helper lines
+  pill: 'text-xs', // Plan badges
   static: {
     xs10: TEXT_SIZES.xs10, // text-[10px] - Static 10px
     xs11: TEXT_SIZES.xs11, // text-[11px] - Static 11px

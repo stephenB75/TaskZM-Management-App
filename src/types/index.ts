@@ -276,13 +276,15 @@ export type SubscriptionTier = 'free' | 'pro';
 
 export interface SubscriptionInfo {
   tier: SubscriptionTier;
-  status: 'active' | 'inactive' | 'trial' | 'canceled';
+  status: 'active' | 'inactive' | 'trial' | 'canceled' | 'cancelled' | 'expired';
   startDate: string | null;
   endDate: string | null;
   cancelAtPeriodEnd: boolean;
   billingPeriod?: 'monthly' | 'yearly' | null; // Track billing period for Pro tier
   /** Where the subscription was purchased (stripe, app_store, play_store, etc.). */
   purchaseStore?: string | null;
+  /** RevenueCat customer portal for managing or cancelling a web (card) subscription. */
+  managementUrl?: string | null;
 }
 
 // Award Types

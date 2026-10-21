@@ -849,7 +849,8 @@ app.get("/taskzm-database-function/health", (c) => {
 app.post("/taskzm-database-function/signup", async (c) => {
   try {
     const body = await c.req.json();
-    const { email, password, name, isDemo, avatar } = body;
+    const { password, name, isDemo, avatar } = body;
+    let email: string = body.email;
 
     if (!email || !password || !name) {
       return c.json({ error: 'Email, password, and name are required' }, 400);
@@ -1809,6 +1810,58 @@ app.post("/taskzm-database-function/settings/:workspaceId", async (c) => {
   }
 });
 
+/** Stored subscription for a user; Pro lapses once its end date passes (demo accounts excepted). */
+async function readStoredSubscription(userId: string): Promise<StoredSubscription> {
+  const isDemo = (await kv.get(`user_${userId}_is_demo`)) === 'true';
+  if (isDemo) {
+    let startDate = await kv.get(`user:${userId}:subscription_start`);
+    if (!startDate) {
+      startDate = new Date().toISOString();
+      await kv.set(`user:${userId}:subscription_start`, startDate);
+    }
+    return {
+      tier: 'pro',
+      status: 'active',
+      startDate,
+      endDate: null,
+      cancelAtPeriodEnd: false,
+      billingPeriod: 'yearly',
+      purchaseStore: 'demo_account',
+      managementUrl: null,
+    };
+  }
+
+  const tier = await kv.get(`user:${userId}:tier`) || 'free';
+  const status = await kv.get(`user:${userId}:subscription_status`) || 'none';
+  const store = await kv.get(`user:${userId}:subscription_store`);
+  const startDate = await kv.get(`user:${userId}:subscription_start`);
+  const expiresAt = await kv.get(`user:${userId}:subscription_expires_at`);
+  const billingPeriod = await kv.get(`user:${userId}:billing_period`);
+  const managementUrl = await kv.get(`user:${userId}:management_url`);
+  const legacySubscription = await kv.get(`user_${userId}_subscription`);
+
+  const endDate = expiresAt || legacySubscription?.endDate || null;
+  const subscription: StoredSubscription = {
+    tier: (tier !== 'free' ? tier : (legacySubscription?.tier || 'free')) === 'pro' ? 'pro' : 'free',
+    status: status !== 'none' ? status : (legacySubscription?.status || 'active'),
+    startDate: startDate || legacySubscription?.startDate || null,
+    endDate,
+    cancelAtPeriodEnd:
+      (status === 'cancelled' && Boolean(expiresAt) && !isPastDate(expiresAt)) ||
+      Boolean(legacySubscription?.cancelAtPeriodEnd),
+    billingPeriod: billingPeriod || legacySubscription?.billingPeriod || null,
+    purchaseStore: store ? normalizeRevenueCatSubscriptionStore(store) : (legacySubscription?.purchaseStore || null),
+    managementUrl: managementUrl || null,
+  };
+
+  if (subscription.tier === 'pro' && isPastDate(subscription.endDate)) {
+    subscription.tier = 'free';
+    subscription.status = 'expired';
+    subscription.cancelAtPeriodEnd = false;
+  }
+  return subscription;
+}
+
 // Get user subscription
 app.get("/taskzm-database-function/subscription", async (c) => {
   try {
@@ -1816,80 +1869,32 @@ app.get("/taskzm-database-function/subscription", async (c) => {
     if (authError || !userId) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
-
-    // Check if this is a demo user - demo users always get Pro tier (yearly)
-    const isDemoFlag = await kv.get(`user_${userId}_is_demo`);
-    const isDemo = isDemoFlag === 'true';
-
-    // Get subscription data from webhook format (primary source)
-    let tier = await kv.get(`user:${userId}:tier`) || 'free';
-    let status = await kv.get(`user:${userId}:subscription_status`) || 'none';
-    const store = await kv.get(`user:${userId}:subscription_store`);
-    let startDate = await kv.get(`user:${userId}:subscription_start`);
-    const expiresAt = await kv.get(`user:${userId}:subscription_expires_at`);
-    let billingPeriod = await kv.get(`user:${userId}:billing_period`);
-    const cancelAtPeriodEnd = status === 'cancelled' && expiresAt && new Date(expiresAt) > new Date();
-
-    // Also check legacy format for backwards compatibility
-    const legacySubscription = await kv.get(`user_${userId}_subscription`);
-    
-    // If demo user, ensure they have Pro tier with yearly billing
-    if (isDemo) {
-      // Override subscription for demo users to ensure they always have full access
-      tier = 'pro';
-      status = 'active';
-      billingPeriod = 'yearly';
-      
-      // Set start date if not already set
-      if (!startDate) {
-        startDate = new Date().toISOString();
-        await kv.set(`user:${userId}:subscription_start`, startDate);
-      }
-      
-      // Ensure subscription data is stored correctly for demo users
-      if (tier !== 'pro' || billingPeriod !== 'yearly' || status !== 'active') {
-        console.log(`🔧 Fixing subscription for demo user ${userId}: Ensuring Pro tier (yearly)`);
-        
-        // Update subscription in both formats
-        const demoSubscription = {
-          tier: 'pro',
-          status: 'active',
-          startDate: startDate || new Date().toISOString(),
-          endDate: null, // Demo accounts don't expire
-          cancelAtPeriodEnd: false,
-          billingPeriod: 'yearly',
-        };
-        
-        await kv.set(`user_${userId}_subscription`, demoSubscription);
-        await kv.set(`user:${userId}:tier`, 'pro');
-        await kv.set(`user:${userId}:subscription_status`, 'active');
-        await kv.set(`user:${userId}:subscription_store`, 'demo_account');
-        await kv.set(`user:${userId}:subscription_start`, demoSubscription.startDate);
-        await kv.set(`user:${userId}:billing_period`, 'yearly');
-        
-        console.log(`✅ Demo user ${userId} subscription fixed: Pro tier (yearly)`);
-      }
-    }
-    
-    // Build subscription object from webhook data
-    const subscription = {
-      tier: tier !== 'free' ? tier : (legacySubscription?.tier || 'free'),
-      status: status !== 'none' ? status : (legacySubscription?.status || 'active'),
-      startDate: startDate || legacySubscription?.startDate || null,
-      endDate: expiresAt || legacySubscription?.endDate || null,
-      cancelAtPeriodEnd: cancelAtPeriodEnd || legacySubscription?.cancelAtPeriodEnd || false,
-      billingPeriod: billingPeriod || legacySubscription?.billingPeriod || null,
-      purchaseStore: normalizeRevenueCatSubscriptionStore(store) || legacySubscription?.purchaseStore || null,
-    };
-
-    return c.json({ subscription });
+    return c.json({ subscription: await readStoredSubscription(userId) });
   } catch (error) {
     console.log('Error fetching subscription:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
   }
 });
 
-// Update user subscription
+// Refresh the caller's subscription from RevenueCat, then return it (used after purchase/restore and on app open)
+app.post("/taskzm-database-function/subscription/sync", async (c) => {
+  try {
+    const { userId, error: authError } = await verifyUser(c.req.raw);
+    if (authError || !userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+    const result = await syncSubscriptionFromRevenueCat(userId);
+    if (!result.synced) {
+      console.warn(`Subscription sync skipped for ${userId}: ${result.reason}`);
+    }
+    return c.json({ subscription: await readStoredSubscription(userId), synced: result.synced });
+  } catch (error) {
+    console.log('Error syncing subscription:', error);
+    return c.json({ error: getErrorMessage(error) }, 500);
+  }
+});
+
+// Update user subscription. Pro is granted only by RevenueCat; clients may downgrade or flag cancel-at-period-end.
 app.post("/taskzm-database-function/subscription", async (c) => {
   try {
     const { userId, error: authError } = await verifyUser(c.req.raw);
@@ -1897,88 +1902,36 @@ app.post("/taskzm-database-function/subscription", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const subscription = await c.req.json();
+    const requested = await c.req.json();
+    const current = await readStoredSubscription(userId);
 
-    // SECURITY: Validate payment for Pro upgrades
-    // If upgrading to Pro, verify payment was made through Stripe
-    if (subscription.tier === 'pro') {
-      // Check if there's a valid payment source (webhook data)
-      const existingTier = await kv.get(`user:${userId}:tier`);
-      const subscriptionStore = await kv.get(`user:${userId}:subscription_store`);
-      const subscriptionStatus = await kv.get(`user:${userId}:subscription_status`);
-      
-      // Check if this is an upgrade attempt (from free to pro)
-      const isUpgradeAttempt = existingTier !== 'pro';
-      
-      if (isUpgradeAttempt) {
-        // This is an upgrade - require payment verification
-        // Payment verification exists if:
-        // 1. Has subscription store (stripe/app_store/play_store) indicating payment
-        // 2. Has active status from webhook
-        // NOTE: admin_granted is NOT a valid payment source for upgrades (use separate admin endpoint)
-        const validPaymentStores = ['stripe', 'app_store', 'play_store'];
-        const hasValidPayment = 
-          (subscriptionStore && validPaymentStores.includes(subscriptionStore)) || // Valid payment store
-          (subscriptionStatus === 'active' && subscriptionStore && validPaymentStores.includes(subscriptionStore)); // Active status with valid store
-        
-        // If no valid payment source, reject the upgrade
-        if (!hasValidPayment) {
-          console.error(`SECURITY: User ${userId} attempted to upgrade to Pro without payment verification`);
-          console.error(`   Existing tier: ${existingTier}`);
-          console.error(`   Subscription store: ${subscriptionStore || 'none'}`);
-          console.error(`   Subscription status: ${subscriptionStatus || 'none'}`);
-          return c.json({ 
-            error: 'Payment verification required. Subscription upgrades must be processed through the payment system.',
-            code: 'PAYMENT_VERIFICATION_REQUIRED'
-          }, 403);
-        }
-        
-        // Log the subscription upgrade for audit
-        console.log(`✅ SECURITY: Subscription upgrade verified for user ${userId}: Free -> Pro (payment source: ${subscriptionStore || 'active status'})`);
-      } else {
-        // Already Pro - allow status updates (renewal, cancellation, etc.)
-        console.log(`Subscription update for user ${userId}: Pro tier status update`);
+    if (requested.tier === 'pro') {
+      if (current.tier !== 'pro') {
+        console.error(`SECURITY: User ${userId} attempted to set Pro without an active RevenueCat entitlement`);
+        return c.json({
+          error: 'Payment verification required. Subscription upgrades must be processed through the payment system.',
+          code: 'PAYMENT_VERIFICATION_REQUIRED'
+        }, 403);
       }
+      const updated: StoredSubscription = { ...current, cancelAtPeriodEnd: Boolean(requested.cancelAtPeriodEnd) };
+      await kv.set(`user_${userId}_subscription`, updated);
+      return c.json({ subscription: updated });
     }
 
-    // If downgrading to free, allow it (no payment needed)
-    if (subscription.tier === 'free') {
+    if (requested.tier === 'free') {
       console.log(`Subscription update for user ${userId}: Downgrading to Free tier`);
+      const downgraded: StoredSubscription = {
+        ...current,
+        tier: 'free',
+        status: 'inactive',
+        cancelAtPeriodEnd: false,
+        billingPeriod: null,
+      };
+      await writeSubscriptionRecord(userId, downgraded);
+      return c.json({ subscription: downgraded });
     }
 
-    // Save subscription in both formats for compatibility
-    // Legacy format (for existing code)
-    await kv.set(`user_${userId}_subscription`, subscription);
-    
-    // Subscription data format
-    // Only update if tier is being set
-    if (subscription.tier) {
-      // If upgrading to Pro, ensure we have payment verification
-      if (subscription.tier === 'pro') {
-        // Don't overwrite webhook-set data, but update if needed
-        const currentStore = await kv.get(`user:${userId}:subscription_store`);
-        if (!currentStore) {
-          // This shouldn't happen if validation above worked, but set a flag
-          await kv.set(`user:${userId}:subscription_store`, 'manual_update');
-          console.warn(`Warning: Pro tier set for user ${userId} without clear payment source`);
-        }
-      }
-      await kv.set(`user:${userId}:tier`, subscription.tier);
-    }
-    if (subscription.status) {
-      await kv.set(`user:${userId}:subscription_status`, subscription.status);
-    }
-    if (subscription.startDate) {
-      await kv.set(`user:${userId}:subscription_start`, subscription.startDate);
-    }
-    if (subscription.endDate) {
-      await kv.set(`user:${userId}:subscription_expires_at`, subscription.endDate);
-    }
-    if (subscription.billingPeriod) {
-      await kv.set(`user:${userId}:billing_period`, subscription.billingPeriod);
-    }
-
-    return c.json({ subscription });
+    return c.json({ error: 'Invalid subscription tier' }, 400);
   } catch (error) {
     console.log('Error saving subscription:', error);
     return c.json({ error: getErrorMessage(error) }, 500);
@@ -4310,8 +4263,126 @@ function normalizeRevenueCatSubscriptionStore(raw: string | null | undefined): s
   const lower = raw.toLowerCase().replace(/-/g, '_');
   if (lower.includes('app_store') || lower === 'appstore') return 'app_store';
   if (lower.includes('play_store') || lower === 'playstore') return 'play_store';
-  if (lower.includes('stripe')) return 'stripe';
+  if (lower.includes('stripe') || lower === 'rc_billing') return 'stripe';
   return lower;
+}
+
+const REVENUECAT_CONFIG = {
+  apiBase: 'https://api.revenuecat.com/v1',
+  proEntitlementId: 'pro',
+  paidStores: ['stripe', 'app_store', 'play_store'],
+  anonymousIdPrefix: '$RCAnonymousID:',
+} as const;
+
+type StoredSubscription = {
+  tier: 'pro' | 'free';
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  cancelAtPeriodEnd: boolean;
+  billingPeriod: 'monthly' | 'yearly' | null;
+  purchaseStore: string | null;
+  managementUrl: string | null;
+};
+
+function isPastDate(iso: string | null | undefined): boolean {
+  if (!iso) return false;
+  const time = Date.parse(iso);
+  return Number.isFinite(time) && time <= Date.now();
+}
+
+async function writeSubscriptionRecord(userId: string, record: StoredSubscription): Promise<void> {
+  await kv.set(`user_${userId}_subscription`, record);
+  await kv.set(`user:${userId}:tier`, record.tier);
+  await kv.set(`user:${userId}:subscription_status`, record.status);
+  await kv.set(`user:${userId}:subscription_store`, record.purchaseStore ?? '');
+  await kv.set(`user:${userId}:billing_period`, record.billingPeriod ?? '');
+  await kv.set(`user:${userId}:management_url`, record.managementUrl ?? '');
+  if (record.startDate) await kv.set(`user:${userId}:subscription_start`, record.startDate);
+  await kv.set(`user:${userId}:subscription_expires_at`, record.endDate ?? '');
+}
+
+/**
+ * Pull the customer's entitlement state from RevenueCat (source of truth) and store it.
+ * Users without a RevenueCat entitlement keep non-store grants (admin/manual) untouched.
+ */
+async function syncSubscriptionFromRevenueCat(
+  userId: string
+): Promise<{ synced: true; subscription: StoredSubscription | null } | { synced: false; reason: string }> {
+  const secretKey = Deno.env.get('REVENUECAT_SECRET_KEY');
+  if (!secretKey) return { synced: false, reason: 'REVENUECAT_SECRET_KEY not configured' };
+  if (!userId || userId.startsWith(REVENUECAT_CONFIG.anonymousIdPrefix)) {
+    return { synced: false, reason: 'anonymous RevenueCat user' };
+  }
+  if ((await kv.get(`user_${userId}_is_demo`)) === 'true') {
+    return { synced: true, subscription: null };
+  }
+
+  const response = await fetch(`${REVENUECAT_CONFIG.apiBase}/subscribers/${encodeURIComponent(userId)}`, {
+    headers: { Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    return { synced: false, reason: `RevenueCat API ${response.status}` };
+  }
+
+  const { subscriber } = await response.json();
+  const entitlements: Record<string, any> = subscriber?.entitlements ?? {};
+  const entitlement =
+    entitlements[REVENUECAT_CONFIG.proEntitlementId] ??
+    Object.entries(entitlements).find(([id]) => id.toLowerCase().includes('pro'))?.[1];
+
+  if (!entitlement) {
+    const currentStore = normalizeRevenueCatSubscriptionStore(await kv.get(`user:${userId}:subscription_store`));
+    if (!REVENUECAT_CONFIG.paidStores.includes(currentStore as typeof REVENUECAT_CONFIG.paidStores[number])) {
+      return { synced: true, subscription: null };
+    }
+    const lapsed: StoredSubscription = {
+      tier: 'free',
+      status: 'expired',
+      startDate: null,
+      endDate: null,
+      cancelAtPeriodEnd: false,
+      billingPeriod: null,
+      purchaseStore: currentStore,
+      managementUrl: subscriber?.management_url ?? null,
+    };
+    await writeSubscriptionRecord(userId, lapsed);
+    return { synced: true, subscription: lapsed };
+  }
+
+  const productId: string = entitlement.product_identifier ?? '';
+  const storeSubscription = subscriber?.subscriptions?.[productId];
+  const nonSubscription = subscriber?.non_subscriptions?.[productId]?.[0];
+  const endDate: string | null = entitlement.expires_date ?? null;
+  const graceEnd: string | null = entitlement.grace_period_expires_date ?? null;
+  const isActive = !isPastDate(endDate) || (graceEnd !== null && !isPastDate(graceEnd));
+  const willCancel = Boolean(storeSubscription?.unsubscribe_detected_at);
+
+  const record: StoredSubscription = {
+    tier: isActive ? 'pro' : 'free',
+    status: !isActive ? 'expired' : willCancel ? 'cancelled' : 'active',
+    startDate: entitlement.purchase_date ?? null,
+    endDate,
+    cancelAtPeriodEnd: isActive && willCancel,
+    billingPeriod: isActive ? inferBillingPeriodFromProductId(productId) : null,
+    purchaseStore: normalizeRevenueCatSubscriptionStore(storeSubscription?.store ?? nonSubscription?.store),
+    managementUrl: subscriber?.management_url ?? null,
+  };
+  await writeSubscriptionRecord(userId, record);
+  return { synced: true, subscription: record };
+}
+
+/** RevenueCat user ids affected by a webhook event (including transfers), excluding anonymous ids. */
+function collectRevenueCatEventUserIds(eventData: Record<string, any>): string[] {
+  const ids = [
+    eventData.app_user_id,
+    eventData.original_app_user_id,
+    ...(Array.isArray(eventData.transferred_to) ? eventData.transferred_to : []),
+    ...(Array.isArray(eventData.transferred_from) ? eventData.transferred_from : []),
+  ].filter(
+    (id): id is string => typeof id === 'string' && id !== '' && !id.startsWith(REVENUECAT_CONFIG.anonymousIdPrefix)
+  );
+  return [...new Set(ids)];
 }
 
 app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
@@ -4339,7 +4410,7 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       : authHeader.trim();
     
     if (token !== webhookSecret) {
-      console.error('Invalid RevenueCat webhook signature. Expected:', webhookSecret.substring(0, 4) + '...', 'Got:', token.substring(0, 4) + '...');
+      console.error('Invalid RevenueCat webhook authorization header');
       return c.json({ code: 401, message: "Auth header is not 'Bearer {token}'" }, 401);
     }
 
@@ -4364,18 +4435,29 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       return c.json({ error: 'Invalid JSON in request body', details: getErrorMessage(parseError) }, 400);
     }
     
-    // Extract user ID from event (handle both nested and flat event structures)
-    const userId = event.event?.app_user_id || event.app_user_id || event.original_app_user_id;
-    
+    const eventType = event.event?.type || event.type;
+    if (eventType === 'TEST') {
+      return c.json({ success: true, event: eventType });
+    }
+
+    const affectedUserIds = collectRevenueCatEventUserIds(event.event || event);
+    const userId = affectedUserIds[0];
+
     if (!userId) {
-      console.error('No user ID in RevenueCat webhook event:', JSON.stringify(event, null, 2));
+      console.error(`No user ID in RevenueCat webhook event (${eventType})`);
       return c.json({ error: 'Missing user ID' }, 400);
     }
 
-    // Handle different event types
-    const eventType = event.event?.type || event.type;
-    
-    console.log(`📥 RevenueCat webhook: ${eventType} for user ${userId}`);
+    console.log(`📥 RevenueCat webhook: ${eventType} for ${affectedUserIds.length} user(s)`);
+
+    const syncResults = await Promise.all(affectedUserIds.map(syncSubscriptionFromRevenueCat));
+    if (syncResults.every((result) => result.synced)) {
+      return c.json({ success: true, event: eventType, synced: affectedUserIds.length });
+    }
+    console.warn(
+      'RevenueCat API sync unavailable, falling back to webhook payload:',
+      syncResults.filter((result) => !result.synced).map((result) => (result as { reason: string }).reason)
+    );
 
     // Extract entitlement information from event
     // RevenueCat can send entitlements in different formats:
@@ -4418,8 +4500,6 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       entitlements.active?.['PRO-Yearly'] ||
       entitlements.active?.['Yearly'];
 
-    const tier = hasProEntitlement ? 'pro' : 'free';
-    
     // Get subscription details from event (prefer nested structure)
     const eventData = event.event || event;
     
@@ -4522,6 +4602,15 @@ app.post("/taskzm-database-function/revenuecat-webhook", async (c) => {
       }
     }
 
+    if (eventType === 'EXPIRATION') {
+      status = 'expired';
+    }
+    if (eventType === 'CANCELLATION' && status === 'active') {
+      status = 'cancelled';
+      cancelAtPeriodEnd = true;
+    }
+    const tier = hasProEntitlement && status !== 'expired' && status !== 'inactive' ? 'pro' : 'free';
+
     // Determine subscription store (normalize RevenueCat APP_STORE / PLAY_STORE / STRIPE values)
     const store = normalizeRevenueCatSubscriptionStore(eventData.store || event.store || 'revenuecat');
 
@@ -4605,75 +4694,12 @@ app.get("/taskzm-database-function/subscription-status", async (c) => {
     if (authError || !userId) {
       return c.json({ error: 'Unauthorized' }, 401);
     }
-
-    // Check if this is a demo user - demo users always get Pro tier (yearly)
-    const isDemoFlag = await kv.get(`user_${userId}_is_demo`);
-    const isDemo = isDemoFlag === 'true';
-
-    // Get subscription data from kv store (webhook format)
-    let tier = await kv.get(`user:${userId}:tier`) || 'free';
-    let status = await kv.get(`user:${userId}:subscription_status`) || 'none';
-    let store = await kv.get(`user:${userId}:subscription_store`);
-    let startDate = await kv.get(`user:${userId}:subscription_start`);
-    const expiresAt = await kv.get(`user:${userId}:subscription_expires_at`);
-    let billingPeriod = await kv.get(`user:${userId}:billing_period`);
-    const cancelAtPeriodEnd = status === 'cancelled' && expiresAt && new Date(expiresAt) > new Date();
-
-    // Also check legacy format for backwards compatibility
-    const legacySubscription = await kv.get(`user_${userId}_subscription`);
-    
-    // If demo user, ensure they have Pro tier with yearly billing
-    if (isDemo) {
-      // Override subscription for demo users to ensure they always have full access
-      tier = 'pro';
-      status = 'active';
-      store = 'demo_account';
-      billingPeriod = 'yearly';
-      
-      // Set start date if not already set
-      if (!startDate) {
-        startDate = new Date().toISOString();
-        await kv.set(`user:${userId}:subscription_start`, startDate);
-      }
-      
-      // Ensure subscription data is stored correctly for demo users
-      if (tier !== 'pro' || billingPeriod !== 'yearly' || status !== 'active') {
-        console.log(`🔧 Fixing subscription status for demo user ${userId}: Ensuring Pro tier (yearly)`);
-        
-        // Update subscription in both formats
-        const demoSubscription = {
-          tier: 'pro',
-          status: 'active',
-          startDate: startDate || new Date().toISOString(),
-          endDate: null, // Demo accounts don't expire
-          cancelAtPeriodEnd: false,
-          billingPeriod: 'yearly',
-        };
-        
-        await kv.set(`user_${userId}_subscription`, demoSubscription);
-        await kv.set(`user:${userId}:tier`, 'pro');
-        await kv.set(`user:${userId}:subscription_status`, 'active');
-        await kv.set(`user:${userId}:subscription_store`, 'demo_account');
-        await kv.set(`user:${userId}:subscription_start`, demoSubscription.startDate);
-        await kv.set(`user:${userId}:billing_period`, 'yearly');
-        
-        console.log(`✅ Demo user ${userId} subscription status fixed: Pro tier (yearly)`);
-      }
-    }
-    
-    // Merge data - prefer webhook format if available
-    const subscriptionData = {
-      tier: tier !== 'free' ? tier : (legacySubscription?.tier || 'free'),
-      status: status !== 'none' ? status : (legacySubscription?.status || 'active'),
-      store: store || legacySubscription?.store,
-      startDate: startDate || legacySubscription?.startDate,
-      endDate: expiresAt || legacySubscription?.endDate,
-      cancelAtPeriodEnd: cancelAtPeriodEnd || legacySubscription?.cancelAtPeriodEnd || false,
-      billingPeriod: billingPeriod || legacySubscription?.billingPeriod || null,
-      isPro: tier === 'pro' || legacySubscription?.tier === 'pro'
-    };
-
-    return c.json(subscriptionData);
+    const subscription = await readStoredSubscription(userId);
+    return c.json({
+      ...subscription,
+      store: subscription.purchaseStore,
+      isPro: subscription.tier === 'pro',
+    });
   } catch (error) {
     console.error('Error fetching subscription status:', error);
     return c.json({ error: getErrorMessage(error) }, 500);

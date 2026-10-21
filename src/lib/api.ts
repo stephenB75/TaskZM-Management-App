@@ -941,22 +941,37 @@ export async function getSubscription() {
   }
 
   const data = await response.json();
-  const subscription = data.subscription;
-  
-  // Normalize subscription data to ensure all required fields exist
-  if (subscription) {
-    return {
-      tier: subscription.tier || 'free',
-      status: subscription.status || 'active',
-      startDate: subscription.startDate || null,
-      endDate: subscription.endDate || null,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
-      billingPeriod: subscription.billingPeriod || null,
-      purchaseStore: subscription.purchaseStore || null,
-    };
+  return normalizeSubscriptionResponse(data.subscription);
+}
+
+function normalizeSubscriptionResponse(subscription: any) {
+  if (!subscription) return subscription;
+  return {
+    tier: subscription.tier || 'free',
+    status: subscription.status || 'active',
+    startDate: subscription.startDate || null,
+    endDate: subscription.endDate || null,
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd || false,
+    billingPeriod: subscription.billingPeriod || null,
+    purchaseStore: subscription.purchaseStore || null,
+    managementUrl: subscription.managementUrl || null,
+  };
+}
+
+/** Ask the server to refresh this user's subscription from RevenueCat, then return it. */
+export async function syncSubscription() {
+  const response = await fetchWithAuthRetry(`${API_BASE}/subscription/sync`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to sync subscription');
   }
-  
-  return subscription;
+
+  const data = await response.json();
+  return normalizeSubscriptionResponse(data.subscription);
 }
 
 export async function saveSubscription(subscription: any) {
