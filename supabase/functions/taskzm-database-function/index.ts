@@ -474,6 +474,10 @@ function plannerAIProvider() {
 const PLANNER_AI_CONFIG = {
   maxTokens: 1200,
   temperature: 0.2,
+  // Reasoning models count their thinking against maxTokens; other providers reject the reasoning_effort field.
+  reasoningModelPattern: /gpt-oss|qwen3/i,
+  reasoningEffort: 'low',
+  reasoningMaxTokens: 2400,
   maxInputChars: 8000,
   maxTasks: 150,
   maxHistory: 8,
@@ -603,7 +607,9 @@ app.post("/taskzm-database-function/ai/planner", async (c) => {
       body: JSON.stringify({
         model: provider.model,
         temperature: cfg.temperature,
-        max_tokens: cfg.maxTokens,
+        ...(cfg.reasoningModelPattern.test(provider.model)
+          ? { max_tokens: cfg.reasoningMaxTokens, reasoning_effort: cfg.reasoningEffort }
+          : { max_tokens: cfg.maxTokens }),
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: PLANNER_AI_SYSTEM_PROMPT },
