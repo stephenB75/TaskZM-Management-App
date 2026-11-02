@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import {
   DropdownMenu,
@@ -10,6 +10,8 @@ import { usePlannerChat } from '../../contexts/PlannerChatContext';
 import { useTasks } from '../../contexts/TaskContext';
 import { useAI } from '../../contexts/AIContext';
 import { useSheetItem } from '../../hooks/useSheetItem';
+import { useMobileLayout } from '../../hooks/useMobileLayout';
+import { getPlatform } from '../../lib/platform';
 import { getDateString } from '../../lib/utils';
 import { TaskDialog } from '../TaskDialog';
 import type { Task } from '../../types';
@@ -108,6 +110,9 @@ export function PlannerChat({ className }: { className?: string }) {
     setInput((prev) => (prev ? `${prev}\n${text}` : text));
   }, []);
   const dictation = useDictation(appendDictation);
+  // Phone and tablet keyboards already have a dictation key.
+  const isMobileLayout = useMobileLayout();
+  const showMic = dictation.supported && !isMobileLayout && !getPlatform().isNative;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
@@ -133,10 +138,37 @@ export function PlannerChat({ className }: { className?: string }) {
     if (contextRef.current) contextRef.current.open = false;
   };
 
-  const lineCount = Math.min(
-    PLANNER_LAYOUT.composerMaxRows,
-    Math.max(PLANNER_LAYOUT.composerMinRows, input.split('\n').length),
-  );
+  const fitComposer = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const style = getComputedStyle(el);
+    const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const maxHeight = parseFloat(style.lineHeight) * PLANNER_LAYOUT.composerMaxRows + padding;
+    // Wrapped lines (and a wrapping placeholder) never show up as newlines, so measure the rendered height.
+    const showsPlaceholder = el.value === '';
+    if (showsPlaceholder) el.value = el.placeholder;
+    el.style.height = 'auto';
+    const contentHeight = el.scrollHeight;
+    if (showsPlaceholder) el.value = '';
+    el.style.height = `${Math.min(contentHeight, maxHeight)}px`;
+    el.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
+  }, []);
+
+  useLayoutEffect(fitComposer, [input, fitComposer]);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    let width = el.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      fitComposer();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fitComposer]);
+
   const isEmpty = messages.length === 0 && drafts.length === 0;
 
   return (
@@ -315,7 +347,7 @@ export function PlannerChat({ className }: { className?: string }) {
         <div className="planner-composer-row">
           <textarea
             ref={inputRef}
-            rows={lineCount}
+            rows={PLANNER_LAYOUT.composerMinRows}
             value={input}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => {
@@ -328,7 +360,7 @@ export function PlannerChat({ className }: { className?: string }) {
             aria-label={TEXT.composerPlaceholder}
             enterKeyHint="send"
           />
-          {dictation.supported ? (
+          {showMic ? (
             <button
               type="button"
               className="planner-icon-btn planner-mic"
