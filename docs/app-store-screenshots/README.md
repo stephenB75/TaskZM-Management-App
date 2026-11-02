@@ -15,6 +15,17 @@ Each folder only fits its own tab; dropping a set into a different tab gives a "
 
 `source/captioned/` holds the lossless captioned masters (iPhone 1320 × 2868, iPad 2752 × 2064) that every folder above is generated from. `source/raw/` holds the uncaptioned captures, for other uses or for redoing captions.
 
+## Product page header and search results artwork
+
+`product-page/` holds the landscape artwork App Store Connect asks for on the product page:
+
+| File | Size | Copy |
+|---|---|---|
+| `header-5244x2950.jpg` | 5244 × 2950 | Type it. TaskZM schedules it. *Your tasks, meetings and focus time on one timeline.* |
+| `search-results-3840x1646.jpg` | 3840 × 1646 | Plan your day in seconds. *The auto scheduler fits every task around your calendar.* |
+
+Both are JPEGs with an sRGB profile and no transparency. Regenerate them from the raw captures with `node scripts/generate-product-page-art.mjs`.
+
 ## Captions
 
 ### iPhone
