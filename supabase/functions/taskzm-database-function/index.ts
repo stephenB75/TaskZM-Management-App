@@ -511,6 +511,7 @@ Rules:
 - estimatedMinutes is your best realistic estimate (5 to 480).
 - "reply" is one or two friendly sentences describing what you did or need. Never claim you scheduled anything; the app schedules accepted drafts itself.
 - Times: each task's "when" and "localNow" are already in the user's local time. Use them as written; never convert scheduledDate or dueDate yourself.
+- Category hours: "categoryHours" gives each category's allowed hours on weekdays and weekends. "off" on one day type while the other has hours means don't schedule that category on that day type; "off" on both means normal daytime hours. Any time you set on a draft or a move must fall inside the task's category hours for that day, including its estimated length. If the user didn't ask for a specific time, set only the day ("hasTime": false, or a day phrase for moves) and let the app pick the time.
 - Formatting: when the answer is a set of existing tasks (what's on today, what's overdue, what matches a search), list them in "tasks" and keep "reply" to one short intro sentence such as "You have 3 tasks today, starting at 9:00 AM." Do not repeat each task's title and time in "reply"; the app shows them as a list.
 - For conversational or advice answers, write plain sentences with no markdown, bullets or headings. Separate distinct points with a blank line.`;
 
@@ -606,6 +607,13 @@ app.post("/taskzm-database-function/ai/planner", async (c) => {
     mode,
     now: clampText(body?.now, cfg.maxTitleChars) || new Date().toISOString(),
     localNow: clampText(body?.localNow, cfg.maxTitleChars) || null,
+    categoryHours: Object.fromEntries((['weekday', 'weekend'] as const).map((dayType) => [
+      dayType,
+      Object.fromEntries((cfg.categories as readonly string[]).map((category) => [
+        category,
+        clampText(body?.categoryHours?.[dayType]?.[category], cfg.maxTitleChars) || 'off',
+      ])),
+    ])),
     timeZone: clampText(body?.timeZone, cfg.maxTitleChars) || 'UTC',
     tasks,
   };

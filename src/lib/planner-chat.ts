@@ -52,8 +52,11 @@ export interface PlannerDraft {
   priority: TaskPriority;
   category: PlannerCategory | null;
   estimatedMinutes: number;
-  /** Date/time the user wrote ("tomorrow at 3pm"); a time books the task there, a day sets its due date. */
-  when?: { date: string; hasTime: boolean };
+  /**
+   * Date/time the user wrote ("tomorrow at 3pm"); a time books the task there, a day sets its due date.
+   * `suggested` marks a time the enhanced AI proposed, which only stands when it fits category hours.
+   */
+  when?: { date: string; hasTime: boolean; suggested?: boolean };
   /** Steps the planner found or suggested; created as subtasks when the draft is accepted. */
   subtasks?: string[];
   /** Cleaned full sentence kept as the task description when the title had to be shortened. */

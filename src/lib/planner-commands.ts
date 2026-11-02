@@ -23,7 +23,15 @@ export type PlannerCommand =
   | { kind: 'duration'; ref: string; minutes: number }
   | { kind: 'priority'; ref: string; priority: TaskPriority }
   | { kind: 'done'; ref: string; /** "I finished X": reports a finished task, so it is never drafted as a new one. */ reported?: boolean }
-  | { kind: 'move'; ref: string; when: string; /** Exact time from the enhanced planner; skips phrase parsing. */ at?: PlannerWhen }
+  | {
+      kind: 'move';
+      ref: string;
+      when: string;
+      /** Exact time from the enhanced planner; skips phrase parsing. */
+      at?: PlannerWhen;
+      /** Proposed by the enhanced planner: a time outside category hours keeps only its day. */
+      suggested?: boolean;
+    }
   | { kind: 'notes'; ref: string; text: string }
   | { kind: 'find'; ref: string };
 

@@ -1,5 +1,6 @@
 import type { Task, HoursSettings } from '../types';
-import { MINUTES_PER_HOUR } from './business-constants';
+import { AI_SCHEDULER_MAX_END_HOUR, MINUTES_PER_HOUR } from './business-constants';
+import { DEFAULT_CATEGORY_HOURS, DEFAULT_CATEGORY_WORK_WINDOW_HOURS, DEFAULT_TASK_CATEGORY } from './ai-config';
 
 /**
  * Get task category from tags
@@ -66,5 +67,41 @@ export function getCategoryHoursForTask(
   const endMinutes = parseTimeToMinutes(categoryHours.end);
 
   return { start: startMinutes, end: endMinutes };
+}
+
+/** Category hours as "HH:mm-HH:mm" (or "off") per day type, for the enhanced planner's context. */
+export function describeCategoryHours(hoursSettings: HoursSettings): Record<'weekday' | 'weekend', Record<string, string>> {
+  const describe = (hours: HoursSettings['weekdayHours']) =>
+    Object.fromEntries(
+      Object.entries(hours).map(([category, window]) => [category, window.enabled ? `${window.start}-${window.end}` : 'off']),
+    );
+  return { weekday: describe(hoursSettings.weekdayHours), weekend: describe(hoursSettings.weekendHours) };
+}
+
+/**
+ * Whether a task starting at `start` sits inside its category hours the way the scheduler's
+ * forced category mode places it: allowed day type, and start/end inside the category window
+ * (or the default window when that category's hours are off).
+ */
+export function fitsForcedCategoryHours(task: Task, start: Date, hoursSettings: HoursSettings): boolean {
+  const category = getTaskCategory(task) ?? DEFAULT_TASK_CATEGORY;
+  const weekend = isWeekend(start);
+  const weekdayEnabled = !!hoursSettings.weekdayHours[category]?.enabled;
+  const weekendEnabled = !!hoursSettings.weekendHours[category]?.enabled;
+  if ((weekdayEnabled || weekendEnabled) && !(weekend ? weekendEnabled : weekdayEnabled)) return false;
+
+  const window = (weekend ? hoursSettings.weekendHours : hoursSettings.weekdayHours)[category];
+  let windowStart: number;
+  let windowEnd: number;
+  if (window?.enabled) {
+    windowStart = parseTimeToMinutes(window.start);
+    windowEnd = parseTimeToMinutes(window.end);
+  } else {
+    const defaultStartHour = DEFAULT_CATEGORY_HOURS[category] || DEFAULT_CATEGORY_HOURS[DEFAULT_TASK_CATEGORY];
+    windowStart = defaultStartHour * MINUTES_PER_HOUR;
+    windowEnd = Math.min(defaultStartHour + DEFAULT_CATEGORY_WORK_WINDOW_HOURS, AI_SCHEDULER_MAX_END_HOUR) * MINUTES_PER_HOUR;
+  }
+  const startMinutes = start.getHours() * MINUTES_PER_HOUR + start.getMinutes();
+  return startMinutes >= windowStart && startMinutes + (task.estimatedTime ?? 0) <= windowEnd;
 }
 

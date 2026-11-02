@@ -1551,6 +1551,8 @@ export interface EnhancedPlannerRequest {
   now: string;
   /** Current date and time already formatted in the user's local time. */
   localNow: string;
+  /** Category hours per day type, e.g. { weekday: { work: "09:00-17:00" }, weekend: { work: "off" } }. */
+  categoryHours: Record<'weekday' | 'weekend', Record<string, string>>;
   timeZone: string;
   history: Array<{ role: 'user' | 'planner'; text: string }>;
   tasks: Array<{

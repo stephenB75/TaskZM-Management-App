@@ -41,6 +41,7 @@ import {
   type PlannerCommand,
 } from '../lib/planner-commands';
 import { getCategoryFromTags } from '../lib/ai-config';
+import { describeCategoryHours, fitsForcedCategoryHours } from '../lib/category-hours-utils';
 import { cleanSteps, estimateWithSubtasks, suggestSubtasks, taskTitleKey } from '../lib/planner-analysis';
 import { requestEnhancedPlanner, type EnhancedPlannerDraft, type EnhancedPlannerEdit } from '../lib/api';
 import {
@@ -125,7 +126,7 @@ function toPlannerDraft(raw: EnhancedPlannerDraft): PlannerDraft | null {
   const title = raw.title?.trim();
   if (!title || title.length < PLANNER_CHAT_CONFIG.minTitleLength) return null;
   const when = raw.when && !Number.isNaN(Date.parse(raw.when.date))
-    ? { date: new Date(raw.when.date).toISOString(), hasTime: Boolean(raw.when.hasTime) }
+    ? { date: new Date(raw.when.date).toISOString(), hasTime: Boolean(raw.when.hasTime), suggested: true }
     : undefined;
   const subtasks = cleanSteps(raw.subtasks ?? [], title);
   const draft: PlannerDraft = {
@@ -158,9 +159,9 @@ function editToCommand(edit: EnhancedPlannerEdit, task: Task): PlannerCommand | 
     case 'move': {
       if (!text) return null;
       if (/^\d{4}-\d{2}-\d{2}/.test(text) && !Number.isNaN(Date.parse(text))) {
-        return { kind: 'move', ref, when: text, at: { date: new Date(text), hasTime: /T\d{2}:\d{2}/.test(text) } };
+        return { kind: 'move', ref, when: text, at: { date: new Date(text), hasTime: /T\d{2}:\d{2}/.test(text) }, suggested: true };
       }
-      return { kind: 'move', ref, when: text };
+      return { kind: 'move', ref, when: text, suggested: true };
     }
     case 'rename':
       return text ? { kind: 'rename', ref, title: text } : null;
@@ -218,7 +219,7 @@ function taskEnd(task: Task, start: Date): number {
 }
 
 export function PlannerChatProvider({ children }: { children: React.ReactNode }) {
-  const { tasks, addTask, updateTask, availableTags, addAvailableTag } = useTasks();
+  const { tasks, addTask, updateTask, availableTags, addAvailableTag, hoursSettings } = useTasks();
   const { startTimer } = usePomodoro();
   const { teamMembers } = useTeam();
   const { canEditTask, canAssignTask, canCreateTask } = usePermissions();
@@ -305,17 +306,45 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
     const ids = new Set(toCommit.map((draft) => draft.id));
     setState((prev) => ({ ...prev, drafts: prev.drafts.filter((draft) => !ids.has(draft.id)) }));
 
-    const newTasks = toCommit.map((draft) => draftToTask(draft, user?.id));
     const slots = new Map<string, Date>();
-    newTasks.forEach((task) => {
-      if (task.scheduledDate) slots.set(task.id, new Date(task.scheduledDate));
+    // AI-suggested times outside category hours keep only their day; the scheduler picks the time.
+    const suggestedDays = new Map<string, Date>();
+    const newTasks = toCommit.map((draft) => {
+      const task = draftToTask(draft, user?.id);
+      if (!task.scheduledDate) return task;
+      const start = new Date(task.scheduledDate);
+      if (!draft.when?.suggested || fitsForcedCategoryHours(task, start, hoursSettings)) {
+        slots.set(task.id, start);
+        return task;
+      }
+      suggestedDays.set(task.id, start);
+      return { ...task, scheduledDate: null, dueDate: endOfDay(start).toISOString() };
     });
     const toPlace = newTasks.filter((task) => !slots.has(task.id));
     const autoSchedule = canAutoSchedule();
     if (autoSchedule && toPlace.length > 0) {
       countUsage();
-      const result = await generateSchedulePlan(toPlace, plannerScheduleWindow(new Date()), { forceCategoryHours: true });
-      result.scheduled.forEach((plan) => slots.set(plan.task.id, plan.scheduledDate));
+      const anyDay: Task[] = [];
+      const byDay = new Map<string, Task[]>();
+      for (const task of toPlace) {
+        const day = suggestedDays.get(task.id);
+        if (!day) {
+          anyDay.push(task);
+          continue;
+        }
+        const key = day.toDateString();
+        byDay.set(key, [...(byDay.get(key) ?? []), task]);
+      }
+      for (const group of byDay.values()) {
+        const day = suggestedDays.get(group[0].id) as Date;
+        const result = await generateSchedulePlan(group, { startDate: day, endDate: endOfDay(day) }, { forceCategoryHours: true });
+        result.scheduled.forEach((plan) => slots.set(plan.task.id, plan.scheduledDate));
+        anyDay.push(...group.filter((task) => !slots.has(task.id)));
+      }
+      if (anyDay.length > 0) {
+        const result = await generateSchedulePlan(anyDay, plannerScheduleWindow(new Date()), { forceCategoryHours: true });
+        result.scheduled.forEach((plan) => slots.set(plan.task.id, plan.scheduledDate));
+      }
     }
 
     for (const task of newTasks) {
@@ -333,7 +362,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       say(message('planner', [slots.size > 0 ? replies.scheduledMany(slots.size) : '', unplaced > 0 ? replies.unplaced(unplaced) : ''].filter(Boolean).join(' ')));
     }
     if (!autoSchedule && toPlace.length > 0) say(message('planner', replies.aiUnavailable));
-  }, [addTask, canAutoSchedule, countUsage, generateSchedulePlan, say, user?.id]);
+  }, [addTask, canAutoSchedule, countUsage, generateSchedulePlan, hoursSettings, say, user?.id]);
 
   const scheduleInbox = useCallback(() => run(async () => {
     const { replies } = PLANNER_UI_TEXT;
@@ -544,7 +573,8 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
         const when = command.at ?? parsePlannerWhen(command.when, now);
         if (!when) return false;
         let start = when.date;
-        if (!when.hasTime) {
+        const outsideHours = Boolean(command.suggested) && when.hasTime && !fitsForcedCategoryHours(task, when.date, hoursSettings);
+        if (!when.hasTime || outsideHours) {
           // Only a day: let the scheduler pick a slot inside category hours, daily limits, and calendar events.
           const plan = canAutoSchedule()
             ? await generateSchedulePlan([{ ...task, scheduledDate: null }], { startDate: when.date, endDate: endOfDay(when.date) }, { forceCategoryHours: true })
@@ -566,7 +596,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       default:
         return false;
     }
-  }, [addAvailableTag, addTask, availableTags, canAssignTask, canAutoSchedule, canCreateTask, canEditTask, countUsage, generateSchedulePlan, hasFeature, say, setPending, startTimer, teamMembers, updateTask, user?.id, user?.name]);
+  }, [addAvailableTag, addTask, availableTags, canAssignTask, canAutoSchedule, canCreateTask, canEditTask, countUsage, generateSchedulePlan, hasFeature, hoursSettings, say, setPending, startTimer, teamMembers, updateTask, user?.id, user?.name]);
 
   const addDrafts = useCallback((drafts: PlannerDraft[]) => {
     const { replies } = PLANNER_UI_TEXT;
@@ -653,6 +683,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
         text,
         now: new Date().toISOString(),
         localNow: formatPlannedWhen(new Date()),
+        categoryHours: describeCategoryHours(hoursSettings),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         history: mode === 'chat'
           ? stateRef.current.messages.slice(-maxHistorySent).map(({ role, text: body }) => ({ role, text: body }))
@@ -693,7 +724,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
     } finally {
       setBusy(false);
     }
-  }, [runCommand, say, withoutExisting]);
+  }, [hoursSettings, runCommand, say, withoutExisting]);
 
   const send = useCallback(async (text: string) => {
     const trimmed = text.trim();
