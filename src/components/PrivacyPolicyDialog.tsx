@@ -109,9 +109,10 @@ export function PrivacyPolicyDialog({
                 planner in Settings, the planner messages and brain
                 dumps you submit, together with the titles, dates,
                 priorities, tags and subtasks of your open tasks,
-                are sent through our servers to OpenAI to interpret
-                your request. OpenAI does not use this data to train
-                its models. You can turn this off at any time.
+                are sent through our servers to a third-party AI
+                provider (currently Groq) to interpret your request.
+                The provider does not use this data to train its
+                models. You can turn this off at any time.
               </p>
             </section>
 

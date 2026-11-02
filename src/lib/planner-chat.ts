@@ -166,7 +166,7 @@ function buildDraft(rawSource: string, explicitSteps?: string[]): PlannerDraft |
     ...(when && keepsWhen ? { when: { date: when.date.toISOString(), hasTime: when.hasTime } } : {}),
   };
   const baseMinutes = Math.round(estimateTaskHours({ ...draftToTask(draft), estimatedTime: null }) * MINUTES_PER_HOUR);
-  const suggestion = inline ? null : suggestSubtasks(title);
+  const suggestion = inline || PLANNER_ANALYSIS_CONFIG.quickActionPattern.test(title) ? null : suggestSubtasks(title);
   const subtasks = cleanSteps(inline?.steps ?? suggestion?.steps ?? [], title);
   if (subtasks.length > 0) draft.subtasks = subtasks;
   draft.estimatedMinutes =

@@ -1361,6 +1361,8 @@ export const PLANNER_ANALYSIS_CONFIG = {
   maxSubtasks: 8,
   /** Extra time per subtask on top of the base estimate, so broken-down tasks aren't booked too short. */
   minutesPerStepFloor: 15,
+  /** Quick one-step actions ("Email the accountant about taxes") never get template subtasks. */
+  quickActionPattern: /^(?:email|call|phone|text|message|reply|ask|remind|ping|tell|send|forward|book|confirm|cancel)\b/i,
   /** Common bigger tasks and the steps they usually take. Checked in order; the first match wins. */
   templates: [
     {

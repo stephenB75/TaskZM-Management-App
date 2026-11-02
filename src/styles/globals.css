@@ -1521,6 +1521,7 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
   gap: 8px;
 }
 .planner-drafts {
+  container-type: inline-size;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -1528,22 +1529,30 @@ html[data-keyboard-open="true"] .native-hide-with-keyboard {
 }
 .planner-draft {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: 8px;
   padding: 10px 0;
   border-top: 1px solid var(--border);
 }
+.planner-draft > :last-child {
+  justify-content: flex-end;
+}
+@container (min-width: 520px) {
+  .planner-draft {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
 .planner-draft strong {
   display: block;
-  overflow: hidden;
   font-size: 14px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .planner-draft small {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin-top: 3px;

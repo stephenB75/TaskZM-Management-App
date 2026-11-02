@@ -445,8 +445,7 @@ function filterTerminologyToTask(
 
 // GET /taskzm-database-function/ai/status — check if OpenAI is configured (no auth; returns configured only)
 app.get("/taskzm-database-function/ai/status", (c) => {
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
-  const configured = !!(apiKey && apiKey.trim().length > 0);
+  const configured = plannerAIProvider().apiKey.length > 0;
   return c.json({ configured });
 });
 
@@ -462,6 +461,15 @@ app.post("/taskzm-database-function/ai/action-plan", (c) => c.json({ error: 'Dep
 // ============================================================================
 // ENHANCED PLANNER (opt-in; the app's planner runs on device unless the user turns this on)
 // ============================================================================
+
+/** The planner can use any OpenAI-compatible provider (e.g. Groq); it falls back to the OpenAI settings above. */
+function plannerAIProvider() {
+  return {
+    url: Deno.env.get('PLANNER_AI_URL') || OPENAI_CHAT_URL,
+    model: Deno.env.get('PLANNER_AI_MODEL') || OPENAI_MODEL,
+    apiKey: (Deno.env.get('PLANNER_AI_API_KEY') || Deno.env.get('OPENAI_API_KEY') || '').trim(),
+  };
+}
 
 const PLANNER_AI_CONFIG = {
   maxTokens: 1200,
@@ -546,8 +554,8 @@ app.post("/taskzm-database-function/ai/planner", async (c) => {
   const { userId, error: authError } = await verifyUser(c.req.raw);
   if (authError || !userId) return c.json({ error: 'Unauthorized' }, 401);
 
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!apiKey || !apiKey.trim()) return c.json({ error: 'Enhanced planner is not configured' }, 503);
+  const provider = plannerAIProvider();
+  if (!provider.apiKey) return c.json({ error: 'Enhanced planner is not configured' }, 503);
 
   const cfg = PLANNER_AI_CONFIG;
   let body: any;
@@ -589,11 +597,11 @@ app.post("/taskzm-database-function/ai/planner", async (c) => {
   };
 
   try {
-    const response = await fetch(OPENAI_CHAT_URL, {
+    const response = await fetch(provider.url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${provider.apiKey}` },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model: provider.model,
         temperature: cfg.temperature,
         max_tokens: cfg.maxTokens,
         response_format: { type: 'json_object' },
@@ -606,7 +614,8 @@ app.post("/taskzm-database-function/ai/planner", async (c) => {
       }),
     });
     if (!response.ok) {
-      console.error('Enhanced planner OpenAI error:', response.status, await response.text());
+      console.error('Enhanced planner AI provider error:', response.status, await response.text());
+      if (response.status === 429) return c.json({ error: 'AI provider busy or out of quota' }, 429);
       return c.json({ error: 'AI request failed' }, 502);
     }
     const data = await response.json();

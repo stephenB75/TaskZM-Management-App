@@ -320,7 +320,7 @@ export const PLANNER_UI_TEXT = {
   settings: {
     enhancedTitle: 'Enhanced AI planner',
     enhancedDescription:
-      'Use OpenAI to understand planner messages and brain dumps. When on, what you type there, plus the titles, dates and subtasks of your open tasks, is sent to OpenAI to work out what you mean. Off by default.',
+      'Use a cloud AI model to understand planner messages and brain dumps. When on, what you type there, plus the titles, dates and subtasks of your open tasks, is sent to our AI provider (currently Groq) to work out what you mean. Off by default.',
     enhancedNotConfigured: 'Not available on this server yet.',
   },
 } as const;
