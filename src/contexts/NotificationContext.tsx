@@ -75,8 +75,9 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { tasks } = useTasks();
+  const { tasks, isLoading: tasksLoading } = useTasks();
   const { user } = useAuth();
+  const checkInFlightRef = useRef(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [settings, setSettings] = useState<NotificationSettings>(() => {
     const stored = getFromLocalStorage<NotificationSettings>(
@@ -251,6 +252,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [updateBadge]);
 
   useEffect(() => {
+    // An unloaded (empty) task list would wipe these keys and re-alert every task once tasks arrive.
+    if (tasksLoading) return;
     const dismissed = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.dismissedNotifications, []);
     const notified = getFromLocalStorage<string[]>(NOTIFICATION_STORAGE_KEYS.notifiedTasks, []);
     const prunedDismissed = pruneStaleTaskNotificationKeys(dismissed, tasks);
@@ -261,7 +264,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (prunedNotified.length !== notified.length) {
       saveToLocalStorage(NOTIFICATION_STORAGE_KEYS.notifiedTasks, prunedNotified);
     }
-  }, [tasks]);
+  }, [tasks, tasksLoading]);
 
   useEffect(() => {
     void syncTaskSchedules();
@@ -317,9 +320,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const deliverTaskAlert = useCallback(
     async (payload: ReturnType<typeof buildOverdueNotificationPayload>, variant: 'overdue' | 'reminder') => {
-      if (settings.soundEnabled) playDueReminderChime();
+      const isNative = getPlatform().isNative;
+      // Native notifications carry their own sound; the WebView chime would double it.
+      if (settings.soundEnabled && !isNative) playDueReminderChime();
 
-      if (getPlatform().isNative || !isAppInForeground()) {
+      if (isNative || !isAppInForeground()) {
         await showNativeNotification(payload);
         return;
       }
@@ -331,10 +336,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [settings.soundEnabled, updateBadge],
   );
 
-  const checkAndNotify = useCallback(async () => {
-    if (!settings.enabled) return;
-    if (!user) return;
-
+  const runNotificationCheck = useCallback(async () => {
     const inForeground = isAppInForeground();
     const isNative = await isNativeNotificationsAvailable();
 
@@ -428,7 +430,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         dueSoon: dueSoonCount,
       });
     }
-  }, [tasks, settings, permission, user, deliverTaskAlert]);
+  }, [tasks, settings, permission, deliverTaskAlert]);
+
+  const checkAndNotify = useCallback(async () => {
+    if (!settings.enabled) return;
+    if (!user) return;
+    if (tasksLoading) return;
+    // Overlapping runs read the same notified list before either saves it, so both would alert.
+    if (checkInFlightRef.current) return;
+    checkInFlightRef.current = true;
+    try {
+      await runNotificationCheck();
+    } finally {
+      checkInFlightRef.current = false;
+    }
+  }, [settings.enabled, user, tasksLoading, runNotificationCheck]);
 
   useEffect(() => {
     const refreshOnResume = () => {

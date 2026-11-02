@@ -187,7 +187,7 @@ export const PLANNER_UI_TEXT = {
     acceptAll: 'Accept all',
     skipAll: 'Skip all',
     composerPlaceholder: 'Add tasks or ask the planner…',
-    addContext: 'Brain dump',
+    addContext: 'Idea & Suggestive Tasks Dropbox',
     contextHint: 'Paste raw notes, an email, or everything on your mind. The planner pulls out the real action items, keeps facts as details on the task they belong to, groups steps into subtasks, and skips anything already on your list. Nothing is saved until you accept it.',
     contextPlaceholder: 'Notes, an email, or everything on your mind…',
     analyzeContext: 'Turn into tasks',
@@ -219,7 +219,7 @@ export const PLANNER_UI_TEXT = {
     nothingFound: "I couldn't find any tasks in that. Try one task per line.",
     smallTalk: 'I\'m here. Tell me what you need to get done, or ask me to change a task, like "move the report to Friday" or "I finished the invoice".',
     contextOnly:
-      "That reads like context rather than a task, so I didn't add anything. Tell me what you want to do about it, or paste your notes into Brain dump and I'll pull out the tasks.",
+      "That reads like context rather than a task, so I didn't add anything. Tell me what you want to do about it, or paste your notes into the Idea & Suggestive Tasks Dropbox and I'll pull out the tasks.",
     skippedContext: (count: number) => `I left out ${plural(count, 'line')} that read like context, not tasks.`,
     alreadyOnList: (title: string) => `"${title}" is already on your list, so I didn't add it again.`,
     projectScope: (title: string, kind: 'build' | 'event' | 'launch' | 'move' | 'general') =>

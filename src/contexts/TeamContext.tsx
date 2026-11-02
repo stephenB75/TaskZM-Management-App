@@ -729,7 +729,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   }, [user, accessToken, workspaceId, syncTeams]);
 
   // Load members when team is selected (backup for when currentTeamId changes externally)
+  const previousTeamIdRef = useRef<string | null>(null);
   useEffect(() => {
+    const previousTeamId = previousTeamIdRef.current;
+    previousTeamIdRef.current = currentTeamId;
     if (currentTeamId && accessToken) {
       // Update loading ref to match current selection
       loadingTeamIdRef.current = currentTeamId;
@@ -751,14 +754,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       // This prevents double syncing
       loadingTeamIdRef.current = null;
       setCurrentTeamMembers([]);
-      // Ensure workspace team members are synced (only if not already syncing)
-      if (workspaceId && accessToken && !isLoading) {
+      // Only when leaving a team: depending on the loading flag here re-fetched members in an endless loop.
+      if (previousTeamId && workspaceId && accessToken) {
         syncTeamMembers(workspaceId).catch(error => {
           console.error('Failed to sync workspace team members:', error);
         });
       }
     }
-  }, [currentTeamId, accessToken, workspaceId, isLoading, syncTeamMembers]);
+  }, [currentTeamId, accessToken, workspaceId, syncTeamMembers]);
 
   return (
     <TeamContext.Provider
