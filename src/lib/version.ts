@@ -5,10 +5,10 @@
  * Update this file when releasing new versions.
  */
 
-export const APP_VERSION = '2.0.1';
-export const VERSION_NAME = 'TaskZM 2.0.1';
-export const VERSION_DATE = 'October 17, 2026';
-export const BUILD_NUMBER = '20261017-1';
+export const APP_VERSION = '2.0.2';
+export const VERSION_NAME = 'TaskZM 2.0.2';
+export const VERSION_DATE = 'November 1, 2026';
+export const BUILD_NUMBER = '20261101-1';
 
 /** Stable release stamp for cache purge (version + build). */
 export function getAppReleaseStamp(): string {
@@ -88,6 +88,24 @@ export const CORE_FUNCTIONS = [
  * Version history for reference
  */
 export const VERSION_HISTORY = [
+  {
+    version: '2.0.2',
+    date: 'November 1, 2026',
+    name: 'TaskZM 2.0.2',
+    changes: [
+      'Auto Scheduler understands plain language: finds and edits existing tasks, asks a quick question before planning bigger projects, and skips duplicates',
+      'Idea & Suggestive Tasks Dropbox: paste notes or an email and get clean tasks with details and subtasks',
+      'Optional Enhanced AI planner (Settings → AI), with the on-device planner as the default',
+      'Planner replies list your tasks as tappable cards with correct local times',
+      'Draft task cards are easier to read; the message box grows as you type',
+      'Pomodoro countdown shows on the task card while a focus timer runs',
+      'Mobile Inbox: full-width Select, Schedule and Delete buttons',
+      'Emoji picker fits on small screens',
+      'Rollover prompt and smarter scheduling that respects category hours',
+      'Fixed repeat reminder sounds with no new notification',
+      'Fixed team members reloading continuously in the background',
+    ],
+  },
   {
     version: '2.0.1',
     date: 'October 17, 2026',
