@@ -216,7 +216,7 @@ export function PlannerChat({ className }: { className?: string }) {
                   {TEXT.plannerName}
                 </span>
                 <p className="m-0 font-semibold">{TEXT.emptyTitle}</p>
-                <p className="m-0 text-muted-foreground">{TEXT.emptyHint}</p>
+                <p className="m-0 text-xs leading-snug text-muted-foreground">{TEXT.emptyHint}</p>
               </div>
               <div className="planner-suggestions">
                 {TEXT.suggestions.map((suggestion) => (

@@ -173,7 +173,7 @@ export const PLANNER_UI_TEXT = {
     } as Record<PlannerRescheduleRange, { label: string; hint: string }>,
     emptyTitle: 'What do you need to get done?',
     emptyHint:
-      'Tell the planner what you need to do in your own words. It finds existing tasks to update ("push the report to Friday", "I finished the invoice"), asks a couple of questions before planning a bigger project, and drafts new tasks for you to accept.',
+      'Describe what you need to do, update a task ("push the report to Friday"), or plan a bigger project.',
     suggestions: [
       'What is on today?',
       'Schedule my inbox',
