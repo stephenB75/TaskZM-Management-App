@@ -19,12 +19,13 @@ Each folder only fits its own tab; dropping a set into a different tab gives a "
 
 `product-page/` holds the landscape artwork App Store Connect asks for on the product page:
 
-| File | Size | Copy |
-|---|---|---|
-| `header-5244x2950.jpg` | 5244 × 2950 | Type it. TaskZM schedules it. *Your tasks, meetings and focus time on one timeline.* |
-| `search-results-3840x1646.jpg` | 3840 × 1646 | Plan your day in seconds. *The auto scheduler fits every task around your calendar.* |
+| File | Use for | Size | Format |
+|---|---|---|---|
+| `universal-5244x2950.png` | Header **and** search results (tick "Use header asset in search results") | 5244 × 2950 (16:9) | PNG only |
+| `header-3840x1646.jpg` | Header only | 3840 × 1646 (21:9) | JPG or PNG |
+| `search-results-3840x2560.jpg` | Search results only | 3840 × 2560 (3:2) | JPG or PNG |
 
-Both are JPEGs with an sRGB profile and no transparency. Regenerate them from the raw captures with `node scripts/generate-product-page-art.mjs`.
+Upload either the universal PNG, or the dedicated header and search results pair. The App Store crops the universal asset to 21:9 for the header and 3:2 for search results, so its text and devices sit inside the area both crops keep. None of the files have transparency. Regenerate them from the raw captures with `node scripts/generate-product-page-art.mjs`. Specs: [Creative assets specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications/).
 
 ## Captions
 
