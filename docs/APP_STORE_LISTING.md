@@ -25,6 +25,47 @@ agenda,to do,todo list,tasks,schedule,calendar,pomodoro,focus,gtd,productivity,r
 TaskZM 2.0 is here: a cleaner timeline, swipe-to-complete, iCloud calendar sync, and reliable reminders. Plan your day in seconds and let the AI fill the gaps.
 ```
 
+## Product page header and search results
+
+The header (top of the product page) and the search result card both show the icon, **name** and **subtitle**; the search card adds the **first three screenshots** (iPhone portrait). The App Store indexes words in the name and subtitle, so the keyword field below avoids repeating them.
+
+### Header
+
+| Field | Recommended | Characters |
+|---|---|---|
+| Name (30 max) | TaskZM: AI Planner & To-Do | 26 |
+| Subtitle (30 max) | Schedule tasks around meetings | 30 |
+
+Alternatives (all within limits):
+
+| Name | Subtitle |
+|---|---|
+| TaskZM: Planner & To-Do (current, 23) | Auto-schedule your tasks (24) |
+| TaskZM: AI Day Planner (22) | Smart schedule & to-do list (27) |
+| | Tasks, calendar & focus timer (29) |
+
+### Search results
+
+Keywords (100 max), paired with the recommended name and subtitle — 97 characters, no spaces after commas:
+
+```
+todo,list,calendar,agenda,pomodoro,focus,reminder,organizer,checklist,timeblock,gtd,daily,routine
+```
+
+First three iPhone screenshots shown in search (order from [`app-store-screenshots/README.md`](app-store-screenshots/README.md)):
+
+1. Your whole day, on one timeline. — matches "planner"
+2. Tasks and meetings, side by side. — matches the subtitle
+3. Type it. TaskZM schedules it. — matches "AI" and auto scheduling
+
+Promotional text option for after the 2.0 launch (146 of 170, editable without review):
+
+```
+Plan your day in seconds: TaskZM fits every task around your meetings, then keeps you on track with reminders and a built-in Pomodoro focus timer.
+```
+
+Name and subtitle changes need a new app version submission; keywords also change only with a new version.
+
 ## Description
 
 ```
