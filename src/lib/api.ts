@@ -1549,6 +1549,8 @@ export interface EnhancedPlannerRequest {
   mode: 'chat' | 'brainDump';
   text: string;
   now: string;
+  /** Current date and time already formatted in the user's local time. */
+  localNow: string;
   timeZone: string;
   history: Array<{ role: 'user' | 'planner'; text: string }>;
   tasks: Array<{
@@ -1558,6 +1560,8 @@ export interface EnhancedPlannerRequest {
     priority: string;
     scheduledDate: string | null;
     dueDate: string | null;
+    /** Scheduled or due time already formatted in the user's local time. */
+    when: string | null;
     estimatedMinutes: number | null;
     tags: string[];
     subtasks: string[];
@@ -1585,6 +1589,8 @@ export interface EnhancedPlannerResponse {
   question: string | null;
   drafts: EnhancedPlannerDraft[];
   edits: EnhancedPlannerEdit[];
+  /** Ids of existing tasks the reply lists; missing from servers deployed before this field. */
+  tasks?: string[];
 }
 
 /** Opt-in planner understanding through the server's AI provider. Throws when unavailable so callers can fall back. */

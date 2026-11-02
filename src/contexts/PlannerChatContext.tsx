@@ -22,6 +22,8 @@ import {
   parsePlannerDrafts,
   plannerScheduleWindow,
   plannerSummary,
+  plannerTodayTaskIds,
+  formatTaskWhen,
   projectKind,
   startOfPlannerWeek,
   stripAssistantRequest,
@@ -59,6 +61,8 @@ export interface PlannerMessage {
   createdAt: string;
   /** Task the reply is about, so the chat can offer to open it. */
   taskId?: string;
+  /** Existing tasks the reply lists, shown as task rows under the text. */
+  taskIds?: string[];
 }
 
 interface PlannerChatValue {
@@ -191,8 +195,15 @@ function editToCommand(edit: EnhancedPlannerEdit, task: Task): PlannerCommand | 
   }
 }
 
-function message(role: PlannerMessage['role'], text: string, taskId?: string): PlannerMessage {
-  return { id: generateId(), role, text, createdAt: new Date().toISOString(), ...(taskId ? { taskId } : {}) };
+function message(role: PlannerMessage['role'], text: string, taskId?: string, taskIds?: string[]): PlannerMessage {
+  return {
+    id: generateId(),
+    role,
+    text,
+    createdAt: new Date().toISOString(),
+    ...(taskId ? { taskId } : {}),
+    ...(taskIds && taskIds.length > 0 ? { taskIds } : {}),
+  };
 }
 
 /** Commands whose wording also reads like a new task ("Finish the report", "Schedule dentist for Friday"). */
@@ -641,6 +652,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
         mode,
         text,
         now: new Date().toISOString(),
+        localNow: formatPlannedWhen(new Date()),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         history: mode === 'chat'
           ? stateRef.current.messages.slice(-maxHistorySent).map(({ role, text: body }) => ({ role, text: body }))
@@ -652,6 +664,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
           priority: task.priority,
           scheduledDate: task.scheduledDate,
           dueDate: task.dueDate,
+          when: formatTaskWhen(task),
           estimatedMinutes: task.estimatedTime,
           tags: task.tags,
           subtasks: task.subtasks.slice(0, maxSubtasksSent).map((item) => item.title),
@@ -661,7 +674,8 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       const drafts = withoutExisting(result.drafts.map(toPlannerDraft).filter((draft): draft is PlannerDraft => draft !== null));
       const edits = mode === 'chat' ? result.edits : [];
       if (result.reply && (drafts.length > 0 || result.question || edits.length === 0)) {
-        say(message('planner', result.reply));
+        const listed = (result.tasks ?? []).filter((id) => tasksRef.current.some((task) => task.id === id));
+        say(message('planner', result.reply, undefined, listed));
       } else if (!result.reply && drafts.length === 0 && edits.length === 0 && !result.question) {
         say(message('planner', PLANNER_UI_TEXT.replies.nothingFound));
       }
@@ -723,7 +737,8 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       if (handled) return;
     }
     if (intent.kind === 'question') {
-      say(message('planner', plannerSummary(tasksRef.current, new Date())));
+      const now = new Date();
+      say(message('planner', plannerSummary(tasksRef.current, now), undefined, plannerTodayTaskIds(tasksRef.current, now)));
       return;
     }
     if (intent.kind === 'scheduleInbox') {

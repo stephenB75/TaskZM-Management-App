@@ -19,6 +19,7 @@ import { estimateTaskHours } from './daily-hours-utils';
 import { COLOR_POP_NEUTRAL } from './color-theme';
 import { tagShade } from './tag-shades';
 import { DEFAULT_CREATED_BY, DEFAULT_TASK_PRIORITY, DEFAULT_TASK_STATUS } from './task-constants';
+import { getTaskNotificationTargetDate, getTaskNotificationTargetRaw, isDateOnlyNotificationTarget } from './notification-task-filters';
 import { generateId, getClockHourCycle, getWeekStart } from './utils';
 import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from './navigation-constants';
 import { parsePlannerWhen, stripPlannerWhen } from './planner-commands';
@@ -388,6 +389,32 @@ export function formatPlannedWhen(date: Date): string {
 
 function isOpen(task: Task): boolean {
   return task.status !== 'done';
+}
+
+/** A task's scheduled (or due) time in the user's local time; time only when it falls on `now`'s day, if given. */
+export function formatTaskWhen(task: Task, now?: Date): string | null {
+  const raw = getTaskNotificationTargetRaw(task);
+  const date = getTaskNotificationTargetDate(task);
+  if (!raw || !date) return null;
+  const sameDay = now ? date.toDateString() === now.toDateString() : false;
+  if (isDateOnlyNotificationTarget(raw, date)) {
+    return sameDay ? null : date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  if (!sameDay) return formatPlannedWhen(date);
+  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hourCycle: getClockHourCycle() });
+}
+
+/** Open tasks scheduled today, earliest first. */
+export function plannerTodayTaskIds(tasks: Task[], now: Date): string[] {
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = endOfDay(dayStart);
+  return tasks
+    .filter((task) => isOpen(task) && task.scheduledDate)
+    .map((task) => ({ id: task.id, at: new Date(task.scheduledDate as string) }))
+    .filter(({ at }) => !Number.isNaN(at.getTime()) && at >= dayStart && at <= dayEnd)
+    .sort((a, b) => a.at.getTime() - b.at.getTime())
+    .map(({ id }) => id);
 }
 
 export function plannerSummary(tasks: Task[], now: Date): string {

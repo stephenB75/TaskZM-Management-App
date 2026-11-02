@@ -483,6 +483,7 @@ const PLANNER_AI_CONFIG = {
   maxHistory: 8,
   maxHistoryChars: 600,
   maxDrafts: 20,
+  maxListedTasks: 20,
   maxSubtasks: 8,
   maxTitleChars: 120,
   maxNotesChars: 600,
@@ -495,7 +496,8 @@ const PLANNER_AI_CONFIG = {
 
 const PLANNER_AI_SYSTEM_PROMPT = `You are the planning assistant inside TaskZM, a task and calendar app.
 Read the user's message in context and decide what they actually want. Reply ONLY with JSON:
-{"reply": string, "question": string|null, "drafts": Draft[], "edits": Edit[]}
+{"reply": string, "question": string|null, "drafts": Draft[], "edits": Edit[], "tasks": string[]}
+"tasks" = ids of existing tasks your reply is about, in the order they should be shown (for example earliest first for "what's on today?"). Use [] when the reply isn't about specific existing tasks.
 Draft = {"title": string, "notes": string|null, "priority": "low"|"medium"|"high"|"urgent", "category": "work"|"personal"|"projects"|null, "estimatedMinutes": number, "when": {"date": ISO 8601 string in the user's local time, "hasTime": boolean}|null, "subtasks": string[]}
 Edit = {"taskId": string, "action": "move"|"rename"|"priority"|"duration"|"done"|"unschedule"|"subtasks"|"tags"|"notes"|"pomodoro"|"find", "value": string|number|string[]|null}
 Edit values: move = ISO date or natural phrase like "friday 3pm"; rename = new title; priority = low|medium|high|urgent; duration = minutes; subtasks = list of subtask titles; tags = list of tag names; notes = text to add to the description; done, unschedule, pomodoro, find = null.
@@ -507,7 +509,10 @@ Rules:
 - For a project or multi-step goal with unclear scope, deadline or deliverables, ask ONE specific clarifying question in "question" and return no drafts for it yet. When the history already contains your question and the user's answer, create the project as one draft with concrete subtasks.
 - For brain dumps (mode "brainDump"), read everything as raw notes: extract every real action item, merge duplicates, attach relevant facts from the notes to the matching task's notes, group related steps under one task as subtasks, and skip anything already in "tasks".
 - estimatedMinutes is your best realistic estimate (5 to 480).
-- "reply" is one or two friendly sentences describing what you did or need. Never claim you scheduled anything; the app schedules accepted drafts itself.`;
+- "reply" is one or two friendly sentences describing what you did or need. Never claim you scheduled anything; the app schedules accepted drafts itself.
+- Times: each task's "when" and "localNow" are already in the user's local time. Use them as written; never convert scheduledDate or dueDate yourself.
+- Formatting: when the answer is a set of existing tasks (what's on today, what's overdue, what matches a search), list them in "tasks" and keep "reply" to one short intro sentence such as "You have 3 tasks today, starting at 9:00 AM." Do not repeat each task's title and time in "reply"; the app shows them as a list.
+- For conversational or advice answers, write plain sentences with no markdown, bullets or headings. Separate distinct points with a blank line.`;
 
 function clampText(value: unknown, max: number): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
@@ -545,11 +550,14 @@ function sanitizePlannerAIResult(raw: Record<string, unknown>, taskIds: Set<stri
         : clampText(item.value, cfg.maxNotesChars) || null;
     return [{ taskId: item.taskId, action: item.action, value }];
   });
+  const listed = (Array.isArray(raw.tasks) ? raw.tasks : [])
+    .filter((id: unknown): id is string => typeof id === 'string' && taskIds.has(id));
   return {
     reply: clampText(raw.reply, cfg.maxReplyChars),
     question: clampText(raw.question, cfg.maxReplyChars) || null,
     drafts,
     edits,
+    tasks: [...new Set(listed)].slice(0, cfg.maxListedTasks),
   };
 }
 
@@ -584,6 +592,7 @@ app.post("/taskzm-database-function/ai/planner", async (c) => {
     priority: clampText(task?.priority, cfg.maxTitleChars),
     scheduledDate: clampText(task?.scheduledDate, cfg.maxTitleChars) || null,
     dueDate: clampText(task?.dueDate, cfg.maxTitleChars) || null,
+    when: clampText(task?.when, cfg.maxTitleChars) || null,
     estimatedMinutes: Number(task?.estimatedMinutes) || null,
     tags: Array.isArray(task?.tags) ? task.tags.slice(0, cfg.maxSubtasks).map((tag: unknown) => clampText(tag, cfg.maxTitleChars)) : [],
     subtasks: Array.isArray(task?.subtasks) ? task.subtasks.slice(0, cfg.maxSubtasks).map((step: unknown) => clampText(step, cfg.maxTitleChars)) : [],
@@ -596,6 +605,7 @@ app.post("/taskzm-database-function/ai/planner", async (c) => {
   const context = {
     mode,
     now: clampText(body?.now, cfg.maxTitleChars) || new Date().toISOString(),
+    localNow: clampText(body?.localNow, cfg.maxTitleChars) || null,
     timeZone: clampText(body?.timeZone, cfg.maxTitleChars) || 'UTC',
     tasks,
   };

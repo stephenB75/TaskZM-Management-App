@@ -21,7 +21,7 @@ import {
   type PlannerRescheduleRange,
 } from '../../lib/navigation-constants';
 import { PLANNER_LAYOUT } from '../../lib/layout-constants';
-import { formatDraftWhen, plannerCategoryColor } from '../../lib/planner-chat';
+import { formatDraftWhen, formatTaskWhen, plannerCategoryColor } from '../../lib/planner-chat';
 import { triggerSelectionHaptic } from '../../lib/native-haptics';
 import { PlannerPriorityPill } from './PlannerPriorityPill';
 
@@ -81,6 +81,36 @@ function useDictation(onText: (text: string) => void) {
   useEffect(() => () => recognitionRef.current?.stop(), []);
 
   return { supported: Recognition !== null, listening, start, stop };
+}
+
+function PlannerReplyTasks({ taskIds, tasks, onOpen }: { taskIds: string[]; tasks: Task[]; onOpen: (task: Task) => void }) {
+  const now = new Date();
+  const listed = taskIds.flatMap((id) => tasks.filter((task) => task.id === id));
+  if (listed.length === 0) return null;
+  return (
+    <ul className="planner-reply-tasks">
+      {listed.map((task) => {
+        const when = formatTaskWhen(task, now);
+        const meta = [when, task.estimatedTime ? TEXT.estimate(task.estimatedTime) : null].filter(Boolean).join(' · ');
+        return (
+          <li key={task.id}>
+            <button
+              type="button"
+              data-done={task.status === 'done' ? 'true' : undefined}
+              onClick={() => {
+                void triggerSelectionHaptic();
+                onOpen(task);
+              }}
+            >
+              <span className="planner-reply-task-title">{task.title}</span>
+              {meta ? <span className="planner-reply-task-meta">{meta}</span> : null}
+              <PlannerPriorityPill priority={task.priority} />
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 export function PlannerChat({ className }: { className?: string }) {
@@ -239,7 +269,10 @@ export function PlannerChat({ className }: { className?: string }) {
                   <Icon name="ai" size={PLANNER_LAYOUT.iconXsPx} />
                   {TEXT.plannerName}
                 </span>
-                <p className="m-0">{item.text}</p>
+                {item.text.split(/\n\s*\n/).map((paragraph, index) => (
+                  <p key={index} className="m-0 whitespace-pre-line">{paragraph.trim()}</p>
+                ))}
+                {item.taskIds ? <PlannerReplyTasks taskIds={item.taskIds} tasks={tasks} onOpen={editor.show} /> : null}
                 {item.taskId && tasks.some((task) => task.id === item.taskId) ? (
                   <button
                     type="button"
