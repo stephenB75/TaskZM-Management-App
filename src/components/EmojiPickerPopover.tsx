@@ -47,9 +47,14 @@ export function EmojiPickerPopover({
           </button>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-[18rem] max-w-[calc(100vw-1rem)] rounded-2xl p-1.5" align="end" sideOffset={6}>
+      <PopoverContent
+        className="flex w-[min(20rem,calc(100vw-1.5rem))] max-h-[min(22rem,var(--radix-popover-content-available-height))] flex-col rounded-2xl p-2"
+        align="end"
+        sideOffset={6}
+        collisionPadding={12}
+      >
         <div
-          className="mb-1.5 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="mb-2 flex flex-shrink-0 flex-wrap gap-1"
           role="tablist"
           aria-label="Emoji sections"
         >
@@ -69,12 +74,12 @@ export function EmojiPickerPopover({
             </button>
           ))}
         </div>
-        <div className="grid max-h-56 grid-cols-8 gap-0.5 overflow-y-auto" role="tabpanel" aria-label={section.label}>
+        <div className="grid min-h-0 flex-1 grid-cols-8 gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain" role="tabpanel" aria-label={section.label}>
           {section.emojis.map((emoji) => (
             <button
               key={emoji}
               type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-lg hover:bg-muted focus:bg-muted focus:outline-none"
+              className="flex aspect-square w-full min-w-0 items-center justify-center rounded-full text-lg hover:bg-muted focus:bg-muted focus:outline-none"
               onClick={() => handleSelect(emoji)}
               aria-label={`Insert ${emoji}`}
             >

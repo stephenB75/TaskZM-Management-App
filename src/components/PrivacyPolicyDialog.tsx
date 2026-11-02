@@ -102,11 +102,16 @@ export function PrivacyPolicyDialog({
                 5. AI Features
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Our auto scheduling features analyze your task
-                patterns locally to provide personalized
-                recommendations. Task data used for Task analysis
-                is processed securely and is not shared with
-                external AI service providers.
+                Our auto scheduling and planner features analyze
+                your tasks on your device by default, and that
+                data is not shared with external AI service
+                providers. If you turn on the optional Enhanced AI
+                planner in Settings, the planner messages and brain
+                dumps you submit, together with the titles, dates,
+                priorities, tags and subtasks of your open tasks,
+                are sent through our servers to OpenAI to interpret
+                your request. OpenAI does not use this data to train
+                its models. You can turn this off at any time.
               </p>
             </section>
 

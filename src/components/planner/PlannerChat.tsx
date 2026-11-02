@@ -8,6 +8,7 @@ import {
 } from '../ui/dropdown-menu';
 import { usePlannerChat } from '../../contexts/PlannerChatContext';
 import { useTasks } from '../../contexts/TaskContext';
+import { useAI } from '../../contexts/AIContext';
 import { useSheetItem } from '../../hooks/useSheetItem';
 import { getDateString } from '../../lib/utils';
 import { TaskDialog } from '../TaskDialog';
@@ -95,6 +96,7 @@ export function PlannerChat({ className }: { className?: string }) {
     clear,
   } = usePlannerChat();
   const { tasks } = useTasks();
+  const { settings: aiSettings } = useAI();
   const editor = useSheetItem<Task>();
   const [input, setInput] = useState('');
   const [context, setContext] = useState('');
@@ -178,7 +180,7 @@ export function PlannerChat({ className }: { className?: string }) {
             <div className="flex flex-col gap-3">
               <div className="planner-reply">
                 <span className="planner-name">
-                  <Icon name="sparkles" size={PLANNER_LAYOUT.iconXsPx} />
+                  <Icon name="ai" size={PLANNER_LAYOUT.iconXsPx} />
                   {TEXT.plannerName}
                 </span>
                 <p className="m-0 font-semibold">{TEXT.emptyTitle}</p>
@@ -202,7 +204,7 @@ export function PlannerChat({ className }: { className?: string }) {
             ) : (
               <div key={item.id} className="planner-reply">
                 <span className="planner-name">
-                  <Icon name="sparkles" size={PLANNER_LAYOUT.iconXsPx} />
+                  <Icon name="ai" size={PLANNER_LAYOUT.iconXsPx} />
                   {TEXT.plannerName}
                 </span>
                 <p className="m-0">{item.text}</p>
@@ -272,7 +274,7 @@ export function PlannerChat({ className }: { className?: string }) {
           {busy ? (
             <div className="planner-reply" aria-live="polite">
               <span className="planner-name">
-                <Icon name="sparkles" size={PLANNER_LAYOUT.iconXsPx} />
+                <Icon name="ai" size={PLANNER_LAYOUT.iconXsPx} />
                 {TEXT.plannerName}
               </span>
               <span className="planner-typing" aria-label={TEXT.thinking}>
@@ -306,7 +308,7 @@ export function PlannerChat({ className }: { className?: string }) {
             aria-label={TEXT.addContext}
           />
           <button type="button" className="planner-pill mb-2" onClick={submitContext} disabled={!context.trim() || busy}>
-            <Icon name="sparkles" size={PLANNER_LAYOUT.iconXsPx} />
+            <Icon name="ai" size={PLANNER_LAYOUT.iconXsPx} />
             {TEXT.analyzeContext}
           </button>
         </details>
@@ -342,7 +344,7 @@ export function PlannerChat({ className }: { className?: string }) {
             <Icon name="paper-plane-tilt" size={PLANNER_LAYOUT.iconPx} weight="fill" />
           </button>
         </div>
-        <div className="planner-footer">{TEXT.footer}</div>
+        <div className="planner-footer">{aiSettings.enhancedPlannerEnabled ? TEXT.footerEnhanced : TEXT.footer}</div>
       </form>
       {editor.item ? (
         <TaskDialog open={editor.open} task={editor.item} onClose={editor.close} initialDate={getDateString(new Date())} />

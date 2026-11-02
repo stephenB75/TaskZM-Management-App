@@ -107,7 +107,7 @@ export function BottomNav({
     {
       id: "ai",
       label: NAVIGATION_UI_TEXT.aiPlan,
-      iconName: "magic-wand",
+      iconName: "ai",
       onClick: () => {
         if (tourActive) return;
         triggerHaptic();

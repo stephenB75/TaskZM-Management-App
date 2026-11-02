@@ -8,30 +8,39 @@ import { useTeam } from './TeamContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAIScheduler, type ScheduleResult } from '../hooks/useAIScheduler';
 import { hasReachedLimit, incrementAIUsage } from '../lib/ai-scheduler-usage';
-import { PLANNER_CHAT_CONFIG } from '../lib/ai-config';
+import { PLANNER_CHAT_CONFIG, PLANNER_ENHANCED_CONFIG, PLANNER_PROJECT_CONFIG } from '../lib/ai-config';
 import { PLANNER_UI_TEXT, type PlannerRescheduleRange } from '../lib/navigation-constants';
 import {
   detectPlannerIntent,
   draftToTask,
   endOfDay,
+  estimateDraftMinutes,
   formatPlannedWhen,
+  isProjectDraft,
   parseBrainDump,
+  parseChatDrafts,
   parsePlannerDrafts,
   plannerScheduleWindow,
   plannerSummary,
+  projectKind,
   startOfPlannerWeek,
+  stripAssistantRequest,
+  type PlannerCategory,
   type PlannerDraft,
 } from '../lib/planner-chat';
 import {
   findTaskByReference,
   findTeamMember,
   normalizeTag,
+  parseDurationMinutes,
   parsePlannerCommand,
   parsePlannerWhen,
+  splitList,
   type PlannerCommand,
 } from '../lib/planner-commands';
 import { getCategoryFromTags } from '../lib/ai-config';
-import { suggestSubtasks } from '../lib/planner-analysis';
+import { cleanSteps, estimateWithSubtasks, suggestSubtasks, taskTitleKey } from '../lib/planner-analysis';
+import { requestEnhancedPlanner, type EnhancedPlannerDraft, type EnhancedPlannerEdit } from '../lib/api';
 import {
   MILLISECONDS_PER_MINUTE,
   POMODORO_WORK_DURATION,
@@ -39,8 +48,9 @@ import {
   SECONDS_PER_MINUTE,
 } from '../lib/business-constants';
 import { generateId } from '../lib/utils';
+import { DEFAULT_TASK_PRIORITY } from '../lib/task-constants';
 import { logger } from '../lib/logger';
-import type { Subtask, Task } from '../types';
+import type { Subtask, Task, TaskPriority } from '../types';
 
 export interface PlannerMessage {
   id: string;
@@ -68,9 +78,16 @@ interface PlannerChatValue {
 
 const PlannerChatContext = createContext<PlannerChatValue | null>(null);
 
+/** A question the planner asked; the next reply answers it unless it reads like a new command. */
+type PlannerPending =
+  | { kind: 'projectScope'; draft: PlannerDraft; suggested: string[]; askDeadline: boolean }
+  | { kind: 'projectDeadline'; draft: PlannerDraft }
+  | { kind: 'taskSteps'; taskId: string };
+
 interface StoredChat {
   messages: PlannerMessage[];
   drafts: PlannerDraft[];
+  pending?: PlannerPending | null;
 }
 
 function readStoredChat(key: string): StoredChat {
@@ -81,9 +98,96 @@ function readStoredChat(key: string): StoredChat {
     return {
       messages: Array.isArray(parsed.messages) ? parsed.messages : [],
       drafts: Array.isArray(parsed.drafts) ? parsed.drafts : [],
+      pending: parsed.pending ?? null,
     };
   } catch {
     return { messages: [], drafts: [] };
+  }
+}
+
+const PRIORITIES: readonly TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
+const CATEGORIES: readonly PlannerCategory[] = ['work', 'personal', 'projects'];
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function isOpenTask(task: Task): boolean {
+  return task.status !== 'done';
+}
+
+/** A draft from the enhanced planner, checked and filled in with on-device defaults. */
+function toPlannerDraft(raw: EnhancedPlannerDraft): PlannerDraft | null {
+  const title = raw.title?.trim();
+  if (!title || title.length < PLANNER_CHAT_CONFIG.minTitleLength) return null;
+  const when = raw.when && !Number.isNaN(Date.parse(raw.when.date))
+    ? { date: new Date(raw.when.date).toISOString(), hasTime: Boolean(raw.when.hasTime) }
+    : undefined;
+  const subtasks = cleanSteps(raw.subtasks ?? [], title);
+  const draft: PlannerDraft = {
+    id: generateId(),
+    title,
+    priority: PRIORITIES.includes(raw.priority as TaskPriority) ? (raw.priority as TaskPriority) : DEFAULT_TASK_PRIORITY,
+    category: CATEGORIES.includes(raw.category as PlannerCategory) ? (raw.category as PlannerCategory) : null,
+    estimatedMinutes: 0,
+    ...(raw.notes ? { notes: raw.notes } : {}),
+    ...(when ? { when } : {}),
+    ...(subtasks.length > 0 ? { subtasks } : {}),
+  };
+  const { minEstimateMinutes, maxEstimateMinutes } = PLANNER_ENHANCED_CONFIG;
+  const estimate = raw.estimatedMinutes ?? 0;
+  draft.estimatedMinutes =
+    estimate >= minEstimateMinutes && estimate <= maxEstimateMinutes ? estimate : estimateDraftMinutes(draft);
+  return draft;
+}
+
+function listValue(value: EnhancedPlannerEdit['value']): string[] {
+  if (Array.isArray(value)) return value.filter((item) => typeof item === 'string' && item.trim().length > 0);
+  return typeof value === 'string' ? splitList(value) : [];
+}
+
+/** An edit from the enhanced planner as a planner command on a known task. */
+function editToCommand(edit: EnhancedPlannerEdit, task: Task): PlannerCommand | null {
+  const ref = task.title;
+  const text = typeof edit.value === 'string' ? edit.value.trim() : '';
+  switch (edit.action) {
+    case 'move': {
+      if (!text) return null;
+      if (/^\d{4}-\d{2}-\d{2}/.test(text) && !Number.isNaN(Date.parse(text))) {
+        return { kind: 'move', ref, when: text, at: { date: new Date(text), hasTime: /T\d{2}:\d{2}/.test(text) } };
+      }
+      return { kind: 'move', ref, when: text };
+    }
+    case 'rename':
+      return text ? { kind: 'rename', ref, title: text } : null;
+    case 'priority':
+      return PRIORITIES.includes(text.toLowerCase() as TaskPriority)
+        ? { kind: 'priority', ref, priority: text.toLowerCase() as TaskPriority }
+        : null;
+    case 'duration': {
+      const minutes = typeof edit.value === 'number' ? Math.round(edit.value) : parseDurationMinutes(text);
+      return minutes && minutes > 0 ? { kind: 'duration', ref, minutes } : null;
+    }
+    case 'subtasks': {
+      const items = listValue(edit.value);
+      return items.length > 0 ? { kind: 'subtasks', ref, items } : null;
+    }
+    case 'tags': {
+      const tags = listValue(edit.value);
+      return tags.length > 0 ? { kind: 'tags', ref, tags } : null;
+    }
+    case 'notes':
+      return text ? { kind: 'notes', ref, text } : null;
+    case 'done':
+      return { kind: 'done', ref, reported: true };
+    case 'unschedule':
+      return { kind: 'unschedule', ref };
+    case 'pomodoro':
+      return { kind: 'pomodoro', ref };
+    case 'find':
+      return { kind: 'find', ref };
+    default:
+      return null;
   }
 }
 
@@ -128,6 +232,8 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
   const [busy, setBusy] = useState(false);
   const tasksRef = useRef(tasks);
   tasksRef.current = tasks;
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   useEffect(() => {
     setState(readStoredChat(storageKey));
@@ -140,6 +246,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
         JSON.stringify({
           messages: state.messages.slice(-PLANNER_CHAT_CONFIG.maxStoredMessages),
           drafts: state.drafts,
+          pending: state.pending ?? null,
         }),
       );
     } catch {
@@ -152,6 +259,10 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       ...prev,
       messages: [...prev.messages, ...next].slice(-PLANNER_CHAT_CONFIG.maxStoredMessages),
     }));
+  }, []);
+
+  const setPending = useCallback((pending: PlannerPending | null) => {
+    setState((prev) => ({ ...prev, pending }));
   }, []);
 
   const canAutoSchedule = useCallback((): boolean => {
@@ -260,7 +371,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
 
 
   /** Run a command on an existing task. Returns false when the message should be handled another way. */
-  const runCommand = useCallback(async (command: PlannerCommand, fallsBackToRange: boolean): Promise<boolean> => {
+  const runCommand = useCallback(async (command: PlannerCommand, fallsBackToRange: boolean, resolved?: Task): Promise<boolean> => {
     const { replies } = PLANNER_UI_TEXT;
     const reply = (text: string, taskId?: string) => say(message('planner', text, taskId));
 
@@ -271,8 +382,11 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       return true;
     }
 
-    const lookup = findTaskByReference(tasksRef.current, command.ref, lastTaskIdRef.current);
-    if (lookup.kind === 'missing' && (fallsBackToRange || DRAFT_FALLBACK_KINDS.has(command.kind))) return false;
+    const lookup = resolved
+      ? ({ kind: 'found', task: resolved } as const)
+      : findTaskByReference(tasksRef.current, command.ref, lastTaskIdRef.current);
+    const reportsFinished = command.kind === 'done' && command.reported;
+    if (lookup.kind === 'missing' && !reportsFinished && (fallsBackToRange || DRAFT_FALLBACK_KINDS.has(command.kind))) return false;
     if (lookup.kind !== 'found') {
       if (lookup.kind === 'ambiguous') reply(replies.ambiguous(lookup.options.map((task) => task.title)));
       else reply(lastTaskIdRef.current || command.ref ? replies.taskNotFound(command.ref) : replies.noTaskInFocus);
@@ -363,7 +477,11 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       }
       case 'breakDown': {
         const suggestion = suggestSubtasks(`${task.title} ${task.description ?? ''}`);
-        if (!suggestion) return reply(replies.noBreakdown(task.title), task.id), true;
+        if (!suggestion) {
+          setPending({ kind: 'taskSteps', taskId: task.id });
+          reply(replies.taskSteps(task.title), task.id);
+          return true;
+        }
         const existing = new Set(task.subtasks.map((item) => item.title.trim().toLowerCase()));
         const steps = suggestion.steps.filter((step) => !existing.has(step.toLowerCase()));
         if (steps.length === 0) return reply(replies.alreadyBrokenDown(task.title), task.id), true;
@@ -378,6 +496,15 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
         for (const tag of tags.filter((item) => !availableTags.includes(item))) await addAvailableTag(tag);
         await updateTask(task.id, { tags: [...new Set([...task.tags, ...tags])] });
         reply(replies.tagsAdded(tags, task.title), task.id);
+        return true;
+      }
+      case 'notes': {
+        const existing = task.description ?? '';
+        const isHtml = /<\/?[a-z][^>]*>/i.test(existing);
+        const addition = isHtml ? `<p>${escapeHtml(command.text)}</p>` : command.text;
+        const description = !existing ? addition : isHtml ? `${existing}${addition}` : `${existing}\n${addition}`;
+        await updateTask(task.id, { description });
+        reply(replies.notesAdded(task.title), task.id);
         return true;
       }
       case 'unschedule':
@@ -403,7 +530,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
         return true;
       case 'move': {
         const now = new Date();
-        const when = parsePlannerWhen(command.when, now);
+        const when = command.at ?? parsePlannerWhen(command.when, now);
         if (!when) return false;
         let start = when.date;
         if (!when.hasTime) {
@@ -428,7 +555,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       default:
         return false;
     }
-  }, [addAvailableTag, addTask, availableTags, canAssignTask, canAutoSchedule, canCreateTask, canEditTask, countUsage, generateSchedulePlan, hasFeature, say, startTimer, teamMembers, updateTask, user?.id, user?.name]);
+  }, [addAvailableTag, addTask, availableTags, canAssignTask, canAutoSchedule, canCreateTask, canEditTask, countUsage, generateSchedulePlan, hasFeature, say, setPending, startTimer, teamMembers, updateTask, user?.id, user?.name]);
 
   const addDrafts = useCallback((drafts: PlannerDraft[]) => {
     const { replies } = PLANNER_UI_TEXT;
@@ -440,12 +567,153 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
     say(message('planner', replies.drafted(drafts.length, drafts.filter((draft) => draft.subtasks?.length).length)));
   }, [say]);
 
+  /** Drafts that repeat an open task are dropped; the planner points to the existing task instead. */
+  const withoutExisting = useCallback((drafts: PlannerDraft[]): PlannerDraft[] => {
+    const open = new Map(tasksRef.current.filter(isOpenTask).map((task) => [taskTitleKey(task.title), task]));
+    return drafts.filter((draft) => {
+      const existing = open.get(taskTitleKey(draft.title));
+      if (!existing) return true;
+      say(message('planner', PLANNER_UI_TEXT.replies.alreadyOnList(existing.title), existing.id));
+      return false;
+    });
+  }, [say]);
+
+  const finishProject = useCallback((draft: PlannerDraft) => {
+    setState((prev) => ({ ...prev, pending: null, drafts: [...prev.drafts, draft] }));
+    say(message('planner', PLANNER_UI_TEXT.replies.projectReady(draft.title, draft.subtasks?.length ?? 0)));
+  }, [say]);
+
+  /** Apply the user's answer to the planner's last question. */
+  const answerPending = useCallback(async (pending: PlannerPending, text: string) => {
+    const { replies } = PLANNER_UI_TEXT;
+    const project = PLANNER_PROJECT_CONFIG;
+
+    if (pending.kind === 'projectDeadline') {
+      if (project.skipPattern.test(text)) return finishProject(pending.draft);
+      const when = parsePlannerWhen(text, new Date());
+      if (!when) return say(message('planner', replies.projectDeadlineAgain));
+      return finishProject({ ...pending.draft, when: { date: when.date.toISOString(), hasTime: false } });
+    }
+
+    const wantsSuggestion = project.suggestPattern.test(text);
+    if (pending.kind === 'taskSteps') {
+      const task = tasksRef.current.find((item) => item.id === pending.taskId);
+      setPending(null);
+      if (!task) return say(message('planner', replies.taskNotFound(text)));
+      const steps = cleanSteps(wantsSuggestion ? [...project.generalSteps] : splitList(text), task.title)
+        .filter((step) => !task.subtasks.some((item) => taskTitleKey(item.title) === taskTitleKey(step)));
+      if (steps.length === 0) return say(message('planner', replies.alreadyBrokenDown(task.title), task.id));
+      if (!canEditTask) return say(message('planner', replies.noPermission));
+      const now = new Date().toISOString();
+      const added = steps.map((title): Subtask => ({ id: generateId(), title, completed: false, createdAt: now }));
+      await updateTask(task.id, { subtasks: [...task.subtasks, ...added] });
+      lastTaskIdRef.current = task.id;
+      return say(message('planner', replies.subtasksAdded(added.length, task.title), task.id));
+    }
+
+    const listed = wantsSuggestion
+      ? pending.suggested.length > 0 ? pending.suggested : [...project.generalSteps]
+      : splitList(text);
+    const steps = cleanSteps(listed, pending.draft.title);
+    if (steps.length === 0) return say(message('planner', replies.projectScopeAgain));
+    const draft: PlannerDraft = {
+      ...pending.draft,
+      subtasks: steps,
+      estimatedMinutes: estimateWithSubtasks(pending.draft.estimatedMinutes, steps.length, project.minutesPerStep),
+    };
+    if (pending.askDeadline) {
+      setPending({ kind: 'projectDeadline', draft });
+      return say(message('planner', replies.projectDeadline(draft.title)));
+    }
+    return finishProject(draft);
+  }, [canEditTask, finishProject, say, setPending, updateTask]);
+
+  /**
+   * Opt-in: let the server's AI read the message with the open tasks and recent chat for context.
+   * Returns false when it is unavailable so the on-device planner can answer instead.
+   */
+  const runEnhanced = useCallback(async (mode: 'chat' | 'brainDump', text: string): Promise<boolean> => {
+    const { maxTasksSent, maxHistorySent, maxSubtasksSent } = PLANNER_ENHANCED_CONFIG;
+    setBusy(true);
+    try {
+      const openTasks = tasksRef.current.filter(isOpenTask).slice(0, maxTasksSent);
+      const result = await requestEnhancedPlanner({
+        mode,
+        text,
+        now: new Date().toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        history: mode === 'chat'
+          ? stateRef.current.messages.slice(-maxHistorySent).map(({ role, text: body }) => ({ role, text: body }))
+          : [],
+        tasks: openTasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          status: task.status,
+          priority: task.priority,
+          scheduledDate: task.scheduledDate,
+          dueDate: task.dueDate,
+          estimatedMinutes: task.estimatedTime,
+          tags: task.tags,
+          subtasks: task.subtasks.slice(0, maxSubtasksSent).map((item) => item.title),
+        })),
+      });
+
+      const drafts = withoutExisting(result.drafts.map(toPlannerDraft).filter((draft): draft is PlannerDraft => draft !== null));
+      const edits = mode === 'chat' ? result.edits : [];
+      if (result.reply && (drafts.length > 0 || result.question || edits.length === 0)) {
+        say(message('planner', result.reply));
+      } else if (!result.reply && drafts.length === 0 && edits.length === 0 && !result.question) {
+        say(message('planner', PLANNER_UI_TEXT.replies.nothingFound));
+      }
+      for (const edit of edits) {
+        const task = tasksRef.current.find((item) => item.id === edit.taskId);
+        const command = task ? editToCommand(edit, task) : null;
+        if (task && command) await runCommand(command, false, task);
+      }
+      if (drafts.length > 0) setState((prev) => ({ ...prev, drafts: [...prev.drafts, ...drafts] }));
+      if (result.question) say(message('planner', result.question));
+      return true;
+    } catch (error) {
+      logger.warn('Enhanced planner unavailable, using on-device planner', error);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, [runCommand, say, withoutExisting]);
+
   const send = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
     say(message('user', trimmed));
-    const intent = detectPlannerIntent(trimmed);
-    const command = intent.kind === 'scheduleInbox' ? null : parsePlannerCommand(trimmed);
+    const { replies } = PLANNER_UI_TEXT;
+
+    const pending = stateRef.current.pending ?? null;
+    if (pending && PLANNER_PROJECT_CONFIG.cancelPattern.test(trimmed)) {
+      setPending(null);
+      say(message('planner', replies.projectCancelled));
+      return;
+    }
+
+    const request = stripAssistantRequest(trimmed);
+    const intent = detectPlannerIntent(request);
+    const command = intent.kind === 'scheduleInbox' ? null : parsePlannerCommand(request);
+    if (pending) {
+      if (!command && intent.kind === 'drafts') {
+        await run(() => answerPending(pending, trimmed));
+        return;
+      }
+      setPending(null);
+    }
+
+    if (aiSettings.enhancedPlannerEnabled && intent.kind !== 'scheduleInbox' && intent.kind !== 'reschedule') {
+      if (await runEnhanced('chat', trimmed)) return;
+      say(message('planner', replies.enhancedUnavailable));
+    }
+
+    if (!command && PLANNER_CHAT_CONFIG.conversationalPattern.test(trimmed)) {
+      say(message('planner', replies.smallTalk));
+      return;
+    }
     if (command) {
       // Stays true if the command throws, so a failed edit isn't also turned into drafts.
       let handled = true;
@@ -466,8 +734,27 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
       await reschedule(intent.range);
       return;
     }
-    addDrafts(command?.kind === 'breakDown' ? parsePlannerDrafts(command.ref) : intent.drafts);
-  }, [addDrafts, reschedule, run, runCommand, say, scheduleInbox]);
+
+    const parsed = command?.kind === 'breakDown'
+      ? { drafts: parsePlannerDrafts(command.ref), skipped: 0 }
+      : parseChatDrafts(request);
+    const parsedCount = parsed.drafts.length;
+    const drafts = withoutExisting(parsed.drafts);
+    if (drafts.length === 1 && isProjectDraft(request, drafts[0])) {
+      const [draft] = drafts;
+      const { subtasks, ...withoutSteps } = draft;
+      setPending({ kind: 'projectScope', draft: withoutSteps, suggested: subtasks ?? [], askDeadline: !draft.when });
+      say(message('planner', replies.projectScope(draft.title, projectKind(draft.title))));
+      return;
+    }
+    if (drafts.length === 0) {
+      if (parsedCount > 0) return;
+      say(message('planner', parsed.skipped > 0 ? replies.contextOnly : replies.nothingFound));
+      return;
+    }
+    addDrafts(drafts);
+    if (parsed.skipped > 0) say(message('planner', replies.skippedContext(parsed.skipped)));
+  }, [addDrafts, aiSettings.enhancedPlannerEnabled, answerPending, reschedule, run, runCommand, runEnhanced, say, scheduleInbox, setPending, withoutExisting]);
 
   // Brain dumps only ever create drafts; they never run commands or edit existing tasks.
   const analyzeContext = useCallback((text: string) => {
@@ -475,16 +762,30 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
     if (!trimmed) return;
     const { brainDumpPreviewChars } = PLANNER_CHAT_CONFIG;
     say(message('user', trimmed.length > brainDumpPreviewChars ? `${trimmed.slice(0, brainDumpPreviewChars).trimEnd()}…` : trimmed));
-    const openTitles = tasksRef.current.filter((task) => task.status !== 'done').map((task) => task.title);
-    const { drafts, skippedNotes, skippedDuplicates } = parseBrainDump(trimmed, openTitles);
-    if (drafts.length > 0) setState((prev) => ({ ...prev, drafts: [...prev.drafts, ...drafts] }));
-    say(message('planner', PLANNER_UI_TEXT.replies.brainDump({
-      tasks: drafts.length,
-      withSteps: drafts.filter((draft) => draft.subtasks?.length).length,
-      notes: skippedNotes,
-      duplicates: skippedDuplicates,
-    })));
-  }, [say]);
+
+    const analyzeOnDevice = () => {
+      const openTitles = tasksRef.current.filter(isOpenTask).map((task) => task.title);
+      const { drafts, skippedNotes, skippedDuplicates, details } = parseBrainDump(trimmed, openTitles);
+      if (drafts.length > 0) setState((prev) => ({ ...prev, drafts: [...prev.drafts, ...drafts] }));
+      say(message('planner', PLANNER_UI_TEXT.replies.brainDump({
+        tasks: drafts.length,
+        withSteps: drafts.filter((draft) => draft.subtasks?.length).length,
+        notes: skippedNotes,
+        duplicates: skippedDuplicates,
+        details,
+      })));
+    };
+
+    if (!aiSettings.enhancedPlannerEnabled) {
+      analyzeOnDevice();
+      return;
+    }
+    void runEnhanced('brainDump', trimmed).then((handled) => {
+      if (handled) return;
+      say(message('planner', PLANNER_UI_TEXT.replies.enhancedUnavailable));
+      analyzeOnDevice();
+    });
+  }, [aiSettings.enhancedPlannerEnabled, runEnhanced, say]);
 
   const acceptDraft = useCallback((id: string) => run(async () => {
     const draft = state.drafts.find((item) => item.id === id);
@@ -501,7 +802,7 @@ export function PlannerChatProvider({ children }: { children: React.ReactNode })
     setState((prev) => ({ ...prev, drafts: [] }));
   }, []);
 
-  const clear = useCallback(() => setState({ messages: [], drafts: [] }), []);
+  const clear = useCallback(() => setState({ messages: [], drafts: [], pending: null }), []);
 
   const value = useMemo<PlannerChatValue>(() => ({
     messages: state.messages,

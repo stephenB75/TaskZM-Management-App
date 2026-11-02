@@ -282,7 +282,7 @@ export const FREE_TIER_FEATURES: FeatureDefinition[] = [
   { icon: "calendar", text: "7-day Kanban & month view", included: true },
   { icon: "tag", text: "Custom tags & organization", included: true },
   {
-    icon: "sparkles",
+    icon: "ai",
     text: "Auto Scheduler",
     detail: "3 suggestions per week",
     included: true,
@@ -293,7 +293,7 @@ export const FREE_TIER_FEATURES: FeatureDefinition[] = [
 
 export const PRO_MONTHLY_FEATURES: FeatureDefinition[] = [
   { icon: "check", text: "Everything in Free, plus", included: true, isHeader: true },
-  { icon: "sparkles", text: "Unlimited Auto Scheduler", included: true, highlight: true },
+  { icon: "ai", text: "Unlimited Auto Scheduler", included: true, highlight: true },
   { icon: "calendar", text: "Calendar sync", detail: "1 calendar connection", included: true, highlight: true },
   { icon: "zap", text: "Task hours & time tracking", included: true, highlight: true },
   { icon: "rotate-ccw", text: "Auto task rollover", included: true, highlight: true },

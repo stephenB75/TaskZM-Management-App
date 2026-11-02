@@ -33,7 +33,7 @@ import {
 } from "./ui/select";
 import { TaskDialog } from "./TaskDialog";
 import { UI_INBOX_GRADIENTS, TOGGLE_SWITCH_COLORS } from "../lib/ui-colors";
-import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth } from "../lib/layout-constants";
+import { TOGGLE_SWITCH_DIMENSIONS, TOGGLE_SWITCH_SPACING, TOGGLE_SWITCH_TEXT_SIZES, HEADER_MOBILE_SAFE_AREA_SPACER, NAV_BAR_BOTTOM_PADDING_MOBILE, VIEWPORT_BREAKPOINTS, HEADER_GAP_SMALL, HEADER_GAP_XSMALL, MOBILE_PADDING_BOTTOM, ICON_SIZE_SM, COMPONENT_DIMENSIONS, HEADER_DESCRIPTION_SIZE, HEADER_DESCRIPTION_MARGIN_TOP, PANEL_PADDING_TOP_MOBILE, PANEL_EMPTY_STATE_PADDING_Y_LARGE, EMPTY_STATE_MARGIN_BOTTOM_SMALL, EMPTY_STATE_MARGIN_BOTTOM_LARGE, EMPTY_STATE_PADDING_X, ICON_SIZE_XS, ICON_SIZE_MD, ICON_SIZE_LG, ICON_SIZE_XL, ICON_SIZE_3XL, getCheckboxSizePxForWidth, getCheckboxVisualSizePxForWidth } from "../lib/layout-constants";
 import { toast } from "../lib/toast-wrapper";
 import { logger } from "../lib/logger";
 import { cn, prepareTaskForDialog, getDateString, parseCalendarEventTime } from "../lib/utils";
@@ -84,9 +84,11 @@ interface InboxHeaderPillProps {
   disabled?: boolean;
   busy?: boolean;
   className?: string;
+  /** Stretch to fill its grid cell and always show the label. */
+  fullWidth?: boolean;
 }
 
-function InboxHeaderPill({ icon, label, onClick, disabled, busy, className }: InboxHeaderPillProps) {
+function InboxHeaderPill({ icon, label, onClick, disabled, busy, className, fullWidth }: InboxHeaderPillProps) {
   return (
     <button
       type="button"
@@ -98,12 +100,15 @@ function InboxHeaderPill({ icon, label, onClick, disabled, busy, className }: In
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex h-8 min-w-8 flex-shrink-0 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-2 sm:h-9 sm:min-w-9 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5",
+        "inline-flex items-center justify-center rounded-full border border-border bg-card font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50",
+        fullWidth
+          ? "h-10 w-full min-w-0 gap-1 px-1.5 text-xs"
+          : "h-8 min-w-8 flex-shrink-0 gap-1.5 px-2 text-sm sm:h-9 sm:min-w-9 sm:px-3.5",
         className,
       )}
     >
-      <Icon name={icon} size={ICON_SIZE_MD} className={cn("flex-shrink-0", busy && "animate-pulse")} />
-      <span className="hidden whitespace-nowrap sm:inline">{label}</span>
+      <Icon name={icon} size={fullWidth ? ICON_SIZE_SM : ICON_SIZE_MD} className={cn("flex-shrink-0", busy && "animate-pulse")} />
+      <span className={cn("whitespace-nowrap", fullWidth ? "truncate" : "hidden sm:inline")}>{label}</span>
     </button>
   );
 }
@@ -806,14 +811,20 @@ export function InboxView() {
         >
           <div className="flex flex-col gap-4">
             {selectedTaskIds.size > 0 && (
-              <div className="flex flex-wrap items-center" style={{ gap: HEADER_GAP_SMALL }} data-testid="inbox-selection-actions">
+              <div
+                className={shouldUseMobileLayout ? "grid grid-cols-3" : "flex flex-wrap items-center"}
+                style={{ gap: HEADER_GAP_SMALL }}
+                data-testid="inbox-selection-actions"
+              >
                   <InboxHeaderPill
+                    fullWidth={shouldUseMobileLayout}
                     icon="check-square"
                     label={selectedTaskIds.size === sortedTasks.length ? "Deselect all" : "Select all"}
                     onClick={handleSelectAll}
                   />
                   {showScheduled ? (
                     <InboxHeaderPill
+                    fullWidth={shouldUseMobileLayout}
                       icon="calendar"
                       label={`Unschedule (${selectedTaskIds.size})`}
                       disabled={!permissions.canEditTask}
@@ -821,7 +832,8 @@ export function InboxView() {
                     />
                   ) : (
                     <InboxHeaderPill
-                      icon="sparkle"
+                    fullWidth={shouldUseMobileLayout}
+                      icon="ai"
                       label={`Schedule (${selectedTaskIds.size})`}
                       disabled={isScheduling || !permissions.canEditTask}
                       busy={isScheduling}
@@ -829,6 +841,7 @@ export function InboxView() {
                     />
                   )}
                   <InboxHeaderPill
+                    fullWidth={shouldUseMobileLayout}
                     icon="trash-2"
                     label={`Delete (${selectedTaskIds.size})`}
                     onClick={() => {

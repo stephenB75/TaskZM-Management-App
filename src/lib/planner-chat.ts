@@ -3,7 +3,7 @@
  * Scheduling itself always goes through useAIScheduler (daily limits, category hours, calendar events).
  */
 
-import { PLANNER_ANALYSIS_CONFIG, PLANNER_CHAT_CONFIG } from './ai-config';
+import { PLANNER_ANALYSIS_CONFIG, PLANNER_CHAT_CONFIG, PLANNER_PROJECT_CONFIG, type PlannerProjectKind } from './ai-config';
 import {
   DAYS_IN_WEEK,
   DEFAULT_PROJECT_ID,
@@ -25,7 +25,9 @@ import { parsePlannerWhen, stripPlannerWhen } from './planner-commands';
 import {
   cleanSteps,
   estimateWithSubtasks,
+  extractEmbeddedAction,
   improveTitle,
+  isFactSentence,
   isNoteSentence,
   normalizeShorthand,
   splitTitleDetail,
@@ -135,6 +137,13 @@ export function draftToTask(draft: PlannerDraft, createdBy?: string | null): Tas
   };
 }
 
+/** On-device estimate for a draft, used when another source gives no usable estimate. */
+export function estimateDraftMinutes(draft: PlannerDraft): number {
+  const base = Math.round(estimateTaskHours({ ...draftToTask(draft), estimatedTime: null }) * MINUTES_PER_HOUR);
+  const steps = draft.subtasks?.length ?? 0;
+  return steps > 0 ? estimateWithSubtasks(base, steps) : base;
+}
+
 /** One draft from one task's text: tidied title, estimate, and subtasks when the task is bigger. */
 function buildDraft(rawSource: string, explicitSteps?: string[]): PlannerDraft | null {
   const source = normalizeShorthand(rawSource);
@@ -172,20 +181,61 @@ function linePieces(text: string): string[] {
   for (const rawLine of text.split(PLANNER_CHAT_CONFIG.draftSeparator)) {
     const line = rawLine.replace(PLANNER_CHAT_CONFIG.listMarker, '').trim();
     if (!line) continue;
-    pieces.push(...(splitInlineSteps(line) ? [line] : splitClauses(line)));
+    pieces.push(...(splitInlineSteps(line) ? [line] : splitClauses(line).map(extractEmbeddedAction)));
   }
   return pieces;
 }
 
-export function parsePlannerDrafts(text: string): PlannerDraft[] {
+/** Context rather than something to do: a feeling, a remark, or a statement of fact. */
+function isContextSentence(piece: string): boolean {
+  return isNoteSentence(piece) || isFactSentence(piece);
+}
+
+export interface ChatDraftsResult {
+  drafts: PlannerDraft[];
+  /** Pieces left out because they read like context, not tasks. */
+  skipped: number;
+}
+
+/** Drafts from a chat message; remarks and facts are left out instead of becoming tasks. */
+export function parseChatDrafts(text: string): ChatDraftsResult {
   const drafts: PlannerDraft[] = [];
+  let skipped = 0;
   for (const piece of linePieces(text)) {
+    if (isContextSentence(piece)) {
+      skipped += 1;
+      continue;
+    }
     const draft = buildDraft(piece);
     if (!draft) continue;
     drafts.push(draft);
-    if (drafts.length >= PLANNER_CHAT_CONFIG.maxDraftsPerMessage) return drafts;
+    if (drafts.length >= PLANNER_CHAT_CONFIG.maxDraftsPerMessage) break;
   }
-  return drafts;
+  return { drafts, skipped };
+}
+
+export function parsePlannerDrafts(text: string): PlannerDraft[] {
+  return parseChatDrafts(text).drafts;
+}
+
+/** "Can you help me plan the launch?" → "plan the launch", so the request itself is parsed. */
+export function stripAssistantRequest(text: string): string {
+  const trimmed = text.trim();
+  if (!PLANNER_CHAT_CONFIG.assistantLeadPattern.test(trimmed)) return trimmed;
+  const stripped = trimmed.replace(PLANNER_CHAT_CONFIG.assistantRequestPattern, '').replace(/\?+\s*$/, '').trim();
+  return stripped.length >= PLANNER_CHAT_CONFIG.minTitleLength ? stripped : trimmed;
+}
+
+export function projectKind(text: string): PlannerProjectKind {
+  const kinds = Object.entries(PLANNER_PROJECT_CONFIG.kindPatterns) as Array<[PlannerProjectKind, RegExp]>;
+  return kinds.find(([, pattern]) => pattern.test(text))?.[0] ?? 'general';
+}
+
+/** A single drafted goal that is big enough to ask about scope and deadline before drafting it. */
+export function isProjectDraft(source: string, draft: PlannerDraft): boolean {
+  if (splitInlineSteps(source)) return false;
+  if (draft.title.trim().split(/\s+/).length < PLANNER_PROJECT_CONFIG.minTitleWords) return false;
+  return PLANNER_PROJECT_CONFIG.projectPattern.test(draft.title);
 }
 
 export interface BrainDumpResult {
@@ -194,6 +244,15 @@ export interface BrainDumpResult {
   skippedNotes: number;
   /** Tasks left out because they repeat one in the dump or one already open. */
   skippedDuplicates: number;
+  /** Facts from the notes kept as details on the task they follow. */
+  details: number;
+}
+
+/** A fact kept in a task's description, written as a sentence. */
+function asDetailSentence(text: string): string {
+  const trimmed = text.trim().replace(/\s+/g, ' ');
+  const sentence = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
 }
 
 interface BrainDumpBlock {
@@ -240,16 +299,20 @@ export function parseBrainDump(text: string, existingTitles: string[] = []): Bra
   const drafts: PlannerDraft[] = [];
   let skippedNotes = 0;
   let skippedDuplicates = 0;
+  let details = 0;
+  let lastDraft: PlannerDraft | null = null;
 
   const push = (draft: PlannerDraft | null) => {
     if (!draft) return;
     const key = taskTitleKey(draft.title);
     if (seen.has(key)) {
       skippedDuplicates += 1;
+      lastDraft = null;
       return;
     }
     seen.add(key);
     drafts.push(draft);
+    lastDraft = draft;
   };
 
   for (const block of groupBrainDump(text)) {
@@ -264,10 +327,20 @@ export function parseBrainDump(text: string, existingTitles: string[] = []): Bra
         skippedNotes += 1;
         continue;
       }
+      if (isFactSentence(piece)) {
+        const target = lastDraft as PlannerDraft | null;
+        if (target) {
+          target.notes = [target.notes, asDetailSentence(piece)].filter(Boolean).join(' ');
+          details += 1;
+        } else {
+          skippedNotes += 1;
+        }
+        continue;
+      }
       push(buildDraft(piece));
     }
   }
-  return { drafts, skippedNotes, skippedDuplicates };
+  return { drafts, skippedNotes, skippedDuplicates, details };
 }
 
 export function endOfDay(date: Date): Date {

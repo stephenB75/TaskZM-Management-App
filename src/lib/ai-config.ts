@@ -1181,6 +1181,12 @@ export const PLANNER_CHAT_CONFIG = {
   storageKey: 'taskzm_planner_chat',
   /** A message is answered (not turned into drafts) when it reads like a question. */
   questionPattern: /\?\s*$|^(what|when|how|which|who|why|do i|am i|is there|show|list|summari[sz]e)\b/i,
+  /** Small talk that is answered, never drafted ("thanks", "ok", "hi"). */
+  conversationalPattern: /^(?:hi|hello|hey|yo|thanks?(?:\s+you)?|thank\s+you|thx|ty|ok(?:ay)?|k|cool|great|nice|perfect|awesome|got\s+it|sounds\s+good|yes|yeah|yep|no|nope|sure|good\s+(?:morning|afternoon|evening|night)|help|what\s+can\s+you\s+do)\b[\s!.?]*$/i,
+  /** Requests addressed to the planner; stripped so the rest reads as the actual task or command. */
+  assistantRequestPattern: /^(?:(?:can|could|would|will)\s+you\s+(?:please\s+)?|please\s+)?(?:help\s+me\s+(?:to\s+|with\s+)?|remind\s+me\s+to\s+|add\s+(?:a\s+)?(?:new\s+)?task\s+(?:to\s+|for\s+)?|create\s+(?:a\s+)?(?:new\s+)?task\s+(?:to\s+|for\s+)?|i\s+need\s+help\s+(?:with\s+)?)/i,
+  /** A request only counts as one when this prefix was present; then a trailing "?" is dropped. */
+  assistantLeadPattern: /^(?:(?:can|could|would|will)\s+you|please|help\s+me|remind\s+me|i\s+need\s+help)\b/i,
   scheduleInboxPattern: /^(plan|schedule|place)\b.*\b(inbox|unscheduled|open tasks|my tasks)\b/i,
   reschedulePatterns: {
     day: /^(re-?schedule|optimi[sz]e|rebalance|replan)\b.*\b(today|day)\b/i,
@@ -1232,7 +1238,7 @@ export const PLANNER_CHAT_CONFIG = {
     /** Groups: task, new title. */
     rename: /^rename\s+(.+?)\s+to\s+(.+)$/i,
     /** Groups: task, duration. */
-    durationSet: /^set\s+(.+?)\s+to\s+(\d+(?:\.\d+)?\s*(?:h|hr|hrs|hour|hours|m|min|mins|minute|minutes))$/i,
+    durationSet: /^(?:set|change)\s+(.+?)\s+to\s+(\d+(?:\.\d+)?\s*(?:h|hr|hrs|hour|hours|m|min|mins|minute|minutes))$/i,
     /** Groups: task, duration. */
     durationTakes: /^(.+?)\s+(?:takes|will take|should take|needs)\s+(\d+(?:\.\d+)?\s*(?:h|hr|hrs|hour|hours|m|min|mins|minute|minutes))$/i,
     /** Groups: task, priority. */
@@ -1240,8 +1246,16 @@ export const PLANNER_CHAT_CONFIG = {
     done: /^(?:mark|set)\s+(.+?)\s+(?:as\s+)?(?:done|complete|completed|finished)$/i,
     complete: /^(?:complete|finish|check off)\s+(.+)$/i,
     /** Groups: task, when. */
-    move: /^(?:move|reschedule|schedule|push|put)\s+(.+?)\s+(?:to|for|on)\s+(.+)$/i,
-    find: /^(?:find|locate|where(?:'s| is)|look up|open)\s+(.+)$/i,
+    move: /^(?:move|reschedule|schedule|push|put|bump|postpone|delay|shift|change)\s+(.+?)\s+(?:to|for|on|until|till)\s+(.+)$/i,
+    /** Groups: task, when ("the dentist got moved to friday"). */
+    movedTo: /^(.+?)\s+(?:is|got|has\s+been|was)\s+(?:moved|pushed|rescheduled|postponed|bumped)\s+(?:to|until|till)\s+(.+)$/i,
+    /** Group: task ("I finished the report", "done with taxes"). */
+    doneNatural: /^(?:i\s+(?:just\s+|already\s+)?)?(?:finished|completed|did(?!\s+you\b)|wrapped\s+up|done\s+with)\s+(.+)$/i,
+    /** Group: task ("the report is done"). */
+    doneTrailing: /^(.+?)\s+is\s+(?:all\s+)?(?:done|finished|complete|completed)$/i,
+    /** Groups: task, note text. */
+    notes: /^(?:add\s+(?:a\s+)?note|note)\s+(?:to|on|for)\s+(.+?)\s*:\s*([\s\S]+)$/i,
+    find: /^(?:find|locate|where(?:'s| is)|look up|open|edit|update|show\s+me)\s+(.+)$/i,
   },
   /** References to the task the planner touched last. */
   pronounPattern: /^(?:it|this|that|this one|that one|this task|that task|the task|the last one|last one)$/i,
@@ -1297,6 +1311,10 @@ export const PLANNER_ANALYSIS_CONFIG = {
   fillerSuffix: /\s+(?:at\s+some\s+point|sometime(?:\s+soon)?|soon(?:ish)?|asap|if\s+(?:i|we)\s+can|if\s+possible|when\s+(?:i|we)\s+(?:get|have)\s+(?:a\s+chance|time)|or\s+something|lol)$/i,
   /** Brain-dump sentences that read like a note or feeling rather than a task ("I'm so behind", "Not sure why…"). */
   noteSentencePattern: /^(?:i'?m|i\s+am|i\s+feel|feeling|it'?s|it\s+is|this\s+(?:is|week|month|weekend)|that\s+(?:is|was)|there'?s|there\s+(?:is|are)|ugh|honestly|lol|wow|so\s+(?:much|many|tired|busy|stressed)|not\s+sure|idk|fyi|note\b|notes?\s*:)/i,
+  /** An action buried after context ("I'm so behind but I need to finish the report"); the task starts at the match. */
+  embeddedActionPattern: /\b(?:(?:i|we)\s+)?(?:need|have|must|should|gotta|got)\s+to\s+|\b(?:wants|asked|needs|told)\s+me\s+to\s+|\b(?:remember|don'?t\s+forget|make\s+sure)\s+to\s+/i,
+  /** Statements of fact or someone else's view ("The client wants blue", "Budget is $5k"): context for a task, not a task. */
+  factSentencePattern: /^(?:the|a|an|our|my|his|her|their|this|that|these|those|he|she|they|it|we|you|[A-Z][a-z]+)\s+(?:\w+\s+){0,3}?(?:is|are|was|were|wants?|needs?|said|says|thinks?|likes?|prefers?|asked|has|had|will|would|can|could|seems?|looks?|went|came|got)\b/,
   /** Words that make a sentence a task even when it starts like a note ("I'm going to call Sam", "Is it time to renew…? need to check"). */
   actionCuePattern: /\b(?:need|needs|have|has|must|should|got|gotta|want|going)\s+to\b|\b(?:remember|don'?t\s+forget|make\s+sure)\b|\b(?:todo|to-do)\b/i,
   /** Shorthand expanded before parsing, so dates and wording read cleanly ("tmrw" → "tomorrow", "w/" → "with"). */
@@ -1396,4 +1414,37 @@ export const PLANNER_ANALYSIS_CONFIG = {
       steps: ['Define the goal and audience', 'Prepare the content and assets', 'Schedule the announcements', 'Launch it', 'Review the results'],
     },
   ] as ReadonlyArray<{ pattern: RegExp; minutesPerStep: number; steps: readonly string[] }>,
+} as const;
+
+/** Planner project interview: bigger goals get a couple of questions before they become a task with subtasks. */
+export const PLANNER_PROJECT_CONFIG = {
+  /** A single drafted task reads like a project when it matches this and has no steps of its own. */
+  projectPattern: /\b(?:project|launch|campaign|website|web\s*site|landing\s+page|app|redesign|rebrand|migrat\w*|renovat\w*|wedding|party|event|conference|offsite|retreat|trip|vacation|course|business|onboarding|hiring|product|roadmap|move\s+(?:house|home|apartment))\b/i,
+  /** Projects need at least this many title words ("Launch" alone stays a plain task). */
+  minTitleWords: 2,
+  /** Question wording per kind of project; the first matching kind wins, otherwise "general". */
+  kindPatterns: {
+    launch: /\b(?:launch|campaign|marketing|announce)\b/i,
+    build: /\b(?:website|web\s*site|landing\s+page|app|feature|product|dashboard|portal|redesign|rebrand|prototype)\b/i,
+    event: /\b(?:wedding|party|event|conference|offsite|retreat|trip|vacation|meetup|birthday|reunion)\b/i,
+    move: /\b(?:move|moving|renovat\w*|declutter)\b/i,
+  },
+  /** Fallback steps when the user asks for suggestions and no template fits. */
+  generalSteps: ['Define the goal and what done looks like', 'List the deliverables', 'Break the work into milestones', 'Work through each milestone', 'Review and wrap up'],
+  minutesPerStep: 45,
+  cancelPattern: /^(?:cancel|never\s*mind|nevermind|stop|forget\s+it)\b/i,
+  suggestPattern: /^(?:suggest|you\s+(?:decide|pick|choose)|not\s+sure|idk|dunno|i\s+don'?t\s+know|up\s+to\s+you|whatever|any)\b/i,
+  skipPattern: /^(?:skip|no\s+deadline|none|no|nope|n\/a|not\s+yet|whenever|no\s+rush)\b/i,
+} as const;
+
+export type PlannerProjectKind = keyof typeof PLANNER_PROJECT_CONFIG.kindPatterns | 'general';
+
+/** Opt-in enhanced planner: how much context goes with each request (the server applies its own caps too). */
+export const PLANNER_ENHANCED_CONFIG = {
+  maxTasksSent: 150,
+  maxHistorySent: 8,
+  maxSubtasksSent: 8,
+  /** Estimates outside this range from the AI are replaced by the on-device estimate. */
+  minEstimateMinutes: 5,
+  maxEstimateMinutes: 480,
 } as const;

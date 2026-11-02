@@ -1545,6 +1545,65 @@ export async function getAIConfigStatus(): Promise<{ configured: boolean }> {
   }
 }
 
+export interface EnhancedPlannerRequest {
+  mode: 'chat' | 'brainDump';
+  text: string;
+  now: string;
+  timeZone: string;
+  history: Array<{ role: 'user' | 'planner'; text: string }>;
+  tasks: Array<{
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    scheduledDate: string | null;
+    dueDate: string | null;
+    estimatedMinutes: number | null;
+    tags: string[];
+    subtasks: string[];
+  }>;
+}
+
+export interface EnhancedPlannerDraft {
+  title: string;
+  notes: string | null;
+  priority: string;
+  category: string | null;
+  estimatedMinutes: number | null;
+  when: { date: string; hasTime: boolean } | null;
+  subtasks: string[];
+}
+
+export interface EnhancedPlannerEdit {
+  taskId: string;
+  action: string;
+  value: string | number | string[] | null;
+}
+
+export interface EnhancedPlannerResponse {
+  reply: string;
+  question: string | null;
+  drafts: EnhancedPlannerDraft[];
+  edits: EnhancedPlannerEdit[];
+}
+
+/** Opt-in planner understanding through the server's AI provider. Throws when unavailable so callers can fall back. */
+export async function requestEnhancedPlanner(payload: EnhancedPlannerRequest): Promise<EnhancedPlannerResponse> {
+  const response = await fetchWithAuthRetry(`${API_BASE}/ai/planner`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(`Enhanced planner failed: ${response.status}`);
+  const data = (await response.json()) as Partial<EnhancedPlannerResponse>;
+  return {
+    reply: typeof data.reply === 'string' ? data.reply : '',
+    question: typeof data.question === 'string' ? data.question : null,
+    drafts: Array.isArray(data.drafts) ? data.drafts : [],
+    edits: Array.isArray(data.edits) ? data.edits : [],
+  };
+}
+
 /**
  * Save new terminology to the shared database
  * This allows all users to benefit from learned terms

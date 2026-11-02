@@ -173,7 +173,7 @@ export const PLANNER_UI_TEXT = {
     } as Record<PlannerRescheduleRange, { label: string; hint: string }>,
     emptyTitle: 'What do you need to get done?',
     emptyHint:
-      'Type or dictate tasks, one per line. The planner estimates each one and finds a time. You can also ask it to move, rename, tag, assign, duplicate, break down, or focus on a task.',
+      'Tell the planner what you need to do in your own words. It finds existing tasks to update ("push the report to Friday", "I finished the invoice"), asks a couple of questions before planning a bigger project, and drafts new tasks for you to accept.',
     suggestions: [
       'What is on today?',
       'Schedule my inbox',
@@ -188,13 +188,14 @@ export const PLANNER_UI_TEXT = {
     skipAll: 'Skip all',
     composerPlaceholder: 'Add tasks or ask the planner…',
     addContext: 'Brain dump',
-    contextHint: 'Paste anything messy. Each idea becomes a clean task, and a "Header:" or indented list becomes one task with subtasks. Nothing is saved until you accept it.',
+    contextHint: 'Paste raw notes, an email, or everything on your mind. The planner pulls out the real action items, keeps facts as details on the task they belong to, groups steps into subtasks, and skips anything already on your list. Nothing is saved until you accept it.',
     contextPlaceholder: 'Notes, an email, or everything on your mind…',
     analyzeContext: 'Turn into tasks',
     send: 'Send',
     voiceStart: 'Dictate',
     voiceStop: 'Stop dictation',
-    footer: 'Rule-based auto scheduler',
+    footer: 'On-device planner',
+    footerEnhanced: 'Enhanced AI planner',
     thinking: 'Planning…',
     clear: 'Clear chat',
     dueOn: (day: string) => `Due ${day}`,
@@ -216,7 +217,34 @@ export const PLANNER_UI_TEXT = {
         .filter(Boolean)
         .join(' '),
     nothingFound: "I couldn't find any tasks in that. Try one task per line.",
-    brainDump: ({ tasks, withSteps, notes, duplicates }: { tasks: number; withSteps: number; notes: number; duplicates: number }) =>
+    smallTalk: 'I\'m here. Tell me what you need to get done, or ask me to change a task, like "move the report to Friday" or "I finished the invoice".',
+    contextOnly:
+      "That reads like context rather than a task, so I didn't add anything. Tell me what you want to do about it, or paste your notes into Brain dump and I'll pull out the tasks.",
+    skippedContext: (count: number) => `I left out ${plural(count, 'line')} that read like context, not tasks.`,
+    alreadyOnList: (title: string) => `"${title}" is already on your list, so I didn't add it again.`,
+    projectScope: (title: string, kind: 'build' | 'event' | 'launch' | 'move' | 'general') =>
+      `Let's plan "${title}". ${
+        kind === 'build'
+          ? 'What pages, features or parts does it need?'
+          : kind === 'event'
+            ? 'What needs sorting out: venue, guests, travel, food, anything else?'
+            : kind === 'launch'
+              ? 'What are you launching, and what has to be ready before it goes out?'
+              : kind === 'move'
+                ? 'Which rooms or areas are involved, and is anyone helping?'
+                : 'What are the main pieces of work or deliverables?'
+      } List them and I'll make each one a subtask, or say "suggest" and I'll use typical steps.`,
+    projectScopeAgain: 'List the steps separated by commas or new lines, say "suggest" for typical steps, or "cancel" to stop.',
+    projectDeadline: (title: string) => `When does "${title}" need to be done? Give me a date like "Nov 15" or "next Friday", or say "no deadline".`,
+    projectDeadlineAgain: 'I didn\'t catch a date. Try "Nov 15", "next Friday" or "in 10 days", or say "no deadline".',
+    projectReady: (title: string, steps: number) =>
+      `Here's "${title}" with ${plural(steps, 'subtask')}. Accept it below and I'll find it time before the deadline.`,
+    projectCancelled: "Okay, I've dropped that plan.",
+    taskSteps: (title: string) =>
+      `"${title}" doesn't match a plan I know. What are the steps? List them and I'll add them as subtasks, or say "suggest" for general project steps.`,
+    notesAdded: (title: string) => `Added that note to "${title}".`,
+    enhancedUnavailable: "Enhanced AI isn't reachable right now, so I used the on-device planner.",
+    brainDump: ({ tasks, withSteps, notes, duplicates, details = 0 }: { tasks: number; withSteps: number; notes: number; duplicates: number; details?: number }) =>
       [
         tasks === 0
           ? "I couldn't find tasks in that. Try listing actions, like \"Email Sam about the invoice\"."
@@ -226,6 +254,7 @@ export const PLANNER_UI_TEXT = {
           : withSteps === 1
             ? '1 bigger task is broken into subtasks.'
             : `${withSteps} bigger tasks are broken into subtasks.`,
+        details === 0 ? '' : `I kept ${plural(details, 'fact')} from your notes as ${details === 1 ? 'a detail' : 'details'} on the matching task.`,
         notes === 0 ? '' : `I left out ${plural(notes, 'line')} that read like notes, not tasks.`,
         duplicates === 0 ? '' : `${plural(duplicates, 'task')} ${duplicates === 1 ? 'was' : 'were'} already on your list, so I skipped ${duplicates === 1 ? 'it' : 'them'}.`,
         tasks === 0 ? '' : "Review the drafts below and accept the ones you want. I'll find each a time.",
@@ -287,5 +316,11 @@ export const PLANNER_UI_TEXT = {
         parts.inbox > 0 ? `${plural(parts.inbox, 'task')} in the Inbox still need a time.` : 'Your Inbox is clear.',
         `About ${parts.weekHours}h planned this week.`,
       ].filter(Boolean).join(' '),
+  },
+  settings: {
+    enhancedTitle: 'Enhanced AI planner',
+    enhancedDescription:
+      'Use OpenAI to understand planner messages and brain dumps. When on, what you type there, plus the titles, dates and subtasks of your open tasks, is sent to OpenAI to work out what you mean. Off by default.',
+    enhancedNotConfigured: 'Not available on this server yet.',
   },
 } as const;

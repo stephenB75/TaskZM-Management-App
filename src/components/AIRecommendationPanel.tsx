@@ -983,7 +983,7 @@ export function AIRecommendationPanel({
                 className="flex flex-col gap-3 rounded-2xl bg-primary/10 p-4"
               >
                 <div className="flex items-start gap-3">
-                  <Icon name="magic-wand" size={ICON_SIZE_LG} weight="duotone" className="shrink-0 text-primary" aria-hidden />
+                  <Icon name="ai" size={ICON_SIZE_LG} className="shrink-0 text-primary" aria-hidden />
                   <div className="min-w-0 flex-1">
                     <h3 className="m-0 text-base font-semibold">{AI_PANEL_UI_TEXT.schedule.title}</h3>
                     <p className="m-0 text-sm text-muted-foreground">
@@ -1044,7 +1044,7 @@ export function AIRecommendationPanel({
                       </Popover>
                     )}
                     <Button onClick={handleScheduleUnscheduledTasks} disabled={isScheduling} className="w-full">
-                      <Icon name="magic-wand" size={ICON_SIZE_MD} weight="duotone" className="mr-1" />
+                      <Icon name="ai" size={ICON_SIZE_MD} className="mr-1" />
                       {AI_PANEL_UI_TEXT.schedule.action(unscheduledCount)}
                     </Button>
                   </>

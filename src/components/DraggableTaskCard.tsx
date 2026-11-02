@@ -650,7 +650,7 @@ export const DraggableTaskCard = React.forwardRef<
       return (
         <div className="px-2 py-1.5 mb-1.5" style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE, marginLeft: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px`, marginRight: `${isMobile ? TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.mobile : TASK_CARD_EXPANDABLE.spacing.aiSuggestionsMargin.desktop}px` }}>
           <div className="flex items-center gap-1 mb-1">
-            <Icon name="sparkles" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={isDark ? domainColors.text : domainColors.text} weight="duotone" />
+            <Icon name="ai" size={isMobile ? TASK_CARD_ICON_SIZES.sparkles.mobile : TASK_CARD_ICON_SIZES.sparkles.desktop} className={domainColors.text} />
             <span className={cn("font-semibold", domainColors.text)} style={{ fontSize: TASK_CARD_AI_ACTION_PLAN_TEXT_SIZE }}>
               {TASK_CARD_TEXT.aiSuggestions}
             </span>

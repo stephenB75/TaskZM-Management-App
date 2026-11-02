@@ -24,6 +24,8 @@ import { getCalendarEventAccent } from '../lib/calendar-event-color';
 import { getTaskDialogPriorityAccent } from '../lib/task-dialog-constants';
 import { AGENDA_LIST_CARD, getAgendaCardBadgeStyles } from '../lib/agenda-list-card-constants';
 import { triggerSelectionHaptic } from '../lib/native-haptics';
+import { usePomodoro } from '../contexts/PomodoroContext';
+import { TaskCardInlinePomodoro } from './TaskCardInlinePomodoro';
 import type { Task } from '../types';
 
 export function taskTimeRange(task: Task): string {
@@ -53,6 +55,9 @@ export function PastelTaskCard({ task, detail, unfinished, onOpen, hideTime, ful
   const timeLabel = hideTime ? (detail || '') : (detail || taskTimeRange(task));
   const badgeLabel = task.priority && task.priority !== 'default' ? task.priority : '';
   const badge = getAgendaCardBadgeStyles(wash.bar);
+  const { getTimerState } = usePomodoro();
+  const timer = getTimerState(task.id);
+  const focusActive = task.status !== 'done' && (timer.isRunning || timer.isPaused);
 
   return (
     <div
@@ -113,6 +118,15 @@ export function PastelTaskCard({ task, detail, unfinished, onOpen, hideTime, ful
             </span>
           ) : null}
         </button>
+        {focusActive ? (
+          <TaskCardInlinePomodoro
+            timerId={task.id}
+            durationMinutes={task.estimatedTime}
+            variant="footer"
+            isMobile
+            className="planner-tl-focus"
+          />
+        ) : null}
         {children}
       </span>
     </div>

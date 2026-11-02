@@ -185,7 +185,7 @@ export const TASK_DIALOG_OPTIONS: Record<TaskDialogOptionId, { label: string; ti
   assign: { label: 'Assign', title: 'Assign to', iconName: 'users' },
   focus: { label: 'Pomodoro', title: 'Pomodoro timer', iconName: 'timer' },
   calendar: { label: 'Calendar', title: 'Calendar', iconName: 'calendar-plus' },
-  ai: { label: 'Assist', title: 'Task analysis', iconName: 'sparkles' },
+  ai: { label: 'Assist', title: 'Task analysis', iconName: 'ai' },
 };
 
 export const TASK_DIALOG_FOCUS_TEXT = {

@@ -459,6 +459,167 @@ app.post("/taskzm-database-function/ai/description-options", (c) => c.json({ err
 // POST /taskzm-database-function/ai/action-plan — DEPRECATED: action plans are generated locally
 app.post("/taskzm-database-function/ai/action-plan", (c) => c.json({ error: 'Deprecated: action plans are generated locally. This endpoint is no longer used.' }, 410));
 
+// ============================================================================
+// ENHANCED PLANNER (opt-in; the app's planner runs on device unless the user turns this on)
+// ============================================================================
+
+const PLANNER_AI_CONFIG = {
+  maxTokens: 1200,
+  temperature: 0.2,
+  maxInputChars: 8000,
+  maxTasks: 150,
+  maxHistory: 8,
+  maxHistoryChars: 600,
+  maxDrafts: 20,
+  maxSubtasks: 8,
+  maxTitleChars: 120,
+  maxNotesChars: 600,
+  maxReplyChars: 600,
+  dailyLimit: 60,
+  priorities: ['low', 'medium', 'high', 'urgent'],
+  categories: ['work', 'personal', 'projects'],
+  editActions: ['move', 'rename', 'priority', 'duration', 'done', 'unschedule', 'subtasks', 'tags', 'notes', 'pomodoro', 'find'],
+} as const;
+
+const PLANNER_AI_SYSTEM_PROMPT = `You are the planning assistant inside TaskZM, a task and calendar app.
+Read the user's message in context and decide what they actually want. Reply ONLY with JSON:
+{"reply": string, "question": string|null, "drafts": Draft[], "edits": Edit[]}
+Draft = {"title": string, "notes": string|null, "priority": "low"|"medium"|"high"|"urgent", "category": "work"|"personal"|"projects"|null, "estimatedMinutes": number, "when": {"date": ISO 8601 string in the user's local time, "hasTime": boolean}|null, "subtasks": string[]}
+Edit = {"taskId": string, "action": "move"|"rename"|"priority"|"duration"|"done"|"unschedule"|"subtasks"|"tags"|"notes"|"pomodoro"|"find", "value": string|number|string[]|null}
+Edit values: move = ISO date or natural phrase like "friday 3pm"; rename = new title; priority = low|medium|high|urgent; duration = minutes; subtasks = list of subtask titles; tags = list of tag names; notes = text to add to the description; done, unschedule, pomodoro, find = null.
+Rules:
+- Only create a draft for something the user needs to do. Greetings, thanks, feelings, opinions, background facts and questions are NOT tasks.
+- Never turn single words or list fragments into separate tasks when they describe one job ("buy milk, eggs and bread" is one task with subtasks or one task).
+- If the message refers to a task in "tasks", edit it with its exact taskId instead of creating a duplicate. Use the conversation history to resolve "it" or "that".
+- Use short, clear imperative titles (max 10 words). Put reasons and details in notes.
+- For a project or multi-step goal with unclear scope, deadline or deliverables, ask ONE specific clarifying question in "question" and return no drafts for it yet. When the history already contains your question and the user's answer, create the project as one draft with concrete subtasks.
+- For brain dumps (mode "brainDump"), read everything as raw notes: extract every real action item, merge duplicates, attach relevant facts from the notes to the matching task's notes, group related steps under one task as subtasks, and skip anything already in "tasks".
+- estimatedMinutes is your best realistic estimate (5 to 480).
+- "reply" is one or two friendly sentences describing what you did or need. Never claim you scheduled anything; the app schedules accepted drafts itself.`;
+
+function clampText(value: unknown, max: number): string {
+  return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
+function sanitizePlannerAIResult(raw: Record<string, unknown>, taskIds: Set<string>) {
+  const cfg = PLANNER_AI_CONFIG;
+  const drafts = (Array.isArray(raw.drafts) ? raw.drafts : []).slice(0, cfg.maxDrafts).flatMap((item: any) => {
+    const title = clampText(item?.title, cfg.maxTitleChars);
+    if (!title) return [];
+    const minutes = Number(item?.estimatedMinutes);
+    const when = item?.when && typeof item.when.date === 'string' && !Number.isNaN(Date.parse(item.when.date))
+      ? { date: item.when.date, hasTime: Boolean(item.when.hasTime) }
+      : null;
+    return [{
+      title,
+      notes: clampText(item?.notes, cfg.maxNotesChars) || null,
+      priority: (cfg.priorities as readonly string[]).includes(item?.priority) ? item.priority : 'medium',
+      category: (cfg.categories as readonly string[]).includes(item?.category) ? item.category : null,
+      estimatedMinutes: Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : null,
+      when,
+      subtasks: (Array.isArray(item?.subtasks) ? item.subtasks : [])
+        .map((step: unknown) => clampText(step, cfg.maxTitleChars))
+        .filter(Boolean)
+        .slice(0, cfg.maxSubtasks),
+    }];
+  });
+  const edits = (Array.isArray(raw.edits) ? raw.edits : []).flatMap((item: any) => {
+    if (typeof item?.taskId !== 'string' || !taskIds.has(item.taskId)) return [];
+    if (!(cfg.editActions as readonly string[]).includes(item?.action)) return [];
+    const value = Array.isArray(item.value)
+      ? item.value.map((entry: unknown) => clampText(entry, cfg.maxTitleChars)).filter(Boolean).slice(0, cfg.maxSubtasks)
+      : typeof item.value === 'number'
+        ? item.value
+        : clampText(item.value, cfg.maxNotesChars) || null;
+    return [{ taskId: item.taskId, action: item.action, value }];
+  });
+  return {
+    reply: clampText(raw.reply, cfg.maxReplyChars),
+    question: clampText(raw.question, cfg.maxReplyChars) || null,
+    drafts,
+    edits,
+  };
+}
+
+// POST /taskzm-database-function/ai/planner — understand a planner message or brain dump (authenticated, opt-in)
+app.post("/taskzm-database-function/ai/planner", async (c) => {
+  const { userId, error: authError } = await verifyUser(c.req.raw);
+  if (authError || !userId) return c.json({ error: 'Unauthorized' }, 401);
+
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey || !apiKey.trim()) return c.json({ error: 'Enhanced planner is not configured' }, 503);
+
+  const cfg = PLANNER_AI_CONFIG;
+  let body: any;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400);
+  }
+  const text = clampText(body?.text, cfg.maxInputChars);
+  if (!text) return c.json({ error: 'text is required' }, 400);
+  const mode = body?.mode === 'brainDump' ? 'brainDump' : 'chat';
+
+  const usageKey = `ai_planner_usage_${userId}_${new Date().toISOString().slice(0, 10)}`;
+  const used = Number(await kv.get(usageKey)) || 0;
+  if (used >= cfg.dailyLimit) return c.json({ error: 'Daily enhanced planner limit reached' }, 429);
+  await kv.set(usageKey, String(used + 1));
+
+  const tasks = (Array.isArray(body?.tasks) ? body.tasks : []).slice(0, cfg.maxTasks).map((task: any) => ({
+    id: clampText(task?.id, cfg.maxTitleChars),
+    title: clampText(task?.title, cfg.maxTitleChars),
+    status: clampText(task?.status, cfg.maxTitleChars),
+    priority: clampText(task?.priority, cfg.maxTitleChars),
+    scheduledDate: clampText(task?.scheduledDate, cfg.maxTitleChars) || null,
+    dueDate: clampText(task?.dueDate, cfg.maxTitleChars) || null,
+    estimatedMinutes: Number(task?.estimatedMinutes) || null,
+    tags: Array.isArray(task?.tags) ? task.tags.slice(0, cfg.maxSubtasks).map((tag: unknown) => clampText(tag, cfg.maxTitleChars)) : [],
+    subtasks: Array.isArray(task?.subtasks) ? task.subtasks.slice(0, cfg.maxSubtasks).map((step: unknown) => clampText(step, cfg.maxTitleChars)) : [],
+  })).filter((task: { id: string; title: string }) => task.id && task.title);
+  const history = (Array.isArray(body?.history) ? body.history : []).slice(-cfg.maxHistory).map((item: any) => ({
+    role: item?.role === 'user' ? 'user' : 'assistant',
+    content: clampText(item?.text, cfg.maxHistoryChars),
+  })).filter((item: { content: string }) => item.content);
+
+  const context = {
+    mode,
+    now: clampText(body?.now, cfg.maxTitleChars) || new Date().toISOString(),
+    timeZone: clampText(body?.timeZone, cfg.maxTitleChars) || 'UTC',
+    tasks,
+  };
+
+  try {
+    const response = await fetch(OPENAI_CHAT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: cfg.temperature,
+        max_tokens: cfg.maxTokens,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: PLANNER_AI_SYSTEM_PROMPT },
+          { role: 'system', content: `Context: ${JSON.stringify(context)}` },
+          ...history,
+          { role: 'user', content: text },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      console.error('Enhanced planner OpenAI error:', response.status, await response.text());
+      return c.json({ error: 'AI request failed' }, 502);
+    }
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content;
+    const parsed = typeof content === 'string' ? JSON.parse(content) : null;
+    if (!parsed || typeof parsed !== 'object') return c.json({ error: 'AI returned no result' }, 502);
+    return c.json(sanitizePlannerAIResult(parsed, new Set(tasks.map((task: { id: string }) => task.id))));
+  } catch (error) {
+    console.error('Enhanced planner error:', error);
+    return c.json({ error: 'AI request failed' }, 502);
+  }
+});
+
 // Verify admin user from access token
 const verifyAdmin = async (request: Request) => {
   const { userId, error } = await verifyUser(request);

@@ -29,6 +29,7 @@ export interface IconProps {
 const ICON_NAME_MAP: Record<string, keyof typeof PhosphorIcons> = {
   // Common icons
   'sparkles': 'Sparkle',
+  'ai': 'Cpu',
   'calendar': 'Calendar',
   'calendar-days': 'CalendarBlank',
   'calendar-blank': 'CalendarBlank',

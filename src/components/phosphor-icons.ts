@@ -6,6 +6,7 @@
 
 import {
   Activity,
+  Cpu,
   Archive,
   ArchiveBox,
   ArrowClockwise,
@@ -135,6 +136,7 @@ import {
 
 export const PhosphorIcons = {
   Activity,
+  Cpu,
   Archive,
   ArchiveBox,
   ArrowClockwise,

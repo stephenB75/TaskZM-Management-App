@@ -9,6 +9,8 @@ interface AISettings {
   priorityBasedScheduling: boolean;
   scheduleUnscheduledTasks: boolean;
   maxHoursPerDay: number; // Daily work hour limit (5, 8, or 10)
+  /** Opt-in: planner messages and brain dumps are understood by the server's AI provider. */
+  enhancedPlannerEnabled: boolean;
 }
 
 interface AIContextType {
@@ -26,6 +28,7 @@ const DEFAULT_AI_SETTINGS: AISettings = {
   priorityBasedScheduling: true,
   scheduleUnscheduledTasks: true,
   maxHoursPerDay: AI_DAILY_HOUR_OPTIONS.FIVE_HOURS, // Default to 5 hours
+  enhancedPlannerEnabled: false,
 };
 
 export function AIProvider({ children }: { children: ReactNode }) {

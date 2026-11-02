@@ -1787,7 +1787,7 @@ export function DashboardView({
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <div className={cn("p-2 rounded-lg", UI_INBOX_GRADIENTS.emptyState.className)}>
-                <Icon name="sparkles" size={ICON_SIZE_LG} className="text-primary" />
+                <Icon name="ai" size={ICON_SIZE_LG} className="text-primary" />
               </div>
               Scheduling Suggestions
             </SheetTitle>
@@ -2005,7 +2005,7 @@ export function DashboardView({
               disabled={selectedPlanTaskIds.size === 0}
               className="rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 disabled:opacity-50"
             >
-              <Icon name="sparkles" size={ICON_SIZE_MD} className="mr-2" />
+              <Icon name="ai" size={ICON_SIZE_MD} className="mr-2" />
               Accept {selectedPlanTaskIds.size > 0 ? `${selectedPlanTaskIds.size} selected` : "selected"}
             </Button>
           </DialogFooter>

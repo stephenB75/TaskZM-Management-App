@@ -22,8 +22,9 @@ export type PlannerCommand =
   | { kind: 'rename'; ref: string; title: string }
   | { kind: 'duration'; ref: string; minutes: number }
   | { kind: 'priority'; ref: string; priority: TaskPriority }
-  | { kind: 'done'; ref: string }
-  | { kind: 'move'; ref: string; when: string }
+  | { kind: 'done'; ref: string; /** "I finished X": reports a finished task, so it is never drafted as a new one. */ reported?: boolean }
+  | { kind: 'move'; ref: string; when: string; /** Exact time from the enhanced planner; skips phrase parsing. */ at?: PlannerWhen }
+  | { kind: 'notes'; ref: string; text: string }
   | { kind: 'find'; ref: string };
 
 function clean(value: string): string {
@@ -97,10 +98,19 @@ export function parsePlannerCommand(text: string): PlannerCommand | null {
   if ((match = input.match(PATTERNS.priority))) {
     return { kind: 'priority', ref: clean(match[1]), priority: match[2].toLowerCase() as TaskPriority };
   }
+  if ((match = input.match(PATTERNS.notes))) {
+    const note = match[2].trim();
+    if (note) return { kind: 'notes', ref: clean(match[1]), text: note };
+  }
   if ((match = input.match(PATTERNS.done)) || (match = input.match(PATTERNS.complete))) {
     return { kind: 'done', ref: clean(match[1]) };
   }
-  if ((match = input.match(PATTERNS.move))) return { kind: 'move', ref: clean(match[1]), when: match[2].trim() };
+  if ((match = input.match(PATTERNS.doneNatural)) || (match = input.match(PATTERNS.doneTrailing))) {
+    return { kind: 'done', ref: clean(match[1]), reported: true };
+  }
+  if ((match = input.match(PATTERNS.move)) || (match = input.match(PATTERNS.movedTo))) {
+    return { kind: 'move', ref: clean(match[1]), when: match[2].trim() };
+  }
   if ((match = input.match(PATTERNS.find))) return { kind: 'find', ref: clean(match[1]) };
   return null;
 }

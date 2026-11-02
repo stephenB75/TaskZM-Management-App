@@ -29,7 +29,7 @@ import { AppHeader } from './AppHeader';
 import { AvatarSelection } from './AvatarSelection';
 import { AVATAR_UI_TEXT, AVATAR_SELECTION_DIALOG_BODY_CLASS, AVATAR_SELECTION_DIALOG_CLASS, AVATAR_SELECTION_DIALOG_FOOTER_CLASS } from '../lib/avatar-constants';
 import { SETTINGS_PANEL_UI_TEXT } from '../lib/settings-panel-constants';
-import { NAVIGATION_UI_TEXT } from '../lib/navigation-constants';
+import { NAVIGATION_UI_TEXT, PLANNER_UI_TEXT } from '../lib/navigation-constants';
 import { scrollSettingsTourTargetIntoView } from '../lib/app-tour-constants';
 import {
   AlertDialog,
@@ -1812,6 +1812,18 @@ export function SettingsPanel({ onStartTour }: SettingsPanelProps) {
                           checked={aiSettings.scheduleUnscheduledTasks}
                           onCheckedChange={toggleScheduleUnscheduledTasks}
                           disabled={!aiSettings.autoSchedulingEnabled}
+                        />
+                        <SettingsToggleRow
+                          id="ai-enhanced-planner"
+                          label={PLANNER_UI_TEXT.settings.enhancedTitle}
+                          description={
+                            serverAIConfigured
+                              ? PLANNER_UI_TEXT.settings.enhancedDescription
+                              : `${PLANNER_UI_TEXT.settings.enhancedDescription} ${PLANNER_UI_TEXT.settings.enhancedNotConfigured}`
+                          }
+                          checked={aiSettings.enhancedPlannerEnabled && Boolean(serverAIConfigured)}
+                          onCheckedChange={(checked) => updateSettings({ enhancedPlannerEnabled: checked })}
+                          disabled={!serverAIConfigured}
                         />
                         </SettingsControlGroup>
 

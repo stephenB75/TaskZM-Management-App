@@ -100,6 +100,25 @@ export function cleanSteps(steps: string[], taskTitle: string): string[] {
   return out;
 }
 
+/** Keep only the action when a sentence opens with context: "I'm so behind but I need to finish the report" → "finish the report". */
+export function extractEmbeddedAction(text: string): string {
+  const match = text.match(CONFIG.embeddedActionPattern);
+  if (!match || match.index === undefined || match.index === 0) return text;
+  const action = text.slice(match.index + match[0].length).trim();
+  return action ? action : text;
+}
+
+const COMMAND_VERBS = new Set(Object.values(CONFIG.imperativeVerbs));
+
+/** True for a statement of fact or someone else's view ("The client wants blue"), which is context rather than a task. */
+export function isFactSentence(text: string): boolean {
+  const trimmed = text.trim();
+  if (CONFIG.actionCuePattern.test(trimmed)) return false;
+  const firstWord = trimmed.match(/^[A-Za-z]+/)?.[0].toLowerCase() ?? '';
+  if (COMMAND_VERBS.has(firstWord)) return false;
+  return CONFIG.factSentencePattern.test(trimmed);
+}
+
 /** True when a brain-dump sentence reads like a note or feeling rather than something to do. */
 export function isNoteSentence(text: string): boolean {
   const trimmed = text.trim();

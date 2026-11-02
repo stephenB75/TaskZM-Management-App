@@ -6,6 +6,8 @@ import { getCategoryFromTags } from '../lib/ai-config';
 import { PLANNER_UI_TEXT } from '../lib/navigation-constants';
 import { plannerCategoryColor } from '../lib/planner-chat';
 import { PlannerPriorityPill } from './planner/PlannerPriorityPill';
+import { usePomodoro } from '../contexts/PomodoroContext';
+import { TaskCardInlinePomodoro } from './TaskCardInlinePomodoro';
 import type { Task } from '../types';
 
 function formatDueDateLabel(dueDate: string): string {
@@ -57,6 +59,9 @@ export function InboxTaskCard({
   const category = getCategoryFromTags(task.tags);
   const meta = getInboxMeta(task);
   const extraTag = task.tags?.find((tag) => tag.toLowerCase() !== category);
+  const { getTimerState } = usePomodoro();
+  const timer = getTimerState(task.id);
+  const focusActive = task.status !== 'done' && (timer.isRunning || timer.isPaused);
   const details = [
     category ?? (task.tags?.length ? null : AGENDA_LIST_CARD_UI.inboxSourceLabel),
     typeof task.estimatedTime === 'number' && task.estimatedTime > 0
@@ -110,6 +115,15 @@ export function InboxTaskCard({
           ) : null}
           {extraTag ? <span className="planner-tag-name">#{extraTag}</span> : null}
         </span>
+        {focusActive ? (
+          <TaskCardInlinePomodoro
+            timerId={task.id}
+            durationMinutes={task.estimatedTime}
+            variant="footer"
+            isMobile
+            className="planner-tl-focus"
+          />
+        ) : null}
       </div>
     </div>
   );

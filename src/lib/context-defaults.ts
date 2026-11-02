@@ -288,6 +288,7 @@ export function createDefaultAISettings() {
     priorityBasedScheduling: true,
     scheduleUnscheduledTasks: true,
     maxHoursPerDay: 5, // Default to 5 hours
+    enhancedPlannerEnabled: false,
   };
 }
 
